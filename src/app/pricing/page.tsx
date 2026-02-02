@@ -1,0 +1,201 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { PLANS, formatPrice } from "@/lib/plans";
+
+export default function PricingPage() {
+  const router = useRouter();
+  const [interval, setInterval] = useState<"monthly" | "yearly">("monthly");
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleSubscribe(plan: "STARTER" | "PRO") {
+    setLoading(plan);
+
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, interval }),
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Checkout error:", data.error);
+        setLoading(null);
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div className="min-h-screen py-16 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <Link href="/" className="text-2xl font-bold text-white mb-4 inline-block">
+            AlgoStudio
+          </Link>
+          <h1 className="text-4xl font-bold text-white mt-4">
+            Simple, transparent pricing
+          </h1>
+          <p className="text-[#94A3B8] mt-2">
+            Choose the plan that fits your trading needs
+          </p>
+        </div>
+
+        {/* Interval Toggle */}
+        <div className="flex justify-center mb-10">
+          <div className="flex rounded-lg bg-[#1E293B] p-1">
+            <button
+              onClick={() => setInterval("monthly")}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                interval === "monthly"
+                  ? "bg-[#4F46E5] text-white"
+                  : "text-[#94A3B8] hover:text-white"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setInterval("yearly")}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                interval === "yearly"
+                  ? "bg-[#4F46E5] text-white"
+                  : "text-[#94A3B8] hover:text-white"
+              }`}
+            >
+              Yearly
+              <span className="ml-2 text-xs text-[#22D3EE]">Save 1 month</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Starter Plan */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
+            <h3 className="text-xl font-semibold text-white">{PLANS.STARTER.name}</h3>
+            <div className="mt-4">
+              <span className="text-4xl font-bold text-white">
+                {formatPrice(PLANS.STARTER.prices[interval].amount, "eur")}
+              </span>
+              <span className="text-[#94A3B8] ml-2">
+                /{interval === "monthly" ? "month" : "year"}
+              </span>
+            </div>
+
+            <ul className="mt-6 space-y-3">
+              {PLANS.STARTER.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-3 text-[#CBD5E1]">
+                  <svg
+                    className="w-5 h-5 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+              <li className="flex items-center gap-3 text-[#64748B]">
+                <svg
+                  className="w-5 h-5 text-[#64748B]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                MQL5 source code export
+              </li>
+            </ul>
+
+            <button
+              onClick={() => handleSubscribe("STARTER")}
+              disabled={loading !== null}
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+              {loading === "STARTER" ? "Loading..." : "Get Started"}
+            </button>
+          </div>
+
+          {/* Pro Plan */}
+          <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-8 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
+                Most Popular
+              </span>
+            </div>
+
+            <h3 className="text-xl font-semibold text-white">{PLANS.PRO.name}</h3>
+            <div className="mt-4">
+              <span className="text-4xl font-bold text-white">
+                {formatPrice(PLANS.PRO.prices[interval].amount, "eur")}
+              </span>
+              <span className="text-[#94A3B8] ml-2">
+                /{interval === "monthly" ? "month" : "year"}
+              </span>
+            </div>
+
+            <ul className="mt-6 space-y-3">
+              {PLANS.PRO.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-3 text-[#CBD5E1]">
+                  <svg
+                    className="w-5 h-5 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => handleSubscribe("PRO")}
+              disabled={loading !== null}
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+            >
+              {loading === "PRO" ? "Loading..." : "Get Started"}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-12">
+          <p className="text-[#64748B] text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="text-[#22D3EE] hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+/* ============================================
+   ALGOSTUDIO COLOR SYSTEM
+   Premium Algorithm Trading Studio
+   ============================================ */
+
+:root {
+  /* Primary Colors */
+  --midnight-purple: #2B0A3D;
+  --midnight-purple-light: #3D1254;
+  --midnight-purple-dark: #1A0626;
+
+  /* Secondary Colors */
+  --indigo-tech: #4F46E5;
+  --indigo-tech-light: #6366F1;
+  --indigo-tech-dark: #3730A3;
+  --indigo-tech-muted: rgba(79, 70, 229, 0.15);
+
+  /* Accent Colors */
+  --neon-cyan: #22D3EE;
+  --neon-cyan-muted: rgba(34, 211, 238, 0.15);
+  --neon-cyan-glow: rgba(34, 211, 238, 0.35);
+  --soft-violet: #A78BFA;
+  --soft-violet-muted: rgba(167, 139, 250, 0.15);
+
+  /* Neutrals */
+  --studio-black: #0F172A;
+  --studio-black-light: #1E293B;
+  --cool-gray: #CBD5E1;
+  --cool-gray-dark: #94A3B8;
+  --cool-gray-muted: #64748B;
+  --pure-white: #FFFFFF;
+
+  /* Semantic Colors */
+  --success: #10B981;
+  --success-muted: rgba(16, 185, 129, 0.15);
+  --error: #EF4444;
+  --error-muted: rgba(239, 68, 68, 0.15);
+  --warning: #F59E0B;
+  --warning-muted: rgba(245, 158, 11, 0.15);
+
+  /* Surface Colors */
+  --background: var(--studio-black);
+  --background-elevated: var(--studio-black-light);
+  --foreground: var(--pure-white);
+  --foreground-muted: var(--cool-gray);
+  --foreground-subtle: var(--cool-gray-muted);
+
+  /* Component Colors */
+  --card: var(--midnight-purple-dark);
+  --card-hover: var(--midnight-purple);
+  --border: rgba(79, 70, 229, 0.2);
+  --border-hover: rgba(79, 70, 229, 0.4);
+  --input: var(--studio-black-light);
+  --input-border: rgba(79, 70, 229, 0.3);
+  --input-focus: var(--neon-cyan);
+
+  /* Interactive States */
+  --interactive-default: var(--indigo-tech);
+  --interactive-hover: var(--indigo-tech-light);
+  --interactive-active: var(--neon-cyan);
+  --interactive-disabled: var(--cool-gray-muted);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
+body {
+  background: linear-gradient(135deg, var(--midnight-purple) 0%, var(--studio-black) 50%, var(--studio-black) 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--studio-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--indigo-tech-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--indigo-tech);
+}
+
+/* ============================================
+   SELECTION STYLING
+   ============================================ */
+
+::selection {
+  background: var(--neon-cyan-muted);
+  color: var(--pure-white);
+}
+
+/* ============================================
+   FOCUS STYLING (Accessibility)
+   ============================================ */
+
+*:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   REACT FLOW OVERRIDES
+   ============================================ */
+
+.react-flow__background {
+  background: linear-gradient(180deg, var(--midnight-purple-dark) 0%, var(--studio-black) 100%) !important;
+}
+
+.react-flow__minimap {
+  background-color: var(--studio-black-light) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.react-flow__controls {
+  background-color: var(--midnight-purple-dark) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--midnight-purple-dark) !important;
+  border-bottom: 1px solid var(--border) !important;
+  fill: var(--cool-gray) !important;
+  transition: all 0.2s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--midnight-purple) !important;
+  fill: var(--neon-cyan) !important;
+}
+
+.react-flow__edge-path {
+  stroke: var(--indigo-tech) !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--neon-cyan) !important;
+}
+
+.react-flow__handle {
+  background-color: var(--indigo-tech) !important;
+  border: 2px solid var(--midnight-purple-dark) !important;
+}
+
+.react-flow__handle:hover {
+  background-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 8px var(--neon-cyan-glow) !important;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Neon Cyan Glow Effect */
+.glow-cyan {
+  box-shadow: 0 0 12px var(--neon-cyan-glow);
+}
+
+.glow-cyan-sm {
+  box-shadow: 0 0 6px var(--neon-cyan-glow);
+}
+
+.glow-cyan-lg {
+  box-shadow: 0 0 20px var(--neon-cyan-glow);
+}
+
+/* Soft Violet Glow Effect */
+.glow-violet {
+  box-shadow: 0 0 12px var(--soft-violet-muted);
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-studio {
+  background: linear-gradient(135deg, var(--midnight-purple) 0%, var(--studio-black) 100%);
+}
+
+.bg-gradient-card {
+  background: linear-gradient(180deg, var(--midnight-purple-dark) 0%, var(--studio-black) 100%);
+}
+
+/* Border with glow on hover */
+.border-glow-hover {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.border-glow-hover:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px var(--neon-cyan-glow);
+}
+
+/* Active/Selected state */
+.state-active {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 12px var(--neon-cyan-glow);
+}
+
+/* Disabled state */
+.state-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}

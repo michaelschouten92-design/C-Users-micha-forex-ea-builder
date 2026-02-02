@@ -1,0 +1,48 @@
+"use client";
+
+import type { NodeProps } from "@xyflow/react";
+import type { StopLossNodeData } from "@/types/builder";
+import { BaseNode, NodeIcons } from "./base-node";
+
+type Props = NodeProps & { data: StopLossNodeData };
+
+const methodLabels = {
+  FIXED_PIPS: "Fixed Pips",
+  ATR_BASED: "ATR-Based",
+  INDICATOR: "Indicator",
+};
+
+export function StopLossNode({ id, data, selected }: Props) {
+  const getValue = () => {
+    switch (data.method) {
+      case "FIXED_PIPS":
+        return `${data.fixedPips} pips`;
+      case "ATR_BASED":
+        return `ATR(${data.atrPeriod}) x ${data.atrMultiplier}`;
+      case "INDICATOR":
+        return "From indicator";
+    }
+  };
+
+  return (
+    <BaseNode
+      id={id}
+      selected={selected}
+      category="trading"
+      label={data.label}
+      icon={NodeIcons.stopLoss}
+      inputHandles={data.method === "INDICATOR" ? 1 : 0}
+    >
+      <div className="space-y-1">
+        <div className="flex justify-between">
+          <span className="text-zinc-500">Method:</span>
+          <span className="font-medium">{methodLabels[data.method]}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-zinc-500">Value:</span>
+          <span className="font-medium">{getValue()}</span>
+        </div>
+      </div>
+    </BaseNode>
+  );
+}
