@@ -3,6 +3,7 @@
 import { signIn, getProviders } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Providers = Awaited<ReturnType<typeof getProviders>>;
 
@@ -200,9 +201,19 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#CBD5E1]">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-[#CBD5E1]">
+                  Password
+                </label>
+                {!isRegistration && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-[#22D3EE] hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <input
                 id="password"
                 name="password"
