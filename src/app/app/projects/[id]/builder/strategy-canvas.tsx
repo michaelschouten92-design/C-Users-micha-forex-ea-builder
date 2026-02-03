@@ -129,9 +129,19 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
 
   // Validate connection before allowing it
   const isValidConnection = useCallback(
-    (connection: Connection) => {
+    (connection: Connection | Edge) => {
+      // Ensure we have the required connection properties
+      if (!connection.source || !connection.target) {
+        return false;
+      }
+      const conn: Connection = {
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? null,
+        targetHandle: connection.targetHandle ?? null,
+      };
       const validation = validateConnection(
-        connection,
+        conn,
         nodes as Node<BuilderNodeData>[],
         edges
       );
@@ -302,8 +312,8 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
   }, [nodes, edges, projectId, initialData]);
 
   // Manual save handler
-  const onSave = useCallback(async () => {
-    return saveToServer(false);
+  const onSave = useCallback(async (): Promise<void> => {
+    await saveToServer(false);
   }, [saveToServer]);
 
   // Autosave effect - save 5 seconds after last change
