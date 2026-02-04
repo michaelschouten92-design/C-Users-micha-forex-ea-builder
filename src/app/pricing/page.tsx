@@ -78,7 +78,60 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Free Plan */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
+            <h3 className="text-xl font-semibold text-white">{PLANS.FREE.name}</h3>
+            <div className="mt-4">
+              <span className="text-4xl font-bold text-white">€0</span>
+              <span className="text-[#94A3B8] ml-2">/forever</span>
+            </div>
+
+            <ul className="mt-6 space-y-3">
+              {PLANS.FREE.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-3 text-[#CBD5E1]">
+                  <svg
+                    className="w-5 h-5 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  {feature}
+                </li>
+              ))}
+              <li className="flex items-center gap-3 text-[#64748B]">
+                <svg
+                  className="w-5 h-5 text-[#64748B]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Export to MetaTrader
+              </li>
+            </ul>
+
+            <Link
+              href="/login?mode=register"
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
+            >
+              Get Started Free
+            </Link>
+          </div>
+
           {/* Starter Plan */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
             <h3 className="text-xl font-semibold text-white">{PLANS.STARTER.name}</h3>

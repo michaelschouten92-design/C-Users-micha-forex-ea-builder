@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const tier = (subscription?.tier ?? "STARTER") as "STARTER" | "PRO";
+  const tier = (subscription?.tier ?? "FREE") as "FREE" | "STARTER" | "PRO";
 
   return (
     <div className="min-h-screen">

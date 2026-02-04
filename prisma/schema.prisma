@@ -15,6 +15,7 @@ datasource db {
 // ============================================
 
 enum PlanTier {
+  FREE
   STARTER
   PRO
 }

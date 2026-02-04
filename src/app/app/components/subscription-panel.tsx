@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
 
 type SubscriptionPanelProps = {
-  tier: "STARTER" | "PRO";
+  tier: "FREE" | "STARTER" | "PRO";
   projectCount: number;
   exportCount: number;
   hasStripeSubscription: boolean;
@@ -57,7 +57,9 @@ export function SubscriptionPanel({
             )}
           </div>
           <p className="text-sm text-[#94A3B8]">
-            {tier === "STARTER"
+            {tier === "FREE"
+              ? "Upgrade to unlock exports and bring your strategies to MetaTrader."
+              : tier === "STARTER"
               ? "Upgrade to Pro for unlimited projects and MQL5 source code export."
               : "You have access to all features."}
           </p>
@@ -65,7 +67,7 @@ export function SubscriptionPanel({
 
         {/* Action Button */}
         <div className="flex-shrink-0">
-          {tier === "STARTER" ? (
+          {tier === "FREE" || tier === "STARTER" ? (
             <Link
               href="/pricing"
               className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
@@ -73,7 +75,7 @@ export function SubscriptionPanel({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
-              Upgrade to Pro
+              {tier === "FREE" ? "Upgrade" : "Upgrade to Pro"}
             </Link>
           ) : hasStripeSubscription ? (
             <button
@@ -140,7 +142,14 @@ export function SubscriptionPanel({
         </div>
       </div>
 
-      {/* Feature Highlight for Starter */}
+      {/* Feature Highlight for Free and Starter */}
+      {tier === "FREE" && (
+        <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
+          <p className="text-xs text-[#A78BFA]">
+            <span className="font-medium">Upgrade to unlock:</span> Export your strategies to MetaTrader (EX5/MQL5 files)
+          </p>
+        </div>
+      )}
       {tier === "STARTER" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">

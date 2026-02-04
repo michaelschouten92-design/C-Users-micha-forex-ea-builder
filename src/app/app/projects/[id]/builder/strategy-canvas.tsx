@@ -12,7 +12,6 @@ import {
   type Connection,
   type Node,
   type Edge,
-  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -533,6 +532,7 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
               animated: true,
               style: { stroke: "#4F46E5", strokeWidth: 2 },
             }}
+            selectNodesOnDrag={false}
           >
             <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
             <Controls />
@@ -574,7 +574,9 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
         </div>
 
         {/* Right: Properties Panel */}
-        <div className={`relative transition-all duration-300 ${rightPanelCollapsed ? 'w-0' : 'w-[300px]'}`}>
+        <div
+          className={`relative transition-all duration-300 ${rightPanelCollapsed ? 'w-0' : 'w-[300px]'}`}
+        >
           {/* Right panel toggle button - bottom edge at 50% */}
           <button
             onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}

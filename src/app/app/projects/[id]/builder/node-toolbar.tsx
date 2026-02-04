@@ -14,7 +14,7 @@ interface NodeToolbarProps {
 
 export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
-    new Set(["timing", "indicator", "condition", "trading"])
+    new Set()
   );
 
   const categories: NodeCategory[] = ["timing", "indicator", "condition", "trading"];
@@ -32,14 +32,26 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
   };
 
   const categoryStyles: Record<NodeCategory, { color: string; bg: string }> = {
-    timing: { color: "text-[#FB923C]", bg: "bg-[rgba(251,146,60,0.1)]" },
-    indicator: { color: "text-[#22D3EE]", bg: "bg-[rgba(34,211,238,0.1)]" },
-    condition: { color: "text-[#A78BFA]", bg: "bg-[rgba(167,139,250,0.1)]" },
-    trading: { color: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.1)]" },
+    timing: { color: "text-white", bg: "bg-[#FF6B00]" },
+    indicator: { color: "text-white", bg: "bg-[#00B8D9]" },
+    condition: { color: "text-white", bg: "bg-[#9C27B0]" },
+    trading: { color: "text-white", bg: "bg-[#00C853]" },
+  };
+
+  const blockColors: Record<NodeCategory, string> = {
+    timing: "text-[#FF6B00]",
+    indicator: "text-[#00B8D9]",
+    condition: "text-[#9C27B0]",
+    trading: "text-[#00C853]",
   };
 
   return (
-    <div className="w-[200px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] overflow-y-auto flex-shrink-0">
+    <div
+      className="w-[200px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] overflow-y-auto flex-shrink-0"
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
         <h3 className="text-sm font-semibold text-white">Blocks</h3>
         <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
@@ -54,19 +66,25 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
             <div key={category} className="mb-2">
               {/* Category Header */}
               <button
-                onClick={() => toggleCategory(category)}
-                className="w-full flex items-center justify-between px-2 py-2 text-xs font-medium text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.1)] rounded-lg transition-all duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCategory(category);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={`w-full flex items-center justify-between px-4 py-4 text-lg font-bold text-white rounded-lg transition-all duration-200 hover:opacity-90 ${categoryStyles[category].bg}`}
               >
-                <span className={categoryStyles[category].color}>
+                <span>
                   {getCategoryLabel(category)}
                 </span>
                 <svg
-                  className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  stroke="white"
+                  strokeWidth={2.5}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
@@ -78,12 +96,12 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
                       key={`${template.type}-${index}`}
                       draggable
                       onDragStart={(e) => onDragStart(e, template)}
-                      className={`px-3 py-2.5 rounded-lg border border-[rgba(79,70,229,0.2)] cursor-grab hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_0_12px_rgba(79,70,229,0.15)] active:cursor-grabbing transition-all duration-200 ${categoryStyles[template.category].bg}`}
+                      className="px-3 py-2.5 rounded-lg bg-[#2A1438] border border-[rgba(79,70,229,0.2)] cursor-grab hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_0_12px_rgba(79,70,229,0.15)] active:cursor-grabbing transition-all duration-200"
                     >
-                      <div className={`text-sm font-medium ${categoryStyles[template.category].color}`}>
+                      <div className={`text-sm font-medium ${blockColors[template.category]}`}>
                         {template.label}
                       </div>
-                      <div className="text-xs text-[#64748B] truncate mt-0.5">
+                      <div className="text-xs text-[#94A3B8] truncate mt-0.5">
                         {template.description}
                       </div>
                     </div>

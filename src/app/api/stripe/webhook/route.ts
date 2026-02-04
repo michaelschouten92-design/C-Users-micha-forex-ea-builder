@@ -141,11 +141,11 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Downgrade to starter (free tier behavior)
+  // Downgrade to FREE tier when subscription is cancelled
   await prisma.subscription.update({
     where: { id: userSubscription.id },
     data: {
-      tier: "STARTER",
+      tier: "FREE",
       status: "cancelled",
       stripeSubId: null,
       currentPeriodStart: null,

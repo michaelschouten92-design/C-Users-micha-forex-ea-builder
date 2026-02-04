@@ -11,7 +11,7 @@ export async function checkProjectLimit(userId: string): Promise<{
     prisma.project.count({ where: { userId } }),
   ]);
 
-  const tier = (subscription?.tier ?? "STARTER") as PlanTier;
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
   const max = plan.limits.maxProjects;
 
@@ -31,7 +31,7 @@ export async function checkExportLimit(userId: string): Promise<{
     where: { userId },
   });
 
-  const tier = (subscription?.tier ?? "STARTER") as PlanTier;
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
   const max = plan.limits.maxExportsPerMonth;
 
@@ -59,7 +59,7 @@ export async function canExportMQL5(userId: string): Promise<boolean> {
     where: { userId },
   });
 
-  const tier = (subscription?.tier ?? "STARTER") as PlanTier;
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
 
   return plan.limits.canExportMQL5;
@@ -70,7 +70,7 @@ export async function canExportEX5(userId: string): Promise<boolean> {
     where: { userId },
   });
 
-  const tier = (subscription?.tier ?? "STARTER") as PlanTier;
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
 
   return plan.limits.canExportEX5;
@@ -81,7 +81,7 @@ export async function getUserPlanLimits(userId: string) {
     where: { userId },
   });
 
-  const tier = (subscription?.tier ?? "STARTER") as PlanTier;
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
 
   return {

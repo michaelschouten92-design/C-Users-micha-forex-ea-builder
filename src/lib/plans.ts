@@ -1,6 +1,22 @@
 // Subscription plans configuration
 
 export const PLANS = {
+  FREE: {
+    name: "Free",
+    tier: "FREE" as const,
+    features: [
+      "Unlimited projects",
+      "Visual strategy builder",
+      "No export capability",
+    ],
+    limits: {
+      maxProjects: Infinity,
+      maxExportsPerMonth: 0,
+      canExportMQL5: false,
+      canExportEX5: false,
+    },
+    prices: null,
+  },
   STARTER: {
     name: "Starter",
     tier: "STARTER" as const,

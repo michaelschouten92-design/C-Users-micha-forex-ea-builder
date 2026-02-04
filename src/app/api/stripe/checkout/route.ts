@@ -24,6 +24,12 @@ export async function POST(request: NextRequest) {
     }
 
     const planConfig = PLANS[plan];
+
+    // FREE plan cannot be purchased via checkout
+    if (!planConfig.prices) {
+      return NextResponse.json({ error: "This plan is not available for purchase" }, { status: 400 });
+    }
+
     const priceId = planConfig.prices[interval].priceId;
 
     if (!priceId) {

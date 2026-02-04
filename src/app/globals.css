@@ -74,6 +74,15 @@
    GLOBAL STYLES
    ============================================ */
 
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 body {
   background: linear-gradient(135deg, var(--midnight-purple) 0%, var(--studio-black) 50%, var(--studio-black) 100%);
   background-attachment: fixed;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import type { Node } from "@xyflow/react";
 import type {
   BuilderNodeData,
@@ -95,7 +96,11 @@ export function PropertiesPanel({
           <input
             type="text"
             value={data.label}
-            onChange={(e) => handleChange({ label: e.target.value })}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleChange({ label: e.target.value });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
           />
         </div>
@@ -184,7 +189,11 @@ function renderNodeFields(
             <input
               type="checkbox"
               checked={timingData.tradeMondayToFriday}
-              onChange={(e) => onChange({ tradeMondayToFriday: e.target.checked } as Partial<TradingTimesNodeData>)}
+              onChange={(e) => {
+                e.stopPropagation();
+                onChange({ tradeMondayToFriday: e.target.checked } as Partial<TradingTimesNodeData>);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
               className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
             />
             Weekdays only (Mon-Fri)
@@ -627,7 +636,7 @@ function renderNodeFields(
   return null;
 }
 
-// Helper components
+// Custom dropdown component that manages its own state
 function SelectField({
   label,
   value,
@@ -639,20 +648,85 @@ function SelectField({
   options: { value: string; label: string }[];
   onChange: (value: string) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    // Use setTimeout to avoid immediate close from the same click that opened it
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+  };
+
   return (
-    <div>
+    <div ref={containerRef} className="relative">
       <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-left flex items-center justify-between hover:border-[rgba(79,70,229,0.5)] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
       >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        <span>{selectedOption?.label || value}</span>
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-lg overflow-hidden">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelect(opt.value);
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              className={`w-full px-3 py-2 text-sm text-left hover:bg-[rgba(79,70,229,0.2)] transition-colors ${
+                opt.value === value ? 'bg-[rgba(79,70,229,0.3)] text-[#22D3EE]' : 'text-white'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -681,7 +755,11 @@ function NumberField({
         min={min}
         max={max}
         step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          e.stopPropagation();
+          onChange(parseFloat(e.target.value) || 0);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
       />
     </div>
@@ -708,7 +786,11 @@ function TimeField({
           value={hour}
           min={0}
           max={23}
-          onChange={(e) => onChange(parseInt(e.target.value) || 0, minute)}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(parseInt(e.target.value) || 0, minute);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="w-12 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent"
           placeholder="HH"
         />
@@ -719,7 +801,11 @@ function TimeField({
           min={0}
           max={59}
           step={15}
-          onChange={(e) => onChange(hour, parseInt(e.target.value) || 0)}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(hour, parseInt(e.target.value) || 0);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="w-12 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent"
           placeholder="MM"
         />

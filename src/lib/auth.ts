@@ -75,7 +75,7 @@ providers.push(
             passwordHash,
             subscription: {
               create: {
-                tier: "STARTER",
+                tier: "FREE",
               },
             },
           },
@@ -149,7 +149,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 authProviderId,
                 subscription: {
                   create: {
-                    tier: "STARTER",
+                    tier: "FREE",
                   },
                 },
               },
