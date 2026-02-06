@@ -365,6 +365,26 @@ function TradingSessionFields({
           Weekdays only (Mon-Fri)
         </label>
       </div>
+      <div className="mt-2">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.useServerTime ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ useServerTime: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Use broker server time
+        </label>
+      </div>
+      {data.useServerTime && (
+        <div className="text-[10px] text-[#FBBF24] mt-1">
+          Session times will be compared against your broker&apos;s server clock (TimeCurrent) instead of GMT.
+        </div>
+      )}
       <div className="mt-2 text-[10px] text-[#64748B]">
         Your broker&apos;s MT5 server may use a different timezone than GMT — check the Market Watch clock for the offset.
       </div>
@@ -507,8 +527,28 @@ function CustomTimesFields({
         </div>
       </div>
 
+      <div className="mt-2">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.useServerTime ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ useServerTime: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Use broker server time
+        </label>
+      </div>
+      {data.useServerTime && (
+        <div className="text-[10px] text-[#FBBF24] mt-1">
+          Time slots will be compared against your broker&apos;s server clock (TimeCurrent) instead of GMT.
+        </div>
+      )}
       <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Define custom trading days and time windows. All times are in GMT. Your broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the offset.
+        Define custom trading days and time windows. {data.useServerTime ? "Times use broker server time." : "All times are in GMT."} Your broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the offset.
       </div>
     </>
   );
@@ -1067,6 +1107,9 @@ function PlaceBuyFields({
       {data.minLot > data.maxLot && (
         <FieldWarning message="Min lot should not exceed max lot" />
       )}
+      {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
+        <FieldWarning message="Risk above 5% per trade is considered aggressive" />
+      )}
     </>
   );
 }
@@ -1111,6 +1154,9 @@ function PlaceSellFields({
       <NumberField label="Max Lot" value={data.maxLot} min={0.01} max={1000} step={0.01} onChange={(v) => onChange({ maxLot: v })} />
       {data.minLot > data.maxLot && (
         <FieldWarning message="Min lot should not exceed max lot" />
+      )}
+      {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
+        <FieldWarning message="Risk above 5% per trade is considered aggressive" />
       )}
     </>
   );

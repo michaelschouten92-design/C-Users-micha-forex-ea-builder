@@ -43,7 +43,11 @@ function generateCustomTimesCode(
   code.onTick.push("// Custom Trading Times");
   code.onTick.push("bool isTradingTime = false;");
   code.onTick.push("MqlDateTime dt;");
-  code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+  if (data.useServerTime) {
+    code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
+  } else {
+    code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+  };
   code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   code.onTick.push("");
 
@@ -98,7 +102,7 @@ function generateCustomTimesCode(
       }
     });
 
-    code.onTick.push(`   // Time slots (GMT)`);
+    code.onTick.push(`   // Time slots (${data.useServerTime ? "Server Time" : "GMT"})`);
     data.timeSlots.forEach((slot, i) => {
       const startStr = `${slot.startHour.toString().padStart(2, "0")}:${slot.startMinute.toString().padStart(2, "0")}`;
       const endStr = `${slot.endHour.toString().padStart(2, "0")}:${slot.endMinute.toString().padStart(2, "0")}`;
@@ -125,10 +129,15 @@ function generateTradingSessionCode(
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
 
-  code.onTick.push(`// Trading Session: ${sessionInfo.label} (${sessionInfo.start} - ${sessionInfo.end} GMT)`);
+  const timeLabel = data.useServerTime ? "Server Time" : "GMT";
+  code.onTick.push(`// Trading Session: ${sessionInfo.label} (${sessionInfo.start} - ${sessionInfo.end} ${timeLabel})`);
   code.onTick.push("bool isTradingTime = false;");
   code.onTick.push("MqlDateTime dt;");
-  code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+  if (data.useServerTime) {
+    code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
+  } else {
+    code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+  }
   code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
 
   if (data.tradeMondayToFriday) {

@@ -23,6 +23,7 @@ export interface TradingSessionNodeData extends BaseNodeData {
   timingType: "trading-session";
   session: TradingSession;
   tradeMondayToFriday: boolean;
+  useServerTime?: boolean;
 }
 
 export interface AlwaysNodeData extends BaseNodeData {
@@ -52,6 +53,7 @@ export interface CustomTimesNodeData extends BaseNodeData {
   timingType: "custom-times";
   days: TradingDays;
   timeSlots: TimeSlot[];
+  useServerTime?: boolean;
 }
 
 export type TimingNodeData = TradingSessionNodeData | AlwaysNodeData | CustomTimesNodeData;
@@ -343,6 +345,8 @@ export interface BuildJsonSettings {
   comment: string;
   maxOpenTrades: number;
   allowHedging: boolean;
+  maxBuyPositions?: number;
+  maxSellPositions?: number;
 }
 
 export interface BuildJsonMetadata {

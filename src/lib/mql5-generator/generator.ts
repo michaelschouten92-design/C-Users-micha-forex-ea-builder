@@ -79,11 +79,15 @@ export function generateMQL5Code(
     comment: buildJson.settings?.comment ?? "AlgoStudio EA",
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
+    maxBuyPositions: buildJson.settings?.maxBuyPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
+    maxSellPositions: buildJson.settings?.maxSellPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
   };
 
   const code: GeneratedCode = {
     inputs: [
       { name: "InpMagicNumber", type: "int", value: ctx.magicNumber, comment: "Magic Number", isOptimizable: false, group: "General Settings" },
+      { name: "InpMaxSlippage", type: "int", value: 10, comment: "Max Slippage (points)", isOptimizable: false, group: "Risk Management" },
+      { name: "InpMaxSpread", type: "int", value: 0, comment: "Max Spread (points, 0=no limit)", isOptimizable: false, group: "Risk Management" },
     ],
     globalVariables: [],
     onInit: [],

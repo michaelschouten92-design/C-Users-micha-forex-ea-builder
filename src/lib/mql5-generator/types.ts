@@ -6,6 +6,8 @@ export interface GeneratorContext {
   comment: string;
   maxOpenTrades: number;
   allowHedging: boolean;
+  maxBuyPositions: number;
+  maxSellPositions: number;
 }
 
 export interface IndicatorVariable {

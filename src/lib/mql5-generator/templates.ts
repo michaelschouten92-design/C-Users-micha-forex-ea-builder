@@ -84,7 +84,7 @@ int OnInit()
    trade.SetExpertMagicNumber(InpMagicNumber);
 
    //--- Set allowed slippage
-   trade.SetDeviationInPoints(10);
+   trade.SetDeviationInPoints(InpMaxSlippage);
 
    //--- Set trade fill type
    trade.SetTypeFillingBySymbol(_Symbol);
@@ -142,6 +142,22 @@ void OnTick()
    datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
    bool isNewBar = (currentBarTime != lastBarTime);
    if(isNewBar) lastBarTime = currentBarTime;
+
+   //--- Check minimum bars available
+   if(Bars(_Symbol, PERIOD_CURRENT) < 100)
+   {
+      static bool barsWarned = false;
+      if(!barsWarned) { Print("Waiting for minimum bars (100) on ", _Symbol); barsWarned = true; }
+      return;
+   }
+
+   //--- Spread filter
+   if(InpMaxSpread > 0)
+   {
+      int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
+      if(currentSpread > InpMaxSpread)
+         return;
+   }
 
    //--- Count current positions
    int positionsCount = CountPositions();
@@ -201,11 +217,27 @@ int CountPositionsByType(ENUM_POSITION_TYPE posType)
 //+------------------------------------------------------------------+
 bool OpenBuy(double lots, double sl = 0, double tp = 0)
 {
-   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * _Point, _Digits) : 0;
-   double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * _Point, _Digits) : 0;
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * _Point, _Digits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * _Point, _Digits) : 0;
 
-   return trade.Buy(lots, _Symbol, ask, slPrice, tpPrice, "${ctx.comment}");
+      if(trade.Buy(lots, _Symbol, ask, slPrice, tpPrice, "${ctx.comment}"))
+         return true;
+
+      uint resultCode = trade.ResultRetcode();
+      if(resultCode != TRADE_RETCODE_REQUOTE && resultCode != TRADE_RETCODE_PRICE_OFF)
+      {
+         Print("OpenBuy failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+         return false;
+      }
+      Print("OpenBuy requote/price-off, retry ", attempt + 1, "/", retries);
+      Sleep(100);
+   }
+   Print("OpenBuy failed after ", retries, " retries");
+   return false;
 }
 
 //+------------------------------------------------------------------+
@@ -213,11 +245,27 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
 //+------------------------------------------------------------------+
 bool OpenSell(double lots, double sl = 0, double tp = 0)
 {
-   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * _Point, _Digits) : 0;
-   double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * _Point, _Digits) : 0;
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+      double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * _Point, _Digits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * _Point, _Digits) : 0;
 
-   return trade.Sell(lots, _Symbol, bid, slPrice, tpPrice, "${ctx.comment}");
+      if(trade.Sell(lots, _Symbol, bid, slPrice, tpPrice, "${ctx.comment}"))
+         return true;
+
+      uint resultCode = trade.ResultRetcode();
+      if(resultCode != TRADE_RETCODE_REQUOTE && resultCode != TRADE_RETCODE_PRICE_OFF)
+      {
+         Print("OpenSell failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+         return false;
+      }
+      Print("OpenSell requote/price-off, retry ", attempt + 1, "/", retries);
+      Sleep(100);
+   }
+   Print("OpenSell failed after ", retries, " retries");
+   return false;
 }
 
 //+------------------------------------------------------------------+

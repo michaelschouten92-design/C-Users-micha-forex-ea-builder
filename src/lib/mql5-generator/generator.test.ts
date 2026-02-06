@@ -1062,6 +1062,139 @@ describe("generateMQL5Code", () => {
   // ============================================
 
   describe("connectivity", () => {
+    it("generates InpMaxSlippage and InpMaxSpread inputs", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpMaxSlippage");
+      expect(code).toContain("InpMaxSpread");
+      expect(code).toContain("SetDeviationInPoints(InpMaxSlippage)");
+    });
+
+    it("generates minimum bars validation in OnTick", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Bars(_Symbol, PERIOD_CURRENT) < 100");
+    });
+
+    it("generates spread filter in OnTick", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpMaxSpread > 0");
+      expect(code).toContain("SYMBOL_SPREAD");
+    });
+
+    it("generates OpenBuy with retry logic", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("TRADE_RETCODE_REQUOTE");
+      expect(code).toContain("TRADE_RETCODE_PRICE_OFF");
+      expect(code).toContain("OpenBuy failed after");
+      expect(code).toContain("OpenSell failed after");
+    });
+
+    it("generates per-direction position limits", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const edges = [
+        { id: "e1", source: "t1", target: "b1" },
+        { id: "e2", source: "t1", target: "s1" },
+      ];
+      build.edges = edges;
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("CountPositionsByType(POSITION_TYPE_BUY) < 1");
+      expect(code).toContain("CountPositionsByType(POSITION_TYPE_SELL) < 1");
+    });
+
+    it("uses custom maxBuyPositions/maxSellPositions from settings", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings.maxBuyPositions = 3;
+      build.settings.maxSellPositions = 2;
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("CountPositionsByType(POSITION_TYPE_BUY) < 3");
+    });
+
+    it("generates server time for trading session when useServerTime is set", () => {
+      const build = makeBuild([
+        makeNode("t1", "trading-session", {
+          category: "timing",
+          timingType: "trading-session",
+          session: "LONDON",
+          tradeMondayToFriday: true,
+          useServerTime: true,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("TimeCurrent()");
+      expect(code).toContain("Server Time");
+      expect(code).not.toContain("TimeGMT()");
+    });
+
+    it("generates server time for custom times when useServerTime is set", () => {
+      const build = makeBuild([
+        makeNode("t1", "custom-times", {
+          category: "timing",
+          timingType: "custom-times",
+          days: {
+            monday: true, tuesday: true, wednesday: true,
+            thursday: true, friday: true, saturday: false, sunday: false,
+          },
+          timeSlots: [{ startHour: 9, startMinute: 0, endHour: 17, endMinute: 0 }],
+          useServerTime: true,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("TimeCurrent()");
+      expect(code).toContain("Server Time");
+      expect(code).not.toContain("TimeGMT()");
+    });
+
     it("excludes disconnected nodes from code generation", () => {
       const build = makeBuild(
         [

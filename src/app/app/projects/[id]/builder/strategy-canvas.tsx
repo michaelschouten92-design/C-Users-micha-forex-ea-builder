@@ -20,6 +20,7 @@ import { VersionControls } from "./version-controls";
 import { validateStrategy } from "./strategy-validation";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
+import { CodePreviewPanel } from "./code-preview-panel";
 import {
   useAutoSave,
   useClipboard,
@@ -342,6 +343,13 @@ export function StrategyCanvas({
               <span className="text-sm font-medium">{connectionError}</span>
             </div>
           )}
+
+          {/* Code Preview Panel */}
+          <CodePreviewPanel
+            nodes={nodes}
+            edges={edges}
+            settings={initialData?.settings ?? undefined}
+          />
 
           {/* Floating Undo/Redo buttons */}
           <div className="absolute bottom-4 right-4 flex gap-2 z-10">

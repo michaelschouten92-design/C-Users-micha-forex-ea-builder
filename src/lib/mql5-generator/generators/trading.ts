@@ -327,7 +327,7 @@ export function generateEntryLogic(
 
   // Only generate buy logic if there's a Place Buy node
   if (hasBuyNode) {
-    code.onTick.push("   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) == 0)");
+    code.onTick.push(`   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`);
     code.onTick.push("   {");
     code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
     code.onTick.push("   }");
@@ -335,7 +335,7 @@ export function generateEntryLogic(
 
   // Only generate sell logic if there's a Place Sell node
   if (hasSellNode) {
-    code.onTick.push("   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) == 0)");
+    code.onTick.push(`   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`);
     code.onTick.push("   {");
     code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
     code.onTick.push("   }");
