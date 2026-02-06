@@ -21,7 +21,8 @@ export function createInput(
   name: string,
   type: OptimizableInput["type"],
   value: number | string | boolean,
-  comment: string
+  comment: string,
+  group?: string
 ): OptimizableInput {
   return {
     name,
@@ -29,6 +30,7 @@ export function createInput(
     value,
     comment,
     isOptimizable: isFieldOptimizable(node, fieldName),
+    group,
   };
 }
 

@@ -363,6 +363,7 @@ export const buildJsonSchema = z.object({
 
 export const createVersionSchema = z.object({
   buildJson: buildJsonSchema,
+  expectedVersion: z.number().int().min(0).optional(),
 });
 
 // ============================================

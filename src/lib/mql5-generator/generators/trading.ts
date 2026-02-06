@@ -16,20 +16,21 @@ export function generatePlaceBuyCode(
 ): void {
   const data = node.data as PlaceBuyNodeData;
 
+  const group = "Buy Order";
   switch (data.method) {
     case "FIXED_LOT":
-      code.inputs.push(createInput(node, "fixedLot", "InpBuyLotSize", "double", data.fixedLot, "Buy Lot Size"));
+      code.inputs.push(createInput(node, "fixedLot", "InpBuyLotSize", "double", data.fixedLot, "Buy Lot Size", group));
       code.onTick.push("double buyLotSize = InpBuyLotSize;");
       break;
 
     case "RISK_PERCENT":
-      code.inputs.push(createInput(node, "riskPercent", "InpBuyRiskPercent", "double", data.riskPercent, "Buy Risk %"));
+      code.inputs.push(createInput(node, "riskPercent", "InpBuyRiskPercent", "double", data.riskPercent, "Buy Risk %", group));
       code.onTick.push("double buyLotSize = CalculateLotSize(InpBuyRiskPercent, slPips);");
       break;
   }
 
-  code.inputs.push(createInput(node, "minLot", "InpBuyMinLot", "double", data.minLot, "Buy Minimum Lot"));
-  code.inputs.push(createInput(node, "maxLot", "InpBuyMaxLot", "double", data.maxLot, "Buy Maximum Lot"));
+  code.inputs.push(createInput(node, "minLot", "InpBuyMinLot", "double", data.minLot, "Buy Minimum Lot", group));
+  code.inputs.push(createInput(node, "maxLot", "InpBuyMaxLot", "double", data.maxLot, "Buy Maximum Lot", group));
   code.onTick.push("buyLotSize = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, buyLotSize));");
 }
 
@@ -39,20 +40,21 @@ export function generatePlaceSellCode(
 ): void {
   const data = node.data as PlaceSellNodeData;
 
+  const group = "Sell Order";
   switch (data.method) {
     case "FIXED_LOT":
-      code.inputs.push(createInput(node, "fixedLot", "InpSellLotSize", "double", data.fixedLot, "Sell Lot Size"));
+      code.inputs.push(createInput(node, "fixedLot", "InpSellLotSize", "double", data.fixedLot, "Sell Lot Size", group));
       code.onTick.push("double sellLotSize = InpSellLotSize;");
       break;
 
     case "RISK_PERCENT":
-      code.inputs.push(createInput(node, "riskPercent", "InpSellRiskPercent", "double", data.riskPercent, "Sell Risk %"));
+      code.inputs.push(createInput(node, "riskPercent", "InpSellRiskPercent", "double", data.riskPercent, "Sell Risk %", group));
       code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
       break;
   }
 
-  code.inputs.push(createInput(node, "minLot", "InpSellMinLot", "double", data.minLot, "Sell Minimum Lot"));
-  code.inputs.push(createInput(node, "maxLot", "InpSellMaxLot", "double", data.maxLot, "Sell Maximum Lot"));
+  code.inputs.push(createInput(node, "minLot", "InpSellMinLot", "double", data.minLot, "Sell Minimum Lot", group));
+  code.inputs.push(createInput(node, "maxLot", "InpSellMaxLot", "double", data.maxLot, "Sell Maximum Lot", group));
   code.onTick.push("sellLotSize = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, sellLotSize));");
 }
 
@@ -64,19 +66,21 @@ export function generateStopLossCode(
 ): void {
   const data = node.data as StopLossNodeData;
 
+  const slGroup = "Stop Loss";
   switch (data.method) {
     case "FIXED_PIPS":
-      code.inputs.push(createInput(node, "fixedPips", "InpStopLoss", "double", data.fixedPips, "Stop Loss (pips)"));
+      code.inputs.push(createInput(node, "fixedPips", "InpStopLoss", "double", data.fixedPips, "Stop Loss (pips)", slGroup));
       code.onTick.push("double slPips = InpStopLoss * 10; // Convert to points");
       break;
 
     case "ATR_BASED":
-      code.inputs.push(createInput(node, "atrPeriod", "InpATRPeriod", "int", data.atrPeriod, "ATR Period for SL"));
-      code.inputs.push(createInput(node, "atrMultiplier", "InpATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for SL"));
+      code.inputs.push(createInput(node, "atrPeriod", "InpATRPeriod", "int", data.atrPeriod, "ATR Period for SL", slGroup));
+      code.inputs.push(createInput(node, "atrMultiplier", "InpATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for SL", slGroup));
       code.globalVariables.push("int atrHandle;");
       code.globalVariables.push("double atrBuffer[];");
       code.onInit.push("atrHandle = iATR(_Symbol, PERIOD_CURRENT, InpATRPeriod);");
       code.onInit.push('if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }');
+      code.onDeinit.push("if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);");
       code.onInit.push("ArraySetAsSeries(atrBuffer, true);");
       code.onTick.push("if(CopyBuffer(atrHandle, 0, 0, 1, atrBuffer) < 1) return;");
       code.onTick.push("double slPips = (atrBuffer[0] / _Point) * InpATRMultiplier;");
@@ -186,20 +190,21 @@ export function generateTakeProfitCode(
 ): void {
   const data = node.data as TakeProfitNodeData;
 
+  const tpGroup = "Take Profit";
   switch (data.method) {
     case "FIXED_PIPS":
-      code.inputs.push(createInput(node, "fixedPips", "InpTakeProfit", "double", data.fixedPips, "Take Profit (pips)"));
+      code.inputs.push(createInput(node, "fixedPips", "InpTakeProfit", "double", data.fixedPips, "Take Profit (pips)", tpGroup));
       code.onTick.push("double tpPips = InpTakeProfit * 10; // Convert to points");
       break;
 
     case "RISK_REWARD":
-      code.inputs.push(createInput(node, "riskRewardRatio", "InpRiskReward", "double", data.riskRewardRatio, "Risk:Reward Ratio"));
+      code.inputs.push(createInput(node, "riskRewardRatio", "InpRiskReward", "double", data.riskRewardRatio, "Risk:Reward Ratio", tpGroup));
       code.onTick.push("double tpPips = slPips * InpRiskReward;");
       break;
 
     case "ATR_BASED":
       // Reuse ATR handle if already created
-      code.inputs.push(createInput(node, "atrMultiplier", "InpTPATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for TP"));
+      code.inputs.push(createInput(node, "atrMultiplier", "InpTPATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for TP", tpGroup));
       code.onTick.push("double tpPips = (atrBuffer[0] / _Point) * InpTPATRMultiplier;");
       break;
   }

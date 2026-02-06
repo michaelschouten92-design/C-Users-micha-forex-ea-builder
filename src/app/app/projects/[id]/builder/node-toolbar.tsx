@@ -11,9 +11,10 @@ import {
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
   isPro?: boolean;
+  onClose?: () => void;
 }
 
-export function NodeToolbar({ onDragStart, isPro = false }: NodeToolbarProps) {
+export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
     new Set()
   );
@@ -86,9 +87,18 @@ export function NodeToolbar({ onDragStart, isPro = false }: NodeToolbarProps) {
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
-        <h3 className="text-sm font-semibold text-white">Blocks</h3>
-        <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
+      <div className="p-3 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-white">Blocks</h3>
+          <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors" title="Close">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="p-2 space-y-2">

@@ -28,6 +28,7 @@ export interface OptimizableInput {
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;
+  group?: string;
 }
 
 export interface GeneratedCode {

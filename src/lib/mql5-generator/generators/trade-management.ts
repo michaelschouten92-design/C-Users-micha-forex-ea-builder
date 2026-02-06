@@ -39,21 +39,23 @@ function generateBreakevenStopCode(
   data: BreakevenStopNodeData,
   code: GeneratedCode
 ): void {
+  const group = "Breakeven Stop";
   // Add inputs based on trigger type
   if (data.trigger === "PIPS") {
-    code.inputs.push(createInput(node, "triggerPips", "InpBETriggerPips", "double", data.triggerPips, "Breakeven Trigger (pips)"));
+    code.inputs.push(createInput(node, "triggerPips", "InpBETriggerPips", "double", data.triggerPips, "Breakeven Trigger (pips)", group));
   } else if (data.trigger === "PERCENTAGE") {
-    code.inputs.push(createInput(node, "triggerPercent", "InpBETriggerPercent", "double", data.triggerPercent, "Breakeven Trigger (% profit)"));
+    code.inputs.push(createInput(node, "triggerPercent", "InpBETriggerPercent", "double", data.triggerPercent, "Breakeven Trigger (% profit)", group));
   } else if (data.trigger === "ATR") {
-    code.inputs.push(createInput(node, "triggerAtrPeriod", "InpBEATRPeriod", "int", data.triggerAtrPeriod, "Breakeven ATR Period"));
-    code.inputs.push(createInput(node, "triggerAtrMultiplier", "InpBEATRMultiplier", "double", data.triggerAtrMultiplier, "Breakeven ATR Multiplier"));
+    code.inputs.push(createInput(node, "triggerAtrPeriod", "InpBEATRPeriod", "int", data.triggerAtrPeriod, "Breakeven ATR Period", group));
+    code.inputs.push(createInput(node, "triggerAtrMultiplier", "InpBEATRMultiplier", "double", data.triggerAtrMultiplier, "Breakeven ATR Multiplier", group));
     code.globalVariables.push("int beATRHandle;");
     code.globalVariables.push("double beATRBuffer[];");
     code.onInit.push("beATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpBEATRPeriod);");
     code.onInit.push('if(beATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Breakeven"); return(INIT_FAILED); }');
+    code.onDeinit.push("if(beATRHandle != INVALID_HANDLE) IndicatorRelease(beATRHandle);");
     code.onInit.push("ArraySetAsSeries(beATRBuffer, true);");
   }
-  code.inputs.push(createInput(node, "lockPips", "InpBELockPips", "double", data.lockPips, "Breakeven Lock (pips above entry)"));
+  code.inputs.push(createInput(node, "lockPips", "InpBELockPips", "double", data.lockPips, "Breakeven Lock (pips above entry)", group));
 
   code.onTick.push("// Breakeven Stop Management");
 
@@ -124,8 +126,9 @@ function generateTrailingStopCode(
   data: TrailingStopNodeData,
   code: GeneratedCode
 ): void {
-  code.inputs.push(createInput(node, "trailPips", "InpTrailPips", "double", data.trailPips, "Trail Distance (pips)"));
-  code.inputs.push(createInput(node, "startAfterPips", "InpTrailStartPips", "double", data.startAfterPips, "Trail Start After (pips profit)"));
+  const group = "Trailing Stop";
+  code.inputs.push(createInput(node, "trailPips", "InpTrailPips", "double", data.trailPips, "Trail Distance (pips)", group));
+  code.inputs.push(createInput(node, "startAfterPips", "InpTrailStartPips", "double", data.startAfterPips, "Trail Start After (pips profit)", group));
 
   code.onTick.push("// Trailing Stop Management");
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
@@ -176,8 +179,9 @@ function generatePartialCloseCode(
   data: PartialCloseNodeData,
   code: GeneratedCode
 ): void {
-  code.inputs.push(createInput(node, "closePercent", "InpPartialClosePercent", "double", data.closePercent, "Partial Close %"));
-  code.inputs.push(createInput(node, "triggerPips", "InpPartialCloseTriggerPips", "double", data.triggerPips, "Partial Close Trigger (pips)"));
+  const group = "Partial Close";
+  code.inputs.push(createInput(node, "closePercent", "InpPartialClosePercent", "double", data.closePercent, "Partial Close %", group));
+  code.inputs.push(createInput(node, "triggerPips", "InpPartialCloseTriggerPips", "double", data.triggerPips, "Partial Close Trigger (pips)", group));
   code.globalVariables.push("bool partialCloseDone[];");
 
   code.onInit.push("ArrayResize(partialCloseDone, 100);");
@@ -232,12 +236,13 @@ function generateLockProfitCode(
   data: LockProfitNodeData,
   code: GeneratedCode
 ): void {
+  const group = "Lock Profit";
   if (data.method === "PERCENTAGE") {
-    code.inputs.push(createInput(node, "lockPercent", "InpLockProfitPercent", "double", data.lockPercent, "Lock Profit %"));
+    code.inputs.push(createInput(node, "lockPercent", "InpLockProfitPercent", "double", data.lockPercent, "Lock Profit %", group));
   } else {
-    code.inputs.push(createInput(node, "lockPips", "InpLockProfitPips", "double", data.lockPips, "Lock Profit (pips)"));
+    code.inputs.push(createInput(node, "lockPips", "InpLockProfitPips", "double", data.lockPips, "Lock Profit (pips)", group));
   }
-  code.inputs.push(createInput(node, "checkIntervalPips", "InpLockCheckInterval", "double", data.checkIntervalPips, "Check Interval (pips)"));
+  code.inputs.push(createInput(node, "checkIntervalPips", "InpLockCheckInterval", "double", data.checkIntervalPips, "Check Interval (pips)", group));
 
   code.onTick.push("// Lock Profit Management");
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");

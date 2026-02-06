@@ -54,6 +54,7 @@ export function StrategyCanvas({
 
   // Panel collapse state
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(
     (initialData?.nodes as Node[]) ?? []
@@ -281,8 +282,20 @@ export function StrategyCanvas({
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 flex min-h-0">
-        {/* Left: Node Toolbar */}
-        <NodeToolbar onDragStart={onDragStart} isPro={isPro} />
+        {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
+        <div className="hidden md:block">
+          <NodeToolbar onDragStart={onDragStart} isPro={isPro} />
+        </div>
+
+        {/* Mobile toolbar overlay */}
+        {mobileToolbarOpen && (
+          <div className="md:hidden fixed inset-0 z-40 flex">
+            <div className="w-[240px] h-full shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+              <NodeToolbar onDragStart={onDragStart} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} />
+            </div>
+            <div className="flex-1" onClick={() => setMobileToolbarOpen(false)} />
+          </div>
+        )}
 
         {/* Center: React Flow Canvas */}
         <div ref={reactFlowWrapper} className="flex-1 relative">
@@ -309,9 +322,20 @@ export function StrategyCanvas({
             <Controls />
           </ReactFlow>
 
+          {/* Mobile: Floating button to open blocks toolbar */}
+          <button
+            onClick={() => setMobileToolbarOpen(true)}
+            className="md:hidden absolute top-4 left-4 z-10 p-3 bg-[#4F46E5] text-white rounded-xl shadow-[0_4px_16px_rgba(79,70,229,0.4)] hover:bg-[#6366F1] transition-all duration-200"
+            title="Open blocks"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </button>
+
           {/* Connection error toast */}
           {connectionError && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw]">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -344,11 +368,12 @@ export function StrategyCanvas({
           </div>
         </div>
 
-        {/* Right: Properties Panel */}
+        {/* Right: Properties Panel - overlay on mobile, side panel on md+ */}
+        {/* Desktop side panel */}
         <div
-          className={`relative transition-all duration-300 ${rightPanelCollapsed ? 'w-0' : 'w-[300px]'}`}
+          className={`hidden md:block relative transition-all duration-300 ${rightPanelCollapsed ? 'w-0' : 'w-[300px]'}`}
         >
-          {/* Right panel toggle button - bottom edge at 50% */}
+          {/* Right panel toggle button */}
           <button
             onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
             className={`absolute top-1/2 -left-10 -translate-y-full z-10 bg-gradient-to-r from-[#A78BFA] to-[#8B5CF6] border border-[rgba(167,139,250,0.5)] border-b-0 rounded-tl-xl flex items-center gap-1 text-white hover:from-[#C4B5FD] hover:to-[#A78BFA] hover:shadow-[0_0_20px_rgba(167,139,250,0.4)] transition-all duration-200 ${rightPanelCollapsed ? 'px-3 py-4' : 'px-2 py-3'}`}
@@ -376,6 +401,19 @@ export function StrategyCanvas({
             </PanelErrorBoundary>
           )}
         </div>
+
+        {/* Mobile properties panel - slide up from bottom */}
+        {selectedNode && (
+          <div className="md:hidden fixed inset-x-0 bottom-12 z-30 max-h-[60vh] bg-[#1A0626] border-t border-[rgba(79,70,229,0.3)] rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.5)] overflow-y-auto">
+            <PanelErrorBoundary>
+              <PropertiesPanel
+                selectedNode={selectedNode as Node<BuilderNodeData> | null}
+                onNodeChange={onNodeChange}
+                onNodeDelete={onNodeDelete}
+              />
+            </PanelErrorBoundary>
+          </div>
+        )}
       </div>
 
       {/* Bottom: Version Controls */}

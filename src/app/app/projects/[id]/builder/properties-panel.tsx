@@ -90,6 +90,18 @@ function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   );
 }
 
+// Inline cross-field validation warning
+function FieldWarning({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-1.5 mt-1.5 text-[#FBBF24] text-[11px]" role="alert">
+      <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.832c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+      <span>{message}</span>
+    </div>
+  );
+}
+
 const APPLIED_PRICE_OPTIONS = [
   { value: "CLOSE", label: "Close" },
   { value: "OPEN", label: "Open" },
@@ -588,6 +600,9 @@ function RSIFields({
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought level must be higher than oversold level" />
+      )}
     </>
   );
 }
@@ -625,6 +640,9 @@ function MACDFields({
         options={[...APPLIED_PRICE_OPTIONS]}
         onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
       />
+      {data.fastPeriod >= data.slowPeriod && (
+        <FieldWarning message="Fast period should be smaller than slow period" />
+      )}
     </>
   );
 }
@@ -994,6 +1012,10 @@ function RangeBreakoutFields({
         <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
       </div>
 
+      {data.maxRangePips > 0 && data.minRangePips > data.maxRangePips && (
+        <FieldWarning message="Min range should not exceed max range" />
+      )}
+
       <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3" role="note">
         Triggers entry when price breaks above range high (buy) or below range low (sell). Connect to Place Buy/Sell blocks.
       </div>
@@ -1039,6 +1061,9 @@ function PlaceBuyFields({
       )}
       <NumberField label="Min Lot" value={data.minLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ minLot: v })} />
       <NumberField label="Max Lot" value={data.maxLot} min={0.01} max={1000} step={0.01} onChange={(v) => onChange({ maxLot: v })} />
+      {data.minLot > data.maxLot && (
+        <FieldWarning message="Min lot should not exceed max lot" />
+      )}
     </>
   );
 }
@@ -1081,6 +1106,9 @@ function PlaceSellFields({
       )}
       <NumberField label="Min Lot" value={data.minLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ minLot: v })} />
       <NumberField label="Max Lot" value={data.maxLot} min={0.01} max={1000} step={0.01} onChange={(v) => onChange({ maxLot: v })} />
+      {data.minLot > data.maxLot && (
+        <FieldWarning message="Min lot should not exceed max lot" />
+      )}
     </>
   );
 }
@@ -1285,6 +1313,9 @@ function BreakevenStopFields({
         />
         <OptimizableFieldCheckbox fieldName="lockPips" data={data} onChange={onChange} />
       </div>
+      {data.trigger === "PIPS" && data.lockPips >= data.triggerPips && (
+        <FieldWarning message="Lock pips should be less than trigger pips for breakeven to work" />
+      )}
       <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
         Moves stop loss to entry price + lock pips when profit target is reached.
       </div>

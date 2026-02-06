@@ -33,6 +33,7 @@ export function useAutoSave({
   const savedStateRef = useRef<string>(
     JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] })
   );
+  const lastSavedVersionRef = useRef<number>(0);
 
   // Use refs to always have latest state in callbacks (prevents stale closures)
   const nodesRef = useRef(nodes);
@@ -83,10 +84,15 @@ export function useAutoSave({
         const res = await fetch(`/api/projects/${projectId}/versions`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-          body: JSON.stringify({ buildJson }),
+          body: JSON.stringify({
+            buildJson,
+            expectedVersion: lastSavedVersionRef.current || undefined,
+          }),
         });
 
         if (res.ok) {
+          const data = await res.json();
+          lastSavedVersionRef.current = data.versionNo;
           savedStateRef.current = JSON.stringify({ nodes: currentNodes, edges: currentEdges });
           if (isAutosave) {
             setAutoSaveStatus("saved");
@@ -96,11 +102,20 @@ export function useAutoSave({
         } else {
           const error = await res.json();
           console.error("Save failed:", error);
+
+          // On version conflict, update our tracked version and retry
+          if (res.status === 409 && error.currentVersion) {
+            lastSavedVersionRef.current = error.currentVersion;
+          }
+
           if (isAutosave) {
             setAutoSaveStatus("error");
             setTimeout(() => setAutoSaveStatus("idle"), 3000);
           } else {
-            showError("Failed to save", "Please try again.");
+            showError(
+              res.status === 409 ? "Version conflict" : "Failed to save",
+              res.status === 409 ? "Another save was detected. Try saving again." : "Please try again."
+            );
           }
           return false;
         }

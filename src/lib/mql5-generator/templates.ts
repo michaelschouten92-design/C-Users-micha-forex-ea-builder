@@ -30,13 +30,23 @@ CTrade trade;
 export function generateInputsSection(inputs: OptimizableInput[]): string {
   if (inputs.length === 0) return "";
 
-  const lines = inputs.map((input) => {
-    if (input.isOptimizable) {
-      return `input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`;
-    } else {
-      return `const ${input.type} ${input.name} = ${input.value}; // ${input.comment} (fixed)`;
+  const lines: string[] = [];
+  let currentGroup = "";
+
+  for (const input of inputs) {
+    // Add group header when group changes
+    if (input.group && input.group !== currentGroup) {
+      currentGroup = input.group;
+      if (lines.length > 0) lines.push("");
+      lines.push(`//--- ${currentGroup}`);
     }
-  });
+
+    if (input.isOptimizable) {
+      lines.push(`input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+    } else {
+      lines.push(`const ${input.type} ${input.name} = ${input.value}; // ${input.comment} (fixed)`);
+    }
+  }
 
   return `//+------------------------------------------------------------------+
 //| Input Parameters                                                   |
@@ -94,7 +104,24 @@ export function generateOnDeinit(deinitCode: string[]): string {
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-${deinitCode.length > 0 ? deinitCode.map(line => "   " + line).join("\n") : "   //--- Cleanup"}
+   //--- Release indicator handles
+${deinitCode.length > 0 ? deinitCode.map(line => "   " + line).join("\n") : "   //--- No handles to release"}
+
+   //--- Log deinitialization reason
+   string reasonText;
+   switch(reason)
+   {
+      case REASON_PROGRAM:     reasonText = "EA stopped by user"; break;
+      case REASON_REMOVE:      reasonText = "EA removed from chart"; break;
+      case REASON_RECOMPILE:   reasonText = "EA recompiled"; break;
+      case REASON_CHARTCHANGE: reasonText = "Symbol or timeframe changed"; break;
+      case REASON_CHARTCLOSE:  reasonText = "Chart closed"; break;
+      case REASON_PARAMETERS:  reasonText = "Input parameters changed"; break;
+      case REASON_ACCOUNT:     reasonText = "Account changed"; break;
+      case REASON_TEMPLATE:    reasonText = "Template applied"; break;
+      default:                 reasonText = "Unknown reason (" + IntegerToString(reason) + ")"; break;
+   }
+   Print("EA deinitialized: ", reasonText);
 }
 
 `;

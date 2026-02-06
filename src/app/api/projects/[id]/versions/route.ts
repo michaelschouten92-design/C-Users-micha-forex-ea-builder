@@ -4,6 +4,12 @@ import { createVersionSchema, formatZodErrors } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
+class VersionConflictError extends Error {
+  constructor(public actual: number, public expected: number) {
+    super(`Version conflict: expected ${expected}, actual ${actual}`);
+  }
+}
+
 type Params = { params: Promise<{ id: string }> };
 
 // GET /api/projects/[id]/versions - List all versions for a project
@@ -66,42 +72,66 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
-  const { buildJson } = validation.data;
+  const { buildJson, expectedVersion } = validation.data;
 
-  // Get the next version number
-  const lastVersion = await prisma.buildVersion.findFirst({
-    where: { projectId: id },
-    orderBy: { versionNo: "desc" },
-    select: { versionNo: true },
-  });
+  // Use transaction for atomic version check + create (optimistic locking)
+  try {
+    const version = await prisma.$transaction(async (tx) => {
+      // Get the current latest version number
+      const lastVersion = await tx.buildVersion.findFirst({
+        where: { projectId: id },
+        orderBy: { versionNo: "desc" },
+        select: { versionNo: true },
+      });
 
-  const nextVersionNo = (lastVersion?.versionNo ?? 0) + 1;
+      const currentVersionNo = lastVersion?.versionNo ?? 0;
 
-  // Update metadata timestamps
-  const now = new Date().toISOString();
-  const updatedBuildJson = {
-    ...buildJson,
-    metadata: {
-      ...buildJson.metadata,
-      updatedAt: now,
-    },
-  };
+      // Optimistic locking: reject if expectedVersion doesn't match
+      if (expectedVersion !== undefined && expectedVersion !== currentVersionNo) {
+        throw new VersionConflictError(currentVersionNo, expectedVersion);
+      }
 
-  // Create the new version
-  const version = await prisma.buildVersion.create({
-    data: {
-      projectId: id,
-      versionNo: nextVersionNo,
-      buildJson: updatedBuildJson as Prisma.InputJsonValue,
-    },
-  });
+      const nextVersionNo = currentVersionNo + 1;
 
-  return NextResponse.json(
-    {
-      id: version.id,
-      versionNo: version.versionNo,
-      createdAt: version.createdAt,
-    },
-    { status: 201 }
-  );
+      // Update metadata timestamps
+      const now = new Date().toISOString();
+      const updatedBuildJson = {
+        ...buildJson,
+        metadata: {
+          ...buildJson.metadata,
+          updatedAt: now,
+        },
+      };
+
+      // Create the new version
+      return tx.buildVersion.create({
+        data: {
+          projectId: id,
+          versionNo: nextVersionNo,
+          buildJson: updatedBuildJson as Prisma.InputJsonValue,
+        },
+      });
+    });
+
+    return NextResponse.json(
+      {
+        id: version.id,
+        versionNo: version.versionNo,
+        createdAt: version.createdAt,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    if (error instanceof VersionConflictError) {
+      return NextResponse.json(
+        {
+          error: "Version conflict",
+          details: `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`,
+          currentVersion: error.actual,
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 }
