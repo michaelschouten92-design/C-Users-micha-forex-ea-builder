@@ -62,7 +62,22 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const body = await request.json();
+  const rawBody = await request.text();
+  if (rawBody.length > 5 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "Request too large", details: "Maximum request size is 5MB" },
+      { status: 413 }
+    );
+  }
+  let body;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON" },
+      { status: 400 }
+    );
+  }
   const validation = createVersionSchema.safeParse(body);
 
   if (!validation.success) {

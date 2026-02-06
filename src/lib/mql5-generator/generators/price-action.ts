@@ -49,8 +49,10 @@ export function generatePriceActionCode(
         if (rb.rangeType === "PREVIOUS_CANDLES") {
           // Calculate range from previous X candles
           const rbTf = getTimeframe(rb.timeframe);
-          code.onTick.push(`${varPrefix}High = iHigh(_Symbol, ${rbTf}, iHighest(_Symbol, ${rbTf}, MODE_HIGH, InpRange${index}Lookback, 1));`);
-          code.onTick.push(`${varPrefix}Low = iLow(_Symbol, ${rbTf}, iLowest(_Symbol, ${rbTf}, MODE_LOW, InpRange${index}Lookback, 1));`);
+          code.onTick.push(`int ${varPrefix}HighBar = iHighest(_Symbol, ${rbTf}, MODE_HIGH, InpRange${index}Lookback, 1);`);
+          code.onTick.push(`int ${varPrefix}LowBar = iLowest(_Symbol, ${rbTf}, MODE_LOW, InpRange${index}Lookback, 1);`);
+          code.onTick.push(`${varPrefix}High = (${varPrefix}HighBar >= 0) ? iHigh(_Symbol, ${rbTf}, ${varPrefix}HighBar) : 0;`);
+          code.onTick.push(`${varPrefix}Low = (${varPrefix}LowBar >= 0) ? iLow(_Symbol, ${rbTf}, ${varPrefix}LowBar) : 0;`);
         } else if (rb.rangeType === "SESSION" || rb.rangeType === "TIME_WINDOW") {
           // Session-based range calculation
           let startHour = rb.sessionStartHour;
@@ -123,8 +125,11 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
    }
 
    // Get high/low
-   int highestBar = iHighest(_Symbol, tf, MODE_HIGH, startBar - endBar, endBar);
-   int lowestBar = iLowest(_Symbol, tf, MODE_LOW, startBar - endBar, endBar);
+   int count = startBar - endBar;
+   if(count <= 0) { high = 0; low = 0; return; }
+   int highestBar = iHighest(_Symbol, tf, MODE_HIGH, count, endBar);
+   int lowestBar = iLowest(_Symbol, tf, MODE_LOW, count, endBar);
+   if(highestBar < 0 || lowestBar < 0) { high = 0; low = 0; return; }
 
    high = iHigh(_Symbol, tf, highestBar);
    low = iLow(_Symbol, tf, lowestBar);

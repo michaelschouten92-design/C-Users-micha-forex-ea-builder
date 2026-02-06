@@ -43,7 +43,7 @@ export function generateIndicatorCode(
 
         code.inputs.push(createInput(node, "period", `InpMA${index}Period`, "int", ma.period, `MA ${index + 1} Period`, group));
         code.inputs.push(createInput(node, "shift", `InpMA${index}Shift`, "int", ma.shift, `MA ${index + 1} Shift`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
           `${varPrefix}Handle = iMA(_Symbol, ${getTimeframe(ma.timeframe)}, InpMA${index}Period, InpMA${index}Shift, ${method}, ${price});`
@@ -63,7 +63,7 @@ export function generateIndicatorCode(
         code.inputs.push(createInput(node, "period", `InpRSI${index}Period`, "int", rsi.period, `RSI ${index + 1} Period`, group));
         code.inputs.push(createInput(node, "overboughtLevel", `InpRSI${index}Overbought`, "double", rsi.overboughtLevel, `RSI ${index + 1} Overbought`, group));
         code.inputs.push(createInput(node, "oversoldLevel", `InpRSI${index}Oversold`, "double", rsi.oversoldLevel, `RSI ${index + 1} Oversold`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
           `${varPrefix}Handle = iRSI(_Symbol, ${getTimeframe(rsi.timeframe)}, InpRSI${index}Period, ${price});`
@@ -83,7 +83,7 @@ export function generateIndicatorCode(
         code.inputs.push(createInput(node, "fastPeriod", `InpMACD${index}Fast`, "int", macd.fastPeriod, `MACD ${index + 1} Fast Period`, group));
         code.inputs.push(createInput(node, "slowPeriod", `InpMACD${index}Slow`, "int", macd.slowPeriod, `MACD ${index + 1} Slow Period`, group));
         code.inputs.push(createInput(node, "signalPeriod", `InpMACD${index}Signal`, "int", macd.signalPeriod, `MACD ${index + 1} Signal Period`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
         code.onInit.push(
@@ -106,7 +106,7 @@ export function generateIndicatorCode(
         code.inputs.push(createInput(node, "period", `InpBB${index}Period`, "int", bb.period, `BB ${index + 1} Period`, group));
         code.inputs.push(createInput(node, "deviation", `InpBB${index}Deviation`, "double", bb.deviation, `BB ${index + 1} Deviation`, group));
         code.inputs.push(createInput(node, "shift", `InpBB${index}Shift`, "int", bb.shift, `BB ${index + 1} Shift`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}UpperBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}MiddleBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}LowerBuffer[];`);
@@ -129,7 +129,7 @@ export function generateIndicatorCode(
         const group = `ATR ${index + 1}`;
 
         code.inputs.push(createInput(node, "period", `InpATR${index}Period`, "int", atr.period, `ATR ${index + 1} Period`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
           `${varPrefix}Handle = iATR(_Symbol, ${getTimeframe(atr.timeframe)}, InpATR${index}Period);`
@@ -147,7 +147,7 @@ export function generateIndicatorCode(
 
         code.inputs.push(createInput(node, "period", `InpADX${index}Period`, "int", adx.period, `ADX ${index + 1} Period`, group));
         code.inputs.push(createInput(node, "trendLevel", `InpADX${index}TrendLevel`, "double", adx.trendLevel, `ADX ${index + 1} Trend Level`, group));
-        code.globalVariables.push(`int ${varPrefix}Handle;`);
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);   // ADX main line
         code.globalVariables.push(`double ${varPrefix}PlusDIBuffer[];`); // +DI line
         code.globalVariables.push(`double ${varPrefix}MinusDIBuffer[];`); // -DI line

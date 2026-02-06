@@ -663,6 +663,34 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("InpRiskReward");
       expect(code).toContain("slPips * InpRiskReward");
     });
+
+    it("generates Stop Loss with ATR-based method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "ATR_BASED",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("atrHandle");
+      expect(code).toContain("InpATRPeriod");
+      expect(code).toContain("InpATRMultiplier");
+      expect(code).toContain("atrBuffer");
+    });
   });
 
   // ============================================
@@ -781,6 +809,118 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Lock Profit Management");
       expect(code).toContain("InpLockProfitPercent");
       expect(code).toContain("InpLockCheckInterval");
+    });
+
+    it("generates Breakeven Stop code with ATR trigger", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("be1", "breakeven-stop", {
+          category: "trademanagement",
+          managementType: "breakeven-stop",
+          trigger: "ATR",
+          triggerPips: 20,
+          triggerPercent: 1,
+          triggerAtrMultiplier: 1.5,
+          triggerAtrPeriod: 14,
+          lockPips: 5,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("beATRHandle");
+      expect(code).toContain("beATRBuffer");
+      expect(code).toContain("InpBEATRPeriod");
+      expect(code).toContain("InpBEATRMultiplier");
+    });
+
+    it("generates Breakeven Stop code with percentage trigger", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("be1", "breakeven-stop", {
+          category: "trademanagement",
+          managementType: "breakeven-stop",
+          trigger: "PERCENTAGE",
+          triggerPips: 20,
+          triggerPercent: 1.5,
+          triggerAtrMultiplier: 1,
+          triggerAtrPeriod: 14,
+          lockPips: 5,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBETriggerPercent");
+      expect(code).toContain("profitPercent");
+      expect(code).not.toContain("beATRHandle");
+    });
+
+    it("generates Lock Profit code with pips method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("lp1", "lock-profit", {
+          category: "trademanagement",
+          managementType: "lock-profit",
+          method: "PIPS",
+          lockPercent: 50,
+          lockPips: 20,
+          checkIntervalPips: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Lock Profit Management");
+      expect(code).toContain("InpLockProfitPips");
+      expect(code).not.toContain("InpLockProfitPercent");
+    });
+
+    it("generates Partial Close code without breakeven option", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("pc1", "partial-close", {
+          category: "trademanagement",
+          managementType: "partial-close",
+          closePercent: 50,
+          triggerPips: 30,
+          moveSLToBreakeven: false,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Partial Close Management");
+      expect(code).toContain("PositionClosePartial");
+      expect(code).not.toContain("Move SL to breakeven");
     });
   });
 

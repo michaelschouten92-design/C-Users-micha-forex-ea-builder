@@ -76,7 +76,7 @@ export function generateStopLossCode(
     case "ATR_BASED":
       code.inputs.push(createInput(node, "atrPeriod", "InpATRPeriod", "int", data.atrPeriod, "ATR Period for SL", slGroup));
       code.inputs.push(createInput(node, "atrMultiplier", "InpATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for SL", slGroup));
-      code.globalVariables.push("int atrHandle;");
+      code.globalVariables.push("int atrHandle = INVALID_HANDLE;");
       code.globalVariables.push("double atrBuffer[];");
       code.onInit.push("atrHandle = iATR(_Symbol, PERIOD_CURRENT, InpATRPeriod);");
       code.onInit.push('if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }');
@@ -239,33 +239,33 @@ export function generateEntryLogic(
       if ("indicatorType" in indData) {
         switch (indData.indicatorType) {
           case "moving-average":
-            buyConditions.push(`(iClose(_Symbol, PERIOD_CURRENT, 1) > ${varPrefix}Buffer[1])`);
-            sellConditions.push(`(iClose(_Symbol, PERIOD_CURRENT, 1) < ${varPrefix}Buffer[1])`);
+            buyConditions.push(`(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
+            sellConditions.push(`(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
             break;
 
           case "rsi":
-            buyConditions.push(`(${varPrefix}Buffer[1] < InpRSI${indIndex}Oversold && ${varPrefix}Buffer[0] > InpRSI${indIndex}Oversold)`);
-            sellConditions.push(`(${varPrefix}Buffer[1] > InpRSI${indIndex}Overbought && ${varPrefix}Buffer[0] < InpRSI${indIndex}Overbought)`);
+            buyConditions.push(`(DoubleLE(${varPrefix}Buffer[1], InpRSI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[0], InpRSI${indIndex}Oversold))`);
+            sellConditions.push(`(DoubleGE(${varPrefix}Buffer[1], InpRSI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[0], InpRSI${indIndex}Overbought))`);
             break;
 
           case "macd":
-            buyConditions.push(`(${varPrefix}MainBuffer[1] < ${varPrefix}SignalBuffer[1] && ${varPrefix}MainBuffer[0] > ${varPrefix}SignalBuffer[0])`);
-            sellConditions.push(`(${varPrefix}MainBuffer[1] > ${varPrefix}SignalBuffer[1] && ${varPrefix}MainBuffer[0] < ${varPrefix}SignalBuffer[0])`);
+            buyConditions.push(`(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
+            sellConditions.push(`(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
             break;
 
           case "bollinger-bands":
-            buyConditions.push(`(iLow(_Symbol, PERIOD_CURRENT, 1) <= ${varPrefix}LowerBuffer[1])`);
-            sellConditions.push(`(iHigh(_Symbol, PERIOD_CURRENT, 1) >= ${varPrefix}UpperBuffer[1])`);
+            buyConditions.push(`(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`);
+            sellConditions.push(`(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`);
             break;
 
           case "atr":
-            buyConditions.push(`(${varPrefix}Buffer[0] > ${varPrefix}Buffer[1])`);
-            sellConditions.push(`(${varPrefix}Buffer[0] > ${varPrefix}Buffer[1])`);
+            buyConditions.push(`(DoubleGT(${varPrefix}Buffer[0], ${varPrefix}Buffer[1]))`);
+            sellConditions.push(`(DoubleGT(${varPrefix}Buffer[0], ${varPrefix}Buffer[1]))`);
             break;
 
           case "adx":
-            buyConditions.push(`(${varPrefix}MainBuffer[0] > InpADX${indIndex}TrendLevel && ${varPrefix}PlusDIBuffer[0] > ${varPrefix}MinusDIBuffer[0])`);
-            sellConditions.push(`(${varPrefix}MainBuffer[0] > InpADX${indIndex}TrendLevel && ${varPrefix}MinusDIBuffer[0] > ${varPrefix}PlusDIBuffer[0])`);
+            buyConditions.push(`(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[0], ${varPrefix}MinusDIBuffer[0]))`);
+            sellConditions.push(`(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[0], ${varPrefix}PlusDIBuffer[0]))`);
             break;
         }
       }

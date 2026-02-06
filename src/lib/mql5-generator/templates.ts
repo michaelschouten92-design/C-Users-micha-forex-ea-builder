@@ -284,16 +284,21 @@ void CloseSellPositions()
 //+------------------------------------------------------------------+
 double CalculateLotSize(double riskPercent, double slPips)
 {
-   if(slPips <= 0) return SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   if(slPips <= 0) return minLot;
+
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   if(balance <= 0) return minLot;
 
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
    double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
-   double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
 
-   double riskAmount = AccountInfoDouble(ACCOUNT_BALANCE) * riskPercent / 100.0;
-   double pipValue = tickValue * (_Point / tickSize);
+   double pipValue = (tickSize > 0) ? tickValue * (_Point / tickSize) : 0;
+   if(pipValue <= 0) return minLot;
+
+   double riskAmount = balance * riskPercent / 100.0;
    double lots = riskAmount / (slPips * pipValue);
 
    //--- Normalize lot size
@@ -302,6 +307,14 @@ double CalculateLotSize(double riskPercent, double slPips)
 
    return NormalizeDouble(lots, 2);
 }
+
+//+------------------------------------------------------------------+
+//| Epsilon-safe double comparisons                                    |
+//+------------------------------------------------------------------+
+bool DoubleGT(double a, double b)  { return (a - b) >  1e-10; }
+bool DoubleLT(double a, double b)  { return (b - a) >  1e-10; }
+bool DoubleGE(double a, double b)  { return (a - b) > -1e-10; }
+bool DoubleLE(double a, double b)  { return (b - a) > -1e-10; }
 
 `;
 }

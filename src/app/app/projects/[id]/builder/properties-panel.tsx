@@ -365,6 +365,9 @@ function TradingSessionFields({
           Weekdays only (Mon-Fri)
         </label>
       </div>
+      <div className="mt-2 text-[10px] text-[#64748B]">
+        Your broker&apos;s MT5 server may use a different timezone than GMT — check the Market Watch clock for the offset.
+      </div>
     </>
   );
 }
@@ -505,7 +508,7 @@ function CustomTimesFields({
       </div>
 
       <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Define custom trading days and time windows. All times are in GMT.
+        Define custom trading days and time windows. All times are in GMT. Your broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the offset.
       </div>
     </>
   );

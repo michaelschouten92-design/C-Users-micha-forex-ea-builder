@@ -48,7 +48,7 @@ function generateBreakevenStopCode(
   } else if (data.trigger === "ATR") {
     code.inputs.push(createInput(node, "triggerAtrPeriod", "InpBEATRPeriod", "int", data.triggerAtrPeriod, "Breakeven ATR Period", group));
     code.inputs.push(createInput(node, "triggerAtrMultiplier", "InpBEATRMultiplier", "double", data.triggerAtrMultiplier, "Breakeven ATR Multiplier", group));
-    code.globalVariables.push("int beATRHandle;");
+    code.globalVariables.push("int beATRHandle = INVALID_HANDLE;");
     code.globalVariables.push("double beATRBuffer[];");
     code.onInit.push("beATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpBEATRPeriod);");
     code.onInit.push('if(beATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Breakeven"); return(INIT_FAILED); }');
