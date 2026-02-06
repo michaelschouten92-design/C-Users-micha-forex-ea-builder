@@ -33,8 +33,8 @@ test.describe("Strategy Builder", () => {
 
     // Should see the toolbar with category buttons
     await expect(page.getByRole("button", { name: /Indicators/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Conditions/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Trading/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /When to trade/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Trade Execution/i })).toBeVisible();
 
     // Should see version controls
     await expect(page.getByRole("button", { name: /Save/i })).toBeVisible();
@@ -52,14 +52,14 @@ test.describe("Strategy Builder", () => {
     await expect(page.getByText("RSI", { exact: true })).toBeVisible();
   });
 
-  test("can expand conditions categories", async ({ page }) => {
+  test("can expand timing categories", async ({ page }) => {
     await page.goto(projectUrl);
 
-    // Expand the Conditions section
-    await page.getByRole("button", { name: /Conditions/i }).click();
+    // Expand the When to trade section
+    await page.getByRole("button", { name: /When to trade/i }).click();
 
-    // Should see condition options
-    await expect(page.getByText("Entry Condition")).toBeVisible();
+    // Should see timing options
+    await expect(page.getByText("Always")).toBeVisible();
   });
 
   test("can load a previous version", async ({ page }) => {
