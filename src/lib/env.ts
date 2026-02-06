@@ -190,10 +190,28 @@ function validateEnv() {
     } as z.infer<typeof refinedEnvSchema>;
   }
 
+  // During build (next build), env vars may not all be available.
+  // Only warn during build, enforce at runtime.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
   // On the server, do full validation
   const result = refinedEnvSchema.safeParse(process.env);
 
   if (!result.success) {
+    const errorMessages = result.error.issues
+      .map((i) => `  ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
+
+    if (isBuildPhase) {
+      // During build: warn but don't crash — runtime secrets aren't available yet
+      console.warn("⚠ Environment validation warnings (build phase):");
+      console.warn(errorMessages);
+      console.warn("These variables must be set at runtime.");
+
+      // Return a partial result with defaults for missing values
+      return envSchema.parse(process.env) as z.infer<typeof refinedEnvSchema>;
+    }
+
     console.error("Environment validation failed:");
     console.error("");
 
@@ -206,15 +224,10 @@ function validateEnv() {
     console.error("Please check your .env file and ensure all required variables are set.");
     console.error("See .env.example for reference.");
 
-    // Exit in production, throw in development for better DX
     if (process.env.NODE_ENV === "production") {
       process.exit(1);
     } else {
-      throw new Error(
-        `Environment validation failed:\n${result.error.issues
-          .map((i) => `  ${i.path.join(".")}: ${i.message}`)
-          .join("\n")}`
-      );
+      throw new Error(`Environment validation failed:\n${errorMessages}`);
     }
   }
 
