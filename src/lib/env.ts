@@ -208,8 +208,29 @@ function validateEnv() {
       console.warn(errorMessages);
       console.warn("These variables must be set at runtime.");
 
-      // Return a partial result with defaults for missing values
-      return envSchema.parse(process.env) as z.infer<typeof refinedEnvSchema>;
+      // Return defaults for build phase — real values will be available at runtime
+      return {
+        NODE_ENV: process.env.NODE_ENV || "production",
+        DATABASE_URL: process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
+        AUTH_SECRET: process.env.AUTH_SECRET || "build-phase-placeholder",
+        AUTH_URL: process.env.AUTH_URL || "http://localhost:3000",
+        AUTH_TRUST_HOST: false,
+        AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
+        AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
+        AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
+        AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
+        RESEND_API_KEY: process.env.RESEND_API_KEY,
+        EMAIL_FROM: process.env.EMAIL_FROM || "AlgoStudio <onboarding@resend.dev>",
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
+        STRIPE_STARTER_MONTHLY_PRICE_ID: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+        STRIPE_STARTER_YEARLY_PRICE_ID: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
+        STRIPE_PRO_MONTHLY_PRICE_ID: process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
+        STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
+        SENTRY_DSN: process.env.SENTRY_DSN,
+        NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      } as z.infer<typeof refinedEnvSchema>;
     }
 
     console.error("Environment validation failed:");
