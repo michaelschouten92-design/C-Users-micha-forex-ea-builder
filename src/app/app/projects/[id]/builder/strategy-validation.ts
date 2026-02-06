@@ -14,6 +14,7 @@ export interface ValidationResult {
   summary: {
     hasTradingTimes: boolean;
     hasIndicator: boolean;
+    hasPriceAction: boolean;
     hasStopLoss: boolean;
     hasTakeProfit: boolean;
     hasPositionSizing: boolean;
@@ -26,6 +27,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   // Check for each node type
   const hasTradingTimes = nodes.some((n) => "timingType" in n.data);
   const hasIndicator = nodes.some((n) => "indicatorType" in n.data);
+  const hasPriceAction = nodes.some((n) => "priceActionType" in n.data);
   const hasStopLoss = nodes.some(
     (n) => "tradingType" in n.data && n.data.tradingType === "stop-loss"
   );
@@ -33,7 +35,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
     (n) => "tradingType" in n.data && n.data.tradingType === "take-profit"
   );
   const hasPositionSizing = nodes.some(
-    (n) => "tradingType" in n.data && n.data.tradingType === "position-sizing"
+    (n) => "tradingType" in n.data && (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
   );
 
   // Required: Timing block (When to trade)
@@ -45,11 +47,11 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
     });
   }
 
-  // Required: At least one indicator for entry logic
-  if (!hasIndicator) {
+  // Required: At least one indicator or price action node for entry logic
+  if (!hasIndicator && !hasPriceAction) {
     issues.push({
       type: "error",
-      message: "At least one Indicator is required for entry/exit logic",
+      message: "At least one Indicator or Price Action node is required for entry/exit logic",
       nodeType: "indicator",
     });
   }
@@ -76,8 +78,8 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   if (!hasPositionSizing) {
     issues.push({
       type: "warning",
-      message: "Trade Entry is recommended - using default 0.1 lot",
-      nodeType: "position-sizing",
+      message: "Place Buy or Place Sell is recommended - using default 0.1 lot",
+      nodeType: "place-buy",
     });
   }
 
@@ -92,6 +94,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
     summary: {
       hasTradingTimes,
       hasIndicator,
+      hasPriceAction,
       hasStopLoss,
       hasTakeProfit,
       hasPositionSizing,

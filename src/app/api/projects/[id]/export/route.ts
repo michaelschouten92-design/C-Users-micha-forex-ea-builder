@@ -265,8 +265,13 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     (n) => indicatorTypes.includes(n.type as string) || (n.data && "indicatorType" in n.data)
   );
 
-  if (!hasIndicator) {
-    errors.push("No indicator nodes found. Add at least one indicator (MA, RSI, MACD, or Bollinger Bands).");
+  const priceActionTypes = ["candlestick-pattern", "support-resistance", "range-breakout"];
+  const hasPriceAction = buildJson.nodes.some(
+    (n) => priceActionTypes.includes(n.type as string) || (n.data && "priceActionType" in n.data)
+  );
+
+  if (!hasIndicator && !hasPriceAction) {
+    errors.push("No signal nodes found. Add at least one Indicator or Price Action node.");
   }
 
   return errors;

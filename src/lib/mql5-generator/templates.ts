@@ -64,7 +64,7 @@ export function generateOnInit(ctx: GeneratorContext, initCode: string[]): strin
 int OnInit()
 {
    //--- Set magic number for trade operations
-   trade.SetExpertMagicNumber(${ctx.magicNumber});
+   trade.SetExpertMagicNumber(InpMagicNumber);
 
    //--- Set allowed slippage
    trade.SetDeviationInPoints(10);
@@ -129,7 +129,7 @@ int CountPositions()
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(PositionGetInteger(POSITION_MAGIC) == ${ctx.magicNumber} &&
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol)
          {
             count++;
@@ -150,7 +150,7 @@ int CountPositionsByType(ENUM_POSITION_TYPE posType)
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(PositionGetInteger(POSITION_MAGIC) == ${ctx.magicNumber} &&
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol &&
             PositionGetInteger(POSITION_TYPE) == posType)
          {
@@ -195,7 +195,7 @@ void CloseAllPositions()
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(PositionGetInteger(POSITION_MAGIC) == ${ctx.magicNumber} &&
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol)
          {
             trade.PositionClose(ticket);
@@ -214,7 +214,7 @@ void CloseBuyPositions()
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(PositionGetInteger(POSITION_MAGIC) == ${ctx.magicNumber} &&
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol &&
             PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
          {
@@ -234,7 +234,7 @@ void CloseSellPositions()
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0)
       {
-         if(PositionGetInteger(POSITION_MAGIC) == ${ctx.magicNumber} &&
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol &&
             PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
          {

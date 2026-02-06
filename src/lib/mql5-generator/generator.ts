@@ -82,7 +82,9 @@ export function generateMQL5Code(
   };
 
   const code: GeneratedCode = {
-    inputs: [],
+    inputs: [
+      { name: "InpMagicNumber", type: "int", value: ctx.magicNumber, comment: "Magic Number", isOptimizable: false },
+    ],
     globalVariables: [],
     onInit: [],
     onDeinit: [],

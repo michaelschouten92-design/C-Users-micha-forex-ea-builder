@@ -112,7 +112,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           <div className="p-3 border-t border-[rgba(79,70,229,0.2)] bg-[rgba(0,0,0,0.2)]">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <CheckItem label="When to trade" checked={validation.summary.hasTradingTimes} required />
-              <CheckItem label="Indicator" checked={validation.summary.hasIndicator} required />
+              <CheckItem label="Signal" checked={validation.summary.hasIndicator || validation.summary.hasPriceAction} required />
               <CheckItem label="Stoploss" checked={validation.summary.hasStopLoss} />
               <CheckItem label="Take Profit" checked={validation.summary.hasTakeProfit} />
               <CheckItem label="Trade Entry" checked={validation.summary.hasPositionSizing} />
