@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { checkExportLimit, canExportMQL5 } from "@/lib/plan-limits";
+import { checkExportLimit, canExportMQL5, canUseTradeManagement } from "@/lib/plan-limits";
+import { exportRequestSchema, buildJsonSchema, formatZodErrors } from "@/lib/validations";
+import {
+  exportRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
+import { createApiLogger, extractErrorDetails } from "@/lib/logger";
+import { audit } from "@/lib/audit";
 import type { BuildJsonSchema } from "@/types/builder";
 
 type Props = {
@@ -13,19 +22,48 @@ type Props = {
 export async function POST(request: NextRequest, { params }: Props) {
   const session = await auth();
   const { id } = await params;
+  const log = createApiLogger("/api/projects/[id]/export", "POST", session?.user?.id);
 
   if (!session?.user?.id) {
+    log.warn("Unauthorized export attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check rate limit (10 exports per hour per user)
+  const rateLimitResult = await checkRateLimit(exportRateLimiter, session.user.id);
+  const rateLimitHeaders = createRateLimitHeaders(rateLimitResult);
+
+  if (!rateLimitResult.success) {
+    log.warn({ remaining: rateLimitResult.remaining }, "Rate limit exceeded for export");
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        details: formatRateLimitError(rateLimitResult),
+      },
+      {
+        status: 429,
+        headers: rateLimitHeaders,
+      }
+    );
   }
 
   try {
     const body = await request.json();
-    const { versionId, exportType = "MQ5" } = body as {
-      versionId?: string;
-      exportType?: "MQ5" | "EX5";
-    };
+    const validation = exportRequestSchema.safeParse(body);
 
-    // Check export limits
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(validation.error) },
+        { status: 400, headers: rateLimitHeaders }
+      );
+    }
+
+    const { versionId, exportType } = validation.data;
+
+    // Audit the export request
+    await audit.exportRequest(session.user.id, id, exportType);
+
+    // Check export limits (plan-based monthly limits)
     const exportLimit = await checkExportLimit(session.user.id);
     if (!exportLimit.allowed) {
       return NextResponse.json(
@@ -37,18 +75,16 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    // Check MQL5 export permission
-    if (exportType === "MQ5") {
-      const canExport = await canExportMQL5(session.user.id);
-      if (!canExport) {
-        return NextResponse.json(
-          {
-            error: "MQL5 export not available",
-            details: "MQL5 source code export is only available on the Pro plan. Upgrade to access source code.",
-          },
-          { status: 403 }
-        );
-      }
+    // Check MQL5 export permission (Starter and Pro can export)
+    const canExport = await canExportMQL5(session.user.id);
+    if (!canExport) {
+      return NextResponse.json(
+        {
+          error: "Export not available",
+          details: "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies.",
+        },
+        { status: 403 }
+      );
     }
 
     // Fetch the project with the specified version
@@ -76,7 +112,19 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     const version = project.versions[0];
-    const buildJson = version.buildJson as unknown as BuildJsonSchema;
+
+    // Validate buildJson from database
+    const buildJsonValidation = buildJsonSchema.safeParse(version.buildJson);
+    if (!buildJsonValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid strategy data",
+          details: formatZodErrors(buildJsonValidation.error)
+        },
+        { status: 400 }
+      );
+    }
+    const buildJson = buildJsonValidation.data as BuildJsonSchema;
 
     // Validate the build JSON has necessary components
     const validationErrors = validateBuildJson(buildJson);
@@ -90,6 +138,25 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
+    // Check if user is using trade management nodes (Pro only)
+    const tradeManagementTypes = ["breakeven-stop", "trailing-stop", "partial-close", "lock-profit"];
+    const hasTradeManagement = buildJson.nodes.some(
+      (n) => tradeManagementTypes.includes(n.type as string) || (n.data && "managementType" in n.data)
+    );
+
+    if (hasTradeManagement) {
+      const canUseTM = await canUseTradeManagement(session.user.id);
+      if (!canUseTM) {
+        return NextResponse.json(
+          {
+            error: "Pro feature required",
+            details: "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Generate MQL5 code
     const mql5Code = generateMQL5Code(buildJson, project.name);
 
@@ -99,24 +166,42 @@ export async function POST(request: NextRequest, { params }: Props) {
         userId: session.user.id,
         projectId: project.id,
         buildVersionId: version.id,
-        exportType: "MQ5",
+        exportType: exportType || "MQ5",
         status: "DONE",
         outputName: `${sanitizeFileName(project.name)}.mq5`,
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      exportId: exportJob.id,
-      fileName: exportJob.outputName,
-      code: mql5Code,
-      versionNo: version.versionNo,
-    });
+    log.info(
+      { projectId: project.id, exportId: exportJob.id, versionNo: version.versionNo },
+      "Export completed successfully"
+    );
+
+    // Audit successful export
+    await audit.exportComplete(session.user.id, project.id, exportJob.id);
+
+    return NextResponse.json(
+      {
+        success: true,
+        exportId: exportJob.id,
+        fileName: exportJob.outputName,
+        code: mql5Code,
+        versionNo: version.versionNo,
+        exportType: "MQ5",
+      },
+      { headers: rateLimitHeaders }
+    );
   } catch (error) {
-    console.error("Export error:", error);
+    log.error({ error: extractErrorDetails(error), projectId: id }, "Export failed");
+
+    // Audit failed export
+    if (session?.user?.id) {
+      await audit.exportFailed(session.user.id, id, String(error));
+    }
+
     return NextResponse.json(
       { error: "Failed to generate MQL5 code" },
-      { status: 500 }
+      { status: 500, headers: rateLimitHeaders }
     );
   }
 }
@@ -125,6 +210,7 @@ export async function POST(request: NextRequest, { params }: Props) {
 export async function GET(request: NextRequest, { params }: Props) {
   const session = await auth();
   const { id } = await params;
+  const log = createApiLogger("/api/projects/[id]/export", "GET", session?.user?.id);
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -147,7 +233,7 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     return NextResponse.json(exports);
   } catch (error) {
-    console.error("Error fetching exports:", error);
+    log.error({ error: extractErrorDetails(error), projectId: id }, "Failed to fetch export history");
     return NextResponse.json(
       { error: "Failed to fetch export history" },
       { status: 500 }
@@ -159,8 +245,18 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   const errors: string[] = [];
 
   if (!buildJson.nodes || buildJson.nodes.length === 0) {
-    errors.push("No nodes found. Add at least one indicator and entry condition.");
+    errors.push("No nodes found. Add at least one timing block and indicator.");
     return errors;
+  }
+
+  // Check for timing node (required)
+  const timingTypes = ["always", "custom-times", "trading-session"];
+  const hasTimingNode = buildJson.nodes.some(
+    (n) => timingTypes.includes(n.type as string) || (n.data && "timingType" in n.data)
+  );
+
+  if (!hasTimingNode) {
+    errors.push("No timing block found. Add a 'When to trade' block (Always, Custom Times, or Trading Sessions).");
   }
 
   // Check by node type OR by data properties (for flexibility)
@@ -169,37 +265,8 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     (n) => indicatorTypes.includes(n.type as string) || (n.data && "indicatorType" in n.data)
   );
 
-  const hasEntryCondition = buildJson.nodes.some(
-    (n) =>
-      n.type === "entry-condition" ||
-      (n.data && "conditionType" in n.data && n.data.conditionType === "entry") ||
-      (n.data && n.data.category === "condition" && n.data.direction)  // Entry conditions have direction
-  );
-
   if (!hasIndicator) {
     errors.push("No indicator nodes found. Add at least one indicator (MA, RSI, MACD, or Bollinger Bands).");
-  }
-
-  if (!hasEntryCondition) {
-    // Provide more detail about what nodes we found
-    const nodeTypes = buildJson.nodes.map(n => n.type || "unknown").join(", ");
-    const nodeCategories = buildJson.nodes.map(n => n.data?.category || "no-category").join(", ");
-    errors.push(`No entry condition found. Add an Entry Condition node to define when to open trades. (Found ${buildJson.nodes.length} nodes: types=[${nodeTypes}], categories=[${nodeCategories}])`);
-  }
-
-  // Check if entry condition is connected to any indicator
-  if (hasEntryCondition && hasIndicator) {
-    const entryNode = buildJson.nodes.find(
-      (n) =>
-        n.type === "entry-condition" ||
-        ("conditionType" in n.data && n.data.conditionType === "entry")
-    );
-    if (entryNode) {
-      const hasConnection = buildJson.edges.some((e) => e.target === entryNode.id);
-      if (!hasConnection) {
-        errors.push("Entry condition is not connected to any indicator. Connect an indicator to define the entry logic.");
-      }
-    }
   }
 
   return errors;

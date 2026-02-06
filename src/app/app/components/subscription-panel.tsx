@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 type SubscriptionPanelProps = {
   tier: "FREE" | "STARTER" | "PRO";
@@ -31,6 +32,7 @@ export function SubscriptionPanel({
     try {
       const res = await fetch("/api/stripe/portal", {
         method: "POST",
+        headers: getCsrfHeaders(),
       });
       const data = await res.json();
       if (data.url) {
@@ -146,14 +148,14 @@ export function SubscriptionPanel({
       {tier === "FREE" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Upgrade to unlock:</span> Export your strategies to MetaTrader (EX5/MQL5 files)
+            <span className="font-medium">Upgrade to unlock:</span> Export your strategies as MQL5 source code for MetaTrader
           </p>
         </div>
       )}
       {tier === "STARTER" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Pro features:</span> Unlimited projects, unlimited exports, MQL5 source code export, priority support
+            <span className="font-medium">Pro features:</span> Unlimited projects, unlimited exports, priority support, early access to new features
           </p>
         </div>
       )}

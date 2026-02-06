@@ -17,15 +17,16 @@ export function ADXNode({ id, data, selected }: Props) {
     >
       <div className="space-y-1">
         <div className="flex justify-between">
+          <span className="text-zinc-500">Timeframe:</span>
+          <span className="font-medium">{data.timeframe}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-zinc-500">Period:</span>
           <span className="font-medium">{data.period}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-zinc-500">Trend Level:</span>
-          <span className="font-medium">{data.trendLevel}</span>
-        </div>
-        <div className="text-xs text-zinc-500 mt-1">
-          ADX &gt; {data.trendLevel} = trending market
+          <span className="text-zinc-500">Trend:</span>
+          <span className="font-medium">&gt;{data.trendLevel}</span>
         </div>
       </div>
     </BaseNode>

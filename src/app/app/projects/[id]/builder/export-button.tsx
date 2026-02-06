@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 interface ExportButtonProps {
   projectId: string;
   hasNodes: boolean;
   canExport: boolean;
+  canExportMQL5?: boolean;
 }
 
 interface ExportResult {
@@ -17,10 +19,15 @@ interface ExportResult {
 
 interface ExportError {
   error: string;
-  details?: string[];
+  details?: string[] | string;
 }
 
-export function ExportButton({ projectId, hasNodes, canExport }: ExportButtonProps) {
+export function ExportButton({
+  projectId,
+  hasNodes,
+  canExport,
+  canExportMQL5 = false,
+}: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -34,8 +41,8 @@ export function ExportButton({ projectId, hasNodes, canExport }: ExportButtonPro
     try {
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ exportType: "MQ5" }),
       });
 
       const data = await res.json();
@@ -75,13 +82,23 @@ export function ExportButton({ projectId, hasNodes, canExport }: ExportButtonPro
     navigator.clipboard.writeText(result.code);
   }
 
+  const isDisabled = exporting || !hasNodes || !canExport || !canExportMQL5;
+
   return (
     <>
       <button
         onClick={handleExport}
-        disabled={exporting || !hasNodes || !canExport}
+        disabled={isDisabled}
         className="flex items-center gap-2 px-4 py-1.5 bg-[#10B981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-        title={!hasNodes ? "Add nodes to export" : !canExport ? "Fix errors before exporting" : "Export to MQL5"}
+        title={
+          !hasNodes
+            ? "Add nodes to export"
+            : !canExport
+            ? "Fix errors before exporting"
+            : !canExportMQL5
+            ? "Upgrade to Starter or Pro to export"
+            : "Export to MQL5"
+        }
       >
         {exporting ? (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -121,15 +138,19 @@ export function ExportButton({ projectId, hasNodes, canExport }: ExportButtonPro
                 <div className="space-y-3">
                   <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-4 rounded-lg">
                     <p className="font-medium">{error.error}</p>
-                    {error.details && error.details.length > 0 && (
-                      <ul className="mt-2 text-sm space-y-1">
-                        {error.details.map((detail, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#EF4444]">•</span>
-                            {detail}
-                          </li>
-                        ))}
-                      </ul>
+                    {error.details && (
+                      typeof error.details === "string" ? (
+                        <p className="mt-2 text-sm">{error.details}</p>
+                      ) : error.details.length > 0 && (
+                        <ul className="mt-2 text-sm space-y-1">
+                          {error.details.map((detail, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-[#EF4444]">•</span>
+                              {detail}
+                            </li>
+                          ))}
+                        </ul>
+                      )
                     )}
                   </div>
                 </div>
@@ -173,6 +194,7 @@ export function ExportButton({ projectId, hasNodes, canExport }: ExportButtonPro
 
                   <p className="text-xs text-[#64748B]">
                     Copy this code to MetaEditor or download the .mq5 file and place it in your MetaTrader 5 Experts folder.
+                    Press F7 in MetaEditor to compile.
                   </p>
                 </div>
               ) : null}

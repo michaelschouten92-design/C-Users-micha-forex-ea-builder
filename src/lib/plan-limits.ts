@@ -65,7 +65,7 @@ export async function canExportMQL5(userId: string): Promise<boolean> {
   return plan.limits.canExportMQL5;
 }
 
-export async function canExportEX5(userId: string): Promise<boolean> {
+export async function canUseTradeManagement(userId: string): Promise<boolean> {
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
   });
@@ -73,8 +73,9 @@ export async function canExportEX5(userId: string): Promise<boolean> {
   const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
 
-  return plan.limits.canExportEX5;
+  return plan.limits.canUseTradeManagement;
 }
+
 
 export async function getUserPlanLimits(userId: string) {
   const subscription = await prisma.subscription.findUnique({

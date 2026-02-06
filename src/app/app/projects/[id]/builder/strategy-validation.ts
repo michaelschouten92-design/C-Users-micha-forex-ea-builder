@@ -12,13 +12,11 @@ export interface ValidationResult {
   canExport: boolean;
   issues: ValidationIssue[];
   summary: {
-    hasEntryCondition: boolean;
-    hasExitCondition: boolean;
+    hasTradingTimes: boolean;
     hasIndicator: boolean;
     hasStopLoss: boolean;
     hasTakeProfit: boolean;
     hasPositionSizing: boolean;
-    hasTradingTimes: boolean;
   };
 }
 
@@ -26,12 +24,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   const issues: ValidationIssue[] = [];
 
   // Check for each node type
-  const hasEntryCondition = nodes.some(
-    (n) => "conditionType" in n.data && n.data.conditionType === "entry"
-  );
-  const hasExitCondition = nodes.some(
-    (n) => "conditionType" in n.data && n.data.conditionType === "exit"
-  );
+  const hasTradingTimes = nodes.some((n) => "timingType" in n.data);
   const hasIndicator = nodes.some((n) => "indicatorType" in n.data);
   const hasStopLoss = nodes.some(
     (n) => "tradingType" in n.data && n.data.tradingType === "stop-loss"
@@ -42,14 +35,13 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   const hasPositionSizing = nodes.some(
     (n) => "tradingType" in n.data && n.data.tradingType === "position-sizing"
   );
-  const hasTradingTimes = nodes.some((n) => "timingType" in n.data);
 
-  // Required: Entry Condition
-  if (!hasEntryCondition) {
+  // Required: Timing block (When to trade)
+  if (!hasTradingTimes) {
     issues.push({
       type: "error",
-      message: "Entry Condition is required - add one from the Conditions category",
-      nodeType: "entry-condition",
+      message: "A timing block is required - add one from 'When to trade' (Always, Custom Times, or Trading Sessions)",
+      nodeType: "timing",
     });
   }
 
@@ -66,7 +58,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   if (!hasStopLoss) {
     issues.push({
       type: "warning",
-      message: "Stop Loss is recommended for risk management",
+      message: "Stoploss is recommended for risk management",
       nodeType: "stop-loss",
     });
   }
@@ -84,17 +76,8 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
   if (!hasPositionSizing) {
     issues.push({
       type: "warning",
-      message: "Position Sizing is recommended - using default 0.1 lot",
+      message: "Trade Entry is recommended - using default 0.1 lot",
       nodeType: "position-sizing",
-    });
-  }
-
-  // Info: Exit Condition
-  if (!hasExitCondition) {
-    issues.push({
-      type: "warning",
-      message: "Exit Condition not set - positions will close via SL/TP only",
-      nodeType: "exit-condition",
     });
   }
 
@@ -107,13 +90,11 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[]): ValidationResu
     canExport,
     issues,
     summary: {
-      hasEntryCondition,
-      hasExitCondition,
+      hasTradingTimes,
       hasIndicator,
       hasStopLoss,
       hasTakeProfit,
       hasPositionSizing,
-      hasTradingTimes,
     },
   };
 }

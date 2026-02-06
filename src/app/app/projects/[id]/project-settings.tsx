@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 type Project = {
   id: string;
@@ -22,7 +23,7 @@ export function ProjectSettings({ project }: { project: Project }) {
     try {
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ name, description }),
       });
 
@@ -48,6 +49,7 @@ export function ProjectSettings({ project }: { project: Project }) {
     try {
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
+        headers: getCsrfHeaders(),
       });
 
       if (res.ok) {

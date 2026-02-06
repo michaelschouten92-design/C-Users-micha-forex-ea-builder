@@ -1,0 +1,255 @@
+/**
+ * Rate limiter with Upstash Redis support for production
+ * and in-memory fallback for development.
+ *
+ * Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+ * environment variables to enable Redis-based rate limiting.
+ */
+
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// ============================================
+// TYPES
+// ============================================
+
+interface RateLimitConfig {
+  /** Maximum number of requests allowed in the window */
+  limit: number;
+  /** Time window in milliseconds */
+  windowMs: number;
+}
+
+interface RateLimitResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  resetAt: Date;
+}
+
+// ============================================
+// IN-MEMORY FALLBACK (development / single instance)
+// ============================================
+
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+class InMemoryRateLimiter {
+  private store: Map<string, RateLimitEntry> = new Map();
+  private config: RateLimitConfig;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor(config: RateLimitConfig) {
+    this.config = config;
+    this.startCleanup();
+  }
+
+  private startCleanup() {
+    if (typeof setInterval !== "undefined" && !this.cleanupInterval) {
+      this.cleanupInterval = setInterval(() => {
+        const now = Date.now();
+        for (const [key, entry] of this.store.entries()) {
+          if (entry.resetAt <= now) {
+            this.store.delete(key);
+          }
+        }
+      }, 60000);
+
+      if (this.cleanupInterval.unref) {
+        this.cleanupInterval.unref();
+      }
+    }
+  }
+
+  check(key: string): RateLimitResult {
+    const now = Date.now();
+    const entry = this.store.get(key);
+
+    if (!entry || entry.resetAt <= now) {
+      const resetAt = now + this.config.windowMs;
+      this.store.set(key, { count: 1, resetAt });
+      return {
+        success: true,
+        limit: this.config.limit,
+        remaining: this.config.limit - 1,
+        resetAt: new Date(resetAt),
+      };
+    }
+
+    if (entry.count >= this.config.limit) {
+      return {
+        success: false,
+        limit: this.config.limit,
+        remaining: 0,
+        resetAt: new Date(entry.resetAt),
+      };
+    }
+
+    entry.count++;
+    return {
+      success: true,
+      limit: this.config.limit,
+      remaining: this.config.limit - entry.count,
+      resetAt: new Date(entry.resetAt),
+    };
+  }
+}
+
+// ============================================
+// UPSTASH REDIS RATE LIMITER
+// ============================================
+
+class UpstashRateLimiter {
+  private ratelimit: Ratelimit;
+  private config: RateLimitConfig;
+
+  constructor(config: RateLimitConfig, redis: Redis) {
+    this.config = config;
+
+    // Convert windowMs to seconds for Upstash sliding window
+    const windowSec = Math.ceil(config.windowMs / 1000);
+    this.ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(config.limit, `${windowSec} s`),
+      analytics: false,
+    });
+  }
+
+  async checkAsync(key: string): Promise<RateLimitResult> {
+    const result = await this.ratelimit.limit(key);
+    return {
+      success: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      resetAt: new Date(result.reset),
+    };
+  }
+
+  // Synchronous wrapper that returns a pessimistic result if async isn't possible.
+  // For endpoints that need sync behavior, use checkAsync instead.
+  check(key: string): RateLimitResult {
+    // This won't actually block — we return a "pass" and let the async check
+    // happen in endpoints that support it. See createRateLimitChecker below.
+    return {
+      success: true,
+      limit: this.config.limit,
+      remaining: this.config.limit,
+      resetAt: new Date(Date.now() + this.config.windowMs),
+    };
+  }
+}
+
+// ============================================
+// FACTORY: Create rate limiter based on environment
+// ============================================
+
+const useRedis = Boolean(
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+);
+
+let redis: Redis | null = null;
+if (useRedis) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+}
+
+interface RateLimiter {
+  check(key: string): RateLimitResult;
+  checkAsync?(key: string): Promise<RateLimitResult>;
+}
+
+function createRateLimiter(config: RateLimitConfig): RateLimiter {
+  if (useRedis && redis) {
+    return new UpstashRateLimiter(config, redis);
+  }
+  return new InMemoryRateLimiter(config);
+}
+
+/**
+ * Async-aware rate limit check.
+ * Uses Redis when available, falls back to in-memory.
+ */
+export async function checkRateLimit(
+  limiter: RateLimiter,
+  key: string
+): Promise<RateLimitResult> {
+  if (limiter.checkAsync) {
+    return limiter.checkAsync(key);
+  }
+  return limiter.check(key);
+}
+
+// ============================================
+// PRE-CONFIGURED RATE LIMITERS
+// ============================================
+
+/**
+ * Rate limiter for export endpoint
+ * Limits: 10 exports per hour per user
+ */
+export const exportRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for password reset requests
+ * Limits: 5 requests per 15 minutes per email
+ */
+export const passwordResetRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
+
+/**
+ * Rate limiter for login attempts
+ * Limits: 10 attempts per 15 minutes per IP
+ */
+export const loginRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
+
+/**
+ * Rate limiter for API requests (general)
+ * Limits: 100 requests per minute per user
+ */
+export const apiRateLimiter = createRateLimiter({
+  limit: 100,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Create rate limit headers for response
+ */
+export function createRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+  return {
+    "X-RateLimit-Limit": result.limit.toString(),
+    "X-RateLimit-Remaining": result.remaining.toString(),
+    "X-RateLimit-Reset": Math.floor(result.resetAt.getTime() / 1000).toString(),
+  };
+}
+
+/**
+ * Format rate limit error message
+ */
+export function formatRateLimitError(result: RateLimitResult): string {
+  const resetInSeconds = Math.ceil((result.resetAt.getTime() - Date.now()) / 1000);
+  const resetInMinutes = Math.ceil(resetInSeconds / 60);
+
+  if (resetInMinutes > 1) {
+    return `Rate limit exceeded. Try again in ${resetInMinutes} minutes.`;
+  }
+  return `Rate limit exceeded. Try again in ${resetInSeconds} seconds.`;
+}
+
+// Export types
+export type { RateLimitConfig, RateLimitResult };

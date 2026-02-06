@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -33,7 +34,7 @@ function ResetPasswordForm() {
     try {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ token, password }),
       });
 

@@ -7,9 +7,7 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
-  addEdge,
   useReactFlow,
-  type Connection,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -21,25 +19,36 @@ import { PropertiesPanel } from "./properties-panel";
 import { VersionControls } from "./version-controls";
 import { validateStrategy } from "./strategy-validation";
 import { useUndoRedo } from "./use-undo-redo";
-import { validateConnection } from "./connection-validation";
+import { PanelErrorBoundary } from "./error-boundary";
+import {
+  useAutoSave,
+  useClipboard,
+  useKeyboardShortcuts,
+  useConnectionValidation,
+} from "./hooks";
 import type {
   BuilderNode,
-  BuilderEdge,
   BuilderNodeData,
   BuilderNodeType,
   BuildJsonSchema,
   NodeTemplate,
-  DEFAULT_BUILD_JSON,
 } from "@/types/builder";
 
 interface StrategyCanvasProps {
   projectId: string;
   initialData: BuildJsonSchema | null;
+  canExportMQL5?: boolean;
+  isPro?: boolean;
 }
 
 let nodeIdCounter = 0;
 
-export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) {
+export function StrategyCanvas({
+  projectId,
+  initialData,
+  canExportMQL5 = false,
+  isPro = false,
+}: StrategyCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, setViewport } = useReactFlow();
 
@@ -67,7 +76,9 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
   );
 
   // Track previous state for snapshot detection
-  const prevStateRef = useRef<string>(JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] }));
+  const prevStateRef = useRef<string>(
+    JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] })
+  );
 
   // Flag to skip snapshot after undo/redo
   const skipSnapshotRef = useRef(false);
@@ -92,81 +103,69 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
     }
   }, [nodes, edges, takeSnapshot]);
 
-  // Track if there are unsaved changes
-  const savedStateRef = useRef<string>(JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] }));
-  const currentState = JSON.stringify({ nodes, edges });
-  const hasUnsavedChanges = currentState !== savedStateRef.current;
+  // Auto-save hook
+  const {
+    autoSaveStatus,
+    hasUnsavedChanges,
+    saveToServer,
+    markAsSaved,
+  } = useAutoSave({
+    projectId,
+    nodes,
+    edges,
+    initialData,
+    debounceMs: 5000,
+  });
 
-  // Autosave state
-  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Helper to generate unique node IDs
+  const getNextNodeId = useCallback((type: string) => {
+    return `${type}-${++nodeIdCounter}`;
+  }, []);
 
-  // Clipboard for copy/paste
-  const clipboardRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+  // Clipboard hook
+  const {
+    copySelectedNodes,
+    pasteNodes,
+    duplicateSelectedNodes,
+  } = useClipboard({
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    getNextNodeId,
+  });
 
-  // Connection validation feedback
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const connectionErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Connection validation hook
+  const {
+    connectionError,
+    isValidConnection,
+    onConnect,
+  } = useConnectionValidation({
+    nodes: nodes as Node<BuilderNodeData>[],
+    edges,
+    setEdges,
+  });
+
+  // Keyboard shortcuts hook
+  useKeyboardShortcuts({
+    nodes,
+    setNodes,
+    setEdges,
+    undo,
+    redo,
+    copySelectedNodes,
+    pasteNodes,
+    duplicateSelectedNodes,
+    onUndoRedo: () => {
+      skipSnapshotRef.current = true;
+    },
+  });
 
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
   // Validate strategy
   const validation = validateStrategy(nodes as Node<BuilderNodeData>[]);
-
-  // Show connection error temporarily
-  const showConnectionError = useCallback((message: string) => {
-    // Clear existing timeout
-    if (connectionErrorTimeoutRef.current) {
-      clearTimeout(connectionErrorTimeoutRef.current);
-    }
-    setConnectionError(message);
-    connectionErrorTimeoutRef.current = setTimeout(() => {
-      setConnectionError(null);
-    }, 3000);
-  }, []);
-
-  // Validate connection before allowing it
-  const isValidConnection = useCallback(
-    (connection: Connection | Edge) => {
-      // Ensure we have the required connection properties
-      if (!connection.source || !connection.target) {
-        return false;
-      }
-      const conn: Connection = {
-        source: connection.source,
-        target: connection.target,
-        sourceHandle: connection.sourceHandle ?? null,
-        targetHandle: connection.targetHandle ?? null,
-      };
-      const validation = validateConnection(
-        conn,
-        nodes as Node<BuilderNodeData>[],
-        edges
-      );
-      return validation.isValid;
-    },
-    [nodes, edges]
-  );
-
-  // Handle new connections
-  const onConnect = useCallback(
-    (params: Connection) => {
-      const validation = validateConnection(
-        params,
-        nodes as Node<BuilderNodeData>[],
-        edges
-      );
-
-      if (!validation.isValid) {
-        showConnectionError(validation.reason || "Invalid connection");
-        return;
-      }
-
-      setEdges((eds) => addEdge({ ...params, animated: true }, eds));
-    },
-    [nodes, edges, setEdges, showConnectionError]
-  );
 
   // Handle drag start from toolbar
   const onDragStart = useCallback(
@@ -197,7 +196,7 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
       });
 
       const newNode: BuilderNode = {
-        id: `${template.type}-${++nodeIdCounter}`,
+        id: getNextNodeId(template.type),
         type: template.type as BuilderNodeType,
         position,
         data: { ...template.defaultData } as BuilderNodeData,
@@ -205,7 +204,7 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
 
       setNodes((nds) => [...nds, newNode as Node]);
     },
-    [screenToFlowPosition, setNodes]
+    [screenToFlowPosition, setNodes, getNextNodeId]
   );
 
   // Handle node data changes from properties panel
@@ -235,135 +234,28 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
     [setNodes, setEdges]
   );
 
-  // Handle deletion of selected nodes
-  const deleteSelectedNodes = useCallback(() => {
-    const selectedNodes = nodes.filter((n) => n.selected);
-    if (selectedNodes.length > 0) {
-      const selectedIds = selectedNodes.map((n) => n.id);
-      setNodes((nds) => nds.filter((n) => !n.selected));
-      setEdges((eds) => eds.filter((e) => !selectedIds.includes(e.source) && !selectedIds.includes(e.target)));
-    }
-  }, [nodes, setNodes, setEdges]);
-
-  // Keyboard event handler for Delete key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if Delete or Backspace is pressed and no input is focused
-      if ((event.key === "Delete" || event.key === "Backspace") &&
-          !["INPUT", "TEXTAREA"].includes((event.target as HTMLElement).tagName)) {
-        event.preventDefault();
-        deleteSelectedNodes();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [deleteSelectedNodes]);
-
-  // Save current state to server
-  const saveToServer = useCallback(async (isAutosave: boolean = false) => {
-    const buildJson: BuildJsonSchema = {
-      version: "1.0",
-      nodes: nodes as BuilderNode[],
-      edges: edges as BuilderEdge[],
-      viewport: { x: 0, y: 0, zoom: 1 }, // Could capture actual viewport
-      metadata: {
-        createdAt: initialData?.metadata?.createdAt ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      settings: initialData?.settings ?? {
-        magicNumber: 123456,
-        comment: "EA Builder Strategy",
-        maxOpenTrades: 1,
-        allowHedging: false,
-      },
-    };
-
-    if (isAutosave) {
-      setAutoSaveStatus("saving");
-    }
-
-    const res = await fetch(`/api/projects/${projectId}/versions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ buildJson }),
-    });
-
-    if (res.ok) {
-      savedStateRef.current = JSON.stringify({ nodes, edges });
-      if (isAutosave) {
-        setAutoSaveStatus("saved");
-        // Reset to idle after 2 seconds
-        setTimeout(() => setAutoSaveStatus("idle"), 2000);
-      }
-      return true;
-    } else {
-      const error = await res.json();
-      console.error("Save failed:", error);
-      if (isAutosave) {
-        setAutoSaveStatus("error");
-        setTimeout(() => setAutoSaveStatus("idle"), 3000);
-      } else {
-        alert("Failed to save. Please try again.");
-      }
-      return false;
-    }
-  }, [nodes, edges, projectId, initialData]);
-
   // Manual save handler
   const onSave = useCallback(async (): Promise<void> => {
-    await saveToServer(false);
-  }, [saveToServer]);
-
-  // Autosave effect - save 5 seconds after last change
-  useEffect(() => {
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
+    const success = await saveToServer(false);
+    if (success) {
+      markAsSaved();
     }
+  }, [saveToServer, markAsSaved]);
 
-    // Only autosave if there are unsaved changes and there are nodes
-    if (hasUnsavedChanges && nodes.length > 0) {
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        saveToServer(true);
-      }, 5000); // 5 seconds debounce
-    }
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [hasUnsavedChanges, nodes.length, saveToServer]);
-
-  // Load a specific version
+  // Load a specific version (now receives cached buildJson, no extra fetch needed)
   const onLoad = useCallback(
-    async (versionId: string) => {
-      const res = await fetch(`/api/projects/${projectId}/versions/${versionId}`);
-      if (res.ok) {
-        const version = await res.json();
-        const buildJson = version.buildJson as BuildJsonSchema;
+    (versionId: string, buildJson: BuildJsonSchema) => {
+      setNodes(buildJson.nodes as Node[]);
+      setEdges(buildJson.edges as Edge[]);
 
-        setNodes(buildJson.nodes as Node[]);
-        setEdges(buildJson.edges as Edge[]);
-
-        if (buildJson.viewport) {
-          setViewport(buildJson.viewport);
-        }
-
-        // Reset history when loading a new version
-        resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
-
-        savedStateRef.current = JSON.stringify({
-          nodes: buildJson.nodes,
-          edges: buildJson.edges,
-        });
-      } else {
-        console.error("Load failed");
-        alert("Failed to load version. Please try again.");
+      if (buildJson.viewport) {
+        setViewport(buildJson.viewport);
       }
+
+      // Reset history when loading a new version
+      resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
     },
-    [projectId, setNodes, setEdges, setViewport, resetHistory]
+    [setNodes, setEdges, setViewport, resetHistory]
   );
 
   // Undo handler for button
@@ -386,132 +278,11 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
     }
   }, [redo, setNodes, setEdges]);
 
-  // Copy selected nodes
-  const copySelectedNodes = useCallback(() => {
-    const selectedNodes = nodes.filter((n) => n.selected);
-    if (selectedNodes.length === 0) return;
-
-    const selectedIds = new Set(selectedNodes.map((n) => n.id));
-    // Only copy edges that connect selected nodes to each other
-    const connectedEdges = edges.filter(
-      (e) => selectedIds.has(e.source) && selectedIds.has(e.target)
-    );
-
-    clipboardRef.current = {
-      nodes: JSON.parse(JSON.stringify(selectedNodes)),
-      edges: JSON.parse(JSON.stringify(connectedEdges)),
-    };
-  }, [nodes, edges]);
-
-  // Paste nodes from clipboard
-  const pasteNodes = useCallback(() => {
-    if (!clipboardRef.current || clipboardRef.current.nodes.length === 0) return;
-
-    const { nodes: copiedNodes, edges: copiedEdges } = clipboardRef.current;
-
-    // Create ID mapping for new nodes
-    const idMapping: Record<string, string> = {};
-    const offset = { x: 50, y: 50 }; // Offset pasted nodes
-
-    // Create new nodes with new IDs
-    const newNodes: Node[] = copiedNodes.map((node) => {
-      const newId = `${node.type}-${++nodeIdCounter}`;
-      idMapping[node.id] = newId;
-      return {
-        ...node,
-        id: newId,
-        position: {
-          x: node.position.x + offset.x,
-          y: node.position.y + offset.y,
-        },
-        selected: true, // Select pasted nodes
-        data: { ...node.data },
-      };
-    });
-
-    // Create new edges with updated IDs
-    const newEdges: Edge[] = copiedEdges.map((edge) => ({
-      ...edge,
-      id: `e-${idMapping[edge.source]}-${idMapping[edge.target]}`,
-      source: idMapping[edge.source],
-      target: idMapping[edge.target],
-    }));
-
-    // Deselect all existing nodes and add new ones
-    setNodes((nds) => [
-      ...nds.map((n) => ({ ...n, selected: false })),
-      ...newNodes,
-    ]);
-    setEdges((eds) => [...eds, ...newEdges]);
-  }, [setNodes, setEdges]);
-
-  // Duplicate selected nodes (Ctrl+D shortcut)
-  const duplicateSelectedNodes = useCallback(() => {
-    copySelectedNodes();
-    pasteNodes();
-  }, [copySelectedNodes, pasteNodes]);
-
-  // Keyboard shortcuts for undo/redo/copy/paste
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Skip if user is typing in an input
-      if (["INPUT", "TEXTAREA"].includes((event.target as HTMLElement).tagName)) {
-        return;
-      }
-
-      // Ctrl+Z or Cmd+Z for undo
-      if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.shiftKey) {
-        event.preventDefault();
-        const state = undo();
-        if (state) {
-          skipSnapshotRef.current = true;
-          setNodes(state.nodes);
-          setEdges(state.edges);
-        }
-      }
-
-      // Ctrl+Y or Ctrl+Shift+Z or Cmd+Shift+Z for redo
-      if (
-        ((event.ctrlKey || event.metaKey) && event.key === "y") ||
-        ((event.ctrlKey || event.metaKey) && event.key === "z" && event.shiftKey)
-      ) {
-        event.preventDefault();
-        const state = redo();
-        if (state) {
-          skipSnapshotRef.current = true;
-          setNodes(state.nodes);
-          setEdges(state.edges);
-        }
-      }
-
-      // Ctrl+C or Cmd+C for copy
-      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
-        event.preventDefault();
-        copySelectedNodes();
-      }
-
-      // Ctrl+V or Cmd+V for paste
-      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
-        event.preventDefault();
-        pasteNodes();
-      }
-
-      // Ctrl+D or Cmd+D for duplicate
-      if ((event.ctrlKey || event.metaKey) && event.key === "d") {
-        event.preventDefault();
-        duplicateSelectedNodes();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, setNodes, setEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes]);
-
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar */}
-        <NodeToolbar onDragStart={onDragStart} />
+        <NodeToolbar onDragStart={onDragStart} isPro={isPro} />
 
         {/* Center: React Flow Canvas */}
         <div ref={reactFlowWrapper} className="flex-1 relative">
@@ -596,11 +367,13 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
             </svg>
           </button>
           {!rightPanelCollapsed && (
-            <PropertiesPanel
-              selectedNode={selectedNode as Node<BuilderNodeData> | null}
-              onNodeChange={onNodeChange}
-              onNodeDelete={onNodeDelete}
-            />
+            <PanelErrorBoundary>
+              <PropertiesPanel
+                selectedNode={selectedNode as Node<BuilderNodeData> | null}
+                onNodeChange={onNodeChange}
+                onNodeDelete={onNodeDelete}
+              />
+            </PanelErrorBoundary>
           )}
         </div>
       </div>
@@ -614,6 +387,7 @@ export function StrategyCanvas({ projectId, initialData }: StrategyCanvasProps) 
         onSave={onSave}
         onLoad={onLoad}
         autoSaveStatus={autoSaveStatus}
+        canExportMQL5={canExportMQL5}
       />
     </div>
   );

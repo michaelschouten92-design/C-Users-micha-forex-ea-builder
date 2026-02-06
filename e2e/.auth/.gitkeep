@@ -1,0 +1,2 @@
+# This directory stores authentication state for E2E tests
+# The actual auth files (user.json) are gitignored

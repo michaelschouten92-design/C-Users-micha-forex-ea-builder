@@ -1,6 +1,6 @@
 // MQL5 Code Templates
 
-import type { GeneratorContext } from "./types";
+import type { GeneratorContext, OptimizableInput } from "./types";
 
 export function generateFileHeader(ctx: GeneratorContext): string {
   const timestamp = new Date().toISOString();
@@ -27,13 +27,21 @@ CTrade trade;
 `;
 }
 
-export function generateInputsSection(inputs: string[]): string {
+export function generateInputsSection(inputs: OptimizableInput[]): string {
   if (inputs.length === 0) return "";
+
+  const lines = inputs.map((input) => {
+    if (input.isOptimizable) {
+      return `input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`;
+    } else {
+      return `const ${input.type} ${input.name} = ${input.value}; // ${input.comment} (fixed)`;
+    }
+  });
 
   return `//+------------------------------------------------------------------+
 //| Input Parameters                                                   |
 //+------------------------------------------------------------------+
-${inputs.join("\n")}
+${lines.join("\n")}
 
 `;
 }

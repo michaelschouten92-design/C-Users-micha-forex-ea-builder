@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { env, features } from "./env";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -12,21 +13,21 @@ const SALT_ROUNDS = 12;
 const providers: Provider[] = [];
 
 // Only add Google if credentials are configured
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+if (features.googleAuth) {
   providers.push(
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      clientId: env.AUTH_GOOGLE_ID!,
+      clientSecret: env.AUTH_GOOGLE_SECRET!,
     })
   );
 }
 
 // Only add GitHub if credentials are configured
-if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
+if (features.githubAuth) {
   providers.push(
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
+      clientId: env.AUTH_GITHUB_ID!,
+      clientSecret: env.AUTH_GITHUB_SECRET!,
     })
   );
 }
@@ -135,12 +136,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (existingUser) {
-            // Link OAuth to existing account by updating authProviderId
-            // Note: This allows OAuth login for existing email accounts
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: { authProviderId },
-            });
+            // SECURITY: Do NOT auto-link OAuth to existing credential-based accounts.
+            // An attacker could register the same email via OAuth and take over the account.
+            // The user must log in with their original method.
+            return false;
           } else {
             // Create new user
             existingUser = await prisma.user.create({

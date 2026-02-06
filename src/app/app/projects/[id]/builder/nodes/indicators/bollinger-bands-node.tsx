@@ -17,16 +17,16 @@ export function BollingerBandsNode({ id, data, selected }: Props) {
     >
       <div className="space-y-1">
         <div className="flex justify-between">
+          <span className="text-zinc-500">Timeframe:</span>
+          <span className="font-medium">{data.timeframe}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-zinc-500">Period:</span>
           <span className="font-medium">{data.period}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Deviation:</span>
           <span className="font-medium">{data.deviation}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Price:</span>
-          <span className="font-medium">{data.appliedPrice}</span>
         </div>
       </div>
     </BaseNode>

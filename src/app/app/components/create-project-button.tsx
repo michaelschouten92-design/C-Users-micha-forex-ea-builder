@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 export function CreateProjectButton() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function CreateProjectButton() {
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ name, description }),
       });
 

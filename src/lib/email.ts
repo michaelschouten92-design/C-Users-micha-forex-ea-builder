@@ -1,10 +1,23 @@
 import { Resend } from "resend";
+import { env, features } from "./env";
+import { logger } from "./logger";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key is available
+const resend = features.email ? new Resend(env.RESEND_API_KEY) : null;
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "AlgoStudio <onboarding@resend.dev>";
+const FROM_EMAIL = env.EMAIL_FROM;
+
+const log = logger.child({ service: "email" });
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping password reset email");
+    if (env.NODE_ENV === "development") {
+      log.debug({ resetUrl }, "Password reset URL (dev only)");
+    }
+    return;
+  }
+
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -38,7 +51,9 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   });
 
   if (error) {
-    console.error("Failed to send password reset email:", error);
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send password reset email");
     throw new Error("Failed to send email");
   }
+
+  log.info({ to: email.substring(0, 3) + "***" }, "Password reset email sent");
 }

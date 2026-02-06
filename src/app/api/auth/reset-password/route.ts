@@ -1,47 +1,61 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resetPasswordSchema, formatZodErrors } from "@/lib/validations";
+import { createApiLogger, extractErrorDetails } from "@/lib/logger";
+import {
+  passwordResetRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 
 const SALT_ROUNDS = 12;
 
 export async function POST(request: Request) {
+  const log = createApiLogger("/api/auth/reset-password", "POST");
+
   try {
-    const { token, password } = await request.json();
+    const body = await request.json();
+    const validation = resetPasswordSchema.safeParse(body);
 
-    if (!token || !password) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Token and password are required" },
+        { error: "Validation failed", details: formatZodErrors(validation.error) },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
+    const { token, password } = validation.data;
+
+    // Rate limit by token to prevent brute-force attempts
+    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, `reset:${token}`);
+    if (!rateLimitResult.success) {
+      log.warn("Reset password rate limit exceeded");
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
+        { error: formatRateLimitError(rateLimitResult) },
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
 
-    // Find valid token
+    // Find token and check expiry in a single unified path to prevent timing side-channel.
+    // Both "not found" and "expired" return the same error after the same work.
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
     });
 
-    if (!resetToken) {
+    const isValid = resetToken && resetToken.expiresAt >= new Date();
+
+    if (!isValid) {
+      // Clean up expired token if it exists
+      if (resetToken) {
+        await prisma.passwordResetToken.delete({
+          where: { id: resetToken.id },
+        });
+      }
+
       return NextResponse.json(
         { error: "Invalid or expired reset link" },
-        { status: 400 }
-      );
-    }
-
-    if (resetToken.expiresAt < new Date()) {
-      // Delete expired token
-      await prisma.passwordResetToken.delete({
-        where: { id: resetToken.id },
-      });
-
-      return NextResponse.json(
-        { error: "Reset link has expired. Please request a new one." },
         { status: 400 }
       );
     }
@@ -53,7 +67,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "User not found" },
+        { error: "Invalid or expired reset link" },
         { status: 400 }
       );
     }
@@ -71,11 +85,13 @@ export async function POST(request: Request) {
       where: { id: resetToken.id },
     });
 
+    log.info({ userId: user.id }, "Password reset completed");
+
     return NextResponse.json({
       message: "Password has been reset successfully",
     });
   } catch (error) {
-    console.error("Reset password error:", error);
+    log.error({ error: extractErrorDetails(error) }, "Reset password error");
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }

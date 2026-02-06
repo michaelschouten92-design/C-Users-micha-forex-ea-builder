@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import { PLANS, type PlanTier } from "@/lib/plans";
+import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
+  const log = createApiLogger("/api/stripe/checkout", "POST", session?.user?.id);
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -79,8 +82,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.AUTH_URL}/app?checkout=success`,
-      cancel_url: `${process.env.AUTH_URL}/pricing?checkout=cancelled`,
+      success_url: `${env.AUTH_URL}/app?checkout=success`,
+      cancel_url: `${env.AUTH_URL}/pricing?checkout=cancelled`,
       metadata: {
         userId: user.id,
         plan,
@@ -88,9 +91,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    log.info({ plan, interval, checkoutSessionId: checkoutSession.id }, "Checkout session created");
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
-    console.error("Checkout error:", error);
+    log.error({ error: extractErrorDetails(error) }, "Checkout error");
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

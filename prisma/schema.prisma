@@ -53,7 +53,7 @@ model User {
 model Subscription {
   id     String   @id @default(cuid())
   userId String   @unique
-  tier   PlanTier @default(STARTER)
+  tier   PlanTier @default(FREE)
   status String   @default("active")
 
   // Future-proof Stripe fields
@@ -64,6 +64,9 @@ model Subscription {
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubId])
 }
 
 model Project {
@@ -78,6 +81,8 @@ model Project {
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   versions BuildVersion[]
   exports  ExportJob[]
+
+  @@index([userId, updatedAt])
 }
 
 model BuildVersion {
@@ -93,6 +98,7 @@ model BuildVersion {
 
   // Unique constraint: one version number per project
   @@unique([projectId, versionNo])
+  @@index([projectId])
 }
 
 model ExportJob {
@@ -127,4 +133,13 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique // Stripe event ID
+  type        String
+  processedAt DateTime @default(now())
+
+  @@index([processedAt])
 }

@@ -22,8 +22,16 @@ export interface InputParameter {
   comment: string;
 }
 
+export interface OptimizableInput {
+  name: string;
+  type: "int" | "double" | "string" | "bool";
+  value: number | string | boolean;
+  comment: string;
+  isOptimizable: boolean;
+}
+
 export interface GeneratedCode {
-  inputs: string[];
+  inputs: OptimizableInput[];
   globalVariables: string[];
   onInit: string[];
   onDeinit: string[];
@@ -34,6 +42,25 @@ export interface GeneratedCode {
 export type MAMethod = "SMA" | "EMA" | "SMMA" | "LWMA";
 export type AppliedPrice = "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 export type TradeDirection = "BUY" | "SELL" | "BOTH";
+
+export type Timeframe = "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1" | "W1" | "MN1";
+
+export const TIMEFRAME_MAP: Record<Timeframe, string> = {
+  M1: "PERIOD_M1",
+  M5: "PERIOD_M5",
+  M15: "PERIOD_M15",
+  M30: "PERIOD_M30",
+  H1: "PERIOD_H1",
+  H4: "PERIOD_H4",
+  D1: "PERIOD_D1",
+  W1: "PERIOD_W1",
+  MN1: "PERIOD_MN1",
+};
+
+export function getTimeframe(tf: string | undefined): string {
+  if (!tf) return "PERIOD_CURRENT";
+  return TIMEFRAME_MAP[tf as Timeframe] ?? "PERIOD_CURRENT";
+}
 
 export const MA_METHOD_MAP: Record<MAMethod, string> = {
   SMA: "MODE_SMA",

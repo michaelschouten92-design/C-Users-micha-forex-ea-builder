@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ProjectSettings } from "./project-settings";
 import { StrategyBuilder } from "./builder/strategy-builder";
 import { CollapsibleSidebar } from "./collapsible-sidebar";
+import { getUserPlanLimits } from "@/lib/plan-limits";
 import type { BuildJsonSchema } from "@/types/builder";
 
 type Props = {
@@ -48,6 +49,9 @@ export default async function ProjectPage({ params }: Props) {
       }
     : null;
 
+  // Get user's plan limits for export permissions
+  const planLimits = await getUserPlanLimits(session.user.id);
+
   return (
     <div className="h-screen flex flex-col">
       <nav className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] flex-shrink-0 sticky top-0 z-50">
@@ -82,7 +86,12 @@ export default async function ProjectPage({ params }: Props) {
       <main className="flex-1 flex min-h-0">
         {/* Main content area - Strategy Builder */}
         <div className="flex-1 min-w-0">
-          <StrategyBuilder projectId={project.id} latestVersion={latestVersion} />
+          <StrategyBuilder
+            projectId={project.id}
+            latestVersion={latestVersion}
+            canExportMQL5={planLimits.limits.canExportMQL5}
+            isPro={planLimits.limits.canUseTradeManagement}
+          />
         </div>
 
         {/* Sidebar */}

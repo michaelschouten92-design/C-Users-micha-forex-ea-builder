@@ -111,12 +111,11 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           {/* Summary checklist */}
           <div className="p-3 border-t border-[rgba(79,70,229,0.2)] bg-[rgba(0,0,0,0.2)]">
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <CheckItem label="Entry Condition" checked={validation.summary.hasEntryCondition} required />
+              <CheckItem label="When to trade" checked={validation.summary.hasTradingTimes} required />
               <CheckItem label="Indicator" checked={validation.summary.hasIndicator} required />
-              <CheckItem label="Stop Loss" checked={validation.summary.hasStopLoss} />
+              <CheckItem label="Stoploss" checked={validation.summary.hasStopLoss} />
               <CheckItem label="Take Profit" checked={validation.summary.hasTakeProfit} />
-              <CheckItem label="Position Sizing" checked={validation.summary.hasPositionSizing} />
-              <CheckItem label="Exit Condition" checked={validation.summary.hasExitCondition} />
+              <CheckItem label="Trade Entry" checked={validation.summary.hasPositionSizing} />
             </div>
           </div>
         </div>

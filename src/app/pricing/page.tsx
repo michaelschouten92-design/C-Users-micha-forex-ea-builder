@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
+import { getCsrfHeaders } from "@/lib/api-client";
+
+// Helper to safely get price - returns null if Stripe not configured
+function getPrice(plan: typeof PLANS.STARTER | typeof PLANS.PRO, interval: "monthly" | "yearly") {
+  if (!plan.prices) return null;
+  return plan.prices[interval];
+}
 
 export default function PricingPage() {
   const router = useRouter();
@@ -16,7 +23,7 @@ export default function PricingPage() {
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ plan, interval }),
       });
 
@@ -136,12 +143,18 @@ export default function PricingPage() {
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
             <h3 className="text-xl font-semibold text-white">{PLANS.STARTER.name}</h3>
             <div className="mt-4">
-              <span className="text-4xl font-bold text-white">
-                {formatPrice(PLANS.STARTER.prices[interval].amount, "eur")}
-              </span>
-              <span className="text-[#94A3B8] ml-2">
-                /{interval === "monthly" ? "month" : "year"}
-              </span>
+              {getPrice(PLANS.STARTER, interval) ? (
+                <>
+                  <span className="text-4xl font-bold text-white">
+                    {formatPrice(getPrice(PLANS.STARTER, interval)!.amount, "eur")}
+                  </span>
+                  <span className="text-[#94A3B8] ml-2">
+                    /{interval === "monthly" ? "month" : "year"}
+                  </span>
+                </>
+              ) : (
+                <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
+              )}
             </div>
 
             <ul className="mt-6 space-y-3">
@@ -163,27 +176,11 @@ export default function PricingPage() {
                   {feature}
                 </li>
               ))}
-              <li className="flex items-center gap-3 text-[#64748B]">
-                <svg
-                  className="w-5 h-5 text-[#64748B]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                MQL5 source code export
-              </li>
             </ul>
 
             <button
               onClick={() => handleSubscribe("STARTER")}
-              disabled={loading !== null}
+              disabled={loading !== null || !getPrice(PLANS.STARTER, interval)}
               className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading === "STARTER" ? "Loading..." : "Get Started"}
@@ -200,12 +197,18 @@ export default function PricingPage() {
 
             <h3 className="text-xl font-semibold text-white">{PLANS.PRO.name}</h3>
             <div className="mt-4">
-              <span className="text-4xl font-bold text-white">
-                {formatPrice(PLANS.PRO.prices[interval].amount, "eur")}
-              </span>
-              <span className="text-[#94A3B8] ml-2">
-                /{interval === "monthly" ? "month" : "year"}
-              </span>
+              {getPrice(PLANS.PRO, interval) ? (
+                <>
+                  <span className="text-4xl font-bold text-white">
+                    {formatPrice(getPrice(PLANS.PRO, interval)!.amount, "eur")}
+                  </span>
+                  <span className="text-[#94A3B8] ml-2">
+                    /{interval === "monthly" ? "month" : "year"}
+                  </span>
+                </>
+              ) : (
+                <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
+              )}
             </div>
 
             <ul className="mt-6 space-y-3">
@@ -231,7 +234,7 @@ export default function PricingPage() {
 
             <button
               onClick={() => handleSubscribe("PRO")}
-              disabled={loading !== null}
+              disabled={loading !== null || !getPrice(PLANS.PRO, interval)}
               className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
             >
               {loading === "PRO" ? "Loading..." : "Get Started"}

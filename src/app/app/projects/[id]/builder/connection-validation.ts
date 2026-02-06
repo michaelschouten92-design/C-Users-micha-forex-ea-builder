@@ -1,18 +1,14 @@
 import type { Node, Edge, Connection } from "@xyflow/react";
-import type { BuilderNodeData, StopLossNodeData } from "@/types/builder";
+import type { BuilderNodeData } from "@/types/builder";
 
 /**
  * Connection validation rules for the EA Builder
  *
  * We keep validation simple and only block clearly invalid connections:
  * - Self-connections
- * - Connections to nodes without input handles
  * - Duplicate connections
  * - Circular connections
  */
-
-// Nodes that cannot receive any connections (no input handles)
-const NO_INPUT_NODES = ["position-sizing", "take-profit"];
 
 export interface ConnectionValidationResult {
   isValid: boolean;
@@ -48,29 +44,7 @@ export function validateConnection(
     };
   }
 
-  const targetData = targetNode.data;
-
-  // Rule 2: Check if target node accepts inputs
-  if (NO_INPUT_NODES.includes(targetNode.type as string)) {
-    const label = targetData?.label || targetNode.type;
-    return {
-      isValid: false,
-      reason: `${label} does not accept incoming connections`,
-    };
-  }
-
-  // Rule 3: Special case for stop-loss - only accepts input when method is "INDICATOR"
-  if (targetNode.type === "stop-loss") {
-    const slData = targetData as StopLossNodeData;
-    if (slData.method !== "INDICATOR") {
-      return {
-        isValid: false,
-        reason: "Stop Loss only accepts connections when method is set to 'Indicator'",
-      };
-    }
-  }
-
-  // Rule 4: Prevent duplicate connections
+  // Rule 2: Prevent duplicate connections
   const duplicateEdge = edges.find(
     (e) => e.source === source && e.target === target
   );
@@ -81,7 +55,7 @@ export function validateConnection(
     };
   }
 
-  // Rule 5: Prevent circular connections
+  // Rule 3: Prevent circular connections
   if (wouldCreateCycle(source!, target!, edges)) {
     return {
       isValid: false,

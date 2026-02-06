@@ -1,4 +1,76 @@
 // Subscription plans configuration
+import { env, features } from "./env";
+
+// Display prices (always available for showing on pricing page)
+const DISPLAY_PRICES = {
+  starter: {
+    monthly: {
+      amount: 1900, // €19 in cents
+      currency: "eur",
+      interval: "month" as const,
+    },
+    yearly: {
+      amount: 20900, // €209 (11 months)
+      currency: "eur",
+      interval: "year" as const,
+    },
+  },
+  pro: {
+    monthly: {
+      amount: 4900, // €49 in cents
+      currency: "eur",
+      interval: "month" as const,
+    },
+    yearly: {
+      amount: 53900, // €539 (11 months)
+      currency: "eur",
+      interval: "year" as const,
+    },
+  },
+};
+
+// Helper to get price config with Stripe price IDs (only on server when Stripe is enabled)
+function getPriceConfigWithIds() {
+  // On client side or when Stripe is not enabled, return display prices without IDs
+  if (typeof window !== "undefined" || !features.stripe) {
+    return {
+      starter: {
+        monthly: { ...DISPLAY_PRICES.starter.monthly, priceId: "" },
+        yearly: { ...DISPLAY_PRICES.starter.yearly, priceId: "" },
+      },
+      pro: {
+        monthly: { ...DISPLAY_PRICES.pro.monthly, priceId: "" },
+        yearly: { ...DISPLAY_PRICES.pro.yearly, priceId: "" },
+      },
+    };
+  }
+
+  // On server with Stripe enabled, include price IDs
+  return {
+    starter: {
+      monthly: {
+        ...DISPLAY_PRICES.starter.monthly,
+        priceId: env.STRIPE_STARTER_MONTHLY_PRICE_ID!,
+      },
+      yearly: {
+        ...DISPLAY_PRICES.starter.yearly,
+        priceId: env.STRIPE_STARTER_YEARLY_PRICE_ID!,
+      },
+    },
+    pro: {
+      monthly: {
+        ...DISPLAY_PRICES.pro.monthly,
+        priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID!,
+      },
+      yearly: {
+        ...DISPLAY_PRICES.pro.yearly,
+        priceId: env.STRIPE_PRO_YEARLY_PRICE_ID!,
+      },
+    },
+  };
+}
+
+const priceConfig = getPriceConfigWithIds();
 
 export const PLANS = {
   FREE: {
@@ -7,13 +79,13 @@ export const PLANS = {
     features: [
       "Unlimited projects",
       "Visual strategy builder",
-      "No export capability",
+      "Build and test your strategies",
     ],
     limits: {
       maxProjects: Infinity,
       maxExportsPerMonth: 0,
       canExportMQL5: false,
-      canExportEX5: false,
+      canUseTradeManagement: false,
     },
     prices: null,
   },
@@ -23,29 +95,16 @@ export const PLANS = {
     features: [
       "Up to 3 projects",
       "5 exports per month",
-      "EX5 export (compiled)",
+      "MQL5 source code export",
       "Email support",
     ],
     limits: {
       maxProjects: 3,
       maxExportsPerMonth: 5,
-      canExportMQL5: false,
-      canExportEX5: true,
+      canExportMQL5: true,
+      canUseTradeManagement: false,
     },
-    prices: {
-      monthly: {
-        amount: 1900, // in cents
-        currency: "eur",
-        interval: "month" as const,
-        priceId: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID!,
-      },
-      yearly: {
-        amount: 20900, // €209 (11 months)
-        currency: "eur",
-        interval: "year" as const,
-        priceId: process.env.STRIPE_STARTER_YEARLY_PRICE_ID!,
-      },
-    },
+    prices: priceConfig.starter,
   },
   PRO: {
     name: "Pro",
@@ -54,29 +113,16 @@ export const PLANS = {
       "Unlimited projects",
       "Unlimited exports",
       "MQL5 source code export",
-      "EX5 export (compiled)",
       "Priority support",
+      "Early access to new features",
     ],
     limits: {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
-      canExportEX5: true,
+      canUseTradeManagement: true,
     },
-    prices: {
-      monthly: {
-        amount: 4900, // in cents
-        currency: "eur",
-        interval: "month" as const,
-        priceId: process.env.STRIPE_PRO_MONTHLY_PRICE_ID!,
-      },
-      yearly: {
-        amount: 53900, // €539 (11 months)
-        currency: "eur",
-        interval: "year" as const,
-        priceId: process.env.STRIPE_PRO_YEARLY_PRICE_ID!,
-      },
-    },
+    prices: priceConfig.pro,
   },
 } as const;
 

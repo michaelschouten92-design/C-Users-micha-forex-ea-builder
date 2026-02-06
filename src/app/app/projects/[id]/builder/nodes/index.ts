@@ -2,46 +2,71 @@
 import type { NodeTypes } from "@xyflow/react";
 
 import { TradingTimesNode } from "./trading-times-node";
+import { AlwaysNode } from "./always-node";
+import { CustomTimesNode } from "./custom-times-node";
 import { MovingAverageNode } from "./indicators/moving-average-node";
 import { RSINode } from "./indicators/rsi-node";
 import { MACDNode } from "./indicators/macd-node";
 import { BollingerBandsNode } from "./indicators/bollinger-bands-node";
 import { ATRNode } from "./indicators/atr-node";
 import { ADXNode } from "./indicators/adx-node";
-import { EntryConditionNode } from "./entry-condition-node";
-import { ExitConditionNode } from "./exit-condition-node";
-import { PositionSizingNode } from "./position-sizing-node";
+import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
+import { SupportResistanceNode } from "./priceaction/support-resistance-node";
+import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
+import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
 import { StopLossNode } from "./stop-loss-node";
 import { TakeProfitNode } from "./take-profit-node";
+import {
+  BreakevenStopNode,
+  TrailingStopNode,
+  PartialCloseNode,
+  LockProfitNode,
+} from "./trademanagement";
 
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
-  "trading-times": TradingTimesNode,
+  "trading-session": TradingTimesNode,
+  "always": AlwaysNode,
+  "custom-times": CustomTimesNode,
   "moving-average": MovingAverageNode,
   "rsi": RSINode,
   "macd": MACDNode,
   "bollinger-bands": BollingerBandsNode,
   "atr": ATRNode,
   "adx": ADXNode,
-  "entry-condition": EntryConditionNode,
-  "exit-condition": ExitConditionNode,
-  "position-sizing": PositionSizingNode,
+  "candlestick-pattern": CandlestickPatternNode,
+  "support-resistance": SupportResistanceNode,
+  "range-breakout": RangeBreakoutNode,
+  "place-buy": PlaceBuyNode,
+  "place-sell": PlaceSellNode,
   "stop-loss": StopLossNode,
   "take-profit": TakeProfitNode,
+  "breakeven-stop": BreakevenStopNode,
+  "trailing-stop": TrailingStopNode,
+  "partial-close": PartialCloseNode,
+  "lock-profit": LockProfitNode,
 };
 
 // Re-export individual nodes for direct imports
 export {
   TradingTimesNode,
+  AlwaysNode,
+  CustomTimesNode,
   MovingAverageNode,
   RSINode,
   MACDNode,
   BollingerBandsNode,
   ATRNode,
   ADXNode,
-  EntryConditionNode,
-  ExitConditionNode,
-  PositionSizingNode,
+  CandlestickPatternNode,
+  SupportResistanceNode,
+  RangeBreakoutNode,
+  PlaceBuyNode,
+  PlaceSellNode,
   StopLossNode,
   TakeProfitNode,
+  BreakevenStopNode,
+  TrailingStopNode,
+  PartialCloseNode,
+  LockProfitNode,
 };

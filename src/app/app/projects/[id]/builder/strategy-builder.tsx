@@ -2,6 +2,7 @@
 
 import { ReactFlowProvider } from "@xyflow/react";
 import { StrategyCanvas } from "./strategy-canvas";
+import { CanvasErrorBoundary } from "./error-boundary";
 import type { BuildJsonSchema } from "@/types/builder";
 
 interface StrategyBuilderProps {
@@ -11,15 +12,26 @@ interface StrategyBuilderProps {
     versionNo: number;
     buildJson: BuildJsonSchema;
   } | null;
+  canExportMQL5?: boolean;
+  isPro?: boolean;
 }
 
-export function StrategyBuilder({ projectId, latestVersion }: StrategyBuilderProps) {
+export function StrategyBuilder({
+  projectId,
+  latestVersion,
+  canExportMQL5 = false,
+  isPro = false,
+}: StrategyBuilderProps) {
   return (
-    <ReactFlowProvider>
-      <StrategyCanvas
-        projectId={projectId}
-        initialData={latestVersion?.buildJson ?? null}
-      />
-    </ReactFlowProvider>
+    <CanvasErrorBoundary>
+      <ReactFlowProvider>
+        <StrategyCanvas
+          projectId={projectId}
+          initialData={latestVersion?.buildJson ?? null}
+          canExportMQL5={canExportMQL5}
+          isPro={isPro}
+        />
+      </ReactFlowProvider>
+    </CanvasErrorBoundary>
   );
 }

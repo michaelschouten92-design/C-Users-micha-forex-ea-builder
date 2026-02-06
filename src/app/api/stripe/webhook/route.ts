@@ -1,9 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
+import { logger, extractErrorDetails } from "@/lib/logger";
+import { audit } from "@/lib/audit";
 import type Stripe from "stripe";
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const log = logger.child({ route: "/api/stripe/webhook" });
+
+// Helper to safely extract string ID from Stripe expandable fields
+function getStringId(field: string | { id: string } | null | undefined): string | null {
+  if (!field) return null;
+  return typeof field === "string" ? field : field.id;
+}
+
+// Helper to get subscription period dates
+function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date; end: Date } {
+  // Access via items data which has the period info
+  const item = subscription.items.data[0];
+  if (item) {
+    return {
+      start: new Date((item as unknown as { current_period_start: number }).current_period_start * 1000),
+      end: new Date((item as unknown as { current_period_end: number }).current_period_end * 1000),
+    };
+  }
+  // Fallback to subscription level if available
+  const sub = subscription as unknown as { current_period_start?: number; current_period_end?: number };
+  return {
+    start: sub.current_period_start ? new Date(sub.current_period_start * 1000) : new Date(),
+    end: sub.current_period_end ? new Date(sub.current_period_end * 1000) : new Date(),
+  };
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -11,14 +38,30 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
 
+  if (!env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json(
+      { error: "Stripe webhook secret not configured" },
+      { status: 500 }
+    );
+  }
+
   try {
-    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    log.error({ error: extractErrorDetails(err) }, "Webhook signature verification failed");
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 400 }
     );
+  }
+
+  // Idempotency check: skip already-processed events
+  const existing = await prisma.webhookEvent.findUnique({
+    where: { eventId: event.id },
+  });
+  if (existing) {
+    log.info({ eventId: event.id }, "Duplicate webhook event, skipping");
+    return NextResponse.json({ received: true });
   }
 
   try {
@@ -54,9 +97,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Record processed event for idempotency
+    await prisma.webhookEvent.create({
+      data: { eventId: event.id, type: event.type },
+    });
+
+    log.info({ eventType: event.type, eventId: event.id }, "Webhook processed successfully");
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    log.error({ error: extractErrorDetails(error), eventType: event.type }, "Webhook handler error");
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }
@@ -69,15 +118,21 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const plan = session.metadata?.plan as "STARTER" | "PRO";
 
   if (!userId || !plan) {
-    console.error("Missing metadata in checkout session");
+    log.error({ sessionId: session.id }, "Missing metadata in checkout session");
     return;
   }
 
-  const subscriptionId = session.subscription as string;
-  const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
+  log.info({ userId, plan, sessionId: session.id }, "Processing checkout completion");
 
-  // Access the subscription data - use any to bypass strict typing issues with Stripe SDK
-  const subData = stripeSubscription as any;
+  const subscriptionId = getStringId(session.subscription);
+  if (!subscriptionId) {
+    log.error({ sessionId: session.id }, "No subscription ID in checkout session");
+    return;
+  }
+
+  const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
+  const customerId = getStringId(session.customer);
+  const period = getSubscriptionPeriod(stripeSubscription);
 
   await prisma.subscription.update({
     where: { userId },
@@ -85,15 +140,20 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       tier: plan,
       status: "active",
       stripeSubId: subscriptionId,
-      stripeCustomerId: session.customer as string,
-      currentPeriodStart: new Date(subData.current_period_start * 1000),
-      currentPeriodEnd: new Date(subData.current_period_end * 1000),
+      stripeCustomerId: customerId,
+      currentPeriodStart: period.start,
+      currentPeriodEnd: period.end,
     },
   });
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string;
+  const customerId = getStringId(subscription.customer);
+
+  if (!customerId) {
+    log.error({ subscriptionId: subscription.id }, "No customer ID in subscription");
+    return;
+  }
 
   // Find user by Stripe customer ID
   const userSubscription = await prisma.subscription.findFirst({
@@ -101,7 +161,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   });
 
   if (!userSubscription) {
-    console.error("Subscription not found for customer:", customerId);
+    log.error({ customerId }, "Subscription not found for customer");
     return;
   }
 
@@ -110,28 +170,54 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   let tier: "STARTER" | "PRO" = "STARTER";
 
   if (
-    priceId === process.env.STRIPE_PRO_MONTHLY_PRICE_ID ||
-    priceId === process.env.STRIPE_PRO_YEARLY_PRICE_ID
+    priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID ||
+    priceId === env.STRIPE_PRO_YEARLY_PRICE_ID
   ) {
     tier = "PRO";
   }
 
-  // Cast to access properties
-  const sub = subscription as unknown as { current_period_start: number; current_period_end: number; status: string };
+  // Map Stripe status to our status
+  const statusMap: Record<Stripe.Subscription.Status, string> = {
+    active: "active",
+    canceled: "cancelled",
+    incomplete: "incomplete",
+    incomplete_expired: "expired",
+    past_due: "past_due",
+    paused: "paused",
+    trialing: "trialing",
+    unpaid: "unpaid",
+  };
+
+  const previousTier = userSubscription.tier;
+  const period = getSubscriptionPeriod(subscription);
 
   await prisma.subscription.update({
     where: { id: userSubscription.id },
     data: {
       tier,
-      status: sub.status === "active" ? "active" : sub.status,
-      currentPeriodStart: new Date(sub.current_period_start * 1000),
-      currentPeriodEnd: new Date(sub.current_period_end * 1000),
+      status: statusMap[subscription.status] || subscription.status,
+      currentPeriodStart: period.start,
+      currentPeriodEnd: period.end,
     },
   });
+
+  // Audit tier changes
+  if (previousTier !== tier) {
+    const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
+    const isUpgrade = tierOrder[tier] > tierOrder[previousTier as keyof typeof tierOrder];
+
+    if (isUpgrade) {
+      await audit.subscriptionUpgrade(userSubscription.userId, previousTier, tier);
+    } else {
+      await audit.subscriptionDowngrade(userSubscription.userId, previousTier, tier);
+    }
+  }
 }
 
 async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer as string;
+  const customerId = getStringId(subscription.customer);
+
+  if (!customerId) return;
 
   const userSubscription = await prisma.subscription.findFirst({
     where: { stripeCustomerId: customerId },
@@ -152,26 +238,22 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
       currentPeriodEnd: null,
     },
   });
+
+  // Audit subscription cancellation
+  await audit.subscriptionCancel(userSubscription.userId);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  // Update subscription period dates
-  const inv = invoice as unknown as { subscription?: string | { id: string }; customer?: string | { id: string } };
-
-  const subscriptionId = typeof inv.subscription === 'string'
-    ? inv.subscription
-    : inv.subscription?.id;
-
+  // Access subscription from invoice
+  const inv = invoice as unknown as { subscription?: string | { id: string } };
+  const subscriptionId = getStringId(inv.subscription);
   if (!subscriptionId) return;
 
-  const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
-  const subData = stripeSubscription as unknown as Stripe.Subscription & { current_period_start: number; current_period_end: number };
-
-  const customerId = typeof inv.customer === 'string'
-    ? inv.customer
-    : inv.customer?.id;
-
+  const customerId = getStringId(invoice.customer);
   if (!customerId) return;
+
+  const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
+  const period = getSubscriptionPeriod(stripeSubscription);
 
   const userSubscription = await prisma.subscription.findFirst({
     where: { stripeCustomerId: customerId },
@@ -182,20 +264,18 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       where: { id: userSubscription.id },
       data: {
         status: "active",
-        currentPeriodStart: new Date(subData.current_period_start * 1000),
-        currentPeriodEnd: new Date(subData.current_period_end * 1000),
+        currentPeriodStart: period.start,
+        currentPeriodEnd: period.end,
       },
     });
+
+    // Audit successful payment
+    await audit.paymentSuccess(userSubscription.userId);
   }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const inv = invoice as unknown as { customer?: string | { id: string } };
-
-  const customerId = typeof inv.customer === 'string'
-    ? inv.customer
-    : inv.customer?.id;
-
+  const customerId = getStringId(invoice.customer);
   if (!customerId) return;
 
   const userSubscription = await prisma.subscription.findFirst({
@@ -209,5 +289,8 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         status: "past_due",
       },
     });
+
+    // Audit failed payment
+    await audit.paymentFailed(userSubscription.userId);
   }
 }

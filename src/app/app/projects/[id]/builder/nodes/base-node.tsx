@@ -27,17 +27,23 @@ const categoryStyles: Record<NodeCategory, { bg: string; border: string; header:
     header: "bg-gradient-to-r from-[#0891B2] to-[#22D3EE]",
     glow: "shadow-[0_0_16px_rgba(34,211,238,0.25)]",
   },
-  condition: {
-    bg: "bg-[rgba(167,139,250,0.08)]",
-    border: "border-[rgba(167,139,250,0.3)]",
-    header: "bg-gradient-to-r from-[#7C3AED] to-[#A78BFA]",
-    glow: "shadow-[0_0_16px_rgba(167,139,250,0.25)]",
+  priceaction: {
+    bg: "bg-[rgba(245,158,11,0.08)]",
+    border: "border-[rgba(245,158,11,0.3)]",
+    header: "bg-gradient-to-r from-[#D97706] to-[#F59E0B]",
+    glow: "shadow-[0_0_16px_rgba(245,158,11,0.25)]",
   },
   trading: {
     bg: "bg-[rgba(16,185,129,0.08)]",
     border: "border-[rgba(16,185,129,0.3)]",
     header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
     glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
+  },
+  trademanagement: {
+    bg: "bg-[rgba(168,85,247,0.08)]",
+    border: "border-[rgba(168,85,247,0.3)]",
+    header: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
+    glow: "shadow-[0_0_16px_rgba(168,85,247,0.25)]",
   },
 };
 
@@ -88,18 +94,11 @@ export function BaseNode({
         />
       )}
 
-      {/* Header */}
-      <div className={`${styles.header} px-3 py-2 rounded-t-[10px] flex items-center gap-2`}>
+      {/* Header - compact design, title only */}
+      <div className={`${styles.header} px-3 py-2.5 rounded-[10px] flex items-center justify-center gap-2`}>
         <span className="text-white">{icon}</span>
-        <span className="text-white text-sm font-medium truncate flex-1">{label}</span>
+        <span className="text-white text-sm font-medium truncate">{label}</span>
       </div>
-
-      {/* Content */}
-      {children && (
-        <div className="px-3 py-2 text-xs text-[#CBD5E1]">
-          {children}
-        </div>
-      )}
 
       {/* Output Handle - BOTTOM */}
       {outputHandles > 0 && (
@@ -125,9 +124,9 @@ export const NodeIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
-  condition: (
+  priceaction: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
     </svg>
   ),
   trading: (
@@ -153,6 +152,12 @@ export const NodeIcons = {
   takeProfit: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  tradeManagement: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
 };

@@ -31,7 +31,8 @@ export function StopLossNode({ id, data, selected }: Props) {
       category="trading"
       label={data.label}
       icon={NodeIcons.stopLoss}
-      inputHandles={data.method === "INDICATOR" ? 1 : 0}
+      inputHandles={1}
+      outputHandles={1}
     >
       <div className="space-y-1">
         <div className="flex justify-between">

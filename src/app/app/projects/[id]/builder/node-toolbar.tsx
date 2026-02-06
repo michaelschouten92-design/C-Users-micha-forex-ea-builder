@@ -10,14 +10,15 @@ import {
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
+  isPro?: boolean;
 }
 
-export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
+export function NodeToolbar({ onDragStart, isPro = false }: NodeToolbarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
     new Set()
   );
 
-  const categories: NodeCategory[] = ["timing", "indicator", "condition", "trading"];
+  const categories: NodeCategory[] = ["timing", "indicator", "priceaction", "trading", "trademanagement"];
 
   const toggleCategory = (category: NodeCategory) => {
     setExpandedCategories((prev) => {
@@ -31,18 +32,51 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
     });
   };
 
-  const categoryStyles: Record<NodeCategory, { color: string; bg: string }> = {
-    timing: { color: "text-white", bg: "bg-[#FF6B00]" },
-    indicator: { color: "text-white", bg: "bg-[#00B8D9]" },
-    condition: { color: "text-white", bg: "bg-[#9C27B0]" },
-    trading: { color: "text-white", bg: "bg-[#00C853]" },
+  // Professional gradient and styling for each category
+  const categoryStyles: Record<NodeCategory, {
+    gradient: string;
+    shadow: string;
+    hoverShadow: string;
+    border: string;
+  }> = {
+    timing: {
+      gradient: "bg-gradient-to-r from-[#FF6B00] to-[#FF8533]",
+      shadow: "shadow-[0_2px_8px_rgba(255,107,0,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(255,107,0,0.4)]",
+      border: "border-[#FF8533]/30"
+    },
+    indicator: {
+      gradient: "bg-gradient-to-r from-[#00B8D9] to-[#00D4FF]",
+      shadow: "shadow-[0_2px_8px_rgba(0,184,217,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,184,217,0.4)]",
+      border: "border-[#00D4FF]/30"
+    },
+    priceaction: {
+      gradient: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]",
+      shadow: "shadow-[0_2px_8px_rgba(245,158,11,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)]",
+      border: "border-[#FBBF24]/30"
+    },
+    trading: {
+      gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
+      shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
+      border: "border-[#69F0AE]/30"
+    },
+    trademanagement: {
+      gradient: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
+      shadow: "shadow-[0_2px_8px_rgba(168,85,247,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
+      border: "border-[#A855F7]/30"
+    },
   };
 
   const blockColors: Record<NodeCategory, string> = {
     timing: "text-[#FF6B00]",
     indicator: "text-[#00B8D9]",
-    condition: "text-[#9C27B0]",
+    priceaction: "text-[#F59E0B]",
     trading: "text-[#00C853]",
+    trademanagement: "text-[#A855F7]",
   };
 
   return (
@@ -57,14 +91,15 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
         <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
       </div>
 
-      <div className="p-2">
+      <div className="p-2 space-y-2">
         {categories.map((category) => {
           const templates = NODE_TEMPLATES.filter((t) => t.category === category);
           const isExpanded = expandedCategories.has(category);
+          const styles = categoryStyles[category];
 
           return (
-            <div key={category} className="mb-2">
-              {/* Category Header */}
+            <div key={category}>
+              {/* Category Header - Professional Design */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -72,16 +107,29 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
-                className={`w-full flex items-center justify-between px-4 py-4 text-lg font-bold text-white rounded-lg transition-all duration-200 hover:opacity-90 ${categoryStyles[category].bg}`}
+                className={`
+                  w-full flex items-center justify-between px-4 py-3
+                  text-white font-semibold text-sm tracking-wide
+                  rounded-xl border
+                  transition-all duration-200 ease-out
+                  hover:scale-[1.02] active:scale-[0.98]
+                  ${styles.gradient}
+                  ${styles.shadow}
+                  ${styles.hoverShadow}
+                  ${styles.border}
+                `}
               >
+                {/* Label */}
                 <span>
                   {getCategoryLabel(category)}
                 </span>
+
+                {/* Chevron */}
                 <svg
-                  className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 opacity-80 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="white"
+                  stroke="currentColor"
                   strokeWidth={2.5}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -90,22 +138,48 @@ export function NodeToolbar({ onDragStart }: NodeToolbarProps) {
 
               {/* Block List */}
               {isExpanded && (
-                <div className="mt-1 space-y-1">
-                  {templates.map((template, index) => (
-                    <div
-                      key={`${template.type}-${index}`}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, template)}
-                      className="px-3 py-2.5 rounded-lg bg-[#2A1438] border border-[rgba(79,70,229,0.2)] cursor-grab hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_0_12px_rgba(79,70,229,0.15)] active:cursor-grabbing transition-all duration-200"
-                    >
-                      <div className={`text-sm font-medium ${blockColors[template.category]}`}>
-                        {template.label}
+                <div className="mt-2 space-y-1 pl-1">
+                  {templates.map((template, index) => {
+                    const isLocked = template.proOnly && !isPro;
+
+                    return (
+                      <div
+                        key={`${template.type}-${index}`}
+                        draggable={!isLocked}
+                        onDragStart={(e) => {
+                          if (isLocked) {
+                            e.preventDefault();
+                            return;
+                          }
+                          onDragStart(e, template);
+                        }}
+                        className={`px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 ${
+                          isLocked
+                            ? "opacity-60 cursor-not-allowed"
+                            : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
+                        }`}
+                        title={isLocked ? "Upgrade to Pro to use this block" : template.description}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={`text-sm font-medium ${blockColors[template.category]}`}>
+                            {template.label}
+                          </div>
+                          {template.proOnly && (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                              isPro
+                                ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"
+                                : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
+                            }`}>
+                              {isLocked ? "🔒 PRO" : "PRO"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#94A3B8] truncate mt-0.5">
+                          {template.description}
+                        </div>
                       </div>
-                      <div className="text-xs text-[#94A3B8] truncate mt-0.5">
-                        {template.description}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

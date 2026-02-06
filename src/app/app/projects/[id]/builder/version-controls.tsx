@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ExportButton } from "./export-button";
 import { ValidationStatus } from "./validation-status";
 import type { ValidationResult } from "./strategy-validation";
+import type { BuildJsonSchema } from "@/types/builder";
 
 interface Version {
   id: string;
   versionNo: number;
   createdAt: string;
+  buildJson: BuildJsonSchema; // Now included in the response
 }
 
 interface VersionControlsProps {
@@ -17,8 +19,9 @@ interface VersionControlsProps {
   hasNodes: boolean;
   validation: ValidationResult;
   onSave: () => Promise<void>;
-  onLoad: (versionId: string) => Promise<void>;
+  onLoad: (versionId: string, buildJson: BuildJsonSchema) => void; // Changed to sync with cached data
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
+  canExportMQL5?: boolean;
 }
 
 export function VersionControls({
@@ -29,9 +32,9 @@ export function VersionControls({
   onSave,
   onLoad,
   autoSaveStatus,
+  canExportMQL5 = false,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -69,15 +72,14 @@ export function VersionControls({
     }
   };
 
-  const handleLoad = async (versionId: string) => {
-    setLoading(true);
+  // Load version from cache (no additional network request needed)
+  const handleLoad = useCallback((versionId: string) => {
     setShowDropdown(false);
-    try {
-      await onLoad(versionId);
-    } finally {
-      setLoading(false);
+    const version = versions.find((v) => v.id === versionId);
+    if (version) {
+      onLoad(versionId, version.buildJson);
     }
-  };
+  }, [versions, onLoad]);
 
   const latestVersion = versions[0]?.versionNo ?? 0;
   const nextVersion = latestVersion + 1;
@@ -108,19 +110,12 @@ export function VersionControls({
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            disabled={loading || versions.length === 0}
+            disabled={versions.length === 0}
             className="flex items-center gap-2 px-4 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm font-medium rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-[rgba(79,70,229,0.3)] transition-all duration-200"
           >
-            {loading ? (
-              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            )}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
             Load Version
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -154,7 +149,12 @@ export function VersionControls({
         <div className="w-px h-6 bg-[rgba(79,70,229,0.3)]" />
 
         {/* Export Button */}
-        <ExportButton projectId={projectId} hasNodes={hasNodes} canExport={validation.canExport} />
+        <ExportButton
+          projectId={projectId}
+          hasNodes={hasNodes}
+          canExport={validation.canExport}
+          canExportMQL5={canExportMQL5}
+        />
       </div>
 
       {/* Right side - Validation Status */}

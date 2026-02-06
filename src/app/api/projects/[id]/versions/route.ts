@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createVersionSchema, formatZodErrors } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
-import type { BuildJsonSchema } from "@/types/builder";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -31,6 +31,7 @@ export async function GET(request: Request, { params }: Params) {
       id: true,
       versionNo: true,
       createdAt: true,
+      buildJson: true, // Include buildJson to avoid N+1 queries when loading versions
     },
   });
 
@@ -56,16 +57,16 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const body = await request.json();
-  const buildJson: BuildJsonSchema = body.buildJson;
+  const validation = createVersionSchema.safeParse(body);
 
-  if (!buildJson) {
-    return NextResponse.json({ error: "buildJson is required" }, { status: 400 });
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: formatZodErrors(validation.error) },
+      { status: 400 }
+    );
   }
 
-  // Validate buildJson structure
-  if (buildJson.version !== "1.0") {
-    return NextResponse.json({ error: "Invalid buildJson version" }, { status: 400 });
-  }
+  const { buildJson } = validation.data;
 
   // Get the next version number
   const lastVersion = await prisma.buildVersion.findFirst({
@@ -78,9 +79,12 @@ export async function POST(request: Request, { params }: Params) {
 
   // Update metadata timestamps
   const now = new Date().toISOString();
-  buildJson.metadata = {
-    ...buildJson.metadata,
-    updatedAt: now,
+  const updatedBuildJson = {
+    ...buildJson,
+    metadata: {
+      ...buildJson.metadata,
+      updatedAt: now,
+    },
   };
 
   // Create the new version
@@ -88,7 +92,7 @@ export async function POST(request: Request, { params }: Params) {
     data: {
       projectId: id,
       versionNo: nextVersionNo,
-      buildJson: buildJson as unknown as Prisma.InputJsonValue,
+      buildJson: updatedBuildJson as Prisma.InputJsonValue,
     },
   });
 

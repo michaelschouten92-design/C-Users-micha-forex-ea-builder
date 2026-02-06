@@ -17,16 +17,12 @@ export function MACDNode({ id, data, selected }: Props) {
     >
       <div className="space-y-1">
         <div className="flex justify-between">
-          <span className="text-zinc-500">Fast:</span>
-          <span className="font-medium">{data.fastPeriod}</span>
+          <span className="text-zinc-500">Timeframe:</span>
+          <span className="font-medium">{data.timeframe}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-zinc-500">Slow:</span>
-          <span className="font-medium">{data.slowPeriod}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Signal:</span>
-          <span className="font-medium">{data.signalPeriod}</span>
+          <span className="text-zinc-500">Periods:</span>
+          <span className="font-medium">{data.fastPeriod}/{data.slowPeriod}/{data.signalPeriod}</span>
         </div>
       </div>
     </BaseNode>

@@ -1,16 +1,45 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { forgotPasswordSchema, formatZodErrors } from "@/lib/validations";
+import { env } from "@/lib/env";
+import {
+  passwordResetRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
+import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
-  try {
-    const { email } = await request.json();
+  const log = createApiLogger("/api/auth/forgot-password", "POST");
 
-    if (!email) {
+  try {
+    const body = await request.json();
+    const validation = forgotPasswordSchema.safeParse(body);
+
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Email is required" },
+        { error: "Validation failed", details: formatZodErrors(validation.error) },
         { status: 400 }
+      );
+    }
+
+    const { email } = validation.data;
+
+    // Check rate limit (5 requests per 15 minutes per email)
+    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, email.toLowerCase());
+    const rateLimitHeaders = createRateLimitHeaders(rateLimitResult);
+
+    if (!rateLimitResult.success) {
+      // Return same message as success to prevent email enumeration
+      // but with rate limit headers for monitoring
+      log.warn({ email: email.substring(0, 3) + "***" }, "Password reset rate limit exceeded");
+      return NextResponse.json(
+        {
+          message: "If an account with this email exists, a reset link has been sent.",
+        },
+        { headers: rateLimitHeaders }
       );
     }
 
@@ -21,9 +50,12 @@ export async function POST(request: Request) {
 
     // Always return success to prevent email enumeration
     if (!user || !user.passwordHash) {
-      return NextResponse.json({
-        message: "If an account with this email exists, a reset link has been sent.",
-      });
+      return NextResponse.json(
+        {
+          message: "If an account with this email exists, a reset link has been sent.",
+        },
+        { headers: rateLimitHeaders }
+      );
     }
 
     // Delete any existing tokens for this email
@@ -45,17 +77,21 @@ export async function POST(request: Request) {
     });
 
     // Build reset URL
-    const baseUrl = process.env.AUTH_URL || "http://localhost:3000";
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    const resetUrl = `${env.AUTH_URL}/reset-password?token=${token}`;
 
     // Send email with reset link
     await sendPasswordResetEmail(email, resetUrl);
 
-    return NextResponse.json({
-      message: "If an account with this email exists, a reset link has been sent.",
-    });
+    log.info({ email: email.substring(0, 3) + "***" }, "Password reset email sent");
+
+    return NextResponse.json(
+      {
+        message: "If an account with this email exists, a reset link has been sent.",
+      },
+      { headers: rateLimitHeaders }
+    );
   } catch (error) {
-    console.error("Forgot password error:", error);
+    log.error({ error: extractErrorDetails(error) }, "Forgot password error");
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }

@@ -17,16 +17,16 @@ export function RSINode({ id, data, selected }: Props) {
     >
       <div className="space-y-1">
         <div className="flex justify-between">
+          <span className="text-zinc-500">Timeframe:</span>
+          <span className="font-medium">{data.timeframe}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-zinc-500">Period:</span>
           <span className="font-medium">{data.period}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-zinc-500">Overbought:</span>
-          <span className="font-medium">{data.overboughtLevel}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Oversold:</span>
-          <span className="font-medium">{data.oversoldLevel}</span>
+          <span className="text-zinc-500">OB/OS:</span>
+          <span className="font-medium">{data.overboughtLevel}/{data.oversoldLevel}</span>
         </div>
       </div>
     </BaseNode>
