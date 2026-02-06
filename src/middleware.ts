@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
@@ -6,19 +5,35 @@ import {
   createCsrfResponse,
   createCsrfErrorResponse,
   shouldProtectRoute,
-  CSRF_EXCLUDED_ROUTES,
 } from "@/lib/csrf";
 
 /**
- * Proxy function for Next.js 16 (replaces middleware)
- *
- * This proxy:
- * 1. Handles authentication redirects
- * 2. Sets a CSRF token cookie on every response
- * 3. Validates CSRF token on state-changing requests (POST, PUT, PATCH, DELETE)
- * 4. Excludes certain routes (webhooks, auth callbacks)
+ * Session cookie names used by NextAuth v5.
+ * In production, cookies are prefixed with __Secure-.
  */
-export async function proxy(request: NextRequest) {
+const SESSION_COOKIE_DEV = "authjs.session-token";
+const SESSION_COOKIE_PROD = "__Secure-authjs.session-token";
+
+function hasSessionCookie(request: NextRequest): boolean {
+  return (
+    request.cookies.has(SESSION_COOKIE_DEV) ||
+    request.cookies.has(SESSION_COOKIE_PROD)
+  );
+}
+
+/**
+ * Next.js middleware for auth redirects and CSRF protection.
+ *
+ * Auth redirects use a lightweight cookie-existence check (no DB or crypto)
+ * so this runs safely in Edge Runtime. Full session validation happens in
+ * API route handlers via auth().
+ *
+ * CSRF uses the double-submit cookie pattern:
+ * 1. Sets a CSRF token cookie on every response
+ * 2. Validates CSRF token on state-changing requests (POST, PUT, PATCH, DELETE)
+ * 3. Excludes webhooks and NextAuth internal routes
+ */
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ============================================
@@ -27,36 +42,22 @@ export async function proxy(request: NextRequest) {
   const isOnApp = pathname.startsWith("/app");
   const isOnLogin = pathname === "/login";
 
-  if (isOnApp || isOnLogin) {
-    const session = await auth();
-    const isLoggedIn = !!session?.user;
+  if (isOnApp && !hasSessionCookie(request)) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
-    // Redirect unauthenticated users from /app to /login
-    if (isOnApp && !isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Redirect authenticated users from /login to /app
-    if (isOnLogin && isLoggedIn) {
-      return NextResponse.redirect(new URL("/app", request.url));
-    }
+  if (isOnLogin && hasSessionCookie(request)) {
+    return NextResponse.redirect(new URL("/app", request.url));
   }
 
   // ============================================
   // CSRF PROTECTION
   // ============================================
-
-  // Skip CSRF for excluded routes (webhooks with their own auth)
-  const isExcluded = CSRF_EXCLUDED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  // For state-changing methods on API routes, validate CSRF
   const isStateChanging = ["POST", "PUT", "PATCH", "DELETE"].includes(
     request.method
   );
 
-  if (!isExcluded && isStateChanging && shouldProtectRoute(pathname)) {
+  if (isStateChanging && shouldProtectRoute(pathname)) {
     const isValid = validateCsrfToken(request);
     if (!isValid) {
       return createCsrfErrorResponse();
@@ -68,7 +69,6 @@ export async function proxy(request: NextRequest) {
   return createCsrfResponse(response, request);
 }
 
-// Configure which routes the proxy runs on
 export const config = {
   matcher: [
     /*
@@ -76,7 +76,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public files (public directory)
+     * - public files (images, SVGs)
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

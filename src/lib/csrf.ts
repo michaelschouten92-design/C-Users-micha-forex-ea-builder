@@ -121,36 +121,42 @@ export function createCsrfErrorResponse(): NextResponse {
 }
 
 /**
- * Routes that should be protected by CSRF
- * Add patterns here to protect specific routes
- */
-export const CSRF_PROTECTED_ROUTES = [
-  "/api/projects",
-  "/api/stripe/checkout",
-  "/api/stripe/portal",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password",
-];
-
-/**
  * Routes that should be excluded from CSRF protection
  * (e.g., webhooks that use their own authentication)
  */
 export const CSRF_EXCLUDED_ROUTES = [
   "/api/stripe/webhook", // Uses Stripe signature verification
-  "/api/auth", // NextAuth handles its own CSRF
 ];
 
 /**
  * Check if a route should have CSRF protection
  */
 export function shouldProtectRoute(pathname: string): boolean {
-  // Check exclusions first
+  // Check explicit exclusions first (e.g., Stripe webhook)
   if (CSRF_EXCLUDED_ROUTES.some((route) => pathname.startsWith(route))) {
     return false;
   }
 
-  // Check if it's an API route that modifies data
+  // Exclude NextAuth internal routes (catch-all at /api/auth/[...nextauth])
+  // but NOT custom auth routes like /api/auth/forgot-password or /api/auth/reset-password.
+  // NextAuth routes go through /api/auth/callback/*, /api/auth/signin, /api/auth/signout, etc.
+  // Our custom routes are explicitly defined and don't match the catch-all.
+  // We exclude paths that match NextAuth's known sub-routes.
+  const nextAuthSubPaths = [
+    "/api/auth/callback",
+    "/api/auth/signin",
+    "/api/auth/signout",
+    "/api/auth/session",
+    "/api/auth/csrf",
+    "/api/auth/providers",
+    "/api/auth/error",
+    "/api/auth/verify-request",
+  ];
+  if (nextAuthSubPaths.some((route) => pathname.startsWith(route))) {
+    return false;
+  }
+
+  // All other API routes should be protected
   if (pathname.startsWith("/api/")) {
     return true;
   }
