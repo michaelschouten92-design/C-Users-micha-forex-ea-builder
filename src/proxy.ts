@@ -22,18 +22,17 @@ function hasSessionCookie(request: NextRequest): boolean {
 }
 
 /**
- * Next.js middleware for auth redirects and CSRF protection.
+ * Next.js proxy for auth redirects and CSRF protection.
  *
- * Auth redirects use a lightweight cookie-existence check (no DB or crypto)
- * so this runs safely in Edge Runtime. Full session validation happens in
- * API route handlers via auth().
+ * Auth redirects use a lightweight cookie-existence check (no DB or crypto).
+ * Full session validation happens in API route handlers via auth().
  *
  * CSRF uses the double-submit cookie pattern:
  * 1. Sets a CSRF token cookie on every response
  * 2. Validates CSRF token on state-changing requests (POST, PUT, PATCH, DELETE)
  * 3. Excludes webhooks and NextAuth internal routes
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ============================================
