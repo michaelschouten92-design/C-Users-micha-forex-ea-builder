@@ -11,6 +11,16 @@ import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframe } from "../types";
 import { createInput } from "./shared";
 
+// Helper to add handle validation after creation
+function addHandleValidation(varPrefix: string, label: string, code: GeneratedCode): void {
+  code.onInit.push(`if(${varPrefix}Handle == INVALID_HANDLE) { Print("Failed to create ${label} indicator handle"); return(INIT_FAILED); }`);
+}
+
+// Helper to add CopyBuffer with error checking
+function addCopyBuffer(handle: string, bufferIndex: number, count: number, target: string, code: GeneratedCode): void {
+  code.onTick.push(`if(CopyBuffer(${handle}, ${bufferIndex}, 0, ${count}, ${target}) < ${count}) return;`);
+}
+
 export function generateIndicatorCode(
   node: BuilderNode,
   index: number,
@@ -37,8 +47,9 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iMA(_Symbol, ${getTimeframe(ma.timeframe)}, InpMA${index}Period, InpMA${index}Shift, ${method}, ${price});`
         );
+        addHandleValidation(varPrefix, `MA ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}Buffer);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
         break;
       }
 
@@ -54,8 +65,9 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iRSI(_Symbol, ${getTimeframe(rsi.timeframe)}, InpRSI${index}Period, ${price});`
         );
+        addHandleValidation(varPrefix, `RSI ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}Buffer);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
         break;
       }
 
@@ -72,10 +84,11 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iMACD(_Symbol, ${getTimeframe(macd.timeframe)}, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, ${price});`
         );
+        addHandleValidation(varPrefix, `MACD ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}MainBuffer);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 1, 0, 3, ${varPrefix}SignalBuffer);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}SignalBuffer`, code);
         break;
       }
 
@@ -93,12 +106,13 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iBands(_Symbol, ${getTimeframe(bb.timeframe)}, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, ${price});`
         );
+        addHandleValidation(varPrefix, `BB ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}UpperBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MiddleBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}LowerBuffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}MiddleBuffer);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 1, 0, 3, ${varPrefix}UpperBuffer);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 2, 0, 3, ${varPrefix}LowerBuffer);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MiddleBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}UpperBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 2, 3, `${varPrefix}LowerBuffer`, code);
         break;
       }
 
@@ -111,8 +125,9 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iATR(_Symbol, ${getTimeframe(atr.timeframe)}, InpATR${index}Period);`
         );
+        addHandleValidation(varPrefix, `ATR ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}Buffer);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
         break;
       }
 
@@ -128,12 +143,13 @@ export function generateIndicatorCode(
         code.onInit.push(
           `${varPrefix}Handle = iADX(_Symbol, ${getTimeframe(adx.timeframe)}, InpADX${index}Period);`
         );
+        addHandleValidation(varPrefix, `ADX ${index + 1}`, code);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}PlusDIBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MinusDIBuffer, true);`);
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 0, 0, 3, ${varPrefix}MainBuffer);`);   // ADX
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 1, 0, 3, ${varPrefix}PlusDIBuffer);`); // +DI
-        code.onTick.push(`CopyBuffer(${varPrefix}Handle, 2, 0, 3, ${varPrefix}MinusDIBuffer);`); // -DI
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code);   // ADX
+        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}PlusDIBuffer`, code); // +DI
+        addCopyBuffer(`${varPrefix}Handle`, 2, 3, `${varPrefix}MinusDIBuffer`, code); // -DI
         break;
       }
     }

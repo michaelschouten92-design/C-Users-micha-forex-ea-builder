@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { memo, useId } from "react";
 import type { Node } from "@xyflow/react";
 import {
   SelectField,
@@ -112,7 +112,7 @@ const TIMEFRAME_OPTIONS: { value: Timeframe; label: string }[] = [
   { value: "MN1", label: "1 Month" },
 ];
 
-export function PropertiesPanel({
+export const PropertiesPanel = memo(function PropertiesPanel({
   selectedNode,
   onNodeChange,
   onNodeDelete,
@@ -215,7 +215,7 @@ export function PropertiesPanel({
       </div>
     </aside>
   );
-}
+});
 
 // Node-specific fields component
 function NodeFields({

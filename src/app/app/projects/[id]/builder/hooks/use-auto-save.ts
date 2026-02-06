@@ -34,28 +34,40 @@ export function useAutoSave({
     JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] })
   );
 
+  // Use refs to always have latest state in callbacks (prevents stale closures)
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  const initialDataRef = useRef(initialData);
+  nodesRef.current = nodes;
+  edgesRef.current = edges;
+  initialDataRef.current = initialData;
+
   // Check for unsaved changes
   const currentState = JSON.stringify({ nodes, edges });
   const hasUnsavedChanges = currentState !== savedStateRef.current;
 
   // Mark current state as saved
   const markAsSaved = useCallback(() => {
-    savedStateRef.current = JSON.stringify({ nodes, edges });
-  }, [nodes, edges]);
+    savedStateRef.current = JSON.stringify({ nodes: nodesRef.current, edges: edgesRef.current });
+  }, []);
 
-  // Save to server
+  // Save to server - stable reference, reads latest state from refs
   const saveToServer = useCallback(
     async (isAutosave: boolean = false): Promise<boolean> => {
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
+      const currentInitialData = initialDataRef.current;
+
       const buildJson: BuildJsonSchema = {
         version: "1.0",
-        nodes: nodes as BuilderNode[],
-        edges: edges as BuilderEdge[],
+        nodes: currentNodes as BuilderNode[],
+        edges: currentEdges as BuilderEdge[],
         viewport: { x: 0, y: 0, zoom: 1 },
         metadata: {
-          createdAt: initialData?.metadata?.createdAt ?? new Date().toISOString(),
+          createdAt: currentInitialData?.metadata?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        settings: initialData?.settings ?? {
+        settings: currentInitialData?.settings ?? {
           magicNumber: 123456,
           comment: "EA Builder Strategy",
           maxOpenTrades: 1,
@@ -75,7 +87,7 @@ export function useAutoSave({
         });
 
         if (res.ok) {
-          savedStateRef.current = JSON.stringify({ nodes, edges });
+          savedStateRef.current = JSON.stringify({ nodes: currentNodes, edges: currentEdges });
           if (isAutosave) {
             setAutoSaveStatus("saved");
             setTimeout(() => setAutoSaveStatus("idle"), 2000);
@@ -101,7 +113,7 @@ export function useAutoSave({
         return false;
       }
     },
-    [nodes, edges, projectId, initialData]
+    [projectId]
   );
 
   // Autosave effect

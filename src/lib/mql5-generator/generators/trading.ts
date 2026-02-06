@@ -76,8 +76,9 @@ export function generateStopLossCode(
       code.globalVariables.push("int atrHandle;");
       code.globalVariables.push("double atrBuffer[];");
       code.onInit.push("atrHandle = iATR(_Symbol, PERIOD_CURRENT, InpATRPeriod);");
+      code.onInit.push('if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }');
       code.onInit.push("ArraySetAsSeries(atrBuffer, true);");
-      code.onTick.push("CopyBuffer(atrHandle, 0, 0, 1, atrBuffer);");
+      code.onTick.push("if(CopyBuffer(atrHandle, 0, 0, 1, atrBuffer) < 1) return;");
       code.onTick.push("double slPips = (atrBuffer[0] / _Point) * InpATRMultiplier;");
       break;
 
@@ -306,17 +307,24 @@ export function generateEntryLogic(
     code.onTick.push(`bool sellCondition = ${sellConditions.join(" && ")};`);
   }
 
+  // One-trade-per-bar protection
+  code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
+  code.onTick.push("");
+  code.onTick.push("//--- One-trade-per-bar check");
+  code.onTick.push("datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);");
+  code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
+
   // Generate entry execution
   code.onTick.push("");
   code.onTick.push("//--- Execute Entry");
-  code.onTick.push(`if(positionsCount < ${ctx.maxOpenTrades})`);
+  code.onTick.push(`if(positionsCount < ${ctx.maxOpenTrades} && newBar)`);
   code.onTick.push("{");
 
   // Only generate buy logic if there's a Place Buy node
   if (hasBuyNode) {
     code.onTick.push("   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) == 0)");
     code.onTick.push("   {");
-    code.onTick.push("      OpenBuy(buyLotSize, slPips, tpPips);");
+    code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
     code.onTick.push("   }");
   }
 
@@ -324,7 +332,7 @@ export function generateEntryLogic(
   if (hasSellNode) {
     code.onTick.push("   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) == 0)");
     code.onTick.push("   {");
-    code.onTick.push("      OpenSell(sellLotSize, slPips, tpPips);");
+    code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
     code.onTick.push("   }");
   }
 

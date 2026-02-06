@@ -50,6 +50,7 @@ function generateBreakevenStopCode(
     code.globalVariables.push("int beATRHandle;");
     code.globalVariables.push("double beATRBuffer[];");
     code.onInit.push("beATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpBEATRPeriod);");
+    code.onInit.push('if(beATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Breakeven"); return(INIT_FAILED); }');
     code.onInit.push("ArraySetAsSeries(beATRBuffer, true);");
   }
   code.inputs.push(createInput(node, "lockPips", "InpBELockPips", "double", data.lockPips, "Breakeven Lock (pips above entry)"));
@@ -57,7 +58,7 @@ function generateBreakevenStopCode(
   code.onTick.push("// Breakeven Stop Management");
 
   if (data.trigger === "ATR") {
-    code.onTick.push("CopyBuffer(beATRHandle, 0, 0, 1, beATRBuffer);");
+    code.onTick.push("if(CopyBuffer(beATRHandle, 0, 0, 1, beATRBuffer) < 1) return;");
   }
 
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");

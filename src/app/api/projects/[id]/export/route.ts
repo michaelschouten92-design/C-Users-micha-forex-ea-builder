@@ -274,7 +274,43 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     errors.push("No signal nodes found. Add at least one Indicator or Price Action node.");
   }
 
+  // Warn about disconnected nodes (not connected to timing flow)
+  const connectedIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, timingTypes);
+  const disconnectedNodes = buildJson.nodes.filter(
+    (n) => !connectedIds.has(n.id) && !timingTypes.includes(n.type as string) && !("timingType" in n.data)
+  );
+  if (disconnectedNodes.length > 0) {
+    const labels = disconnectedNodes.map((n) => n.data?.label || n.type).join(", ");
+    errors.push(`Disconnected nodes found: ${labels}. Connect them to the strategy flow or remove them.`);
+  }
+
   return errors;
+}
+
+// BFS to find all nodes connected from timing nodes
+function getConnectedNodeIds(
+  nodes: BuildJsonSchema["nodes"],
+  edges: BuildJsonSchema["edges"],
+  startNodeTypes: string[]
+): Set<string> {
+  const connectedIds = new Set<string>();
+  const startNodes = nodes.filter(
+    (n) => startNodeTypes.includes(n.type as string) || ("timingType" in n.data)
+  );
+  const queue: string[] = startNodes.map((n) => n.id);
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (connectedIds.has(currentId)) continue;
+    connectedIds.add(currentId);
+    const outgoing = edges.filter((e) => e.source === currentId);
+    for (const edge of outgoing) {
+      if (!connectedIds.has(edge.target)) {
+        queue.push(edge.target);
+      }
+    }
+  }
+  return connectedIds;
 }
 
 function sanitizeFileName(name: string): string {

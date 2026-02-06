@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import type { NodeCategory } from "@/types/builder";
 
@@ -47,7 +48,7 @@ const categoryStyles: Record<NodeCategory, { bg: string; border: string; header:
   },
 };
 
-export function BaseNode({
+export const BaseNode = memo(function BaseNode({
   id,
   selected,
   category,
@@ -110,7 +111,7 @@ export function BaseNode({
       )}
     </div>
   );
-}
+});
 
 // Icons for different node types
 export const NodeIcons = {

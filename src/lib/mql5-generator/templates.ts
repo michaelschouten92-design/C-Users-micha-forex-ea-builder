@@ -63,17 +63,25 @@ export function generateOnInit(ctx: GeneratorContext, initCode: string[]): strin
 //+------------------------------------------------------------------+
 int OnInit()
 {
+   //--- Validate symbol is tradeable
+   if(!SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE))
+   {
+      Print("Symbol ", _Symbol, " is not available for trading");
+      return(INIT_FAILED);
+   }
+
    //--- Set magic number for trade operations
    trade.SetExpertMagicNumber(InpMagicNumber);
 
    //--- Set allowed slippage
    trade.SetDeviationInPoints(10);
 
-   //--- Set trade comment
+   //--- Set trade fill type
    trade.SetTypeFillingBySymbol(_Symbol);
 
 ${initCode.map(line => "   " + line).join("\n")}
 
+   Print("${ctx.projectName} initialized successfully on ", _Symbol, " ", EnumToString(Period()));
    return(INIT_SUCCEEDED);
 }
 
