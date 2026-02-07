@@ -8,7 +8,7 @@ describe("plans", () => {
     });
 
     it("FREE tier has correct limits", () => {
-      expect(PLANS.FREE.limits.maxProjects).toBe(5);
+      expect(PLANS.FREE.limits.maxProjects).toBe(3);
       expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(2);
       expect(PLANS.FREE.limits.canExportMQL5).toBe(true);
       expect(PLANS.FREE.limits.canUseTradeManagement).toBe(false);

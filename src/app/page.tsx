@@ -468,7 +468,7 @@ export default async function Home() {
               },
               {
                 q: "What do I get with the free plan?",
-                a: "You get full access to the visual builder with up to 5 projects and 2 MQL5 exports per month. No credit card required.",
+                a: "You get full access to the visual builder with up to 3 projects and 2 MQL5 exports per month. No credit card required.",
               },
               {
                 q: "Can I use the exported EA in live trading?",
@@ -530,7 +530,7 @@ export default async function Home() {
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Up to 5 projects
+                  Up to 3 projects
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -565,7 +565,7 @@ export default async function Home() {
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Up to 25 projects
+                  Up to 15 projects
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
