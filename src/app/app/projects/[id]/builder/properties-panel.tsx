@@ -21,6 +21,7 @@ import type {
   BollingerBandsNodeData,
   ATRNodeData,
   ADXNodeData,
+  StochasticNodeData,
   CandlestickPatternNodeData,
   SupportResistanceNodeData,
   RangeBreakoutNodeData,
@@ -266,6 +267,8 @@ function NodeFields({
         return <ATRFields data={data as ATRNodeData} onChange={onChange} />;
       case "adx":
         return <ADXFields data={data as ADXNodeData} onChange={onChange} />;
+      case "stochastic":
+        return <StochasticFields data={data as StochasticNodeData} onChange={onChange} />;
     }
   }
 
@@ -780,6 +783,48 @@ function ADXFields({
       </div>
       <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
         ADX &gt; {data.trendLevel} indicates a trending market. +DI &gt; -DI suggests uptrend, -DI &gt; +DI suggests downtrend.
+      </div>
+    </>
+  );
+}
+
+function StochasticFields({
+  data,
+  onChange,
+}: {
+  data: StochasticNodeData;
+  onChange: (updates: Partial<StochasticNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField label="K Period" value={data.kPeriod} min={1} max={500} onChange={(v) => onChange({ kPeriod: v })} />
+        <OptimizableFieldCheckbox fieldName="kPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField label="D Period" value={data.dPeriod} min={1} max={500} onChange={(v) => onChange({ dPeriod: v })} />
+        <OptimizableFieldCheckbox fieldName="dPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField label="Slowing" value={data.slowing} min={1} max={500} onChange={(v) => onChange({ slowing: v })} />
+        <OptimizableFieldCheckbox fieldName="slowing" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField label="Overbought Level" value={data.overboughtLevel} min={50} max={100} onChange={(v) => onChange({ overboughtLevel: v })} />
+        <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField label="Oversold Level" value={data.oversoldLevel} min={0} max={50} onChange={(v) => onChange({ oversoldLevel: v })} />
+        <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
+      </div>
+      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+        Stochastic measures momentum. %K crossing above %D in oversold suggests buy, crossing below %D in overbought suggests sell.
       </div>
     </>
   );

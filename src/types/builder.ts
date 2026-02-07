@@ -126,13 +126,25 @@ export interface ADXNodeData extends BaseNodeData {
   trendLevel: number; // Level above which market is considered trending (default: 25)
 }
 
+export interface StochasticNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "stochastic";
+  timeframe: Timeframe;
+  kPeriod: number;
+  dPeriod: number;
+  slowing: number;
+  overboughtLevel: number;
+  oversoldLevel: number;
+}
+
 export type IndicatorNodeData =
   | MovingAverageNodeData
   | RSINodeData
   | MACDNodeData
   | BollingerBandsNodeData
   | ATRNodeData
-  | ADXNodeData;
+  | ADXNodeData
+  | StochasticNodeData;
 
 // Price Action Nodes
 export type CandlestickPattern =
@@ -330,6 +342,7 @@ export type BuilderNodeType =
   | "bollinger-bands"
   | "atr"
   | "adx"
+  | "stochastic"
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
@@ -550,6 +563,23 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       period: 14,
       trendLevel: 25,
     } as ADXNodeData,
+  },
+  {
+    type: "stochastic",
+    label: "Stochastic",
+    category: "indicator",
+    description: "Stochastic Oscillator (%K, %D)",
+    defaultData: {
+      label: "Stochastic",
+      category: "indicator",
+      indicatorType: "stochastic",
+      timeframe: "H1",
+      kPeriod: 14,
+      dPeriod: 3,
+      slowing: 3,
+      overboughtLevel: 80,
+      oversoldLevel: 20,
+    } as StochasticNodeData,
   },
   // Price Action
   {

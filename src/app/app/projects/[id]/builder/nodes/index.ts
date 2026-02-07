@@ -10,6 +10,7 @@ import { MACDNode } from "./indicators/macd-node";
 import { BollingerBandsNode } from "./indicators/bollinger-bands-node";
 import { ATRNode } from "./indicators/atr-node";
 import { ADXNode } from "./indicators/adx-node";
+import { StochasticNode } from "./indicators/stochastic-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
@@ -35,6 +36,7 @@ export const nodeTypes: NodeTypes = {
   "bollinger-bands": BollingerBandsNode,
   "atr": ATRNode,
   "adx": ADXNode,
+  "stochastic": StochasticNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
   "range-breakout": RangeBreakoutNode,
@@ -60,6 +62,7 @@ export {
   BollingerBandsNode,
   ATRNode,
   ADXNode,
+  StochasticNode,
   CandlestickPatternNode,
   SupportResistanceNode,
   RangeBreakoutNode,

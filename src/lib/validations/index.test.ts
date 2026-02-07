@@ -4,6 +4,8 @@ import {
   updateProjectSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  checkoutRequestSchema,
+  exportRequestSchema,
   formatZodErrors,
 } from "./index";
 import { z } from "zod";
@@ -123,6 +125,64 @@ describe("validations", () => {
       const result = resetPasswordSchema.safeParse({
         token: "",
         password: "securepassword",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("checkoutRequestSchema", () => {
+    it("validates valid checkout request", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "STARTER",
+        interval: "monthly",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("validates yearly interval", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "PRO",
+        interval: "yearly",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid plan", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "INVALID",
+        interval: "monthly",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects invalid interval", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "STARTER",
+        interval: "weekly",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects FREE plan", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "FREE",
+        interval: "monthly",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("exportRequestSchema", () => {
+    it("validates MQ5 export", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "MQ5",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid export type", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "INVALID",
       });
       expect(result.success).toBe(false);
     });

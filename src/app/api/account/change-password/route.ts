@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { validateCsrfToken } from "@/lib/csrf";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -14,11 +13,6 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const csrfValid = validateCsrfToken(request);
-  if (!csrfValid) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 403 });
-  }
-
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -164,6 +164,98 @@ export async function sendWelcomeEmail(email: string, loginUrl: string) {
   }
 }
 
+export async function sendOnboardingDay1Email(email: string, appUrl: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping onboarding day 1 email");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Build your first trading strategy",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Ready to build your first EA?</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              Here are 3 quick steps to get started:
+            </p>
+            <ol style="margin: 0 0 24px 0; padding-left: 20px; line-height: 2;">
+              <li><strong style="color: #ffffff;">Create a project</strong> — choose from a template or start blank</li>
+              <li><strong style="color: #ffffff;">Add blocks</strong> — drag indicators and actions onto the canvas</li>
+              <li><strong style="color: #ffffff;">Export</strong> — download your .mq5 file for MetaTrader 5</li>
+            </ol>
+            <a href="${appUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Start Building
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              Tip: Try the &ldquo;MA Crossover&rdquo; template to see how strategies are built.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send onboarding day 1 email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Onboarding day 1 email sent");
+  }
+}
+
+export async function sendOnboardingDay3Email(email: string, pricingUrl: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping onboarding day 3 email");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Your strategy is ready to export",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Take your strategy live</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              You have 2 free exports per month on your current plan. That&apos;s enough to test your strategy in MetaTrader 5.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+              Need more exports or access to trade management features like trailing stops and partial closes? Check out our paid plans.
+            </p>
+            <a href="${pricingUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              View Plans
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              Questions? Reply to this email or join our community on <a href="https://whop.com/algostudio" style="color: #A78BFA; text-decoration: none;">Whop</a>.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send onboarding day 3 email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Onboarding day 3 email sent");
+  }
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");

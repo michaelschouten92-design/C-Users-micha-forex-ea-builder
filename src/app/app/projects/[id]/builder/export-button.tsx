@@ -236,10 +236,28 @@ export function ExportButton({
                     </pre>
                   </div>
 
-                  <p className="text-xs text-[#64748B]">
-                    Copy this code to MetaEditor or download the .mq5 file and place it in your MetaTrader 5 Experts folder.
-                    Press F7 in MetaEditor to compile.
-                  </p>
+                  {/* Next Steps Guide */}
+                  <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-white">Next steps</h4>
+                    <ol className="space-y-2 text-xs text-[#94A3B8]">
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</span>
+                        <span>Open MetaTrader 5 and go to <strong className="text-white">File &gt; Open Data Folder</strong></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</span>
+                        <span>Place the <strong className="text-white">.mq5</strong> file in <strong className="text-white">MQL5/Experts</strong></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</span>
+                        <span>Open in MetaEditor and press <strong className="text-white">F7</strong> to compile</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">4</span>
+                        <span>Drag the EA onto a chart to start <strong className="text-white">backtesting</strong> or trading</span>
+                      </li>
+                    </ol>
+                  </div>
                 </div>
               ) : null}
             </div>

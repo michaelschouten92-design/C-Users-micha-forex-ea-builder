@@ -113,22 +113,6 @@ export default function PricingPage() {
                   {feature}
                 </li>
               ))}
-              <li className="flex items-center gap-3 text-[#64748B]">
-                <svg
-                  className="w-5 h-5 text-[#64748B]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Export to MetaTrader
-              </li>
             </ul>
 
             <Link
@@ -242,8 +226,15 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* Trial note */}
+        <div className="text-center mt-8">
+          <p className="text-[#94A3B8] text-sm">
+            All paid plans include a 7-day free trial. Cancel anytime.
+          </p>
+        </div>
+
         {/* Footer */}
-        <div className="text-center mt-12">
+        <div className="text-center mt-6">
           <p className="text-[#64748B] text-sm">
             Already have an account?{" "}
             <Link href="/login" className="text-[#22D3EE] hover:underline">

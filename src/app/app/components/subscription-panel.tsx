@@ -60,9 +60,9 @@ export function SubscriptionPanel({
           </div>
           <p className="text-sm text-[#94A3B8]">
             {tier === "FREE"
-              ? "Upgrade to unlock exports and bring your strategies to MetaTrader."
+              ? "Upgrade for more projects, more exports, and advanced trade management."
               : tier === "STARTER"
-              ? "Upgrade to Pro for unlimited projects and MQL5 source code export."
+              ? "Upgrade to Pro for unlimited projects and exports."
               : "You have access to all features."}
           </p>
         </div>
@@ -148,7 +148,7 @@ export function SubscriptionPanel({
       {tier === "FREE" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Upgrade to unlock:</span> Export your strategies as MQL5 source code for MetaTrader
+            <span className="font-medium">Upgrade to unlock:</span> More projects, more exports, trade management blocks, and priority support
           </p>
         </div>
       )}

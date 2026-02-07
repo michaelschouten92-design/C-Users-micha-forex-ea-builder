@@ -43,6 +43,8 @@ model User {
   passwordHash    String?   // Hashed password (null for OAuth users)
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
+  referralCode    String?   @unique
+  referredBy      String?   // referralCode of the user who referred them
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -50,6 +52,7 @@ model User {
   subscription Subscription?
   projects     Project[]
   exports      ExportJob[]
+  templates    UserTemplate[]
 }
 
 model Subscription {
@@ -174,4 +177,16 @@ model WebhookEvent {
   processedAt DateTime @default(now())
 
   @@index([processedAt])
+}
+
+model UserTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  buildJson Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

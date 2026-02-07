@@ -21,6 +21,7 @@ import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
+import { WelcomeModal } from "./welcome-modal";
 import {
   useAutoSave,
   useClipboard,
@@ -127,6 +128,19 @@ export function StrategyCanvas({
     settings,
     debounceMs: 5000,
   });
+
+  // Get current buildJson for save-as-template
+  const getBuildJson = useCallback((): BuildJsonSchema => ({
+    version: "1.0",
+    nodes: nodes as BuilderNode[],
+    edges: edges as unknown as BuildJsonSchema["edges"],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    metadata: {
+      createdAt: initialData?.metadata?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    settings,
+  }), [nodes, edges, settings, initialData]);
 
   // Helper to generate unique node IDs
   const getNextNodeId = useCallback((type: string) => {
@@ -298,6 +312,7 @@ export function StrategyCanvas({
 
   return (
     <div className="h-full flex flex-col">
+      <WelcomeModal />
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
         <div className="hidden md:block">
@@ -483,6 +498,7 @@ export function StrategyCanvas({
         onLoad={onLoad}
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
+        onGetBuildJson={getBuildJson}
       />
     </div>
   );

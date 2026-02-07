@@ -6,6 +6,7 @@ import type {
   BollingerBandsNodeData,
   ATRNodeData,
   ADXNodeData,
+  StochasticNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframe } from "../types";
@@ -162,6 +163,30 @@ export function generateIndicatorCode(
         addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code);   // ADX
         addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}PlusDIBuffer`, code); // +DI
         addCopyBuffer(`${varPrefix}Handle`, 2, 3, `${varPrefix}MinusDIBuffer`, code); // -DI
+        break;
+      }
+
+      case "stochastic": {
+        const stoch = data as StochasticNodeData;
+        const group = `Stochastic ${index + 1}`;
+
+        code.inputs.push(createInput(node, "kPeriod", `InpStoch${index}KPeriod`, "int", stoch.kPeriod, `Stochastic ${index + 1} K Period`, group));
+        code.inputs.push(createInput(node, "dPeriod", `InpStoch${index}DPeriod`, "int", stoch.dPeriod, `Stochastic ${index + 1} D Period`, group));
+        code.inputs.push(createInput(node, "slowing", `InpStoch${index}Slowing`, "int", stoch.slowing, `Stochastic ${index + 1} Slowing`, group));
+        code.inputs.push(createInput(node, "overboughtLevel", `InpStoch${index}Overbought`, "double", stoch.overboughtLevel, `Stochastic ${index + 1} Overbought`, group));
+        code.inputs.push(createInput(node, "oversoldLevel", `InpStoch${index}Oversold`, "double", stoch.oversoldLevel, `Stochastic ${index + 1} Oversold`, group));
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);    // %K line
+        code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);  // %D line
+        code.onInit.push(
+          `${varPrefix}Handle = iStochastic(_Symbol, ${getTimeframe(stoch.timeframe)}, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, MODE_SMA, STO_LOWHIGH);`
+        );
+        addHandleValidation(varPrefix, `Stochastic ${index + 1}`, code);
+        code.onDeinit.push(`if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code);  // %K
+        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}SignalBuffer`, code); // %D
         break;
       }
     }

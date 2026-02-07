@@ -50,11 +50,27 @@ async function handleCleanup(request: NextRequest) {
       },
     });
 
+    // Clean up expired email verification tokens
+    const deletedVerificationTokens = await prisma.emailVerificationToken.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Clean up old audit logs (>90 days)
+    const deletedAuditLogs = await prisma.auditLog.deleteMany({
+      where: {
+        createdAt: { lt: ninetyDaysAgo },
+      },
+    });
+
     log.info(
       {
         deletedProjects: deletedProjects.count,
         deletedTokens: deletedTokens.count,
         deletedWebhookEvents: deletedWebhookEvents.count,
+        deletedVerificationTokens: deletedVerificationTokens.count,
+        deletedAuditLogs: deletedAuditLogs.count,
       },
       "Cleanup completed"
     );
@@ -65,6 +81,8 @@ async function handleCleanup(request: NextRequest) {
         projects: deletedProjects.count,
         expiredTokens: deletedTokens.count,
         webhookEvents: deletedWebhookEvents.count,
+        verificationTokens: deletedVerificationTokens.count,
+        auditLogs: deletedAuditLogs.count,
       },
     });
   } catch (error) {

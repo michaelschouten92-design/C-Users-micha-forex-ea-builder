@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CreateProjectButton } from "./components/create-project-button";
 import { ProjectList } from "./components/project-list";
 import { SubscriptionPanel } from "./components/subscription-panel";
+import { EmailVerificationBanner } from "./components/email-verification-banner";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const [projects, subscription, exportCount] = await Promise.all([
+  const [projects, subscription, exportCount, user] = await Promise.all([
     prisma.project.findMany({
       where: { userId: session.user.id, deletedAt: null },
       orderBy: { updatedAt: "desc" },
@@ -36,6 +37,10 @@ export default async function DashboardPage() {
         userId: session.user.id,
         createdAt: { gte: startOfMonth },
       },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { emailVerified: true },
     }),
   ]);
 
@@ -86,6 +91,8 @@ export default async function DashboardPage() {
           </div>
         </div>
       </nav>
+
+      {user && !user.emailVerified && <EmailVerificationBanner />}
 
       <main id="main-content" className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Subscription Panel */}

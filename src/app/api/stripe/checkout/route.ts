@@ -99,7 +99,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create checkout session
+    // Check if user has ever had a paid subscription (no trial for returning users)
+    const hadPaidSub = user.subscription?.stripeSubId != null;
+
+    // Create checkout session with 7-day trial for new subscribers
     const checkoutSession = await getStripe().checkout.sessions.create({
       customer: stripeCustomerId,
       mode: "subscription",
@@ -110,6 +113,11 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
+      ...(!hadPaidSub && {
+        subscription_data: {
+          trial_period_days: 7,
+        },
+      }),
       success_url: `${env.AUTH_URL}/app?checkout=success`,
       cancel_url: `${env.AUTH_URL}/pricing?checkout=cancelled`,
       metadata: {

@@ -49,6 +49,9 @@ export default function SettingsPage() {
           {/* Data Export */}
           <DataExportSection />
 
+          {/* Referral */}
+          <ReferralSection />
+
           {/* Delete Account */}
           <DeleteAccountSection />
         </div>
@@ -201,6 +204,73 @@ function DataExportSection() {
       >
         {loading ? "Exporting..." : "Download My Data"}
       </button>
+    </div>
+  );
+}
+
+function ReferralSection() {
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function loadReferral() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/referral");
+      if (res.ok) {
+        const data = await res.json();
+        setReferralCode(data.referralCode);
+        setReferralCount(data.referralCount);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function copyLink() {
+    if (!referralCode) return;
+    const url = `${window.location.origin}/login?mode=register&ref=${referralCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">Referrals</h2>
+      <p className="text-sm text-[#94A3B8] mb-4">
+        Invite friends to AlgoStudio and help them get started with automated trading.
+      </p>
+      {referralCode ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              readOnly
+              value={`${typeof window !== "undefined" ? window.location.origin : ""}/login?mode=register&ref=${referralCode}`}
+              className="flex-1 px-4 py-2.5 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] text-sm"
+            />
+            <button
+              onClick={copyLink}
+              className="px-4 py-2.5 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-all duration-200"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <p className="text-sm text-[#64748B]">
+            {referralCount} {referralCount === 1 ? "person has" : "people have"} signed up with your link.
+          </p>
+        </div>
+      ) : (
+        <button
+          onClick={loadReferral}
+          disabled={loading}
+          className="px-4 py-2 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] disabled:opacity-50 transition-all duration-200"
+        >
+          {loading ? "Loading..." : "Get Referral Link"}
+        </button>
+      )}
     </div>
   );
 }

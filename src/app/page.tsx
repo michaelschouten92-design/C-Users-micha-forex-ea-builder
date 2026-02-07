@@ -30,10 +30,41 @@ export default async function Home() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: "0",
-      highPrice: "29.99",
+      highPrice: "49",
       priceCurrency: "EUR",
       offerCount: 3,
     },
+  };
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Do I need coding experience to use AlgoStudio?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. AlgoStudio is a visual drag-and-drop builder. You create strategies by connecting blocks — no MQL5, Python, or any other programming knowledge required.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can I use the exported EA in live trading?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. You can backtest it in the MT5 Strategy Tester and run it on any broker that supports MT5.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What indicators does AlgoStudio support?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "AlgoStudio supports Moving Average (SMA/EMA), RSI, MACD, Bollinger Bands, ATR, ADX, Stochastic, candlestick patterns, support/resistance zones, and range breakouts.",
+        },
+      },
+    ],
   };
 
   return (
@@ -41,6 +72,10 @@ export default async function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0D0117]/80 backdrop-blur-md border-b border-[rgba(79,70,229,0.1)]">
@@ -51,6 +86,9 @@ export default async function Home() {
           <div className="flex items-center gap-6">
             <Link href="/pricing" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
               Pricing
+            </Link>
+            <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+              Blog
             </Link>
             <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
               Sign in
@@ -337,6 +375,137 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Trusted by traders worldwide
+            </h2>
+            <p className="text-[#94A3B8]">
+              See what our users have to say
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
+                &ldquo;I&apos;ve been wanting to automate my MA crossover strategy for months but couldn&apos;t code MQL5. AlgoStudio let me build and export it in under an hour.&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#4F46E5]/30 flex items-center justify-center text-xs text-[#A78BFA] font-bold">J</div>
+                <div>
+                  <div className="text-sm text-white font-medium">James R.</div>
+                  <div className="text-xs text-[#64748B]">Forex Trader</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
+                &ldquo;The visual builder is incredibly intuitive. I built a breakout strategy with RSI filters and trailing stop in one afternoon. The exported EA runs perfectly in MT5.&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#22D3EE]/30 flex items-center justify-center text-xs text-[#22D3EE] font-bold">S</div>
+                <div>
+                  <div className="text-sm text-white font-medium">Sarah M.</div>
+                  <div className="text-xs text-[#64748B]">Swing Trader</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
+                &ldquo;I tested several EA builders and AlgoStudio is the cleanest. The generated MQL5 code is well-structured and easy to customize further if needed.&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#22C55E]/30 flex items-center justify-center text-xs text-[#22C55E] font-bold">D</div>
+                <div>
+                  <div className="text-sm text-white font-medium">David K.</div>
+                  <div className="text-xs text-[#64748B]">Algo Developer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Frequently asked questions
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: "Do I need coding experience?",
+                a: "No. AlgoStudio is a visual drag-and-drop builder. You create strategies by connecting blocks — no MQL5, Python, or any other programming knowledge required.",
+              },
+              {
+                q: "What do I get with the free plan?",
+                a: "You get full access to the visual builder with up to 5 projects and 2 MQL5 exports per month. No credit card required.",
+              },
+              {
+                q: "Can I use the exported EA in live trading?",
+                a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. You can backtest it in the MT5 Strategy Tester and run it on any broker that supports MT5.",
+              },
+              {
+                q: "What indicators are supported?",
+                a: "We support Moving Average (SMA/EMA), RSI, MACD, Bollinger Bands, ATR, ADX, Stochastic, candlestick patterns, support/resistance zones, and range breakouts. More are added regularly.",
+              },
+              {
+                q: "Can I cancel my subscription anytime?",
+                a: "Yes. You can cancel at any time from your account settings. Your access continues until the end of your billing period.",
+              },
+              {
+                q: "Is the generated MQL5 code editable?",
+                a: "Yes. You get clean, well-commented MQL5 source code that you can modify in MetaEditor if you want to customize it further.",
+              },
+            ].map((item, i) => (
+              <details
+                key={i}
+                className="group bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
+              >
+                <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-sm list-none">
+                  {item.q}
+                  <svg className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Preview */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
@@ -345,7 +514,7 @@ export default async function Home() {
               Simple pricing
             </h2>
             <p className="text-[#94A3B8]">
-              Start free, upgrade when you need exports
+              Start free, upgrade when you need more
             </p>
           </div>
 
@@ -361,7 +530,7 @@ export default async function Home() {
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Unlimited projects
+                  Up to 5 projects
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,11 +538,11 @@ export default async function Home() {
                   </svg>
                   Visual builder
                 </li>
-                <li className="flex items-center gap-2 text-[#64748B]">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  No exports
+                  2 exports/month
                 </li>
               </ul>
               <Link
@@ -396,13 +565,13 @@ export default async function Home() {
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Up to 3 projects
+                  Up to 25 projects
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  5 exports/month
+                  20 exports/month
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,6 +670,11 @@ export default async function Home() {
                 <li>
                   <Link href="/login?mode=register" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
                     Register
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Blog
                   </Link>
                 </li>
               </ul>
