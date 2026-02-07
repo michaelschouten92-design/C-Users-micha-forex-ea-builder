@@ -82,7 +82,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
 
   return (
     <div
-      className="w-[200px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] overflow-y-auto flex-shrink-0"
+      className="w-[230px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] overflow-y-auto flex-shrink-0"
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
@@ -130,7 +130,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
                 `}
               >
                 {/* Label */}
-                <span className="whitespace-nowrap text-xs">
+                <span className="whitespace-nowrap">
                   {getCategoryLabel(category)}
                 </span>
 
