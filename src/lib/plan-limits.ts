@@ -1,17 +1,49 @@
 import { prisma } from "./prisma";
 import { PLANS, type PlanTier } from "./plans";
 
+// ============================================
+// SUBSCRIPTION TIER CACHE (60s TTL)
+// ============================================
+
+interface CacheEntry {
+  tier: PlanTier;
+  expiresAt: number;
+}
+
+const tierCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+async function getCachedTier(userId: string): Promise<PlanTier> {
+  const cached = tierCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.tier;
+  }
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { tier: true },
+  });
+
+  const tier = (subscription?.tier ?? "FREE") as PlanTier;
+  tierCache.set(userId, { tier, expiresAt: Date.now() + CACHE_TTL_MS });
+  return tier;
+}
+
+/** Invalidate cache for a user (call after subscription changes) */
+export function invalidateSubscriptionCache(userId: string) {
+  tierCache.delete(userId);
+}
+
 export async function checkProjectLimit(userId: string): Promise<{
   allowed: boolean;
   current: number;
   max: number;
 }> {
-  const [subscription, projectCount] = await Promise.all([
-    prisma.subscription.findUnique({ where: { userId } }),
+  const [tier, projectCount] = await Promise.all([
+    getCachedTier(userId),
     prisma.project.count({ where: { userId } }),
   ]);
 
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
   const plan = PLANS[tier];
   const max = plan.limits.maxProjects;
 
@@ -27,11 +59,7 @@ export async function checkExportLimit(userId: string): Promise<{
   current: number;
   max: number;
 }> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
+  const tier = await getCachedTier(userId);
   const plan = PLANS[tier];
   const max = plan.limits.maxExportsPerMonth;
 
@@ -55,35 +83,22 @@ export async function checkExportLimit(userId: string): Promise<{
 }
 
 export async function canExportMQL5(userId: string): Promise<boolean> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
-  const plan = PLANS[tier];
-
-  return plan.limits.canExportMQL5;
+  const tier = await getCachedTier(userId);
+  return PLANS[tier].limits.canExportMQL5;
 }
 
 export async function canUseTradeManagement(userId: string): Promise<boolean> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
-  const plan = PLANS[tier];
-
-  return plan.limits.canUseTradeManagement;
+  const tier = await getCachedTier(userId);
+  return PLANS[tier].limits.canUseTradeManagement;
 }
 
-
 export async function getUserPlanLimits(userId: string) {
+  const tier = await getCachedTier(userId);
+  const plan = PLANS[tier];
+
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
   });
-
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
-  const plan = PLANS[tier];
 
   return {
     tier,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { forgotPasswordSchema, formatZodErrors } from "@/lib/validations";
+import { forgotPasswordSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { env } from "@/lib/env";
 import {
   passwordResetRateLimiter,
@@ -13,6 +13,10 @@ import crypto from "crypto";
 
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/forgot-password", "POST");
+
+  // Check body size
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
 
   try {
     const body = await request.json();
@@ -63,20 +67,21 @@ export async function POST(request: Request) {
       where: { email },
     });
 
-    // Generate secure token
+    // Generate secure token and hash it for storage
     const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Save token
+    // Save hashed token (plaintext token is only sent via email)
     await prisma.passwordResetToken.create({
       data: {
         email,
-        token,
+        token: tokenHash,
         expiresAt,
       },
     });
 
-    // Build reset URL
+    // Build reset URL with plaintext token
     const resetUrl = `${env.AUTH_URL}/reset-password?token=${token}`;
 
     // Send email with reset link

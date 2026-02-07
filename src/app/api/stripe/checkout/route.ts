@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { PLANS, type PlanTier } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
+import { checkoutRequestSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   apiRateLimiter,
@@ -29,14 +30,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check body size
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
+
   try {
     const body = await request.json();
-    const { plan, interval } = body as {
-      plan: PlanTier;
-      interval: "monthly" | "yearly";
-    };
+    const validation = checkoutRequestSchema.safeParse(body);
 
-    // Validate plan
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: formatZodErrors(validation.error) },
+        { status: 400 }
+      );
+    }
+
+    const { plan, interval } = validation.data;
+
+    // Validate plan exists in config
     if (!PLANS[plan]) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }

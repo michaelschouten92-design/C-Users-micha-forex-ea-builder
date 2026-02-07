@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { updateProjectSchema, formatZodErrors } from "@/lib/validations";
+import { updateProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import {
@@ -68,6 +68,10 @@ export async function PATCH(request: Request, { params }: Params) {
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
+
+    // Check body size
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     const body = await request.json();
     const validation = updateProjectSchema.safeParse(body);

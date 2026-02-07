@@ -399,8 +399,37 @@ export const forgotPasswordSchema = z.object({
 });
 
 // ============================================
+// STRIPE SCHEMAS
+// ============================================
+
+export const checkoutRequestSchema = z.object({
+  plan: z.enum(["STARTER", "PRO"]),
+  interval: z.enum(["monthly", "yearly"]),
+});
+
+export type CheckoutRequestInput = z.infer<typeof checkoutRequestSchema>;
+
+// ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+/** Max request body size in bytes (1MB default) */
+const MAX_BODY_SIZE = 1 * 1024 * 1024;
+
+/**
+ * Check Content-Length header and reject oversized requests.
+ * Returns an error Response if too large, null if OK.
+ */
+export function checkBodySize(request: Request, maxBytes: number = MAX_BODY_SIZE): Response | null {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+    return Response.json(
+      { error: "Request too large", details: `Maximum request size is ${Math.round(maxBytes / 1024)}KB` },
+      { status: 413 }
+    );
+  }
+  return null;
+}
 
 export type ValidationResult<T> =
   | { success: true; data: T }

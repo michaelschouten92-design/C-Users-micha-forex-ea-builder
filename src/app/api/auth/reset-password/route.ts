@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resetPasswordSchema, formatZodErrors } from "@/lib/validations";
+import { resetPasswordSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   passwordResetRateLimiter,
@@ -9,11 +9,16 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const SALT_ROUNDS = 12;
 
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/reset-password", "POST");
+
+  // Check body size
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
 
   try {
     const body = await request.json();
@@ -28,8 +33,11 @@ export async function POST(request: Request) {
 
     const { token, password } = validation.data;
 
-    // Rate limit by token to prevent brute-force attempts
-    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, `reset:${token}`);
+    // Hash the incoming token to compare with stored hash
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Rate limit by token hash to prevent brute-force attempts
+    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, `reset:${tokenHash}`);
     if (!rateLimitResult.success) {
       log.warn("Reset password rate limit exceeded");
       return NextResponse.json(
@@ -38,10 +46,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find token and check expiry in a single unified path to prevent timing side-channel.
-    // Both "not found" and "expired" return the same error after the same work.
+    // Find token by hash and check expiry in a single unified path to prevent timing side-channel.
     const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
     });
 
     const isValid = resetToken && resetToken.expiresAt >= new Date();
@@ -60,32 +67,30 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: resetToken.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Invalid or expired reset link" },
-        { status: 400 }
-      );
-    }
-
-    // Hash new password and update user
+    // Hash new password before entering transaction
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash },
-    });
+    // Atomic: update password + delete token in one transaction
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { email: resetToken.email },
+      });
 
-    // Delete used token
-    await prisma.passwordResetToken.delete({
-      where: { id: resetToken.id },
-    });
+      if (!user) {
+        throw new Error("User not found");
+      }
 
-    log.info({ userId: user.id }, "Password reset completed");
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      });
+
+      await tx.passwordResetToken.delete({
+        where: { id: resetToken.id },
+      });
+
+      log.info({ userId: user.id }, "Password reset completed");
+    });
 
     return NextResponse.json({
       message: "Password has been reset successfully",

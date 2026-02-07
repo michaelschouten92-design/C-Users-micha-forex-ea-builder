@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
+import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -155,6 +156,8 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       currentPeriodEnd: period.end,
     },
   });
+
+  invalidateSubscriptionCache(userId);
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -162,16 +165,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   if (!customerId) {
     log.error({ subscriptionId: subscription.id }, "No customer ID in subscription");
-    return;
-  }
-
-  // Find user by Stripe customer ID
-  const userSubscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-  });
-
-  if (!userSubscription) {
-    log.error({ customerId }, "Subscription not found for customer");
     return;
   }
 
@@ -198,30 +191,47 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     unpaid: "unpaid",
   };
 
-  const previousTier = userSubscription.tier;
   const period = getSubscriptionPeriod(subscription);
 
-  await prisma.subscription.update({
-    where: { id: userSubscription.id },
-    data: {
-      tier,
-      status: statusMap[subscription.status] || subscription.status,
-      currentPeriodStart: period.start,
-      currentPeriodEnd: period.end,
-    },
+  // Use transaction for atomic read-then-write
+  const result = await prisma.$transaction(async (tx) => {
+    const userSubscription = await tx.subscription.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
+
+    if (!userSubscription) {
+      log.error({ customerId }, "Subscription not found for customer");
+      return null;
+    }
+
+    const previousTier = userSubscription.tier;
+
+    await tx.subscription.update({
+      where: { id: userSubscription.id },
+      data: {
+        tier,
+        status: statusMap[subscription.status] || subscription.status,
+        currentPeriodStart: period.start,
+        currentPeriodEnd: period.end,
+      },
+    });
+
+    // Audit tier changes
+    if (previousTier !== tier) {
+      const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
+      const isUpgrade = tierOrder[tier] > tierOrder[previousTier as keyof typeof tierOrder];
+
+      if (isUpgrade) {
+        await audit.subscriptionUpgrade(userSubscription.userId, previousTier, tier);
+      } else {
+        await audit.subscriptionDowngrade(userSubscription.userId, previousTier, tier);
+      }
+    }
+
+    return userSubscription.userId;
   });
 
-  // Audit tier changes
-  if (previousTier !== tier) {
-    const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
-    const isUpgrade = tierOrder[tier] > tierOrder[previousTier as keyof typeof tierOrder];
-
-    if (isUpgrade) {
-      await audit.subscriptionUpgrade(userSubscription.userId, previousTier, tier);
-    } else {
-      await audit.subscriptionDowngrade(userSubscription.userId, previousTier, tier);
-    }
-  }
+  if (result) invalidateSubscriptionCache(result);
 }
 
 async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
@@ -229,28 +239,30 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
   if (!customerId) return;
 
-  const userSubscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
+  // Use transaction for atomic read-then-write
+  const userId = await prisma.$transaction(async (tx) => {
+    const userSubscription = await tx.subscription.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
+
+    if (!userSubscription) return null;
+
+    await tx.subscription.update({
+      where: { id: userSubscription.id },
+      data: {
+        tier: "FREE",
+        status: "cancelled",
+        stripeSubId: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+      },
+    });
+
+    await audit.subscriptionCancel(userSubscription.userId);
+    return userSubscription.userId;
   });
 
-  if (!userSubscription) {
-    return;
-  }
-
-  // Downgrade to FREE tier when subscription is cancelled
-  await prisma.subscription.update({
-    where: { id: userSubscription.id },
-    data: {
-      tier: "FREE",
-      status: "cancelled",
-      stripeSubId: null,
-      currentPeriodStart: null,
-      currentPeriodEnd: null,
-    },
-  });
-
-  // Audit subscription cancellation
-  await audit.subscriptionCancel(userSubscription.userId);
+  if (userId) invalidateSubscriptionCache(userId);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -265,12 +277,15 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(stripeSubscription);
 
-  const userSubscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-  });
+  // Use transaction for atomic read-then-write
+  await prisma.$transaction(async (tx) => {
+    const userSubscription = await tx.subscription.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
 
-  if (userSubscription) {
-    await prisma.subscription.update({
+    if (!userSubscription) return;
+
+    await tx.subscription.update({
       where: { id: userSubscription.id },
       data: {
         status: "active",
@@ -279,28 +294,29 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       },
     });
 
-    // Audit successful payment
     await audit.paymentSuccess(userSubscription.userId);
-  }
+  });
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const customerId = getStringId(invoice.customer);
   if (!customerId) return;
 
-  const userSubscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-  });
+  // Use transaction for atomic read-then-write
+  await prisma.$transaction(async (tx) => {
+    const userSubscription = await tx.subscription.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
 
-  if (userSubscription) {
-    await prisma.subscription.update({
+    if (!userSubscription) return;
+
+    await tx.subscription.update({
       where: { id: userSubscription.id },
       data: {
         status: "past_due",
       },
     });
 
-    // Audit failed payment
     await audit.paymentFailed(userSubscription.userId);
-  }
+  });
 }

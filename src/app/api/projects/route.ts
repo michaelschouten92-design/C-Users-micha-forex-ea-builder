@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkProjectLimit } from "@/lib/plan-limits";
-import { createProjectSchema, formatZodErrors } from "@/lib/validations";
+import { createProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import {
@@ -54,6 +54,10 @@ export async function POST(request: Request) {
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
+
+    // Check body size
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     // Check project limit
     const projectLimit = await checkProjectLimit(session.user.id);

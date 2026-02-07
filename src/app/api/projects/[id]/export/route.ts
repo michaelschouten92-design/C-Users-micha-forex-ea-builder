@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
 import { checkExportLimit, canExportMQL5, canUseTradeManagement } from "@/lib/plan-limits";
-import { exportRequestSchema, buildJsonSchema, formatZodErrors } from "@/lib/validations";
+import { exportRequestSchema, buildJsonSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import {
   exportRateLimiter,
   checkRateLimit,
@@ -46,6 +46,10 @@ export async function POST(request: NextRequest, { params }: Props) {
       }
     );
   }
+
+  // Check body size
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
 
   try {
     const body = await request.json();
