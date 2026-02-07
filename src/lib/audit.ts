@@ -61,9 +61,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
     `Audit: ${eventType}`
   );
 
-  // Optionally persist to database for compliance
-  // Uncomment if you add an AuditLog model to your Prisma schema
-  /*
+  // Persist to database for compliance
   try {
     await prisma.auditLog.create({
       data: {
@@ -79,7 +77,6 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
   } catch (error) {
     auditLogger.error({ error }, "Failed to persist audit log");
   }
-  */
 }
 
 /**

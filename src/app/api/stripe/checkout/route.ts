@@ -5,6 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { PLANS, type PlanTier } from "@/lib/plans";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -12,6 +18,15 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimitResult) },
+      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+    );
   }
 
   try {

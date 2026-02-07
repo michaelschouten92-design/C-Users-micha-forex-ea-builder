@@ -92,6 +92,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       where: {
         id,
         userId: session.user.id,
+        deletedAt: null,
       },
       include: {
         versions: versionId
@@ -214,6 +215,15 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit
+  const rateLimitResult = await checkRateLimit(exportRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimitResult) },
+      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+    );
   }
 
   try {

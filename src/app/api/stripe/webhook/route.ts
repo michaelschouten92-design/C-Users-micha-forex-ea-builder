@@ -113,16 +113,26 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const VALID_PAID_TIERS = ["STARTER", "PRO"] as const;
+type PaidTier = (typeof VALID_PAID_TIERS)[number];
+
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
-  const plan = session.metadata?.plan as "STARTER" | "PRO";
+  const plan = session.metadata?.plan;
 
   if (!userId || !plan) {
     log.error({ sessionId: session.id }, "Missing metadata in checkout session");
     return;
   }
 
-  log.info({ userId, plan, sessionId: session.id }, "Processing checkout completion");
+  if (!VALID_PAID_TIERS.includes(plan as PaidTier)) {
+    log.error({ sessionId: session.id, plan }, "Invalid plan tier in checkout metadata");
+    return;
+  }
+
+  const validatedPlan: PaidTier = plan as PaidTier;
+
+  log.info({ userId, plan: validatedPlan, sessionId: session.id }, "Processing checkout completion");
 
   const subscriptionId = getStringId(session.subscription);
   if (!subscriptionId) {
@@ -137,7 +147,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   await prisma.subscription.update({
     where: { userId },
     data: {
-      tier: plan,
+      tier: validatedPlan,
       status: "active",
       stripeSubId: subscriptionId,
       stripeCustomerId: customerId,

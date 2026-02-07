@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { createVersionSchema, formatZodErrors } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 class VersionConflictError extends Error {
   constructor(public actual: number, public expected: number) {
@@ -23,7 +29,7 @@ export async function GET(request: Request, { params }: Params) {
 
   // Verify ownership
   const project = await prisma.project.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: session.user.id, deletedAt: null },
   });
 
   if (!project) {
@@ -53,9 +59,18 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimitResult) },
+      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   // Verify ownership
   const project = await prisma.project.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: session.user.id, deletedAt: null },
   });
 
   if (!project) {

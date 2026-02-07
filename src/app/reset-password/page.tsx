@@ -1,13 +1,22 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const tokenRef = useRef(searchParams.get("token"));
+
+  // Strip token from URL to prevent leakage via browser history / referrer
+  useEffect(() => {
+    if (tokenRef.current && window.location.search.includes("token=")) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  const token = tokenRef.current;
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

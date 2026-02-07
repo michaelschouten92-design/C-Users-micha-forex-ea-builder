@@ -4,6 +4,12 @@ import { checkProjectLimit } from "@/lib/plan-limits";
 import { createProjectSchema, formatZodErrors } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 // GET /api/projects - List all projects for current user
 export async function GET() {
@@ -15,7 +21,7 @@ export async function GET() {
     }
 
     const projects = await prisma.project.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       orderBy: { updatedAt: "desc" },
       include: {
         _count: {
@@ -38,6 +44,15 @@ export async function POST(request: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rateLimitResult) },
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      );
     }
 
     // Check project limit

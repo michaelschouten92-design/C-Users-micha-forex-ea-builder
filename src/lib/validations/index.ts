@@ -103,21 +103,21 @@ const baseNodeDataSchema = z.object({
 const alwaysNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("timing"),
   timingType: z.literal("always"),
-}).passthrough();
+}).strip();
 
 const customTimesNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("timing"),
   timingType: z.literal("custom-times"),
   days: tradingDaysSchema,
   timeSlots: z.array(timeSlotSchema),
-}).passthrough();
+}).strip();
 
 const tradingSessionNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("timing"),
   timingType: z.literal("trading-session"),
   session: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP"]),
   tradeMondayToFriday: z.boolean(),
-}).passthrough();
+}).strip();
 
 // ---- Indicator node data schemas ----
 const movingAverageNodeDataSchema = baseNodeDataSchema.extend({
@@ -128,7 +128,7 @@ const movingAverageNodeDataSchema = baseNodeDataSchema.extend({
   method: z.enum(["SMA", "EMA", "SMMA", "LWMA"]),
   appliedPrice: appliedPriceSchema,
   shift: z.number().int().min(0).max(1000),
-}).passthrough();
+}).strip();
 
 const rsiNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("indicator"),
@@ -138,7 +138,7 @@ const rsiNodeDataSchema = baseNodeDataSchema.extend({
   appliedPrice: appliedPriceSchema,
   overboughtLevel: z.number().min(0).max(100),
   oversoldLevel: z.number().min(0).max(100),
-}).passthrough();
+}).strip();
 
 const macdNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("indicator"),
@@ -148,7 +148,7 @@ const macdNodeDataSchema = baseNodeDataSchema.extend({
   slowPeriod: z.number().int().min(1).max(1000),
   signalPeriod: z.number().int().min(1).max(1000),
   appliedPrice: appliedPriceSchema,
-}).passthrough();
+}).strip();
 
 const bollingerBandsNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("indicator"),
@@ -158,14 +158,14 @@ const bollingerBandsNodeDataSchema = baseNodeDataSchema.extend({
   deviation: z.number().min(0.1).max(10),
   appliedPrice: appliedPriceSchema,
   shift: z.number().int().min(0).max(1000),
-}).passthrough();
+}).strip();
 
 const atrNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("indicator"),
   indicatorType: z.literal("atr"),
   timeframe: timeframeSchema,
   period: z.number().int().min(1).max(1000),
-}).passthrough();
+}).strip();
 
 const adxNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("indicator"),
@@ -173,7 +173,7 @@ const adxNodeDataSchema = baseNodeDataSchema.extend({
   timeframe: timeframeSchema,
   period: z.number().int().min(1).max(1000),
   trendLevel: z.number().min(0).max(100),
-}).passthrough();
+}).strip();
 
 // ---- Price Action node data schemas ----
 const candlestickPatternNodeDataSchema = baseNodeDataSchema.extend({
@@ -186,7 +186,7 @@ const candlestickPatternNodeDataSchema = baseNodeDataSchema.extend({
     "THREE_WHITE_SOLDIERS", "THREE_BLACK_CROWS",
   ])),
   minBodySize: z.number().min(0).max(1000),
-}).passthrough();
+}).strip();
 
 const supportResistanceNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("priceaction"),
@@ -195,7 +195,7 @@ const supportResistanceNodeDataSchema = baseNodeDataSchema.extend({
   lookbackPeriod: z.number().int().min(1).max(10000),
   touchCount: z.number().int().min(1).max(100),
   zoneSize: z.number().min(0).max(1000),
-}).passthrough();
+}).strip();
 
 const rangeBreakoutNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("priceaction"),
@@ -213,7 +213,7 @@ const rangeBreakoutNodeDataSchema = baseNodeDataSchema.extend({
   bufferPips: z.number().min(0).max(1000),
   minRangePips: z.number().min(0).max(10000),
   maxRangePips: z.number().min(0).max(10000),
-}).passthrough();
+}).strip();
 
 // ---- Trading node data schemas ----
 const positionSizingFieldsSchema = z.object({
@@ -227,12 +227,12 @@ const positionSizingFieldsSchema = z.object({
 const placeBuyNodeDataSchema = baseNodeDataSchema.merge(positionSizingFieldsSchema).extend({
   category: z.literal("trading"),
   tradingType: z.literal("place-buy"),
-}).passthrough();
+}).strip();
 
 const placeSellNodeDataSchema = baseNodeDataSchema.merge(positionSizingFieldsSchema).extend({
   category: z.literal("trading"),
   tradingType: z.literal("place-sell"),
-}).passthrough();
+}).strip();
 
 const stopLossNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trading"),
@@ -242,7 +242,7 @@ const stopLossNodeDataSchema = baseNodeDataSchema.extend({
   atrMultiplier: z.number().min(0.1).max(100),
   atrPeriod: z.number().int().min(1).max(1000),
   indicatorNodeId: z.string().optional(),
-}).passthrough();
+}).strip();
 
 const takeProfitNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trading"),
@@ -252,13 +252,13 @@ const takeProfitNodeDataSchema = baseNodeDataSchema.extend({
   riskRewardRatio: z.number().min(0.1).max(100),
   atrMultiplier: z.number().min(0.1).max(100),
   atrPeriod: z.number().int().min(1).max(1000),
-}).passthrough();
+}).strip();
 
 const closeConditionNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trading"),
   tradingType: z.literal("close-condition"),
   closeDirection: z.enum(["BUY", "SELL", "BOTH"]),
-}).passthrough();
+}).strip();
 
 // ---- Trade Management node data schemas (Pro only) ----
 const breakevenStopNodeDataSchema = baseNodeDataSchema.extend({
@@ -270,7 +270,7 @@ const breakevenStopNodeDataSchema = baseNodeDataSchema.extend({
   triggerAtrMultiplier: z.number().min(0.1).max(100),
   triggerAtrPeriod: z.number().int().min(1).max(1000),
   lockPips: z.number().min(0).max(10000),
-}).passthrough();
+}).strip();
 
 const trailingStopNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trademanagement"),
@@ -281,7 +281,7 @@ const trailingStopNodeDataSchema = baseNodeDataSchema.extend({
   trailAtrPeriod: z.number().int().min(1).max(1000),
   trailPercent: z.number().min(0).max(100),
   startAfterPips: z.number().min(0).max(10000),
-}).passthrough();
+}).strip();
 
 const partialCloseNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trademanagement"),
@@ -289,7 +289,7 @@ const partialCloseNodeDataSchema = baseNodeDataSchema.extend({
   closePercent: z.number().min(1).max(100),
   triggerPips: z.number().min(0).max(10000),
   moveSLToBreakeven: z.boolean(),
-}).passthrough();
+}).strip();
 
 const lockProfitNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trademanagement"),
@@ -298,14 +298,14 @@ const lockProfitNodeDataSchema = baseNodeDataSchema.extend({
   lockPercent: z.number().min(0).max(100),
   lockPips: z.number().min(0).max(10000),
   checkIntervalPips: z.number().min(0).max(10000),
-}).passthrough();
+}).strip();
 
 // Node data schema - permissive validation with base field check.
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
 const builderNodeDataSchema = z.object({
   label: z.string(),
   category: nodeCategorySchema,
-}).passthrough();
+}).strip();
 
 // React Flow node structure
 const builderNodeSchema = z.object({
@@ -325,7 +325,7 @@ const builderNodeSchema = z.object({
     width: z.number().optional(),
     height: z.number().optional(),
   }).optional(),
-}).passthrough();
+}).strip();
 
 // React Flow edge structure
 const builderEdgeSchema = z.object({
@@ -334,7 +334,7 @@ const builderEdgeSchema = z.object({
   target: z.string(),
   sourceHandle: z.string().nullable().optional(),
   targetHandle: z.string().nullable().optional(),
-}).passthrough();
+}).strip();
 
 // Viewport schema
 const viewportSchema = z.object({

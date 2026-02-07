@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { updateProjectSchema, formatZodErrors } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -20,6 +26,7 @@ export async function GET(request: Request, { params }: Params) {
       where: {
         id,
         userId: session.user.id,
+        deletedAt: null,
       },
       include: {
         versions: {
@@ -53,6 +60,15 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Rate limit
+    const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rateLimitResult) },
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
     const validation = updateProjectSchema.safeParse(body);
 
@@ -65,7 +81,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     // Verify ownership
     const existing = await prisma.project.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
     });
 
     if (!existing) {
@@ -101,15 +117,16 @@ export async function DELETE(request: Request, { params }: Params) {
 
     // Verify ownership
     const existing = await prisma.project.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, deletedAt: null },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    await prisma.project.delete({
+    await prisma.project.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
     return NextResponse.json({ success: true });

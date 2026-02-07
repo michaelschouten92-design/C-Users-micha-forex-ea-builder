@@ -24,6 +24,7 @@ export default async function ProjectPage({ params }: Props) {
     where: {
       id,
       userId: session.user.id,
+      deletedAt: null,
     },
     include: {
       versions: {
