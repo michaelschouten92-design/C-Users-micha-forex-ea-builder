@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
 import { registrationRateLimiter, loginRateLimiter, checkRateLimit } from "./rate-limit";
-import { sendWelcomeEmail } from "./email";
+import { sendWelcomeEmail, sendVerificationEmail } from "./email";
+import { randomBytes } from "crypto";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -90,6 +91,19 @@ providers.push(
           },
         });
 
+        // Send verification email (fire-and-forget, don't block registration)
+        const verifyToken = randomBytes(32).toString("hex");
+        prisma.emailVerificationToken.create({
+          data: {
+            email,
+            token: verifyToken,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          },
+        }).then(() => {
+          const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
+          sendVerificationEmail(email, verifyUrl).catch(() => {});
+        }).catch(() => {});
+
         // Send welcome email (fire-and-forget, don't block registration)
         sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
 
@@ -157,11 +171,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // The user must log in with their original method.
             return false;
           } else {
-            // Create new user
+            // Create new user (OAuth users are pre-verified)
             existingUser = await prisma.user.create({
               data: {
                 email: user.email,
                 authProviderId,
+                emailVerified: true,
+                emailVerifiedAt: new Date(),
                 subscription: {
                   create: {
                     tier: "FREE",

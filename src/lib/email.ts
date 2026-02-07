@@ -60,6 +60,55 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   log.info({ to: email.substring(0, 3) + "***" }, "Password reset email sent");
 }
 
+export async function sendVerificationEmail(email: string, verifyUrl: string) {
+  if (!resend) {
+    if (env.NODE_ENV === "production") {
+      log.error("RESEND_API_KEY is not configured in production - cannot send emails");
+    }
+    log.warn("Email not configured - skipping verification email");
+    log.debug({ verifyUrl }, "Verification URL (dev only)");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Verify your AlgoStudio email",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Verify your email</h1>
+            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+              Please confirm your email address to complete your AlgoStudio registration.
+            </p>
+            <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Verify Email
+            </a>
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #94A3B8;">
+              This link will expire in 24 hours.
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              If you didn't create an account, you can safely ignore this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send verification email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Verification email sent");
+  }
+}
+
 export async function sendWelcomeEmail(email: string, loginUrl: string) {
   if (!resend) {
     if (env.NODE_ENV === "production") {
@@ -112,5 +161,50 @@ export async function sendWelcomeEmail(email: string, loginUrl: string) {
     // Don't throw — welcome email failure should not block registration
   } else {
     log.info({ to: email.substring(0, 3) + "***" }, "Welcome email sent");
+  }
+}
+
+export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping payment failed email");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Payment failed - Action required",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Payment failed</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              We were unable to process your latest payment for your AlgoStudio subscription.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+              Please update your payment method to keep your subscription active. If payment is not resolved, your account will be downgraded to the Free plan.
+            </p>
+            <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Update Payment Method
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              If you believe this is an error, please contact us at support@algostudio.nl.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send payment failed email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Payment failed email sent");
   }
 }

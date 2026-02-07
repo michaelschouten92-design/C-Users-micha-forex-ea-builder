@@ -481,18 +481,82 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-[rgba(79,70,229,0.1)]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm text-[#64748B]">
-            © {new Date().getFullYear()} AlgoStudio. All rights reserved.
-          </span>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Pricing
-            </Link>
-            <Link href="/login" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Sign in
-            </Link>
+      <footer className="py-12 px-6 border-t border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            {/* Product */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/pricing" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Sign in
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login?mode=register" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Register
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Legal</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/privacy" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Support</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/contact" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:support@algostudio.nl" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    support@algostudio.nl
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Community */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Community</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="https://whop.com/algostudio" target="_blank" rel="noopener noreferrer" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                    Whop
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-[rgba(79,70,229,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-sm text-[#64748B]">
+              © {new Date().getFullYear()} AlgoStudio. All rights reserved.
+            </span>
           </div>
         </div>
       </footer>

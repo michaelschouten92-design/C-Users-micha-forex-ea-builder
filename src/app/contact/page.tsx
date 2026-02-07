@@ -1,0 +1,111 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description:
+    "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our no-code EA builder.",
+  alternates: { canonical: "/contact" },
+};
+
+export default function ContactPage() {
+  return (
+    <div id="main-content" className="min-h-screen py-16 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            &larr; Back to home
+          </Link>
+        </div>
+
+        <h1 className="text-4xl font-bold text-white mb-4">Contact</h1>
+        <p className="text-[#94A3B8] mb-10">
+          Have a question, found a bug, or need help? We&apos;re here to help.
+        </p>
+
+        <div className="space-y-6">
+          {/* Email */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">
+                  Email
+                </h2>
+                <p className="text-sm text-[#94A3B8] mb-3">
+                  For support, questions, or feedback.
+                </p>
+                <a
+                  href="mailto:support@algostudio.nl"
+                  className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"
+                >
+                  support@algostudio.nl
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Community */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1">
+                  Community
+                </h2>
+                <p className="text-sm text-[#94A3B8] mb-3">
+                  Join other traders, share strategies, and get help from the
+                  community.
+                </p>
+                <a
+                  href="https://whop.com/algostudio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"
+                >
+                  Join on Whop &rarr;
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Response time */}
+        <p className="text-sm text-[#64748B] mt-8">
+          We typically respond within 24 hours on business days.
+        </p>
+      </div>
+    </div>
+  );
+}

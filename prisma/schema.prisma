@@ -37,12 +37,14 @@ enum ExportStatus {
 // ============================================
 
 model User {
-  id             String   @id @default(cuid())
-  authProviderId String   @unique
-  email          String   @unique
-  passwordHash   String?  // Hashed password (null for OAuth users)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String    @id @default(cuid())
+  authProviderId  String    @unique
+  email           String    @unique
+  passwordHash    String?   // Hashed password (null for OAuth users)
+  emailVerified   Boolean   @default(false)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   subscription Subscription?
@@ -125,6 +127,17 @@ model ExportJob {
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([projectId, userId, createdAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
 }
 
 model PasswordResetToken {

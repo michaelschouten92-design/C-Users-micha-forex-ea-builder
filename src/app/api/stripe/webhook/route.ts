@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
+import { sendPaymentFailedEmail } from "@/lib/email";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -356,6 +357,18 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   });
 
   if (userId) {
+    // Send payment failed email to user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (user?.email) {
+      const portalUrl = `${env.AUTH_URL || "https://algostudio.nl"}/app`;
+      sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
+        log.warn({ err }, "Payment failed email send failed")
+      );
+    }
+
     audit.paymentFailed(userId).catch((err) =>
       log.warn({ err }, "Audit log failed but payment failure recorded")
     );

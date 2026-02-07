@@ -63,6 +63,12 @@ export default async function DashboardPage() {
               }`}>
                 {tier}
               </span>
+              <Link
+                href="/app/settings"
+                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+              >
+                Settings
+              </Link>
               <form
                 action={async () => {
                   "use server";
