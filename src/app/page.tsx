@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PLANS, formatPrice } from "@/lib/plans";
+
+export const metadata: Metadata = {
+  title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+  description:
+    "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual drag-and-drop strategy builder for forex trading bots.",
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const session = await auth();
@@ -10,8 +18,30 @@ export default async function Home() {
     redirect("/app");
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "AlgoStudio",
+    description:
+      "No-code visual builder for MetaTrader 5 Expert Advisors. Build, test, and export trading bots without writing code.",
+    url: "https://algostudio.nl",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    offers: {
+      "@type": "AggregateOffer",
+      lowPrice: "0",
+      highPrice: "29.99",
+      priceCurrency: "EUR",
+      offerCount: 3,
+    },
+  };
+
   return (
     <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0D0117]/80 backdrop-blur-md border-b border-[rgba(79,70,229,0.1)]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">

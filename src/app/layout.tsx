@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.AUTH_URL || "https://algostudio.nl"),
   title: {
     default: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
     template: "%s | AlgoStudio",

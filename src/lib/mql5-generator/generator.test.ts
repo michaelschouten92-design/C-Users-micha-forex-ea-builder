@@ -1770,7 +1770,7 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       // Don't set maxTradesPerDay at all (remove from defaults)
-      delete (build.settings as Record<string, unknown>).maxTradesPerDay;
+      delete (build.settings as unknown as Record<string, unknown>).maxTradesPerDay;
       const code = generateMQL5Code(build, "NoSetting");
 
       expect(code).not.toContain("lastTradeDay");
