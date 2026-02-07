@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createVersionSchema, formatZodErrors } from "@/lib/validations";
+import { createVersionSchema, formatZodErrors, checkContentType } from "@/lib/validations";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
@@ -88,6 +88,10 @@ export async function POST(request: Request, { params }: Params) {
       { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
     );
   }
+
+  // Validate content type
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
 
   // Verify ownership
   const project = await prisma.project.findFirst({

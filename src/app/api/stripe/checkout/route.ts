@@ -4,7 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { PLANS } from "@/lib/plans";
-import { checkoutRequestSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { checkoutRequestSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   apiRateLimiter,
@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check body size
+  // Validate request
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
   const sizeError = checkBodySize(request);
   if (sizeError) return sizeError;
 

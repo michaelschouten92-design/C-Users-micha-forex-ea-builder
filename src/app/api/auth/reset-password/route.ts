@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resetPasswordSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { resetPasswordSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   passwordResetRateLimiter,
@@ -16,7 +16,9 @@ const SALT_ROUNDS = 12;
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/reset-password", "POST");
 
-  // Check body size
+  // Validate request
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
   const sizeError = checkBodySize(request);
   if (sizeError) return sizeError;
 

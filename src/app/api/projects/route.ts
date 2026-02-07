@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkProjectLimit } from "@/lib/plan-limits";
-import { createProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { createProjectSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
     const url = new URL(request.url);
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     logger.error({ error }, "Failed to list projects");
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
   }
 }
 
@@ -64,19 +64,21 @@ export async function POST(request: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
     // Rate limit
     const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { error: formatRateLimitError(rateLimitResult) },
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rateLimitResult)),
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
 
-    // Check body size
+    // Validate request
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
     const sizeError = checkBodySize(request);
     if (sizeError) return sizeError;
 
@@ -94,7 +96,7 @@ export async function POST(request: Request) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatZodErrors(validation.error) },
+        apiError(ErrorCode.VALIDATION_FAILED, "Validation failed", formatZodErrors(validation.error)),
         { status: 400 }
       );
     }
@@ -112,6 +114,6 @@ export async function POST(request: Request) {
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Failed to create project");
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
   }
 }

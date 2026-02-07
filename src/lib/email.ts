@@ -11,10 +11,12 @@ const log = logger.child({ service: "email" });
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   if (!resend) {
-    log.warn("Email not configured - skipping password reset email");
-    if (env.NODE_ENV === "development") {
-      log.debug({ resetUrl }, "Password reset URL (dev only)");
+    if (env.NODE_ENV === "production") {
+      log.error("RESEND_API_KEY is not configured in production - cannot send emails");
+      throw new Error("Email service not configured");
     }
+    log.warn("Email not configured - skipping password reset email");
+    log.debug({ resetUrl }, "Password reset URL (dev only)");
     return;
   }
 

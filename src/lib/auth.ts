@@ -5,6 +5,7 @@ import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
+import { registrationRateLimiter, checkRateLimit } from "./rate-limit";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -61,6 +62,12 @@ providers.push(
       });
 
       if (isRegistration) {
+        // Rate limit registration attempts by email
+        const rateLimitResult = await checkRateLimit(registrationRateLimiter, `register:${email}`);
+        if (!rateLimitResult.success) {
+          throw new Error("Too many registration attempts. Please try again later.");
+        }
+
         // Registration flow
         if (existingUser) {
           throw new Error("An account with this email already exists");
@@ -180,7 +187,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 14 * 24 * 60 * 60, // 14 days
     updateAge: 24 * 60 * 60, // Refresh token every 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
 });

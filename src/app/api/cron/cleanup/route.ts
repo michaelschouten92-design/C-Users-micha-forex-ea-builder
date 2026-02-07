@@ -10,7 +10,7 @@ const log = logger.child({ route: "/api/cron/cleanup" });
  *
  * Protect with a secret bearer token in production (e.g. via Vercel Cron).
  */
-export async function POST(request: NextRequest) {
+async function handleCleanup(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -66,4 +66,13 @@ export async function POST(request: NextRequest) {
     log.error({ error }, "Cleanup failed");
     return NextResponse.json({ error: "Cleanup failed" }, { status: 500 });
   }
+}
+
+// Vercel Cron sends GET requests
+export async function GET(request: NextRequest) {
+  return handleCleanup(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCleanup(request);
 }

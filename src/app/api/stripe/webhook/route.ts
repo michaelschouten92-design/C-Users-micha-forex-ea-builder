@@ -40,9 +40,10 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   if (!env.STRIPE_WEBHOOK_SECRET) {
+    log.error("STRIPE_WEBHOOK_SECRET not configured");
     return NextResponse.json(
-      { error: "Stripe webhook secret not configured" },
-      { status: 500 }
+      { error: "Webhook processing failed" },
+      { status: 400 }
     );
   }
 
@@ -168,15 +169,23 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Determine plan from price
+  // Determine plan from price - validate against known price IDs
   const priceId = subscription.items.data[0]?.price.id;
-  let tier: "STARTER" | "PRO" = "STARTER";
+  let tier: "STARTER" | "PRO";
 
   if (
     priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID ||
     priceId === env.STRIPE_PRO_YEARLY_PRICE_ID
   ) {
     tier = "PRO";
+  } else if (
+    priceId === env.STRIPE_STARTER_MONTHLY_PRICE_ID ||
+    priceId === env.STRIPE_STARTER_YEARLY_PRICE_ID
+  ) {
+    tier = "STARTER";
+  } else {
+    log.error({ priceId, subscriptionId: subscription.id }, "Unknown price ID in subscription update");
+    return;
   }
 
   // Map Stripe status to our status

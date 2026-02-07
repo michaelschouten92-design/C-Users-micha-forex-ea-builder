@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { forgotPasswordSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { forgotPasswordSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
 import { env } from "@/lib/env";
 import {
   passwordResetRateLimiter,
@@ -14,7 +14,9 @@ import crypto from "crypto";
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/forgot-password", "POST");
 
-  // Check body size
+  // Validate request
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
   const sizeError = checkBodySize(request);
   if (sizeError) return sizeError;
 

@@ -413,6 +413,21 @@ export type CheckoutRequestInput = z.infer<typeof checkoutRequestSchema>;
 // HELPER FUNCTIONS
 // ============================================
 
+/**
+ * Check that Content-Type header is application/json.
+ * Returns an error Response if invalid, null if OK.
+ */
+export function checkContentType(request: Request): Response | null {
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    return Response.json(
+      { error: "Content-Type must be application/json", code: "VALIDATION_FAILED" },
+      { status: 415 }
+    );
+  }
+  return null;
+}
+
 /** Max request body size in bytes (1MB default) */
 const MAX_BODY_SIZE = 1 * 1024 * 1024;
 

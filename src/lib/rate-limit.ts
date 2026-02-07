@@ -215,6 +215,15 @@ export const loginRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for registration attempts
+ * Limits: 5 registrations per hour per IP/email
+ */
+export const registrationRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
  * Rate limiter for API requests (general)
  * Limits: 100 requests per minute per user
  */

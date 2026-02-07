@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { updateProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { updateProjectSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { audit } from "@/lib/audit";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -20,7 +21,7 @@ export async function GET(request: Request, { params }: Params) {
     const { id } = await params;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
     const project = await prisma.project.findFirst({
@@ -41,13 +42,13 @@ export async function GET(request: Request, { params }: Params) {
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), { status: 404 });
     }
 
     return NextResponse.json(project);
   } catch (error) {
     logger.error({ error }, "Failed to get project");
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
   }
 }
 
@@ -58,19 +59,21 @@ export async function PATCH(request: Request, { params }: Params) {
     const { id } = await params;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
     // Rate limit
     const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { error: formatRateLimitError(rateLimitResult) },
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rateLimitResult)),
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
 
-    // Check body size
+    // Validate request
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
     const sizeError = checkBodySize(request);
     if (sizeError) return sizeError;
 
@@ -79,7 +82,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatZodErrors(validation.error) },
+        apiError(ErrorCode.VALIDATION_FAILED, "Validation failed", formatZodErrors(validation.error)),
         { status: 400 }
       );
     }
@@ -90,7 +93,7 @@ export async function PATCH(request: Request, { params }: Params) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), { status: 404 });
     }
 
     const { name, description } = validation.data;
@@ -106,7 +109,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json(project);
   } catch (error) {
     logger.error({ error }, "Failed to update project");
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
   }
 }
 
@@ -117,7 +120,7 @@ export async function DELETE(request: Request, { params }: Params) {
     const { id } = await params;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
     // Verify ownership
@@ -126,7 +129,7 @@ export async function DELETE(request: Request, { params }: Params) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), { status: 404 });
     }
 
     await prisma.project.update({
@@ -134,9 +137,11 @@ export async function DELETE(request: Request, { params }: Params) {
       data: { deletedAt: new Date() },
     });
 
+    await audit.projectDelete(session.user.id, id, existing.name);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ error }, "Failed to delete project");
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
   }
 }
