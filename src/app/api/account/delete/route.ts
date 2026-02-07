@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { checkBodySize } from "@/lib/validations";
 import {
-  apiRateLimiter,
+  gdprDeleteRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -22,8 +22,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate limit
-  const rateLimitResult = await checkRateLimit(apiRateLimiter, `gdpr-delete:${session.user.id}`);
+  // Rate limit: 2 attempts per 24 hours
+  const rateLimitResult = await checkRateLimit(gdprDeleteRateLimiter, `gdpr-delete:${session.user.id}`);
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: formatRateLimitError(rateLimitResult) },

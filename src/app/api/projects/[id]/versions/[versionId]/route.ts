@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: Params) {
 
   // Verify ownership
   const project = await prisma.project.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: session.user.id, deletedAt: null },
   });
 
   if (!project) {

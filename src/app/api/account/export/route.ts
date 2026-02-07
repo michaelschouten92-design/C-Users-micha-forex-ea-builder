@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import {
-  apiRateLimiter,
+  gdprExportRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   // Rate limit: 3 exports per hour
-  const rateLimitResult = await checkRateLimit(apiRateLimiter, `gdpr-export:${session.user.id}`);
+  const rateLimitResult = await checkRateLimit(gdprExportRateLimiter, `gdpr-export:${session.user.id}`);
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: formatRateLimitError(rateLimitResult) },

@@ -41,7 +41,7 @@ export async function checkProjectLimit(userId: string): Promise<{
 }> {
   const [tier, projectCount] = await Promise.all([
     getCachedTier(userId),
-    prisma.project.count({ where: { userId } }),
+    prisma.project.count({ where: { userId, deletedAt: null } }),
   ]);
 
   const plan = PLANS[tier];

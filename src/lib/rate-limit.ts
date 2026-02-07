@@ -232,6 +232,24 @@ export const apiRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for GDPR data export
+ * Limits: 3 exports per hour per user
+ */
+export const gdprExportRateLimiter = createRateLimiter({
+  limit: 3,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for GDPR account deletion
+ * Limits: 2 attempts per 24 hours per user
+ */
+export const gdprDeleteRateLimiter = createRateLimiter({
+  limit: 2,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

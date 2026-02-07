@@ -124,6 +124,7 @@ model ExportJob {
   // Indexes for efficient queries
   @@index([userId, createdAt])
   @@index([status, createdAt])
+  @@index([projectId, userId, createdAt])
 }
 
 model PasswordResetToken {
@@ -134,6 +135,7 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt])
 }
 
 model AuditLog {
@@ -149,6 +151,7 @@ model AuditLog {
 
   @@index([userId, createdAt])
   @@index([eventType, createdAt])
+  @@index([createdAt])
 }
 
 model WebhookEvent {

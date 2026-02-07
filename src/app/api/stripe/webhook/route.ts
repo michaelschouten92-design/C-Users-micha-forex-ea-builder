@@ -34,8 +34,13 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
 }
 
 export async function POST(request: NextRequest) {
+  const signature = request.headers.get("stripe-signature");
+  if (!signature) {
+    log.error("Missing stripe-signature header");
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  }
+
   const body = await request.text();
-  const signature = request.headers.get("stripe-signature")!;
 
   let event: Stripe.Event;
 

@@ -5,7 +5,7 @@ import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
-import { registrationRateLimiter, checkRateLimit } from "./rate-limit";
+import { registrationRateLimiter, loginRateLimiter, checkRateLimit } from "./rate-limit";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -94,7 +94,12 @@ providers.push(
           email: user.email,
         };
       } else {
-        // Login flow
+        // Login flow — rate limit by email to prevent brute-force
+        const loginRateResult = await checkRateLimit(loginRateLimiter, `login:${email.toLowerCase()}`);
+        if (!loginRateResult.success) {
+          throw new Error("Too many login attempts. Please try again later.");
+        }
+
         if (!existingUser) {
           throw new Error("No account found with this email address");
         }
