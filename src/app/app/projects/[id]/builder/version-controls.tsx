@@ -1,16 +1,67 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ExportButton } from "./export-button";
 import { ValidationStatus } from "./validation-status";
 import type { ValidationResult } from "./strategy-validation";
-import type { BuildJsonSchema } from "@/types/builder";
+import type { BuildJsonSchema, BuilderNode } from "@/types/builder";
 
 interface Version {
   id: string;
   versionNo: number;
   createdAt: string;
-  buildJson: BuildJsonSchema; // Now included in the response
+  buildJson: BuildJsonSchema;
+}
+
+interface DiffResult {
+  nodesAdded: BuilderNode[];
+  nodesRemoved: BuilderNode[];
+  nodesChanged: { node: BuilderNode; changes: string[] }[];
+  edgesAdded: number;
+  edgesRemoved: number;
+}
+
+function computeDiff(older: BuildJsonSchema, newer: BuildJsonSchema): DiffResult {
+  const oldNodeMap = new Map(older.nodes.map((n) => [n.id, n]));
+  const newNodeMap = new Map(newer.nodes.map((n) => [n.id, n]));
+
+  const nodesAdded = newer.nodes.filter((n) => !oldNodeMap.has(n.id));
+  const nodesRemoved = older.nodes.filter((n) => !newNodeMap.has(n.id));
+
+  const nodesChanged: DiffResult["nodesChanged"] = [];
+  for (const newNode of newer.nodes) {
+    const oldNode = oldNodeMap.get(newNode.id);
+    if (!oldNode) continue;
+
+    const changes: string[] = [];
+    if (oldNode.data.label !== newNode.data.label) {
+      changes.push(`Label: "${oldNode.data.label}" → "${newNode.data.label}"`);
+    }
+
+    // Compare data properties (shallow)
+    const oldData = oldNode.data as Record<string, unknown>;
+    const newData = newNode.data as Record<string, unknown>;
+    const allKeys = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+    for (const key of allKeys) {
+      if (key === "label" || key === "category") continue;
+      const oldVal = JSON.stringify(oldData[key]);
+      const newVal = JSON.stringify(newData[key]);
+      if (oldVal !== newVal) {
+        changes.push(`${key} changed`);
+      }
+    }
+
+    if (changes.length > 0) {
+      nodesChanged.push({ node: newNode, changes });
+    }
+  }
+
+  const oldEdgeIds = new Set(older.edges.map((e) => `${e.source}->${e.target}`));
+  const newEdgeIds = new Set(newer.edges.map((e) => `${e.source}->${e.target}`));
+  const edgesAdded = [...newEdgeIds].filter((id) => !oldEdgeIds.has(id)).length;
+  const edgesRemoved = [...oldEdgeIds].filter((id) => !newEdgeIds.has(id)).length;
+
+  return { nodesAdded, nodesRemoved, nodesChanged, edgesAdded, edgesRemoved };
 }
 
 interface VersionControlsProps {
@@ -37,6 +88,7 @@ export function VersionControls({
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [diffVersions, setDiffVersions] = useState<[number, number] | null>(null);
 
   // Fetch versions list
   const fetchVersions = async () => {
@@ -84,6 +136,16 @@ export function VersionControls({
   const latestVersion = versions[0]?.versionNo ?? 0;
   const nextVersion = latestVersion + 1;
 
+  // Compute diff between selected versions
+  const diff = useMemo(() => {
+    if (!diffVersions) return null;
+    const [olderNo, newerNo] = diffVersions;
+    const older = versions.find((v) => v.versionNo === olderNo);
+    const newer = versions.find((v) => v.versionNo === newerNo);
+    if (!older || !newer) return null;
+    return computeDiff(older.buildJson, newer.buildJson);
+  }, [diffVersions, versions]);
+
   return (
     <div className="h-12 bg-[#1A0626] border-t border-[rgba(79,70,229,0.2)] px-2 md:px-4 flex items-center justify-between gap-1 md:gap-0">
       {/* Left side - Save and Load */}
@@ -123,23 +185,39 @@ export function VersionControls({
           </button>
 
           {showDropdown && versions.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-1 w-64 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] max-h-48 overflow-y-auto">
-              {versions.map((version) => (
-                <button
+            <div className="absolute bottom-full left-0 mb-1 w-72 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] max-h-48 overflow-y-auto">
+              {versions.map((version, idx) => (
+                <div
                   key={version.id}
-                  onClick={() => handleLoad(version.id)}
-                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-[rgba(79,70,229,0.15)] flex justify-between items-center text-white transition-colors duration-200"
+                  className="flex items-center hover:bg-[rgba(79,70,229,0.15)] transition-colors duration-200"
                 >
-                  <span className="font-medium">Version {version.versionNo}</span>
-                  <span className="text-[#64748B] text-xs">
-                    {new Date(version.createdAt).toLocaleDateString("nl-NL", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => handleLoad(version.id)}
+                    className="flex-1 px-4 py-2.5 text-left text-sm flex justify-between items-center text-white"
+                  >
+                    <span className="font-medium">Version {version.versionNo}</span>
+                    <span className="text-[#64748B] text-xs">
+                      {new Date(version.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </button>
+                  {idx < versions.length - 1 && (
+                    <button
+                      onClick={() => {
+                        setDiffVersions([versions[idx + 1].versionNo, version.versionNo]);
+                        setShowDropdown(false);
+                      }}
+                      className="px-2 py-1 mr-2 text-[10px] text-[#A78BFA] hover:bg-[rgba(167,139,250,0.15)] rounded transition-colors flex-shrink-0"
+                      title={`Compare v${versions[idx + 1].versionNo} → v${version.versionNo}`}
+                    >
+                      Diff
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -204,6 +282,101 @@ export function VersionControls({
           <span className="text-[#64748B] hidden md:inline">No versions saved yet</span>
         )}
       </div>
+
+      {/* Version Diff Modal */}
+      {diff && diffVersions && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 max-h-[70vh] flex flex-col">
+            <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">
+                Changes: v{diffVersions[0]} → v{diffVersions[1]}
+              </h3>
+              <button
+                onClick={() => setDiffVersions(null)}
+                className="text-[#64748B] hover:text-white p-1 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-4 text-sm">
+              {diff.nodesAdded.length === 0 && diff.nodesRemoved.length === 0 && diff.nodesChanged.length === 0 && diff.edgesAdded === 0 && diff.edgesRemoved === 0 ? (
+                <p className="text-[#64748B] text-center py-4">No differences found</p>
+              ) : (
+                <>
+                  {diff.nodesAdded.length > 0 && (
+                    <div>
+                      <h4 className="text-[#22D3EE] font-medium mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#22D3EE]" />
+                        Blocks added ({diff.nodesAdded.length})
+                      </h4>
+                      <ul className="space-y-1 pl-4">
+                        {diff.nodesAdded.map((n) => (
+                          <li key={n.id} className="text-[#CBD5E1]">{n.data.label} <span className="text-[#64748B]">({n.type})</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {diff.nodesRemoved.length > 0 && (
+                    <div>
+                      <h4 className="text-[#EF4444] font-medium mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
+                        Blocks removed ({diff.nodesRemoved.length})
+                      </h4>
+                      <ul className="space-y-1 pl-4">
+                        {diff.nodesRemoved.map((n) => (
+                          <li key={n.id} className="text-[#CBD5E1]">{n.data.label} <span className="text-[#64748B]">({n.type})</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {diff.nodesChanged.length > 0 && (
+                    <div>
+                      <h4 className="text-[#FBBF24] font-medium mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#FBBF24]" />
+                        Blocks modified ({diff.nodesChanged.length})
+                      </h4>
+                      <ul className="space-y-2 pl-4">
+                        {diff.nodesChanged.map(({ node, changes }) => (
+                          <li key={node.id}>
+                            <span className="text-[#CBD5E1] font-medium">{node.data.label}</span>
+                            <ul className="mt-1 space-y-0.5">
+                              {changes.map((c, i) => (
+                                <li key={i} className="text-xs text-[#94A3B8] pl-3">{c}</li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(diff.edgesAdded > 0 || diff.edgesRemoved > 0) && (
+                    <div>
+                      <h4 className="text-[#A78BFA] font-medium mb-2 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#A78BFA]" />
+                        Connections
+                      </h4>
+                      <div className="pl-4 text-[#CBD5E1] space-y-1">
+                        {diff.edgesAdded > 0 && <p>+{diff.edgesAdded} added</p>}
+                        {diff.edgesRemoved > 0 && <p>-{diff.edgesRemoved} removed</p>}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="p-3 border-t border-[rgba(79,70,229,0.2)] flex justify-end">
+              <button
+                onClick={() => setDiffVersions(null)}
+                className="px-4 py-1.5 text-sm text-[#CBD5E1] hover:text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

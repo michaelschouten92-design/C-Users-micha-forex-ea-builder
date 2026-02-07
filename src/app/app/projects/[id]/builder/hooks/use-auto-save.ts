@@ -30,9 +30,6 @@ export function useAutoSave({
 }: UseAutoSaveOptions): UseAutoSaveReturn {
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const savedStateRef = useRef<string>(
-    JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] })
-  );
   const lastSavedVersionRef = useRef<number>(0);
 
   // Use refs to always have latest state in callbacks (prevents stale closures)
@@ -43,13 +40,25 @@ export function useAutoSave({
   edgesRef.current = edges;
   initialDataRef.current = initialData;
 
-  // Check for unsaved changes
-  const currentState = JSON.stringify({ nodes, edges });
-  const hasUnsavedChanges = currentState !== savedStateRef.current;
+  // Track unsaved changes via a counter instead of JSON.stringify every render.
+  // changeCounter increments when nodes/edges array references change (React Flow
+  // creates new arrays on any mutation). savedCounterRef tracks the last saved value.
+  const changeCounterRef = useRef(0);
+  const savedCounterRef = useRef(0);
+  const prevNodesRef = useRef(nodes);
+  const prevEdgesRef = useRef(edges);
+
+  if (nodes !== prevNodesRef.current || edges !== prevEdgesRef.current) {
+    changeCounterRef.current += 1;
+    prevNodesRef.current = nodes;
+    prevEdgesRef.current = edges;
+  }
+
+  const hasUnsavedChanges = changeCounterRef.current !== savedCounterRef.current;
 
   // Mark current state as saved
   const markAsSaved = useCallback(() => {
-    savedStateRef.current = JSON.stringify({ nodes: nodesRef.current, edges: edgesRef.current });
+    savedCounterRef.current = changeCounterRef.current;
   }, []);
 
   // Save to server - stable reference, reads latest state from refs
@@ -93,7 +102,7 @@ export function useAutoSave({
         if (res.ok) {
           const data = await res.json();
           lastSavedVersionRef.current = data.versionNo;
-          savedStateRef.current = JSON.stringify({ nodes: currentNodes, edges: currentEdges });
+          savedCounterRef.current = changeCounterRef.current;
           if (isAutosave) {
             setAutoSaveStatus("saved");
             setTimeout(() => setAutoSaveStatus("idle"), 2000);
@@ -149,6 +158,18 @@ export function useAutoSave({
       }
     };
   }, [hasUnsavedChanges, nodes.length, saveToServer, debounceMs]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   return {
     autoSaveStatus,

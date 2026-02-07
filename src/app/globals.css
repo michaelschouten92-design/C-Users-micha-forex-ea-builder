@@ -87,7 +87,7 @@ body {
   background: linear-gradient(135deg, var(--midnight-purple) 0%, var(--studio-black) 50%, var(--studio-black) 100%);
   background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   min-height: 100vh;
 }
 
@@ -233,4 +233,36 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* ============================================
+   REDUCED MOTION (Accessibility)
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable animated React Flow edges */
+  .react-flow__edge-path {
+    animation: none !important;
+  }
+
+  .react-flow__edge.animated path {
+    animation: none !important;
+  }
+
+  /* Disable glow effects */
+  .glow-cyan,
+  .glow-cyan-sm,
+  .glow-cyan-lg,
+  .glow-violet {
+    box-shadow: none;
+  }
 }

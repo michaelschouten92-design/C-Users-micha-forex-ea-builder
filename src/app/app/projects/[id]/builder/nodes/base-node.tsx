@@ -61,7 +61,7 @@ export const BaseNode = memo(function BaseNode({
   const styles = categoryStyles[category];
   const { deleteElements } = useReactFlow();
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     deleteElements({ nodes: [{ id }] });
   };
@@ -78,7 +78,10 @@ export const BaseNode = memo(function BaseNode({
       {/* Delete button - visible on hover or when selected */}
       <button
         onClick={handleDelete}
-        className={`absolute -top-2 -right-2 w-6 h-6 bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10 ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleDelete(e); }}
+        tabIndex={0}
+        aria-label={`Delete ${label} block`}
+        className={`absolute -top-2 -right-2 w-6 h-6 bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE] ${selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
         title="Delete block (Delete key)"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

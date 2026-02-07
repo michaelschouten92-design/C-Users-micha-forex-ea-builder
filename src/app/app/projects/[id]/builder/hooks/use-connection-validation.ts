@@ -11,6 +11,7 @@ interface UseConnectionValidationOptions {
 
 interface UseConnectionValidationReturn {
   connectionError: string | null;
+  dismissConnectionError: () => void;
   isValidConnection: (connection: Connection | Edge) => boolean;
   onConnect: (params: Connection) => void;
 }
@@ -32,7 +33,7 @@ export function useConnectionValidation({
     setConnectionError(message);
     connectionErrorTimeoutRef.current = setTimeout(() => {
       setConnectionError(null);
-    }, 3000);
+    }, 5000);
   }, []);
 
   // Validate connection before allowing it
@@ -69,8 +70,16 @@ export function useConnectionValidation({
     [nodes, edges, setEdges, showConnectionError]
   );
 
+  const dismissConnectionError = useCallback(() => {
+    if (connectionErrorTimeoutRef.current) {
+      clearTimeout(connectionErrorTimeoutRef.current);
+    }
+    setConnectionError(null);
+  }, []);
+
   return {
     connectionError,
+    dismissConnectionError,
     isValidConnection,
     onConnect,
   };

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreateProjectButton } from "./components/create-project-button";
-import { ProjectCard } from "./components/project-card";
+import { ProjectList } from "./components/project-list";
 import { SubscriptionPanel } from "./components/subscription-panel";
 
 export default async function DashboardPage() {
@@ -95,38 +95,7 @@ export default async function DashboardPage() {
           <CreateProjectButton />
         </div>
 
-        {projects.length === 0 ? (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
-            <div className="text-[#64748B] mb-4">
-              <svg
-                className="mx-auto h-12 w-12"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              No projects yet
-            </h3>
-            <p className="text-[#94A3B8] mb-4">
-              Create your first Expert Advisor project.
-            </p>
-            <CreateProjectButton />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        )}
+        <ProjectList projects={projects} />
       </main>
     </div>
   );

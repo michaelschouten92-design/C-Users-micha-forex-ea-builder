@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectSettings } from "./project-settings";
-import { StrategyBuilder } from "./builder/strategy-builder";
+import { LazyStrategyBuilder } from "./builder/lazy-strategy-builder";
 import { CollapsibleSidebar } from "./collapsible-sidebar";
 import { getUserPlanLimits } from "@/lib/plan-limits";
 import type { BuildJsonSchema } from "@/types/builder";
@@ -86,7 +86,7 @@ export default async function ProjectPage({ params }: Props) {
       <main className="flex-1 flex min-h-0">
         {/* Main content area - Strategy Builder */}
         <div className="flex-1 min-w-0">
-          <StrategyBuilder
+          <LazyStrategyBuilder
             projectId={project.id}
             latestVersion={latestVersion}
             canExportMQL5={planLimits.limits.canExportMQL5}
