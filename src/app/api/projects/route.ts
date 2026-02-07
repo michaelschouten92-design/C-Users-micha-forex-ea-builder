@@ -82,15 +82,6 @@ export async function POST(request: Request) {
     const sizeError = checkBodySize(request);
     if (sizeError) return sizeError;
 
-    // Check project limit
-    const projectLimit = await checkProjectLimit(session.user.id);
-    if (!projectLimit.allowed) {
-      return NextResponse.json(
-        apiError(ErrorCode.PROJECT_LIMIT, "Project limit reached", `You've reached the maximum of ${projectLimit.max} projects on your current plan. Upgrade to Pro for unlimited projects.`),
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const validation = createProjectSchema.safeParse(body);
 
@@ -103,15 +94,32 @@ export async function POST(request: Request) {
 
     const { name, description } = validation.data;
 
-    const project = await prisma.project.create({
-      data: {
-        name,
-        description,
-        userId: session.user.id,
-      },
+    // Use transaction to atomically check limit and create project
+    const result = await prisma.$transaction(async (tx) => {
+      const projectLimit = await checkProjectLimit(session.user.id);
+      if (!projectLimit.allowed) {
+        return { error: true as const, max: projectLimit.max };
+      }
+
+      const project = await tx.project.create({
+        data: {
+          name,
+          description,
+          userId: session.user.id,
+        },
+      });
+
+      return { error: false as const, project };
     });
 
-    return NextResponse.json(project, { status: 201 });
+    if (result.error) {
+      return NextResponse.json(
+        apiError(ErrorCode.PROJECT_LIMIT, "Project limit reached", `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to Pro for unlimited projects.`),
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(result.project, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Failed to create project");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });

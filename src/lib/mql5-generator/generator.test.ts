@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: BuildJsonSettings = {
   comment: "Test EA",
   maxOpenTrades: 1,
   allowHedging: false,
+  maxTradesPerDay: 0,
 };
 
 function makeBuild(
@@ -1655,6 +1656,125 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("closeBuyCondition");
       expect(code).toContain("CloseBuyPositions()");
       expect(code).not.toContain("closeSellCondition");
+    });
+  });
+
+  // ============================================
+  // FEATURE: Max Trades Per Day
+  // ============================================
+
+  describe("maxTradesPerDay setting", () => {
+    function makeStrategyWithDayLimit(maxTradesPerDay: number) {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ma1", "moving-average", {
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: "H1",
+          period: 20,
+          method: "SMA",
+          appliedPrice: "CLOSE",
+          shift: 0,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings.maxTradesPerDay = maxTradesPerDay;
+      return build;
+    }
+
+    it("generates daily trade limit code when maxTradesPerDay > 0", () => {
+      const build = makeStrategyWithDayLimit(5);
+      const code = generateMQL5Code(build, "DayLimitTest");
+
+      // Should contain daily tracking global variables
+      expect(code).toContain("datetime lastTradeDay = 0;");
+      expect(code).toContain("int tradesToday = 0;");
+
+      // Should contain day-reset logic
+      expect(code).toContain("iTime(_Symbol, PERIOD_D1, 0)");
+      expect(code).toContain("if(today != lastTradeDay)");
+      expect(code).toContain("tradesToday = 0;");
+
+      // Should contain daily limit in entry condition
+      expect(code).toContain("tradesToday < 5");
+
+      // Should increment counter after opening a trade
+      expect(code).toContain("tradesToday++");
+    });
+
+    it("does NOT generate daily trade limit code when maxTradesPerDay is 0", () => {
+      const build = makeStrategyWithDayLimit(0);
+      const code = generateMQL5Code(build, "NoDayLimitTest");
+
+      // Should NOT contain daily tracking variables
+      expect(code).not.toContain("lastTradeDay");
+      expect(code).not.toContain("tradesToday");
+
+      // Should NOT contain daily limit check
+      expect(code).not.toContain("PERIOD_D1");
+    });
+
+    it("uses the exact maxTradesPerDay value in the condition", () => {
+      const build = makeStrategyWithDayLimit(10);
+      const code = generateMQL5Code(build, "DayLimit10");
+      expect(code).toContain("tradesToday < 10");
+    });
+
+    it("includes both maxOpenTrades and maxTradesPerDay in entry condition", () => {
+      const build = makeStrategyWithDayLimit(3);
+      build.settings.maxOpenTrades = 2;
+      const code = generateMQL5Code(build, "CombinedLimits");
+
+      // Should check both limits
+      expect(code).toContain("positionsCount < 2");
+      expect(code).toContain("tradesToday < 3");
+      expect(code).toContain("newBar");
+    });
+
+    it("defaults to no daily limit when maxTradesPerDay is undefined", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      // Don't set maxTradesPerDay at all (remove from defaults)
+      delete (build.settings as Record<string, unknown>).maxTradesPerDay;
+      const code = generateMQL5Code(build, "NoSetting");
+
+      expect(code).not.toContain("lastTradeDay");
+      expect(code).not.toContain("tradesToday");
     });
   });
 

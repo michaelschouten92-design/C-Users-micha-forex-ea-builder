@@ -21,10 +21,20 @@ async function getCachedTier(userId: string): Promise<PlanTier> {
 
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
-    select: { tier: true },
+    select: { tier: true, status: true, currentPeriodEnd: true },
   });
 
-  const tier = (subscription?.tier ?? "FREE") as PlanTier;
+  let tier = (subscription?.tier ?? "FREE") as PlanTier;
+
+  // Revert to FREE if subscription is not active or has expired
+  if (tier !== "FREE") {
+    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
+    if (!isActive || isExpired) {
+      tier = "FREE";
+    }
+  }
+
   tierCache.set(userId, { tier, expiresAt: Date.now() + CACHE_TTL_MS });
   return tier;
 }

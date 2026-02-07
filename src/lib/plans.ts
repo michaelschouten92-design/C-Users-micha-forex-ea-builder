@@ -1,28 +1,33 @@
 // Subscription plans configuration
 import { env, features } from "./env";
 
-// Display prices (always available for showing on pricing page)
+// Display prices — override via env vars (amounts in cents), fallback to defaults
+const parsePrice = (envVal: string | undefined, fallback: number) => {
+  const parsed = parseInt(envVal ?? "", 10);
+  return isNaN(parsed) ? fallback : parsed;
+};
+
 const DISPLAY_PRICES = {
   starter: {
     monthly: {
-      amount: 1900, // €19 in cents
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_MONTHLY, 1900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: 20900, // €209 (11 months)
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_YEARLY, 20900),
       currency: "eur",
       interval: "year" as const,
     },
   },
   pro: {
     monthly: {
-      amount: 4900, // €49 in cents
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 4900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: 53900, // €539 (11 months)
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 53900),
       currency: "eur",
       interval: "year" as const,
     },

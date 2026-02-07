@@ -16,8 +16,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AlgoStudio",
-  description: "No-code MT5 Expert Advisor builder",
+  title: {
+    default: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+    template: "%s | AlgoStudio",
+  },
+  description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+  openGraph: {
+    title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+    description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+    type: "website",
+    siteName: "AlgoStudio",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+    description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code.",
+  },
 };
 
 export default async function RootLayout({
@@ -29,6 +43,15 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <script
+            defer
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
       >

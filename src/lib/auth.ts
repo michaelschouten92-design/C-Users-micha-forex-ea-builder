@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
 import { registrationRateLimiter, loginRateLimiter, checkRateLimit } from "./rate-limit";
+import { sendWelcomeEmail } from "./email";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -89,6 +90,9 @@ providers.push(
           },
         });
 
+        // Send welcome email (fire-and-forget, don't block registration)
+        sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
+
         return {
           id: user.id,
           email: user.email,
@@ -165,6 +169,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               },
             });
+
+            // Send welcome email (fire-and-forget)
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
           }
         }
 
