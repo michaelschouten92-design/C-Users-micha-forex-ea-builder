@@ -322,7 +322,7 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
       );
     });
     if (!hasConnectedSignal) {
-      errors.push("Close Condition node has no indicator or price action connected — it won't close any positions.");
+      errors.push("Exit Signal node has no indicator or price action connected — it won't close any positions.");
     }
   }
 

@@ -114,7 +114,7 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[], edges: Edge[] =
     if (!hasConnectedSignal) {
       issues.push({
         type: "warning",
-        message: "Close Condition node has no indicator or price action connected — it won't close any positions",
+        message: "Exit Signal node has no indicator or price action connected — it won't close any positions",
         nodeType: "close-condition",
       });
     }

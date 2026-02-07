@@ -16,6 +16,7 @@ import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
 import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
 import { StopLossNode } from "./stop-loss-node";
 import { TakeProfitNode } from "./take-profit-node";
+import { CloseConditionNode } from "./close-condition-node";
 import {
   BreakevenStopNode,
   TrailingStopNode,
@@ -41,6 +42,7 @@ export const nodeTypes: NodeTypes = {
   "place-sell": PlaceSellNode,
   "stop-loss": StopLossNode,
   "take-profit": TakeProfitNode,
+  "close-condition": CloseConditionNode,
   "breakeven-stop": BreakevenStopNode,
   "trailing-stop": TrailingStopNode,
   "partial-close": PartialCloseNode,
@@ -65,6 +67,7 @@ export {
   PlaceSellNode,
   StopLossNode,
   TakeProfitNode,
+  CloseConditionNode,
   BreakevenStopNode,
   TrailingStopNode,
   PartialCloseNode,

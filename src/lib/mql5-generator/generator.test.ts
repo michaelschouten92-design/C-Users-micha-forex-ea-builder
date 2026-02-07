@@ -1611,7 +1611,7 @@ describe("generateMQL5Code", () => {
         ]
       );
       const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("Close Conditions");
+      expect(code).toContain("Exit Signal Conditions");
       expect(code).toContain("closeBuyCondition");
       expect(code).toContain("closeSellCondition");
       expect(code).toContain("CloseBuyPositions()");

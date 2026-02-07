@@ -33,12 +33,12 @@ export function generateCloseConditionCode(
 
   if (connectedIndicatorNodes.length === 0 && connectedPriceActionNodes.length === 0) {
     code.onTick.push("");
-    code.onTick.push("// Close Condition: no indicator/price action connected");
+    code.onTick.push("// Exit Signal: no indicator/price action connected");
     return;
   }
 
   code.onTick.push("");
-  code.onTick.push("//--- Close Conditions");
+  code.onTick.push("//--- Exit Signal Conditions");
 
   // Generate reverse conditions for closing
   const closeBuyConditions: string[] = [];

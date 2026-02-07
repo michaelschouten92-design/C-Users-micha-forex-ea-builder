@@ -34,6 +34,8 @@ import type {
   PlaceSellNodeData,
   StopLossNodeData,
   TakeProfitNodeData,
+  CloseConditionNodeData,
+  CloseDirection,
   BreakevenStopNodeData,
   TrailingStopNodeData,
   PartialCloseNodeData,
@@ -290,6 +292,8 @@ function NodeFields({
         return <StopLossFields data={data as StopLossNodeData} onChange={onChange} />;
       case "take-profit":
         return <TakeProfitFields data={data as TakeProfitNodeData} onChange={onChange} />;
+      case "close-condition":
+        return <CloseConditionFields data={data as CloseConditionNodeData} onChange={onChange} />;
     }
   }
 
@@ -1270,6 +1274,38 @@ function TakeProfitFields({
           </div>
         </>
       )}
+    </>
+  );
+}
+
+function CloseConditionFields({
+  data,
+  onChange,
+}: {
+  data: CloseConditionNodeData;
+  onChange: (updates: Partial<CloseConditionNodeData>) => void;
+}) {
+  return (
+    <>
+      <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Closes positions when conditions are met
+      </div>
+      <SelectField
+        label="Close Direction"
+        value={data.closeDirection}
+        options={[
+          { value: "BOTH", label: "Close Both (Buy & Sell)" },
+          { value: "BUY", label: "Close Buy Only" },
+          { value: "SELL", label: "Close Sell Only" },
+        ]}
+        onChange={(v) => onChange({ closeDirection: v as CloseDirection })}
+      />
+      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+        Closes open positions when connected conditions are triggered. Connect indicator or price action blocks to define when to close.
+      </div>
     </>
   );
 }

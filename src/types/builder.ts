@@ -671,11 +671,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: "close-condition",
-    label: "Close Condition",
+    label: "Exit Signal",
     category: "trading",
     description: "Close positions when conditions reverse",
     defaultData: {
-      label: "Close Condition",
+      label: "Exit Signal",
       category: "trading",
       tradingType: "close-condition",
       closeDirection: "BOTH",
