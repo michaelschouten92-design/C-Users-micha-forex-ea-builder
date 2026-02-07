@@ -17,6 +17,7 @@ import { nodeTypes } from "./nodes";
 import { NodeToolbar } from "./node-toolbar";
 import { PropertiesPanel } from "./properties-panel";
 import { VersionControls } from "./version-controls";
+import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
@@ -373,6 +374,13 @@ export function StrategyCanvas({
             edges={edges}
             settings={initialData?.settings ?? undefined}
           />
+
+          {/* Validation Status - top right overlay */}
+          {nodes.length > 0 && (
+            <div className="absolute top-4 right-4 z-10">
+              <ValidationStatus validation={validation} />
+            </div>
+          )}
 
           {/* Floating Undo/Redo buttons */}
           <div className="absolute bottom-4 right-4 flex gap-2 z-10">

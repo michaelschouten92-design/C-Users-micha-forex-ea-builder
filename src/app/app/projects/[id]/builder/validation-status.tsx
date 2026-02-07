@@ -78,7 +78,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
 
       {/* Dropdown with details */}
       {showDetails && validation.issues.length > 0 && (
-        <div className="absolute bottom-full left-0 mb-2 w-80 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] overflow-hidden">
+        <div className="absolute top-full right-0 mt-2 w-80 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] overflow-hidden">
           <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
             <h4 className="text-sm font-semibold text-white">Strategy Checklist</h4>
           </div>

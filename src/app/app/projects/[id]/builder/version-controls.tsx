@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ExportButton } from "./export-button";
-import { ValidationStatus } from "./validation-status";
 import type { ValidationResult } from "./strategy-validation";
 import type { BuildJsonSchema, BuilderNode } from "@/types/builder";
 
@@ -235,14 +234,8 @@ export function VersionControls({
         />
       </div>
 
-      {/* Right side - Validation Status */}
+      {/* Right side */}
       <div className="flex items-center gap-2 md:gap-4 text-sm">
-        {/* Validation Status - hide on very small screens */}
-        {hasNodes && <div className="hidden sm:block"><ValidationStatus validation={validation} /></div>}
-
-        {/* Separator */}
-        {hasNodes && <div className="w-px h-6 bg-[rgba(79,70,229,0.3)] hidden sm:block" />}
-
         {/* Save status */}
         {autoSaveStatus === "saving" ? (
           <span className="flex items-center gap-1.5 text-[#94A3B8]">
