@@ -99,14 +99,14 @@ export const PLANS = {
     tier: "STARTER" as const,
     features: [
       "Up to 25 projects",
-      "20 exports per month",
+      "10 exports per month",
       "MQL5 source code export",
       "Trade management blocks",
       "Email support",
     ],
     limits: {
       maxProjects: 25,
-      maxExportsPerMonth: 20,
+      maxExportsPerMonth: 10,
       canExportMQL5: true,
       canUseTradeManagement: true,
     },
