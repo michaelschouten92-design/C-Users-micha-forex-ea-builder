@@ -43,7 +43,7 @@ export interface GeneratedCode {
   helperFunctions: string[];
 }
 
-export type MAMethod = "SMA" | "EMA" | "SMMA" | "LWMA";
+export type MAMethod = "SMA" | "EMA";
 export type AppliedPrice = "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 export type TradeDirection = "BUY" | "SELL" | "BOTH";
 
@@ -69,8 +69,6 @@ export function getTimeframe(tf: string | undefined): string {
 export const MA_METHOD_MAP: Record<MAMethod, string> = {
   SMA: "MODE_SMA",
   EMA: "MODE_EMA",
-  SMMA: "MODE_SMMA",
-  LWMA: "MODE_LWMA",
 };
 
 export const APPLIED_PRICE_MAP: Record<AppliedPrice, string> = {

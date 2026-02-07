@@ -76,7 +76,7 @@ export interface MovingAverageNodeData extends BaseNodeData {
   indicatorType: "moving-average";
   timeframe: Timeframe;
   period: number;
-  method: "SMA" | "EMA" | "SMMA" | "LWMA";
+  method: "SMA" | "EMA";
   appliedPrice: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
   shift: number;
 }
@@ -462,7 +462,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "moving-average",
     label: "Moving Average",
     category: "indicator",
-    description: "SMA, EMA, SMMA, LWMA",
+    description: "SMA, EMA",
     defaultData: {
       label: "Moving Average",
       category: "indicator",

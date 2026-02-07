@@ -125,7 +125,7 @@ const movingAverageNodeDataSchema = baseNodeDataSchema.extend({
   indicatorType: z.literal("moving-average"),
   timeframe: timeframeSchema,
   period: z.number().int().min(1).max(1000),
-  method: z.enum(["SMA", "EMA", "SMMA", "LWMA"]),
+  method: z.enum(["SMA", "EMA"]),
   appliedPrice: appliedPriceSchema,
   shift: z.number().int().min(0).max(1000),
 }).strip();
