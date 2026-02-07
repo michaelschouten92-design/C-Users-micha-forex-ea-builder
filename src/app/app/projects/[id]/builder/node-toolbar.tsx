@@ -130,7 +130,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
                 `}
               >
                 {/* Label */}
-                <span>
+                <span className="whitespace-nowrap text-xs">
                   {getCategoryLabel(category)}
                 </span>
 
