@@ -62,10 +62,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Delete any existing tokens for this email
-    await prisma.passwordResetToken.deleteMany({
-      where: { email },
-    });
+    // Delete any existing tokens for this email + clean up all expired tokens
+    await Promise.all([
+      prisma.passwordResetToken.deleteMany({ where: { email } }),
+      prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
+    ]);
 
     // Generate secure token and hash it for storage
     const token = crypto.randomBytes(32).toString("hex");

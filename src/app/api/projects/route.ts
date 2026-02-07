@@ -4,6 +4,7 @@ import { checkProjectLimit } from "@/lib/plan-limits";
 import { createProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -11,8 +12,8 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 
-// GET /api/projects - List all projects for current user
-export async function GET() {
+// GET /api/projects - List all projects for current user (paginated)
+export async function GET(request: Request) {
   try {
     const session = await auth();
 
@@ -20,17 +21,37 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const projects = await prisma.project.findMany({
-      where: { userId: session.user.id, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        _count: {
-          select: { versions: true },
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") ?? "20", 10)));
+    const skip = (page - 1) * limit;
+
+    const [projects, total] = await Promise.all([
+      prisma.project.findMany({
+        where: { userId: session.user.id, deletedAt: null },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          _count: {
+            select: { versions: true },
+          },
         },
+        skip,
+        take: limit,
+      }),
+      prisma.project.count({
+        where: { userId: session.user.id, deletedAt: null },
+      }),
+    ]);
+
+    return NextResponse.json({
+      data: projects,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
-
-    return NextResponse.json(projects);
   } catch (error) {
     logger.error({ error }, "Failed to list projects");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -63,10 +84,7 @@ export async function POST(request: Request) {
     const projectLimit = await checkProjectLimit(session.user.id);
     if (!projectLimit.allowed) {
       return NextResponse.json(
-        {
-          error: "Project limit reached",
-          details: `You've reached the maximum of ${projectLimit.max} projects on your current plan. Upgrade to Pro for unlimited projects.`,
-        },
+        apiError(ErrorCode.PROJECT_LIMIT, "Project limit reached", `You've reached the maximum of ${projectLimit.max} projects on your current plan. Upgrade to Pro for unlimited projects.`),
         { status: 403 }
       );
     }

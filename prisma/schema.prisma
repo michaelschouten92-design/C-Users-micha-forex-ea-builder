@@ -83,8 +83,7 @@ model Project {
   versions BuildVersion[]
   exports  ExportJob[]
 
-  @@index([userId, updatedAt])
-  @@index([userId, deletedAt])
+  @@index([userId, deletedAt, updatedAt])
 }
 
 model BuildVersion {

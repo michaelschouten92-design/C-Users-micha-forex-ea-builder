@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
 import { checkExportLimit, canExportMQL5, canUseTradeManagement } from "@/lib/plan-limits";
 import { exportRequestSchema, buildJsonSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   exportRateLimiter,
   checkRateLimit,
@@ -71,10 +72,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     const exportLimit = await checkExportLimit(session.user.id);
     if (!exportLimit.allowed) {
       return NextResponse.json(
-        {
-          error: "Export limit reached",
-          details: `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`,
-        },
+        apiError(ErrorCode.EXPORT_LIMIT, "Export limit reached", `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`),
         { status: 403 }
       );
     }
@@ -83,10 +81,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     const canExport = await canExportMQL5(session.user.id);
     if (!canExport) {
       return NextResponse.json(
-        {
-          error: "Export not available",
-          details: "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies.",
-        },
+        apiError(ErrorCode.PLAN_REQUIRED, "Export not available", "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies."),
         { status: 403 }
       );
     }
@@ -153,10 +148,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       const canUseTM = await canUseTradeManagement(session.user.id);
       if (!canUseTM) {
         return NextResponse.json(
-          {
-            error: "Pro feature required",
-            details: "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features.",
-          },
+          apiError(ErrorCode.PRO_FEATURE, "Pro feature required", "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features."),
           { status: 403 }
         );
       }

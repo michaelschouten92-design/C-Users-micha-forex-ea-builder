@@ -16,6 +16,7 @@ interface UseKeyboardShortcutsOptions {
   pasteNodes: () => void;
   duplicateSelectedNodes: () => void;
   onUndoRedo: () => void; // Called to skip snapshot after undo/redo
+  onSave?: () => void; // Called on Ctrl+S
 }
 
 export function useKeyboardShortcuts({
@@ -28,6 +29,7 @@ export function useKeyboardShortcuts({
   pasteNodes,
   duplicateSelectedNodes,
   onUndoRedo,
+  onSave,
 }: UseKeyboardShortcutsOptions): void {
   // Handle deletion of selected nodes
   const deleteSelectedNodes = useCallback(() => {
@@ -108,9 +110,15 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         duplicateSelectedNodes();
       }
+
+      // Ctrl+S or Cmd+S for save
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault();
+        onSave?.();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, setNodes, setEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes, onUndoRedo]);
+  }, [undo, redo, setNodes, setEdges, copySelectedNodes, pasteNodes, duplicateSelectedNodes, onUndoRedo, onSave]);
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updateProjectSchema, formatZodErrors, checkBodySize } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   apiRateLimiter,
   checkRateLimit,

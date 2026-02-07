@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createVersionSchema, formatZodErrors } from "@/lib/validations";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import {
@@ -18,7 +19,7 @@ class VersionConflictError extends Error {
 
 type Params = { params: Promise<{ id: string }> };
 
-// GET /api/projects/[id]/versions - List all versions for a project
+// GET /api/projects/[id]/versions - List versions for a project (paginated)
 export async function GET(request: Request, { params }: Params) {
   const session = await auth();
   const { id } = await params;
@@ -36,18 +37,38 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const versions = await prisma.buildVersion.findMany({
-    where: { projectId: id },
-    orderBy: { versionNo: "desc" },
-    select: {
-      id: true,
-      versionNo: true,
-      createdAt: true,
-      buildJson: true, // Include buildJson to avoid N+1 queries when loading versions
+  const url = new URL(request.url);
+  const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10));
+  const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") ?? "20", 10)));
+  const skip = (page - 1) * limit;
+
+  const [versions, total] = await Promise.all([
+    prisma.buildVersion.findMany({
+      where: { projectId: id },
+      orderBy: { versionNo: "desc" },
+      select: {
+        id: true,
+        versionNo: true,
+        createdAt: true,
+        buildJson: true,
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.buildVersion.count({
+      where: { projectId: id },
+    }),
+  ]);
+
+  return NextResponse.json({
+    data: versions,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
   });
-
-  return NextResponse.json(versions);
 }
 
 // POST /api/projects/[id]/versions - Create a new version
@@ -155,8 +176,7 @@ export async function POST(request: Request, { params }: Params) {
     if (error instanceof VersionConflictError) {
       return NextResponse.json(
         {
-          error: "Version conflict",
-          details: `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`,
+          ...apiError(ErrorCode.VERSION_CONFLICT, "Version conflict", `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`),
           currentVersion: error.actual,
         },
         { status: 409 }

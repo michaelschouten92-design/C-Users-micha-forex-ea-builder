@@ -27,6 +27,7 @@ import {
   useClipboard,
   useKeyboardShortcuts,
   useConnectionValidation,
+  useOnlineStatus,
 } from "./hooks";
 import type {
   BuilderNode,
@@ -163,7 +164,13 @@ export function StrategyCanvas({
     onUndoRedo: () => {
       skipSnapshotRef.current = true;
     },
+    onSave: () => {
+      saveToServer(false);
+    },
   });
+
+  // Online/offline detection
+  const isOnline = useOnlineStatus();
 
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
@@ -349,6 +356,16 @@ export function StrategyCanvas({
               >
                 Retry
               </button>
+            </div>
+          )}
+
+          {/* Offline warning banner */}
+          {!isOnline && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw]">
+              <svg className="w-5 h-5 flex-shrink-0 text-[#FCD34D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m-2.829-2.829a5 5 0 000-7.07m-4.243 4.243a1 1 0 010-1.414" />
+              </svg>
+              <span className="text-sm font-medium">You are offline — changes won&apos;t be saved until you reconnect</span>
             </div>
           )}
 

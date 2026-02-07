@@ -92,10 +92,11 @@ export function VersionControls({
   // Fetch versions list
   const fetchVersions = async () => {
     try {
-      const res = await fetch(`/api/projects/${projectId}/versions`);
+      const res = await fetch(`/api/projects/${projectId}/versions?limit=20`);
       if (res.ok) {
-        const data = await res.json();
-        setVersions(data);
+        const json = await res.json();
+        // Support both paginated { data: [] } and legacy flat array responses
+        setVersions(Array.isArray(json) ? json : json.data);
       }
     } catch (error) {
       console.error("Failed to fetch versions:", error);
