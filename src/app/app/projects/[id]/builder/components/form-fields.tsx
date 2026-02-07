@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState, useEffect } from "react";
 
 interface SelectFieldProps<T extends string> {
   label: string;
@@ -60,6 +60,11 @@ export function NumberField({
   onChange,
 }: NumberFieldProps) {
   const id = useId();
+  const [localValue, setLocalValue] = useState(String(value));
+
+  useEffect(() => {
+    setLocalValue(String(value));
+  }, [value]);
 
   return (
     <div>
@@ -69,15 +74,28 @@ export function NumberField({
       <input
         id={id}
         type="number"
-        value={value}
+        value={localValue}
         min={min}
         max={max}
         step={step}
         onChange={(e) => {
           e.stopPropagation();
-          const val = parseFloat(e.target.value);
-          if (!isNaN(val)) {
-            onChange(val);
+          const raw = e.target.value;
+          setLocalValue(raw);
+          const num = parseFloat(raw);
+          if (!isNaN(num)) {
+            onChange(num);
+          }
+        }}
+        onBlur={() => {
+          const num = parseFloat(localValue);
+          if (isNaN(num) || localValue === "") {
+            setLocalValue(String(min));
+            onChange(min);
+          } else {
+            const clamped = Math.min(max, Math.max(min, num));
+            setLocalValue(String(clamped));
+            if (clamped !== num) onChange(clamped);
           }
         }}
         onPointerDown={(e) => e.stopPropagation()}

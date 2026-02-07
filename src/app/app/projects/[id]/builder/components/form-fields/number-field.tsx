@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, memo } from "react";
+import { useId, useState, useEffect, memo } from "react";
 
 interface NumberFieldProps {
   label: string;
@@ -20,6 +20,12 @@ export const NumberField = memo(function NumberField({
   onChange,
 }: NumberFieldProps) {
   const inputId = useId();
+  const [localValue, setLocalValue] = useState(String(value));
+
+  // Sync from parent when value changes externally
+  useEffect(() => {
+    setLocalValue(String(value));
+  }, [value]);
 
   return (
     <div>
@@ -32,7 +38,7 @@ export const NumberField = memo(function NumberField({
       <input
         id={inputId}
         type="number"
-        value={value}
+        value={localValue}
         min={min}
         max={max}
         step={step}
@@ -41,7 +47,23 @@ export const NumberField = memo(function NumberField({
         aria-valuenow={value}
         onChange={(e) => {
           e.stopPropagation();
-          onChange(parseFloat(e.target.value) || 0);
+          const raw = e.target.value;
+          setLocalValue(raw);
+          const num = parseFloat(raw);
+          if (!isNaN(num)) {
+            onChange(num);
+          }
+        }}
+        onBlur={() => {
+          const num = parseFloat(localValue);
+          if (isNaN(num) || localValue === "") {
+            setLocalValue(String(min));
+            onChange(min);
+          } else {
+            const clamped = Math.min(max, Math.max(min, num));
+            setLocalValue(String(clamped));
+            if (clamped !== num) onChange(clamped);
+          }
         }}
         onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
