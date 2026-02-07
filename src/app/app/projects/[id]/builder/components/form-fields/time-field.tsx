@@ -42,7 +42,7 @@ export const TimeField = memo(function TimeField({
             onChange(parseInt(e.target.value) || 0, minute);
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="w-12 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+          className="w-14 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           placeholder="HH"
         />
         <span className="text-[#64748B]" aria-hidden="true">
@@ -66,7 +66,7 @@ export const TimeField = memo(function TimeField({
             onChange(hour, parseInt(e.target.value) || 0);
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="w-12 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+          className="w-14 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           placeholder="MM"
         />
       </div>
