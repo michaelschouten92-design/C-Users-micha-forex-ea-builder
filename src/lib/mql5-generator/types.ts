@@ -8,6 +8,7 @@ export interface GeneratorContext {
   allowHedging: boolean;
   maxBuyPositions: number;
   maxSellPositions: number;
+  conditionMode: "AND" | "OR";
 }
 
 export interface IndicatorVariable {

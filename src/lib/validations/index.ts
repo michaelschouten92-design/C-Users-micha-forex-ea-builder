@@ -254,6 +254,12 @@ const takeProfitNodeDataSchema = baseNodeDataSchema.extend({
   atrPeriod: z.number().int().min(1).max(1000),
 }).passthrough();
 
+const closeConditionNodeDataSchema = baseNodeDataSchema.extend({
+  category: z.literal("trading"),
+  tradingType: z.literal("close-condition"),
+  closeDirection: z.enum(["BUY", "SELL", "BOTH"]),
+}).passthrough();
+
 // ---- Trade Management node data schemas (Pro only) ----
 const breakevenStopNodeDataSchema = baseNodeDataSchema.extend({
   category: z.literal("trademanagement"),
@@ -343,6 +349,7 @@ const buildSettingsSchema = z.object({
   comment: z.string().max(100),
   maxOpenTrades: z.number().int().min(1).max(100),
   allowHedging: z.boolean(),
+  conditionMode: z.enum(["AND", "OR"]).optional(),
 });
 
 // Build metadata schema

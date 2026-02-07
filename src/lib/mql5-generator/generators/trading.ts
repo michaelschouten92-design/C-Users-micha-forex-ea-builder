@@ -107,11 +107,12 @@ function generateIndicatorBasedSL(
     connectedIndicator = indicatorNodes.find(n => n.id === data.indicatorNodeId);
   }
 
-  // Fallback: check edges for connection to SL node
+  // Fallback: check edges for connection to SL node (either direction)
   if (!connectedIndicator) {
-    const connectedEdge = edges.find(e => e.target === slNode.id);
+    const connectedEdge = edges.find(e => e.target === slNode.id || e.source === slNode.id);
     if (connectedEdge) {
-      connectedIndicator = indicatorNodes.find(n => n.id === connectedEdge.source);
+      const otherId = connectedEdge.target === slNode.id ? connectedEdge.source : connectedEdge.target;
+      connectedIndicator = indicatorNodes.find(n => n.id === otherId);
     }
   }
 
@@ -202,11 +203,26 @@ export function generateTakeProfitCode(
       code.onTick.push("double tpPips = slPips * InpRiskReward;");
       break;
 
-    case "ATR_BASED":
-      // Reuse ATR handle if already created
+    case "ATR_BASED": {
       code.inputs.push(createInput(node, "atrMultiplier", "InpTPATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for TP", tpGroup));
-      code.onTick.push("double tpPips = (atrBuffer[0] / _Point) * InpTPATRMultiplier;");
+      // Check if SL already created an atrHandle; if so, reuse its buffer
+      const hasAtrHandle = code.globalVariables.some(v => v.startsWith("int atrHandle"));
+      if (hasAtrHandle) {
+        code.onTick.push("double tpPips = (atrBuffer[0] / _Point) * InpTPATRMultiplier;");
+      } else {
+        // Create a dedicated ATR handle for TP
+        code.inputs.push(createInput(node, "atrPeriod", "InpTPATRPeriod", "int", data.atrPeriod, "ATR Period for TP", tpGroup));
+        code.globalVariables.push("int tpAtrHandle = INVALID_HANDLE;");
+        code.globalVariables.push("double tpAtrBuffer[];");
+        code.onInit.push("tpAtrHandle = iATR(_Symbol, PERIOD_CURRENT, InpTPATRPeriod);");
+        code.onInit.push('if(tpAtrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for TP"); return(INIT_FAILED); }');
+        code.onDeinit.push("if(tpAtrHandle != INVALID_HANDLE) IndicatorRelease(tpAtrHandle);");
+        code.onInit.push("ArraySetAsSeries(tpAtrBuffer, true);");
+        code.onTick.push("if(CopyBuffer(tpAtrHandle, 0, 0, 1, tpAtrBuffer) < 1) return;");
+        code.onTick.push("double tpPips = (tpAtrBuffer[0] / _Point) * InpTPATRMultiplier;");
+      }
       break;
+    }
   }
 }
 
@@ -308,15 +324,15 @@ export function generateEntryLogic(
     if (buyConditions.length === 0) buyConditions.push("false");
     if (sellConditions.length === 0) sellConditions.push("false");
 
-    code.onTick.push(`bool buyCondition = ${buyConditions.join(" && ")};`);
-    code.onTick.push(`bool sellCondition = ${sellConditions.join(" && ")};`);
+    const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
+    code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
+    code.onTick.push(`bool sellCondition = ${sellConditions.join(joiner)};`);
   }
 
-  // One-trade-per-bar protection
+  // One-trade-per-bar protection (reuse currentBarTime declared in OnTick template)
   code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
   code.onTick.push("");
   code.onTick.push("//--- One-trade-per-bar check");
-  code.onTick.push("datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);");
   code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
 
   // Generate entry execution

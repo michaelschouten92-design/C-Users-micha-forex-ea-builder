@@ -241,11 +241,20 @@ export interface TakeProfitNodeData extends BaseNodeData {
   atrPeriod: number;
 }
 
+export type CloseDirection = "BUY" | "SELL" | "BOTH";
+
+export interface CloseConditionNodeData extends BaseNodeData {
+  category: "trading";
+  tradingType: "close-condition";
+  closeDirection: CloseDirection;
+}
+
 export type TradingNodeData =
   | PlaceBuyNodeData
   | PlaceSellNodeData
   | StopLossNodeData
-  | TakeProfitNodeData;
+  | TakeProfitNodeData
+  | CloseConditionNodeData;
 
 // Trade Management Nodes (Pro only)
 export type BreakevenTrigger = "PIPS" | "ATR" | "PERCENTAGE";
@@ -328,6 +337,7 @@ export type BuilderNodeType =
   | "place-sell"
   | "stop-loss"
   | "take-profit"
+  | "close-condition"
   | "breakeven-stop"
   | "trailing-stop"
   | "partial-close"
@@ -347,6 +357,7 @@ export interface BuildJsonSettings {
   allowHedging: boolean;
   maxBuyPositions?: number;
   maxSellPositions?: number;
+  conditionMode?: "AND" | "OR";
 }
 
 export interface BuildJsonMetadata {
@@ -655,6 +666,18 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       atrMultiplier: 3,
       atrPeriod: 14,
     } as TakeProfitNodeData,
+  },
+  {
+    type: "close-condition",
+    label: "Close Condition",
+    category: "trading",
+    description: "Close positions when conditions reverse",
+    defaultData: {
+      label: "Close Condition",
+      category: "trading",
+      tradingType: "close-condition",
+      closeDirection: "BOTH",
+    } as CloseConditionNodeData,
   },
   // Trade Management (Pro only)
   {

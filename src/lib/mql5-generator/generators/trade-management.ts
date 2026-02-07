@@ -182,10 +182,30 @@ function generatePartialCloseCode(
   const group = "Partial Close";
   code.inputs.push(createInput(node, "closePercent", "InpPartialClosePercent", "double", data.closePercent, "Partial Close %", group));
   code.inputs.push(createInput(node, "triggerPips", "InpPartialCloseTriggerPips", "double", data.triggerPips, "Partial Close Trigger (pips)", group));
-  code.globalVariables.push("bool partialCloseDone[];");
+  code.globalVariables.push("ulong partialClosedTickets[];");
 
-  code.onInit.push("ArrayResize(partialCloseDone, 100);");
-  code.onInit.push("ArrayInitialize(partialCloseDone, false);");
+  // Generate helper functions for partial close tracking
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Check if ticket has been partially closed                         |
+//+------------------------------------------------------------------+
+bool IsPartialClosed(ulong ticket)
+{
+   for(int i = ArraySize(partialClosedTickets) - 1; i >= 0; i--)
+   {
+      if(partialClosedTickets[i] == ticket) return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Mark ticket as partially closed                                   |
+//+------------------------------------------------------------------+
+void MarkPartialClosed(ulong ticket)
+{
+   int size = ArraySize(partialClosedTickets);
+   ArrayResize(partialClosedTickets, size + 1);
+   partialClosedTickets[size] = ticket;
+}`);
 
   code.onTick.push("// Partial Close Management");
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
@@ -207,14 +227,13 @@ function generatePartialCloseCode(
   code.onTick.push("         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)");
   code.onTick.push("            profitReached = true;");
   code.onTick.push("");
-  code.onTick.push("         int ticketIndex = (int)(ticket % 100);");
-  code.onTick.push("         if(profitReached && !partialCloseDone[ticketIndex])");
+  code.onTick.push("         if(profitReached && !IsPartialClosed(ticket))");
   code.onTick.push("         {");
   code.onTick.push("            double closeVolume = NormalizeDouble(volume * InpPartialClosePercent / 100.0, 2);");
   code.onTick.push("            if(closeVolume >= SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))");
   code.onTick.push("            {");
   code.onTick.push("               trade.PositionClosePartial(ticket, closeVolume);");
-  code.onTick.push("               partialCloseDone[ticketIndex] = true;");
+  code.onTick.push("               MarkPartialClosed(ticket);");
 
   if (data.moveSLToBreakeven) {
     code.onTick.push("               // Move SL to breakeven after partial close");

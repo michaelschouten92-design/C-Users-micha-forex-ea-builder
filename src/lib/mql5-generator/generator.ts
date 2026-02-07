@@ -23,7 +23,7 @@ import {
 } from "./templates";
 
 import { sanitizeName } from "./generators/shared";
-import { generateTimingCode } from "./generators/timing";
+import { generateTimingCode, generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
 import {
@@ -34,6 +34,7 @@ import {
   generateEntryLogic,
 } from "./generators/trading";
 import { generateTradeManagementCode } from "./generators/trade-management";
+import { generateCloseConditionCode } from "./generators/close-conditions";
 
 // Helper function to get all connected node IDs starting from source nodes
 function getConnectedNodeIds(
@@ -81,6 +82,7 @@ export function generateMQL5Code(
     allowHedging: buildJson.settings?.allowHedging ?? false,
     maxBuyPositions: buildJson.settings?.maxBuyPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
     maxSellPositions: buildJson.settings?.maxSellPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
+    conditionMode: buildJson.settings?.conditionMode ?? "AND",
   };
 
   const code: GeneratedCode = {
@@ -152,9 +154,9 @@ export function generateMQL5Code(
     (n) => (priceActionTypes.includes(n.type as string) || "priceActionType" in n.data) && isConnected(n)
   );
 
-  // Generate timing code
+  // Generate timing code (supports multiple timing nodes OR'd together)
   if (timingNodes.length > 0) {
-    generateTimingCode(timingNodes[0], code);
+    generateMultipleTimingCode(timingNodes, code);
   }
 
   // Generate indicator code (only connected indicators)
@@ -198,6 +200,16 @@ export function generateMQL5Code(
 
   // Generate entry logic based on connected indicators, price action nodes, and buy/sell nodes
   generateEntryLogic(indicatorNodes, priceActionNodes, hasBuy, hasSell, ctx, code);
+
+  // Generate close condition code
+  const closeConditionNodes = buildJson.nodes.filter(
+    (n) =>
+      (n.type === "close-condition" ||
+      ("tradingType" in n.data && n.data.tradingType === "close-condition")) && isConnected(n)
+  );
+  closeConditionNodes.forEach((ccNode) => {
+    generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);
+  });
 
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {

@@ -284,6 +284,40 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     errors.push(`Disconnected nodes found: ${labels}. Connect them to the strategy flow or remove them.`);
   }
 
+  // Warn about buy/sell nodes that exist but are disconnected
+  const buySellNodes = buildJson.nodes.filter(
+    (n) => n.type === "place-buy" || n.type === "place-sell" ||
+      (n.data && "tradingType" in n.data && (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell"))
+  );
+  if (buySellNodes.length > 0) {
+    const disconnectedBuySell = buySellNodes.filter(
+      (n) => !buildJson.edges.some(e => e.source === n.id || e.target === n.id)
+    );
+    if (disconnectedBuySell.length > 0) {
+      errors.push("No Place Buy or Place Sell connected — strategy won't open any trades.");
+    }
+  }
+
+  // Warn about close condition nodes without connected indicators
+  const closeConditionNodes = buildJson.nodes.filter(
+    (n) => n.type === "close-condition" ||
+      (n.data && "tradingType" in n.data && n.data.tradingType === "close-condition")
+  );
+  for (const ccNode of closeConditionNodes) {
+    const connectedEdges = buildJson.edges.filter(e => e.source === ccNode.id || e.target === ccNode.id);
+    const connectedNodeIds = connectedEdges.map(e => e.source === ccNode.id ? e.target : e.source);
+    const hasConnectedSignal = connectedNodeIds.some(id => {
+      const node = buildJson.nodes.find(n => n.id === id);
+      return node && (
+        indicatorTypes.includes(node.type as string) || ("indicatorType" in node.data) ||
+        priceActionTypes.includes(node.type as string) || ("priceActionType" in node.data)
+      );
+    });
+    if (!hasConnectedSignal) {
+      errors.push("Close Condition node has no indicator or price action connected — it won't close any positions.");
+    }
+  }
+
   return errors;
 }
 

@@ -11,44 +11,79 @@ export function generateTimingCode(
   node: BuilderNode,
   code: GeneratedCode
 ): void {
-  const data = node.data;
+  generateSingleTimingCode(node, "isTradingTime", code);
+  code.onTick.push("if(!isTradingTime) return;");
+  code.onTick.push("");
+}
 
-  // Determine timing type
+export function generateMultipleTimingCode(
+  nodes: BuilderNode[],
+  code: GeneratedCode
+): void {
+  if (nodes.length === 1) {
+    generateTimingCode(nodes[0], code);
+    return;
+  }
+
+  // Generate each timing node with its own variable
+  nodes.forEach((node, index) => {
+    generateSingleTimingCode(node, `isTradingTime${index}`, code);
+  });
+
+  // Combine all timing results with OR
+  const vars = nodes.map((_, i) => `isTradingTime${i}`);
+  code.onTick.push(`bool isTradingTime = ${vars.join(" || ")};`);
+  code.onTick.push("if(!isTradingTime) return;");
+  code.onTick.push("");
+}
+
+function generateSingleTimingCode(
+  node: BuilderNode,
+  varName: string,
+  code: GeneratedCode
+): void {
+  const data = node.data;
   const timingType = ("timingType" in data ? data.timingType : null) || node.type;
 
   switch (timingType) {
     case "always":
-      generateAlwaysCode(code);
+      generateAlwaysCode(varName, code);
       break;
     case "custom-times":
-      generateCustomTimesCode(data as CustomTimesNodeData, code);
+      generateCustomTimesCode(data as CustomTimesNodeData, varName, code);
       break;
     case "trading-session":
     default:
-      generateTradingSessionCode(data as TradingSessionNodeData, code);
+      generateTradingSessionCode(data as TradingSessionNodeData, varName, code);
       break;
   }
 }
 
-function generateAlwaysCode(code: GeneratedCode): void {
+function generateAlwaysCode(varName: string, code: GeneratedCode): void {
   code.onTick.push("// Timing: Always (no time restrictions)");
-  code.onTick.push("bool isTradingTime = true;");
+  code.onTick.push(`bool ${varName} = true;`);
   code.onTick.push("");
 }
 
 function generateCustomTimesCode(
   data: CustomTimesNodeData,
+  varName: string,
   code: GeneratedCode
 ): void {
   code.onTick.push("// Custom Trading Times");
-  code.onTick.push("bool isTradingTime = false;");
-  code.onTick.push("MqlDateTime dt;");
-  if (data.useServerTime) {
-    code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
-  } else {
-    code.onTick.push("TimeToStruct(TimeGMT(), dt);");
-  };
-  code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
+  code.onTick.push(`bool ${varName} = false;`);
+
+  // Only declare MqlDateTime/currentMinutes if not already declared
+  const needsTimeDecl = !code.onTick.some(l => l.includes("MqlDateTime dt;"));
+  if (needsTimeDecl) {
+    code.onTick.push("MqlDateTime dt;");
+    if (data.useServerTime) {
+      code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
+    } else {
+      code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+    }
+    code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
+  }
   code.onTick.push("");
 
   // Generate day of week conditions
@@ -68,8 +103,6 @@ function generateCustomTimesCode(
 
   if (activeDays.length === 0) {
     code.onTick.push("// No trading days selected");
-    code.onTick.push("if(!isTradingTime) return;");
-    code.onTick.push("");
     return;
   }
 
@@ -87,7 +120,7 @@ function generateCustomTimesCode(
 
   // Generate time slot conditions
   if (data.timeSlots.length === 0) {
-    code.onTick.push("   isTradingTime = true; // No time slots defined, trade all day");
+    code.onTick.push(`   ${varName} = true; // No time slots defined, trade all day`);
   } else {
     const slotConditions = data.timeSlots.map((slot) => {
       const startMinutes = slot.startHour * 60 + slot.startMinute;
@@ -108,17 +141,16 @@ function generateCustomTimesCode(
       const endStr = `${slot.endHour.toString().padStart(2, "0")}:${slot.endMinute.toString().padStart(2, "0")}`;
       code.onTick.push(`   // Slot ${i + 1}: ${startStr} - ${endStr}`);
     });
-    code.onTick.push(`   if(${slotConditions.join(" || ")}) isTradingTime = true;`);
+    code.onTick.push(`   if(${slotConditions.join(" || ")}) ${varName} = true;`);
   }
 
   code.onTick.push("}");
-  code.onTick.push("");
-  code.onTick.push("if(!isTradingTime) return; // Outside trading time");
   code.onTick.push("");
 }
 
 function generateTradingSessionCode(
   data: TradingSessionNodeData,
+  varName: string,
   code: GeneratedCode
 ): void {
   const sessionInfo = SESSION_TIMES[data.session];
@@ -131,14 +163,19 @@ function generateTradingSessionCode(
 
   const timeLabel = data.useServerTime ? "Server Time" : "GMT";
   code.onTick.push(`// Trading Session: ${sessionInfo.label} (${sessionInfo.start} - ${sessionInfo.end} ${timeLabel})`);
-  code.onTick.push("bool isTradingTime = false;");
-  code.onTick.push("MqlDateTime dt;");
-  if (data.useServerTime) {
-    code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
-  } else {
-    code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+  code.onTick.push(`bool ${varName} = false;`);
+
+  // Only declare MqlDateTime/currentMinutes if not already declared
+  const needsTimeDecl = !code.onTick.some(l => l.includes("MqlDateTime dt;"));
+  if (needsTimeDecl) {
+    code.onTick.push("MqlDateTime dt;");
+    if (data.useServerTime) {
+      code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
+    } else {
+      code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+    }
+    code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   }
-  code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
 
   if (data.tradeMondayToFriday) {
     code.onTick.push("// Only trade on weekdays (Mon-Fri)");
@@ -148,17 +185,15 @@ function generateTradingSessionCode(
 
   if (endMinutes > startMinutes) {
     // Normal session (same day)
-    code.onTick.push(`   if(currentMinutes >= ${startMinutes} && currentMinutes < ${endMinutes}) isTradingTime = true;`);
+    code.onTick.push(`   if(currentMinutes >= ${startMinutes} && currentMinutes < ${endMinutes}) ${varName} = true;`);
   } else {
     // Overnight session (spans midnight) - e.g., Sydney 22:00-07:00
-    code.onTick.push(`   if(currentMinutes >= ${startMinutes} || currentMinutes < ${endMinutes}) isTradingTime = true;`);
+    code.onTick.push(`   if(currentMinutes >= ${startMinutes} || currentMinutes < ${endMinutes}) ${varName} = true;`);
   }
 
   if (data.tradeMondayToFriday) {
     code.onTick.push("}");
   }
 
-  code.onTick.push("");
-  code.onTick.push("if(!isTradingTime) return; // Outside trading session");
   code.onTick.push("");
 }

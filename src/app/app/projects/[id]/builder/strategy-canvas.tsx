@@ -167,7 +167,7 @@ export function StrategyCanvas({
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
   // Validate strategy
-  const validation = validateStrategy(nodes as Node<BuilderNodeData>[]);
+  const validation = validateStrategy(nodes as Node<BuilderNodeData>[], edges);
 
   // Handle drag start from toolbar
   const onDragStart = useCallback(

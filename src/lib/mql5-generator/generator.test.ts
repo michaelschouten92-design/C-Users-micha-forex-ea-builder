@@ -1227,4 +1227,456 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("InpRSI");
     });
   });
+
+  // ============================================
+  // BUG FIX: Task 5 — ATR TP without SL ATR
+  // ============================================
+
+  describe("ATR TP without ATR SL", () => {
+    it("generates tpAtrHandle when SL is not ATR-based", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "ATR_BASED",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("tpAtrHandle");
+      expect(code).toContain("tpAtrBuffer");
+      expect(code).toContain("InpTPATRPeriod");
+      expect(code).not.toContain("int atrHandle");
+    });
+
+    it("reuses atrBuffer when SL is also ATR-based", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "ATR_BASED",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "ATR_BASED",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("atrBuffer[0]");
+      expect(code).toContain("InpTPATRMultiplier");
+      expect(code).not.toContain("tpAtrHandle");
+    });
+  });
+
+  // ============================================
+  // BUG FIX: Task 6 — No duplicate currentBarTime
+  // ============================================
+
+  describe("duplicate currentBarTime fix", () => {
+    it("does not declare currentBarTime twice", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ma1", "moving-average", {
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: "H1",
+          period: 20,
+          method: "SMA",
+          appliedPrice: "CLOSE",
+          shift: 0,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should only have one declaration of currentBarTime (from the template)
+      const matches = code.match(/datetime currentBarTime/g);
+      expect(matches).not.toBeNull();
+      expect(matches!.length).toBe(1);
+    });
+  });
+
+  // ============================================
+  // FIX: Task 10 — SL with reversed edge
+  // ============================================
+
+  describe("indicator-based SL reversed edge", () => {
+    it("resolves indicator when SL is source and indicator is target", () => {
+      const build = makeBuild(
+        [
+          makeNode("t1", "always", { category: "timing", timingType: "always" }),
+          makeNode("bb1", "bollinger-bands", {
+            category: "indicator",
+            indicatorType: "bollinger-bands",
+            timeframe: "H1",
+            period: 20,
+            deviation: 2,
+            appliedPrice: "CLOSE",
+            shift: 0,
+          }),
+          makeNode("sl1", "stop-loss", {
+            category: "trading",
+            tradingType: "stop-loss",
+            method: "INDICATOR",
+            fixedPips: 50,
+            atrMultiplier: 1.5,
+            atrPeriod: 14,
+          }),
+          makeNode("b1", "place-buy", {
+            category: "trading",
+            tradingType: "place-buy",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+          }),
+        ],
+        [
+          { id: "e1", source: "t1", target: "bb1" },
+          { id: "e2", source: "bb1", target: "b1" },
+          // Reversed edge: SL -> indicator
+          { id: "e3", source: "sl1", target: "bb1" },
+          { id: "e4", source: "t1", target: "sl1" },
+        ]
+      );
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Indicator-based SL using Bollinger Bands");
+      expect(code).toContain("ind0LowerBuffer");
+    });
+  });
+
+  // ============================================
+  // FIX: Task 4 — Partial close uses array search
+  // ============================================
+
+  describe("partial close ticket tracking", () => {
+    it("uses array search instead of ticket modulo", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("pc1", "partial-close", {
+          category: "trademanagement",
+          managementType: "partial-close",
+          closePercent: 50,
+          triggerPips: 30,
+          moveSLToBreakeven: true,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("IsPartialClosed(ticket)");
+      expect(code).toContain("MarkPartialClosed(ticket)");
+      expect(code).toContain("partialClosedTickets");
+      expect(code).not.toContain("ticket % 100");
+    });
+  });
+
+  // ============================================
+  // ENHANCEMENT: Task 2 — Multiple timing nodes
+  // ============================================
+
+  describe("multiple timing nodes", () => {
+    it("combines two timing nodes with OR", () => {
+      const build = makeBuild(
+        [
+          makeNode("t1", "trading-session", {
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          }),
+          makeNode("t2", "trading-session", {
+            category: "timing",
+            timingType: "trading-session",
+            session: "NEW_YORK",
+            tradeMondayToFriday: true,
+          }),
+          makeNode("b1", "place-buy", {
+            category: "trading",
+            tradingType: "place-buy",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+          }),
+        ],
+        [
+          { id: "e1", source: "t1", target: "b1" },
+          { id: "e2", source: "t2", target: "b1" },
+        ]
+      );
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("isTradingTime0");
+      expect(code).toContain("isTradingTime1");
+      expect(code).toContain("isTradingTime0 || isTradingTime1");
+      expect(code).toContain("London Session");
+      expect(code).toContain("New York Session");
+    });
+
+    it("single timing node uses isTradingTime directly", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("bool isTradingTime = true;");
+      expect(code).not.toContain("isTradingTime0");
+    });
+  });
+
+  // ============================================
+  // ENHANCEMENT: Task 1 — AND/OR condition mode
+  // ============================================
+
+  describe("condition mode (AND/OR)", () => {
+    it("joins conditions with || when conditionMode is OR", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ma1", "moving-average", {
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: "H1",
+          period: 20,
+          method: "SMA",
+          appliedPrice: "CLOSE",
+          shift: 0,
+        }),
+        makeNode("rsi1", "rsi", {
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: "H1",
+          period: 14,
+          appliedPrice: "CLOSE",
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings.conditionMode = "OR";
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("||");
+      // Should have || between conditions, not &&
+      const buyLine = code.split("\n").find((l: string) => l.includes("bool buyCondition"));
+      expect(buyLine).toBeDefined();
+      expect(buyLine).toContain("||");
+    });
+
+    it("defaults to AND when conditionMode is not set", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ma1", "moving-average", {
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: "H1",
+          period: 20,
+          method: "SMA",
+          appliedPrice: "CLOSE",
+          shift: 0,
+        }),
+        makeNode("rsi1", "rsi", {
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: "H1",
+          period: 14,
+          appliedPrice: "CLOSE",
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      const buyLine = code.split("\n").find((l: string) => l.includes("bool buyCondition"));
+      expect(buyLine).toBeDefined();
+      expect(buyLine).toContain("&&");
+    });
+  });
+
+  // ============================================
+  // FEATURE: Task 3 — Close conditions
+  // ============================================
+
+  describe("close conditions", () => {
+    it("generates position close logic for close-condition node", () => {
+      const build = makeBuild(
+        [
+          makeNode("t1", "always", { category: "timing", timingType: "always" }),
+          makeNode("ma1", "moving-average", {
+            category: "indicator",
+            indicatorType: "moving-average",
+            timeframe: "H1",
+            period: 20,
+            method: "SMA",
+            appliedPrice: "CLOSE",
+            shift: 0,
+          }),
+          makeNode("b1", "place-buy", {
+            category: "trading",
+            tradingType: "place-buy",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+          }),
+          makeNode("cc1", "close-condition", {
+            category: "trading",
+            tradingType: "close-condition",
+            closeDirection: "BOTH",
+          }),
+        ],
+        [
+          { id: "e1", source: "t1", target: "ma1" },
+          { id: "e2", source: "ma1", target: "b1" },
+          { id: "e3", source: "ma1", target: "cc1" },
+        ]
+      );
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Close Conditions");
+      expect(code).toContain("closeBuyCondition");
+      expect(code).toContain("closeSellCondition");
+      expect(code).toContain("CloseBuyPositions()");
+      expect(code).toContain("CloseSellPositions()");
+    });
+
+    it("only closes BUY when closeDirection is BUY", () => {
+      const build = makeBuild(
+        [
+          makeNode("t1", "always", { category: "timing", timingType: "always" }),
+          makeNode("rsi1", "rsi", {
+            category: "indicator",
+            indicatorType: "rsi",
+            timeframe: "H1",
+            period: 14,
+            appliedPrice: "CLOSE",
+            overboughtLevel: 70,
+            oversoldLevel: 30,
+          }),
+          makeNode("b1", "place-buy", {
+            category: "trading",
+            tradingType: "place-buy",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+          }),
+          makeNode("cc1", "close-condition", {
+            category: "trading",
+            tradingType: "close-condition",
+            closeDirection: "BUY",
+          }),
+        ],
+        [
+          { id: "e1", source: "t1", target: "rsi1" },
+          { id: "e2", source: "rsi1", target: "b1" },
+          { id: "e3", source: "rsi1", target: "cc1" },
+        ]
+      );
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("closeBuyCondition");
+      expect(code).toContain("CloseBuyPositions()");
+      expect(code).not.toContain("closeSellCondition");
+    });
+  });
+
+  // ============================================
+  // FEATURE: Task 7 — Strategy presets validation
+  // ============================================
+
+  describe("strategy presets", () => {
+    it("preset buildJson objects are valid for generation", async () => {
+      const { STRATEGY_PRESETS } = await import("@/lib/strategy-presets");
+      expect(STRATEGY_PRESETS.length).toBe(3);
+      for (const preset of STRATEGY_PRESETS) {
+        expect(preset.id).toBeTruthy();
+        expect(preset.name).toBeTruthy();
+        expect(preset.buildJson.version).toBe("1.0");
+        expect(preset.buildJson.nodes.length).toBeGreaterThan(0);
+        expect(preset.buildJson.edges.length).toBeGreaterThan(0);
+        // Should not throw
+        const code = generateMQL5Code(preset.buildJson, preset.name);
+        expect(code).toContain("#property copyright");
+        expect(code).toContain("OnTick");
+      }
+    });
+  });
 });
