@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { showError } from "@/lib/toast";
 
 // Helper to safely get price - returns null if Stripe not configured
 function getPrice(plan: typeof PLANS.STARTER | typeof PLANS.PRO, interval: "monthly" | "yearly") {
@@ -32,11 +33,11 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error("Checkout error:", data.error);
+        showError(data.error || "Failed to start checkout");
         setLoading(null);
       }
-    } catch (error) {
-      console.error("Checkout error:", error);
+    } catch {
+      showError("Something went wrong. Please try again.");
       setLoading(null);
     }
   }

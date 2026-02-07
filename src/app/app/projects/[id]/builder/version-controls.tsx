@@ -105,8 +105,8 @@ export function VersionControls({
         // Support both paginated { data: [] } and legacy flat array responses
         setVersions(Array.isArray(json) ? json : json.data);
       }
-    } catch (error) {
-      console.error("Failed to fetch versions:", error);
+    } catch {
+      // Silently fail — versions panel will show empty state
     }
   };
 

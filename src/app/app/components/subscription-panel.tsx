@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { showError } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
   tier: "FREE" | "STARTER" | "PRO";
@@ -38,8 +39,8 @@ export function SubscriptionPanel({
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch (error) {
-      console.error("Error opening portal:", error);
+    } catch {
+      showError("Failed to open billing portal. Please try again.");
     } finally {
       setLoading(false);
     }
