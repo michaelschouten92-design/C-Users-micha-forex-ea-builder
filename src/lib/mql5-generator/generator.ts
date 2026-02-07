@@ -83,6 +83,7 @@ export function generateMQL5Code(
     maxBuyPositions: buildJson.settings?.maxBuyPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
     maxSellPositions: buildJson.settings?.maxSellPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
     conditionMode: buildJson.settings?.conditionMode ?? "AND",
+    maxTradesPerDay: buildJson.settings?.maxTradesPerDay ?? 0,
   };
 
   const code: GeneratedCode = {

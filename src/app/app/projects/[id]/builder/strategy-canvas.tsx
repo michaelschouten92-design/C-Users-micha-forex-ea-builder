@@ -34,8 +34,10 @@ import type {
   BuilderNodeData,
   BuilderNodeType,
   BuildJsonSchema,
+  BuildJsonSettings,
   NodeTemplate,
 } from "@/types/builder";
+import { DEFAULT_SETTINGS } from "@/types/builder";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -58,6 +60,11 @@ export function StrategyCanvas({
   // Panel collapse state
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
+
+  // Strategy settings state
+  const [settings, setSettings] = useState<BuildJsonSettings>(
+    initialData?.settings ?? { ...DEFAULT_SETTINGS }
+  );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(
     (initialData?.nodes as Node[]) ?? []
@@ -118,6 +125,7 @@ export function StrategyCanvas({
     nodes,
     edges,
     initialData,
+    settings,
     debounceMs: 5000,
   });
 
@@ -294,14 +302,14 @@ export function StrategyCanvas({
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
         <div className="hidden md:block">
-          <NodeToolbar onDragStart={onDragStart} isPro={isPro} />
+          <NodeToolbar onDragStart={onDragStart} isPro={isPro} settings={settings} onSettingsChange={setSettings} />
         </div>
 
         {/* Mobile toolbar overlay */}
         {mobileToolbarOpen && (
           <div className="md:hidden fixed inset-0 z-40 flex">
             <div className="w-[240px] h-full shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
-              <NodeToolbar onDragStart={onDragStart} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} />
+              <NodeToolbar onDragStart={onDragStart} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} settings={settings} onSettingsChange={setSettings} />
             </div>
             <div className="flex-1" onClick={() => setMobileToolbarOpen(false)} />
           </div>
@@ -389,7 +397,7 @@ export function StrategyCanvas({
           <CodePreviewPanel
             nodes={nodes}
             edges={edges}
-            settings={initialData?.settings ?? undefined}
+            settings={settings}
           />
 
           {/* Validation Status - top right overlay */}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 import type { Node, Edge } from "@xyflow/react";
-import type { BuilderNode, BuilderEdge, BuildJsonSchema } from "@/types/builder";
+import type { BuilderNode, BuilderEdge, BuildJsonSchema, BuildJsonSettings } from "@/types/builder";
 
 export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -11,6 +11,7 @@ interface UseAutoSaveOptions {
   nodes: Node[];
   edges: Edge[];
   initialData: BuildJsonSchema | null;
+  settings?: BuildJsonSettings;
   debounceMs?: number;
 }
 
@@ -26,6 +27,7 @@ export function useAutoSave({
   nodes,
   edges,
   initialData,
+  settings,
   debounceMs = 5000,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
@@ -36,9 +38,11 @@ export function useAutoSave({
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const initialDataRef = useRef(initialData);
+  const settingsRef = useRef(settings);
   nodesRef.current = nodes;
   edgesRef.current = edges;
   initialDataRef.current = initialData;
+  settingsRef.current = settings;
 
   // Track unsaved changes via a counter instead of JSON.stringify every render.
   // changeCounter increments when nodes/edges array references change (React Flow
@@ -47,11 +51,13 @@ export function useAutoSave({
   const savedCounterRef = useRef(0);
   const prevNodesRef = useRef(nodes);
   const prevEdgesRef = useRef(edges);
+  const prevSettingsRef = useRef(settings);
 
-  if (nodes !== prevNodesRef.current || edges !== prevEdgesRef.current) {
+  if (nodes !== prevNodesRef.current || edges !== prevEdgesRef.current || settings !== prevSettingsRef.current) {
     changeCounterRef.current += 1;
     prevNodesRef.current = nodes;
     prevEdgesRef.current = edges;
+    prevSettingsRef.current = settings;
   }
 
   const hasUnsavedChanges = changeCounterRef.current !== savedCounterRef.current;
@@ -67,6 +73,7 @@ export function useAutoSave({
       const currentNodes = nodesRef.current;
       const currentEdges = edgesRef.current;
       const currentInitialData = initialDataRef.current;
+      const currentSettings = settingsRef.current;
 
       const buildJson: BuildJsonSchema = {
         version: "1.0",
@@ -77,11 +84,12 @@ export function useAutoSave({
           createdAt: currentInitialData?.metadata?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        settings: currentInitialData?.settings ?? {
+        settings: currentSettings ?? currentInitialData?.settings ?? {
           magicNumber: 123456,
           comment: "EA Builder Strategy",
           maxOpenTrades: 1,
           allowHedging: false,
+          maxTradesPerDay: 0,
         },
       };
 

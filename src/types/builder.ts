@@ -358,6 +358,7 @@ export interface BuildJsonSettings {
   maxBuyPositions?: number;
   maxSellPositions?: number;
   conditionMode?: "AND" | "OR";
+  maxTradesPerDay?: number; // 0 = unlimited
 }
 
 export interface BuildJsonMetadata {
@@ -383,6 +384,7 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
   comment: "EA Builder Strategy",
   maxOpenTrades: 1,
   allowHedging: false,
+  maxTradesPerDay: 0,
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {

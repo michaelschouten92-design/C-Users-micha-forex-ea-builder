@@ -335,17 +335,35 @@ export function generateEntryLogic(
   code.onTick.push("//--- One-trade-per-bar check");
   code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
 
+  // Daily trade limit logic
+  const hasDaily = ctx.maxTradesPerDay > 0;
+  if (hasDaily) {
+    code.globalVariables.push("datetime lastTradeDay = 0; // Track current trading day");
+    code.globalVariables.push("int tradesToday = 0; // Daily trade counter");
+    code.onTick.push("");
+    code.onTick.push("//--- Daily trade limit");
+    code.onTick.push("datetime today = iTime(_Symbol, PERIOD_D1, 0);");
+    code.onTick.push("if(today != lastTradeDay) { lastTradeDay = today; tradesToday = 0; }");
+  }
+
   // Generate entry execution
   code.onTick.push("");
   code.onTick.push("//--- Execute Entry");
-  code.onTick.push(`if(positionsCount < ${ctx.maxOpenTrades} && newBar)`);
+  const entryCondition = hasDaily
+    ? `if(positionsCount < ${ctx.maxOpenTrades} && newBar && tradesToday < ${ctx.maxTradesPerDay})`
+    : `if(positionsCount < ${ctx.maxOpenTrades} && newBar)`;
+  code.onTick.push(entryCondition);
   code.onTick.push("{");
 
   // Only generate buy logic if there's a Place Buy node
   if (hasBuyNode) {
     code.onTick.push(`   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`);
     code.onTick.push("   {");
-    code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+    if (hasDaily) {
+      code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");
+    } else {
+      code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+    }
     code.onTick.push("   }");
   }
 
@@ -353,7 +371,11 @@ export function generateEntryLogic(
   if (hasSellNode) {
     code.onTick.push(`   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`);
     code.onTick.push("   {");
-    code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+    if (hasDaily) {
+      code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");
+    } else {
+      code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+    }
     code.onTick.push("   }");
   }
 

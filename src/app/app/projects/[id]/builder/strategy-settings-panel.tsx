@@ -1,0 +1,144 @@
+"use client";
+
+import { useState } from "react";
+import type { BuildJsonSettings } from "@/types/builder";
+
+interface StrategySettingsPanelProps {
+  settings: BuildJsonSettings;
+  onChange: (settings: BuildJsonSettings) => void;
+}
+
+export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPanelProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const update = (partial: Partial<BuildJsonSettings>) => {
+    onChange({ ...settings, ...partial });
+  };
+
+  return (
+    <div className="border-t border-[rgba(79,70,229,0.2)]">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsExpanded(!isExpanded);
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="w-full flex items-center justify-between px-3 py-3 text-sm font-semibold text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+      >
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Strategy Settings</span>
+        </div>
+        <svg
+          className={`w-4 h-4 opacity-80 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className="px-3 pb-3 space-y-3">
+          {/* Magic Number */}
+          <SettingsNumberField
+            label="Magic Number"
+            value={settings.magicNumber}
+            min={1}
+            max={2147483647}
+            step={1}
+            onChange={(v) => update({ magicNumber: v })}
+          />
+
+          {/* Max Open Trades */}
+          <SettingsNumberField
+            label="Max Open Trades"
+            value={settings.maxOpenTrades}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) => update({ maxOpenTrades: v })}
+          />
+
+          {/* Max Trades Per Day */}
+          <div>
+            <SettingsNumberField
+              label="Max Trades Per Day"
+              value={settings.maxTradesPerDay ?? 0}
+              min={0}
+              max={100}
+              step={1}
+              onChange={(v) => update({ maxTradesPerDay: v })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">0 = unlimited</p>
+          </div>
+
+          {/* Allow Hedging */}
+          <div>
+            <label
+              className="flex items-center gap-2 cursor-pointer"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={settings.allowHedging}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  update({ allowHedging: e.target.checked });
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+              />
+              <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
+            </label>
+            <p className="text-[10px] text-[#64748B] mt-1 ml-6">Allow both buy and sell positions at the same time</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsNumberField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
+      <input
+        type="number"
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        onChange={(e) => {
+          e.stopPropagation();
+          const v = parseInt(e.target.value, 10);
+          if (!isNaN(v) && v >= min && v <= max) {
+            onChange(v);
+          }
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+      />
+    </div>
+  );
+}

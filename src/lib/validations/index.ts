@@ -350,6 +350,7 @@ const buildSettingsSchema = z.object({
   maxOpenTrades: z.number().int().min(1).max(100),
   allowHedging: z.boolean(),
   conditionMode: z.enum(["AND", "OR"]).optional(),
+  maxTradesPerDay: z.number().int().min(0).max(100).optional(),
 });
 
 // Build metadata schema

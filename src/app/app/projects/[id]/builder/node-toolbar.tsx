@@ -6,15 +6,19 @@ import {
   getCategoryLabel,
   type NodeCategory,
   type NodeTemplate,
+  type BuildJsonSettings,
 } from "@/types/builder";
+import { StrategySettingsPanel } from "./strategy-settings-panel";
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
   isPro?: boolean;
   onClose?: () => void;
+  settings?: BuildJsonSettings;
+  onSettingsChange?: (settings: BuildJsonSettings) => void;
 }
 
-export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbarProps) {
+export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onSettingsChange }: NodeToolbarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
     new Set()
   );
@@ -82,7 +86,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
 
   return (
     <div
-      className="w-[230px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] overflow-y-auto flex-shrink-0"
+      className="w-[230px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
@@ -101,7 +105,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
         )}
       </div>
 
-      <div className="p-2 space-y-2">
+      <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {categories.map((category) => {
           const templates = NODE_TEMPLATES.filter((t) => t.category === category);
           const isExpanded = expandedCategories.has(category);
@@ -198,6 +202,11 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
           );
         })}
       </div>
+
+      {/* Strategy Settings Panel */}
+      {settings && onSettingsChange && (
+        <StrategySettingsPanel settings={settings} onChange={onSettingsChange} />
+      )}
     </div>
   );
 }

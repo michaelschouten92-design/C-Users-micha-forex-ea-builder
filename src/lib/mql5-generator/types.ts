@@ -9,6 +9,7 @@ export interface GeneratorContext {
   maxBuyPositions: number;
   maxSellPositions: number;
   conditionMode: "AND" | "OR";
+  maxTradesPerDay: number;
 }
 
 export interface IndicatorVariable {
