@@ -54,8 +54,8 @@ interface NumberFieldProps {
 export function NumberField({
   label,
   value,
-  min,
-  max,
+  min = 0,
+  max = Infinity,
   step = 1,
   onChange,
 }: NumberFieldProps) {
