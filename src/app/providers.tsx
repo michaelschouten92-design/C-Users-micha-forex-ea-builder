@@ -4,10 +4,17 @@ import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
 import { Toaster } from "sonner";
 import { defaultSwrConfig } from "@/lib/swr";
+import type { Session } from "next-auth";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
   return (
-    <SessionProvider>
+    <SessionProvider session={session} refetchOnWindowFocus={false}>
       <SWRConfig value={defaultSwrConfig}>
         {children}
       </SWRConfig>

@@ -11,8 +11,8 @@ import {
  * Session cookie names used by NextAuth v5.
  * In production, cookies are prefixed with __Secure-.
  */
-const SESSION_COOKIE_DEV = "authjs.session-token";
-const SESSION_COOKIE_PROD = "__Secure-authjs.session-token";
+const SESSION_COOKIE_DEV = "next-auth.session-token";
+const SESSION_COOKIE_PROD = "__Secure-next-auth.session-token";
 
 function hasSessionCookie(request: NextRequest): boolean {
   return (
