@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 type Project = {
   id: string;
@@ -26,6 +27,7 @@ export function ProjectCard({ project }: { project: Project }) {
     try {
       const res = await fetch(`/api/projects/${project.id}/duplicate`, {
         method: "POST",
+        headers: getCsrfHeaders(),
       });
 
       if (res.ok) {
@@ -46,6 +48,7 @@ export function ProjectCard({ project }: { project: Project }) {
     try {
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
+        headers: getCsrfHeaders(),
       });
 
       if (res.ok) {
