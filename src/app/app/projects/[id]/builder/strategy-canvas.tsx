@@ -21,7 +21,6 @@ import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
-import { CodePreviewPanel } from "./code-preview-panel";
 import {
   useAutoSave,
   useClipboard,
@@ -393,12 +392,6 @@ export function StrategyCanvas({
             </div>
           )}
 
-          {/* Code Preview Panel */}
-          <CodePreviewPanel
-            nodes={nodes}
-            edges={edges}
-            settings={settings}
-          />
 
           {/* Validation Status - top right overlay */}
           {nodes.length > 0 && (
