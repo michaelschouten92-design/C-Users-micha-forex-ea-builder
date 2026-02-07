@@ -50,7 +50,6 @@ export async function GET(request: Request, { params }: Params) {
         id: true,
         versionNo: true,
         createdAt: true,
-        buildJson: true,
       },
       skip,
       take: limit,

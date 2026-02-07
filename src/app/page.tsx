@@ -11,7 +11,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden">
+    <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0D0117]/80 backdrop-blur-md border-b border-[rgba(79,70,229,0.1)]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">

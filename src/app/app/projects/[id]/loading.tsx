@@ -20,7 +20,7 @@ export default function ProjectLoading() {
       <div className="flex-1 flex items-center justify-center bg-[#0A0118]">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 mx-auto border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[#94A3B8] text-sm">Project laden...</p>
+          <p className="text-[#94A3B8] text-sm">Loading project...</p>
         </div>
       </div>
     </div>

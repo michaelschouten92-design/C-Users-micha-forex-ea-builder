@@ -33,23 +33,23 @@ export default function ProjectError({
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">
-          Project kon niet worden geladen
+          Failed to Load Project
         </h2>
         <p className="text-[#94A3B8] mb-6">
-          Er is een fout opgetreden bij het laden van dit project.
+          An error occurred while loading this project.
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
             className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
           >
-            Probeer opnieuw
+            Try Again
           </button>
           <Link
             href="/app"
             className="px-6 py-2.5 border border-[rgba(79,70,229,0.3)] text-[#A78BFA] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
           >
-            Terug naar dashboard
+            Back to Dashboard
           </Link>
         </div>
       </div>

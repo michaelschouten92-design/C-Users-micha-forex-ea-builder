@@ -128,6 +128,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
                   ${styles.hoverShadow}
                   ${styles.border}
                 `}
+                aria-expanded={isExpanded}
               >
                 {/* Label */}
                 <span className="whitespace-nowrap">
@@ -163,6 +164,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose }: NodeToolbar
                           }
                           onDragStart(e, template);
                         }}
+                        aria-label={`${template.label} block`}
                         className={`px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 ${
                           isLocked
                             ? "opacity-60 cursor-not-allowed"

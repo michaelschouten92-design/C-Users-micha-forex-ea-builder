@@ -131,7 +131,7 @@ export function ExportButton({
       {/* Export Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+          <div aria-label="Export modal" className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" role="dialog">
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">
@@ -150,7 +150,7 @@ export function ExportButton({
             {/* Content */}
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
               {exporting ? (
-                <div className="py-8 space-y-6">
+                <div aria-live="polite" className="py-8 space-y-6">
                   {exportSteps.map((step, i) => (
                     <div key={i} className="flex items-center gap-3">
                       {i < exportStep ? (

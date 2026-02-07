@@ -268,7 +268,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div id="main-content" className="min-h-screen flex items-center justify-center">
       <Suspense fallback={
         <div className="max-w-md w-full p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl">
           <div className="animate-pulse space-y-4">

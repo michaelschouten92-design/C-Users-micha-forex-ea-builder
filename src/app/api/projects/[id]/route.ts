@@ -34,6 +34,11 @@ export async function GET(request: Request, { params }: Params) {
         versions: {
           orderBy: { versionNo: "desc" },
           take: 10,
+          select: {
+            id: true,
+            versionNo: true,
+            createdAt: true,
+          },
         },
         _count: {
           select: { versions: true, exports: true },

@@ -207,17 +207,21 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   const period = getSubscriptionPeriod(subscription);
 
-  // Use transaction for atomic read-then-write
+  // Use transaction with row-level locking to prevent concurrent webhook race conditions
   const result = await prisma.$transaction(async (tx) => {
-    const userSubscription = await tx.subscription.findFirst({
-      where: { stripeCustomerId: customerId },
-    });
+    // Lock the subscription row to prevent concurrent updates
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string; tier: string }>>`
+      SELECT id, "userId", tier FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
 
-    if (!userSubscription) {
+    if (!rows.length) {
       log.error({ customerId }, "Subscription not found for customer");
       return null;
     }
 
+    const userSubscription = rows[0];
     const previousTier = userSubscription.tier;
 
     await tx.subscription.update({
@@ -230,22 +234,23 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       },
     });
 
-    // Audit tier changes
-    if (previousTier !== tier) {
-      const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
-      const isUpgrade = tierOrder[tier] > tierOrder[previousTier as keyof typeof tierOrder];
-
-      if (isUpgrade) {
-        await audit.subscriptionUpgrade(userSubscription.userId, previousTier, tier);
-      } else {
-        await audit.subscriptionDowngrade(userSubscription.userId, previousTier, tier);
-      }
-    }
-
-    return userSubscription.userId;
+    return { userId: userSubscription.userId, previousTier };
   });
 
-  if (result) invalidateSubscriptionCache(result);
+  if (result) {
+    invalidateSubscriptionCache(result.userId);
+
+    // Audit tier changes (fire-and-forget, outside transaction)
+    if (result.previousTier !== tier) {
+      const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
+      const isUpgrade = tierOrder[tier] > tierOrder[result.previousTier as keyof typeof tierOrder];
+
+      (isUpgrade
+        ? audit.subscriptionUpgrade(result.userId, result.previousTier, tier)
+        : audit.subscriptionDowngrade(result.userId, result.previousTier, tier)
+      ).catch((err) => log.warn({ err }, "Audit log failed but subscription updated"));
+    }
+  }
 }
 
 async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
@@ -253,16 +258,18 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
   if (!customerId) return;
 
-  // Use transaction for atomic read-then-write
+  // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
-    const userSubscription = await tx.subscription.findFirst({
-      where: { stripeCustomerId: customerId },
-    });
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
 
-    if (!userSubscription) return null;
+    if (!rows.length) return null;
 
     await tx.subscription.update({
-      where: { id: userSubscription.id },
+      where: { id: rows[0].id },
       data: {
         tier: "FREE",
         status: "cancelled",
@@ -272,11 +279,15 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
       },
     });
 
-    await audit.subscriptionCancel(userSubscription.userId);
-    return userSubscription.userId;
+    return rows[0].userId;
   });
 
-  if (userId) invalidateSubscriptionCache(userId);
+  if (userId) {
+    invalidateSubscriptionCache(userId);
+    audit.subscriptionCancel(userId).catch((err) =>
+      log.warn({ err }, "Audit log failed but subscription cancelled")
+    );
+  }
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -291,16 +302,18 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(stripeSubscription);
 
-  // Use transaction for atomic read-then-write
-  await prisma.$transaction(async (tx) => {
-    const userSubscription = await tx.subscription.findFirst({
-      where: { stripeCustomerId: customerId },
-    });
+  // Use transaction with row-level locking
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
 
-    if (!userSubscription) return;
+    if (!rows.length) return null;
 
     await tx.subscription.update({
-      where: { id: userSubscription.id },
+      where: { id: rows[0].id },
       data: {
         status: "active",
         currentPeriodStart: period.start,
@@ -308,29 +321,43 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       },
     });
 
-    await audit.paymentSuccess(userSubscription.userId);
+    return rows[0].userId;
   });
+
+  if (userId) {
+    audit.paymentSuccess(userId).catch((err) =>
+      log.warn({ err }, "Audit log failed but payment recorded")
+    );
+  }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const customerId = getStringId(invoice.customer);
   if (!customerId) return;
 
-  // Use transaction for atomic read-then-write
-  await prisma.$transaction(async (tx) => {
-    const userSubscription = await tx.subscription.findFirst({
-      where: { stripeCustomerId: customerId },
-    });
+  // Use transaction with row-level locking
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
 
-    if (!userSubscription) return;
+    if (!rows.length) return null;
 
     await tx.subscription.update({
-      where: { id: userSubscription.id },
+      where: { id: rows[0].id },
       data: {
         status: "past_due",
       },
     });
 
-    await audit.paymentFailed(userSubscription.userId);
+    return rows[0].userId;
   });
+
+  if (userId) {
+    audit.paymentFailed(userId).catch((err) =>
+      log.warn({ err }, "Audit log failed but payment failure recorded")
+    );
+  }
 }

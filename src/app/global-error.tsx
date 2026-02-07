@@ -15,9 +15,9 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="nl">
+    <html lang="en">
       <body className="bg-[#0A0118] text-white min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 max-w-md">
+        <div role="alert" className="text-center p-8 max-w-md">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
             <svg
               className="w-8 h-8 text-red-500"
@@ -33,15 +33,15 @@ export default function GlobalError({
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold mb-4">Er is iets misgegaan</h2>
+          <h2 className="text-2xl font-bold mb-4">Something Went Wrong</h2>
           <p className="text-gray-400 mb-6">
-            We hebben het probleem automatisch gerapporteerd en werken eraan.
+            We have automatically reported the issue and are working on it.
           </p>
           <button
             onClick={reset}
             className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
           >
-            Probeer opnieuw
+            Try Again
           </button>
         </div>
       </body>

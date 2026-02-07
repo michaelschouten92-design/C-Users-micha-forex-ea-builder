@@ -19,6 +19,23 @@ export function ProjectCard({ project }: { project: Project }) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+
+  async function handleDuplicate() {
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/duplicate`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        router.refresh();
+      }
+    } finally {
+      setDuplicating(false);
+      setShowMenu(false);
+    }
+  }
 
   async function handleDelete() {
     if (!confirm(`Are you sure you want to delete "${project.name}"?`)) {
@@ -58,6 +75,7 @@ export function ProjectCard({ project }: { project: Project }) {
               e.preventDefault();
               setShowMenu(!showMenu);
             }}
+            aria-label="Project options"
             className="text-[#64748B] hover:text-[#CBD5E1] p-1 -mr-2 -mt-1 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -87,8 +105,17 @@ export function ProjectCard({ project }: { project: Project }) {
             className="fixed inset-0 z-10"
             onClick={() => setShowMenu(false)}
           />
-          <div className="absolute right-4 mt-[-60px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]">
+          <div role="menu" className="absolute right-4 mt-[-60px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]">
             <button
+              role="menuitem"
+              onClick={handleDuplicate}
+              disabled={duplicating}
+              className="w-full text-left px-4 py-2 text-sm text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 transition-colors duration-200"
+            >
+              {duplicating ? "Duplicating..." : "Duplicate"}
+            </button>
+            <button
+              role="menuitem"
               onClick={handleDelete}
               disabled={deleting}
               className="w-full text-left px-4 py-2 text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] disabled:opacity-50 transition-colors duration-200"
