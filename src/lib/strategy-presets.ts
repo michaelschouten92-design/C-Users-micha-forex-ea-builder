@@ -144,7 +144,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
     id: "rsi-mean-reversion",
     name: "RSI Mean Reversion",
     description: "Mean reversion strategy trading RSI oversold/overbought levels during the London session. Buys when RSI crosses above 30, sells when RSI crosses below 70.",
-    tier: "STARTER",
+    tier: "FREE",
     buildJson: {
       version: "1.0",
       nodes: [
@@ -257,7 +257,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
     id: "breakout-strategy",
     name: "Breakout Strategy",
     description: "Breakout strategy trading the Asian session range during custom weekday hours (8-17). Uses ATR-based stop loss and 1.5:1 risk-reward take profit.",
-    tier: "STARTER",
+    tier: "FREE",
     buildJson: {
       version: "1.0",
       nodes: [

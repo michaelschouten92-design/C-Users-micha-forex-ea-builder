@@ -38,6 +38,7 @@ import type {
   NodeTemplate,
 } from "@/types/builder";
 import { DEFAULT_SETTINGS } from "@/types/builder";
+import type { StrategyPreset } from "@/lib/strategy-presets";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -290,6 +291,23 @@ export function StrategyCanvas({
     [setNodes, setEdges, setViewport, resetHistory]
   );
 
+  // Load a template preset
+  const onLoadTemplate = useCallback(
+    (preset: StrategyPreset) => {
+      const { buildJson } = preset;
+      setNodes(buildJson.nodes as Node[]);
+      setEdges(buildJson.edges as Edge[]);
+      setSettings(buildJson.settings ?? { ...DEFAULT_SETTINGS });
+
+      if (buildJson.viewport) {
+        setViewport(buildJson.viewport);
+      }
+
+      resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
+    },
+    [setNodes, setEdges, setSettings, setViewport, resetHistory]
+  );
+
   // Undo handler for button
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -316,14 +334,14 @@ export function StrategyCanvas({
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
         <div className="hidden md:block">
-          <NodeToolbar onDragStart={onDragStart} isPro={isPro} settings={settings} onSettingsChange={setSettings} />
+          <NodeToolbar onDragStart={onDragStart} onLoadTemplate={onLoadTemplate} hasNodes={nodes.length > 0} isPro={isPro} settings={settings} onSettingsChange={setSettings} />
         </div>
 
         {/* Mobile toolbar overlay */}
         {mobileToolbarOpen && (
           <div className="md:hidden fixed inset-0 z-40 flex">
             <div className="w-[240px] h-full shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
-              <NodeToolbar onDragStart={onDragStart} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} settings={settings} onSettingsChange={setSettings} />
+              <NodeToolbar onDragStart={onDragStart} onLoadTemplate={onLoadTemplate} hasNodes={nodes.length > 0} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} settings={settings} onSettingsChange={setSettings} />
             </div>
             <div className="flex-1" onClick={() => setMobileToolbarOpen(false)} />
           </div>
