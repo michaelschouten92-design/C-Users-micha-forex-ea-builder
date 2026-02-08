@@ -368,6 +368,20 @@ export default function NoCodeEABuilderPage() {
             >
               EA Templates
             </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/blog/getting-started-with-algostudio"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              Getting Started Tutorial
+            </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/blog/metatrader-5-vs-metatrader-4"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              MT5 vs MT4 Comparison
+            </Link>
           </div>
         </section>
       </article>

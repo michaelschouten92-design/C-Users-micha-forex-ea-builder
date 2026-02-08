@@ -97,7 +97,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p>Each change takes seconds in AlgoStudio's <a href="/visual-strategy-builder">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
 
-      <p>Want to learn more about building EAs without code? Read our in-depth guide on <a href="/no-code-mt5-ea-builder">no-code MT5 EA building</a>, or explore all available <a href="/templates">EA templates</a>.</p>
+      <p>Want to learn more about building EAs without code? Read our in-depth guide on <a href="/no-code-mt5-ea-builder">no-code MT5 EA building</a>, or explore all available <a href="/templates">EA templates</a>. And before you go live, make sure to read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most common mistakes traders make when automating strategies</a>.</p>
     `,
   },
   {
@@ -332,7 +332,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Compare live results to backtest</strong> — if they diverge significantly, investigate before scaling up</li>
       </ol>
 
-      <p>Ready to build an EA worth backtesting? Start with one of our <a href="/templates">free EA templates</a> — each is pre-configured with sensible parameters and designed for the MT5 Strategy Tester. Or learn the complete workflow in our <a href="/blog/from-trading-idea-to-automated-ea">From Idea to EA</a> guide.</p>
+      <p>Ready to build an EA worth backtesting? Start with one of our <a href="/templates">free EA templates</a> — each is pre-configured with sensible parameters and designed for the MT5 Strategy Tester. Or learn the complete workflow in our <a href="/blog/from-trading-idea-to-automated-ea">From Idea to EA</a> guide. If you're choosing between MT4 and MT5 for backtesting, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a> — the Strategy Tester differences alone justify the switch.</p>
     `,
   },
   {
@@ -432,7 +432,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The key is patience. A well-tested EA with realistic expectations will outperform any impulse-based manual trading over time. Don't rush to live trading — the market will be there tomorrow.</p>
 
-      <p>Ready to build your first EA? Try <a href="/automated-trading-for-beginners">our beginner's guide to automated trading</a> for a complete walkthrough, or explore our <a href="/templates">free EA templates</a> for ready-to-customize starting points.</p>
+      <p>Ready to build your first EA? Follow our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio</a> tutorial, or explore our <a href="/templates">free EA templates</a> for ready-to-customize starting points. Still deciding between manual and automated? Read our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> for an honest breakdown.</p>
     `,
   },
   {
@@ -557,7 +557,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Build these rules into your EA from the start — not as an afterthought. In AlgoStudio, you can configure all of these in the Strategy Settings and Trade Management blocks. Every <a href="/templates">EA template</a> includes pre-configured risk management that follows these principles.</p>
 
-      <p>Want to see these principles in action? Our <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> and <a href="/templates/rsi-ea-template">RSI template</a> both use ATR-based stops, risk-based sizing, and daily trade limits by default.</p>
+      <p>Want to see these principles in action? Our <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> and <a href="/templates/rsi-ea-template">RSI template</a> both use ATR-based stops, risk-based sizing, and daily trade limits by default. Also read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating</a> — poor risk management is #2 on the list.</p>
     `,
   },
   {
@@ -669,7 +669,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/no-code-mt5-ea-builder">no-code EA builders</a> like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
 
-      <p>New to automated trading? Read our complete <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>.</p>
+      <p>New to automated trading? Read our complete <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>. For an even deeper dive into the pros and cons of each approach, see our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">detailed manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
@@ -994,7 +994,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>A strategy that passes all these checks is genuinely robust and has a real chance of working in live trading. It won't show 500% annual returns — realistic expectations are 2-5% monthly — but it'll compound reliably over time.</p>
 
-      <p>Ready to build a robust EA? Start with our <a href="/templates">free templates</a> — each is designed with minimal parameters and clear logic. Or learn the complete workflow in our <a href="/blog/from-trading-idea-to-automated-ea">From Idea to EA guide</a>.</p>
+      <p>Ready to build a robust EA? Start with our <a href="/templates">free templates</a> — each is designed with minimal parameters and clear logic. Or learn the complete workflow in our <a href="/blog/from-trading-idea-to-automated-ea">From Idea to EA guide</a>. For a broader checklist, read our <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating strategies</a> — overfitting is #1 on the list.</p>
     `,
   },
   {
@@ -1097,7 +1097,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Testing Your Pair Choice</h2>
       <p>Before committing to a pair, build your EA in AlgoStudio and <a href="/blog/backtest-your-ea-metatrader5">backtest on at least 3 different pairs</a>. If it only works on one, you might be <a href="/blog/avoid-overfitting-expert-advisor">overfitting</a>. A robust strategy should show some profitability across correlated pairs — even if it's optimized for just one.</p>
 
-      <p>Ready to test different pairs? Our <a href="/templates">free EA templates</a> are pre-configured for the major pairs and ready to backtest immediately.</p>
+      <p>Ready to test different pairs? Our <a href="/templates">free EA templates</a> are pre-configured for the major pairs and ready to backtest immediately. If you're still deciding between manual and automated trading, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual comparison</a> covers the trade-offs honestly.</p>
     `,
   },
   {
@@ -1332,7 +1332,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p>Drag a new block, connect it, re-export — no code to debug, no syntax errors to fix. This rapid iteration cycle is what makes visual building so powerful. You can test 10 variations in the time it would take to code one.</p>
 
-      <p>For a ready-to-use starting point, check out our <a href="/templates/rsi-ea-template">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize.</p>
+      <p>For a ready-to-use starting point, check out our <a href="/templates/rsi-ea-template">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize. New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through the basics. And if you're wondering why we build for MT5 instead of MT4, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a>.</p>
     `,
   },
   {
@@ -1474,7 +1474,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>RSI strategy:</strong> Start with our <a href="/templates/rsi-ea-template">RSI EA template</a> — pre-configured with EMA trend filter and London session timing</li>
         <li><strong>Trend-following:</strong> Try the <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a> — uses similar trend-following logic as MACD</li>
       </ul>
-      <p>Many traders end up running both strategies simultaneously — RSI on range-bound pairs like EUR/GBP and MA crossover on trending pairs like GBP/USD. Read more about <a href="/blog/best-indicators-for-forex-ea">the best indicators for forex EAs</a>.</p>
+      <p>Many traders end up running both strategies simultaneously — RSI on range-bound pairs like EUR/GBP and MA crossover on trending pairs like GBP/USD. Read more about <a href="/blog/best-indicators-for-forex-ea">the best indicators for forex EAs</a>. And whichever indicator you choose, make sure you're running it on the right platform — our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a> explains why MT5's Strategy Tester makes a real difference for optimization.</p>
     `,
   },
   {
@@ -1583,7 +1583,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The barrier to automated trading has never been lower. With <a href="/no-code-mt5-ea-builder">no-code EA builders</a>, you can build, backtest, and deploy strategies in minutes.</p>
 
-      <p>Ready to explore? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or jump straight to building with our <a href="/templates">free EA templates</a>.</p>
+      <p>Ready to explore? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or jump straight to building with our <a href="/templates">free EA templates</a>. For a quicker overview of the key differences, see our <a href="/blog/automated-trading-vs-manual-trading">automated trading vs manual trading comparison</a>. And if you decide to automate, follow our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> to build your first EA in minutes.</p>
     `,
   },
   {
@@ -1691,7 +1691,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </tbody>
       </table>
 
-      <p>Ready to build your EA the right way? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a> and use AlgoStudio's <a href="/visual-strategy-builder">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>.</p>
+      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio tutorial</a> and use the <a href="/visual-strategy-builder">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
@@ -1836,6 +1836,8 @@ export const BLOG_POSTS: BlogPost[] = [
       </table>
 
       <p>Ready to start? Try one of our pre-built templates as a starting point: <a href="/templates/moving-average-crossover-ea">Moving Average Crossover</a> (trend-following), <a href="/templates/rsi-ea-template">RSI Mean Reversion</a> (counter-trend), or <a href="/templates/breakout-ea-template">Breakout Strategy</a> (session-based). Each gives you a proven strategy you can customize and take through all 7 phases.</p>
+
+      <p>New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
     `,
   },
 ];

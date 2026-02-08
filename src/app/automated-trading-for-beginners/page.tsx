@@ -372,6 +372,27 @@ export default function AutomatedTradingForBeginnersPage() {
             >
               EA Templates
             </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/blog/automated-trading-vs-manual-trading"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              Automated vs Manual Trading
+            </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/blog/5-mistakes-automating-trading-strategies"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              5 Automation Mistakes to Avoid
+            </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/blog/getting-started-with-algostudio"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              Getting Started Tutorial
+            </Link>
           </div>
         </section>
       </article>
