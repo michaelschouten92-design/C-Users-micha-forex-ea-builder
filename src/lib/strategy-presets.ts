@@ -24,7 +24,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "always",
-          position: { x: 0, y: 200 },
+          position: { x: 250, y: 0 },
           data: {
             label: "Always",
             category: "timing",
@@ -34,7 +34,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "ma-fast",
           type: "moving-average",
-          position: { x: 300, y: 100 },
+          position: { x: 100, y: 180 },
           data: {
             label: "Fast MA (10)",
             category: "indicator",
@@ -49,7 +49,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "ma-slow",
           type: "moving-average",
-          position: { x: 300, y: 300 },
+          position: { x: 400, y: 180 },
           data: {
             label: "Slow MA (50)",
             category: "indicator",
@@ -64,7 +64,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "buy1",
           type: "place-buy",
-          position: { x: 600, y: 100 },
+          position: { x: 100, y: 360 },
           data: {
             label: "Place Buy",
             category: "trading",
@@ -79,7 +79,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 600, y: 300 },
+          position: { x: 400, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -92,11 +92,11 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "sl1",
+          id: "sl-buy",
           type: "stop-loss",
-          position: { x: 900, y: 100 },
+          position: { x: 0, y: 540 },
           data: {
-            label: "Stoploss",
+            label: "Buy Stoploss",
             category: "trading",
             tradingType: "stop-loss",
             method: "FIXED_PIPS",
@@ -106,11 +106,40 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "tp1",
+          id: "tp-buy",
           type: "take-profit",
-          position: { x: 900, y: 300 },
+          position: { x: 200, y: 540 },
           data: {
-            label: "Take Profit",
+            label: "Buy Take Profit",
+            category: "trading",
+            tradingType: "take-profit",
+            method: "RISK_REWARD",
+            fixedPips: 100,
+            riskRewardRatio: 2,
+            atrMultiplier: 3,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "sl-sell",
+          type: "stop-loss",
+          position: { x: 300, y: 540 },
+          data: {
+            label: "Sell Stoploss",
+            category: "trading",
+            tradingType: "stop-loss",
+            method: "FIXED_PIPS",
+            fixedPips: 50,
+            atrMultiplier: 1.5,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "tp-sell",
+          type: "take-profit",
+          position: { x: 500, y: 540 },
+          data: {
+            label: "Sell Take Profit",
             category: "trading",
             tradingType: "take-profit",
             method: "RISK_REWARD",
@@ -126,8 +155,10 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         { id: "e2", source: "timing1", target: "ma-slow" },
         { id: "e3", source: "ma-fast", target: "buy1" },
         { id: "e4", source: "ma-slow", target: "sell1" },
-        { id: "e5", source: "buy1", target: "sl1" },
-        { id: "e6", source: "sell1", target: "tp1" },
+        { id: "e5", source: "buy1", target: "sl-buy" },
+        { id: "e6", source: "buy1", target: "tp-buy" },
+        { id: "e7", source: "sell1", target: "sl-sell" },
+        { id: "e8", source: "sell1", target: "tp-sell" },
       ],
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
@@ -151,7 +182,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "trading-session",
-          position: { x: 0, y: 200 },
+          position: { x: 250, y: 0 },
           data: {
             label: "London Session",
             category: "timing",
@@ -163,7 +194,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "rsi1",
           type: "rsi",
-          position: { x: 300, y: 200 },
+          position: { x: 250, y: 180 },
           data: {
             label: "RSI (14)",
             category: "indicator",
@@ -178,7 +209,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "buy1",
           type: "place-buy",
-          position: { x: 600, y: 100 },
+          position: { x: 100, y: 360 },
           data: {
             label: "Place Buy",
             category: "trading",
@@ -193,7 +224,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 600, y: 300 },
+          position: { x: 400, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -206,11 +237,11 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "sl1",
+          id: "sl-buy",
           type: "stop-loss",
-          position: { x: 900, y: 100 },
+          position: { x: 0, y: 540 },
           data: {
-            label: "Stoploss",
+            label: "Buy Stoploss",
             category: "trading",
             tradingType: "stop-loss",
             method: "FIXED_PIPS",
@@ -220,11 +251,40 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "tp1",
+          id: "tp-buy",
           type: "take-profit",
-          position: { x: 900, y: 300 },
+          position: { x: 200, y: 540 },
           data: {
-            label: "Take Profit",
+            label: "Buy Take Profit",
+            category: "trading",
+            tradingType: "take-profit",
+            method: "FIXED_PIPS",
+            fixedPips: 60,
+            riskRewardRatio: 2,
+            atrMultiplier: 3,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "sl-sell",
+          type: "stop-loss",
+          position: { x: 300, y: 540 },
+          data: {
+            label: "Sell Stoploss",
+            category: "trading",
+            tradingType: "stop-loss",
+            method: "FIXED_PIPS",
+            fixedPips: 30,
+            atrMultiplier: 1.5,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "tp-sell",
+          type: "take-profit",
+          position: { x: 500, y: 540 },
+          data: {
+            label: "Sell Take Profit",
             category: "trading",
             tradingType: "take-profit",
             method: "FIXED_PIPS",
@@ -239,8 +299,10 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         { id: "e1", source: "timing1", target: "rsi1" },
         { id: "e2", source: "rsi1", target: "buy1" },
         { id: "e3", source: "rsi1", target: "sell1" },
-        { id: "e4", source: "buy1", target: "sl1" },
-        { id: "e5", source: "sell1", target: "tp1" },
+        { id: "e4", source: "buy1", target: "sl-buy" },
+        { id: "e5", source: "buy1", target: "tp-buy" },
+        { id: "e6", source: "sell1", target: "sl-sell" },
+        { id: "e7", source: "sell1", target: "tp-sell" },
       ],
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
@@ -264,7 +326,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "custom-times",
-          position: { x: 0, y: 200 },
+          position: { x: 250, y: 0 },
           data: {
             label: "Weekday Hours",
             category: "timing",
@@ -284,7 +346,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "rb1",
           type: "range-breakout",
-          position: { x: 300, y: 200 },
+          position: { x: 250, y: 180 },
           data: {
             label: "Asian Range Breakout",
             category: "priceaction",
@@ -307,7 +369,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "buy1",
           type: "place-buy",
-          position: { x: 600, y: 100 },
+          position: { x: 100, y: 360 },
           data: {
             label: "Place Buy",
             category: "trading",
@@ -322,7 +384,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 600, y: 300 },
+          position: { x: 400, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -335,11 +397,11 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "sl1",
+          id: "sl-buy",
           type: "stop-loss",
-          position: { x: 900, y: 100 },
+          position: { x: 0, y: 540 },
           data: {
-            label: "ATR Stoploss",
+            label: "Buy ATR Stoploss",
             category: "trading",
             tradingType: "stop-loss",
             method: "ATR_BASED",
@@ -349,11 +411,40 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
           },
         },
         {
-          id: "tp1",
+          id: "tp-buy",
           type: "take-profit",
-          position: { x: 900, y: 300 },
+          position: { x: 200, y: 540 },
           data: {
-            label: "Take Profit (1.5:1)",
+            label: "Buy Take Profit",
+            category: "trading",
+            tradingType: "take-profit",
+            method: "RISK_REWARD",
+            fixedPips: 100,
+            riskRewardRatio: 1.5,
+            atrMultiplier: 3,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "sl-sell",
+          type: "stop-loss",
+          position: { x: 300, y: 540 },
+          data: {
+            label: "Sell ATR Stoploss",
+            category: "trading",
+            tradingType: "stop-loss",
+            method: "ATR_BASED",
+            fixedPips: 50,
+            atrMultiplier: 1.5,
+            atrPeriod: 14,
+          },
+        },
+        {
+          id: "tp-sell",
+          type: "take-profit",
+          position: { x: 500, y: 540 },
+          data: {
+            label: "Sell Take Profit",
             category: "trading",
             tradingType: "take-profit",
             method: "RISK_REWARD",
@@ -368,8 +459,10 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         { id: "e1", source: "timing1", target: "rb1" },
         { id: "e2", source: "rb1", target: "buy1" },
         { id: "e3", source: "rb1", target: "sell1" },
-        { id: "e4", source: "buy1", target: "sl1" },
-        { id: "e5", source: "sell1", target: "tp1" },
+        { id: "e4", source: "buy1", target: "sl-buy" },
+        { id: "e5", source: "buy1", target: "tp-buy" },
+        { id: "e6", source: "sell1", target: "sl-sell" },
+        { id: "e7", source: "sell1", target: "tp-sell" },
       ],
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
