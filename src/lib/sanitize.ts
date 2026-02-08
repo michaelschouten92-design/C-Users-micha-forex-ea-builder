@@ -1,37 +1,56 @@
-import DOMPurify from "isomorphic-dompurify";
-
 /**
  * Input sanitization utilities for XSS prevention.
  *
  * Use these functions to sanitize user input before storing in the database
  * or rendering in the UI.
+ *
+ * Note: React automatically escapes text in JSX, so these are primarily
+ * for defense-in-depth when storing user input.
  */
 
 /**
- * Sanitize HTML content - removes all dangerous tags and attributes
- * Use for rich text fields that may contain HTML
+ * Sanitize HTML content - removes all dangerous tags and attributes.
+ * Only allows a small set of safe formatting tags.
  */
 export function sanitizeHtml(input: string): string {
-  return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li"],
-    ALLOWED_ATTR: ["href", "target", "rel"],
-  });
+  const allowedTags = new Set(["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li"]);
+  const allowedAttrs = new Set(["href", "target", "rel"]);
+
+  // Strip all tags except allowed ones, and strip disallowed attributes
+  return input
+    .replace(/<!--[\s\S]*?-->/g, "") // Remove HTML comments
+    .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (match, tag, attrs) => {
+      const lowerTag = tag.toLowerCase();
+      if (!allowedTags.has(lowerTag)) return "";
+
+      // Filter attributes
+      const safeAttrs =
+        (attrs as string)
+          .match(/\s+([a-zA-Z-]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*))?/g)
+          ?.filter((attr: string) => {
+            const name = attr.trim().split(/[\s=]/)[0].toLowerCase();
+            return allowedAttrs.has(name);
+          })
+          .join("") ?? "";
+
+      return match.startsWith("</") ? `</${lowerTag}>` : `<${lowerTag}${safeAttrs}>`;
+    });
 }
 
 /**
- * Sanitize plain text - strips ALL HTML tags
- * Use for text fields like names, descriptions, comments
+ * Sanitize plain text - strips ALL HTML tags.
+ * Use for text fields like names, descriptions, comments.
  */
 export function sanitizeText(input: string): string {
-  return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: [], // No HTML tags allowed
-    ALLOWED_ATTR: [],
-  });
+  return input
+    .replace(/<!--[\s\S]*?-->/g, "") // Remove HTML comments
+    .replace(/<(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "") // Remove dangerous tags with content
+    .replace(/<[^>]*>/g, ""); // Remove all remaining HTML tags
 }
 
 /**
- * Sanitize and trim text input
- * Common utility for form fields
+ * Sanitize and trim text input.
+ * Common utility for form fields.
  */
 export function sanitizeInput(input: string | null | undefined): string | null {
   if (!input) return null;
@@ -41,8 +60,8 @@ export function sanitizeInput(input: string | null | undefined): string | null {
 }
 
 /**
- * Sanitize object values recursively
- * Useful for sanitizing form data objects
+ * Sanitize object values recursively.
+ * Useful for sanitizing form data objects.
  */
 export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
   const result: Record<string, unknown> = {};
@@ -61,8 +80,8 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
 }
 
 /**
- * Check if a string contains potentially dangerous content
- * Returns true if the string contains HTML/script tags
+ * Check if a string contains potentially dangerous content.
+ * Returns true if the string contains HTML/script tags.
  */
 export function containsHtml(input: string): boolean {
   const htmlPattern = /<[^>]*>/;
@@ -70,8 +89,8 @@ export function containsHtml(input: string): boolean {
 }
 
 /**
- * Escape HTML entities for safe display
- * Use when you need to display user input as plain text
+ * Escape HTML entities for safe display.
+ * Use when you need to display user input as plain text.
  */
 export function escapeHtml(input: string): string {
   const escapeMap: Record<string, string> = {

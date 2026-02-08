@@ -35,7 +35,6 @@
     "@xyflow/react": "^12.10.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
-    "isomorphic-dompurify": "^2.35.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "pino": "^10.3.0",

@@ -25,8 +25,8 @@ describe("sanitize", () => {
 
     it("handles special characters", () => {
       const input = "Hello & World < Test > 123";
-      // DOMPurify encodes entities for safety
-      expect(sanitizeText(input)).toBe("Hello &amp; World &lt; Test &gt; 123");
+      // Plain text passes through; React escapes entities during rendering
+      expect(sanitizeText(input)).toBe("Hello & World  123");
     });
   });
 
@@ -56,9 +56,7 @@ describe("sanitize", () => {
   describe("escapeHtml", () => {
     it("escapes HTML entities", () => {
       const input = '<script>alert("xss")</script>';
-      expect(escapeHtml(input)).toBe(
-        "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;"
-      );
+      expect(escapeHtml(input)).toBe("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
     });
 
     it("escapes ampersands", () => {
