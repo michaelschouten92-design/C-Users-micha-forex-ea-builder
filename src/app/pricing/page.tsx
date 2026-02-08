@@ -50,12 +50,8 @@ export default function PricingPage() {
           <Link href="/" className="text-2xl font-bold text-white mb-4 inline-block">
             AlgoStudio
           </Link>
-          <h1 className="text-4xl font-bold text-white mt-4">
-            Simple, transparent pricing
-          </h1>
-          <p className="text-[#94A3B8] mt-2">
-            Choose the plan that fits your trading needs
-          </p>
+          <h1 className="text-4xl font-bold text-white mt-4">Simple, transparent pricing</h1>
+          <p className="text-[#94A3B8] mt-2">Choose the plan that fits your trading needs</p>
         </div>
 
         {/* Interval Toggle */}
@@ -80,7 +76,7 @@ export default function PricingPage() {
               }`}
             >
               Yearly
-              <span className="ml-2 text-xs text-[#22D3EE]">Save 1 month</span>
+              <span className="ml-2 text-xs text-[#22D3EE]">Save 33%</span>
             </button>
           </div>
         </div>
