@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 export function ContactForm() {
   const [name, setName] = useState("");
@@ -19,7 +20,7 @@ export function ContactForm() {
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ name, email, subject, message }),
       });
 
