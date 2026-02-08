@@ -362,7 +362,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       select: { email: true },
     });
     if (user?.email) {
-      const portalUrl = `${env.AUTH_URL || "https://algostudio.nl"}/app`;
+      const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
       sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
         log.warn({ err }, "Payment failed email send failed")
       );

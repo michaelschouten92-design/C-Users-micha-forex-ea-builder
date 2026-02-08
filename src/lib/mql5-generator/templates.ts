@@ -11,7 +11,7 @@ export function generateFileHeader(ctx: GeneratorContext): string {
 //|                                    ${timestamp.substring(0, 19).padEnd(36)}|
 //+------------------------------------------------------------------+
 #property copyright "AlgoStudio"
-#property link      "https://algostudio.app"
+#property link      "https://algo-studio.com"
 #property version   "1.00"
 #property strict
 
@@ -90,7 +90,7 @@ int OnInit()
    //--- Set trade fill type
    trade.SetTypeFillingBySymbol(_Symbol);
 
-${initCode.map(line => "   " + line).join("\n")}
+${initCode.map((line) => "   " + line).join("\n")}
 
    Print("${ctx.projectName} initialized successfully on ", _Symbol, " ", EnumToString(Period()));
    return(INIT_SUCCEEDED);
@@ -106,7 +106,7 @@ export function generateOnDeinit(deinitCode: string[]): string {
 void OnDeinit(const int reason)
 {
    //--- Release indicator handles
-${deinitCode.length > 0 ? deinitCode.map(line => "   " + line).join("\n") : "   //--- No handles to release"}
+${deinitCode.length > 0 ? deinitCode.map((line) => "   " + line).join("\n") : "   //--- No handles to release"}
 
    //--- Log deinitialization reason
    string reasonText;
@@ -163,7 +163,7 @@ void OnTick()
    //--- Count current positions
    int positionsCount = CountPositions();
 
-${tickCode.map(line => "   " + line).join("\n")}
+${tickCode.map((line) => "   " + line).join("\n")}
 }
 
 `;

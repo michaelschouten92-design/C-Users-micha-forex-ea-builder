@@ -25,7 +25,7 @@ export default async function Home() {
     name: "AlgoStudio",
     description:
       "No-code visual builder for MetaTrader 5 Expert Advisors. Build, test, and export trading bots without writing code.",
-    url: "https://algostudio.nl",
+    url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
     offers: {
@@ -162,7 +162,7 @@ export default async function Home() {
                 </div>
                 <div className="flex-1 mx-4">
                   <div className="bg-[#1A0626] rounded-md px-3 py-1 text-xs text-[#64748B] max-w-xs mx-auto">
-                    algostudio.app/builder
+                    algo-studio.com/builder
                   </div>
                 </div>
               </div>
@@ -686,10 +686,10 @@ export default async function Home() {
                 </li>
                 <li>
                   <a
-                    href="mailto:support@algostudio.nl"
+                    href="mailto:contact@algo-studio.com"
                     className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                   >
-                    support@algostudio.nl
+                    contact@algo-studio.com
                   </a>
                 </li>
               </ul>

@@ -13,10 +13,7 @@ export default function ContactPage() {
     <div id="main-content" className="min-h-screen py-16 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
+          <Link href="/" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             &larr; Back to home
           </Link>
         </div>
@@ -46,17 +43,13 @@ export default function ContactPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white mb-1">
-                  Email
-                </h2>
-                <p className="text-sm text-[#94A3B8] mb-3">
-                  For support, questions, or feedback.
-                </p>
+                <h2 className="text-lg font-semibold text-white mb-1">Email</h2>
+                <p className="text-sm text-[#94A3B8] mb-3">For support, questions, or feedback.</p>
                 <a
-                  href="mailto:support@algostudio.nl"
+                  href="mailto:contact@algo-studio.com"
                   className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"
                 >
-                  support@algostudio.nl
+                  contact@algo-studio.com
                 </a>
               </div>
             </div>
@@ -81,12 +74,9 @@ export default function ContactPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white mb-1">
-                  Community
-                </h2>
+                <h2 className="text-lg font-semibold text-white mb-1">Community</h2>
                 <p className="text-sm text-[#94A3B8] mb-3">
-                  Join other traders, share strategies, and get help from the
-                  community.
+                  Join other traders, share strategies, and get help from the community.
                 </p>
                 <a
                   href="https://whop.com/algostudio"

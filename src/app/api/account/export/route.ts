@@ -120,7 +120,7 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="algostudio-data-export-${new Date().toISOString().split("T")[0]}.json"`,
+        "Content-Disposition": `attachment; filename="algo-studio-data-export-${new Date().toISOString().split("T")[0]}.json"`,
         ...createRateLimitHeaders(rateLimitResult),
       },
     });

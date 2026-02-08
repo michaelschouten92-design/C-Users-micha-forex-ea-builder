@@ -292,7 +292,7 @@ export async function sendAccountDeletedEmail(email: string) {
               If your Stripe subscription was active, it has been cancelled automatically.
             </p>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you did not request this, please contact us immediately at support@algostudio.nl.
+              If you did not request this, please contact us immediately at contact@algo-studio.com.
             </p>
           </div>
         </body>
@@ -337,7 +337,7 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
               Update Payment Method
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you believe this is an error, please contact us at support@algostudio.nl.
+              If you believe this is an error, please contact us at contact@algo-studio.com.
             </p>
           </div>
         </body>

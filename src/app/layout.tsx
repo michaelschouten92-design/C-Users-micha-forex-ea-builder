@@ -16,15 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.AUTH_URL || "https://algostudio.nl"),
+  metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
     default: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
     template: "%s | AlgoStudio",
   },
-  description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+  description:
+    "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
   openGraph: {
     title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
-    description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+    description:
+      "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
     type: "website",
     siteName: "AlgoStudio",
   },
@@ -53,9 +55,7 @@ export default async function RootLayout({
           />
         )}
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[#4F46E5] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
