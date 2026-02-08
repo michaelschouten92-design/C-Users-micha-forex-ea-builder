@@ -6,14 +6,14 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
-  title: "Moving Average Crossover EA Template — Free MT5 Strategy",
+  title: "Moving Average Crossover EA Template | Free MT5 Trend Strategy",
   description:
-    "Free Moving Average crossover Expert Advisor template for MetaTrader 5. Pre-configured with 10/50 EMA crossover, ATR-based stops, and London session timing.",
+    "Free Moving Average crossover Expert Advisor template for MetaTrader 5. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
   alternates: { canonical: "/templates/moving-average-crossover-ea" },
   openGraph: {
-    title: "Moving Average Crossover EA Template — Free MT5 Strategy",
+    title: "Moving Average Crossover EA Template | Free MT5 Trend Strategy",
     description:
-      "Free MA crossover EA template. Pre-configured trend-following strategy ready to customize and export.",
+      "Free Moving Average crossover Expert Advisor template for MetaTrader 5. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
     url: "/templates/moving-average-crossover-ea",
   },
 };
@@ -27,23 +27,23 @@ const breadcrumbs = [
 const faqQuestions = [
   {
     q: "What timeframe works best for the MA crossover strategy?",
-    a: "H1 (1-hour) and H4 (4-hour) timeframes produce the best results. Lower timeframes generate too many false signals, while daily charts produce very few trades.",
+    a: "H1 (1-hour) and H4 (4-hour) timeframes produce the best results. Lower timeframes like M15 generate too many false crossover signals, while daily charts produce very few trades. Start with H1 and test H4 if you want fewer but higher-quality signals.",
   },
   {
-    q: "Which currency pairs work best?",
-    a: "Major pairs that trend well: EURUSD, GBPUSD, and USDJPY. Avoid range-bound pairs like EURGBP and exotic pairs with wide spreads.",
+    q: "Which currency pairs work best for MA crossover EAs?",
+    a: "Major pairs that trend well: EURUSD, GBPUSD, and USDJPY. Avoid range-bound pairs like EURGBP and exotic pairs with wide spreads. The strategy profits from sustained directional moves, so trending pairs are essential.",
   },
   {
-    q: "Should I use SMA or EMA?",
-    a: "EMA (Exponential Moving Average) is recommended for crossover strategies because it responds faster to price changes. SMA gives smoother but slower signals.",
+    q: "Should I use SMA or EMA for the crossover?",
+    a: "EMA (Exponential Moving Average) is recommended because it responds faster to recent price changes, catching trend changes earlier. SMA (Simple Moving Average) gives smoother but slower signals. Test both in backtesting — EMA 10/50 is a strong default.",
   },
   {
-    q: "What win rate should I expect?",
-    a: "A well-optimized MA crossover typically wins 35-45% of trades. The strategy is profitable because winning trades are larger than losers (using 1:2 risk-reward).",
+    q: "What win rate should I expect from this strategy?",
+    a: "A well-optimized MA crossover typically wins 35–45% of trades. The strategy is profitable because winning trades are significantly larger than losers, using a 2:1 risk-reward ratio. You don't need to win most trades — you need winners that are bigger than losers.",
   },
   {
-    q: "Can I add more indicators to this template?",
-    a: "Yes. Common additions include an ADX filter (only trade when ADX > 25) and RSI filter (don't buy when RSI > 70). Keep it simple — 2-3 indicators total is the sweet spot.",
+    q: "Can I add more indicators to improve the strategy?",
+    a: "Yes. Common additions include an ADX filter (only trade when ADX > 25, confirming a trend exists) and an RSI filter (don't buy when RSI > 70, avoiding overbought entries). Keep it simple — 2–3 indicators total is the sweet spot. More indicators usually means overfitting, not better results.",
   },
 ];
 
@@ -52,9 +52,9 @@ const parameters = [
   { name: "Slow MA Period", value: "50", type: "EMA" },
   { name: "Stop Loss", value: "1.5x ATR(14)", type: "ATR-based" },
   { name: "Take Profit", value: "2:1 R:R", type: "Risk-reward" },
-  { name: "Session", value: "London (08:00-17:00 GMT)", type: "Timing" },
+  { name: "Session", value: "London (08:00–17:00 GMT)", type: "Timing" },
   { name: "Max Trades/Day", value: "3", type: "Risk" },
-  { name: "Position Sizing", value: "1% risk", type: "Risk" },
+  { name: "Position Sizing", value: "1% risk per trade", type: "Risk" },
 ];
 
 export default function MovingAverageCrossoverTemplatePage() {
@@ -73,54 +73,95 @@ export default function MovingAverageCrossoverTemplatePage() {
       <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Breadcrumbs items={breadcrumbs} />
 
-        {/* Hero */}
-        <header className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] rounded-full px-4 py-1.5 mb-6">
-            <span className="text-xs text-[#10B981] font-medium">FREE TEMPLATE</span>
-          </div>
+        {/* H1 + Intro */}
+        <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            Moving Average Crossover EA Template
+            Moving Average Crossover EA Template for MetaTrader 5
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
-            The Moving Average crossover is the most popular trend-following strategy in forex. This
-            template uses a fast 10 EMA and slow 50 EMA crossover with ATR-based risk management,
-            optimized for the London session.
+            The Moving Average crossover is the most popular trend-following strategy in forex
+            trading. This free EA template uses a fast 10 EMA and slow 50 EMA crossover with
+            ATR-based risk management, optimized for the London session. Build it in AlgoStudio
+            without coding, customize the parameters, and export a production-ready MQL5 Expert
+            Advisor in minutes.
           </p>
         </header>
 
-        {/* Strategy Explanation */}
+        {/* H2 – What Is a Moving Average Crossover Strategy? */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">How the Strategy Works</h2>
-          <p className="text-[#94A3B8] leading-relaxed mb-4">
-            The Moving Average crossover identifies trend changes by comparing two moving averages
-            with different periods. When the fast MA (which reacts quickly to price) crosses above
-            the slow MA (which shows the longer-term trend), it signals that a new uptrend may be
-            starting.
-          </p>
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-4 space-y-3">
+          <h2 className="text-2xl font-bold text-white mb-6">
+            What Is a Moving Average Crossover Strategy?
+          </h2>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              A Moving Average crossover strategy compares two moving averages with different
+              periods. The fast MA (short period, like 10) reacts quickly to recent price changes.
+              The slow MA (longer period, like 50) represents the broader trend. When the fast MA
+              crosses above the slow MA, it signals a potential new uptrend. When it crosses below,
+              it signals a potential downtrend.
+            </p>
+            <p>
+              This is a <strong className="text-white">trend-following</strong> approach — it
+              doesn&apos;t try to predict reversals or pick tops and bottoms. Instead, it waits for
+              a trend to establish itself and then rides the move. The trade-off is a lower win rate
+              (35–45%), but winning trades are significantly larger than losing trades because you
+              hold positions through extended trending moves.
+            </p>
+            <p>
+              The strategy has been used by professional and retail traders for decades because of
+              its simplicity and robustness. It works across all liquid markets and timeframes,
+              making it an ideal starting point for anyone new to automated trading.
+            </p>
+          </div>
+        </section>
+
+        {/* H2 – How the Strategy Works */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-white mb-6">How This EA Template Works</h2>
+          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-6 space-y-3">
             <div>
               <span className="text-[#10B981] font-semibold text-sm">BUY SIGNAL: </span>
               <span className="text-[#CBD5E1] text-sm">
-                Fast EMA (10) crosses above Slow EMA (50)
+                Fast EMA (10) crosses above Slow EMA (50) during the London session
               </span>
             </div>
             <div>
               <span className="text-[#EF4444] font-semibold text-sm">SELL SIGNAL: </span>
               <span className="text-[#CBD5E1] text-sm">
-                Fast EMA (10) crosses below Slow EMA (50)
+                Fast EMA (10) crosses below Slow EMA (50) during the London session
+              </span>
+            </div>
+            <div>
+              <span className="text-[#F59E0B] font-semibold text-sm">EXIT: </span>
+              <span className="text-[#CBD5E1] text-sm">
+                Stop loss at 1.5x ATR(14) or take profit at 2:1 risk-reward ratio
               </span>
             </div>
           </div>
-          <p className="text-[#94A3B8] leading-relaxed">
-            The strategy performs best in trending markets with clear directional moves. It
-            underperforms in choppy, sideways conditions — adding an ADX filter can help avoid these
-            periods.
-          </p>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              The London session filter (08:00–17:00 GMT) ensures you only trade during the most
+              liquid hours, when major forex pairs have the tightest spreads and strongest trends.
+              ATR-based stop losses adapt automatically to current market volatility — wider stops
+              in volatile conditions, tighter stops in calm markets.
+            </p>
+            <p>
+              The strategy performs best in trending markets with clear directional moves. It
+              underperforms in choppy, sideways conditions where the MAs keep crossing back and
+              forth. Adding an ADX filter (only trade when ADX &gt; 25) is a common improvement to
+              avoid these whipsaw periods.
+            </p>
+          </div>
         </section>
 
-        {/* Parameters Table */}
+        {/* H2 – Parameters Table */}
         <section className="mb-16">
           <h2 className="text-2xl font-bold text-white mb-6">Default Parameters</h2>
+          <p className="text-[#94A3B8] leading-relaxed mb-6">
+            These defaults work well on major pairs (EURUSD, GBPUSD) on H1. All parameters are
+            exported as <code className="text-[#A78BFA]">input</code> variables so you can optimize
+            them in the MT5 Strategy Tester.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -143,99 +184,138 @@ export default function MovingAverageCrossoverTemplatePage() {
           </div>
         </section>
 
-        {/* How to Use */}
+        {/* H2 – How to Build This EA */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">How to Use This Template</h2>
-          <div className="space-y-6">
-            {[
-              {
-                step: "1",
-                title: "Create a new project in AlgoStudio",
-                desc: 'Sign up or log in and click "New Project". Name it "MA Crossover Strategy".',
-              },
-              {
-                step: "2",
-                title: "Add a Trading Sessions block",
-                desc: 'Drag a Trading Sessions block and select "London Session" (08:00-17:00 GMT).',
-              },
-              {
-                step: "3",
-                title: "Add two Moving Average blocks",
-                desc: "Set one to EMA period 10 (fast) and the other to EMA period 50 (slow). Connect both to the timing block.",
-              },
-              {
-                step: "4",
-                title: "Add trade execution and risk management",
-                desc: "Add Place Buy and Place Sell blocks. Connect Stop Loss (1.5x ATR) and Take Profit (2:1 R:R) blocks.",
-              },
-              {
-                step: "5",
-                title: "Export, backtest, and optimize",
-                desc: "Export to MQL5, backtest on EURUSD H1 with 2+ years of data. Optimize MA periods in the MT5 Strategy Tester.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="flex gap-4">
-                <div className="w-8 h-8 bg-[#4F46E5] rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold mb-1">{item.title}</h3>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+          <h2 className="text-2xl font-bold text-white mb-6">
+            How to Build This EA Without Coding
+          </h2>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                1. Create a new project in AlgoStudio
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Sign up for free (no credit card required) and click &ldquo;New Project&rdquo;. Name
+                your project &ldquo;MA Crossover Strategy&rdquo; and open the visual builder canvas.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                2. Add timing and indicator blocks
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Drag a Trading Sessions block onto the canvas and select the London session
+                (08:00–17:00 GMT). Add two Moving Average blocks — set one to EMA period 10 (fast)
+                and the other to EMA period 50 (slow). Connect both to the timing block.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                3. Add trade execution and risk management
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Add Place Buy and Place Sell blocks. Connect Stop Loss (set to 1.5x ATR with period
+                14), Take Profit (set to 2:1 risk-reward ratio), position sizing (1% risk per
+                trade), and Max Trades Per Day (3). Your entire strategy is now visible on the
+                canvas.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                4. Export, backtest, and optimize
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Click Export to generate a .mq5 file. Load it into MetaTrader 5 and backtest on
+                EURUSD H1 with at least 2 years of historical data. Use the MT5 Strategy Tester
+                optimizer to find the best MA periods — try ranges of 5–20 for the fast MA and
+                30–100 for the slow MA. Demo trade for 1–3 months before going live.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Related */}
+        {/* H2 – Optimization Tips */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">Related Resources</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <h2 className="text-2xl font-bold text-white mb-6">Optimization Tips</h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Test different MA period combinations
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                The 10/50 EMA is a strong default, but 8/21, 10/30, and 20/50 are all worth testing.
+                The key is maintaining enough separation between the fast and slow period — if
+                they&apos;re too close, you get excessive crossovers and whipsaws.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Add an ADX trend filter</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                The biggest weakness of MA crossover strategies is choppy, sideways markets. Adding
+                an ADX block with a threshold of 25 ensures you only take trades when a real trend
+                exists. This typically reduces trade count by 30–40% but significantly improves the
+                win rate.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Don&apos;t over-optimize</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                If your backtest shows 90%+ win rates, you&apos;ve probably overfitted to historical
+                data. A realistic MA crossover wins 35–45% of trades with a positive profit factor.
+                Prefer parameter sets that produce consistent results across multiple years and
+                currency pairs.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <FAQSection questions={faqQuestions} />
+
+        {/* Internal links */}
+        <section className="mb-16 mt-16">
+          <div className="flex flex-wrap gap-3 text-sm">
+            <Link
+              href="/templates"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              All Templates
+            </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/templates/rsi-ea-template"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">RSI EA Template</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Mean reversion strategy for range-bound markets.
-              </p>
+              RSI EA Template
             </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/templates/breakout-ea-template"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">Breakout EA Template</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Trade Asian range breakouts at the London open.
-              </p>
+              Breakout EA Template
             </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/blog/moving-average-crossover-strategy"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">MA Crossover Deep Dive</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Full guide on building and optimizing MA strategies.
-              </p>
+              MA Crossover Guide
             </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
-              href="/blog/best-indicators-for-forex-ea"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              href="/no-code-mt5-ea-builder"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">Best Indicators for EAs</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Which indicators to add for better performance.
-              </p>
+              No-Code EA Builder
             </Link>
           </div>
         </section>
-
-        <FAQSection questions={faqQuestions} />
       </article>
 
       <CTASection
-        title="Build this strategy in minutes"
-        description="Create the MA Crossover EA with AlgoStudio's visual builder. Free to start."
+        title="Build the MA Crossover EA in minutes"
+        description="Create this strategy with AlgoStudio's visual builder. Free plan available — no credit card required."
       />
     </div>
   );

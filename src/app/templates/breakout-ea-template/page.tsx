@@ -6,14 +6,14 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
-  title: "Breakout EA Template — Free Asian Range Breakout Strategy for MT5",
+  title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5",
   description:
-    "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR-based stops and 1.5:1 risk-reward.",
+    "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build without coding.",
   alternates: { canonical: "/templates/breakout-ea-template" },
   openGraph: {
-    title: "Breakout EA Template — Free Asian Range Breakout Strategy for MT5",
+    title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5",
     description:
-      "Free breakout EA template. Trade Asian range breakouts with ATR-based risk management.",
+      "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build without coding.",
     url: "/templates/breakout-ea-template",
   },
 };
@@ -26,36 +26,36 @@ const breadcrumbs = [
 
 const faqQuestions = [
   {
-    q: "What is the Asian range?",
-    a: "The Asian range is the price range formed during the Tokyo trading session (approximately 00:00-08:00 GMT). During this quiet session, price typically consolidates in a narrow range. When the London session opens, increased volume often causes a breakout from this range.",
+    q: "What is the Asian range in forex trading?",
+    a: "The Asian range is the price range formed during the Tokyo trading session (approximately 00:00–08:00 GMT). During this quiet session, price typically consolidates in a narrow range. When the London session opens, increased volume often causes a breakout from this range.",
   },
   {
-    q: "Why trade the Asian range breakout?",
-    a: "It's one of the most well-documented patterns in forex. The transition from low-volatility (Asia) to high-volatility (London) creates predictable breakout opportunities. The tight Asian range provides clear stop loss levels.",
+    q: "Why is the Asian range breakout a popular strategy?",
+    a: "It's one of the most well-documented patterns in forex. The transition from low-volatility (Asia) to high-volatility (London) creates predictable breakout opportunities. The tight Asian range provides clear entry levels and natural stop loss placement.",
   },
   {
-    q: "What if the breakout is a false breakout?",
-    a: "False breakouts happen. The ATR-based stop loss is placed inside the Asian range to protect you. The 1.5:1 risk-reward ratio means you only need to win about 40% of trades to be profitable.",
+    q: "How do you handle false breakouts?",
+    a: "False breakouts are inevitable. The ATR-based stop loss placed inside the Asian range limits losses on false breaks. The 1.5:1 risk-reward ratio means you only need to win about 40% of breakouts to be profitable. Range size filters (20–80 pips) also help avoid low-conviction setups.",
   },
   {
-    q: "Can I use this on pairs other than EURUSD?",
-    a: "Yes, but results vary. GBPUSD and EURUSD work best because they're most active during the London session. USDJPY can also work but is more active during Tokyo. Always backtest on each pair individually.",
+    q: "Can I use this strategy on pairs other than EURUSD?",
+    a: "Yes, but results vary. GBPUSD and EURUSD work best because they're most active during the London session. USDJPY can also work but tends to be more active during Tokyo. Always backtest on each pair individually before trading live.",
   },
   {
-    q: "What timeframe should I use?",
-    a: "M15 (15-minute) or M30 (30-minute) work best for this strategy. These timeframes give enough granularity to catch the breakout while filtering out noise.",
+    q: "What timeframe should I use for breakout trading?",
+    a: "M15 (15-minute) or M30 (30-minute) work best for this strategy. These timeframes give enough granularity to catch the initial breakout candle while filtering out the noise of smaller timeframes like M1 or M5.",
   },
 ];
 
 const parameters = [
-  { name: "Range Session", value: "Asian (00:00-08:00 GMT)", type: "Timing" },
-  { name: "Breakout Session", value: "London Open (08:00-12:00 GMT)", type: "Timing" },
+  { name: "Range Session", value: "Asian (00:00–08:00 GMT)", type: "Timing" },
+  { name: "Breakout Session", value: "London Open (08:00–12:00 GMT)", type: "Timing" },
   { name: "Stop Loss", value: "1.5x ATR(14)", type: "ATR-based" },
   { name: "Take Profit", value: "1.5:1 R:R", type: "Risk-reward" },
   { name: "Min Range Size", value: "20 pips", type: "Filter" },
   { name: "Max Range Size", value: "80 pips", type: "Filter" },
   { name: "Max Trades/Day", value: "1", type: "Risk" },
-  { name: "Position Sizing", value: "1% risk", type: "Risk" },
+  { name: "Position Sizing", value: "1% risk per trade", type: "Risk" },
 ];
 
 export default function BreakoutEATemplatePage() {
@@ -74,31 +74,53 @@ export default function BreakoutEATemplatePage() {
       <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Breadcrumbs items={breadcrumbs} />
 
-        {/* Hero */}
-        <header className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] rounded-full px-4 py-1.5 mb-6">
-            <span className="text-xs text-[#10B981] font-medium">FREE TEMPLATE</span>
-          </div>
+        {/* H1 + Intro */}
+        <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            Breakout EA Template
+            Breakout EA Template — Asian Range Breakout for MetaTrader 5
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
-            Trade the Asian session range breakout at the London open — one of the most reliable
-            patterns in forex. This template identifies the overnight consolidation range and enters
-            when price breaks out with momentum at the start of the London session.
+            Trade the Asian session range breakout at the London open — one of the most reliable and
+            well-documented patterns in forex. This free EA template identifies the overnight
+            consolidation range, waits for price to break out when European traders enter the
+            market, and enters with ATR-based risk management. Build it in AlgoStudio without coding
+            and export a production-ready MQL5 Expert Advisor.
           </p>
         </header>
 
-        {/* Strategy Explanation */}
+        {/* H2 – What Is Breakout Trading? */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">How the Strategy Works</h2>
-          <p className="text-[#94A3B8] leading-relaxed mb-4">
-            During the Asian session (Tokyo), the forex market is relatively quiet. Price
-            consolidates in a narrow range as volume is lower. When the London session opens at
-            08:00 GMT, European traders enter the market and volume surges. This often pushes price
-            out of the Asian range, creating a breakout.
-          </p>
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-4 space-y-3">
+          <h2 className="text-2xl font-bold text-white mb-6">
+            What Is Asian Range Breakout Trading?
+          </h2>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              During the Asian session (Tokyo, approximately 00:00–08:00 GMT), the forex market is
+              relatively quiet. Price consolidates in a narrow range as trading volume is lower than
+              during the European and US sessions. This consolidation creates a clearly defined high
+              and low — the Asian range.
+            </p>
+            <p>
+              When the London session opens at 08:00 GMT, European traders and institutions enter
+              the market. Volume surges, and price often breaks out of the Asian range with
+              conviction. The breakout strategy captures this volatility expansion by entering a
+              trade when price moves above the Asian high (buy) or below the Asian low (sell).
+            </p>
+            <p>
+              This strategy is popular because it offers{" "}
+              <strong className="text-white">clear entry levels</strong> (the range high and low),{" "}
+              <strong className="text-white">natural stop loss placement</strong> (inside the
+              range), and a <strong className="text-white">predictable timing window</strong> (the
+              London open). You always know where to enter, where to place your stop, and when to
+              look for setups.
+            </p>
+          </div>
+        </section>
+
+        {/* H2 – How the Strategy Works */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-white mb-6">How This EA Template Works</h2>
+          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-6 space-y-3">
             <div>
               <span className="text-[#10B981] font-semibold text-sm">BUY SIGNAL: </span>
               <span className="text-[#CBD5E1] text-sm">
@@ -112,22 +134,42 @@ export default function BreakoutEATemplatePage() {
               </span>
             </div>
             <div>
-              <span className="text-[#F59E0B] font-semibold text-sm">FILTER: </span>
+              <span className="text-[#F59E0B] font-semibold text-sm">FILTERS: </span>
               <span className="text-[#CBD5E1] text-sm">
-                Only trade if range is between 20-80 pips (too narrow = no conviction, too wide =
-                stop too far)
+                Asian range must be 20–80 pips (too narrow = no conviction, too wide = stop too far)
+              </span>
+            </div>
+            <div>
+              <span className="text-[#A78BFA] font-semibold text-sm">EXIT: </span>
+              <span className="text-[#CBD5E1] text-sm">
+                Stop loss at 1.5x ATR(14) inside the range, take profit at 1.5:1 R:R
               </span>
             </div>
           </div>
-          <p className="text-[#94A3B8] leading-relaxed">
-            The strategy limits to one trade per day. Once the breakout is traded (win or loss), the
-            EA waits for the next Asian session to form a new range.
-          </p>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              The strategy limits to one trade per day. Once the breakout is traded (win or loss),
+              the EA waits for the next Asian session to form a new range. This prevents overtrading
+              and keeps risk exposure predictable — you never have more than one position open from
+              this strategy.
+            </p>
+            <p>
+              The range size filter is important. If the Asian range is too narrow (under 20 pips),
+              there isn&apos;t enough consolidation for a meaningful breakout. If it&apos;s too wide
+              (over 80 pips), the stop loss would be too far away and the risk-reward ratio
+              deteriorates. The 20–80 pip range captures the sweet spot for most major pairs.
+            </p>
+          </div>
         </section>
 
-        {/* Parameters Table */}
+        {/* H2 – Parameters Table */}
         <section className="mb-16">
           <h2 className="text-2xl font-bold text-white mb-6">Default Parameters</h2>
+          <p className="text-[#94A3B8] leading-relaxed mb-6">
+            Optimized for EURUSD and GBPUSD on M15/M30 timeframes. All parameters are exported as{" "}
+            <code className="text-[#A78BFA]">input</code> variables for MT5 Strategy Tester
+            optimization.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -150,97 +192,127 @@ export default function BreakoutEATemplatePage() {
           </div>
         </section>
 
-        {/* How to Use */}
+        {/* H2 – How to Build This EA */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">How to Use This Template</h2>
-          <div className="space-y-6">
-            {[
-              {
-                step: "1",
-                title: "Create a new project in AlgoStudio",
-                desc: 'Sign up or log in and create a new project. Name it "Asian Range Breakout".',
-              },
-              {
-                step: "2",
-                title: "Set up the range detection",
-                desc: "Add a Range Breakout block and configure it for the Asian session (00:00-08:00 GMT). Set min range to 20 pips and max to 80 pips.",
-              },
-              {
-                step: "3",
-                title: "Set the breakout window",
-                desc: "Add a Custom Times block for the London open window (08:00-12:00 GMT). This limits breakout entries to the first 4 hours of London.",
-              },
-              {
-                step: "4",
-                title: "Configure risk management",
-                desc: "Add Stop Loss (1.5x ATR) placed inside the Asian range, Take Profit at 1.5:1 R:R, and set Max Trades Per Day to 1.",
-              },
-              {
-                step: "5",
-                title: "Export and backtest",
-                desc: "Export to MQL5, backtest on EURUSD M15 with 2+ years of data. Optimize range filters and timing in the MT5 Strategy Tester.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="flex gap-4">
-                <div className="w-8 h-8 bg-[#4F46E5] rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold mb-1">{item.title}</h3>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+          <h2 className="text-2xl font-bold text-white mb-6">
+            How to Build This EA Without Coding
+          </h2>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                1. Create a new project in AlgoStudio
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Sign up for free and create a new project. Name it &ldquo;Asian Range
+                Breakout&rdquo; and open the visual builder canvas.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                2. Set up the range detection
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Add a Range Breakout block and configure it for the Asian session (00:00–08:00 GMT).
+                Set the minimum range to 20 pips and maximum to 80 pips. This block automatically
+                tracks the session high and low and triggers when price breaks out.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">3. Set the breakout window</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Add a Custom Times block for the London open window (08:00–12:00 GMT). This limits
+                breakout entries to the first 4 hours of London — the period with the highest
+                probability of genuine breakouts rather than false breaks.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">
+                4. Add risk management and export
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Add Stop Loss (1.5x ATR placed inside the Asian range), Take Profit at 1.5:1 R:R,
+                position sizing at 1% risk, and Max Trades Per Day set to 1. Export the MQL5 file,
+                backtest on EURUSD M15 with 2+ years of data, and optimize the range filters and
+                timing parameters.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Related */}
+        {/* H2 – When Breakout Strategies Work Best */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">Related Resources</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <h2 className="text-2xl font-bold text-white mb-6">
+            When Breakout Strategies Work Best — and When They Don&apos;t
+          </h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Works well when</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                The Asian session has a tight, well-defined range (30–60 pips on EURUSD). Major
+                economic releases are scheduled during the London session. The market has been
+                consolidating overnight and institutional volume pushes price decisively through the
+                range boundary.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">Struggles when</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                The Asian session was already volatile (wide range &gt; 80 pips). It&apos;s a
+                low-volume day (bank holidays, between Christmas and New Year). The range is
+                extremely tight (&lt; 20 pips), which often means the market is in a dead zone with
+                no institutional interest. The range size filter catches most of these scenarios.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <FAQSection questions={faqQuestions} />
+
+        {/* Internal links */}
+        <section className="mb-16 mt-16">
+          <div className="flex flex-wrap gap-3 text-sm">
+            <Link
+              href="/templates"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              All Templates
+            </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/templates/moving-average-crossover-ea"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">MA Crossover Template</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Trend-following with moving average crossovers.
-              </p>
+              MA Crossover Template
             </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/templates/rsi-ea-template"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">RSI EA Template</h3>
-              <p className="text-sm text-[#94A3B8]">Mean reversion with RSI overbought/oversold.</p>
+              RSI EA Template
             </Link>
-            <Link
-              href="/blog/forex-trading-sessions-explained"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              <h3 className="text-white font-semibold mb-1">Trading Sessions Guide</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Understand session timing for better EA performance.
-              </p>
-            </Link>
+            <span className="text-[#64748B]">·</span>
             <Link
               href="/blog/from-trading-idea-to-automated-ea"
-              className="block p-4 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              <h3 className="text-white font-semibold mb-1">From Idea to EA</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Complete workflow for building and deploying EAs.
-              </p>
+              From Idea to EA
+            </Link>
+            <span className="text-[#64748B]">·</span>
+            <Link
+              href="/no-code-mt5-ea-builder"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              No-Code EA Builder
             </Link>
           </div>
         </section>
-
-        <FAQSection questions={faqQuestions} />
       </article>
 
       <CTASection
-        title="Build this strategy in minutes"
-        description="Create the Breakout EA with AlgoStudio's visual builder. Free to start."
+        title="Build the Breakout EA in minutes"
+        description="Create this strategy with AlgoStudio's visual builder. Free plan available — no credit card required."
       />
     </div>
   );
