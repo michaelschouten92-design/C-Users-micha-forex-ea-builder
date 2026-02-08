@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { logger } from "@/lib/logger";
 import {
   resendVerificationRateLimiter,
@@ -51,12 +51,13 @@ export async function POST() {
       where: { email: user.email },
     });
 
-    // Create new token
+    // Create new token (store hashed, send plaintext in email)
     const token = randomBytes(32).toString("hex");
+    const hashedToken = createHash("sha256").update(token).digest("hex");
     await prisma.emailVerificationToken.create({
       data: {
         email: user.email,
-        token,
+        token: hashedToken,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });

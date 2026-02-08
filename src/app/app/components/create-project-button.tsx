@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfHeaders } from "@/lib/api-client";
 
@@ -11,6 +11,15 @@ export function CreateProjectButton() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,9 +65,7 @@ export function CreateProjectButton() {
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4">
             <form onSubmit={handleSubmit}>
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  New Project
-                </h3>
+                <h3 className="text-lg font-semibold text-white mb-4">New Project</h3>
 
                 {error && (
                   <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg mb-4 text-sm">
@@ -68,10 +75,7 @@ export function CreateProjectButton() {
 
                 <div className="space-y-4">
                   <div>
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-[#CBD5E1] mb-1"
-                    >
+                    <label htmlFor="name" className="block text-sm font-medium text-[#CBD5E1] mb-1">
                       Name *
                     </label>
                     <input

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PLANS, formatPrice } from "@/lib/plans";
+import { MobileNav } from "@/components/mobile-nav";
 
 export const metadata: Metadata = {
   title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
@@ -84,7 +85,7 @@ export default async function Home() {
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-white">AlgoStudio</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6">
             <Link
               href="/pricing"
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
@@ -110,6 +111,7 @@ export default async function Home() {
               Start Free
             </Link>
           </div>
+          <MobileNav />
         </div>
       </nav>
 

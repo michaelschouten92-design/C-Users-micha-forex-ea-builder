@@ -16,16 +16,13 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
-  const [isRegistration, setIsRegistration] = useState(false);
+  const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
   const [providers, setProviders] = useState<Providers>(null);
 
-  // Fetch available providers and check for mode param on mount
+  // Fetch available providers on mount
   useEffect(() => {
     getProviders().then(setProviders);
-    if (searchParams.get("mode") === "register") {
-      setIsRegistration(true);
-    }
-  }, [searchParams]);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,9 +70,7 @@ function LoginForm() {
   return (
     <div className="max-w-md w-full space-y-8 p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div>
-        <h2 className="text-center text-3xl font-bold text-white">
-          AlgoStudio
-        </h2>
+        <h2 className="text-center text-3xl font-bold text-white">AlgoStudio</h2>
         <p className="mt-2 text-center text-sm text-[#94A3B8]">
           {isRegistration ? "Create a new account" : "Sign in to your account"}
         </p>
@@ -159,9 +154,7 @@ function LoginForm() {
           type="button"
           onClick={() => setIsRegistration(false)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-            !isRegistration
-              ? "bg-[#4F46E5] text-white"
-              : "text-[#94A3B8] hover:text-white"
+            !isRegistration ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
           }`}
         >
           Sign In
@@ -170,9 +163,7 @@ function LoginForm() {
           type="button"
           onClick={() => setIsRegistration(true)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-            isRegistration
-              ? "bg-[#4F46E5] text-white"
-              : "text-[#94A3B8] hover:text-white"
+            isRegistration ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
           }`}
         >
           Register
@@ -209,10 +200,7 @@ function LoginForm() {
                 Password
               </label>
               {!isRegistration && (
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-[#22D3EE] hover:underline"
-                >
+                <Link href="/forgot-password" className="text-sm text-[#22D3EE] hover:underline">
                   Forgot password?
                 </Link>
               )}
@@ -259,7 +247,23 @@ function LoginForm() {
 
       {isRegistration && (
         <p className="text-xs text-center text-[#64748B]">
-          By registering, you agree to our terms of service.
+          By registering, you agree to our{" "}
+          <a
+            href="/terms"
+            target="_blank"
+            className="text-[#A78BFA] hover:text-[#C4B5FD] underline"
+          >
+            terms of service
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy"
+            target="_blank"
+            className="text-[#A78BFA] hover:text-[#C4B5FD] underline"
+          >
+            privacy policy
+          </a>
+          .
         </p>
       )}
     </div>
@@ -269,14 +273,16 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div id="main-content" className="min-h-screen flex items-center justify-center">
-      <Suspense fallback={
-        <div className="max-w-md w-full p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-[#1E293B] rounded w-1/2 mx-auto" />
-            <div className="h-4 bg-[#1E293B] rounded w-2/3 mx-auto" />
+      <Suspense
+        fallback={
+          <div className="max-w-md w-full p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-[#1E293B] rounded w-1/2 mx-auto" />
+              <div className="h-4 bg-[#1E293B] rounded w-2/3 mx-auto" />
+            </div>
           </div>
-        </div>
-      }>
+        }
+      >
         <LoginForm />
       </Suspense>
     </div>

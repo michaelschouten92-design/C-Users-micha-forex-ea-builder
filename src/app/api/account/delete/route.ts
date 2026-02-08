@@ -66,9 +66,16 @@ export async function DELETE(request: Request) {
         const { getStripe } = await import("@/lib/stripe");
         await getStripe().subscriptions.cancel(subscription.stripeSubId);
       } catch (stripeError) {
-        logger.warn(
+        logger.error(
           { error: stripeError, userId },
           "Failed to cancel Stripe subscription during account deletion"
+        );
+        return NextResponse.json(
+          {
+            error:
+              "Failed to cancel your subscription. Please cancel it in Stripe first, then try again.",
+          },
+          { status: 500 }
         );
       }
     }
@@ -117,10 +124,19 @@ export async function DELETE(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "Account and all associated data have been permanently deleted.",
     });
+
+    // Clear session cookies so the deleted user is logged out
+    const cookieName =
+      process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token";
+    response.cookies.set(cookieName, "", { maxAge: 0, path: "/" });
+
+    return response;
   } catch (error) {
     logger.error({ error, userId: session.user.id }, "GDPR account deletion failed");
     return NextResponse.json({ error: "Account deletion failed" }, { status: 500 });

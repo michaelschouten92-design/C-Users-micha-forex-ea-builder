@@ -13,9 +13,7 @@ const isServer = typeof window === "undefined";
 
 const envSchema = z.object({
   // Node environment
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
   // Database (required)
   DATABASE_URL: z
@@ -27,10 +25,7 @@ const envSchema = z.object({
   AUTH_SECRET: z
     .string()
     .min(1, "AUTH_SECRET is required - generate with: openssl rand -base64 32"),
-  AUTH_URL: z
-    .string()
-    .url("AUTH_URL must be a valid URL")
-    .default("http://localhost:3000"),
+  AUTH_URL: z.string().url("AUTH_URL must be a valid URL").default("http://localhost:3000"),
   AUTH_TRUST_HOST: z
     .string()
     .transform((val) => val === "true")
@@ -46,9 +41,7 @@ const envSchema = z.object({
 
   // Resend Email (optional in dev, recommended in prod)
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z
-    .string()
-    .default("AlgoStudio <onboarding@resend.dev>"),
+  EMAIL_FROM: z.string().default("AlgoStudio <onboarding@resend.dev>"),
 
   // Stripe (optional in dev, required in prod for payments)
   STRIPE_SECRET_KEY: z.string().optional().or(z.literal("")),
@@ -65,8 +58,12 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional().or(z.literal("")),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")),
 
-  // Stripe webhook secret (optional in dev, required in prod)
-  // Allow empty string in development
+  // Upstash Redis (optional - for production rate limiting)
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // Cron secret (optional in dev, required in prod)
+  CRON_SECRET: z.string().optional(),
 });
 
 // Refinements for conditional requirements
@@ -101,12 +98,17 @@ const refinedEnvSchema = envSchema
       if (data.NODE_ENV === "production") {
         if (!data.STRIPE_SECRET_KEY || data.STRIPE_SECRET_KEY === "") return false;
         if (!data.STRIPE_WEBHOOK_SECRET || data.STRIPE_WEBHOOK_SECRET === "") return false;
-        if (!data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "") return false;
+        if (
+          !data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+          data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === ""
+        )
+          return false;
       }
       return true;
     },
     {
-      message: "Stripe keys (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) are required in production",
+      message:
+        "Stripe keys (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) are required in production",
       path: ["STRIPE_SECRET_KEY"],
     }
   )
@@ -142,9 +144,7 @@ const refinedEnvSchema = envSchema
 
 // Client-safe schema (only NEXT_PUBLIC_* variables)
 const clientEnvSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")),
 });
@@ -187,6 +187,9 @@ function validateEnv() {
       STRIPE_PRO_MONTHLY_PRICE_ID: undefined,
       STRIPE_PRO_YEARLY_PRICE_ID: undefined,
       SENTRY_DSN: undefined,
+      UPSTASH_REDIS_REST_URL: undefined,
+      UPSTASH_REDIS_REST_TOKEN: undefined,
+      CRON_SECRET: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -211,7 +214,9 @@ function validateEnv() {
       // Return defaults for build phase — real values will be available at runtime
       return {
         NODE_ENV: process.env.NODE_ENV || "production",
-        DATABASE_URL: process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
+        DATABASE_URL:
+          process.env.DATABASE_URL ||
+          "postgresql://placeholder:placeholder@localhost:5432/placeholder",
         AUTH_SECRET: process.env.AUTH_SECRET || "build-phase-placeholder",
         AUTH_URL: process.env.AUTH_URL || "http://localhost:3000",
         AUTH_TRUST_HOST: false,
@@ -230,6 +235,9 @@ function validateEnv() {
         STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
         SENTRY_DSN: process.env.SENTRY_DSN,
         NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+        UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+        UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+        CRON_SECRET: process.env.CRON_SECRET,
       } as z.infer<typeof refinedEnvSchema>;
     }
 
@@ -264,8 +272,22 @@ export type Env = z.infer<typeof refinedEnvSchema>;
 // Helper to check if a feature is enabled (treat empty strings as disabled)
 // On client-side, these will be false since server env vars are not available
 export const features = {
-  googleAuth: isServer && Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_ID !== "" && env.AUTH_GOOGLE_SECRET && env.AUTH_GOOGLE_SECRET !== ""),
-  githubAuth: isServer && Boolean(env.AUTH_GITHUB_ID && env.AUTH_GITHUB_ID !== "" && env.AUTH_GITHUB_SECRET && env.AUTH_GITHUB_SECRET !== ""),
+  googleAuth:
+    isServer &&
+    Boolean(
+      env.AUTH_GOOGLE_ID &&
+      env.AUTH_GOOGLE_ID !== "" &&
+      env.AUTH_GOOGLE_SECRET &&
+      env.AUTH_GOOGLE_SECRET !== ""
+    ),
+  githubAuth:
+    isServer &&
+    Boolean(
+      env.AUTH_GITHUB_ID &&
+      env.AUTH_GITHUB_ID !== "" &&
+      env.AUTH_GITHUB_SECRET &&
+      env.AUTH_GITHUB_SECRET !== ""
+    ),
   stripe: isServer && Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY !== ""),
   email: isServer && Boolean(env.RESEND_API_KEY && env.RESEND_API_KEY !== ""),
 } as const;

@@ -38,15 +38,16 @@ async function handleOnboardingEmails(request: NextRequest) {
     const pricingUrl = `${env.AUTH_URL}/pricing`;
 
     // Day 1: Users created 24-48h ago who haven't created any projects
+    // Use 25h start to prevent overlap on cron retries within 1h
     const day1Start = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-    const day1End = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const day1End = new Date(now.getTime() - 25 * 60 * 60 * 1000);
 
     const day1Users = await prisma.user.findMany({
       where: {
         createdAt: { gte: day1Start, lt: day1End },
         projects: { none: {} },
       },
-      select: { email: true },
+      select: { id: true, email: true },
     });
 
     let day1Sent = 0;
@@ -61,15 +62,16 @@ async function handleOnboardingEmails(request: NextRequest) {
     }
 
     // Day 3: Users created 72-96h ago who haven't exported
+    // Use 73h start to prevent overlap on cron retries within 1h
     const day3Start = new Date(now.getTime() - 96 * 60 * 60 * 1000);
-    const day3End = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+    const day3End = new Date(now.getTime() - 73 * 60 * 60 * 1000);
 
     const day3Users = await prisma.user.findMany({
       where: {
         createdAt: { gte: day3Start, lt: day3End },
         exports: { none: {} },
       },
-      select: { email: true },
+      select: { id: true, email: true },
     });
 
     let day3Sent = 0;

@@ -34,62 +34,78 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
-    // Check project limit
-    const projectLimit = await checkProjectLimit(session.user.id);
-    if (!projectLimit.allowed) {
+    // Verify ownership, check limit, and create — all in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Check project limit inside transaction to prevent race condition
+      const projectLimit = await checkProjectLimit(session!.user!.id!);
+      if (!projectLimit.allowed) {
+        return { error: true as const, status: 403, max: projectLimit.max };
+      }
+
+      const sourceProject = await tx.project.findFirst({
+        where: { id, userId: session!.user!.id!, deletedAt: null },
+        include: {
+          versions: {
+            orderBy: { versionNo: "desc" as const },
+            take: 1,
+            select: { buildJson: true },
+          },
+        },
+      });
+
+      if (!sourceProject) {
+        return { error: true as const, status: 404, max: 0 };
+      }
+
+      const newProject = await tx.project.create({
+        data: {
+          name: `${sourceProject.name} (copy)`,
+          description: sourceProject.description,
+          userId: session!.user!.id!,
+          ...(sourceProject.versions.length > 0
+            ? {
+                versions: {
+                  create: {
+                    versionNo: 1,
+                    buildJson: sourceProject.versions[0].buildJson as Prisma.InputJsonValue,
+                  },
+                },
+              }
+            : {}),
+        },
+        include: {
+          _count: { select: { versions: true } },
+        },
+      });
+
+      return { error: false as const, project: newProject };
+    });
+
+    if (result.error) {
+      if (result.status === 404) {
+        return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), {
+          status: 404,
+        });
+      }
       return NextResponse.json(
-        apiError(ErrorCode.PROJECT_LIMIT, "Project limit reached", `You've reached the maximum of ${projectLimit.max} projects on your current plan. Upgrade to Pro for unlimited projects.`),
+        apiError(
+          ErrorCode.PROJECT_LIMIT,
+          "Project limit reached",
+          `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to Pro for unlimited projects.`
+        ),
         { status: 403 }
       );
     }
 
-    // Verify ownership and fetch the source project
-    const sourceProject = await prisma.project.findFirst({
-      where: { id, userId: session.user.id, deletedAt: null },
-      include: {
-        versions: {
-          orderBy: { versionNo: "desc" },
-          take: 1,
-          select: {
-            buildJson: true,
-          },
-        },
-      },
-    });
-
-    if (!sourceProject) {
-      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), { status: 404 });
-    }
-
-    // Create the duplicated project with its first version (if source had versions)
-    const newProject = await prisma.project.create({
-      data: {
-        name: `${sourceProject.name} (copy)`,
-        description: sourceProject.description,
-        userId: session.user.id,
-        ...(sourceProject.versions.length > 0
-          ? {
-              versions: {
-                create: {
-                  versionNo: 1,
-                  buildJson: sourceProject.versions[0].buildJson as Prisma.InputJsonValue,
-                },
-              },
-            }
-          : {}),
-      },
-      include: {
-        _count: {
-          select: { versions: true },
-        },
-      },
-    });
+    const newProject = result.project;
 
     await audit.projectCreate(session.user.id, newProject.id, newProject.name);
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Failed to duplicate project");
-    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+      status: 500,
+    });
   }
 }

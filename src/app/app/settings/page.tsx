@@ -15,16 +15,16 @@ export default function SettingsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
-              <Link href="/app" className="text-xl font-bold text-white hover:text-[#A78BFA] transition-colors">
+              <Link
+                href="/app"
+                className="text-xl font-bold text-white hover:text-[#A78BFA] transition-colors"
+              >
                 AlgoStudio
               </Link>
               <span className="text-[#64748B]">/</span>
               <span className="text-[#94A3B8]">Settings</span>
             </div>
-            <Link
-              href="/app"
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-            >
+            <Link href="/app" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
               Back to Dashboard
             </Link>
           </div>
@@ -38,18 +38,65 @@ export default function SettingsPage() {
           {/* Email */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
-            <p className="text-[#94A3B8] text-sm">
-              {session?.user?.email || "Loading..."}
-            </p>
+            <p className="text-[#94A3B8] text-sm">{session?.user?.email || "Loading..."}</p>
           </div>
 
           {/* Change Password */}
           <ChangePasswordSection />
 
+          {/* Export Data */}
+          <ExportDataSection />
+
           {/* Delete Account */}
           <DeleteAccountSection />
         </div>
       </main>
+    </div>
+  );
+}
+
+function ExportDataSection() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleExport() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/account/export", {
+        headers: getCsrfHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        showError(data.error || "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `algo-studio-data-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccess("Data exported successfully");
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">Export Your Data</h2>
+      <p className="text-sm text-[#94A3B8] mb-4">
+        Download all your data as a JSON file (projects, settings, activity).
+      </p>
+      <button
+        onClick={handleExport}
+        disabled={loading}
+        className="px-6 py-2.5 text-sm font-medium text-white border border-[rgba(79,70,229,0.5)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+      >
+        {loading ? "Exporting..." : "Download My Data"}
+      </button>
     </div>
   );
 }
@@ -103,7 +150,10 @@ function ChangePasswordSection() {
       <h2 className="text-lg font-semibold text-white mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="currentPassword" className="block text-sm font-medium text-[#CBD5E1] mb-1">
+          <label
+            htmlFor="currentPassword"
+            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+          >
             Current Password
           </label>
           <input
@@ -130,7 +180,10 @@ function ChangePasswordSection() {
           />
         </div>
         <div>
-          <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-[#CBD5E1] mb-1">
+          <label
+            htmlFor="confirmNewPassword"
+            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+          >
             Confirm New Password
           </label>
           <input
@@ -218,7 +271,10 @@ function DeleteAccountSection() {
               {loading ? "Deleting..." : "Confirm Delete"}
             </button>
             <button
-              onClick={() => { setShowConfirm(false); setConfirmText(""); }}
+              onClick={() => {
+                setShowConfirm(false);
+                setConfirmText("");
+              }}
               className="px-6 py-2.5 text-sm font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
             >
               Cancel

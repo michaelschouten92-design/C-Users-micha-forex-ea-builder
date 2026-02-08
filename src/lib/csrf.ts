@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
 
 /**
  * CSRF Protection using the Double Submit Cookie pattern.
@@ -70,28 +71,25 @@ export function validateCsrfToken(request: NextRequest): boolean {
 }
 
 /**
- * Constant-time string comparison
+ * Constant-time string comparison using Node's crypto
  */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
+    // Pad shorter string to prevent length leak, then compare (will always fail)
+    const padded = a.padEnd(b.length, "\0");
+    const bufA = Buffer.from(padded);
+    const bufB = Buffer.from(b);
+    cryptoTimingSafeEqual(bufA, bufB);
     return false;
   }
 
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-
-  return result === 0;
+  return cryptoTimingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 /**
  * Create CSRF middleware response with token cookie
  */
-export function createCsrfResponse(
-  response: NextResponse,
-  request: NextRequest
-): NextResponse {
+export function createCsrfResponse(response: NextResponse, request: NextRequest): NextResponse {
   // Check if token already exists
   let token = request.cookies.get(CSRF_COOKIE_NAME)?.value;
 
@@ -114,10 +112,7 @@ export function createCsrfResponse(
  * Create error response for CSRF validation failure
  */
 export function createCsrfErrorResponse(): NextResponse {
-  return NextResponse.json(
-    { error: "CSRF token validation failed" },
-    { status: 403 }
-  );
+  return NextResponse.json({ error: "CSRF token validation failed" }, { status: 403 });
 }
 
 /**

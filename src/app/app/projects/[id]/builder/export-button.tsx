@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 interface ExportButtonProps {
@@ -34,11 +34,16 @@ export function ExportButton({
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
 
-  const exportSteps = [
-    "Validating strategy...",
-    "Generating MQL5 code...",
-    "Finalizing export...",
-  ];
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowModal(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [showModal]);
+
+  const exportSteps = ["Validating strategy...", "Generating MQL5 code...", "Finalizing export..."];
 
   async function handleExport() {
     setExporting(true);
@@ -69,7 +74,7 @@ export function ExportButton({
       }
 
       setResult(data);
-    } catch (err) {
+    } catch {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
       setError({ error: "Failed to export. Please try again." });
@@ -109,20 +114,36 @@ export function ExportButton({
           !hasNodes
             ? "Add nodes to export"
             : !canExport
-            ? "Fix errors before exporting"
-            : !canExportMQL5
-            ? "Upgrade to Starter or Pro to export"
-            : "Export to MQL5"
+              ? "Fix errors before exporting"
+              : !canExportMQL5
+                ? "Upgrade to Starter or Pro to export"
+                : "Export to MQL5"
         }
       >
         {exporting ? (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
           </svg>
         ) : (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
           </svg>
         )}
         Export MQL5
@@ -131,7 +152,11 @@ export function ExportButton({
       {/* Export Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div aria-label="Export modal" className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" role="dialog">
+          <div
+            aria-label="Export modal"
+            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
+            role="dialog"
+          >
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">
@@ -142,7 +167,12 @@ export function ExportButton({
                 className="text-[#64748B] hover:text-white p-1 transition-colors duration-200"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -154,18 +184,45 @@ export function ExportButton({
                   {exportSteps.map((step, i) => (
                     <div key={i} className="flex items-center gap-3">
                       {i < exportStep ? (
-                        <svg className="w-5 h-5 text-[#22D3EE] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-5 h-5 text-[#22D3EE] flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       ) : i === exportStep ? (
-                        <svg className="w-5 h-5 text-[#A78BFA] animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        <svg
+                          className="w-5 h-5 text-[#A78BFA] animate-spin flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
                         </svg>
                       ) : (
                         <div className="w-5 h-5 rounded-full border-2 border-[rgba(79,70,229,0.3)] flex-shrink-0" />
                       )}
-                      <span className={`text-sm ${i <= exportStep ? 'text-white' : 'text-[#64748B]'}`}>
+                      <span
+                        className={`text-sm ${i <= exportStep ? "text-white" : "text-[#64748B]"}`}
+                      >
                         {step}
                       </span>
                     </div>
@@ -182,20 +239,21 @@ export function ExportButton({
                 <div className="space-y-3">
                   <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-4 rounded-lg">
                     <p className="font-medium">{error.error}</p>
-                    {error.details && (
-                      typeof error.details === "string" ? (
+                    {error.details &&
+                      (typeof error.details === "string" ? (
                         <p className="mt-2 text-sm">{error.details}</p>
-                      ) : error.details.length > 0 && (
-                        <ul className="mt-2 text-sm space-y-1">
-                          {error.details.map((detail, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-[#EF4444]">•</span>
-                              {detail}
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                    )}
+                      ) : (
+                        error.details.length > 0 && (
+                          <ul className="mt-2 text-sm space-y-1">
+                            {error.details.map((detail, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-[#EF4444]">•</span>
+                                {detail}
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      ))}
                   </div>
                 </div>
               ) : result ? (
@@ -212,8 +270,18 @@ export function ExportButton({
                         onClick={copyToClipboard}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
                         </svg>
                         Copy
                       </button>
@@ -221,8 +289,18 @@ export function ExportButton({
                         onClick={downloadFile}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all duration-200"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
                         </svg>
                         Download
                       </button>
@@ -241,20 +319,40 @@ export function ExportButton({
                     <h4 className="text-sm font-semibold text-white">Next steps</h4>
                     <ol className="space-y-2 text-xs text-[#94A3B8]">
                       <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</span>
-                        <span>Open MetaTrader 5 and go to <strong className="text-white">File &gt; Open Data Folder</strong></span>
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          1
+                        </span>
+                        <span>
+                          Open MetaTrader 5 and go to{" "}
+                          <strong className="text-white">File &gt; Open Data Folder</strong>
+                        </span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</span>
-                        <span>Place the <strong className="text-white">.mq5</strong> file in <strong className="text-white">MQL5/Experts</strong></span>
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          2
+                        </span>
+                        <span>
+                          Place the <strong className="text-white">.mq5</strong> file in{" "}
+                          <strong className="text-white">MQL5/Experts</strong>
+                        </span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</span>
-                        <span>Open in MetaEditor and press <strong className="text-white">F7</strong> to compile</span>
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          3
+                        </span>
+                        <span>
+                          Open in MetaEditor and press <strong className="text-white">F7</strong> to
+                          compile
+                        </span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">4</span>
-                        <span>Drag the EA onto a chart to start <strong className="text-white">backtesting</strong> or trading</span>
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          4
+                        </span>
+                        <span>
+                          Drag the EA onto a chart to start{" "}
+                          <strong className="text-white">backtesting</strong> or trading
+                        </span>
                       </li>
                     </ol>
                   </div>

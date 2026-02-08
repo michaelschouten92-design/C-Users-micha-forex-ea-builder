@@ -28,6 +28,11 @@ export default function PricingPage() {
         body: JSON.stringify({ plan, interval }),
       });
 
+      if (res.status === 401) {
+        router.push("/login?mode=register&redirect=/pricing");
+        return;
+      }
+
       const data = await res.json();
 
       if (data.url) {

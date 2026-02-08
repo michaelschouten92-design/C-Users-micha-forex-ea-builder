@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { createHash } from "crypto";
 
 const log = logger.child({ route: "/api/auth/verify-email" });
 
@@ -12,8 +13,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const hashedToken = createHash("sha256").update(token).digest("hex");
     const verification = await prisma.emailVerificationToken.findUnique({
-      where: { token },
+      where: { token: hashedToken },
     });
 
     if (!verification) {
@@ -24,7 +26,10 @@ export async function GET(request: NextRequest) {
     if (verification.expiresAt < new Date()) {
       // Clean up expired token
       await prisma.emailVerificationToken.delete({ where: { id: verification.id } });
-      log.warn({ email: verification.email.substring(0, 3) + "***" }, "Expired verification token used");
+      log.warn(
+        { email: verification.email.substring(0, 3) + "***" },
+        "Expired verification token used"
+      );
       return NextResponse.redirect(new URL("/login?error=token_expired", request.url));
     }
 

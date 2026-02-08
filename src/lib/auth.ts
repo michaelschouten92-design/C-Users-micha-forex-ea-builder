@@ -12,7 +12,7 @@ import {
   checkRateLimit,
 } from "./rate-limit";
 import { sendWelcomeEmail, sendVerificationEmail } from "./email";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import type { Provider } from "next-auth/providers";
 
 const SALT_ROUNDS = 12;
@@ -75,6 +75,15 @@ providers.push(
           throw new Error("Too many registration attempts. Please try again later.");
         }
 
+        // Also rate limit by IP to prevent mass account creation
+        const regIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
+        if (regIp) {
+          const ipResult = await checkRateLimit(registrationRateLimiter, `register-ip:${regIp}`);
+          if (!ipResult.success) {
+            throw new Error("Too many registration attempts. Please try again later.");
+          }
+        }
+
         // Registration flow
         if (existingUser) {
           throw new Error("An account with this email already exists");
@@ -98,11 +107,12 @@ providers.push(
 
         // Send verification email (fire-and-forget, don't block registration)
         const verifyToken = randomBytes(32).toString("hex");
+        const hashedToken = createHash("sha256").update(verifyToken).digest("hex");
         prisma.emailVerificationToken
           .create({
             data: {
               email,
-              token: verifyToken,
+              token: hashedToken,
               expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
             },
           })
@@ -138,19 +148,16 @@ providers.push(
           }
         }
 
-        if (!existingUser) {
-          throw new Error("No account found with this email address");
-        }
-
-        if (!existingUser.passwordHash) {
-          throw new Error("This account uses a different login method");
+        if (!existingUser || !existingUser.passwordHash) {
+          // Use generic message to prevent email enumeration
+          throw new Error("Invalid email or password");
         }
 
         // Verify password
         const isValidPassword = await bcrypt.compare(password, existingUser.passwordHash);
 
         if (!isValidPassword) {
-          throw new Error("Invalid password");
+          throw new Error("Invalid email or password");
         }
 
         return {
