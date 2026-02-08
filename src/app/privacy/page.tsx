@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - AlgoStudio",
-  description: "AlgoStudio privacy policy - how we handle your data.",
+  description:
+    "AlgoStudio privacy policy. Learn how we protect your data, handle payments securely, use cookies, and comply with GDPR regulations.",
   alternates: { canonical: "/privacy" },
 };
 

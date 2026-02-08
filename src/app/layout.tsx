@@ -8,11 +8,13 @@ import { auth } from "@/lib/auth";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -37,6 +39,18 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "AlgoStudio",
+  url: process.env.AUTH_URL || "https://algo-studio.com",
+  logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
+  description:
+    "No-code platform for building, testing, and exporting MetaTrader 5 Expert Advisors with a visual drag-and-drop strategy builder.",
+  foundingDate: "2025",
+  sameAs: [],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -47,6 +61,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
           <script
             defer

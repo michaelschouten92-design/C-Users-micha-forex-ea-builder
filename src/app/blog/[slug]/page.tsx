@@ -27,6 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.description,
       type: "article",
       publishedTime: post.date,
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+        },
+      ],
     },
   };
 }
@@ -39,17 +47,54 @@ export default async function BlogPostPage({ params }: Props) {
     notFound();
   }
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.description,
-    datePublished: post.date,
-    author: {
-      "@type": "Organization",
-      name: post.author,
+  const baseUrl = process.env.AUTH_URL || "https://algo-studio.com";
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.description,
+      datePublished: post.date,
+      url: `${baseUrl}/blog/${slug}`,
+      image: `${baseUrl}/opengraph-image`,
+      author: {
+        "@type": "Organization",
+        name: post.author,
+        url: baseUrl,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "AlgoStudio",
+        url: baseUrl,
+        logo: `${baseUrl}/opengraph-image`,
+      },
     },
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: baseUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: `${baseUrl}/blog`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post.title,
+          item: `${baseUrl}/blog/${slug}`,
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen py-16 px-4">

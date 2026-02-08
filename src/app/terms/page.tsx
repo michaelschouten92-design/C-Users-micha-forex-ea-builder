@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service - AlgoStudio",
-  description: "AlgoStudio terms of service.",
+  description:
+    "Read AlgoStudio's terms of service. Understand our policies on subscriptions, accounts, intellectual property, and trading risk disclaimers.",
   alternates: { canonical: "/terms" },
 };
 
