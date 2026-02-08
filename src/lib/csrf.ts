@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual as cryptoTimingSafeEqual } from "crypto";
 
 /**
  * CSRF Protection using the Double Submit Cookie pattern.
@@ -71,19 +70,20 @@ export function validateCsrfToken(request: NextRequest): boolean {
 }
 
 /**
- * Constant-time string comparison using Node's crypto
+ * Constant-time string comparison (Edge-compatible, no Node.js crypto)
  */
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // Pad shorter string to prevent length leak, then compare (will always fail)
-    const padded = a.padEnd(b.length, "\0");
-    const bufA = Buffer.from(padded);
-    const bufB = Buffer.from(b);
-    cryptoTimingSafeEqual(bufA, bufB);
-    return false;
-  }
+  if (a.length !== b.length) return false;
 
-  return cryptoTimingSafeEqual(Buffer.from(a), Buffer.from(b));
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+  return result === 0;
 }
 
 /**
