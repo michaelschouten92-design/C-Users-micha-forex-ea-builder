@@ -102,6 +102,17 @@ export async function canUseTradeManagement(userId: string): Promise<boolean> {
   return PLANS[tier].limits.canUseTradeManagement;
 }
 
+/** Fetch all export-related permissions in a single cached tier lookup */
+export async function getExportPermissions(userId: string) {
+  const tier = await getCachedTier(userId);
+  const plan = PLANS[tier];
+  return {
+    tier,
+    canExportMQL5: plan.limits.canExportMQL5,
+    canUseTradeManagement: plan.limits.canUseTradeManagement,
+  };
+}
+
 export async function getUserPlanLimits(userId: string) {
   const tier = await getCachedTier(userId);
   const plan = PLANS[tier];

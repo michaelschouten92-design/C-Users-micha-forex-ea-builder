@@ -149,6 +149,14 @@ const useRedis = Boolean(
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
 );
 
+if (!useRedis && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[rate-limit] WARNING: UPSTASH_REDIS_REST_URL/TOKEN not configured. " +
+      "Using in-memory rate limiting which does NOT work across multiple instances. " +
+      "Configure Upstash Redis for production."
+  );
+}
+
 let redis: Redis | null = null;
 if (useRedis) {
   redis = new Redis({
@@ -218,6 +226,15 @@ export const loginRateLimiter = createRateLimiter({
 export const registrationRateLimiter = createRateLimiter({
   limit: 5,
   windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for login attempts by IP
+ * Limits: 20 attempts per 15 minutes per IP (prevents credential stuffing)
+ */
+export const loginIpRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 15 * 60 * 1000, // 15 minutes
 });
 
 /**

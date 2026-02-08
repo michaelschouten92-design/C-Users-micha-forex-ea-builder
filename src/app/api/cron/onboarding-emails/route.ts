@@ -26,6 +26,12 @@ async function handleOnboardingEmails(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // In production on Vercel, verify the request comes from Vercel Cron
+  if (process.env.VERCEL && !request.headers.get("x-vercel-cron")) {
+    log.warn("Cron request missing x-vercel-cron header");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const now = new Date();
     const appUrl = `${env.AUTH_URL}/app`;
@@ -44,9 +50,14 @@ async function handleOnboardingEmails(request: NextRequest) {
     });
 
     let day1Sent = 0;
+    let day1Failed = 0;
     for (const user of day1Users) {
-      await sendOnboardingDay1Email(user.email, appUrl);
-      day1Sent++;
+      try {
+        await sendOnboardingDay1Email(user.email, appUrl);
+        day1Sent++;
+      } catch {
+        day1Failed++;
+      }
     }
 
     // Day 3: Users created 72-96h ago who haven't exported
@@ -62,16 +73,22 @@ async function handleOnboardingEmails(request: NextRequest) {
     });
 
     let day3Sent = 0;
+    let day3Failed = 0;
     for (const user of day3Users) {
-      await sendOnboardingDay3Email(user.email, pricingUrl);
-      day3Sent++;
+      try {
+        await sendOnboardingDay3Email(user.email, pricingUrl);
+        day3Sent++;
+      } catch {
+        day3Failed++;
+      }
     }
 
-    log.info({ day1Sent, day3Sent }, "Onboarding emails sent");
+    log.info({ day1Sent, day1Failed, day3Sent, day3Failed }, "Onboarding emails sent");
 
     return NextResponse.json({
       success: true,
       sent: { day1: day1Sent, day3: day3Sent },
+      failed: { day1: day1Failed, day3: day3Failed },
     });
   } catch (error) {
     log.error({ error }, "Onboarding emails failed");

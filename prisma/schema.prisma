@@ -53,6 +53,8 @@ model User {
   projects     Project[]
   exports      ExportJob[]
   templates    UserTemplate[]
+
+  @@index([createdAt])
 }
 
 model Subscription {

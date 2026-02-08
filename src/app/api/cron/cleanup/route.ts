@@ -24,6 +24,12 @@ async function handleCleanup(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // In production on Vercel, verify the request comes from Vercel Cron
+  if (process.env.VERCEL && !request.headers.get("x-vercel-cron")) {
+    log.warn("Cron request missing x-vercel-cron header");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 

@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
               // unsafe-inline needed for Next.js styled-jsx; unsafe-eval needed for dev mode HMR
               `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://js.stripe.com https://plausible.io`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https: blob:",
+              "img-src 'self' data: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://plausible.io",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
@@ -85,6 +85,4 @@ const sentryConfig = {
 };
 
 // Only wrap with Sentry if DSN is configured
-export default process.env.SENTRY_DSN
-  ? withSentryConfig(nextConfig, sentryConfig)
-  : nextConfig;
+export default process.env.SENTRY_DSN ? withSentryConfig(nextConfig, sentryConfig) : nextConfig;

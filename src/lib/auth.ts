@@ -5,7 +5,12 @@ import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
-import { registrationRateLimiter, loginRateLimiter, checkRateLimit } from "./rate-limit";
+import {
+  registrationRateLimiter,
+  loginRateLimiter,
+  loginIpRateLimiter,
+  checkRateLimit,
+} from "./rate-limit";
 import { sendWelcomeEmail, sendVerificationEmail } from "./email";
 import { randomBytes } from "crypto";
 import type { Provider } from "next-auth/providers";
@@ -44,7 +49,7 @@ providers.push(
       password: { label: "Password", type: "password" },
       isRegistration: { label: "Is Registration", type: "text" },
     },
-    async authorize(credentials) {
+    async authorize(credentials, request) {
       if (!credentials?.email || !credentials?.password) {
         return null;
       }
@@ -93,16 +98,19 @@ providers.push(
 
         // Send verification email (fire-and-forget, don't block registration)
         const verifyToken = randomBytes(32).toString("hex");
-        prisma.emailVerificationToken.create({
-          data: {
-            email,
-            token: verifyToken,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-          },
-        }).then(() => {
-          const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
-          sendVerificationEmail(email, verifyUrl).catch(() => {});
-        }).catch(() => {});
+        prisma.emailVerificationToken
+          .create({
+            data: {
+              email,
+              token: verifyToken,
+              expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            },
+          })
+          .then(() => {
+            const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
+            sendVerificationEmail(email, verifyUrl).catch(() => {});
+          })
+          .catch(() => {});
 
         // Send welcome email (fire-and-forget, don't block registration)
         sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
@@ -113,9 +121,21 @@ providers.push(
         };
       } else {
         // Login flow — rate limit by email to prevent brute-force
-        const loginRateResult = await checkRateLimit(loginRateLimiter, `login:${email.toLowerCase()}`);
+        const loginRateResult = await checkRateLimit(
+          loginRateLimiter,
+          `login:${email.toLowerCase()}`
+        );
         if (!loginRateResult.success) {
           throw new Error("Too many login attempts. Please try again later.");
+        }
+
+        // Also rate limit by IP to prevent credential stuffing across emails
+        const clientIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
+        if (clientIp) {
+          const ipRateResult = await checkRateLimit(loginIpRateLimiter, `login-ip:${clientIp}`);
+          if (!ipRateResult.success) {
+            throw new Error("Too many login attempts. Please try again later.");
+          }
         }
 
         if (!existingUser) {
@@ -220,9 +240,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === "production"
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax" as const,

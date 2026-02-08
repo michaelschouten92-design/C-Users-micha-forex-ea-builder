@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { checkExportLimit, canExportMQL5, canUseTradeManagement } from "@/lib/plan-limits";
+import { checkExportLimit, getExportPermissions } from "@/lib/plan-limits";
 import {
   exportRequestSchema,
   buildJsonSchema,
@@ -34,6 +34,18 @@ export async function POST(request: NextRequest, { params }: Props) {
   if (!session?.user?.id) {
     log.warn("Unauthorized export attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Require verified email before allowing exports
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { emailVerified: true },
+  });
+  if (!user?.emailVerified) {
+    return NextResponse.json(
+      { error: "Please verify your email address before exporting." },
+      { status: 403 }
+    );
   }
 
   // Check rate limit (10 exports per hour per user)
@@ -89,9 +101,9 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    // Check MQL5 export permission (Starter and Pro can export)
-    const canExport = await canExportMQL5(session.user.id);
-    if (!canExport) {
+    // Check MQL5 export permission and trade management in one lookup
+    const permissions = await getExportPermissions(session.user.id);
+    if (!permissions.canExportMQL5) {
       return NextResponse.json(
         apiError(
           ErrorCode.PLAN_REQUIRED,
@@ -167,8 +179,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     );
 
     if (hasTradeManagement) {
-      const canUseTM = await canUseTradeManagement(session.user.id);
-      if (!canUseTM) {
+      if (!permissions.canUseTradeManagement) {
         return NextResponse.json(
           apiError(
             ErrorCode.PRO_FEATURE,

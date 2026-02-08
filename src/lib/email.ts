@@ -205,7 +205,10 @@ export async function sendOnboardingDay1Email(email: string, appUrl: string) {
   });
 
   if (error) {
-    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send onboarding day 1 email");
+    log.error(
+      { error, to: email.substring(0, 3) + "***" },
+      "Failed to send onboarding day 1 email"
+    );
   } else {
     log.info({ to: email.substring(0, 3) + "***" }, "Onboarding day 1 email sent");
   }
@@ -250,9 +253,57 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
   });
 
   if (error) {
-    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send onboarding day 3 email");
+    log.error(
+      { error, to: email.substring(0, 3) + "***" },
+      "Failed to send onboarding day 3 email"
+    );
   } else {
     log.info({ to: email.substring(0, 3) + "***" }, "Onboarding day 3 email sent");
+  }
+}
+
+export async function sendAccountDeletedEmail(email: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping account deleted email");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Your AlgoStudio account has been deleted",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Account deleted</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              Your AlgoStudio account and all associated data have been permanently deleted as requested.
+            </p>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              This includes all projects, strategy versions, export history, and personal information.
+            </p>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              If your Stripe subscription was active, it has been cancelled automatically.
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              If you did not request this, please contact us immediately at support@algostudio.nl.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send account deleted email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Account deleted confirmation email sent");
   }
 }
 

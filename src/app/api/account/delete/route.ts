@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { sendAccountDeletedEmail } from "@/lib/email";
 import { checkBodySize } from "@/lib/validations";
 import {
   gdprDeleteRateLimiter,
@@ -23,7 +24,10 @@ export async function DELETE(request: Request) {
   }
 
   // Rate limit: 2 attempts per 24 hours
-  const rateLimitResult = await checkRateLimit(gdprDeleteRateLimiter, `gdpr-delete:${session.user.id}`);
+  const rateLimitResult = await checkRateLimit(
+    gdprDeleteRateLimiter,
+    `gdpr-delete:${session.user.id}`
+  );
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: formatRateLimitError(rateLimitResult) },
@@ -39,12 +43,18 @@ export async function DELETE(request: Request) {
 
     if (body?.confirm !== "DELETE") {
       return NextResponse.json(
-        { error: "Confirmation required. Send { confirm: \"DELETE\" } to proceed." },
+        { error: 'Confirmation required. Send { confirm: "DELETE" } to proceed.' },
         { status: 400 }
       );
     }
 
     const userId = session.user.id;
+
+    // Fetch user email before deletion (needed for confirmation email)
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
 
     // Cancel Stripe subscription if active
     const subscription = await prisma.subscription.findUnique({
@@ -56,7 +66,10 @@ export async function DELETE(request: Request) {
         const { getStripe } = await import("@/lib/stripe");
         await getStripe().subscriptions.cancel(subscription.stripeSubId);
       } catch (stripeError) {
-        logger.warn({ error: stripeError, userId }, "Failed to cancel Stripe subscription during account deletion");
+        logger.warn(
+          { error: stripeError, userId },
+          "Failed to cancel Stripe subscription during account deletion"
+        );
       }
     }
 
@@ -82,20 +95,27 @@ export async function DELETE(request: Request) {
       // Delete subscription
       await tx.subscription.deleteMany({ where: { userId } });
 
-      // Delete password reset tokens
-      const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true } });
-      if (user) {
-        await tx.passwordResetToken.deleteMany({ where: { email: user.email } });
+      // Delete tokens by email
+      if (userRecord) {
+        await tx.passwordResetToken.deleteMany({ where: { email: userRecord.email } });
+        await tx.emailVerificationToken.deleteMany({ where: { email: userRecord.email } });
       }
 
       // Delete audit logs
       await tx.auditLog.deleteMany({ where: { userId } });
 
-      // Delete user
+      // Delete user (cascades to UserTemplates)
       await tx.user.delete({ where: { id: userId } });
     });
 
     logger.info({ userId }, "GDPR account deletion completed");
+
+    // Send confirmation email (fire-and-forget, after deletion)
+    if (userRecord?.email) {
+      sendAccountDeletedEmail(userRecord.email).catch((err) =>
+        logger.warn({ error: err }, "Failed to send account deletion confirmation email")
+      );
+    }
 
     return NextResponse.json({
       success: true,
