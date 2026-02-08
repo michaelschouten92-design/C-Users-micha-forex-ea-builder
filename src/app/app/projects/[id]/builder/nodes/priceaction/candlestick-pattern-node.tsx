@@ -19,11 +19,12 @@ const patternLabels: Record<string, string> = {
 };
 
 export function CandlestickPatternNode({ id, data, selected }: Props) {
-  const displayPatterns = data.patterns
+  const patterns = data.patterns ?? [];
+  const displayPatterns = patterns
     .slice(0, 2)
     .map((p) => patternLabels[p] || p)
     .join(", ");
-  const moreCount = data.patterns.length > 2 ? ` +${data.patterns.length - 2}` : "";
+  const moreCount = patterns.length > 2 ? ` +${patterns.length - 2}` : "";
 
   return (
     <BaseNode
@@ -40,8 +41,12 @@ export function CandlestickPatternNode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Patterns:</span>
-          <span className="font-medium text-right truncate max-w-[100px]" title={data.patterns.map(p => patternLabels[p]).join(", ")}>
-            {displayPatterns}{moreCount}
+          <span
+            className="font-medium text-right truncate max-w-[100px]"
+            title={patterns.map((p) => patternLabels[p]).join(", ")}
+          >
+            {displayPatterns}
+            {moreCount}
           </span>
         </div>
       </div>

@@ -7,7 +7,18 @@ import { BaseNode, NodeIcons } from "./base-node";
 type Props = NodeProps & { data: CustomTimesNodeData };
 
 export function CustomTimesNode({ id, data, selected }: Props) {
-  const activeDays = Object.entries(data.days)
+  const days = data.days ?? {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+  const timeSlots = data.timeSlots ?? [];
+
+  const activeDays = Object.entries(days)
     .filter(([, active]) => active)
     .map(([day]) => day.charAt(0).toUpperCase() + day.slice(1, 3))
     .join(", ");
@@ -33,12 +44,13 @@ export function CustomTimesNode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-zinc-500">Time slots:</span>
-          <span className="font-medium">{data.timeSlots.length}</span>
+          <span className="font-medium">{timeSlots.length}</span>
         </div>
-        {data.timeSlots.length > 0 && (
+        {timeSlots.length > 0 && (
           <div className="text-xs text-zinc-400">
-            {formatTime(data.timeSlots[0].startHour, data.timeSlots[0].startMinute)} - {formatTime(data.timeSlots[0].endHour, data.timeSlots[0].endMinute)}
-            {data.timeSlots.length > 1 && ` +${data.timeSlots.length - 1} more`}
+            {formatTime(timeSlots[0].startHour, timeSlots[0].startMinute)} -{" "}
+            {formatTime(timeSlots[0].endHour, timeSlots[0].endMinute)}
+            {timeSlots.length > 1 && ` +${timeSlots.length - 1} more`}
           </div>
         )}
       </div>

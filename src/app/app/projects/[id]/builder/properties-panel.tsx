@@ -2,11 +2,7 @@
 
 import { memo, useId } from "react";
 import type { Node } from "@xyflow/react";
-import {
-  SelectField,
-  NumberField,
-  TimeField,
-} from "./components/form-fields";
+import { SelectField, NumberField, TimeField } from "./components/form-fields";
 import type {
   BuilderNodeData,
   TradingSessionNodeData,
@@ -83,7 +79,13 @@ function OptimizableFieldCheckbox<T extends BuilderNodeData>({
         className="w-3 h-3 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
       />
       <span className="flex items-center gap-1">
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-3 h-3"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M3 3v18h18" />
           <path d="M18 9l-5 5-4-4-3 3" />
         </svg>
@@ -97,8 +99,18 @@ function OptimizableFieldCheckbox<T extends BuilderNodeData>({
 function FieldWarning({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-1.5 mt-1.5 text-[#FBBF24] text-[11px]" role="alert">
-      <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.832c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      <svg
+        className="w-3.5 h-3.5 flex-shrink-0 mt-0.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.832c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+        />
       </svg>
       <span>{message}</span>
     </div>
@@ -206,10 +218,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
       <div className="p-4 space-y-4">
         {/* Label Field (all nodes) */}
         <div>
-          <label
-            htmlFor={labelInputId}
-            className="block text-xs font-medium text-[#CBD5E1] mb-1"
-          >
+          <label htmlFor={labelInputId} className="block text-xs font-medium text-[#CBD5E1] mb-1">
             Label
           </label>
           <input
@@ -276,9 +285,13 @@ function NodeFields({
   if ("priceActionType" in data) {
     switch (data.priceActionType) {
       case "candlestick-pattern":
-        return <CandlestickPatternFields data={data as CandlestickPatternNodeData} onChange={onChange} />;
+        return (
+          <CandlestickPatternFields data={data as CandlestickPatternNodeData} onChange={onChange} />
+        );
       case "support-resistance":
-        return <SupportResistanceFields data={data as SupportResistanceNodeData} onChange={onChange} />;
+        return (
+          <SupportResistanceFields data={data as SupportResistanceNodeData} onChange={onChange} />
+        );
       case "range-breakout":
         return <RangeBreakoutFields data={data as RangeBreakoutNodeData} onChange={onChange} />;
     }
@@ -349,7 +362,9 @@ function TradingSessionFields({
       <div className="bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
         <div className="flex justify-between text-xs mb-1">
           <span className="text-[#94A3B8]">Time (GMT):</span>
-          <span className="text-white font-medium">{sessionInfo.start} - {sessionInfo.end}</span>
+          <span className="text-white font-medium">
+            {sessionInfo.start} - {sessionInfo.end}
+          </span>
         </div>
         <div className="text-xs text-[#94A3B8]">
           {data.session === "LONDON_NY_OVERLAP"
@@ -389,11 +404,13 @@ function TradingSessionFields({
       </div>
       {data.useServerTime && (
         <div className="text-[10px] text-[#FBBF24] mt-1">
-          Session times will be compared against your broker&apos;s server clock (TimeCurrent) instead of GMT.
+          Session times will be compared against your broker&apos;s server clock (TimeCurrent)
+          instead of GMT.
         </div>
       )}
       <div className="mt-2 text-[10px] text-[#64748B]">
-        Your broker&apos;s MT5 server may use a different timezone than GMT — check the Market Watch clock for the offset.
+        Your broker&apos;s MT5 server may use a different timezone than GMT — check the Market Watch
+        clock for the offset.
       </div>
     </>
   );
@@ -407,7 +424,10 @@ function AlwaysFields({
   onChange: (updates: Partial<AlwaysNodeData>) => void;
 }) {
   return (
-    <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+    <div
+      className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+      role="note"
+    >
       Trading is enabled at all times. No time restrictions apply.
     </div>
   );
@@ -430,38 +450,47 @@ function CustomTimesFields({
   data: CustomTimesNodeData;
   onChange: (updates: Partial<CustomTimesNodeData>) => void;
 }) {
+  const days = data.days ?? {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+  const timeSlots = data.timeSlots ?? [];
+
   const updateDay = (day: keyof TradingDays, value: boolean) => {
     onChange({
       days: {
-        ...data.days,
+        ...days,
         [day]: value,
       },
     });
   };
 
   const updateTimeSlot = (index: number, field: keyof TimeSlot, value: number) => {
-    const newSlots = [...data.timeSlots];
+    const newSlots = [...timeSlots];
     newSlots[index] = { ...newSlots[index], [field]: value };
     onChange({ timeSlots: newSlots });
   };
 
   const addTimeSlot = () => {
     onChange({
-      timeSlots: [...data.timeSlots, { startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
+      timeSlots: [...timeSlots, { startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
     });
   };
 
   const removeTimeSlot = (index: number) => {
-    const newSlots = data.timeSlots.filter((_, i) => i !== index);
+    const newSlots = timeSlots.filter((_, i) => i !== index);
     onChange({ timeSlots: newSlots });
   };
 
   return (
     <>
       <div>
-        <label className="block text-xs font-medium text-[#CBD5E1] mb-2">
-          Trading Days
-        </label>
+        <label className="block text-xs font-medium text-[#CBD5E1] mb-2">Trading Days</label>
         <div className="space-y-1 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg p-2">
           {DAY_LABELS.map(({ key, label }) => (
             <label
@@ -470,7 +499,7 @@ function CustomTimesFields({
             >
               <input
                 type="checkbox"
-                checked={data.days[key]}
+                checked={days[key]}
                 onChange={(e) => updateDay(key, e.target.checked)}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="rounded border-[rgba(79,70,229,0.3)] bg-[#0F172A] text-[#22D3EE] focus:ring-[#22D3EE]"
@@ -483,9 +512,7 @@ function CustomTimesFields({
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-xs font-medium text-[#CBD5E1]">
-            Time Slots (GMT)
-          </label>
+          <label className="block text-xs font-medium text-[#CBD5E1]">Time Slots (GMT)</label>
           <button
             onClick={addTimeSlot}
             onPointerDown={(e) => e.stopPropagation()}
@@ -495,14 +522,14 @@ function CustomTimesFields({
           </button>
         </div>
         <div className="space-y-2">
-          {data.timeSlots.map((slot, index) => (
+          {timeSlots.map((slot, index) => (
             <div
               key={index}
               className="bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg p-2"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-[#94A3B8]">Slot {index + 1}</span>
-                {data.timeSlots.length > 1 && (
+                {timeSlots.length > 1 && (
                   <button
                     onClick={() => removeTimeSlot(index)}
                     onPointerDown={(e) => e.stopPropagation()}
@@ -551,11 +578,18 @@ function CustomTimesFields({
       </div>
       {data.useServerTime && (
         <div className="text-[10px] text-[#FBBF24] mt-1">
-          Time slots will be compared against your broker&apos;s server clock (TimeCurrent) instead of GMT.
+          Time slots will be compared against your broker&apos;s server clock (TimeCurrent) instead
+          of GMT.
         </div>
       )}
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Define custom trading days and time windows. {data.useServerTime ? "Times use broker server time." : "All times are in GMT."} Your broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the offset.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Define custom trading days and time windows.{" "}
+        {data.useServerTime ? "Times use broker server time." : "All times are in GMT."} Your
+        broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the
+        offset.
       </div>
     </>
   );
@@ -586,7 +620,13 @@ function MovingAverageFields({
         onChange={(v) => onChange({ method: v as MovingAverageNodeData["method"] })}
       />
       <div>
-        <NumberField label="Period" value={data.period} min={1} max={500} onChange={(v) => onChange({ period: v })} />
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <SelectField
@@ -596,7 +636,13 @@ function MovingAverageFields({
         onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
       />
       <div>
-        <NumberField label="Shift" value={data.shift} min={0} max={100} onChange={(v) => onChange({ shift: v })} />
+        <NumberField
+          label="Shift"
+          value={data.shift}
+          min={0}
+          max={100}
+          onChange={(v) => onChange({ shift: v })}
+        />
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
     </>
@@ -619,7 +665,13 @@ function RSIFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="Period" value={data.period} min={1} max={500} onChange={(v) => onChange({ period: v })} />
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <SelectField
@@ -671,15 +723,33 @@ function MACDFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="Fast Period" value={data.fastPeriod} min={1} max={500} onChange={(v) => onChange({ fastPeriod: v })} />
+        <NumberField
+          label="Fast Period"
+          value={data.fastPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ fastPeriod: v })}
+        />
         <OptimizableFieldCheckbox fieldName="fastPeriod" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Slow Period" value={data.slowPeriod} min={1} max={500} onChange={(v) => onChange({ slowPeriod: v })} />
+        <NumberField
+          label="Slow Period"
+          value={data.slowPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ slowPeriod: v })}
+        />
         <OptimizableFieldCheckbox fieldName="slowPeriod" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Signal Period" value={data.signalPeriod} min={1} max={500} onChange={(v) => onChange({ signalPeriod: v })} />
+        <NumberField
+          label="Signal Period"
+          value={data.signalPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ signalPeriod: v })}
+        />
         <OptimizableFieldCheckbox fieldName="signalPeriod" data={data} onChange={onChange} />
       </div>
       <SelectField
@@ -711,11 +781,24 @@ function BollingerBandsFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="Period" value={data.period} min={1} max={500} onChange={(v) => onChange({ period: v })} />
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Deviation" value={data.deviation} min={0.1} max={10} step={0.1} onChange={(v) => onChange({ deviation: v })} />
+        <NumberField
+          label="Deviation"
+          value={data.deviation}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ deviation: v })}
+        />
         <OptimizableFieldCheckbox fieldName="deviation" data={data} onChange={onChange} />
       </div>
       <SelectField
@@ -725,7 +808,13 @@ function BollingerBandsFields({
         onChange={(v) => onChange({ appliedPrice: v as BollingerBandsNodeData["appliedPrice"] })}
       />
       <div>
-        <NumberField label="Shift" value={data.shift} min={0} max={100} onChange={(v) => onChange({ shift: v })} />
+        <NumberField
+          label="Shift"
+          value={data.shift}
+          min={0}
+          max={100}
+          onChange={(v) => onChange({ shift: v })}
+        />
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
     </>
@@ -748,10 +837,19 @@ function ATRFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="Period" value={data.period} min={1} max={500} onChange={(v) => onChange({ period: v })} />
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
         ATR measures market volatility. Commonly used for dynamic SL/TP levels.
       </div>
     </>
@@ -774,15 +872,31 @@ function ADXFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="Period" value={data.period} min={1} max={500} onChange={(v) => onChange({ period: v })} />
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Trend Level" value={data.trendLevel} min={10} max={50} onChange={(v) => onChange({ trendLevel: v })} />
+        <NumberField
+          label="Trend Level"
+          value={data.trendLevel}
+          min={10}
+          max={50}
+          onChange={(v) => onChange({ trendLevel: v })}
+        />
         <OptimizableFieldCheckbox fieldName="trendLevel" data={data} onChange={onChange} />
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        ADX &gt; {data.trendLevel} indicates a trending market. +DI &gt; -DI suggests uptrend, -DI &gt; +DI suggests downtrend.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        ADX &gt; {data.trendLevel} indicates a trending market. +DI &gt; -DI suggests uptrend, -DI
+        &gt; +DI suggests downtrend.
       </div>
     </>
   );
@@ -804,27 +918,61 @@ function StochasticFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <NumberField label="K Period" value={data.kPeriod} min={1} max={500} onChange={(v) => onChange({ kPeriod: v })} />
+        <NumberField
+          label="K Period"
+          value={data.kPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ kPeriod: v })}
+        />
         <OptimizableFieldCheckbox fieldName="kPeriod" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="D Period" value={data.dPeriod} min={1} max={500} onChange={(v) => onChange({ dPeriod: v })} />
+        <NumberField
+          label="D Period"
+          value={data.dPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ dPeriod: v })}
+        />
         <OptimizableFieldCheckbox fieldName="dPeriod" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Slowing" value={data.slowing} min={1} max={500} onChange={(v) => onChange({ slowing: v })} />
+        <NumberField
+          label="Slowing"
+          value={data.slowing}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ slowing: v })}
+        />
         <OptimizableFieldCheckbox fieldName="slowing" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Overbought Level" value={data.overboughtLevel} min={50} max={100} onChange={(v) => onChange({ overboughtLevel: v })} />
+        <NumberField
+          label="Overbought Level"
+          value={data.overboughtLevel}
+          min={50}
+          max={100}
+          onChange={(v) => onChange({ overboughtLevel: v })}
+        />
         <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       </div>
       <div>
-        <NumberField label="Oversold Level" value={data.oversoldLevel} min={0} max={50} onChange={(v) => onChange({ oversoldLevel: v })} />
+        <NumberField
+          label="Oversold Level"
+          value={data.oversoldLevel}
+          min={0}
+          max={50}
+          onChange={(v) => onChange({ oversoldLevel: v })}
+        />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Stochastic measures momentum. %K crossing above %D in oversold suggests buy, crossing below %D in overbought suggests sell.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Stochastic measures momentum. %K crossing above %D in oversold suggests buy, crossing below
+        %D in overbought suggests sell.
       </div>
     </>
   );
@@ -853,10 +1001,12 @@ function CandlestickPatternFields({
   data: CandlestickPatternNodeData;
   onChange: (updates: Partial<CandlestickPatternNodeData>) => void;
 }) {
+  const patterns = data.patterns ?? [];
+
   const togglePattern = (pattern: CandlestickPattern) => {
-    const newPatterns = data.patterns.includes(pattern)
-      ? data.patterns.filter((p) => p !== pattern)
-      : [...data.patterns, pattern];
+    const newPatterns = patterns.includes(pattern)
+      ? patterns.filter((p) => p !== pattern)
+      : [...patterns, pattern];
     onChange({ patterns: newPatterns });
   };
 
@@ -869,9 +1019,7 @@ function CandlestickPatternFields({
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
       <div>
-        <label className="block text-xs font-medium text-[#CBD5E1] mb-2">
-          Patterns to Detect
-        </label>
+        <label className="block text-xs font-medium text-[#CBD5E1] mb-2">Patterns to Detect</label>
         <div className="space-y-1 max-h-48 overflow-y-auto bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg p-2">
           {CANDLESTICK_PATTERN_OPTIONS.map((option) => (
             <label
@@ -880,7 +1028,7 @@ function CandlestickPatternFields({
             >
               <input
                 type="checkbox"
-                checked={data.patterns.includes(option.value)}
+                checked={patterns.includes(option.value)}
                 onChange={() => togglePattern(option.value)}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="rounded border-[rgba(79,70,229,0.3)] bg-[#0F172A] text-[#22D3EE] focus:ring-[#22D3EE]"
@@ -897,7 +1045,10 @@ function CandlestickPatternFields({
         max={100}
         onChange={(v) => onChange({ minBodySize: v })}
       />
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
         Detects selected candlestick patterns. Minimum body size filters out weak signals.
       </div>
     </>
@@ -940,8 +1091,12 @@ function SupportResistanceFields({
         max={100}
         onChange={(v) => onChange({ zoneSize: v })}
       />
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Identifies key price levels based on historical touches. Higher touch count = stronger level.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Identifies key price levels based on historical touches. Higher touch count = stronger
+        level.
       </div>
     </>
   );
@@ -990,7 +1145,9 @@ function RangeBreakoutFields({
 
       {/* Range Definition */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Range Definition</span>
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Range Definition
+        </span>
       </div>
 
       <SelectField
@@ -1022,7 +1179,8 @@ function RangeBreakoutFields({
         />
       )}
 
-      {(data.rangeType === "TIME_WINDOW" || (data.rangeType === "SESSION" && data.rangeSession === "CUSTOM")) && (
+      {(data.rangeType === "TIME_WINDOW" ||
+        (data.rangeType === "SESSION" && data.rangeSession === "CUSTOM")) && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <TimeField
@@ -1047,7 +1205,9 @@ function RangeBreakoutFields({
 
       {/* Breakout Settings */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Breakout Settings</span>
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Breakout Settings
+        </span>
       </div>
 
       <SelectField
@@ -1106,8 +1266,12 @@ function RangeBreakoutFields({
         <FieldWarning message="Min range should not exceed max range" />
       )}
 
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3" role="note">
-        Triggers entry when price breaks above range high (buy) or below range low (sell). Connect to Place Buy/Sell blocks.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
+        role="note"
+      >
+        Triggers entry when price breaks above range high (buy) or below range low (sell). Connect
+        to Place Buy/Sell blocks.
       </div>
     </>
   );
@@ -1123,7 +1287,13 @@ function PlaceBuyFields({
   return (
     <>
       <div className="bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M7 17l5-5 5 5M7 7l5 5 5-5" />
         </svg>
         Opens a BUY position when conditions are met
@@ -1139,21 +1309,47 @@ function PlaceBuyFields({
       />
       {data.method === "FIXED_LOT" && (
         <div>
-          <NumberField label="Lot Size" value={data.fixedLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ fixedLot: v })} />
+          <NumberField
+            label="Lot Size"
+            value={data.fixedLot}
+            min={0.01}
+            max={100}
+            step={0.01}
+            onChange={(v) => onChange({ fixedLot: v })}
+          />
           <OptimizableFieldCheckbox fieldName="fixedLot" data={data} onChange={onChange} />
         </div>
       )}
       {data.method === "RISK_PERCENT" && (
         <div>
-          <NumberField label="Risk %" value={data.riskPercent} min={0.1} max={100} step={0.1} onChange={(v) => onChange({ riskPercent: v })} />
+          <NumberField
+            label="Risk %"
+            value={data.riskPercent}
+            min={0.1}
+            max={100}
+            step={0.1}
+            onChange={(v) => onChange({ riskPercent: v })}
+          />
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
       )}
-      <NumberField label="Min Lot" value={data.minLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ minLot: v })} />
-      <NumberField label="Max Lot" value={data.maxLot} min={0.01} max={1000} step={0.01} onChange={(v) => onChange({ maxLot: v })} />
-      {data.minLot > data.maxLot && (
-        <FieldWarning message="Min lot should not exceed max lot" />
-      )}
+      <NumberField
+        label="Min Lot"
+        value={data.minLot}
+        min={0.01}
+        max={100}
+        step={0.01}
+        onChange={(v) => onChange({ minLot: v })}
+      />
+      <NumberField
+        label="Max Lot"
+        value={data.maxLot}
+        min={0.01}
+        max={1000}
+        step={0.01}
+        onChange={(v) => onChange({ maxLot: v })}
+      />
+      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
       )}
@@ -1171,7 +1367,13 @@ function PlaceSellFields({
   return (
     <>
       <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M7 7l5 5 5-5M7 17l5-5 5 5" />
         </svg>
         Opens a SELL position when conditions are met
@@ -1187,21 +1389,47 @@ function PlaceSellFields({
       />
       {data.method === "FIXED_LOT" && (
         <div>
-          <NumberField label="Lot Size" value={data.fixedLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ fixedLot: v })} />
+          <NumberField
+            label="Lot Size"
+            value={data.fixedLot}
+            min={0.01}
+            max={100}
+            step={0.01}
+            onChange={(v) => onChange({ fixedLot: v })}
+          />
           <OptimizableFieldCheckbox fieldName="fixedLot" data={data} onChange={onChange} />
         </div>
       )}
       {data.method === "RISK_PERCENT" && (
         <div>
-          <NumberField label="Risk %" value={data.riskPercent} min={0.1} max={100} step={0.1} onChange={(v) => onChange({ riskPercent: v })} />
+          <NumberField
+            label="Risk %"
+            value={data.riskPercent}
+            min={0.1}
+            max={100}
+            step={0.1}
+            onChange={(v) => onChange({ riskPercent: v })}
+          />
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
       )}
-      <NumberField label="Min Lot" value={data.minLot} min={0.01} max={100} step={0.01} onChange={(v) => onChange({ minLot: v })} />
-      <NumberField label="Max Lot" value={data.maxLot} min={0.01} max={1000} step={0.01} onChange={(v) => onChange({ maxLot: v })} />
-      {data.minLot > data.maxLot && (
-        <FieldWarning message="Min lot should not exceed max lot" />
-      )}
+      <NumberField
+        label="Min Lot"
+        value={data.minLot}
+        min={0.01}
+        max={100}
+        step={0.01}
+        onChange={(v) => onChange({ minLot: v })}
+      />
+      <NumberField
+        label="Max Lot"
+        value={data.maxLot}
+        min={0.01}
+        max={1000}
+        step={0.01}
+        onChange={(v) => onChange({ maxLot: v })}
+      />
+      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
       )}
@@ -1230,14 +1458,26 @@ function StopLossFields({
       />
       {data.method === "FIXED_PIPS" && (
         <div>
-          <NumberField label="Pips" value={data.fixedPips} min={1} max={1000} onChange={(v) => onChange({ fixedPips: v })} />
+          <NumberField
+            label="Pips"
+            value={data.fixedPips}
+            min={1}
+            max={1000}
+            onChange={(v) => onChange({ fixedPips: v })}
+          />
           <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
         </div>
       )}
       {data.method === "ATR_BASED" && (
         <>
           <div>
-            <NumberField label="ATR Period" value={data.atrPeriod} min={1} max={500} onChange={(v) => onChange({ atrPeriod: v })} />
+            <NumberField
+              label="ATR Period"
+              value={data.atrPeriod}
+              min={1}
+              max={500}
+              onChange={(v) => onChange({ atrPeriod: v })}
+            />
             <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
           </div>
           <div>
@@ -1254,7 +1494,10 @@ function StopLossFields({
         </>
       )}
       {data.method === "INDICATOR" && (
-        <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+        <div
+          className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+          role="note"
+        >
           Connect an indicator block to use its value as SL level.
         </div>
       )}
@@ -1283,7 +1526,13 @@ function TakeProfitFields({
       />
       {data.method === "FIXED_PIPS" && (
         <div>
-          <NumberField label="Pips" value={data.fixedPips} min={1} max={1000} onChange={(v) => onChange({ fixedPips: v })} />
+          <NumberField
+            label="Pips"
+            value={data.fixedPips}
+            min={1}
+            max={1000}
+            onChange={(v) => onChange({ fixedPips: v })}
+          />
           <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
         </div>
       )}
@@ -1303,7 +1552,13 @@ function TakeProfitFields({
       {data.method === "ATR_BASED" && (
         <>
           <div>
-            <NumberField label="ATR Period" value={data.atrPeriod} min={1} max={500} onChange={(v) => onChange({ atrPeriod: v })} />
+            <NumberField
+              label="ATR Period"
+              value={data.atrPeriod}
+              min={1}
+              max={500}
+              onChange={(v) => onChange({ atrPeriod: v })}
+            />
             <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
           </div>
           <div>
@@ -1333,7 +1588,13 @@ function CloseConditionFields({
   return (
     <>
       <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
         Closes positions when conditions are met
@@ -1348,8 +1609,12 @@ function CloseConditionFields({
         ]}
         onChange={(v) => onChange({ closeDirection: v as CloseDirection })}
       />
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Closes open positions when connected conditions are triggered. Connect indicator or price action blocks to define when to close.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Closes open positions when connected conditions are triggered. Connect indicator or price
+        action blocks to define when to close.
       </div>
     </>
   );
@@ -1416,7 +1681,11 @@ function BreakevenStopFields({
               max={500}
               onChange={(v) => onChange({ triggerAtrPeriod: v })}
             />
-            <OptimizableFieldCheckbox fieldName="triggerAtrPeriod" data={data} onChange={onChange} />
+            <OptimizableFieldCheckbox
+              fieldName="triggerAtrPeriod"
+              data={data}
+              onChange={onChange}
+            />
           </div>
           <div>
             <NumberField
@@ -1427,7 +1696,11 @@ function BreakevenStopFields({
               step={0.1}
               onChange={(v) => onChange({ triggerAtrMultiplier: v })}
             />
-            <OptimizableFieldCheckbox fieldName="triggerAtrMultiplier" data={data} onChange={onChange} />
+            <OptimizableFieldCheckbox
+              fieldName="triggerAtrMultiplier"
+              data={data}
+              onChange={onChange}
+            />
           </div>
         </>
       )}
@@ -1444,7 +1717,10 @@ function BreakevenStopFields({
       {data.trigger === "PIPS" && data.lockPips >= data.triggerPips && (
         <FieldWarning message="Lock pips should be less than trigger pips for breakeven to work" />
       )}
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
         Moves stop loss to entry price + lock pips when profit target is reached.
       </div>
     </>
@@ -1506,7 +1782,11 @@ function TrailingStopFields({
               step={0.1}
               onChange={(v) => onChange({ trailAtrMultiplier: v })}
             />
-            <OptimizableFieldCheckbox fieldName="trailAtrMultiplier" data={data} onChange={onChange} />
+            <OptimizableFieldCheckbox
+              fieldName="trailAtrMultiplier"
+              data={data}
+              onChange={onChange}
+            />
           </div>
         </>
       )}
@@ -1532,7 +1812,10 @@ function TrailingStopFields({
         />
         <OptimizableFieldCheckbox fieldName="startAfterPips" data={data} onChange={onChange} />
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
         Trailing stop follows price movement to lock in profits as the trade moves in your favor.
       </div>
     </>
@@ -1586,7 +1869,10 @@ function PartialCloseFields({
           Move SL to breakeven after partial close
         </label>
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3" role="note">
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
+        role="note"
+      >
         Closes a portion of the position at the profit target to secure partial profits.
       </div>
     </>
@@ -1648,8 +1934,12 @@ function LockProfitFields({
         />
         <OptimizableFieldCheckbox fieldName="checkIntervalPips" data={data} onChange={onChange} />
       </div>
-      <div className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg" role="note">
-        Automatically adjusts stop loss to lock in a portion of unrealized profit as the trade progresses.
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Automatically adjusts stop loss to lock in a portion of unrealized profit as the trade
+        progresses.
       </div>
     </>
   );
