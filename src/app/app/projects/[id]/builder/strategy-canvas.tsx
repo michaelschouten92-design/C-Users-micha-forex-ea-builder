@@ -38,7 +38,7 @@ import type {
   NodeTemplate,
 } from "@/types/builder";
 import { DEFAULT_SETTINGS } from "@/types/builder";
-import type { StrategyPreset } from "@/lib/strategy-presets";
+import { STRATEGY_PRESETS, type StrategyPreset } from "@/lib/strategy-presets";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -334,14 +334,14 @@ export function StrategyCanvas({
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
         <div className="hidden md:block">
-          <NodeToolbar onDragStart={onDragStart} onLoadTemplate={onLoadTemplate} hasNodes={nodes.length > 0} isPro={isPro} settings={settings} onSettingsChange={setSettings} />
+          <NodeToolbar onDragStart={onDragStart} isPro={isPro} settings={settings} onSettingsChange={setSettings} />
         </div>
 
         {/* Mobile toolbar overlay */}
         {mobileToolbarOpen && (
           <div className="md:hidden fixed inset-0 z-40 flex">
             <div className="w-[240px] h-full shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
-              <NodeToolbar onDragStart={onDragStart} onLoadTemplate={onLoadTemplate} hasNodes={nodes.length > 0} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} settings={settings} onSettingsChange={setSettings} />
+              <NodeToolbar onDragStart={onDragStart} isPro={isPro} onClose={() => setMobileToolbarOpen(false)} settings={settings} onSettingsChange={setSettings} />
             </div>
             <div className="flex-1" onClick={() => setMobileToolbarOpen(false)} />
           </div>
@@ -371,6 +371,35 @@ export function StrategyCanvas({
             <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
             <Controls />
           </ReactFlow>
+
+          {/* Empty canvas: Template cards on the right */}
+          {nodes.length === 0 && (
+            <div className="absolute top-4 right-4 z-10 w-[260px] space-y-3">
+              <div className="px-1">
+                <h3 className="text-sm font-semibold text-white">Start from a template</h3>
+                <p className="text-xs text-[#64748B] mt-0.5">Or drag blocks from the left panel</p>
+              </div>
+              {STRATEGY_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => onLoadTemplate(preset)}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] transition-all duration-200 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[#C4B5FD] group-hover:text-white transition-colors">
+                      {preset.name}
+                    </span>
+                    <svg className="w-4 h-4 text-[#64748B] group-hover:text-[#4F46E5] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-[#64748B] mt-1 line-clamp-2">
+                    {preset.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Mobile: Floating button to open blocks toolbar */}
           <button
