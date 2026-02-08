@@ -52,20 +52,20 @@ export default async function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">
-                AlgoStudio
-              </h1>
+              <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
               <span className="text-xs text-[#A78BFA] font-medium tracking-wider uppercase hidden sm:inline">
                 Trading Studio
               </span>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-[#CBD5E1] hidden sm:inline">{session.user.email}</span>
-              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                tier === "PRO"
-                  ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
-                  : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
-              }`}>
+              <span
+                className={`text-xs px-3 py-1 rounded-full font-medium border ${
+                  tier === "PRO"
+                    ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
+                    : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
+                }`}
+              >
                 {tier}
               </span>
               <Link
@@ -101,6 +101,11 @@ export default async function DashboardPage() {
           projectCount={projects.length}
           exportCount={exportCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
+          trialEndsAt={
+            subscription?.status === "trialing" && subscription.currentPeriodEnd
+              ? subscription.currentPeriodEnd.toISOString()
+              : undefined
+          }
         />
 
         <div className="flex justify-between items-center mb-6">

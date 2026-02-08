@@ -15,10 +15,7 @@ const SESSION_COOKIE_DEV = "next-auth.session-token";
 const SESSION_COOKIE_PROD = "__Secure-next-auth.session-token";
 
 function hasSessionCookie(request: NextRequest): boolean {
-  return (
-    request.cookies.has(SESSION_COOKIE_DEV) ||
-    request.cookies.has(SESSION_COOKIE_PROD)
-  );
+  return request.cookies.has(SESSION_COOKIE_DEV) || request.cookies.has(SESSION_COOKIE_PROD);
 }
 
 /**
@@ -52,9 +49,7 @@ export function proxy(request: NextRequest) {
   // ============================================
   // CSRF PROTECTION
   // ============================================
-  const isStateChanging = ["POST", "PUT", "PATCH", "DELETE"].includes(
-    request.method
-  );
+  const isStateChanging = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
 
   if (isStateChanging && shouldProtectRoute(pathname)) {
     const isValid = validateCsrfToken(request);
@@ -65,6 +60,12 @@ export function proxy(request: NextRequest) {
 
   // Continue with the request and ensure CSRF cookie is set
   const response = NextResponse.next();
+
+  // Add request ID for tracing
+  const requestId = crypto.randomUUID();
+  response.headers.set("x-request-id", requestId);
+  request.headers.set("x-request-id", requestId);
+
   return createCsrfResponse(response, request);
 }
 

@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
-import { sendPaymentFailedEmail } from "@/lib/email";
+import { sendPaymentFailedEmail, sendPlanChangeEmail, sendRenewalReminderEmail } from "@/lib/email";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -102,6 +102,12 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
+        break;
+      }
+
+      case "invoice.upcoming": {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoiceUpcoming(invoice);
         break;
       }
     }
@@ -240,7 +246,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   if (result) {
     invalidateSubscriptionCache(result.userId);
 
-    // Audit tier changes (fire-and-forget, outside transaction)
+    // Audit tier changes and send confirmation email (fire-and-forget, outside transaction)
     if (result.previousTier !== tier) {
       const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
       const isUpgrade = tierOrder[tier] > tierOrder[result.previousTier as keyof typeof tierOrder];
@@ -249,6 +255,18 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         ? audit.subscriptionUpgrade(result.userId, result.previousTier, tier)
         : audit.subscriptionDowngrade(result.userId, result.previousTier, tier)
       ).catch((err) => log.warn({ err }, "Audit log failed but subscription updated"));
+
+      // Send plan change confirmation email
+      const user = await prisma.user.findUnique({
+        where: { id: result.userId },
+        select: { email: true },
+      });
+      if (user?.email) {
+        const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+        sendPlanChangeEmail(user.email, result.previousTier, tier, isUpgrade, settingsUrl).catch(
+          (err) => log.warn({ err }, "Plan change email send failed")
+        );
+      }
     }
   }
 }
@@ -372,4 +390,36 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       .paymentFailed(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment failure recorded"));
   }
+}
+
+async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
+  const customerId = getStringId(invoice.customer);
+  if (!customerId) return;
+
+  // Only send reminder for subscription invoices (not one-time charges)
+  const inv = invoice as unknown as { subscription?: string | { id: string } };
+  const subscriptionId = getStringId(inv.subscription);
+  if (!subscriptionId) return;
+
+  const subscription = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: { user: { select: { email: true } } },
+  });
+
+  if (!subscription?.user?.email) return;
+
+  // Stripe sends invoice.upcoming ~3 days before renewal
+  const daysUntilRenewal = subscription.currentPeriodEnd
+    ? Math.max(
+        1,
+        Math.ceil((subscription.currentPeriodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      )
+    : 3;
+
+  const planName = subscription.tier === "PRO" ? "Pro" : "Starter";
+  const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app/settings`;
+
+  sendRenewalReminderEmail(subscription.user.email, daysUntilRenewal, planName, settingsUrl).catch(
+    (err) => log.warn({ err }, "Renewal reminder email send failed")
+  );
 }

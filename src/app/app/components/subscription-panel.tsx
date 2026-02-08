@@ -11,6 +11,7 @@ type SubscriptionPanelProps = {
   projectCount: number;
   exportCount: number;
   hasStripeSubscription: boolean;
+  trialEndsAt?: string;
 };
 
 export function SubscriptionPanel({
@@ -18,6 +19,7 @@ export function SubscriptionPanel({
   projectCount,
   exportCount,
   hasStripeSubscription,
+  trialEndsAt,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const plan = PLANS[tier];
@@ -46,8 +48,41 @@ export function SubscriptionPanel({
     }
   }
 
+  // Calculate trial days remaining
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+
   return (
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 mb-6">
+      {/* Trial countdown banner */}
+      {trialDaysLeft !== null && trialDaysLeft > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.25)] rounded-lg">
+          <svg
+            className="w-5 h-5 text-[#A78BFA] flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="text-sm text-[#CBD5E1]">
+            <span className="font-medium text-white">
+              {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""}
+            </span>{" "}
+            left in your free trial.{" "}
+            {trialDaysLeft <= 3 && (
+              <span className="text-[#F59E0B]">Your card will be charged when the trial ends.</span>
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Plan Info */}
         <div>

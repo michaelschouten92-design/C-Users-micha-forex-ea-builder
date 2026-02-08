@@ -175,8 +175,9 @@ export default async function Home() {
                 alt="AlgoStudio visual strategy builder interface"
                 width={3830}
                 height={1820}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                 className="w-full"
-                quality={95}
+                quality={85}
                 priority
               />
             </div>
@@ -311,6 +312,50 @@ export default async function Home() {
               <p className="text-sm text-[#94A3B8]">
                 Download your EA file and load it into MetaTrader 5. Start trading.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof / Trust */}
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">Trusted by traders worldwide</h2>
+            <p className="text-[#94A3B8]">
+              Build strategies for the world&apos;s most popular trading platform
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {[
+              { value: "10+", label: "Technical indicators" },
+              { value: "100%", label: "Valid MQL5 output" },
+              { value: "< 5 min", label: "To first export" },
+              { value: "24/7", label: "Build anytime" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-3xl font-bold text-[#A78BFA] mb-1">{stat.value}</div>
+                <div className="text-sm text-[#94A3B8]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Platform compatibility */}
+          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-8 text-center">
+            <p className="text-sm font-medium text-[#CBD5E1] mb-4">
+              Works with MetaTrader 5 on any broker
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6">
+              {["Forex", "Indices", "Commodities", "Crypto CFDs", "Stocks CFDs"].map((market) => (
+                <span
+                  key={market}
+                  className="px-4 py-2 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg text-sm text-[#CBD5E1]"
+                >
+                  {market}
+                </span>
+              ))}
             </div>
           </div>
         </div>

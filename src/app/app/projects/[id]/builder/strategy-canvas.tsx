@@ -343,6 +343,19 @@ export function StrategyCanvas({
 
   return (
     <div className="h-full flex flex-col">
+      {/* Skip navigation links for keyboard users */}
+      <a
+        href="#builder-canvas"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#4F46E5] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+      >
+        Skip to canvas
+      </a>
+      <a
+        href="#properties-panel"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-40 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#4F46E5] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+      >
+        Skip to properties
+      </a>
       <WelcomeModal />
       <div className="flex-1 flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
@@ -372,7 +385,7 @@ export function StrategyCanvas({
         )}
 
         {/* Center: React Flow Canvas */}
-        <div ref={reactFlowWrapper} className="flex-1 relative">
+        <div id="builder-canvas" ref={reactFlowWrapper} className="flex-1 relative">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -477,6 +490,7 @@ export function StrategyCanvas({
                         }}
                         className="p-2 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200 flex-shrink-0"
                         title="Delete template"
+                        aria-label="Delete template"
                       >
                         <svg
                           className="w-4 h-4"
@@ -504,6 +518,7 @@ export function StrategyCanvas({
             onClick={() => setMobileToolbarOpen(true)}
             className="md:hidden absolute top-4 left-4 z-10 p-3 bg-[#4F46E5] text-white rounded-xl shadow-[0_4px_16px_rgba(79,70,229,0.4)] hover:bg-[#6366F1] transition-all duration-200"
             title="Open blocks"
+            aria-label="Open blocks toolbar"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -517,7 +532,11 @@ export function StrategyCanvas({
 
           {/* Autosave error banner */}
           {autoSaveStatus === "error" && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]"
+            >
               <svg
                 className="w-5 h-5 flex-shrink-0 text-[#FCA5A5]"
                 fill="none"
@@ -545,7 +564,11 @@ export function StrategyCanvas({
 
           {/* Offline warning banner */}
           {!isOnline && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw]">
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw]"
+            >
               <svg
                 className="w-5 h-5 flex-shrink-0 text-[#FCD34D]"
                 fill="none"
@@ -568,6 +591,7 @@ export function StrategyCanvas({
           {/* Connection error toast */}
           {connectionError && (
             <div
+              role="alert"
               onClick={dismissConnectionError}
               className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
             >
@@ -615,6 +639,7 @@ export function StrategyCanvas({
               disabled={!canUndo}
               className="p-2 bg-[#1E293B] text-white rounded-lg border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
               title="Undo (Ctrl+Z)"
+              aria-label="Undo (Ctrl+Z)"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -630,6 +655,7 @@ export function StrategyCanvas({
               disabled={!canRedo}
               className="p-2 bg-[#1E293B] text-white rounded-lg border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
               title="Redo (Ctrl+Y)"
+              aria-label="Redo (Ctrl+Y)"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -644,6 +670,7 @@ export function StrategyCanvas({
               onClick={() => setShowShortcuts(true)}
               className="p-2 bg-[#1E293B] text-[#94A3B8] rounded-lg border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] hover:text-white transition-all duration-200 shadow-lg"
               title="Keyboard shortcuts (Shift+?)"
+              aria-label="Keyboard shortcuts (Shift+?)"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -709,6 +736,7 @@ export function StrategyCanvas({
         {/* Right: Properties Panel - overlay on mobile, side panel on md+ */}
         {/* Desktop side panel */}
         <div
+          id="properties-panel"
           className={`hidden md:block relative transition-all duration-300 ${rightPanelCollapsed ? "w-0" : "w-[300px]"}`}
         >
           {/* Right panel toggle button */}

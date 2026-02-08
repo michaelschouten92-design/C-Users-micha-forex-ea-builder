@@ -234,8 +234,66 @@ export default function PricingPage() {
           </p>
         </div>
 
+        {/* FAQ */}
+        <div className="mt-20 max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-white text-center mb-8">
+            Frequently asked questions
+          </h2>
+          <div className="space-y-3">
+            {[
+              {
+                q: "How does the 7-day free trial work?",
+                a: "When you subscribe to Starter or Pro, you get 7 days free. You won't be charged until the trial ends. Cancel anytime during the trial and you won't pay a thing.",
+              },
+              {
+                q: "Can I upgrade or downgrade at any time?",
+                a: "Yes. You can switch between plans at any time from your account settings. When upgrading, you'll get immediate access to the new features. When downgrading, the change takes effect at the end of your current billing period.",
+              },
+              {
+                q: "What happens when I cancel?",
+                a: "You keep access to all paid features until the end of your current billing period. After that, your account reverts to the Free plan. Your projects and strategies are never deleted.",
+              },
+              {
+                q: "Do you offer refunds?",
+                a: "If you're not satisfied within the first 14 days of a paid subscription, contact us and we'll issue a full refund — no questions asked.",
+              },
+              {
+                q: "What payment methods do you accept?",
+                a: "We accept all major credit and debit cards (Visa, Mastercard, American Express) through Stripe. All payments are processed securely.",
+              },
+              {
+                q: "What counts as an export?",
+                a: "Each time you download a .mq5 file from the builder, that counts as one export. Re-downloading the same version doesn't count again.",
+              },
+            ].map((item, i) => (
+              <details
+                key={i}
+                className="group bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
+              >
+                <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-sm list-none">
+                  {item.q}
+                  <svg
+                    className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </summary>
+                <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">{item.a}</div>
+              </details>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
-        <div className="text-center mt-6">
+        <div className="text-center mt-12">
           <p className="text-[#64748B] text-sm">
             Already have an account?{" "}
             <Link href="/login" className="text-[#22D3EE] hover:underline">

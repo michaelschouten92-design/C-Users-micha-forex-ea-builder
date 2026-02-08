@@ -129,6 +129,7 @@ class UpstashRateLimiter {
 
   // Synchronous wrapper that returns a pessimistic result if async isn't possible.
   // For endpoints that need sync behavior, use checkAsync instead.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   check(key: string): RateLimitResult {
     // This won't actually block — we return a "pass" and let the async check
     // happen in endpoints that support it. See createRateLimitChecker below.
@@ -317,11 +318,23 @@ export const contactFormRateLimiter = createRateLimiter({
  * Create rate limit headers for response
  */
 export function createRateLimitHeaders(result: RateLimitResult): Record<string, string> {
-  return {
+  const resetEpoch = Math.floor(result.resetAt.getTime() / 1000);
+  const headers: Record<string, string> = {
     "X-RateLimit-Limit": result.limit.toString(),
     "X-RateLimit-Remaining": result.remaining.toString(),
-    "X-RateLimit-Reset": Math.floor(result.resetAt.getTime() / 1000).toString(),
+    "X-RateLimit-Reset": resetEpoch.toString(),
   };
+
+  // Add standard Retry-After header when rate limited
+  if (!result.success) {
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((result.resetAt.getTime() - Date.now()) / 1000)
+    );
+    headers["Retry-After"] = retryAfterSeconds.toString();
+  }
+
+  return headers;
 }
 
 /**
