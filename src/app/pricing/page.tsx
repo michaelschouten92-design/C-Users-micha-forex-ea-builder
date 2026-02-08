@@ -121,7 +121,12 @@ export default function PricingPage() {
           </div>
 
           {/* Starter Plan */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
+          <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-8 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
+                Most Popular
+              </span>
+            </div>
             <h3 className="text-xl font-semibold text-white">{PLANS.STARTER.name}</h3>
             <div className="mt-4">
               {getPrice(PLANS.STARTER, interval) ? (
@@ -162,20 +167,14 @@ export default function PricingPage() {
             <button
               onClick={() => handleSubscribe("STARTER")}
               disabled={loading !== null || !getPrice(PLANS.STARTER, interval)}
-              className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
             >
               {loading === "STARTER" ? "Loading..." : "Get Started"}
             </button>
           </div>
 
           {/* Pro Plan */}
-          <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-8 relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
-                Most Popular
-              </span>
-            </div>
-
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
             <h3 className="text-xl font-semibold text-white">{PLANS.PRO.name}</h3>
             <div className="mt-4">
               {getPrice(PLANS.PRO, interval) ? (
@@ -216,7 +215,7 @@ export default function PricingPage() {
             <button
               onClick={() => handleSubscribe("PRO")}
               disabled={loading !== null || !getPrice(PLANS.PRO, interval)}
-              className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading === "PRO" ? "Loading..." : "Get Started"}
             </button>
