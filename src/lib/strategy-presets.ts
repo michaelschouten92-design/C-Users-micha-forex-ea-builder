@@ -24,7 +24,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "always",
-          position: { x: 250, y: 0 },
+          position: { x: 300, y: 0 },
           data: {
             label: "Always",
             category: "timing",
@@ -49,7 +49,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "ma-slow",
           type: "moving-average",
-          position: { x: 400, y: 180 },
+          position: { x: 550, y: 180 },
           data: {
             label: "Slow MA (50)",
             category: "indicator",
@@ -79,7 +79,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 400, y: 360 },
+          position: { x: 550, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -123,7 +123,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sl-sell",
           type: "stop-loss",
-          position: { x: 300, y: 540 },
+          position: { x: 450, y: 540 },
           data: {
             label: "Sell Stoploss",
             category: "trading",
@@ -137,7 +137,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "tp-sell",
           type: "take-profit",
-          position: { x: 500, y: 540 },
+          position: { x: 650, y: 540 },
           data: {
             label: "Sell Take Profit",
             category: "trading",
@@ -182,7 +182,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "trading-session",
-          position: { x: 250, y: 0 },
+          position: { x: 300, y: 0 },
           data: {
             label: "London Session",
             category: "timing",
@@ -194,7 +194,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "rsi1",
           type: "rsi",
-          position: { x: 250, y: 180 },
+          position: { x: 300, y: 180 },
           data: {
             label: "RSI (14)",
             category: "indicator",
@@ -224,7 +224,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 400, y: 360 },
+          position: { x: 550, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -268,7 +268,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sl-sell",
           type: "stop-loss",
-          position: { x: 300, y: 540 },
+          position: { x: 450, y: 540 },
           data: {
             label: "Sell Stoploss",
             category: "trading",
@@ -282,7 +282,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "tp-sell",
           type: "take-profit",
-          position: { x: 500, y: 540 },
+          position: { x: 650, y: 540 },
           data: {
             label: "Sell Take Profit",
             category: "trading",
@@ -326,7 +326,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "timing1",
           type: "custom-times",
-          position: { x: 250, y: 0 },
+          position: { x: 300, y: 0 },
           data: {
             label: "Weekday Hours",
             category: "timing",
@@ -346,7 +346,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "rb1",
           type: "range-breakout",
-          position: { x: 250, y: 180 },
+          position: { x: 300, y: 180 },
           data: {
             label: "Asian Range Breakout",
             category: "priceaction",
@@ -384,7 +384,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sell1",
           type: "place-sell",
-          position: { x: 400, y: 360 },
+          position: { x: 550, y: 360 },
           data: {
             label: "Place Sell",
             category: "trading",
@@ -428,7 +428,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "sl-sell",
           type: "stop-loss",
-          position: { x: 300, y: 540 },
+          position: { x: 450, y: 540 },
           data: {
             label: "Sell ATR Stoploss",
             category: "trading",
@@ -442,7 +442,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         {
           id: "tp-sell",
           type: "take-profit",
-          position: { x: 500, y: 540 },
+          position: { x: 650, y: 540 },
           data: {
             label: "Sell Take Profit",
             category: "trading",
