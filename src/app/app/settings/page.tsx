@@ -46,9 +46,6 @@ export default function SettingsPage() {
           {/* Change Password */}
           <ChangePasswordSection />
 
-          {/* Data Export */}
-          <DataExportSection />
-
           {/* Referral */}
           <ReferralSection />
 
@@ -156,54 +153,6 @@ function ChangePasswordSection() {
           {loading ? "Saving..." : "Change Password"}
         </button>
       </form>
-    </div>
-  );
-}
-
-function DataExportSection() {
-  const [loading, setLoading] = useState(false);
-
-  async function handleExport() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/account/export", {
-        headers: getCsrfHeaders(),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        showError(data.error || "Failed to export data");
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `algostudio-data-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showSuccess("Data exported successfully");
-    } catch {
-      showError("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-      <h2 className="text-lg font-semibold text-white mb-2">Export Data</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
-        Download a copy of all your data including projects, strategies, and account information.
-      </p>
-      <button
-        onClick={handleExport}
-        disabled={loading}
-        className="px-6 py-2.5 text-sm font-medium text-white border border-[rgba(79,70,229,0.5)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-      >
-        {loading ? "Exporting..." : "Download My Data"}
-      </button>
     </div>
   );
 }
