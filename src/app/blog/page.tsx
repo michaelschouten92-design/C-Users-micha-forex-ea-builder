@@ -4,7 +4,11 @@ import { getAllPosts } from "@/lib/blog/posts";
 
 export const metadata: Metadata = {
   title: "Blog | AlgoStudio",
-  description: "Learn about automated forex trading, EA development, and strategy building with AlgoStudio.",
+  description:
+    "Learn about automated forex trading, EA development, and strategy building with AlgoStudio.",
+  alternates: {
+    canonical: "/blog",
+  },
   openGraph: {
     title: "Blog | AlgoStudio",
     description: "Learn about automated forex trading, EA development, and strategy building.",
@@ -48,9 +52,7 @@ export default function BlogPage() {
               <h2 className="text-lg font-semibold text-white group-hover:text-[#22D3EE] transition-colors mb-2">
                 {post.title}
               </h2>
-              <p className="text-sm text-[#94A3B8] line-clamp-2">
-                {post.description}
-              </p>
+              <p className="text-sm text-[#94A3B8] line-clamp-2">{post.description}</p>
               <div className="flex gap-2 mt-3">
                 {post.tags.map((tag) => (
                   <span

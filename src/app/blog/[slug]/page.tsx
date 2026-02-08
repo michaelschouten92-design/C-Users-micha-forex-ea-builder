@@ -19,6 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${post.title} | AlgoStudio Blog`,
     description: post.description,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.description,
@@ -75,9 +78,7 @@ export default async function BlogPostPage({ params }: Props) {
             <span>&middot;</span>
             <span>{post.author}</span>
           </div>
-          <h1 className="text-3xl font-bold text-white leading-tight">
-            {post.title}
-          </h1>
+          <h1 className="text-3xl font-bold text-white leading-tight">{post.title}</h1>
           <p className="text-[#94A3B8] mt-3">{post.description}</p>
           <div className="flex gap-2 mt-4">
             {post.tags.map((tag) => (
@@ -105,9 +106,7 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* CTA */}
         <div className="mt-12 bg-gradient-to-br from-[#1A0626] to-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-xl p-8 text-center">
-          <h3 className="text-xl font-bold text-white mb-2">
-            Ready to build your own EA?
-          </h3>
+          <h3 className="text-xl font-bold text-white mb-2">Ready to build your own EA?</h3>
           <p className="text-[#94A3B8] mb-6 text-sm">
             Start building automated trading strategies for MetaTrader 5 — no coding required.
           </p>

@@ -173,10 +173,7 @@ function createRateLimiter(config: RateLimitConfig): RateLimiter {
  * Async-aware rate limit check.
  * Uses Redis when available, falls back to in-memory.
  */
-export async function checkRateLimit(
-  limiter: RateLimiter,
-  key: string
-): Promise<RateLimitResult> {
+export async function checkRateLimit(limiter: RateLimiter, key: string): Promise<RateLimitResult> {
   if (limiter.checkAsync) {
     return limiter.checkAsync(key);
   }
@@ -266,6 +263,24 @@ export const changePasswordRateLimiter = createRateLimiter({
 export const projectDeleteRateLimiter = createRateLimiter({
   limit: 10,
   windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for template creation
+ * Limits: 20 creates per hour per user
+ */
+export const templateCreateRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for resend verification email
+ * Limits: 3 requests per 15 minutes per user
+ */
+export const resendVerificationRateLimiter = createRateLimiter({
+  limit: 3,
+  windowMs: 15 * 60 * 1000, // 15 minutes
 });
 
 // ============================================

@@ -17,7 +17,7 @@ export function generateCloseConditionCode(
 
   // Find indicators/price action connected to this close condition node
   const connectedEdges = edges.filter(
-    e => e.target === closeNode.id || e.source === closeNode.id
+    (e) => e.target === closeNode.id || e.source === closeNode.id
   );
 
   const connectedIndicatorNodes: BuilderNode[] = [];
@@ -25,9 +25,9 @@ export function generateCloseConditionCode(
 
   for (const edge of connectedEdges) {
     const otherId = edge.target === closeNode.id ? edge.source : edge.target;
-    const indNode = indicatorNodes.find(n => n.id === otherId);
+    const indNode = indicatorNodes.find((n) => n.id === otherId);
     if (indNode) connectedIndicatorNodes.push(indNode);
-    const paNode = priceActionNodes.find(n => n.id === otherId);
+    const paNode = priceActionNodes.find((n) => n.id === otherId);
     if (paNode) connectedPriceActionNodes.push(paNode);
   }
 
@@ -53,8 +53,12 @@ export function generateCloseConditionCode(
       switch (indData.indicatorType) {
         case "moving-average":
           // Close buy when price crosses below MA, close sell when price crosses above MA
-          closeBuyConditions.push(`(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
-          closeSellConditions.push(`(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
+          closeBuyConditions.push(
+            `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+          );
+          closeSellConditions.push(
+            `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+          );
           break;
 
         case "rsi":
@@ -65,20 +69,43 @@ export function generateCloseConditionCode(
 
         case "macd":
           // Close buy on bearish crossover, close sell on bullish crossover
-          closeBuyConditions.push(`(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
-          closeSellConditions.push(`(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
+          closeBuyConditions.push(
+            `(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+          );
+          closeSellConditions.push(
+            `(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+          );
           break;
 
         case "bollinger-bands":
           // Close buy when price hits upper band, close sell when price hits lower band
-          closeBuyConditions.push(`(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`);
-          closeSellConditions.push(`(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`);
+          closeBuyConditions.push(
+            `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`
+          );
+          closeSellConditions.push(
+            `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`
+          );
           break;
 
         case "adx":
           // Close when trend weakens (ADX drops below level)
-          closeBuyConditions.push(`(DoubleLT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel))`);
-          closeSellConditions.push(`(DoubleLT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel))`);
+          closeBuyConditions.push(
+            `(DoubleLT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel))`
+          );
+          closeSellConditions.push(
+            `(DoubleLT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel))`
+          );
+          break;
+
+        case "stochastic":
+          // Close buy when %K enters overbought zone
+          closeBuyConditions.push(
+            `(DoubleGE(${varPrefix}MainBuffer[0], InpStoch${indIndex}Overbought))`
+          );
+          // Close sell when %K enters oversold zone
+          closeSellConditions.push(
+            `(DoubleLE(${varPrefix}MainBuffer[0], InpStoch${indIndex}Oversold))`
+          );
           break;
       }
     }
@@ -121,12 +148,8 @@ export function generateCloseConditionCode(
     return;
   }
 
-  const closeBuyExpr = closeBuyConditions.length > 0
-    ? closeBuyConditions.join(" || ")
-    : "false";
-  const closeSellExpr = closeSellConditions.length > 0
-    ? closeSellConditions.join(" || ")
-    : "false";
+  const closeBuyExpr = closeBuyConditions.length > 0 ? closeBuyConditions.join(" || ") : "false";
+  const closeSellExpr = closeSellConditions.length > 0 ? closeSellConditions.join(" || ") : "false";
 
   if (data.closeDirection === "BUY" || data.closeDirection === "BOTH") {
     code.onTick.push(`bool closeBuyCondition = ${closeBuyExpr};`);

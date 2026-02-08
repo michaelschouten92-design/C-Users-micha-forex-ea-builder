@@ -5,6 +5,12 @@ import { sendVerificationEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { randomBytes } from "crypto";
 import { logger } from "@/lib/logger";
+import {
+  resendVerificationRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const log = logger.child({ route: "/api/auth/resend-verification" });
 
@@ -12,6 +18,18 @@ export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit
+  const rateLimit = await checkRateLimit(
+    resendVerificationRateLimiter,
+    `resend-verify:${session.user.id}`
+  );
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimit) },
+      { status: 429, headers: createRateLimitHeaders(rateLimit) }
+    );
   }
 
   try {

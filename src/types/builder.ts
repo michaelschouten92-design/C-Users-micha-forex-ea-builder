@@ -59,13 +59,14 @@ export interface CustomTimesNodeData extends BaseNodeData {
 export type TimingNodeData = TradingSessionNodeData | AlwaysNodeData | CustomTimesNodeData;
 
 // Session time definitions (GMT)
-export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> = {
-  LONDON: { start: "08:00", end: "17:00", label: "London Session" },
-  NEW_YORK: { start: "13:00", end: "22:00", label: "New York Session" },
-  TOKYO: { start: "00:00", end: "09:00", label: "Tokyo Session" },
-  SYDNEY: { start: "22:00", end: "07:00", label: "Sydney Session" },
-  LONDON_NY_OVERLAP: { start: "13:00", end: "17:00", label: "London/NY Overlap" },
-};
+export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
+  {
+    LONDON: { start: "08:00", end: "17:00", label: "London Session" },
+    NEW_YORK: { start: "13:00", end: "22:00", label: "New York Session" },
+    TOKYO: { start: "00:00", end: "09:00", label: "Tokyo Session" },
+    SYDNEY: { start: "22:00", end: "07:00", label: "Sydney Session" },
+    LONDON_NY_OVERLAP: { start: "13:00", end: "17:00", label: "London/NY Overlap" },
+  };
 
 // Timeframe type for indicators and price action
 export type Timeframe = "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1" | "W1" | "MN1";
@@ -570,7 +571,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Stochastic",
     category: "indicator",
     description: "Stochastic Oscillator (%K, %D)",
-    comingSoon: true,
     defaultData: {
       label: "Stochastic",
       category: "indicator",

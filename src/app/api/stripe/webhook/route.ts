@@ -22,12 +22,17 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
   const item = subscription.items.data[0];
   if (item) {
     return {
-      start: new Date((item as unknown as { current_period_start: number }).current_period_start * 1000),
+      start: new Date(
+        (item as unknown as { current_period_start: number }).current_period_start * 1000
+      ),
       end: new Date((item as unknown as { current_period_end: number }).current_period_end * 1000),
     };
   }
   // Fallback to subscription level if available
-  const sub = subscription as unknown as { current_period_start?: number; current_period_end?: number };
+  const sub = subscription as unknown as {
+    current_period_start?: number;
+    current_period_end?: number;
+  };
   return {
     start: sub.current_period_start ? new Date(sub.current_period_start * 1000) : new Date(),
     end: sub.current_period_end ? new Date(sub.current_period_end * 1000) : new Date(),
@@ -47,27 +52,23 @@ export async function POST(request: NextRequest) {
 
   if (!env.STRIPE_WEBHOOK_SECRET) {
     log.error("STRIPE_WEBHOOK_SECRET not configured");
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 400 });
   }
 
   try {
     event = getStripe().webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     log.error({ error: extractErrorDetails(err) }, "Webhook signature verification failed");
-    return NextResponse.json(
-      { error: "Invalid signature" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Idempotency check: skip already-processed events
-  const existing = await prisma.webhookEvent.findUnique({
-    where: { eventId: event.id },
-  });
-  if (existing) {
+  // Idempotency: try to claim this event first (prevents race conditions)
+  try {
+    await prisma.webhookEvent.create({
+      data: { eventId: event.id, type: event.type },
+    });
+  } catch {
+    // Unique constraint violation = duplicate event already being processed
     log.info({ eventId: event.id }, "Duplicate webhook event, skipping");
     return NextResponse.json({ received: true });
   }
@@ -105,19 +106,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Record processed event for idempotency
-    await prisma.webhookEvent.create({
-      data: { eventId: event.id, type: event.type },
-    });
-
     log.info({ eventType: event.type, eventId: event.id }, "Webhook processed successfully");
     return NextResponse.json({ received: true });
   } catch (error) {
-    log.error({ error: extractErrorDetails(error), eventType: event.type }, "Webhook handler error");
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 }
+    log.error(
+      { error: extractErrorDetails(error), eventType: event.type },
+      "Webhook handler error"
     );
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
 
@@ -140,7 +136,10 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   const validatedPlan: PaidTier = plan as PaidTier;
 
-  log.info({ userId, plan: validatedPlan, sessionId: session.id }, "Processing checkout completion");
+  log.info(
+    { userId, plan: validatedPlan, sessionId: session.id },
+    "Processing checkout completion"
+  );
 
   const subscriptionId = getStringId(session.subscription);
   if (!subscriptionId) {
@@ -179,10 +178,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const priceId = subscription.items.data[0]?.price.id;
   let tier: "STARTER" | "PRO";
 
-  if (
-    priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID ||
-    priceId === env.STRIPE_PRO_YEARLY_PRICE_ID
-  ) {
+  if (priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID || priceId === env.STRIPE_PRO_YEARLY_PRICE_ID) {
     tier = "PRO";
   } else if (
     priceId === env.STRIPE_STARTER_MONTHLY_PRICE_ID ||
@@ -190,7 +186,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   ) {
     tier = "STARTER";
   } else {
-    log.error({ priceId, subscriptionId: subscription.id }, "Unknown price ID in subscription update");
+    log.error(
+      { priceId, subscriptionId: subscription.id },
+      "Unknown price ID in subscription update"
+    );
     return;
   }
 
@@ -285,9 +284,9 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
   if (userId) {
     invalidateSubscriptionCache(userId);
-    audit.subscriptionCancel(userId).catch((err) =>
-      log.warn({ err }, "Audit log failed but subscription cancelled")
-    );
+    audit
+      .subscriptionCancel(userId)
+      .catch((err) => log.warn({ err }, "Audit log failed but subscription cancelled"));
   }
 }
 
@@ -326,9 +325,9 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   });
 
   if (userId) {
-    audit.paymentSuccess(userId).catch((err) =>
-      log.warn({ err }, "Audit log failed but payment recorded")
-    );
+    audit
+      .paymentSuccess(userId)
+      .catch((err) => log.warn({ err }, "Audit log failed but payment recorded"));
   }
 }
 
@@ -369,8 +368,8 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       );
     }
 
-    audit.paymentFailed(userId).catch((err) =>
-      log.warn({ err }, "Audit log failed but payment failure recorded")
-    );
+    audit
+      .paymentFailed(userId)
+      .catch((err) => log.warn({ err }, "Audit log failed but payment failure recorded"));
   }
 }

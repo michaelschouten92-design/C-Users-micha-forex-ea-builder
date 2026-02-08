@@ -30,11 +30,7 @@ export class CanvasErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error for debugging
-    console.error("Canvas error:", error);
-    console.error("Component stack:", errorInfo.componentStack);
-
-    // Call optional error handler
+    // Report to error tracking (Sentry, etc.) via onError prop
     this.props.onError?.(error, errorInfo);
   }
 
@@ -73,13 +69,11 @@ export class CanvasErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
 
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Something went wrong
-            </h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Something went wrong</h3>
 
             <p className="text-[#94A3B8] mb-6">
-              The strategy builder encountered an error. Your work has been
-              auto-saved. Try refreshing the page to continue.
+              The strategy builder encountered an error. Your work has been auto-saved. Try
+              refreshing the page to continue.
             </p>
 
             {this.state.error && (
@@ -130,7 +124,6 @@ export class PanelErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Panel error:", error);
     this.props.onError?.(error, errorInfo);
   }
 
@@ -146,9 +139,7 @@ export class PanelErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="p-4 bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] rounded-lg">
-          <p className="text-sm text-[#EF4444] mb-2">
-            This panel encountered an error.
-          </p>
+          <p className="text-sm text-[#EF4444] mb-2">This panel encountered an error.</p>
           <button
             onClick={this.handleRetry}
             className="text-xs text-[#94A3B8] hover:text-white underline"

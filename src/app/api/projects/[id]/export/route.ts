@@ -3,7 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
 import { checkExportLimit, canExportMQL5, canUseTradeManagement } from "@/lib/plan-limits";
-import { exportRequestSchema, buildJsonSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import {
+  exportRequestSchema,
+  buildJsonSchema,
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+} from "@/lib/validations";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   exportRateLimiter,
@@ -74,7 +80,11 @@ export async function POST(request: NextRequest, { params }: Props) {
     const exportLimit = await checkExportLimit(session.user.id);
     if (!exportLimit.allowed) {
       return NextResponse.json(
-        apiError(ErrorCode.EXPORT_LIMIT, "Export limit reached", `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`),
+        apiError(
+          ErrorCode.EXPORT_LIMIT,
+          "Export limit reached",
+          `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`
+        ),
         { status: 403 }
       );
     }
@@ -83,7 +93,11 @@ export async function POST(request: NextRequest, { params }: Props) {
     const canExport = await canExportMQL5(session.user.id);
     if (!canExport) {
       return NextResponse.json(
-        apiError(ErrorCode.PLAN_REQUIRED, "Export not available", "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies."),
+        apiError(
+          ErrorCode.PLAN_REQUIRED,
+          "Export not available",
+          "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies."
+        ),
         { status: 403 }
       );
     }
@@ -121,7 +135,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       return NextResponse.json(
         {
           error: "Invalid strategy data",
-          details: formatZodErrors(buildJsonValidation.error)
+          details: formatZodErrors(buildJsonValidation.error),
         },
         { status: 400 }
       );
@@ -141,16 +155,26 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     // Check if user is using trade management nodes (Pro only)
-    const tradeManagementTypes = ["breakeven-stop", "trailing-stop", "partial-close", "lock-profit"];
+    const tradeManagementTypes = [
+      "breakeven-stop",
+      "trailing-stop",
+      "partial-close",
+      "lock-profit",
+    ];
     const hasTradeManagement = buildJson.nodes.some(
-      (n) => tradeManagementTypes.includes(n.type as string) || (n.data && "managementType" in n.data)
+      (n) =>
+        tradeManagementTypes.includes(n.type as string) || (n.data && "managementType" in n.data)
     );
 
     if (hasTradeManagement) {
       const canUseTM = await canUseTradeManagement(session.user.id);
       if (!canUseTM) {
         return NextResponse.json(
-          apiError(ErrorCode.PRO_FEATURE, "Pro feature required", "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features."),
+          apiError(
+            ErrorCode.PRO_FEATURE,
+            "Pro feature required",
+            "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features."
+          ),
           { status: 403 }
         );
       }
@@ -225,27 +249,51 @@ export async function GET(request: NextRequest, { params }: Props) {
   }
 
   try {
-    const exports = await prisma.exportJob.findMany({
-      where: {
-        projectId: id,
-        userId: session.user.id,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        buildVersion: {
-          select: { versionNo: true },
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10) || 1);
+    const pageSize = Math.min(
+      50,
+      Math.max(1, parseInt(request.nextUrl.searchParams.get("pageSize") ?? "10", 10) || 10)
+    );
+    const skip = (page - 1) * pageSize;
+
+    const [exports, total] = await Promise.all([
+      prisma.exportJob.findMany({
+        where: {
+          projectId: id,
+          userId: session.user.id,
         },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          buildVersion: {
+            select: { versionNo: true },
+          },
+        },
+      }),
+      prisma.exportJob.count({
+        where: {
+          projectId: id,
+          userId: session.user.id,
+        },
+      }),
+    ]);
+
+    return NextResponse.json({
+      data: exports,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
       },
     });
-
-    return NextResponse.json(exports);
   } catch (error) {
-    log.error({ error: extractErrorDetails(error), projectId: id }, "Failed to fetch export history");
-    return NextResponse.json(
-      { error: "Failed to fetch export history" },
-      { status: 500 }
+    log.error(
+      { error: extractErrorDetails(error), projectId: id },
+      "Failed to fetch export history"
     );
+    return NextResponse.json({ error: "Failed to fetch export history" }, { status: 500 });
   }
 }
 
@@ -264,11 +312,21 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   );
 
   if (!hasTimingNode) {
-    errors.push("No timing block found. Add a 'When to trade' block (Always, Custom Times, or Trading Sessions).");
+    errors.push(
+      "No timing block found. Add a 'When to trade' block (Always, Custom Times, or Trading Sessions)."
+    );
   }
 
   // Check by node type OR by data properties (for flexibility)
-  const indicatorTypes = ["moving-average", "rsi", "macd", "bollinger-bands", "atr", "adx"];
+  const indicatorTypes = [
+    "moving-average",
+    "rsi",
+    "macd",
+    "bollinger-bands",
+    "atr",
+    "adx",
+    "stochastic",
+  ];
   const hasIndicator = buildJson.nodes.some(
     (n) => indicatorTypes.includes(n.type as string) || (n.data && "indicatorType" in n.data)
   );
@@ -285,21 +343,30 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   // Warn about disconnected nodes (not connected to timing flow)
   const connectedIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, timingTypes);
   const disconnectedNodes = buildJson.nodes.filter(
-    (n) => !connectedIds.has(n.id) && !timingTypes.includes(n.type as string) && !("timingType" in n.data)
+    (n) =>
+      !connectedIds.has(n.id) &&
+      !timingTypes.includes(n.type as string) &&
+      !("timingType" in n.data)
   );
   if (disconnectedNodes.length > 0) {
     const labels = disconnectedNodes.map((n) => n.data?.label || n.type).join(", ");
-    errors.push(`Disconnected nodes found: ${labels}. Connect them to the strategy flow or remove them.`);
+    errors.push(
+      `Disconnected nodes found: ${labels}. Connect them to the strategy flow or remove them.`
+    );
   }
 
   // Warn about buy/sell nodes that exist but are disconnected
   const buySellNodes = buildJson.nodes.filter(
-    (n) => n.type === "place-buy" || n.type === "place-sell" ||
-      (n.data && "tradingType" in n.data && (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell"))
+    (n) =>
+      n.type === "place-buy" ||
+      n.type === "place-sell" ||
+      (n.data &&
+        "tradingType" in n.data &&
+        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell"))
   );
   if (buySellNodes.length > 0) {
     const disconnectedBuySell = buySellNodes.filter(
-      (n) => !buildJson.edges.some(e => e.source === n.id || e.target === n.id)
+      (n) => !buildJson.edges.some((e) => e.source === n.id || e.target === n.id)
     );
     if (disconnectedBuySell.length > 0) {
       errors.push("No Place Buy or Place Sell connected — strategy won't open any trades.");
@@ -308,21 +375,31 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
 
   // Warn about close condition nodes without connected indicators
   const closeConditionNodes = buildJson.nodes.filter(
-    (n) => n.type === "close-condition" ||
+    (n) =>
+      n.type === "close-condition" ||
       (n.data && "tradingType" in n.data && n.data.tradingType === "close-condition")
   );
   for (const ccNode of closeConditionNodes) {
-    const connectedEdges = buildJson.edges.filter(e => e.source === ccNode.id || e.target === ccNode.id);
-    const connectedNodeIds = connectedEdges.map(e => e.source === ccNode.id ? e.target : e.source);
-    const hasConnectedSignal = connectedNodeIds.some(id => {
-      const node = buildJson.nodes.find(n => n.id === id);
-      return node && (
-        indicatorTypes.includes(node.type as string) || ("indicatorType" in node.data) ||
-        priceActionTypes.includes(node.type as string) || ("priceActionType" in node.data)
+    const connectedEdges = buildJson.edges.filter(
+      (e) => e.source === ccNode.id || e.target === ccNode.id
+    );
+    const connectedNodeIds = connectedEdges.map((e) =>
+      e.source === ccNode.id ? e.target : e.source
+    );
+    const hasConnectedSignal = connectedNodeIds.some((id) => {
+      const node = buildJson.nodes.find((n) => n.id === id);
+      return (
+        node &&
+        (indicatorTypes.includes(node.type as string) ||
+          "indicatorType" in node.data ||
+          priceActionTypes.includes(node.type as string) ||
+          "priceActionType" in node.data)
       );
     });
     if (!hasConnectedSignal) {
-      errors.push("Exit Signal node has no indicator or price action connected — it won't close any positions.");
+      errors.push(
+        "Exit Signal node has no indicator or price action connected — it won't close any positions."
+      );
     }
   }
 
@@ -337,7 +414,7 @@ function getConnectedNodeIds(
 ): Set<string> {
   const connectedIds = new Set<string>();
   const startNodes = nodes.filter(
-    (n) => startNodeTypes.includes(n.type as string) || ("timingType" in n.data)
+    (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
   );
   const queue: string[] = startNodes.map((n) => n.id);
 

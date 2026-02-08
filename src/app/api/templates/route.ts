@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import {
+  templateCreateRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const MAX_TEMPLATES = 20;
 
@@ -32,6 +38,15 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit
+  const rateLimit = await checkRateLimit(templateCreateRateLimiter, `template:${session.user.id}`);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimit) },
+      { status: 429, headers: createRateLimitHeaders(rateLimit) }
+    );
   }
 
   const contentTypeError = checkContentType(request);
@@ -71,6 +86,50 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json(template, { status: 201 });
+}
+
+// PATCH /api/templates - Rename a template
+const updateTemplateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100).trim(),
+});
+
+export async function PATCH(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
+
+  const body = await request.json();
+  const validation = updateTemplateSchema.safeParse(body);
+
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: formatZodErrors(validation.error) },
+      { status: 400 }
+    );
+  }
+
+  const template = await prisma.userTemplate.findFirst({
+    where: { id: validation.data.id, userId: session.user.id },
+  });
+
+  if (!template) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
+
+  const updated = await prisma.userTemplate.update({
+    where: { id: validation.data.id },
+    data: { name: validation.data.name },
+    select: { id: true, name: true, createdAt: true },
+  });
+
+  return NextResponse.json(updated);
 }
 
 // DELETE /api/templates - Delete a template by ID (via query param)

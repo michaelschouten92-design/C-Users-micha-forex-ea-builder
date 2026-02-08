@@ -114,6 +114,6 @@ export async function getUserPlanLimits(userId: string) {
     tier,
     plan: plan.name,
     limits: plan.limits,
-    subscription,
+    subscription: subscription ?? null,
   };
 }

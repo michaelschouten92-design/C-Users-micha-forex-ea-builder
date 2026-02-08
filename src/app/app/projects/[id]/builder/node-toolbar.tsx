@@ -18,12 +18,22 @@ interface NodeToolbarProps {
   onSettingsChange?: (settings: BuildJsonSettings) => void;
 }
 
-export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onSettingsChange }: NodeToolbarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
-    new Set()
-  );
+export function NodeToolbar({
+  onDragStart,
+  isPro = false,
+  onClose,
+  settings,
+  onSettingsChange,
+}: NodeToolbarProps) {
+  const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(new Set());
 
-  const categories: NodeCategory[] = ["timing", "indicator", "priceaction", "trading", "trademanagement"];
+  const categories: NodeCategory[] = [
+    "timing",
+    "indicator",
+    "priceaction",
+    "trading",
+    "trademanagement",
+  ];
 
   const toggleCategory = (category: NodeCategory) => {
     setExpandedCategories((prev) => {
@@ -38,41 +48,44 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
   };
 
   // Professional gradient and styling for each category
-  const categoryStyles: Record<NodeCategory, {
-    gradient: string;
-    shadow: string;
-    hoverShadow: string;
-    border: string;
-  }> = {
+  const categoryStyles: Record<
+    NodeCategory,
+    {
+      gradient: string;
+      shadow: string;
+      hoverShadow: string;
+      border: string;
+    }
+  > = {
     timing: {
       gradient: "bg-gradient-to-r from-[#FF6B00] to-[#FF8533]",
       shadow: "shadow-[0_2px_8px_rgba(255,107,0,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(255,107,0,0.4)]",
-      border: "border-[#FF8533]/30"
+      border: "border-[#FF8533]/30",
     },
     indicator: {
       gradient: "bg-gradient-to-r from-[#00B8D9] to-[#00D4FF]",
       shadow: "shadow-[0_2px_8px_rgba(0,184,217,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,184,217,0.4)]",
-      border: "border-[#00D4FF]/30"
+      border: "border-[#00D4FF]/30",
     },
     priceaction: {
       gradient: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]",
       shadow: "shadow-[0_2px_8px_rgba(245,158,11,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)]",
-      border: "border-[#FBBF24]/30"
+      border: "border-[#FBBF24]/30",
     },
     trading: {
       gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
       shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
-      border: "border-[#69F0AE]/30"
+      border: "border-[#69F0AE]/30",
     },
     trademanagement: {
       gradient: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
       shadow: "shadow-[0_2px_8px_rgba(168,85,247,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
-      border: "border-[#A855F7]/30"
+      border: "border-[#A855F7]/30",
     },
   };
 
@@ -97,9 +110,19 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
           <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors" title="Close">
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors"
+            title="Close"
+            aria-label="Close blocks panel"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}
@@ -135,9 +158,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                 aria-expanded={isExpanded}
               >
                 {/* Label */}
-                <span className="whitespace-nowrap">
-                  {getCategoryLabel(category)}
-                </span>
+                <span className="whitespace-nowrap">{getCategoryLabel(category)}</span>
 
                 {/* Chevron */}
                 <svg
@@ -176,7 +197,13 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                             ? "opacity-60 cursor-not-allowed"
                             : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
                         }`}
-                        title={isComingSoon ? "Coming soon" : isLocked ? "Upgrade to Starter or Pro to use this block" : template.description}
+                        title={
+                          isComingSoon
+                            ? "Coming soon"
+                            : isLocked
+                              ? "Upgrade to Starter or Pro to use this block"
+                              : template.description
+                        }
                       >
                         <div className="flex items-center justify-between">
                           <div className={`text-sm font-medium ${blockColors[template.category]}`}>
@@ -188,11 +215,13 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                             </span>
                           )}
                           {template.proOnly && !isComingSoon && (
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                              isPro
-                                ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"
-                                : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
-                            }`}>
+                            <span
+                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                isPro
+                                  ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"
+                                  : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
+                              }`}
+                            >
                               {isLocked ? "🔒 STARTER+" : "STARTER+"}
                             </span>
                           )}

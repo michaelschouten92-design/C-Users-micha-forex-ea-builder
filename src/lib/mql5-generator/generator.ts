@@ -1,15 +1,8 @@
 // Main MQL5 Code Generator — orchestrates modular generators
 
-import type {
-  BuildJsonSchema,
-  BuilderNode,
-  BuilderEdge,
-} from "@/types/builder";
+import type { BuildJsonSchema, BuilderNode, BuilderEdge } from "@/types/builder";
 
-import {
-  type GeneratorContext,
-  type GeneratedCode,
-} from "./types";
+import { type GeneratorContext, type GeneratedCode } from "./types";
 
 import {
   generateFileHeader,
@@ -46,8 +39,7 @@ function getConnectedNodeIds(
 
   // Find all starting nodes (timing nodes)
   const startNodes = nodes.filter(
-    (n) => startNodeTypes.includes(n.type as string) ||
-    ("timingType" in n.data)
+    (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
   );
 
   // BFS to find all connected nodes
@@ -70,27 +62,46 @@ function getConnectedNodeIds(
   return connectedIds;
 }
 
-export function generateMQL5Code(
-  buildJson: BuildJsonSchema,
-  projectName: string
-): string {
+export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string): string {
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
     magicNumber: buildJson.settings?.magicNumber ?? 123456,
     comment: buildJson.settings?.comment ?? "AlgoStudio EA",
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
-    maxBuyPositions: buildJson.settings?.maxBuyPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
-    maxSellPositions: buildJson.settings?.maxSellPositions ?? (buildJson.settings?.maxOpenTrades ?? 1),
+    maxBuyPositions: buildJson.settings?.maxBuyPositions ?? buildJson.settings?.maxOpenTrades ?? 1,
+    maxSellPositions:
+      buildJson.settings?.maxSellPositions ?? buildJson.settings?.maxOpenTrades ?? 1,
     conditionMode: buildJson.settings?.conditionMode ?? "AND",
     maxTradesPerDay: buildJson.settings?.maxTradesPerDay ?? 0,
   };
 
   const code: GeneratedCode = {
     inputs: [
-      { name: "InpMagicNumber", type: "int", value: ctx.magicNumber, comment: "Magic Number", isOptimizable: false, group: "General Settings" },
-      { name: "InpMaxSlippage", type: "int", value: 10, comment: "Max Slippage (points)", isOptimizable: false, group: "Risk Management" },
-      { name: "InpMaxSpread", type: "int", value: 0, comment: "Max Spread (points, 0=no limit)", isOptimizable: false, group: "Risk Management" },
+      {
+        name: "InpMagicNumber",
+        type: "int",
+        value: ctx.magicNumber,
+        comment: "Magic Number",
+        isOptimizable: false,
+        group: "General Settings",
+      },
+      {
+        name: "InpMaxSlippage",
+        type: "int",
+        value: 10,
+        comment: "Max Slippage (points)",
+        isOptimizable: false,
+        group: "Risk Management",
+      },
+      {
+        name: "InpMaxSpread",
+        type: "int",
+        value: 0,
+        comment: "Max Spread (points, 0=no limit)",
+        isOptimizable: false,
+        group: "Risk Management",
+      },
     ],
     globalVariables: [],
     onInit: [],
@@ -100,59 +111,73 @@ export function generateMQL5Code(
   };
 
   // Get all nodes that are connected to the strategy (starting from timing nodes)
-  const connectedNodeIds = getConnectedNodeIds(
-    buildJson.nodes,
-    buildJson.edges,
-    ["trading-session", "always", "custom-times"]
-  );
+  const connectedNodeIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, [
+    "trading-session",
+    "always",
+    "custom-times",
+  ]);
 
   // Helper to check if a node is connected to the strategy
   const isConnected = (node: BuilderNode) => connectedNodeIds.has(node.id);
 
   // Process nodes by type (check both node.type and node.data properties)
   // Only include nodes that are connected to the strategy
-  const indicatorTypes = ["moving-average", "rsi", "macd", "bollinger-bands", "atr", "adx"];
+  const indicatorTypes = [
+    "moving-average",
+    "rsi",
+    "macd",
+    "bollinger-bands",
+    "atr",
+    "adx",
+    "stochastic",
+  ];
   const indicatorNodes = buildJson.nodes.filter(
-    (n) => (indicatorTypes.includes(n.type as string) || "indicatorType" in n.data) && isConnected(n)
+    (n) =>
+      (indicatorTypes.includes(n.type as string) || "indicatorType" in n.data) && isConnected(n)
   );
   const placeBuyNodes = buildJson.nodes.filter(
     (n) =>
-      (n.type === "place-buy" ||
-      ("tradingType" in n.data && n.data.tradingType === "place-buy")) && isConnected(n)
+      (n.type === "place-buy" || ("tradingType" in n.data && n.data.tradingType === "place-buy")) &&
+      isConnected(n)
   );
   const placeSellNodes = buildJson.nodes.filter(
     (n) =>
       (n.type === "place-sell" ||
-      ("tradingType" in n.data && n.data.tradingType === "place-sell")) && isConnected(n)
+        ("tradingType" in n.data && n.data.tradingType === "place-sell")) &&
+      isConnected(n)
   );
   const stopLossNodes = buildJson.nodes.filter(
     (n) =>
-      (n.type === "stop-loss" ||
-      ("tradingType" in n.data && n.data.tradingType === "stop-loss")) && isConnected(n)
+      (n.type === "stop-loss" || ("tradingType" in n.data && n.data.tradingType === "stop-loss")) &&
+      isConnected(n)
   );
   const takeProfitNodes = buildJson.nodes.filter(
     (n) =>
       (n.type === "take-profit" ||
-      ("tradingType" in n.data && n.data.tradingType === "take-profit")) && isConnected(n)
+        ("tradingType" in n.data && n.data.tradingType === "take-profit")) &&
+      isConnected(n)
   );
   const timingNodes = buildJson.nodes.filter(
     (n) =>
       n.type === "trading-session" ||
       n.type === "always" ||
       n.type === "custom-times" ||
-      ("timingType" in n.data)
+      "timingType" in n.data
   );
 
   // Trade Management nodes (Pro only) - only connected ones
   const tradeManagementTypes = ["breakeven-stop", "trailing-stop", "partial-close", "lock-profit"];
   const tradeManagementNodes = buildJson.nodes.filter(
-    (n) => (tradeManagementTypes.includes(n.type as string) || "managementType" in n.data) && isConnected(n)
+    (n) =>
+      (tradeManagementTypes.includes(n.type as string) || "managementType" in n.data) &&
+      isConnected(n)
   );
 
   // Price Action nodes - only connected ones
   const priceActionTypes = ["candlestick-pattern", "support-resistance", "range-breakout"];
   const priceActionNodes = buildJson.nodes.filter(
-    (n) => (priceActionTypes.includes(n.type as string) || "priceActionType" in n.data) && isConnected(n)
+    (n) =>
+      (priceActionTypes.includes(n.type as string) || "priceActionType" in n.data) && isConnected(n)
   );
 
   // Generate timing code (supports multiple timing nodes OR'd together)
@@ -206,7 +231,8 @@ export function generateMQL5Code(
   const closeConditionNodes = buildJson.nodes.filter(
     (n) =>
       (n.type === "close-condition" ||
-      ("tradingType" in n.data && n.data.tradingType === "close-condition")) && isConnected(n)
+        ("tradingType" in n.data && n.data.tradingType === "close-condition")) &&
+      isConnected(n)
   );
   closeConditionNodes.forEach((ccNode) => {
     generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);

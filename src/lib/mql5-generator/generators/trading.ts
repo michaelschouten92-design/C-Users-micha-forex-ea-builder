@@ -10,51 +10,93 @@ import type {
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { createInput } from "./shared";
 
-export function generatePlaceBuyCode(
-  node: BuilderNode,
-  code: GeneratedCode
-): void {
+export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data as PlaceBuyNodeData;
 
   const group = "Buy Order";
   switch (data.method) {
     case "FIXED_LOT":
-      code.inputs.push(createInput(node, "fixedLot", "InpBuyLotSize", "double", data.fixedLot, "Buy Lot Size", group));
+      code.inputs.push(
+        createInput(
+          node,
+          "fixedLot",
+          "InpBuyLotSize",
+          "double",
+          data.fixedLot,
+          "Buy Lot Size",
+          group
+        )
+      );
       code.onTick.push("double buyLotSize = InpBuyLotSize;");
       break;
 
     case "RISK_PERCENT":
-      code.inputs.push(createInput(node, "riskPercent", "InpBuyRiskPercent", "double", data.riskPercent, "Buy Risk %", group));
+      code.inputs.push(
+        createInput(
+          node,
+          "riskPercent",
+          "InpBuyRiskPercent",
+          "double",
+          data.riskPercent,
+          "Buy Risk %",
+          group
+        )
+      );
       code.onTick.push("double buyLotSize = CalculateLotSize(InpBuyRiskPercent, slPips);");
       break;
   }
 
-  code.inputs.push(createInput(node, "minLot", "InpBuyMinLot", "double", data.minLot, "Buy Minimum Lot", group));
-  code.inputs.push(createInput(node, "maxLot", "InpBuyMaxLot", "double", data.maxLot, "Buy Maximum Lot", group));
+  code.inputs.push(
+    createInput(node, "minLot", "InpBuyMinLot", "double", data.minLot, "Buy Minimum Lot", group)
+  );
+  code.inputs.push(
+    createInput(node, "maxLot", "InpBuyMaxLot", "double", data.maxLot, "Buy Maximum Lot", group)
+  );
   code.onTick.push("buyLotSize = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, buyLotSize));");
 }
 
-export function generatePlaceSellCode(
-  node: BuilderNode,
-  code: GeneratedCode
-): void {
+export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data as PlaceSellNodeData;
 
   const group = "Sell Order";
   switch (data.method) {
     case "FIXED_LOT":
-      code.inputs.push(createInput(node, "fixedLot", "InpSellLotSize", "double", data.fixedLot, "Sell Lot Size", group));
+      code.inputs.push(
+        createInput(
+          node,
+          "fixedLot",
+          "InpSellLotSize",
+          "double",
+          data.fixedLot,
+          "Sell Lot Size",
+          group
+        )
+      );
       code.onTick.push("double sellLotSize = InpSellLotSize;");
       break;
 
     case "RISK_PERCENT":
-      code.inputs.push(createInput(node, "riskPercent", "InpSellRiskPercent", "double", data.riskPercent, "Sell Risk %", group));
+      code.inputs.push(
+        createInput(
+          node,
+          "riskPercent",
+          "InpSellRiskPercent",
+          "double",
+          data.riskPercent,
+          "Sell Risk %",
+          group
+        )
+      );
       code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
       break;
   }
 
-  code.inputs.push(createInput(node, "minLot", "InpSellMinLot", "double", data.minLot, "Sell Minimum Lot", group));
-  code.inputs.push(createInput(node, "maxLot", "InpSellMaxLot", "double", data.maxLot, "Sell Maximum Lot", group));
+  code.inputs.push(
+    createInput(node, "minLot", "InpSellMinLot", "double", data.minLot, "Sell Minimum Lot", group)
+  );
+  code.inputs.push(
+    createInput(node, "maxLot", "InpSellMaxLot", "double", data.maxLot, "Sell Maximum Lot", group)
+  );
   code.onTick.push("sellLotSize = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, sellLotSize));");
 }
 
@@ -69,17 +111,49 @@ export function generateStopLossCode(
   const slGroup = "Stop Loss";
   switch (data.method) {
     case "FIXED_PIPS":
-      code.inputs.push(createInput(node, "fixedPips", "InpStopLoss", "double", data.fixedPips, "Stop Loss (pips)", slGroup));
+      code.inputs.push(
+        createInput(
+          node,
+          "fixedPips",
+          "InpStopLoss",
+          "double",
+          data.fixedPips,
+          "Stop Loss (pips)",
+          slGroup
+        )
+      );
       code.onTick.push("double slPips = InpStopLoss * 10; // Convert to points");
       break;
 
     case "ATR_BASED":
-      code.inputs.push(createInput(node, "atrPeriod", "InpATRPeriod", "int", data.atrPeriod, "ATR Period for SL", slGroup));
-      code.inputs.push(createInput(node, "atrMultiplier", "InpATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for SL", slGroup));
+      code.inputs.push(
+        createInput(
+          node,
+          "atrPeriod",
+          "InpATRPeriod",
+          "int",
+          data.atrPeriod,
+          "ATR Period for SL",
+          slGroup
+        )
+      );
+      code.inputs.push(
+        createInput(
+          node,
+          "atrMultiplier",
+          "InpATRMultiplier",
+          "double",
+          data.atrMultiplier,
+          "ATR Multiplier for SL",
+          slGroup
+        )
+      );
       code.globalVariables.push("int atrHandle = INVALID_HANDLE;");
       code.globalVariables.push("double atrBuffer[];");
       code.onInit.push("atrHandle = iATR(_Symbol, PERIOD_CURRENT, InpATRPeriod);");
-      code.onInit.push('if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }');
+      code.onInit.push(
+        'if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }'
+      );
       code.onDeinit.push("if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);");
       code.onInit.push("ArraySetAsSeries(atrBuffer, true);");
       code.onTick.push("if(CopyBuffer(atrHandle, 0, 0, 1, atrBuffer) < 1) return;");
@@ -104,21 +178,28 @@ function generateIndicatorBasedSL(
   let connectedIndicator: BuilderNode | undefined;
 
   if (data.indicatorNodeId) {
-    connectedIndicator = indicatorNodes.find(n => n.id === data.indicatorNodeId);
+    connectedIndicator = indicatorNodes.find((n) => n.id === data.indicatorNodeId);
   }
 
   // Fallback: check edges for connection to SL node (either direction)
   if (!connectedIndicator) {
-    const connectedEdge = edges.find(e => e.target === slNode.id || e.source === slNode.id);
+    const connectedEdge = edges.find((e) => e.target === slNode.id || e.source === slNode.id);
     if (connectedEdge) {
-      const otherId = connectedEdge.target === slNode.id ? connectedEdge.source : connectedEdge.target;
-      connectedIndicator = indicatorNodes.find(n => n.id === otherId);
+      const otherId =
+        connectedEdge.target === slNode.id ? connectedEdge.source : connectedEdge.target;
+      connectedIndicator = indicatorNodes.find((n) => n.id === otherId);
     }
   }
 
   if (!connectedIndicator) {
     // No indicator connected - use default fixed pips with warning
-    code.inputs.push({ name: "InpStopLoss", type: "double", value: 50, comment: "Stop Loss (pips) - No indicator connected", isOptimizable: true });
+    code.inputs.push({
+      name: "InpStopLoss",
+      type: "double",
+      value: 50,
+      comment: "Stop Loss (pips) - No indicator connected",
+      isOptimizable: true,
+    });
     code.onTick.push("double slPips = InpStopLoss * 10; // Fallback: no indicator connected");
     return;
   }
@@ -131,7 +212,13 @@ function generateIndicatorBasedSL(
     switch (indData.indicatorType) {
       case "bollinger-bands":
         // Use distance from price to opposite Bollinger Band as SL
-        code.inputs.push({ name: "InpBBSLBuffer", type: "double", value: 5, comment: "Additional buffer pips for BB SL", isOptimizable: true });
+        code.inputs.push({
+          name: "InpBBSLBuffer",
+          type: "double",
+          value: 5,
+          comment: "Additional buffer pips for BB SL",
+          isOptimizable: true,
+        });
         code.onTick.push("// Indicator-based SL using Bollinger Bands");
         code.onTick.push("double slPips;");
         code.onTick.push("double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
@@ -145,7 +232,13 @@ function generateIndicatorBasedSL(
 
       case "moving-average":
         // Use distance from price to MA as SL
-        code.inputs.push({ name: "InpMASLMultiplier", type: "double", value: 1.5, comment: "MA SL distance multiplier", isOptimizable: true });
+        code.inputs.push({
+          name: "InpMASLMultiplier",
+          type: "double",
+          value: 1.5,
+          comment: "MA SL distance multiplier",
+          isOptimizable: true,
+        });
         code.onTick.push("// Indicator-based SL using Moving Average");
         code.onTick.push("double slPips;");
         code.onTick.push("double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
@@ -157,14 +250,26 @@ function generateIndicatorBasedSL(
 
       case "atr":
         // Use ATR value directly as SL (similar to ATR_BASED but from connected node)
-        code.inputs.push({ name: "InpATRSLMultiplier", type: "double", value: 1.5, comment: "ATR SL multiplier", isOptimizable: true });
+        code.inputs.push({
+          name: "InpATRSLMultiplier",
+          type: "double",
+          value: 1.5,
+          comment: "ATR SL multiplier",
+          isOptimizable: true,
+        });
         code.onTick.push("// Indicator-based SL using ATR");
         code.onTick.push(`double slPips = (${varPrefix}Buffer[0] / _Point) * InpATRSLMultiplier;`);
         break;
 
       case "adx":
         // Use ATR-style calculation scaled by ADX strength
-        code.inputs.push({ name: "InpADXSLBase", type: "double", value: 50, comment: "Base SL pips when ADX is at trend level", isOptimizable: true });
+        code.inputs.push({
+          name: "InpADXSLBase",
+          type: "double",
+          value: 50,
+          comment: "Base SL pips when ADX is at trend level",
+          isOptimizable: true,
+        });
         code.onTick.push("// Indicator-based SL using ADX (scaled by trend strength)");
         code.onTick.push(`double adxValue = ${varPrefix}MainBuffer[0];`);
         code.onTick.push("// Stronger trend = tighter SL, weaker trend = wider SL");
@@ -174,48 +279,101 @@ function generateIndicatorBasedSL(
 
       default:
         // RSI, MACD etc. not typically used for SL - use default
-        code.inputs.push({ name: "InpStopLoss", type: "double", value: 50, comment: "Stop Loss (pips)", isOptimizable: true });
-        code.onTick.push(`double slPips = InpStopLoss * 10; // ${indData.indicatorType} not suitable for SL calculation`);
+        code.inputs.push({
+          name: "InpStopLoss",
+          type: "double",
+          value: 50,
+          comment: "Stop Loss (pips)",
+          isOptimizable: true,
+        });
+        code.onTick.push(
+          `double slPips = InpStopLoss * 10; // ${indData.indicatorType} not suitable for SL calculation`
+        );
         break;
     }
   } else {
     // Unknown indicator type
-    code.inputs.push({ name: "InpStopLoss", type: "double", value: 50, comment: "Stop Loss (pips)", isOptimizable: true });
+    code.inputs.push({
+      name: "InpStopLoss",
+      type: "double",
+      value: 50,
+      comment: "Stop Loss (pips)",
+      isOptimizable: true,
+    });
     code.onTick.push("double slPips = InpStopLoss * 10; // Unknown indicator type");
   }
 }
 
-export function generateTakeProfitCode(
-  node: BuilderNode,
-  code: GeneratedCode
-): void {
+export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data as TakeProfitNodeData;
 
   const tpGroup = "Take Profit";
   switch (data.method) {
     case "FIXED_PIPS":
-      code.inputs.push(createInput(node, "fixedPips", "InpTakeProfit", "double", data.fixedPips, "Take Profit (pips)", tpGroup));
+      code.inputs.push(
+        createInput(
+          node,
+          "fixedPips",
+          "InpTakeProfit",
+          "double",
+          data.fixedPips,
+          "Take Profit (pips)",
+          tpGroup
+        )
+      );
       code.onTick.push("double tpPips = InpTakeProfit * 10; // Convert to points");
       break;
 
     case "RISK_REWARD":
-      code.inputs.push(createInput(node, "riskRewardRatio", "InpRiskReward", "double", data.riskRewardRatio, "Risk:Reward Ratio", tpGroup));
+      code.inputs.push(
+        createInput(
+          node,
+          "riskRewardRatio",
+          "InpRiskReward",
+          "double",
+          data.riskRewardRatio,
+          "Risk:Reward Ratio",
+          tpGroup
+        )
+      );
       code.onTick.push("double tpPips = slPips * InpRiskReward;");
       break;
 
     case "ATR_BASED": {
-      code.inputs.push(createInput(node, "atrMultiplier", "InpTPATRMultiplier", "double", data.atrMultiplier, "ATR Multiplier for TP", tpGroup));
+      code.inputs.push(
+        createInput(
+          node,
+          "atrMultiplier",
+          "InpTPATRMultiplier",
+          "double",
+          data.atrMultiplier,
+          "ATR Multiplier for TP",
+          tpGroup
+        )
+      );
       // Check if SL already created an atrHandle; if so, reuse its buffer
-      const hasAtrHandle = code.globalVariables.some(v => v.startsWith("int atrHandle"));
+      const hasAtrHandle = code.globalVariables.some((v) => v.startsWith("int atrHandle"));
       if (hasAtrHandle) {
         code.onTick.push("double tpPips = (atrBuffer[0] / _Point) * InpTPATRMultiplier;");
       } else {
         // Create a dedicated ATR handle for TP
-        code.inputs.push(createInput(node, "atrPeriod", "InpTPATRPeriod", "int", data.atrPeriod, "ATR Period for TP", tpGroup));
+        code.inputs.push(
+          createInput(
+            node,
+            "atrPeriod",
+            "InpTPATRPeriod",
+            "int",
+            data.atrPeriod,
+            "ATR Period for TP",
+            tpGroup
+          )
+        );
         code.globalVariables.push("int tpAtrHandle = INVALID_HANDLE;");
         code.globalVariables.push("double tpAtrBuffer[];");
         code.onInit.push("tpAtrHandle = iATR(_Symbol, PERIOD_CURRENT, InpTPATRPeriod);");
-        code.onInit.push('if(tpAtrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for TP"); return(INIT_FAILED); }');
+        code.onInit.push(
+          'if(tpAtrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for TP"); return(INIT_FAILED); }'
+        );
         code.onDeinit.push("if(tpAtrHandle != INVALID_HANDLE) IndicatorRelease(tpAtrHandle);");
         code.onInit.push("ArraySetAsSeries(tpAtrBuffer, true);");
         code.onTick.push("if(CopyBuffer(tpAtrHandle, 0, 0, 1, tpAtrBuffer) < 1) return;");
@@ -255,23 +413,39 @@ export function generateEntryLogic(
       if ("indicatorType" in indData) {
         switch (indData.indicatorType) {
           case "moving-average":
-            buyConditions.push(`(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
-            sellConditions.push(`(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`);
+            buyConditions.push(
+              `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+            );
+            sellConditions.push(
+              `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+            );
             break;
 
           case "rsi":
-            buyConditions.push(`(DoubleLE(${varPrefix}Buffer[1], InpRSI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[0], InpRSI${indIndex}Oversold))`);
-            sellConditions.push(`(DoubleGE(${varPrefix}Buffer[1], InpRSI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[0], InpRSI${indIndex}Overbought))`);
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[1], InpRSI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[0], InpRSI${indIndex}Oversold))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[1], InpRSI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[0], InpRSI${indIndex}Overbought))`
+            );
             break;
 
           case "macd":
-            buyConditions.push(`(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
-            sellConditions.push(`(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`);
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+            );
             break;
 
           case "bollinger-bands":
-            buyConditions.push(`(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`);
-            sellConditions.push(`(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`);
+            buyConditions.push(
+              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`
+            );
             break;
 
           case "atr":
@@ -280,8 +454,23 @@ export function generateEntryLogic(
             break;
 
           case "adx":
-            buyConditions.push(`(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[0], ${varPrefix}MinusDIBuffer[0]))`);
-            sellConditions.push(`(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[0], ${varPrefix}PlusDIBuffer[0]))`);
+            buyConditions.push(
+              `(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[0], ${varPrefix}MinusDIBuffer[0]))`
+            );
+            sellConditions.push(
+              `(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[0], ${varPrefix}PlusDIBuffer[0]))`
+            );
+            break;
+
+          case "stochastic":
+            // Buy: %K crosses up from oversold zone
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}MainBuffer[1], InpStoch${indIndex}Oversold) && DoubleGT(${varPrefix}MainBuffer[0], InpStoch${indIndex}Oversold))`
+            );
+            // Sell: %K crosses down from overbought zone
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}MainBuffer[1], InpStoch${indIndex}Overbought) && DoubleLT(${varPrefix}MainBuffer[0], InpStoch${indIndex}Overbought))`
+            );
             break;
         }
       }
@@ -366,9 +555,13 @@ export function generateEntryLogic(
     code.onTick.push(buyCheck);
     code.onTick.push("   {");
     if (hasDaily) {
-      code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");
+      code.onTick.push(
+        "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+      );
     } else {
-      code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+      code.onTick.push(
+        "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+      );
     }
     code.onTick.push("   }");
   }
@@ -381,9 +574,13 @@ export function generateEntryLogic(
     code.onTick.push(sellCheck);
     code.onTick.push("   {");
     if (hasDaily) {
-      code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");
+      code.onTick.push(
+        "      if(OpenSell(sellLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+      );
     } else {
-      code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;");
+      code.onTick.push(
+        "      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+      );
     }
     code.onTick.push("   }");
   }
