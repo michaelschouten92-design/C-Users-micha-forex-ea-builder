@@ -97,7 +97,11 @@ function generateCustomTimesCode(
     saturday: 6,
   };
 
-  const activeDays = Object.entries(data.days)
+  const days = data.days ?? {
+    monday: true, tuesday: true, wednesday: true,
+    thursday: true, friday: true, saturday: false, sunday: false,
+  };
+  const activeDays = Object.entries(days)
     .filter(([, active]) => active)
     .map(([day]) => dayMap[day as keyof TradingDays]);
 
@@ -119,10 +123,11 @@ function generateCustomTimesCode(
   code.onTick.push("{");
 
   // Generate time slot conditions
-  if (data.timeSlots.length === 0) {
+  const timeSlots = data.timeSlots ?? [];
+  if (timeSlots.length === 0) {
     code.onTick.push(`   ${varName} = true; // No time slots defined, trade all day`);
   } else {
-    const slotConditions = data.timeSlots.map((slot) => {
+    const slotConditions = timeSlots.map((slot) => {
       const startMinutes = slot.startHour * 60 + slot.startMinute;
       const endMinutes = slot.endHour * 60 + slot.endMinute;
 
@@ -136,7 +141,7 @@ function generateCustomTimesCode(
     });
 
     code.onTick.push(`   // Time slots (${data.useServerTime ? "Server Time" : "GMT"})`);
-    data.timeSlots.forEach((slot, i) => {
+    timeSlots.forEach((slot, i) => {
       const startStr = `${slot.startHour.toString().padStart(2, "0")}:${slot.startMinute.toString().padStart(2, "0")}`;
       const endStr = `${slot.endHour.toString().padStart(2, "0")}:${slot.endMinute.toString().padStart(2, "0")}`;
       code.onTick.push(`   // Slot ${i + 1}: ${startStr} - ${endStr}`);
