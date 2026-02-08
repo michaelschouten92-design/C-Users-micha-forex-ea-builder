@@ -84,13 +84,22 @@ export default async function Home() {
             <span className="text-xl font-bold text-white">AlgoStudio</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+            <Link
+              href="/pricing"
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
               Pricing
             </Link>
-            <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+            <Link
+              href="/blog"
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
               Blog
             </Link>
-            <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+            <Link
+              href="/login"
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
               Sign in
             </Link>
             <Link
@@ -136,7 +145,7 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Builder Preview */}
+          {/* Builder Preview Video */}
           <div className="mt-16 relative overflow-hidden">
             {/* Glow effect */}
             <div className="absolute inset-4 bg-gradient-to-r from-[#4F46E5]/20 via-[#A78BFA]/20 to-[#22D3EE]/20 blur-3xl -z-10" />
@@ -157,115 +166,10 @@ export default async function Home() {
                 </div>
               </div>
 
-              {/* Builder UI mockup */}
-              <div className="p-3 flex gap-3 min-h-[250px] md:min-h-[300px] overflow-hidden">
-                {/* Left sidebar - Components */}
-                <div className="hidden lg:block w-40 flex-shrink-0 bg-[#0D0117]/50 rounded-lg p-3 border border-[rgba(79,70,229,0.1)]">
-                  <div className="text-xs text-[#64748B] mb-3 font-medium">Components</div>
-                  <div className="space-y-2">
-                    <div className="bg-[#1A0626] rounded px-3 py-2 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] cursor-default">
-                      Moving Average
-                    </div>
-                    <div className="bg-[#1A0626] rounded px-3 py-2 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] cursor-default">
-                      RSI
-                    </div>
-                    <div className="bg-[#1A0626] rounded px-3 py-2 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] cursor-default">
-                      MACD
-                    </div>
-                    <div className="bg-[#1A0626] rounded px-3 py-2 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] cursor-default">
-                      Bollinger Bands
-                    </div>
-                    <div className="bg-[#4F46E5]/20 rounded px-3 py-2 text-xs text-[#A78BFA] border border-[#4F46E5]/40 cursor-default">
-                      + Add Condition
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main canvas */}
-                <div className="flex-1 min-w-0 bg-[#0D0117]/30 rounded-lg p-4 border border-[rgba(79,70,229,0.1)] relative overflow-hidden">
-                  {/* Grid pattern */}
-                  <div className="absolute inset-0 opacity-5" style={{
-                    backgroundImage: 'radial-gradient(circle, #A78BFA 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
-                  }} />
-
-                  {/* Strategy blocks */}
-                  <div className="relative space-y-3">
-                    {/* Entry condition block */}
-                    <div className="bg-[#1A0626] rounded-lg p-3 border border-[#22D3EE]/30 shadow-lg shadow-[#22D3EE]/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-[#22D3EE]" />
-                        <span className="text-xs font-medium text-[#22D3EE]">Entry Condition</span>
-                      </div>
-                      <div className="text-xs text-[#94A3B8]">
-                        MA(20) crosses above MA(50)
-                      </div>
-                    </div>
-
-                    {/* Connector line */}
-                    <div className="flex justify-center">
-                      <div className="w-0.5 h-6 bg-gradient-to-b from-[#22D3EE]/50 to-[#4F46E5]/50" />
-                    </div>
-
-                    {/* Filter block */}
-                    <div className="bg-[#1A0626] rounded-lg p-3 border border-[#A78BFA]/30 shadow-lg shadow-[#A78BFA]/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-[#A78BFA]" />
-                        <span className="text-xs font-medium text-[#A78BFA]">Filter</span>
-                      </div>
-                      <div className="text-xs text-[#94A3B8]">
-                        RSI(14) {"<"} 70
-                      </div>
-                    </div>
-
-                    {/* Connector line */}
-                    <div className="flex justify-center">
-                      <div className="w-0.5 h-6 bg-gradient-to-b from-[#A78BFA]/50 to-[#22C55E]/50" />
-                    </div>
-
-                    {/* Action block */}
-                    <div className="bg-[#1A0626] rounded-lg p-3 border border-[#22C55E]/30 shadow-lg shadow-[#22C55E]/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full bg-[#22C55E]" />
-                        <span className="text-xs font-medium text-[#22C55E]">Action</span>
-                      </div>
-                      <div className="text-xs text-[#94A3B8]">
-                        Buy 0.1 lots with 50 pip SL
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right sidebar - Properties */}
-                <div className="hidden xl:block w-48 flex-shrink-0 bg-[#0D0117]/50 rounded-lg p-3 border border-[rgba(79,70,229,0.1)]">
-                  <div className="text-xs text-[#64748B] mb-3 font-medium">Properties</div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-[#64748B] block mb-1">Stop Loss</label>
-                      <div className="bg-[#1A0626] rounded px-3 py-1.5 text-xs text-white border border-[rgba(79,70,229,0.2)]">
-                        50 pips
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[#64748B] block mb-1">Take Profit</label>
-                      <div className="bg-[#1A0626] rounded px-3 py-1.5 text-xs text-white border border-[rgba(79,70,229,0.2)]">
-                        100 pips
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-[#64748B] block mb-1">Lot Size</label>
-                      <div className="bg-[#1A0626] rounded px-3 py-1.5 text-xs text-white border border-[rgba(79,70,229,0.2)]">
-                        0.1
-                      </div>
-                    </div>
-                    <div className="pt-2">
-                      <div className="bg-[#4F46E5] rounded-lg px-3 py-2 text-xs text-white text-center font-medium">
-                        Export EA
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Demo video */}
+              <video className="w-full" autoPlay loop muted playsInline poster="/demo-poster.png">
+                <source src="/demo.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
@@ -287,21 +191,42 @@ export default async function Home() {
             {/* Feature 1 */}
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="w-12 h-12 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                <svg
+                  className="w-6 h-6 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Visual Strategy Builder</h3>
               <p className="text-sm text-[#94A3B8]">
-                Drag and drop indicators, conditions, and actions. Build complex strategies without touching code.
+                Drag and drop indicators, conditions, and actions. Build complex strategies without
+                touching code.
               </p>
             </div>
 
             {/* Feature 2 */}
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="w-12 h-12 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="w-6 h-6 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">One-Click Export</h3>
@@ -313,8 +238,18 @@ export default async function Home() {
             {/* Feature 3 */}
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="w-12 h-12 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  className="w-6 h-6 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Fast Iteration</h3>
@@ -330,12 +265,8 @@ export default async function Home() {
       <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              How it works
-            </h2>
-            <p className="text-[#94A3B8]">
-              From idea to live trading in three steps
-            </p>
+            <h2 className="text-3xl font-bold text-white mb-4">How it works</h2>
+            <p className="text-[#94A3B8]">From idea to live trading in three steps</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -346,7 +277,8 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Design Your Strategy</h3>
               <p className="text-sm text-[#94A3B8]">
-                Use our visual builder to define entry and exit conditions with technical indicators.
+                Use our visual builder to define entry and exit conditions with technical
+                indicators.
               </p>
             </div>
 
@@ -379,28 +311,33 @@ export default async function Home() {
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Trusted by traders worldwide
-            </h2>
-            <p className="text-[#94A3B8]">
-              See what our users have to say
-            </p>
+            <h2 className="text-3xl font-bold text-white mb-4">Trusted by traders worldwide</h2>
+            <p className="text-[#94A3B8]">See what our users have to say</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-[#FBBF24]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
               <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
-                &ldquo;I&apos;ve been wanting to automate my MA crossover strategy for months but couldn&apos;t code MQL5. AlgoStudio let me build and export it in under an hour.&rdquo;
+                &ldquo;I&apos;ve been wanting to automate my MA crossover strategy for months but
+                couldn&apos;t code MQL5. AlgoStudio let me build and export it in under an
+                hour.&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#4F46E5]/30 flex items-center justify-center text-xs text-[#A78BFA] font-bold">J</div>
+                <div className="w-8 h-8 rounded-full bg-[#4F46E5]/30 flex items-center justify-center text-xs text-[#A78BFA] font-bold">
+                  J
+                </div>
                 <div>
                   <div className="text-sm text-white font-medium">James R.</div>
                   <div className="text-xs text-[#64748B]">Forex Trader</div>
@@ -411,16 +348,25 @@ export default async function Home() {
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-[#FBBF24]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
               <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
-                &ldquo;The visual builder is incredibly intuitive. I built a breakout strategy with RSI filters and trailing stop in one afternoon. The exported EA runs perfectly in MT5.&rdquo;
+                &ldquo;The visual builder is incredibly intuitive. I built a breakout strategy with
+                RSI filters and trailing stop in one afternoon. The exported EA runs perfectly in
+                MT5.&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#22D3EE]/30 flex items-center justify-center text-xs text-[#22D3EE] font-bold">S</div>
+                <div className="w-8 h-8 rounded-full bg-[#22D3EE]/30 flex items-center justify-center text-xs text-[#22D3EE] font-bold">
+                  S
+                </div>
                 <div>
                   <div className="text-sm text-white font-medium">Sarah M.</div>
                   <div className="text-xs text-[#64748B]">Swing Trader</div>
@@ -431,16 +377,24 @@ export default async function Home() {
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-4 h-4 text-[#FBBF24]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-[#FBBF24]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
               <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
-                &ldquo;I tested several EA builders and AlgoStudio is the cleanest. The generated MQL5 code is well-structured and easy to customize further if needed.&rdquo;
+                &ldquo;I tested several EA builders and AlgoStudio is the cleanest. The generated
+                MQL5 code is well-structured and easy to customize further if needed.&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#22C55E]/30 flex items-center justify-center text-xs text-[#22C55E] font-bold">D</div>
+                <div className="w-8 h-8 rounded-full bg-[#22C55E]/30 flex items-center justify-center text-xs text-[#22C55E] font-bold">
+                  D
+                </div>
                 <div>
                   <div className="text-sm text-white font-medium">David K.</div>
                   <div className="text-xs text-[#64748B]">Algo Developer</div>
@@ -455,9 +409,7 @@ export default async function Home() {
       <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Frequently asked questions
-            </h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Frequently asked questions</h2>
           </div>
 
           <div className="space-y-4">
@@ -493,13 +445,21 @@ export default async function Home() {
               >
                 <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-sm list-none">
                   {item.q}
-                  <svg className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </summary>
-                <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">
-                  {item.a}
-                </div>
+                <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">{item.a}</div>
               </details>
             ))}
           </div>
@@ -510,12 +470,8 @@ export default async function Home() {
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Simple pricing
-            </h2>
-            <p className="text-[#94A3B8]">
-              Start free, upgrade when you need more
-            </p>
+            <h2 className="text-3xl font-bold text-white mb-4">Simple pricing</h2>
+            <p className="text-[#94A3B8]">Start free, upgrade when you need more</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -527,20 +483,50 @@ export default async function Home() {
               </div>
               <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Up to 3 projects
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Visual builder
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   2 exports/month
                 </li>
@@ -557,25 +543,57 @@ export default async function Home() {
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <h3 className="text-lg font-semibold text-white">{PLANS.STARTER.name}</h3>
               <div className="mt-2 mb-4">
-                <span className="text-3xl font-bold text-white">{formatPrice(PLANS.STARTER.prices!.monthly.amount, "eur")}</span>
+                <span className="text-3xl font-bold text-white">
+                  {formatPrice(PLANS.STARTER.prices!.monthly.amount, "eur")}
+                </span>
                 <span className="text-[#64748B] text-sm">/mo</span>
               </div>
               <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Up to 15 projects
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   10 exports/month
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   MQL5 source code
                 </li>
@@ -597,25 +615,57 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-semibold text-white">{PLANS.PRO.name}</h3>
               <div className="mt-2 mb-4">
-                <span className="text-3xl font-bold text-white">{formatPrice(PLANS.PRO.prices!.monthly.amount, "eur")}</span>
+                <span className="text-3xl font-bold text-white">
+                  {formatPrice(PLANS.PRO.prices!.monthly.amount, "eur")}
+                </span>
                 <span className="text-[#64748B] text-sm">/mo</span>
               </div>
               <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Unlimited everything
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   MQL5 source code
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-[#22D3EE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Priority support
                 </li>
@@ -634,9 +684,7 @@ export default async function Home() {
       {/* CTA Section */}
       <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to automate your trading?
-          </h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to automate your trading?</h2>
           <p className="text-[#94A3B8] mb-8">
             Join traders who build their own Expert Advisors without writing code.
           </p>
@@ -658,22 +706,34 @@ export default async function Home() {
               <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/pricing" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/pricing"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="/login" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/login"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Sign in
                   </Link>
                 </li>
                 <li>
-                  <Link href="/login?mode=register" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/login?mode=register"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Register
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/blog"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Blog
                   </Link>
                 </li>
@@ -685,12 +745,18 @@ export default async function Home() {
               <h3 className="text-sm font-semibold text-white mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/privacy"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/terms"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Terms of Service
                   </Link>
                 </li>
@@ -702,12 +768,18 @@ export default async function Home() {
               <h3 className="text-sm font-semibold text-white mb-4">Support</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/contact" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <Link
+                    href="/contact"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:support@algostudio.nl" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <a
+                    href="mailto:support@algostudio.nl"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     support@algostudio.nl
                   </a>
                 </li>
@@ -719,7 +791,12 @@ export default async function Home() {
               <h3 className="text-sm font-semibold text-white mb-4">Community</h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="https://whop.com/algostudio" target="_blank" rel="noopener noreferrer" className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors">
+                  <a
+                    href="https://whop.com/algostudio"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
                     Whop
                   </a>
                 </li>
