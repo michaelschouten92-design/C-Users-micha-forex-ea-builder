@@ -300,6 +300,15 @@ export const resendVerificationRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
 });
 
+/**
+ * Rate limiter for contact form
+ * Limits: 3 messages per hour per IP
+ */
+export const contactFormRateLimiter = createRateLimiter({
+  limit: 3,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

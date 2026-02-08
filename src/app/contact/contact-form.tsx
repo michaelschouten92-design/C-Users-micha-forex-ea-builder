@@ -7,15 +7,33 @@ export function ContactForm() {
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const mailtoSubject = encodeURIComponent(subject || "AlgoStudio Contact");
-    const mailtoBody = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
-    window.location.href = `mailto:contact@algo-studio.com?subject=${mailtoSubject}&body=${mailtoBody}`;
-    setSent(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (sent) {
@@ -31,15 +49,16 @@ export function ContactForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-white font-medium">Your email client should have opened.</p>
-        <p className="text-sm text-[#94A3B8] mt-1">
-          Didn&apos;t work?{" "}
-          <a href="mailto:contact@algo-studio.com" className="text-[#A78BFA] hover:underline">
-            Email us directly
-          </a>
-        </p>
+        <p className="text-white font-medium">Message sent!</p>
+        <p className="text-sm text-[#94A3B8] mt-1">We&apos;ll get back to you within 24 hours.</p>
         <button
-          onClick={() => setSent(false)}
+          onClick={() => {
+            setSent(false);
+            setName("");
+            setEmail("");
+            setSubject("");
+            setMessage("");
+          }}
           className="text-sm text-[#64748B] hover:text-white mt-3 transition-colors"
         >
           Send another message
@@ -50,10 +69,15 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="contact-name" className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Name
+            Name *
           </label>
           <input
             id="contact-name"
@@ -67,7 +91,7 @@ export function ContactForm() {
         </div>
         <div>
           <label htmlFor="contact-email" className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Email
+            Email *
           </label>
           <input
             id="contact-email"
@@ -109,9 +133,10 @@ export function ContactForm() {
       </div>
       <button
         type="submit"
-        className="w-full bg-[#4F46E5] text-white py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+        disabled={loading}
+        className="w-full bg-[#4F46E5] text-white py-2.5 rounded-lg font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
       >
-        Send Message
+        {loading ? "Sending..." : "Send Message"}
       </button>
     </form>
   );

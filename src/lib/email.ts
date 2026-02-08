@@ -307,6 +307,54 @@ export async function sendAccountDeletedEmail(email: string) {
   }
 }
 
+export async function sendContactFormEmail(
+  senderName: string,
+  senderEmail: string,
+  subject: string,
+  message: string
+) {
+  if (!resend) {
+    log.warn("Email not configured - skipping contact form email");
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: "contact@algo-studio.com",
+    replyTo: senderEmail,
+    subject: `[Contact] ${subject || "New message"}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">New contact message</h1>
+            <table style="width: 100%; margin: 0 0 24px 0; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">From:</td><td style="padding: 6px 0; color: #ffffff;">${senderName}</td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${senderEmail}" style="color: #A78BFA;">${senderEmail}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Subject:</td><td style="padding: 6px 0; color: #ffffff;">${subject || "—"}</td></tr>
+            </table>
+            <div style="padding: 20px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); white-space: pre-wrap; line-height: 1.6;">
+              ${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error }, "Failed to send contact form email");
+    throw new Error("Failed to send message");
+  }
+
+  log.info({ from: senderEmail.substring(0, 3) + "***" }, "Contact form email sent");
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");
