@@ -20,22 +20,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
-    default: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+    default: "AlgoStudio – No-Code MT5 EA Builder | Visual EA & Strategy Builder",
     template: "%s | AlgoStudio",
   },
   description:
-    "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+    "Build and export fully functional MetaTrader 5 Expert Advisors without coding. Drag & drop visual strategy builder, powerful backtesting & free plan.",
   openGraph: {
-    title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+    title: "AlgoStudio – No-Code MT5 EA Builder | Visual EA & Strategy Builder",
     description:
-      "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual strategy builder with drag-and-drop blocks.",
+      "Build and export fully functional MetaTrader 5 Expert Advisors without coding. Drag & drop visual strategy builder, powerful backtesting & free plan.",
     type: "website",
     siteName: "AlgoStudio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
-    description: "Build, test, and export MetaTrader 5 Expert Advisors without writing code.",
+    title: "AlgoStudio – No-Code MT5 EA Builder | Visual EA & Strategy Builder",
+    description: "Build and export fully functional MetaTrader 5 Expert Advisors without coding.",
   },
 };
 

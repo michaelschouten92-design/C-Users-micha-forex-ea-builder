@@ -7,9 +7,9 @@ import { PLANS, formatPrice } from "@/lib/plans";
 import { MobileNav } from "@/components/mobile-nav";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+  title: "AlgoStudio – No-Code MT5 EA Builder | Visual EA & Strategy Builder",
   description:
-    "Build, test, and export MetaTrader 5 Expert Advisors without writing code. Visual drag-and-drop strategy builder for forex trading bots.",
+    "Build and export fully functional MetaTrader 5 Expert Advisors without coding. Drag & drop visual strategy builder, powerful backtesting & free plan.",
   alternates: { canonical: "/" },
 };
 
@@ -348,7 +348,7 @@ export default async function Home() {
               optimization in the MT5 Strategy Tester.
             </p>
             <p>
-              <Link href="/no-code-ea-builder" className="text-[#22D3EE] hover:underline">
+              <Link href="/no-code-mt5-ea-builder" className="text-[#22D3EE] hover:underline">
                 Learn more about no-code EA building &rarr;
               </Link>
             </p>
@@ -890,10 +890,10 @@ export default async function Home() {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href="/no-code-ea-builder"
+                    href="/no-code-mt5-ea-builder"
                     className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                   >
-                    No-Code EA Builder
+                    No-Code MT5 EA Builder
                   </Link>
                 </li>
                 <li>
