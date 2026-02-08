@@ -21,7 +21,7 @@ export async function GET() {
   const templates = await prisma.userTemplate.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, createdAt: true },
+    select: { id: true, name: true, buildJson: true, createdAt: true },
   });
 
   return NextResponse.json(templates);

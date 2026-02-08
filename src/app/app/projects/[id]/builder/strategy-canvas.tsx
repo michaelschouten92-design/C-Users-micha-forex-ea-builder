@@ -291,10 +291,25 @@ export function StrategyCanvas({
     [setNodes, setEdges, setViewport, resetHistory]
   );
 
-  // Load a template preset
-  const onLoadTemplate = useCallback(
-    (preset: StrategyPreset) => {
-      const { buildJson } = preset;
+  // User saved templates
+  interface UserTemplate {
+    id: string;
+    name: string;
+    buildJson: BuildJsonSchema;
+  }
+  const [userTemplates, setUserTemplates] = useState<UserTemplate[]>([]);
+
+  useEffect(() => {
+    if (nodes.length > 0) return;
+    fetch("/api/templates")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setUserTemplates(data))
+      .catch(() => {});
+  }, [nodes.length]);
+
+  // Load buildJson onto canvas (shared by presets and user templates)
+  const loadBuildJson = useCallback(
+    (buildJson: BuildJsonSchema) => {
       setNodes(buildJson.nodes as Node[]);
       setEdges(buildJson.edges as Edge[]);
       setSettings(buildJson.settings ?? { ...DEFAULT_SETTINGS });
@@ -306,6 +321,14 @@ export function StrategyCanvas({
       resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
     },
     [setNodes, setEdges, setSettings, setViewport, resetHistory]
+  );
+
+  // Load a template preset
+  const onLoadTemplate = useCallback(
+    (preset: StrategyPreset) => {
+      loadBuildJson(preset.buildJson);
+    },
+    [loadBuildJson]
   );
 
   // Undo handler for button
@@ -398,6 +421,31 @@ export function StrategyCanvas({
                   </p>
                 </button>
               ))}
+
+              {/* User saved templates */}
+              {userTemplates.length > 0 && (
+                <>
+                  <div className="px-1 pt-2">
+                    <h3 className="text-sm font-semibold text-white">Your templates</h3>
+                  </div>
+                  {userTemplates.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => loadBuildJson(t.buildJson)}
+                      className="w-full text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all duration-200 group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[#22D3EE] group-hover:text-white transition-colors">
+                          {t.name}
+                        </span>
+                        <svg className="w-4 h-4 text-[#64748B] group-hover:text-[#22D3EE] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
 
