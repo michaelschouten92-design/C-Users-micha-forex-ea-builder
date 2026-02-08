@@ -54,6 +54,7 @@ export interface CustomTimesNodeData extends BaseNodeData {
   days: TradingDays;
   timeSlots: TimeSlot[];
   useServerTime?: boolean;
+  closeOnSessionEnd?: boolean;
 }
 
 export type TimingNodeData = TradingSessionNodeData | AlwaysNodeData | CustomTimesNodeData;

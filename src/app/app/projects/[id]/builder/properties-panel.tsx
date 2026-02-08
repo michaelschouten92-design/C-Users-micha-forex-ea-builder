@@ -561,7 +561,20 @@ function CustomTimesFields({
         </div>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-2 space-y-2">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.closeOnSessionEnd ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ closeOnSessionEnd: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Close trades on session end
+        </label>
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input
             type="checkbox"
@@ -576,6 +589,11 @@ function CustomTimesFields({
           Use broker server time
         </label>
       </div>
+      {data.closeOnSessionEnd && (
+        <div className="text-[10px] text-[#22D3EE] mt-1">
+          All open positions will be closed when the trading session ends.
+        </div>
+      )}
       {data.useServerTime && (
         <div className="text-[10px] text-[#FBBF24] mt-1">
           Time slots will be compared against your broker&apos;s server clock (TimeCurrent) instead

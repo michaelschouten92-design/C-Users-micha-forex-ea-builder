@@ -53,6 +53,7 @@ export function CustomTimesNode({ id, data, selected }: Props) {
             {timeSlots.length > 1 && ` +${timeSlots.length - 1} more`}
           </div>
         )}
+        {data.closeOnSessionEnd && <div className="text-xs text-orange-400">Close on end</div>}
       </div>
     </BaseNode>
   );
