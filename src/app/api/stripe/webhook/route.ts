@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
-import { sendPaymentFailedEmail, sendPlanChangeEmail, sendRenewalReminderEmail } from "@/lib/email";
+import { sendPaymentFailedEmail, sendPlanChangeEmail } from "@/lib/email";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -102,12 +102,6 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
-        break;
-      }
-
-      case "invoice.upcoming": {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoiceUpcoming(invoice);
         break;
       }
     }
@@ -390,36 +384,4 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       .paymentFailed(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment failure recorded"));
   }
-}
-
-async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
-  const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
-
-  // Only send reminder for subscription invoices (not one-time charges)
-  const inv = invoice as unknown as { subscription?: string | { id: string } };
-  const subscriptionId = getStringId(inv.subscription);
-  if (!subscriptionId) return;
-
-  const subscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-    include: { user: { select: { email: true } } },
-  });
-
-  if (!subscription?.user?.email) return;
-
-  // Stripe sends invoice.upcoming ~3 days before renewal
-  const daysUntilRenewal = subscription.currentPeriodEnd
-    ? Math.max(
-        1,
-        Math.ceil((subscription.currentPeriodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      )
-    : 3;
-
-  const planName = subscription.tier === "PRO" ? "Pro" : "Starter";
-  const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app/settings`;
-
-  sendRenewalReminderEmail(subscription.user.email, daysUntilRenewal, planName, settingsUrl).catch(
-    (err) => log.warn({ err }, "Renewal reminder email send failed")
-  );
 }
