@@ -397,7 +397,11 @@ export function StrategyCanvas({
 
           {/* Empty canvas: Template cards on the right */}
           {nodes.length === 0 && (
-            <div className="absolute top-4 right-4 z-10 w-[260px] space-y-3">
+            <div
+              className="absolute top-4 right-4 z-10 w-[260px] space-y-3"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
               <div className="px-1">
                 <h3 className="text-sm font-semibold text-white">Start from a template</h3>
                 <p className="text-xs text-[#64748B] mt-0.5">Or drag blocks from the left panel</p>
