@@ -145,7 +145,7 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Builder Preview Video */}
+          {/* Builder Preview Screenshot */}
           <div className="mt-16 relative overflow-hidden">
             {/* Glow effect */}
             <div className="absolute inset-4 bg-gradient-to-r from-[#4F46E5]/20 via-[#A78BFA]/20 to-[#22D3EE]/20 blur-3xl -z-10" />
@@ -166,10 +166,12 @@ export default async function Home() {
                 </div>
               </div>
 
-              {/* Demo video */}
-              <video className="w-full" autoPlay loop muted playsInline poster="/demo-poster.png">
-                <source src="/demo.mp4" type="video/mp4" />
-              </video>
+              {/* Demo screenshot */}
+              <img
+                src="/demo-screenshot.png"
+                alt="AlgoStudio visual strategy builder interface"
+                className="w-full"
+              />
             </div>
           </div>
         </div>
