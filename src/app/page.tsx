@@ -317,6 +317,194 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* SEO Section 1: Build MT5 EAs Without Coding */}
+      <section className="py-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            Build MT5 Expert Advisors without coding
+          </h2>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              Building a MetaTrader 5 Expert Advisor traditionally requires learning MQL5 — a
+              C++-based programming language that takes months to master. For most traders, this is
+              an impossible barrier between their strategy ideas and live automated trading.
+            </p>
+            <p>
+              AlgoStudio removes that barrier completely. Instead of writing hundreds of lines of
+              code, you design your strategy visually by connecting blocks on a canvas. Each block
+              represents a trading concept you already understand: indicators like{" "}
+              <strong className="text-white">Moving Averages</strong>,{" "}
+              <strong className="text-white">RSI</strong>, and{" "}
+              <strong className="text-white">MACD</strong>; actions like{" "}
+              <strong className="text-white">Place Buy</strong> and{" "}
+              <strong className="text-white">Place Sell</strong>; and risk management tools like{" "}
+              <strong className="text-white">Stop Loss</strong> and{" "}
+              <strong className="text-white">Take Profit</strong>.
+            </p>
+            <p>
+              When you&apos;re done, AlgoStudio generates clean, well-commented MQL5 source code
+              that you can export directly into MetaTrader 5. The code is production-ready — with
+              proper indicator handles, error handling, and clearly marked input parameters for
+              optimization in the MT5 Strategy Tester.
+            </p>
+            <p>
+              <Link href="/no-code-ea-builder" className="text-[#22D3EE] hover:underline">
+                Learn more about no-code EA building &rarr;
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Section 2: How the Visual Strategy Builder Works */}
+      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            How the visual strategy builder works
+          </h2>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              AlgoStudio&apos;s drag-and-drop canvas lets you build complete trading strategies
+              without touching code. Every strategy is composed of five types of blocks that you
+              connect to define your trading logic:
+            </p>
+            <ul className="space-y-3 ml-1">
+              <li className="flex gap-3">
+                <span className="text-[#22D3EE] font-semibold flex-shrink-0">Timing</span>
+                <span>
+                  — Control when your EA trades. Choose from always-on, specific trading sessions
+                  (London, New York, Tokyo), custom time windows, or day-of-week filters.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#A78BFA] font-semibold flex-shrink-0">Indicators</span>
+                <span>
+                  — Define entry conditions using Moving Averages, RSI, MACD, Bollinger Bands, ATR,
+                  ADX, Stochastic, and more. Set periods, levels, and crossover conditions visually.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#F59E0B] font-semibold flex-shrink-0">Price Action</span>
+                <span>
+                  — React to candlestick patterns, support/resistance zones, and range breakouts
+                  without writing pattern-matching code.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#10B981] font-semibold flex-shrink-0">Trading</span>
+                <span>
+                  — Execute buy and sell orders and close positions. Connect these to your indicator
+                  conditions to automate entries and exits.
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-[#EF4444] font-semibold flex-shrink-0">Risk</span>
+                <span>
+                  — Protect your capital with stop loss, take profit, trailing stops, break-even
+                  rules, and daily trade limits — all configurable per block.
+                </span>
+              </li>
+            </ul>
+            <p>
+              Connect the blocks on the canvas and your entire strategy is visible at a glance. No
+              jumping between files, no debugging syntax errors, no guessing what your EA does.
+            </p>
+            <p>
+              <Link href="/visual-strategy-builder" className="text-[#22D3EE] hover:underline">
+                Explore the visual strategy builder &rarr;
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Section 3: Who Is AlgoStudio For */}
+      <section className="py-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-white mb-6">Who is AlgoStudio for?</h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Beginners exploring automated trading
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                You&apos;ve heard about Expert Advisors and want to try automated trading, but
+                don&apos;t know MQL5 and don&apos;t want to spend months learning to code.
+                AlgoStudio lets you start with a{" "}
+                <Link href="/templates" className="text-[#22D3EE] hover:underline">
+                  free template
+                </Link>{" "}
+                and have your first EA running in under 5 minutes.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Manual traders who want to automate
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                You have a profitable manual strategy but can&apos;t watch charts 24 hours a day.
+                You want your rules executed consistently — without emotion, fatigue, or missed
+                setups. AlgoStudio turns your existing strategy into a working EA that trades while
+                you sleep.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Experienced traders testing new ideas
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                You know what you want to test, but writing MQL5 from scratch for every idea is
+                slow. With AlgoStudio you can prototype and export three strategies in the time it
+                takes to code one. Iterate faster, backtest more, and find edges that work.
+              </p>
+            </div>
+            <p className="text-[#94A3B8] leading-relaxed">
+              <Link
+                href="/automated-trading-for-beginners"
+                className="text-[#22D3EE] hover:underline"
+              >
+                Read our beginner&apos;s guide to automated trading &rarr;
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Section 4: Why Visual Beats Manual Coding */}
+      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            Why visual EA building beats manual coding
+          </h2>
+          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
+            <p>
+              MQL5 is a powerful language, but it wasn&apos;t designed for rapid strategy
+              prototyping. A simple Moving Average crossover EA requires 200+ lines of code:
+              indicator buffer initialization, tick event handling, order management, error
+              handling, and deinitialization. Change one condition and you risk introducing a bug
+              that takes hours to find.
+            </p>
+            <p>
+              With AlgoStudio&apos;s visual builder, the same strategy is 5 connected blocks on a
+              canvas. Want to swap RSI for Stochastic? Drag a new block. Want to add an ADX trend
+              filter? Connect one more block. Every change takes seconds, not hours — and the
+              generated code is always syntactically correct.
+            </p>
+            <p>
+              This isn&apos;t about dumbing down EA development. It&apos;s about removing the
+              accidental complexity (syntax, compilation, debugging) so you can focus on what
+              actually matters: <strong className="text-white">your trading logic</strong>. The
+              exported MQL5 code is clean, readable, and fully editable in MetaEditor if you want to
+              customize it further.
+            </p>
+            <p>
+              The result: you test more ideas, iterate faster, and find profitable strategies
+              sooner. That&apos;s the real edge.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof / Trust */}
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
