@@ -656,7 +656,7 @@ export default async function Home() {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-[rgba(79,70,229,0.1)]">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
             {/* Product */}
             <div>
               <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
@@ -691,6 +691,45 @@ export default async function Home() {
                     className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                   >
                     Blog
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Resources</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    href="/no-code-ea-builder"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
+                    No-Code EA Builder
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/visual-strategy-builder"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
+                    Visual Strategy Builder
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/automated-trading-for-beginners"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
+                    Automated Trading Guide
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/templates"
+                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  >
+                    EA Templates
                   </Link>
                 </li>
               </ul>

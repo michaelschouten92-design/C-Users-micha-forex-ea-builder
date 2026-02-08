@@ -38,6 +38,8 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Click the green <strong>Export MQL5</strong> button. Download the .mq5 file, place it in your MetaTrader 5 Experts folder, compile in MetaEditor with F7, and you're ready to backtest.</p>
 
       <p>That's it — your first EA is live in under 5 minutes. No coding needed.</p>
+
+      <p>Want to learn more about no-code EA building? Check out our <a href="/no-code-ea-builder">No-Code EA Builder</a> page, or start with a ready-made <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a>.</p>
     `,
   },
   {
@@ -74,6 +76,8 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h2>Combining Indicators</h2>
       <p>The most effective EAs combine 2-3 indicators. A classic setup: use ADX to confirm trend strength, MA crossover for direction, and RSI to avoid overbought/oversold entries.</p>
+
+      <p>Ready to put these indicators to work? Try our <a href="/templates/rsi-ea-template">RSI EA template</a> or <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a> to get started quickly.</p>
     `,
   },
   {
@@ -180,6 +184,8 @@ export const BLOG_POSTS: BlogPost[] = [
       </ol>
 
       <p>The key is patience. A well-tested EA with realistic expectations will outperform any impulse-based manual trading over time.</p>
+
+      <p>Ready to build your first EA? Try <a href="/automated-trading-for-beginners">our beginner&apos;s guide to automated trading</a> for a step-by-step walkthrough.</p>
     `,
   },
   {
@@ -316,6 +322,8 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <p>The barrier to entry has dropped significantly. You no longer need to learn MQL5 programming — tools like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
+
+      <p>New to automated trading? Read our complete <a href="/automated-trading-for-beginners">beginner&apos;s guide to automated trading</a>.</p>
     `,
   },
   {
@@ -448,6 +456,8 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Risk-reward: 1:2 or higher</li>
       </ul>
       <p>It won't make you rich overnight, but it's a solid, proven foundation. Many professional traders started with MA crossovers and built more complex strategies on top.</p>
+
+      <p>Want to skip the setup? Use our ready-made <a href="/templates/moving-average-crossover-ea">Moving Average Crossover EA template</a> — pre-configured and ready to customize.</p>
     `,
   },
   {
@@ -672,6 +682,409 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Configuring Sessions in AlgoStudio</h2>
       <p>AlgoStudio makes session-based trading easy. Drag a <strong>Trading Sessions</strong> block from the timing category and select your preferred session. For custom hours, use the <strong>Custom Times</strong> block where you can set exact start/end times and trading days.</p>
       <p>Remember: all session times in the EA use your broker's server time. If you're unsure, enable the "Use Server Time" option to avoid timezone confusion.</p>
+    `,
+  },
+  {
+    slug: "how-to-build-mt5-ea-without-coding",
+    title: "How to Build an MT5 EA Without Coding",
+    description:
+      "A step-by-step tutorial on building a MetaTrader 5 Expert Advisor without writing any code. Learn how visual builders make EA development accessible to every trader.",
+    date: "2025-05-01",
+    author: "AlgoStudio Team",
+    readTime: "8 min read",
+    tags: ["tutorial", "beginner", "no-code"],
+    content: `
+      <p>Building an Expert Advisor used to mean learning MQL5 — a C++-like programming language that takes months to master. Today, visual EA builders have changed the game. In this tutorial, you'll learn how to build a complete, working MT5 EA without writing a single line of code.</p>
+
+      <h2>Why Build Without Code?</h2>
+      <p>Most forex traders are not programmers. They have strategy ideas — entry rules, indicator combinations, risk management approaches — but translating those ideas into MQL5 code is a massive barrier. Hiring a developer costs hundreds or thousands of dollars per EA, and you still can't easily modify the result.</p>
+      <p>A <a href="/no-code-ea-builder">no-code EA builder</a> lets you express your strategy visually. You think in terms of "buy when RSI is below 30 and price crosses above the 50 EMA" — and that's exactly how you build it.</p>
+
+      <h2>What You'll Build</h2>
+      <p>In this tutorial, we'll create a simple but effective EA:</p>
+      <ul>
+        <li><strong>Strategy:</strong> RSI mean-reversion with EMA trend filter</li>
+        <li><strong>Entry:</strong> Buy when RSI drops below 30 and price is above the 50 EMA</li>
+        <li><strong>Exit:</strong> Take profit at 1:2 risk-reward, stop loss at 1.5x ATR</li>
+        <li><strong>Session:</strong> London session only</li>
+      </ul>
+
+      <h2>Step 1: Create Your Project</h2>
+      <p>Sign up for a free AlgoStudio account and click <strong>"New Project"</strong> on your dashboard. Name it something descriptive like "RSI Mean Reversion London."</p>
+
+      <h2>Step 2: Set the Timing</h2>
+      <p>Every EA needs a timing block. Drag a <strong>Trading Sessions</strong> block from the timing category and select "London Session." This limits your EA to trading during the most liquid hours (08:00-17:00 GMT), which reduces false signals from low-volume periods.</p>
+
+      <h2>Step 3: Add Your Indicators</h2>
+      <p>Drag an <strong>RSI</strong> block onto the canvas. Set the period to 14 and the oversold level to 30. This defines your primary entry condition.</p>
+      <p>Next, add a <strong>Moving Average</strong> block. Set it to EMA with period 50. This acts as a trend filter — you'll only buy when price is above the 50 EMA, confirming the overall trend is up.</p>
+      <p>Connect both indicator blocks to the timing block.</p>
+
+      <h2>Step 4: Set Up Trade Execution</h2>
+      <p>Add a <strong>Place Buy</strong> block and connect it to your indicators. Then add:</p>
+      <ul>
+        <li>A <strong>Stop Loss</strong> block set to ATR-based with a 1.5x multiplier</li>
+        <li>A <strong>Take Profit</strong> block set to 2:1 risk-reward ratio</li>
+      </ul>
+      <p>Connect both to the Place Buy block.</p>
+
+      <h2>Step 5: Export and Backtest</h2>
+      <p>Click the <strong>Export MQL5</strong> button. Download the .mq5 file, place it in your MetaTrader 5 Experts folder, and compile it in MetaEditor (press F7). Open the Strategy Tester, select your EA, and run a backtest on EURUSD H1 with at least 1 year of data.</p>
+
+      <h2>Next Steps</h2>
+      <p>Once your basic EA works, you can iterate:</p>
+      <ul>
+        <li>Add an ADX filter to avoid ranging markets</li>
+        <li>Test different RSI periods (10, 14, 21)</li>
+        <li>Try different session timings</li>
+        <li>Adjust the risk-reward ratio</li>
+      </ul>
+
+      <p>Each change takes seconds in the <a href="/visual-strategy-builder">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
+
+      <p>For a ready-to-use starting point, check out our <a href="/templates/rsi-ea-template">RSI EA template</a> which has this exact strategy pre-configured.</p>
+    `,
+  },
+  {
+    slug: "rsi-vs-macd-for-automated-trading",
+    title: "RSI vs MACD: Which Works Better for Automated Trading?",
+    description:
+      "A detailed comparison of RSI and MACD indicators for Expert Advisor development. Learn when to use each, how to combine them, and which suits your strategy best.",
+    date: "2025-05-05",
+    author: "AlgoStudio Team",
+    readTime: "7 min read",
+    tags: ["indicators", "strategy", "comparison"],
+    content: `
+      <p>RSI and MACD are two of the most popular indicators in forex trading. Both are available in every charting platform and every EA builder. But which one works better for automated strategies? The answer depends on your strategy type, timeframe, and market conditions.</p>
+
+      <h2>RSI: The Mean-Reversion Workhorse</h2>
+      <p>The <strong>Relative Strength Index (RSI)</strong> is a momentum oscillator that measures the speed and magnitude of recent price changes. It oscillates between 0 and 100.</p>
+      <ul>
+        <li><strong>Overbought:</strong> RSI above 70 suggests the price may be due for a pullback</li>
+        <li><strong>Oversold:</strong> RSI below 30 suggests the price may be due for a bounce</li>
+        <li><strong>Default period:</strong> 14 candles</li>
+      </ul>
+
+      <h3>Best Use Cases for RSI in EAs</h3>
+      <ul>
+        <li><strong>Mean-reversion strategies:</strong> Buy oversold, sell overbought</li>
+        <li><strong>Entry filter:</strong> Don't buy when already overbought</li>
+        <li><strong>Ranging markets:</strong> RSI excels when price oscillates between levels</li>
+      </ul>
+
+      <h3>RSI Strengths</h3>
+      <p>Simple to interpret, works well in sideways markets, fewer false signals in ranges. A single RSI value gives you a clear overbought/oversold reading.</p>
+
+      <h3>RSI Weaknesses</h3>
+      <p>Fails in strong trends — RSI can stay overbought for weeks in a bull market. Using RSI alone to sell in a strong uptrend will cause repeated losses.</p>
+
+      <h2>MACD: The Trend-Following Powerhouse</h2>
+      <p>The <strong>Moving Average Convergence Divergence (MACD)</strong> consists of two lines (MACD line and signal line) plus a histogram. It measures the relationship between two exponential moving averages.</p>
+      <ul>
+        <li><strong>Bullish signal:</strong> MACD line crosses above the signal line</li>
+        <li><strong>Bearish signal:</strong> MACD line crosses below the signal line</li>
+        <li><strong>Default settings:</strong> 12, 26, 9</li>
+      </ul>
+
+      <h3>Best Use Cases for MACD in EAs</h3>
+      <ul>
+        <li><strong>Trend-following strategies:</strong> Trade in the direction of the MACD crossover</li>
+        <li><strong>Momentum confirmation:</strong> Use histogram to confirm trend strength</li>
+        <li><strong>Divergence detection:</strong> Price makes new high but MACD doesn't — possible reversal</li>
+      </ul>
+
+      <h3>MACD Strengths</h3>
+      <p>Excellent in trending markets, catches big moves early, histogram provides additional momentum information.</p>
+
+      <h3>MACD Weaknesses</h3>
+      <p>Lagging indicator — signals come after the move has started. Generates many false crossovers in choppy, sideways markets.</p>
+
+      <h2>Head-to-Head Comparison</h2>
+      <table>
+        <thead>
+          <tr><th>Factor</th><th>RSI</th><th>MACD</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Market type</td><td>Ranging / sideways</td><td>Trending</td></tr>
+          <tr><td>Signal type</td><td>Overbought/oversold levels</td><td>Line crossovers</td></tr>
+          <tr><td>Speed</td><td>Faster (leading)</td><td>Slower (lagging)</td></tr>
+          <tr><td>False signals</td><td>In strong trends</td><td>In sideways markets</td></tr>
+          <tr><td>Complexity</td><td>1 parameter (period)</td><td>3 parameters</td></tr>
+          <tr><td>Best timeframe</td><td>M15-H4</td><td>H1-Daily</td></tr>
+        </tbody>
+      </table>
+
+      <h2>The Best Approach: Combine Them</h2>
+      <p>The most robust automated strategies combine both indicators to cover each other's weaknesses:</p>
+      <ul>
+        <li><strong>Use MACD for direction:</strong> Only take buy signals when MACD is bullish</li>
+        <li><strong>Use RSI for timing:</strong> Wait for RSI to reach oversold before entering a buy</li>
+        <li><strong>Example:</strong> Buy when MACD is above signal line AND RSI drops below 35, then rebounds above 35</li>
+      </ul>
+      <p>This combination filters out RSI's false signals in trends (MACD confirms the trend) and MACD's false signals in ranges (RSI confirms the entry timing).</p>
+
+      <h2>Try It Yourself</h2>
+      <p>Want to test RSI-based strategies? Start with our <a href="/templates/rsi-ea-template">RSI EA template</a>. For moving average-based trend following, check the <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a>.</p>
+
+      <p>Both indicators are available in AlgoStudio's visual builder — drag the blocks onto the canvas and start experimenting. Read more about <a href="/blog/best-indicators-for-forex-ea">the best indicators for forex EAs</a>.</p>
+    `,
+  },
+  {
+    slug: "manual-trading-vs-automated-trading-pros-cons",
+    title: "Manual Trading vs Automated Trading: Pros and Cons",
+    description:
+      "Should you trade manually or use an Expert Advisor? An honest comparison of both approaches, including the hybrid strategy many professionals use.",
+    date: "2025-05-10",
+    author: "AlgoStudio Team",
+    readTime: "7 min read",
+    tags: ["beginner", "automated-trading"],
+    content: `
+      <p>The debate between manual and automated trading is one of the oldest in forex. Both approaches have loyal advocates, and both have real advantages. This guide gives you an honest comparison so you can decide which fits your situation — or whether a combination of both is the answer.</p>
+
+      <h2>Manual Trading: Full Control, Full Responsibility</h2>
+      <p>Manual trading means you analyze charts, identify setups, and click buy or sell yourself. You're in complete control of every decision.</p>
+
+      <h3>The Pros</h3>
+      <ul>
+        <li><strong>Context awareness:</strong> You can factor in news events, market sentiment, geopolitical events — things that are nearly impossible to code into an EA</li>
+        <li><strong>Adaptability:</strong> When market conditions change, you can adjust instantly. An EA keeps doing what it was programmed to do until you change it</li>
+        <li><strong>Learning:</strong> Manual trading teaches you to read the market. This knowledge is valuable even if you later switch to automation</li>
+        <li><strong>Discretion:</strong> You can skip trades that technically meet your criteria but don't "look right"</li>
+      </ul>
+
+      <h3>The Cons</h3>
+      <ul>
+        <li><strong>Emotional trading:</strong> This is the biggest killer. Fear after losses leads to missed trades. Greed after wins leads to oversized positions. Revenge trading after a losing streak leads to account blowups</li>
+        <li><strong>Time-intensive:</strong> Forex markets run 24/5. You can only watch a screen for so many hours</li>
+        <li><strong>Inconsistency:</strong> Your execution quality depends on your mood, sleep, stress level, and focus. Monday morning you and Friday afternoon you make different decisions</li>
+        <li><strong>No backtesting:</strong> You can't rigorously test a manual strategy on historical data. You're flying blind</li>
+      </ul>
+
+      <h2>Automated Trading: Discipline by Design</h2>
+      <p>Automated trading means coding your rules into an <a href="/blog/what-is-an-expert-advisor">Expert Advisor</a> and letting it execute every trade. The EA follows the rules — always, without exception.</p>
+
+      <h3>The Pros</h3>
+      <ul>
+        <li><strong>Zero emotions:</strong> The EA doesn't feel fear, greed, or frustration. It executes the strategy identically whether you're up 50% or down 10%</li>
+        <li><strong>24/5 coverage:</strong> Your EA never sleeps. It monitors every tick on every pair you assign it to</li>
+        <li><strong>Backtestable:</strong> Before risking real money, test your strategy on years of historical data. Know the profit factor, drawdown, and win rate before your first live trade</li>
+        <li><strong>Speed:</strong> EAs react in milliseconds. By the time a manual trader sees a signal and clicks, the EA has already entered</li>
+        <li><strong>Scalable:</strong> Run multiple EAs on different pairs and timeframes simultaneously</li>
+      </ul>
+
+      <h3>The Cons</h3>
+      <ul>
+        <li><strong>No context:</strong> An EA doesn't know about NFP releases, central bank surprises, or black swan events</li>
+        <li><strong>Requires maintenance:</strong> Markets evolve. A strategy that worked in 2023 might need parameter adjustments in 2025</li>
+        <li><strong>Over-optimization trap:</strong> It's easy to create a strategy that looks perfect on historical data but fails live</li>
+        <li><strong>Technical risks:</strong> Internet outages, VPS crashes, and broker disconnections can disrupt execution</li>
+      </ul>
+
+      <h2>The Hybrid Approach: Best of Both Worlds</h2>
+      <p>Many professional traders use a combination:</p>
+      <ol>
+        <li><strong>Automate your core strategy:</strong> Let the EA handle entries and exits based on your rules</li>
+        <li><strong>Manually oversee:</strong> Check performance weekly, pause the EA during major news events</li>
+        <li><strong>Discretionary overlay:</strong> Use the EA for your primary strategy and manually trade high-conviction setups that don't fit the automated rules</li>
+        <li><strong>Regular optimization:</strong> Review and adjust EA parameters monthly based on changing market conditions</li>
+      </ol>
+
+      <h2>Which Is Right for You?</h2>
+      <p>Choose <strong>manual trading</strong> if you enjoy the process of analysis, have time to watch markets, and have strong emotional discipline.</p>
+      <p>Choose <strong>automated trading</strong> if you have a clear, rule-based strategy, struggle with trading psychology, want 24/5 coverage, or prefer a systematic approach.</p>
+      <p>Choose the <strong>hybrid approach</strong> if you want the best of both worlds — most experienced traders end up here.</p>
+
+      <p>Ready to explore automated trading? Our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a> walks you through everything step by step.</p>
+    `,
+  },
+  {
+    slug: "5-mistakes-automating-trading-strategies",
+    title: "5 Mistakes Traders Make When Automating Strategies",
+    description:
+      "Avoid the most common pitfalls when building Expert Advisors. From over-optimization to ignoring risk management, learn what to watch out for.",
+    date: "2025-05-15",
+    author: "AlgoStudio Team",
+    readTime: "7 min read",
+    tags: ["strategy", "beginner", "backtesting"],
+    content: `
+      <p>Building an Expert Advisor is exciting — you design a strategy, backtest it, and see beautiful profit curves. But between that backtest and real profit, there are common pitfalls that trip up nearly every new EA developer. Here are the five most expensive mistakes and how to avoid them.</p>
+
+      <h2>Mistake 1: Over-Optimizing Parameters</h2>
+      <p>This is the #1 reason EAs fail in live trading. You run the MT5 optimizer and find the perfect combination: MA period 17, RSI period 11, stop loss 43 pips. The backtest shows 300% profit. You go live — and it loses money.</p>
+      <p><strong>What happened:</strong> You didn't find a real pattern. You found random noise that happened to be profitable in that specific historical period. This is called "curve fitting."</p>
+      <p><strong>How to avoid it:</strong></p>
+      <ul>
+        <li>Keep parameters to a minimum (4-6 optimizable inputs)</li>
+        <li>Always test on out-of-sample data (optimize on 2020-2023, test on 2024)</li>
+        <li>Look for parameter stability — if MA period 17 is profitable, periods 15-19 should also be profitable</li>
+        <li>Read our detailed guide on <a href="/blog/avoid-overfitting-expert-advisor">how to avoid overfitting</a></li>
+      </ul>
+
+      <h2>Mistake 2: Skipping Risk Management</h2>
+      <p>Many beginners focus entirely on entry signals and ignore risk management. They think: "If my entries are good enough, I don't need a stop loss." This is how accounts blow up.</p>
+      <p><strong>The reality:</strong> Even the best strategies have losing streaks. Without a stop loss, one bad trade can erase weeks of profit. Without position sizing, you're gambling with random lot sizes.</p>
+      <p><strong>How to avoid it:</strong></p>
+      <ul>
+        <li>Every trade needs a stop loss — no exceptions</li>
+        <li>Risk 1-2% of your account per trade maximum</li>
+        <li>Use ATR-based stops that adapt to volatility</li>
+        <li>Set a daily trade limit to prevent over-trading</li>
+        <li>Read our <a href="/blog/risk-management-for-forex-ea">risk management guide</a> for the complete checklist</li>
+      </ul>
+
+      <h2>Mistake 3: Using Too Many Indicators</h2>
+      <p>More indicators does not mean better performance. Adding a 5th or 6th indicator to your strategy usually just adds complexity and overfitting risk without improving results.</p>
+      <p><strong>Why it happens:</strong> Each indicator you add is another parameter to optimize. More parameters mean more opportunities to fit the noise in historical data.</p>
+      <p><strong>How to avoid it:</strong></p>
+      <ul>
+        <li>Use 1-2 indicators for entry signals</li>
+        <li>Optionally add 1 filter (e.g., ADX for trend strength)</li>
+        <li>If your strategy needs 5 indicators to be profitable, it's not a real edge</li>
+        <li>Simple strategies are more robust and more likely to work in live trading</li>
+      </ul>
+
+      <h2>Mistake 4: Going Live Too Quickly</h2>
+      <p>Backtesting looks great, so you immediately deposit money and go live. Two weeks later, you're down 15% and panicking.</p>
+      <p><strong>What went wrong:</strong> Backtests use historical data with known prices. Live trading has slippage, spread widening, requotes, and different market conditions. A profitable backtest is necessary but not sufficient.</p>
+      <p><strong>How to avoid it:</strong></p>
+      <ul>
+        <li>Backtest on at least 2 years of data</li>
+        <li>Run on a demo account for 1-3 months minimum</li>
+        <li>Compare demo results to backtest results — they should be reasonably similar</li>
+        <li>Start live with the smallest possible position size</li>
+        <li>Scale up gradually as you gain confidence</li>
+      </ul>
+
+      <h2>Mistake 5: Not Adapting to Changing Markets</h2>
+      <p>You build a great EA in January, it works well for months, then slowly starts losing. You keep running it, hoping it'll recover. It doesn't.</p>
+      <p><strong>Why it happens:</strong> Markets evolve. Volatility changes, correlations shift, and patterns that worked in trending markets fail in ranging ones. An EA optimized for one regime will underperform in another.</p>
+      <p><strong>How to avoid it:</strong></p>
+      <ul>
+        <li>Review your EA's performance monthly</li>
+        <li>Compare recent results to backtest expectations</li>
+        <li>If performance degrades significantly for 2-3 months, re-optimize or pause</li>
+        <li>Consider using session or volatility filters that automatically adjust behavior</li>
+      </ul>
+
+      <p>Ready to build your EA the right way? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a> and use AlgoStudio's visual builder to create strategies that follow best practices from the start.</p>
+    `,
+  },
+  {
+    slug: "from-trading-idea-to-automated-ea",
+    title: "From Idea to EA: Turning a Trading Strategy into Automation",
+    description:
+      "Learn the complete workflow of turning a trading idea into a working Expert Advisor — from strategy definition to backtesting and live deployment.",
+    date: "2025-05-20",
+    author: "AlgoStudio Team",
+    readTime: "9 min read",
+    tags: ["tutorial", "strategy", "workflow"],
+    content: `
+      <p>You have a trading idea. Maybe you noticed that price often bounces when RSI hits 30, or that moving average crossovers catch big trends. How do you turn that observation into a working Expert Advisor? This guide walks you through the complete workflow — from raw idea to live trading.</p>
+
+      <h2>Phase 1: Define Your Strategy</h2>
+      <p>Before opening any tool, write down your strategy in plain language. Be specific about every rule:</p>
+
+      <h3>Entry Rules</h3>
+      <ul>
+        <li>What conditions must be true to open a trade?</li>
+        <li>Which direction: buy, sell, or both?</li>
+        <li>Example: "Buy when the 10 EMA crosses above the 50 EMA during the London session"</li>
+      </ul>
+
+      <h3>Exit Rules</h3>
+      <ul>
+        <li>Where does the stop loss go? (Fixed pips, ATR-based, indicator-based)</li>
+        <li>Where does the take profit go? (Fixed, risk-reward ratio, opposite signal)</li>
+        <li>Are there any other exit conditions? (Time-based, trailing stop, break-even)</li>
+      </ul>
+
+      <h3>Filters</h3>
+      <ul>
+        <li>Are there conditions where you should NOT trade? (Ranging markets, news events, specific sessions)</li>
+        <li>Example: "Only trade when ADX is above 25"</li>
+      </ul>
+
+      <h3>Risk Management</h3>
+      <ul>
+        <li>How much per trade? (e.g., 1% of account)</li>
+        <li>Maximum open trades?</li>
+        <li>Daily trade limit?</li>
+      </ul>
+
+      <p>If any of these answers are vague ("I'll decide in the moment"), it can't be automated. An EA needs exact rules for every scenario.</p>
+
+      <h2>Phase 2: Build It Visually</h2>
+      <p>With your rules defined, open <a href="/no-code-ea-builder">AlgoStudio's visual builder</a> and translate them into blocks:</p>
+
+      <ol>
+        <li><strong>Start with timing:</strong> Drag a Trading Sessions or Always block to define when the EA runs</li>
+        <li><strong>Add indicators:</strong> Place your entry indicators and connect them to timing</li>
+        <li><strong>Add trade actions:</strong> Connect Place Buy/Sell blocks to your indicator conditions</li>
+        <li><strong>Set risk management:</strong> Add Stop Loss, Take Profit, and position sizing blocks</li>
+        <li><strong>Add filters (optional):</strong> Connect additional indicator blocks as filters</li>
+      </ol>
+
+      <p>The beauty of the <a href="/visual-strategy-builder">visual builder</a> is that you can see your entire strategy at a glance. If the logic looks too complex, it probably is — simplify.</p>
+
+      <h2>Phase 3: First Backtest</h2>
+      <p>Export your EA from AlgoStudio and load it into MetaTrader 5. Run a backtest with these settings:</p>
+      <ul>
+        <li><strong>Symbol:</strong> Start with EURUSD (most liquid, tightest spreads)</li>
+        <li><strong>Timeframe:</strong> Match your intended trading timeframe</li>
+        <li><strong>Period:</strong> At least 2 years (e.g., 2022-2024)</li>
+        <li><strong>Model:</strong> "Every tick based on real ticks" for accuracy</li>
+        <li><strong>Deposit:</strong> A realistic amount (e.g., $10,000)</li>
+      </ul>
+
+      <h3>What to Look For</h3>
+      <ul>
+        <li><strong>Profit factor:</strong> Above 1.3 is decent, above 1.5 is good</li>
+        <li><strong>Max drawdown:</strong> Below 20% is comfortable, below 30% is acceptable</li>
+        <li><strong>Total trades:</strong> At least 100 for statistical significance</li>
+        <li><strong>Equity curve:</strong> Smooth and upward, not a lottery ticket</li>
+      </ul>
+
+      <h2>Phase 4: Optimize (Carefully)</h2>
+      <p>If initial results are promising, use the MT5 optimizer to find better parameter values. But be careful — this is where most traders go wrong.</p>
+      <ul>
+        <li>Only optimize 2-3 parameters at a time</li>
+        <li>Look for "parameter plateaus" where a range of values all produce good results</li>
+        <li>Avoid the single best result — it's almost always overfitted</li>
+        <li>Always validate on out-of-sample data</li>
+      </ul>
+
+      <h2>Phase 5: Out-of-Sample Validation</h2>
+      <p>This is the moment of truth. Take your optimized parameters and test on data the optimizer never saw:</p>
+      <ol>
+        <li>If you optimized on 2022-2023, test on 2024</li>
+        <li>If out-of-sample results are within 70% of in-sample results, the strategy is likely robust</li>
+        <li>If out-of-sample results are dramatically worse, you've overfitted — go back to Phase 4</li>
+      </ol>
+
+      <h2>Phase 6: Demo Trading</h2>
+      <p>Backtest results use historical data. Live conditions introduce slippage, spread variations, and real execution delays. Run your EA on a demo account for 1-3 months to verify:</p>
+      <ul>
+        <li>Results match backtest expectations</li>
+        <li>Execution is clean (no excessive slippage)</li>
+        <li>The EA handles weekends, holidays, and low-liquidity periods correctly</li>
+      </ul>
+
+      <h2>Phase 7: Go Live (Small)</h2>
+      <p>If demo results confirm your backtest, start live trading with the smallest possible position size. Increase gradually as you gain confidence. Monitor the first 50 trades closely.</p>
+
+      <h2>The Complete Checklist</h2>
+      <ul>
+        <li>Strategy rules are written in plain language</li>
+        <li>EA is built and exported from AlgoStudio</li>
+        <li>Backtested on 2+ years with 100+ trades</li>
+        <li>Profit factor above 1.3, drawdown below 25%</li>
+        <li>Optimized carefully with parameter plateaus</li>
+        <li>Validated on out-of-sample data</li>
+        <li>Demo traded for 1-3 months</li>
+        <li>Live trading started with minimum position size</li>
+      </ul>
+
+      <p>Ready to start? Try one of our pre-built templates: <a href="/templates/moving-average-crossover-ea">Moving Average Crossover</a>, <a href="/templates/rsi-ea-template">RSI Mean Reversion</a>, or <a href="/templates/breakout-ea-template">Breakout Strategy</a>. Each gives you a solid starting point you can customize and optimize.</p>
     `,
   },
 ];

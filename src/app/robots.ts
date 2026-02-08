@@ -5,7 +5,18 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/pricing", "/privacy", "/terms", "/contact", "/blog"],
+        allow: [
+          "/",
+          "/pricing",
+          "/privacy",
+          "/terms",
+          "/contact",
+          "/blog",
+          "/no-code-ea-builder",
+          "/visual-strategy-builder",
+          "/automated-trading-for-beginners",
+          "/templates",
+        ],
         disallow: ["/app/", "/api/"],
       },
     ],
