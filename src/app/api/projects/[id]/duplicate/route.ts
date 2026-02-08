@@ -101,7 +101,15 @@ export async function POST(request: Request, { params }: Params) {
 
     await audit.projectCreate(session.user.id, newProject.id, newProject.name);
 
-    return NextResponse.json(newProject, { status: 201 });
+    return NextResponse.json(
+      {
+        ...newProject,
+        ...(newProject._count.versions === 0
+          ? { warning: "Source project had no saved versions. The duplicate is empty." }
+          : {}),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to duplicate project");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

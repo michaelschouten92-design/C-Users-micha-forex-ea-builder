@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { showError } from "@/lib/toast";
 
 type Project = {
   id: string;
@@ -33,7 +34,12 @@ export function ProjectCard({ project }: { project: Project }) {
 
       if (res.ok) {
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError(data.message || data.details || "Failed to duplicate project");
       }
+    } catch {
+      showError("Something went wrong. Please try again.");
     } finally {
       setDuplicating(false);
       setShowMenu(false);
@@ -50,7 +56,12 @@ export function ProjectCard({ project }: { project: Project }) {
 
       if (res.ok) {
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError(data.message || data.details || "Failed to delete project");
       }
+    } catch {
+      showError("Something went wrong. Please try again.");
     } finally {
       setDeleting(false);
       setShowMenu(false);

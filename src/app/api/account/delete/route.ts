@@ -64,19 +64,32 @@ export async function DELETE(request: Request) {
     if (subscription?.stripeSubId) {
       try {
         const { getStripe } = await import("@/lib/stripe");
-        await getStripe().subscriptions.cancel(subscription.stripeSubId);
+        const stripeSub = await getStripe().subscriptions.retrieve(subscription.stripeSubId);
+        // Only cancel if not already cancelled (safe for retries)
+        if (stripeSub.status !== "canceled") {
+          await getStripe().subscriptions.cancel(subscription.stripeSubId);
+        }
       } catch (stripeError) {
-        logger.error(
-          { error: stripeError, userId },
-          "Failed to cancel Stripe subscription during account deletion"
-        );
-        return NextResponse.json(
-          {
-            error:
-              "Failed to cancel your subscription. Please cancel it in Stripe first, then try again.",
-          },
-          { status: 500 }
-        );
+        // If subscription is already deleted/cancelled in Stripe, proceed with DB cleanup
+        const err = stripeError as { code?: string; statusCode?: number };
+        if (err.statusCode === 404 || err.code === "resource_missing") {
+          logger.warn(
+            { userId },
+            "Stripe subscription already deleted, proceeding with account deletion"
+          );
+        } else {
+          logger.error(
+            { error: stripeError, userId },
+            "Failed to cancel Stripe subscription during account deletion"
+          );
+          return NextResponse.json(
+            {
+              error:
+                "Failed to cancel your subscription. Please cancel it in Stripe first, then try again.",
+            },
+            { status: 500 }
+          );
+        }
       }
     }
 

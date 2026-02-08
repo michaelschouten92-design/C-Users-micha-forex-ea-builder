@@ -61,21 +61,29 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
     `Audit: ${eventType}`
   );
 
-  // Persist to database for compliance
+  // Persist to database for compliance (retry once on failure)
+  const data = {
+    userId,
+    eventType,
+    resourceType,
+    resourceId,
+    metadata: metadata ? JSON.stringify(metadata) : null,
+    ipAddress: ipAddress ? maskIpAddress(ipAddress) : null,
+    userAgent: userAgent ? truncateUserAgent(userAgent) : null,
+  };
+
   try {
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        eventType,
-        resourceType,
-        resourceId,
-        metadata: metadata ? JSON.stringify(metadata) : null,
-        ipAddress: ipAddress ? maskIpAddress(ipAddress) : null,
-        userAgent: userAgent ? truncateUserAgent(userAgent) : null,
-      },
-    });
+    await prisma.auditLog.create({ data });
   } catch (error) {
-    auditLogger.error({ error }, "Failed to persist audit log");
+    auditLogger.error({ error, eventType, userId }, "Failed to persist audit log, retrying");
+    try {
+      await prisma.auditLog.create({ data });
+    } catch (retryError) {
+      auditLogger.error(
+        { error: retryError, eventType, userId },
+        "Audit log persistence failed after retry — compliance data lost"
+      );
+    }
   }
 }
 
@@ -129,8 +137,7 @@ export const audit = {
   login: (userId: string, ctx?: { ipAddress?: string; userAgent?: string }) =>
     logAuditEvent({ userId, eventType: "auth.login", ...ctx }),
 
-  logout: (userId: string) =>
-    logAuditEvent({ userId, eventType: "auth.logout" }),
+  logout: (userId: string) => logAuditEvent({ userId, eventType: "auth.logout" }),
 
   passwordResetRequest: (email: string, ctx?: { ipAddress?: string }) =>
     logAuditEvent({

@@ -31,52 +31,63 @@ async function handleCleanup(request: NextRequest) {
   }
 
   try {
+    const BATCH_SIZE = 1000;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    // Batched delete helper to avoid long-running queries
+    async function batchDelete(
+      model: {
+        deleteMany: (args: { where: { id: { in: string[] } } }) => Promise<{ count: number }>;
+        findMany: (args: {
+          where: Record<string, unknown>;
+          select: { id: true };
+          take: number;
+        }) => Promise<Array<{ id: string }>>;
+      },
+      where: Record<string, unknown>
+    ): Promise<number> {
+      let totalDeleted = 0;
+
+      while (true) {
+        const batch = await model.findMany({ where, select: { id: true }, take: BATCH_SIZE });
+        if (batch.length === 0) break;
+        const result = await model.deleteMany({ where: { id: { in: batch.map((r) => r.id) } } });
+        totalDeleted += result.count;
+        if (batch.length < BATCH_SIZE) break;
+      }
+      return totalDeleted;
+    }
 
     // Permanently delete soft-deleted projects older than 30 days
     // (cascades to versions and exports via Prisma onDelete: Cascade)
-    const deletedProjects = await prisma.project.deleteMany({
-      where: {
-        deletedAt: { lt: thirtyDaysAgo },
-      },
-    });
+    const deletedProjects = await batchDelete(prisma.project, { deletedAt: { lt: thirtyDaysAgo } });
 
-    // Clean up expired password reset tokens
-    const deletedTokens = await prisma.passwordResetToken.deleteMany({
-      where: {
-        expiresAt: { lt: new Date() },
-      },
+    // Clean up expired tokens
+    const deletedTokens = await batchDelete(prisma.passwordResetToken, {
+      expiresAt: { lt: new Date() },
+    });
+    const deletedVerificationTokens = await batchDelete(prisma.emailVerificationToken, {
+      expiresAt: { lt: new Date() },
     });
 
     // Clean up old webhook events (>90 days)
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    const deletedWebhookEvents = await prisma.webhookEvent.deleteMany({
-      where: {
-        processedAt: { lt: ninetyDaysAgo },
-      },
-    });
-
-    // Clean up expired email verification tokens
-    const deletedVerificationTokens = await prisma.emailVerificationToken.deleteMany({
-      where: {
-        expiresAt: { lt: new Date() },
-      },
+    const deletedWebhookEvents = await batchDelete(prisma.webhookEvent, {
+      processedAt: { lt: ninetyDaysAgo },
     });
 
     // Clean up old audit logs (>90 days)
-    const deletedAuditLogs = await prisma.auditLog.deleteMany({
-      where: {
-        createdAt: { lt: ninetyDaysAgo },
-      },
+    const deletedAuditLogs = await batchDelete(prisma.auditLog, {
+      createdAt: { lt: ninetyDaysAgo },
     });
 
     log.info(
       {
-        deletedProjects: deletedProjects.count,
-        deletedTokens: deletedTokens.count,
-        deletedWebhookEvents: deletedWebhookEvents.count,
-        deletedVerificationTokens: deletedVerificationTokens.count,
-        deletedAuditLogs: deletedAuditLogs.count,
+        deletedProjects,
+        deletedTokens,
+        deletedWebhookEvents,
+        deletedVerificationTokens,
+        deletedAuditLogs,
       },
       "Cleanup completed"
     );
@@ -84,11 +95,11 @@ async function handleCleanup(request: NextRequest) {
     return NextResponse.json({
       success: true,
       deleted: {
-        projects: deletedProjects.count,
-        expiredTokens: deletedTokens.count,
-        webhookEvents: deletedWebhookEvents.count,
-        verificationTokens: deletedVerificationTokens.count,
-        auditLogs: deletedAuditLogs.count,
+        projects: deletedProjects,
+        expiredTokens: deletedTokens,
+        webhookEvents: deletedWebhookEvents,
+        verificationTokens: deletedVerificationTokens,
+        auditLogs: deletedAuditLogs,
       },
     });
   } catch (error) {

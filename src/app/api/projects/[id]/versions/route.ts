@@ -12,7 +12,10 @@ import {
 } from "@/lib/rate-limit";
 
 class VersionConflictError extends Error {
-  constructor(public actual: number, public expected: number) {
+  constructor(
+    public actual: number,
+    public expected: number
+  ) {
     super(`Version conflict: expected ${expected}, actual ${actual}`);
   }
 }
@@ -112,10 +115,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     body = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
   const validation = createVersionSchema.safeParse(body);
 
@@ -167,11 +167,80 @@ export async function POST(request: Request, { params }: Params) {
       });
     });
 
+    // Quick validation warnings (non-blocking, helps users catch issues before export)
+    const warnings: string[] = [];
+    const nodes = buildJson.nodes ?? [];
+    const edges = buildJson.edges ?? [];
+
+    if (nodes.length > 0) {
+      const timingTypes = ["always", "custom-times", "trading-session"];
+      const hasTimingNode = nodes.some(
+        (n: Record<string, unknown>) =>
+          timingTypes.includes(n.type as string) ||
+          (n.data &&
+            typeof n.data === "object" &&
+            "timingType" in (n.data as Record<string, unknown>))
+      );
+      if (!hasTimingNode) {
+        warnings.push("No timing block found — add a 'When to trade' block.");
+      }
+
+      const hasSignalNode = nodes.some((n: Record<string, unknown>) =>
+        [
+          "moving-average",
+          "rsi",
+          "macd",
+          "bollinger-bands",
+          "atr",
+          "adx",
+          "stochastic",
+          "candlestick-pattern",
+          "support-resistance",
+          "range-breakout",
+        ].includes(n.type as string)
+      );
+      if (!hasSignalNode) {
+        warnings.push("No signal nodes — add an indicator or price action block.");
+      }
+
+      const hasTradeNode = nodes.some(
+        (n: Record<string, unknown>) => n.type === "place-buy" || n.type === "place-sell"
+      );
+      if (!hasTradeNode) {
+        warnings.push("No trade action — add a Place Buy or Place Sell block.");
+      }
+
+      // Check for disconnected nodes
+      const connectedIds = new Set<string>();
+      const queue: string[] = nodes
+        .filter((n: Record<string, unknown>) => timingTypes.includes(n.type as string))
+        .map((n: Record<string, unknown>) => n.id as string);
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (connectedIds.has(current)) continue;
+        connectedIds.add(current);
+        for (const e of edges) {
+          const edge = e as Record<string, unknown>;
+          if (edge.source === current && !connectedIds.has(edge.target as string)) {
+            queue.push(edge.target as string);
+          }
+        }
+      }
+      const disconnected = nodes.filter(
+        (n: Record<string, unknown>) =>
+          !connectedIds.has(n.id as string) && !timingTypes.includes(n.type as string)
+      );
+      if (disconnected.length > 0) {
+        warnings.push(`${disconnected.length} disconnected node(s) — connect them or remove them.`);
+      }
+    }
+
     return NextResponse.json(
       {
         id: version.id,
         versionNo: version.versionNo,
         createdAt: version.createdAt,
+        ...(warnings.length > 0 ? { warnings } : {}),
       },
       { status: 201 }
     );
@@ -179,7 +248,11 @@ export async function POST(request: Request, { params }: Params) {
     if (error instanceof VersionConflictError) {
       return NextResponse.json(
         {
-          ...apiError(ErrorCode.VERSION_CONFLICT, "Version conflict", `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`),
+          ...apiError(
+            ErrorCode.VERSION_CONFLICT,
+            "Version conflict",
+            `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`
+          ),
           currentVersion: error.actual,
         },
         { status: 409 }

@@ -1,28 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { features } from "@/lib/env";
-import {
-  apiRateLimiter,
-  checkRateLimit,
-  createRateLimitHeaders,
-  formatRateLimitError,
-} from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
-  // Rate limit by IP to prevent abuse
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
-  const rateLimitResult = await checkRateLimit(apiRateLimiter, `health:${ip}`);
-
-  if (!rateLimitResult.success) {
-    return NextResponse.json(
-      { error: formatRateLimitError(rateLimitResult) },
-      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
-    );
-  }
-
+export async function GET() {
   const services: Record<string, "up" | "down"> = {};
 
   // Check database

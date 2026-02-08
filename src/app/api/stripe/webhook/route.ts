@@ -5,7 +5,11 @@ import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
-import { sendPaymentFailedEmail, sendPlanChangeEmail } from "@/lib/email";
+import {
+  sendPaymentFailedEmail,
+  sendPaymentActionRequiredEmail,
+  sendPlanChangeEmail,
+} from "@/lib/email";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -102,6 +106,27 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
+        break;
+      }
+
+      case "invoice.payment_action_required": {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handlePaymentActionRequired(invoice);
+        break;
+      }
+
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        await handleChargeRefunded(charge);
+        break;
+      }
+
+      case "charge.dispute.created": {
+        const dispute = event.data.object as Stripe.Dispute;
+        log.error(
+          { disputeId: dispute.id, chargeId: getStringId(dispute.charge), reason: dispute.reason },
+          "Chargeback dispute created — manual review required"
+        );
         break;
       }
     }
@@ -258,7 +283,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       if (user?.email) {
         const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
         sendPlanChangeEmail(user.email, result.previousTier, tier, isUpgrade, settingsUrl).catch(
-          (err) => log.warn({ err }, "Plan change email send failed")
+          (err) => log.error({ err }, "Plan change email send failed")
         );
       }
     }
@@ -376,12 +401,65 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     if (user?.email) {
       const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
       sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
-        log.warn({ err }, "Payment failed email send failed")
+        log.error({ err }, "Payment failed email send failed")
       );
     }
 
     audit
       .paymentFailed(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment failure recorded"));
+  }
+}
+
+async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
+  const customerId = getStringId(invoice.customer);
+  if (!customerId) return;
+
+  const subscription = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: { user: { select: { email: true } } },
+  });
+
+  if (!subscription?.user?.email) return;
+
+  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+  sendPaymentActionRequiredEmail(subscription.user.email, portalUrl).catch((err) =>
+    log.error({ err }, "Payment action required email send failed")
+  );
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const customerId = getStringId(charge.customer);
+  if (!customerId) return;
+
+  // Only downgrade on full refunds
+  if (!charge.refunded) return;
+
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
+
+    if (!rows.length) return null;
+
+    await tx.subscription.update({
+      where: { id: rows[0].id },
+      data: {
+        tier: "FREE",
+        status: "cancelled",
+        stripeSubId: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+      },
+    });
+
+    return rows[0].userId;
+  });
+
+  if (userId) {
+    invalidateSubscriptionCache(userId);
+    log.info({ userId, chargeId: charge.id }, "Subscription downgraded to FREE after full refund");
   }
 }
