@@ -171,8 +171,8 @@ export default async function Home() {
               <Image
                 src="/demo-screenshot.png"
                 alt="AlgoStudio visual strategy builder interface"
-                width={1920}
-                height={1080}
+                width={3830}
+                height={1820}
                 className="w-full"
                 quality={95}
                 priority
