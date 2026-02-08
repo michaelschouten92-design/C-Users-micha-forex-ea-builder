@@ -39,6 +39,7 @@ import type {
 } from "@/types/builder";
 import { DEFAULT_SETTINGS } from "@/types/builder";
 import { STRATEGY_PRESETS, type StrategyPreset } from "@/lib/strategy-presets";
+import { apiClient } from "@/lib/api-client";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -301,8 +302,7 @@ export function StrategyCanvas({
 
   useEffect(() => {
     if (nodes.length > 0) return;
-    fetch("/api/templates")
-      .then((res) => (res.ok ? res.json() : []))
+    apiClient.get<UserTemplate[]>("/api/templates")
       .then((data) => setUserTemplates(data))
       .catch(() => {});
   }, [nodes.length]);
@@ -452,10 +452,9 @@ export function StrategyCanvas({
                       </button>
                       <button
                         onClick={() => {
-                          fetch(`/api/templates?id=${t.id}`, { method: "DELETE" })
-                            .then((res) => {
-                              if (res.ok) setUserTemplates((prev) => prev.filter((ut) => ut.id !== t.id));
-                            });
+                          apiClient.delete(`/api/templates?id=${t.id}`)
+                            .then(() => setUserTemplates((prev) => prev.filter((ut) => ut.id !== t.id)))
+                            .catch(() => {});
                         }}
                         className="p-2 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200 flex-shrink-0"
                         title="Delete template"
