@@ -429,20 +429,38 @@ export function StrategyCanvas({
                     <h3 className="text-sm font-semibold text-white">Your templates</h3>
                   </div>
                   {userTemplates.map((t) => (
-                    <button
+                    <div
                       key={t.id}
-                      onClick={() => loadBuildJson(t.buildJson)}
-                      className="w-full text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all duration-200 group"
+                      className="flex items-center gap-1.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-[#22D3EE] group-hover:text-white transition-colors">
-                          {t.name}
-                        </span>
-                        <svg className="w-4 h-4 text-[#64748B] group-hover:text-[#22D3EE] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <button
+                        onClick={() => loadBuildJson(t.buildJson)}
+                        className="flex-1 text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all duration-200 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-[#22D3EE] group-hover:text-white transition-colors">
+                            {t.name}
+                          </span>
+                          <svg className="w-4 h-4 text-[#64748B] group-hover:text-[#22D3EE] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          fetch(`/api/templates?id=${t.id}`, { method: "DELETE" })
+                            .then((res) => {
+                              if (res.ok) setUserTemplates((prev) => prev.filter((ut) => ut.id !== t.id));
+                            });
+                        }}
+                        className="p-2 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200 flex-shrink-0"
+                        title="Delete template"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   ))}
                 </>
               )}
