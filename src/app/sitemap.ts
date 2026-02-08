@@ -32,6 +32,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...blogPosts,
     {
+      url: `${baseUrl}/no-code-mt5-ea-builder`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/no-code-ea-builder`,
       lastModified: new Date(),
       changeFrequency: "monthly",

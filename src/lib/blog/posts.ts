@@ -698,7 +698,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h2>Why Build Without Code?</h2>
       <p>Most forex traders are not programmers. They have strategy ideas — entry rules, indicator combinations, risk management approaches — but translating those ideas into MQL5 code is a massive barrier. Hiring a developer costs hundreds or thousands of dollars per EA, and you still can't easily modify the result.</p>
-      <p>A <a href="/no-code-ea-builder">no-code EA builder</a> lets you express your strategy visually. You think in terms of "buy when RSI is below 30 and price crosses above the 50 EMA" — and that's exactly how you build it.</p>
+      <p>A <a href="/no-code-mt5-ea-builder">no-code MT5 EA builder</a> lets you express your strategy visually. You think in terms of "buy when RSI is below 30 and price crosses above the 50 EMA" — and that's exactly how you build it.</p>
 
       <h2>What You'll Build</h2>
       <p>In this tutorial, we'll create a simple but effective EA:</p>
@@ -1014,7 +1014,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>If any of these answers are vague ("I'll decide in the moment"), it can't be automated. An EA needs exact rules for every scenario.</p>
 
       <h2>Phase 2: Build It Visually</h2>
-      <p>With your rules defined, open <a href="/no-code-ea-builder">AlgoStudio's visual builder</a> and translate them into blocks:</p>
+      <p>With your rules defined, open <a href="/no-code-mt5-ea-builder">AlgoStudio's no-code MT5 EA builder</a> and translate them into blocks:</p>
 
       <ol>
         <li><strong>Start with timing:</strong> Drag a Trading Sessions or Always block to define when the EA runs</li>

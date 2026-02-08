@@ -12,6 +12,7 @@ export default function robots(): MetadataRoute.Robots {
           "/terms",
           "/contact",
           "/blog",
+          "/no-code-mt5-ea-builder",
           "/no-code-ea-builder",
           "/visual-strategy-builder",
           "/automated-trading-for-beginners",
