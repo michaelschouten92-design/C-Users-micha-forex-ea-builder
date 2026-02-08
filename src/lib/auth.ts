@@ -43,7 +43,6 @@ providers.push(
       email: { label: "Email", type: "email", placeholder: "you@email.com" },
       password: { label: "Password", type: "password" },
       isRegistration: { label: "Is Registration", type: "text" },
-      referralCode: { label: "Referral Code", type: "text" },
     },
     async authorize(credentials) {
       if (!credentials?.email || !credentials?.password) {
@@ -53,7 +52,6 @@ providers.push(
       const email = credentials.email as string;
       const password = credentials.password as string;
       const isRegistration = credentials.isRegistration === "true";
-      const referralCode = (credentials.referralCode as string) || undefined;
 
       // Validate password strength
       if (password.length < 8) {
@@ -80,22 +78,11 @@ providers.push(
         // Hash password and create user
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-        // Validate referral code if provided
-        let validReferral: string | undefined;
-        if (referralCode) {
-          const referrer = await prisma.user.findUnique({
-            where: { referralCode },
-            select: { id: true },
-          });
-          if (referrer) validReferral = referralCode;
-        }
-
         const user = await prisma.user.create({
           data: {
             email,
             authProviderId: `credentials_${email}`,
             passwordHash,
-            referredBy: validReferral,
             subscription: {
               create: {
                 tier: "FREE",

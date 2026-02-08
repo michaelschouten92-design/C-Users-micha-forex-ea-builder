@@ -7,6 +7,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { audit } from "@/lib/audit";
 import {
   apiRateLimiter,
+  projectDeleteRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -126,6 +127,15 @@ export async function DELETE(request: Request, { params }: Params) {
 
     if (!session?.user?.id) {
       return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = await checkRateLimit(projectDeleteRateLimiter, `proj-del:${session.user.id}`);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rateLimitResult)),
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      );
     }
 
     // Verify ownership

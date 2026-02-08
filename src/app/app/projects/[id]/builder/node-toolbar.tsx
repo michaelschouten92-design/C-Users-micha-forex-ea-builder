@@ -156,13 +156,15 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                 <div className="mt-2 space-y-1 pl-1">
                   {templates.map((template, index) => {
                     const isLocked = template.proOnly && !isPro;
+                    const isComingSoon = template.comingSoon;
+                    const isDisabled = isLocked || isComingSoon;
 
                     return (
                       <div
                         key={`${template.type}-${index}`}
-                        draggable={!isLocked}
+                        draggable={!isDisabled}
                         onDragStart={(e) => {
-                          if (isLocked) {
+                          if (isDisabled) {
                             e.preventDefault();
                             return;
                           }
@@ -170,17 +172,22 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                         }}
                         aria-label={`${template.label} block`}
                         className={`px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 ${
-                          isLocked
+                          isDisabled
                             ? "opacity-60 cursor-not-allowed"
                             : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
                         }`}
-                        title={isLocked ? "Upgrade to Starter or Pro to use this block" : template.description}
+                        title={isComingSoon ? "Coming soon" : isLocked ? "Upgrade to Starter or Pro to use this block" : template.description}
                       >
                         <div className="flex items-center justify-between">
                           <div className={`text-sm font-medium ${blockColors[template.category]}`}>
                             {template.label}
                           </div>
-                          {template.proOnly && (
+                          {isComingSoon && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(100,116,139,0.3)] text-[#94A3B8]">
+                              SOON
+                            </span>
+                          )}
+                          {template.proOnly && !isComingSoon && (
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                               isPro
                                 ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"

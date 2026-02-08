@@ -250,6 +250,24 @@ export const gdprDeleteRateLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
 });
 
+/**
+ * Rate limiter for password changes
+ * Limits: 5 attempts per hour per user
+ */
+export const changePasswordRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for project deletion
+ * Limits: 10 deletions per hour per user
+ */
+export const projectDeleteRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

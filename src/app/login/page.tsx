@@ -48,7 +48,6 @@ function LoginForm() {
       email,
       password,
       isRegistration: isRegistration.toString(),
-      referralCode: searchParams.get("ref") ?? "",
       redirect: false,
     });
 

@@ -73,10 +73,10 @@ export async function checkExportLimit(userId: string): Promise<{
   const plan = PLANS[tier];
   const max = plan.limits.maxExportsPerMonth;
 
-  // Count exports this month
+  // Count exports this month (use UTC for consistent month boundaries)
   const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
 
   const exportCount = await prisma.exportJob.count({
     where: {

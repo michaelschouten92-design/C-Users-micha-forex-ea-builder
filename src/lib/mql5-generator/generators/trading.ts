@@ -306,17 +306,8 @@ export function generateEntryLogic(
             break;
           }
 
-          case "candlestick-pattern": {
-            buyConditions.push(`(${varPrefix}BuySignal)`);
-            sellConditions.push(`(${varPrefix}SellSignal)`);
-            break;
-          }
-
-          case "support-resistance": {
-            buyConditions.push(`(${varPrefix}NearSupport)`);
-            sellConditions.push(`(${varPrefix}NearResistance)`);
-            break;
-          }
+          // candlestick-pattern and support-resistance are not yet implemented (comingSoon)
+          // They are blocked in the UI and should not reach code generation
         }
       }
     });
@@ -355,9 +346,15 @@ export function generateEntryLogic(
   code.onTick.push(entryCondition);
   code.onTick.push("{");
 
+  // Anti-hedging condition: prevent opening opposite positions when hedging is disabled
+  const noHedge = !ctx.allowHedging;
+
   // Only generate buy logic if there's a Place Buy node
   if (hasBuyNode) {
-    code.onTick.push(`   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`);
+    const buyCheck = noHedge
+      ? `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions} && CountPositionsByType(POSITION_TYPE_SELL) == 0)`
+      : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
+    code.onTick.push(buyCheck);
     code.onTick.push("   {");
     if (hasDaily) {
       code.onTick.push("      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");
@@ -369,7 +366,10 @@ export function generateEntryLogic(
 
   // Only generate sell logic if there's a Place Sell node
   if (hasSellNode) {
-    code.onTick.push(`   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`);
+    const sellCheck = noHedge
+      ? `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions} && CountPositionsByType(POSITION_TYPE_BUY) == 0)`
+      : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
+    code.onTick.push(sellCheck);
     code.onTick.push("   {");
     if (hasDaily) {
       code.onTick.push("      if(OpenSell(sellLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }");

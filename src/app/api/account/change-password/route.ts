@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import {
+  changePasswordRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -19,6 +25,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Rate limit
+    const rateLimitResult = await checkRateLimit(changePasswordRateLimiter, `change-pw:${session.user.id}`);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rateLimitResult) },
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const body = await request.json();
     const parsed = schema.safeParse(body);
 

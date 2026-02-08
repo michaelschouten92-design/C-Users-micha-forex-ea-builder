@@ -423,6 +423,7 @@ export interface NodeTemplate {
   description: string;
   defaultData: Partial<BuilderNodeData>;
   proOnly?: boolean; // Only available for paid users (Starter+)
+  comingSoon?: boolean; // Not yet implemented in code generation
 }
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
@@ -569,6 +570,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Stochastic",
     category: "indicator",
     description: "Stochastic Oscillator (%K, %D)",
+    comingSoon: true,
     defaultData: {
       label: "Stochastic",
       category: "indicator",
@@ -587,6 +589,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Candlestick Patterns",
     category: "priceaction",
     description: "Detect candle patterns",
+    comingSoon: true,
     defaultData: {
       label: "Candlestick Patterns",
       category: "priceaction",
@@ -601,6 +604,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Support/Resistance",
     category: "priceaction",
     description: "Key price levels",
+    comingSoon: true,
     defaultData: {
       label: "Support/Resistance",
       category: "priceaction",
