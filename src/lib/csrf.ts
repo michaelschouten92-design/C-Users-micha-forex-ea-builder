@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -25,22 +24,6 @@ function generateToken(): string {
   const array = new Uint8Array(TOKEN_LENGTH);
   crypto.getRandomValues(array);
   return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-/**
- * Get or create CSRF token from cookies
- * Call this in your layout or page to ensure token exists
- */
-export async function getOrCreateCsrfToken(): Promise<string> {
-  const cookieStore = await cookies();
-  let token = cookieStore.get(CSRF_COOKIE_NAME)?.value;
-
-  if (!token) {
-    token = generateToken();
-    // Note: Cookie will be set via middleware or response
-  }
-
-  return token;
 }
 
 /**

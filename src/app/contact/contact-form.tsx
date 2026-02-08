@@ -25,8 +25,15 @@ export function ContactForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Something went wrong");
+        const text = await res.text();
+        let errorMessage = "Something went wrong";
+        try {
+          const data = JSON.parse(text);
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Non-JSON response (e.g., server error page)
+        }
+        throw new Error(errorMessage);
       }
 
       setSent(true);
