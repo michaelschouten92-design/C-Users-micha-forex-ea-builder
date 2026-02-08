@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -167,10 +168,14 @@ export default async function Home() {
               </div>
 
               {/* Demo screenshot */}
-              <img
+              <Image
                 src="/demo-screenshot.png"
                 alt="AlgoStudio visual strategy builder interface"
+                width={1920}
+                height={1080}
                 className="w-full"
+                quality={95}
+                priority
               />
             </div>
           </div>
