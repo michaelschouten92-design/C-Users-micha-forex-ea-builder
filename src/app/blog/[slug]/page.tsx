@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPostBySlug, getAllPosts } from "@/lib/blog/posts";
+import { getPostBySlug, getAllPosts, getRelatedPosts } from "@/lib/blog/posts";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -148,6 +148,27 @@ export default async function BlogPostPage({ params }: Props) {
             [&_a]:text-[#22D3EE] [&_a]:underline"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* Related Posts */}
+        {getRelatedPosts(slug).length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-lg font-semibold text-white mb-4">Related Articles</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {getRelatedPosts(slug).map((related) => (
+                <Link
+                  key={related.slug}
+                  href={`/blog/${related.slug}`}
+                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 hover:border-[rgba(79,70,229,0.4)] transition-all duration-200 group"
+                >
+                  <p className="text-xs text-[#64748B] mb-1.5">{related.readTime}</p>
+                  <h4 className="text-sm font-medium text-white group-hover:text-[#22D3EE] transition-colors line-clamp-2">
+                    {related.title}
+                  </h4>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-12 bg-gradient-to-br from-[#1A0626] to-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-xl p-8 text-center">

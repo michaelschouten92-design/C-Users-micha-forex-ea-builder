@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -24,6 +25,12 @@ export default function ContactPage() {
         </p>
 
         <div className="space-y-6">
+          {/* Contact Form */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Send us a message</h2>
+            <ContactForm />
+          </div>
+
           {/* Email */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
             <div className="flex items-start gap-4">
@@ -44,7 +51,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-white mb-1">Email</h2>
-                <p className="text-sm text-[#94A3B8] mb-3">For support, questions, or feedback.</p>
+                <p className="text-sm text-[#94A3B8] mb-3">Prefer to email directly?</p>
                 <a
                   href="mailto:contact@algo-studio.com"
                   className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"

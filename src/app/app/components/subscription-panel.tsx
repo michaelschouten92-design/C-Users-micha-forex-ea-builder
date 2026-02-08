@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLANS, formatPrice } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 
@@ -63,8 +63,8 @@ export function SubscriptionPanel({
             {tier === "FREE"
               ? "Upgrade for more projects, more exports, and advanced trade management."
               : tier === "STARTER"
-              ? "Upgrade to Pro for unlimited projects and exports."
-              : "You have access to all features."}
+                ? "Upgrade to Pro for unlimited projects and exports."
+                : "You have access to all features."}
           </p>
         </div>
 
@@ -76,7 +76,12 @@ export function SubscriptionPanel({
               className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
               </svg>
               {tier === "FREE" ? "Upgrade" : "Upgrade to Pro"}
             </Link>
@@ -106,11 +111,29 @@ export function SubscriptionPanel({
             <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
-                  projectPercentage >= 100 ? "bg-[#EF4444]" : projectPercentage >= 80 ? "bg-[#F59E0B]" : "bg-[#22D3EE]"
+                  projectPercentage >= 100
+                    ? "bg-[#EF4444]"
+                    : projectPercentage >= 80
+                      ? "bg-[#F59E0B]"
+                      : "bg-[#22D3EE]"
                 }`}
                 style={{ width: `${Math.min(projectPercentage, 100)}%` }}
               />
             </div>
+          )}
+          {projectLimit !== Infinity && projectPercentage >= 80 && projectPercentage < 100 && (
+            <p className="text-xs text-[#F59E0B] mt-1">
+              {projectLimit - projectCount} project{projectLimit - projectCount !== 1 ? "s" : ""}{" "}
+              remaining
+            </p>
+          )}
+          {projectLimit !== Infinity && projectPercentage >= 100 && (
+            <p className="text-xs text-[#EF4444] mt-1">
+              Project limit reached —{" "}
+              <Link href="/pricing" className="underline hover:text-white">
+                upgrade
+              </Link>
+            </p>
           )}
           {projectLimit === Infinity && (
             <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
@@ -131,11 +154,29 @@ export function SubscriptionPanel({
             <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
-                  exportPercentage >= 100 ? "bg-[#EF4444]" : exportPercentage >= 80 ? "bg-[#F59E0B]" : "bg-[#22D3EE]"
+                  exportPercentage >= 100
+                    ? "bg-[#EF4444]"
+                    : exportPercentage >= 80
+                      ? "bg-[#F59E0B]"
+                      : "bg-[#22D3EE]"
                 }`}
                 style={{ width: `${Math.min(exportPercentage, 100)}%` }}
               />
             </div>
+          )}
+          {exportLimit !== Infinity && exportPercentage >= 80 && exportPercentage < 100 && (
+            <p className="text-xs text-[#F59E0B] mt-1">
+              {exportLimit - exportCount} export{exportLimit - exportCount !== 1 ? "s" : ""}{" "}
+              remaining this month
+            </p>
+          )}
+          {exportLimit !== Infinity && exportPercentage >= 100 && (
+            <p className="text-xs text-[#EF4444] mt-1">
+              Export limit reached —{" "}
+              <Link href="/pricing" className="underline hover:text-white">
+                upgrade
+              </Link>
+            </p>
           )}
           {exportLimit === Infinity && (
             <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
@@ -149,14 +190,16 @@ export function SubscriptionPanel({
       {tier === "FREE" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Upgrade to unlock:</span> More projects, more exports, trade management blocks, and priority support
+            <span className="font-medium">Upgrade to unlock:</span> More projects, more exports,
+            trade management blocks, and priority support
           </p>
         </div>
       )}
       {tier === "STARTER" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Pro features:</span> Unlimited projects, unlimited exports, priority support, early access to new features
+            <span className="font-medium">Pro features:</span> Unlimited projects, unlimited
+            exports, priority support, early access to new features
           </p>
         </div>
       )}

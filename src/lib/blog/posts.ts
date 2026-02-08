@@ -13,7 +13,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "getting-started-with-algostudio",
     title: "Getting Started with AlgoStudio: Build Your First EA in 5 Minutes",
-    description: "Learn how to create your first Expert Advisor using the visual strategy builder. No coding required.",
+    description:
+      "Learn how to create your first Expert Advisor using the visual strategy builder. No coding required.",
     date: "2025-03-15",
     author: "AlgoStudio Team",
     readTime: "4 min read",
@@ -42,7 +43,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "best-indicators-for-forex-ea",
     title: "The 5 Best Indicators for Forex Expert Advisors",
-    description: "Discover which technical indicators work best in automated forex trading strategies and how to combine them effectively.",
+    description:
+      "Discover which technical indicators work best in automated forex trading strategies and how to combine them effectively.",
     date: "2025-03-10",
     author: "AlgoStudio Team",
     readTime: "6 min read",
@@ -77,7 +79,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "backtest-your-ea-metatrader5",
     title: "How to Backtest Your EA in MetaTrader 5: Complete Guide",
-    description: "Step-by-step guide to backtesting your Expert Advisor in MetaTrader 5's Strategy Tester for reliable results.",
+    description:
+      "Step-by-step guide to backtesting your Expert Advisor in MetaTrader 5's Strategy Tester for reliable results.",
     date: "2025-03-05",
     author: "AlgoStudio Team",
     readTime: "5 min read",
@@ -114,7 +117,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "what-is-an-expert-advisor",
     title: "What Is an Expert Advisor (EA)? The Complete Guide for 2025",
-    description: "Everything you need to know about Expert Advisors: what they are, how they work in MetaTrader 5, and why traders use them to automate forex strategies.",
+    description:
+      "Everything you need to know about Expert Advisors: what they are, how they work in MetaTrader 5, and why traders use them to automate forex strategies.",
     date: "2025-03-20",
     author: "AlgoStudio Team",
     readTime: "7 min read",
@@ -181,7 +185,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "risk-management-for-forex-ea",
     title: "Risk Management for Forex EAs: How to Protect Your Capital",
-    description: "Learn the essential risk management techniques every Expert Advisor needs: position sizing, stop losses, drawdown limits, and the rules professional traders follow.",
+    description:
+      "Learn the essential risk management techniques every Expert Advisor needs: position sizing, stop losses, drawdown limits, and the rules professional traders follow.",
     date: "2025-03-25",
     author: "AlgoStudio Team",
     readTime: "8 min read",
@@ -248,7 +253,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "automated-trading-vs-manual-trading",
     title: "Automated Trading vs Manual Trading: Which Is Better?",
-    description: "A detailed comparison of automated and manual forex trading. Learn the pros, cons, and which approach fits your trading style and goals.",
+    description:
+      "A detailed comparison of automated and manual forex trading. Learn the pros, cons, and which approach fits your trading style and goals.",
     date: "2025-04-01",
     author: "AlgoStudio Team",
     readTime: "6 min read",
@@ -315,7 +321,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "metatrader-5-vs-metatrader-4",
     title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use?",
-    description: "A comprehensive comparison of MT4 and MT5 for forex trading and EA development. Why MT5 is the better choice for serious traders in 2025.",
+    description:
+      "A comprehensive comparison of MT4 and MT5 for forex trading and EA development. Why MT5 is the better choice for serious traders in 2025.",
     date: "2025-04-05",
     author: "AlgoStudio Team",
     readTime: "6 min read",
@@ -372,7 +379,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "moving-average-crossover-strategy",
     title: "Moving Average Crossover Strategy: Build It Step by Step",
-    description: "Learn how to build and optimize a Moving Average crossover Expert Advisor. Includes entry rules, exit rules, filters, and optimization tips.",
+    description:
+      "Learn how to build and optimize a Moving Average crossover Expert Advisor. Includes entry rules, exit rules, filters, and optimization tips.",
     date: "2025-04-10",
     author: "AlgoStudio Team",
     readTime: "8 min read",
@@ -445,7 +453,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "avoid-overfitting-expert-advisor",
     title: "How to Avoid Overfitting Your Expert Advisor",
-    description: "Overfitting is the #1 reason EAs fail in live trading. Learn how to detect it, prevent it, and build robust strategies that work on unseen data.",
+    description:
+      "Overfitting is the #1 reason EAs fail in live trading. Learn how to detect it, prevent it, and build robust strategies that work on unseen data.",
     date: "2025-04-15",
     author: "AlgoStudio Team",
     readTime: "7 min read",
@@ -512,7 +521,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "best-forex-pairs-for-automated-trading",
     title: "The Best Forex Pairs for Automated Trading in 2025",
-    description: "Not all currency pairs are equal for EAs. Discover which forex pairs offer the best liquidity, spreads, and trend behavior for automated strategies.",
+    description:
+      "Not all currency pairs are equal for EAs. Discover which forex pairs offer the best liquidity, spreads, and trend behavior for automated strategies.",
     date: "2025-04-20",
     author: "AlgoStudio Team",
     readTime: "6 min read",
@@ -577,7 +587,8 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "forex-trading-sessions-explained",
     title: "Forex Trading Sessions Explained: When Should Your EA Trade?",
-    description: "Understand the London, New York, Tokyo, and Sydney sessions. Learn which sessions are best for different EA strategies and how session timing affects profitability.",
+    description:
+      "Understand the London, New York, Tokyo, and Sydney sessions. Learn which sessions are best for different EA strategies and how session timing affects profitability.",
     date: "2025-04-25",
     author: "AlgoStudio Team",
     readTime: "7 min read",
@@ -670,7 +681,26 @@ export function getPostBySlug(slug: string): BlogPost | undefined {
 }
 
 export function getAllPosts(): BlogPost[] {
-  return [...BLOG_POSTS].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  return [...BLOG_POSTS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export function getRelatedPosts(slug: string, limit = 3): BlogPost[] {
+  const post = getPostBySlug(slug);
+  if (!post) return [];
+
+  const others = BLOG_POSTS.filter((p) => p.slug !== slug);
+
+  // Score by number of shared tags
+  const scored = others.map((p) => ({
+    post: p,
+    score: p.tags.filter((t) => post.tags.includes(t)).length,
+  }));
+
+  return scored
+    .sort(
+      (a, b) =>
+        b.score - a.score || new Date(b.post.date).getTime() - new Date(a.post.date).getTime()
+    )
+    .slice(0, limit)
+    .map((s) => s.post);
 }

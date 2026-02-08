@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 export function CreateProjectButton() {
@@ -11,6 +12,7 @@ export function CreateProjectButton() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isLimitError, setIsLimitError] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -24,6 +26,7 @@ export function CreateProjectButton() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setIsLimitError(false);
     setLoading(true);
 
     try {
@@ -35,7 +38,11 @@ export function CreateProjectButton() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Something went wrong");
+        const msg = data.error || "Something went wrong";
+        if (res.status === 403 || msg.toLowerCase().includes("limit")) {
+          setIsLimitError(true);
+        }
+        throw new Error(msg);
       }
 
       const project = await res.json();
@@ -68,8 +75,31 @@ export function CreateProjectButton() {
                 <h3 className="text-lg font-semibold text-white mb-4">New Project</h3>
 
                 {error && (
-                  <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg mb-4 text-sm">
-                    {error}
+                  <div
+                    className={`p-3 rounded-lg mb-4 text-sm border ${isLimitError ? "bg-[rgba(79,70,229,0.1)] border-[rgba(79,70,229,0.3)] text-[#A78BFA]" : "bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#EF4444]"}`}
+                  >
+                    <p>{error}</p>
+                    {isLimitError && (
+                      <Link
+                        href="/pricing"
+                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-[#4F46E5] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 10l7-7m0 0l7 7m-7-7v18"
+                          />
+                        </svg>
+                        Upgrade Plan
+                      </Link>
+                    )}
                   </div>
                 )}
 
