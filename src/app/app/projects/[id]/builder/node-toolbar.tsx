@@ -174,7 +174,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                             ? "opacity-60 cursor-not-allowed"
                             : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
                         }`}
-                        title={isLocked ? "Upgrade to Pro to use this block" : template.description}
+                        title={isLocked ? "Upgrade to Starter or Pro to use this block" : template.description}
                       >
                         <div className="flex items-center justify-between">
                           <div className={`text-sm font-medium ${blockColors[template.category]}`}>
@@ -186,7 +186,7 @@ export function NodeToolbar({ onDragStart, isPro = false, onClose, settings, onS
                                 ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"
                                 : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
                             }`}>
-                              {isLocked ? "🔒 PRO" : "PRO"}
+                              {isLocked ? "🔒 STARTER+" : "STARTER+"}
                             </span>
                           )}
                         </div>

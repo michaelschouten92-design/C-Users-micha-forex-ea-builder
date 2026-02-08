@@ -422,7 +422,7 @@ export interface NodeTemplate {
   category: NodeCategory;
   description: string;
   defaultData: Partial<BuilderNodeData>;
-  proOnly?: boolean; // Only available for Pro users
+  proOnly?: boolean; // Only available for paid users (Starter+)
 }
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
