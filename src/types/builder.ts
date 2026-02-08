@@ -589,7 +589,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Candlestick Patterns",
     category: "priceaction",
     description: "Detect candle patterns",
-    comingSoon: true,
     defaultData: {
       label: "Candlestick Patterns",
       category: "priceaction",
@@ -604,7 +603,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Support/Resistance",
     category: "priceaction",
     description: "Key price levels",
-    comingSoon: true,
     defaultData: {
       label: "Support/Resistance",
       category: "priceaction",

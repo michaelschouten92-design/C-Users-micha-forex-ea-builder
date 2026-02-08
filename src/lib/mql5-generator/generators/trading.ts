@@ -306,8 +306,17 @@ export function generateEntryLogic(
             break;
           }
 
-          // candlestick-pattern and support-resistance are not yet implemented (comingSoon)
-          // They are blocked in the UI and should not reach code generation
+          case "candlestick-pattern": {
+            buyConditions.push(`(${varPrefix}BuySignal)`);
+            sellConditions.push(`(${varPrefix}SellSignal)`);
+            break;
+          }
+
+          case "support-resistance": {
+            buyConditions.push(`(${varPrefix}NearSupport)`);
+            sellConditions.push(`(${varPrefix}NearResistance)`);
+            break;
+          }
         }
       }
     });
