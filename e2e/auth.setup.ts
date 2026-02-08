@@ -5,6 +5,7 @@ const authFile = "e2e/.auth/user.json";
 /**
  * Authentication setup - runs before all tests that require authentication.
  * Creates a logged-in session and saves it for reuse.
+ * Also cleans up leftover test projects to avoid hitting plan limits.
  */
 setup("authenticate", async ({ page }) => {
   // Use test credentials from environment or defaults
@@ -31,6 +32,9 @@ setup("authenticate", async ({ page }) => {
     // Verify we're logged in
     await expect(page).toHaveURL("/app");
 
+    // Clean up leftover test projects to avoid hitting plan limits
+    await cleanupTestProjects(page);
+
     // Save authentication state
     await page.context().storageState({ path: authFile });
     console.log("Authentication successful - session saved");
@@ -44,3 +48,40 @@ setup("authenticate", async ({ page }) => {
     await page.context().storageState({ path: authFile });
   }
 });
+
+/**
+ * Delete leftover test projects from previous e2e runs.
+ * Matches projects named "E2E Test Project *" or "Test Project *".
+ */
+async function cleanupTestProjects(page: import("@playwright/test").Page) {
+  try {
+    const baseURL = page.url().replace(/\/app$/, "");
+
+    // Fetch all projects
+    const res = await page.request.get(`${baseURL}/api/projects?limit=50`);
+    if (!res.ok()) return;
+
+    const { data: projects } = await res.json();
+    const testProjects = (projects as { id: string; name: string }[]).filter(
+      (p) => /^(E2E Test Project|Test Project)\s/.test(p.name)
+    );
+
+    if (testProjects.length === 0) return;
+
+    console.log(`Cleaning up ${testProjects.length} leftover test project(s)...`);
+
+    // Read CSRF token from cookies
+    const cookies = await page.context().cookies();
+    const csrfToken = cookies.find((c) => c.name === "csrf_token")?.value ?? "";
+
+    for (const project of testProjects) {
+      await page.request.delete(`${baseURL}/api/projects/${project.id}`, {
+        headers: { "x-csrf-token": csrfToken },
+      });
+    }
+
+    console.log("Cleanup complete.");
+  } catch (err) {
+    console.log("Project cleanup failed (non-fatal):", err);
+  }
+}
