@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
+import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
   title: "Visual Strategy Builder — Drag-and-Drop EA Builder for MT5",
@@ -81,6 +82,7 @@ const blockCategories = [
 export default function VisualStrategyBuilderPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
+      <SiteNav />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}

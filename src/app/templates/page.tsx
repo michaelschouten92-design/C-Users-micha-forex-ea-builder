@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CTASection } from "@/components/marketing/cta-section";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
+import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
   title: "Free Expert Advisor Templates — Pre-Built MT5 EA Strategies",
@@ -60,6 +61,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16">
+      <SiteNav />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
