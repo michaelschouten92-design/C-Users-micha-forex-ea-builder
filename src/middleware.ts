@@ -29,7 +29,7 @@ function hasSessionCookie(request: NextRequest): boolean {
  * 2. Validates CSRF token on state-changing requests (POST, PUT, PATCH, DELETE)
  * 3. Excludes webhooks and NextAuth internal routes
  */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ============================================
