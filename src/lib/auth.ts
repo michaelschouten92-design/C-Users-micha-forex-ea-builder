@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
@@ -14,6 +14,22 @@ import {
 import { sendWelcomeEmail, sendVerificationEmail } from "./email";
 import { randomBytes, createHash } from "crypto";
 import type { Provider } from "next-auth/providers";
+
+class AccountExistsError extends CredentialsSignin {
+  code = "account_exists";
+}
+
+class InvalidCredentialsError extends CredentialsSignin {
+  code = "invalid_credentials";
+}
+
+class PasswordTooShortError extends CredentialsSignin {
+  code = "password_too_short";
+}
+
+class RateLimitError extends CredentialsSignin {
+  code = "rate_limited";
+}
 
 const SALT_ROUNDS = 12;
 
@@ -60,7 +76,7 @@ providers.push(
 
       // Validate password strength
       if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters");
+        throw new PasswordTooShortError();
       }
 
       // Find existing user
@@ -72,7 +88,7 @@ providers.push(
         // Rate limit registration attempts by email
         const rateLimitResult = await checkRateLimit(registrationRateLimiter, `register:${email}`);
         if (!rateLimitResult.success) {
-          throw new Error("Too many registration attempts. Please try again later.");
+          throw new RateLimitError();
         }
 
         // Also rate limit by IP to prevent mass account creation
@@ -80,13 +96,13 @@ providers.push(
         if (regIp) {
           const ipResult = await checkRateLimit(registrationRateLimiter, `register-ip:${regIp}`);
           if (!ipResult.success) {
-            throw new Error("Too many registration attempts. Please try again later.");
+            throw new RateLimitError();
           }
         }
 
         // Registration flow
         if (existingUser) {
-          throw new Error("An account with this email already exists");
+          throw new AccountExistsError();
         }
 
         // Hash password and create user
@@ -136,7 +152,7 @@ providers.push(
           `login:${email.toLowerCase()}`
         );
         if (!loginRateResult.success) {
-          throw new Error("Too many login attempts. Please try again later.");
+          throw new RateLimitError();
         }
 
         // Also rate limit by IP to prevent credential stuffing across emails
@@ -144,20 +160,20 @@ providers.push(
         if (clientIp) {
           const ipRateResult = await checkRateLimit(loginIpRateLimiter, `login-ip:${clientIp}`);
           if (!ipRateResult.success) {
-            throw new Error("Too many login attempts. Please try again later.");
+            throw new RateLimitError();
           }
         }
 
         if (!existingUser || !existingUser.passwordHash) {
           // Use generic message to prevent email enumeration
-          throw new Error("Invalid email or password");
+          throw new InvalidCredentialsError();
         }
 
         // Verify password
         const isValidPassword = await bcrypt.compare(password, existingUser.passwordHash);
 
         if (!isValidPassword) {
-          throw new Error("Invalid email or password");
+          throw new InvalidCredentialsError();
         }
 
         return {

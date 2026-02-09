@@ -51,7 +51,14 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError(result.error);
+      const ERROR_MESSAGES: Record<string, string> = {
+        account_exists: "An account with this email already exists. Please sign in instead.",
+        invalid_credentials: "Invalid email or password.",
+        password_too_short: "Password must be at least 8 characters.",
+        rate_limited: "Too many attempts. Please try again later.",
+      };
+      const code = (result as unknown as Record<string, string>).code;
+      setError(ERROR_MESSAGES[code] || "Something went wrong. Please try again.");
     } else {
       router.push("/app");
       router.refresh();
