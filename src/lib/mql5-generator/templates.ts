@@ -129,6 +129,69 @@ ${deinitCode.length > 0 ? deinitCode.map((line) => "   " + line).join("\n") : " 
 }
 
 export function generateOnTick(ctx: GeneratorContext, tickCode: string[]): string {
+  // Build daily P&L check code if enabled
+  let dailyPnlCode = "";
+  if (ctx.maxDailyProfitPercent > 0 || ctx.maxDailyLossPercent > 0) {
+    dailyPnlCode = `
+   //--- Daily P&L Protection
+   {
+      double dailyPnL = 0;
+      datetime todayStart = iTime(_Symbol, PERIOD_D1, 0);
+
+      // Sum closed trades today
+      HistorySelect(todayStart, TimeCurrent());
+      for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
+      {
+         ulong dealTicket = HistoryDealGetTicket(i);
+         if(dealTicket > 0 && HistoryDealGetInteger(dealTicket, DEAL_MAGIC) == InpMagicNumber)
+         {
+            dailyPnL += HistoryDealGetDouble(dealTicket, DEAL_PROFIT)
+                      + HistoryDealGetDouble(dealTicket, DEAL_SWAP)
+                      + HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+         }
+      }
+
+      // Add floating P&L
+      for(int i = PositionsTotal() - 1; i >= 0; i--)
+      {
+         ulong ticket = PositionGetTicket(i);
+         if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+            dailyPnL += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+      }
+
+      double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+      double dailyPnLPercent = (balance > 0) ? (dailyPnL / balance) * 100.0 : 0;
+`;
+    if (ctx.maxDailyProfitPercent > 0) {
+      dailyPnlCode += `
+      if(dailyPnLPercent >= ${ctx.maxDailyProfitPercent})
+      {
+         CloseAllPositions();
+         static bool profitLimitHit = false;
+         if(!profitLimitHit) { Print("Daily profit target reached: ", DoubleToString(dailyPnLPercent, 2), "%"); profitLimitHit = true; }
+         if(iTime(_Symbol, PERIOD_D1, 0) != todayStart) profitLimitHit = false;
+         return;
+      }
+`;
+    }
+    if (ctx.maxDailyLossPercent > 0) {
+      dailyPnlCode += `
+      if(dailyPnLPercent <= -${ctx.maxDailyLossPercent})
+      {
+         CloseAllPositions();
+         static bool lossLimitHit = false;
+         if(!lossLimitHit) { Print("Daily loss limit reached: ", DoubleToString(dailyPnLPercent, 2), "%"); lossLimitHit = true; }
+         if(iTime(_Symbol, PERIOD_D1, 0) != todayStart) lossLimitHit = false;
+         return;
+      }
+`;
+    }
+    dailyPnlCode += "   }\n";
+  }
+
+  // Use configurable spread from settings if provided
+  const spreadValue = ctx.maxSpreadPips > 0 ? `${ctx.maxSpreadPips * 10}` : "InpMaxSpread";
+
   return `//+------------------------------------------------------------------+
 //| Expert tick function                                               |
 //+------------------------------------------------------------------+
@@ -153,13 +216,13 @@ void OnTick()
    }
 
    //--- Spread filter
-   if(InpMaxSpread > 0)
+   if(${spreadValue} > 0)
    {
       int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
-      if(currentSpread > InpMaxSpread)
+      if(currentSpread > ${spreadValue})
          return;
    }
-
+${dailyPnlCode}
    //--- Count current positions
    int positionsCount = CountPositions();
 

@@ -40,6 +40,12 @@ import type {
   BreakevenTrigger,
   TrailingStopMethod,
   LockProfitMethod,
+  CCINodeData,
+  WilliamsRNodeData,
+  ParabolicSARNodeData,
+  MomentumNodeData,
+  EnvelopesNodeData,
+  TimeExitNodeData,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -273,6 +279,16 @@ function NodeFields({
         return <ADXFields data={data as ADXNodeData} onChange={onChange} />;
       case "stochastic":
         return <StochasticFields data={data as StochasticNodeData} onChange={onChange} />;
+      case "cci":
+        return <CCIFields data={data as CCINodeData} onChange={onChange} />;
+      case "williams-r":
+        return <WilliamsRFields data={data as WilliamsRNodeData} onChange={onChange} />;
+      case "parabolic-sar":
+        return <ParabolicSARFields data={data as ParabolicSARNodeData} onChange={onChange} />;
+      case "momentum":
+        return <MomentumFields data={data as MomentumNodeData} onChange={onChange} />;
+      case "envelopes":
+        return <EnvelopesFields data={data as EnvelopesNodeData} onChange={onChange} />;
     }
   }
 
@@ -305,6 +321,8 @@ function NodeFields({
         return <TakeProfitFields data={data as TakeProfitNodeData} onChange={onChange} />;
       case "close-condition":
         return <CloseConditionFields data={data as CloseConditionNodeData} onChange={onChange} />;
+      case "time-exit":
+        return <TimeExitFields data={data as TimeExitNodeData} onChange={onChange} />;
     }
   }
 
@@ -624,6 +642,7 @@ function MovingAverageFields({
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MovingAverageNodeData["signalMode"] })}
+        tooltip="Every tick checks each price update. Candle close waits for bar confirmation"
       />
       <div>
         <NumberField
@@ -661,6 +680,7 @@ function RSIFields({
           min={1}
           max={500}
           onChange={(v) => onChange({ period: v })}
+          tooltip="Number of bars used for calculation. Higher values = smoother, slower signals"
         />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
@@ -669,6 +689,7 @@ function RSIFields({
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as RSINodeData["signalMode"] })}
+        tooltip="Every tick checks each price update. Candle close waits for bar confirmation"
       />
       <div>
         <NumberField
@@ -677,6 +698,7 @@ function RSIFields({
           min={50}
           max={100}
           onChange={(v) => onChange({ overboughtLevel: v })}
+          tooltip="Indicator value above which the market is considered overbought"
         />
         <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       </div>
@@ -687,6 +709,7 @@ function RSIFields({
           min={0}
           max={50}
           onChange={(v) => onChange({ oversoldLevel: v })}
+          tooltip="Indicator value below which the market is considered oversold"
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
@@ -1362,6 +1385,7 @@ function PlaceBuyFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ riskPercent: v })}
+            tooltip="Percentage of account balance risked per trade"
           />
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
@@ -1521,6 +1545,7 @@ function StopLossFields({
               max={10}
               step={0.1}
               onChange={(v) => onChange({ atrMultiplier: v })}
+              tooltip="Multiplies the ATR value. Higher = wider stop loss"
             />
             <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
           </div>
@@ -1779,6 +1804,7 @@ function TrailingStopFields({
           { value: "FIXED_PIPS", label: "Fixed Pips" },
           { value: "ATR_BASED", label: "ATR-Based" },
           { value: "PERCENTAGE", label: "Percentage" },
+          { value: "INDICATOR", label: "From Indicator (SAR/MA)" },
         ]}
         onChange={(v) => onChange({ method: v as TrailingStopMethod })}
       />
@@ -1833,6 +1859,15 @@ function TrailingStopFields({
             onChange={(v) => onChange({ trailPercent: v })}
           />
           <OptimizableFieldCheckbox fieldName="trailPercent" data={data} onChange={onChange} />
+        </div>
+      )}
+      {data.method === "INDICATOR" && (
+        <div
+          className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+          role="note"
+        >
+          Connect a Parabolic SAR or Moving Average indicator block. The indicator value will be
+          used as the trailing stop level.
         </div>
       )}
       <div>
@@ -1908,6 +1943,9 @@ function PartialCloseFields({
       >
         Closes a portion of the position at the profit target to secure partial profits.
       </div>
+      <div className="text-xs text-[#22D3EE] bg-[rgba(34,211,238,0.05)] border border-[rgba(34,211,238,0.15)] p-3 rounded-lg">
+        Add multiple Partial Close blocks for staged exits at different profit levels.
+      </div>
     </>
   );
 }
@@ -1973,6 +2011,332 @@ function LockProfitFields({
       >
         Automatically adjusts stop loss to lock in a portion of unrealized profit as the trade
         progresses.
+      </div>
+    </>
+  );
+}
+
+// ============================================
+// NEW INDICATOR FIELD COMPONENTS
+// ============================================
+
+function CCIFields({
+  data,
+  onChange,
+}: {
+  data: CCINodeData;
+  onChange: (updates: Partial<CCINodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as CCINodeData["signalMode"] })}
+      />
+      <div>
+        <NumberField
+          label="Overbought Level"
+          value={data.overboughtLevel}
+          min={-500}
+          max={500}
+          onChange={(v) => onChange({ overboughtLevel: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Oversold Level"
+          value={data.oversoldLevel}
+          min={-500}
+          max={500}
+          onChange={(v) => onChange({ oversoldLevel: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
+      </div>
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought level must be higher than oversold level" />
+      )}
+    </>
+  );
+}
+
+function WilliamsRFields({
+  data,
+  onChange,
+}: {
+  data: WilliamsRNodeData;
+  onChange: (updates: Partial<WilliamsRNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as WilliamsRNodeData["signalMode"] })}
+      />
+      <div>
+        <NumberField
+          label="Overbought Level"
+          value={data.overboughtLevel}
+          min={-100}
+          max={0}
+          onChange={(v) => onChange({ overboughtLevel: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Oversold Level"
+          value={data.oversoldLevel}
+          min={-100}
+          max={0}
+          onChange={(v) => onChange({ oversoldLevel: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
+      </div>
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought level must be higher than oversold level" />
+      )}
+    </>
+  );
+}
+
+function ParabolicSARFields({
+  data,
+  onChange,
+}: {
+  data: ParabolicSARNodeData;
+  onChange: (updates: Partial<ParabolicSARNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Step"
+          value={data.step}
+          min={0.001}
+          max={1}
+          step={0.001}
+          onChange={(v) => onChange({ step: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="step" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Maximum"
+          value={data.maximum}
+          min={0.01}
+          max={5}
+          step={0.01}
+          onChange={(v) => onChange({ maximum: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="maximum" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as ParabolicSARNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        SAR dots above price suggest downtrend, below price suggest uptrend. Can also be used as
+        trailing stop.
+      </div>
+    </>
+  );
+}
+
+function MomentumFields({
+  data,
+  onChange,
+}: {
+  data: MomentumNodeData;
+  onChange: (updates: Partial<MomentumNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Level"
+          value={data.level}
+          min={0}
+          max={200}
+          onChange={(v) => onChange({ level: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="level" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as MomentumNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Values above {data.level} indicate bullish momentum, below indicate bearish.
+      </div>
+    </>
+  );
+}
+
+function EnvelopesFields({
+  data,
+  onChange,
+}: {
+  data: EnvelopesNodeData;
+  onChange: (updates: Partial<EnvelopesNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Method"
+        value={data.method}
+        options={[
+          { value: "SMA", label: "Simple (SMA)" },
+          { value: "EMA", label: "Exponential (EMA)" },
+        ]}
+        onChange={(v) => onChange({ method: v as EnvelopesNodeData["method"] })}
+      />
+      <div>
+        <NumberField
+          label="Period"
+          value={data.period}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ period: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Deviation"
+          value={data.deviation}
+          min={0.01}
+          max={10}
+          step={0.01}
+          onChange={(v) => onChange({ deviation: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="deviation" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Shift"
+          value={data.shift}
+          min={0}
+          max={100}
+          onChange={(v) => onChange({ shift: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as EnvelopesNodeData["signalMode"] })}
+      />
+    </>
+  );
+}
+
+// ============================================
+// TIME EXIT FIELD COMPONENT
+// ============================================
+
+function TimeExitFields({
+  data,
+  onChange,
+}: {
+  data: TimeExitNodeData;
+  onChange: (updates: Partial<TimeExitNodeData>) => void;
+}) {
+  return (
+    <>
+      <NumberField
+        label="Exit After Bars"
+        value={data.exitAfterBars}
+        min={1}
+        max={1000}
+        onChange={(v) => onChange({ exitAfterBars: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.exitTimeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ exitTimeframe: v as Timeframe })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Automatically closes positions after the specified number of bars on the selected timeframe.
       </div>
     </>
   );

@@ -25,6 +25,7 @@ import {
   generateStopLossCode,
   generateTakeProfitCode,
   generateEntryLogic,
+  generateTimeExitCode,
 } from "./generators/trading";
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
@@ -74,6 +75,9 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
       buildJson.settings?.maxSellPositions ?? buildJson.settings?.maxOpenTrades ?? 1,
     conditionMode: buildJson.settings?.conditionMode ?? "AND",
     maxTradesPerDay: buildJson.settings?.maxTradesPerDay ?? 0,
+    maxDailyProfitPercent: buildJson.settings?.maxDailyProfitPercent ?? 0,
+    maxDailyLossPercent: buildJson.settings?.maxDailyLossPercent ?? 0,
+    maxSpreadPips: buildJson.settings?.maxSpreadPips ?? 0,
   };
 
   const code: GeneratedCode = {
@@ -130,6 +134,11 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "atr",
     "adx",
     "stochastic",
+    "cci",
+    "williams-r",
+    "parabolic-sar",
+    "momentum",
+    "envelopes",
   ];
   const indicatorNodes = buildJson.nodes.filter(
     (n) =>
@@ -238,9 +247,19 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);
   });
 
+  // Generate time-based exit code
+  const timeExitNodes = buildJson.nodes.filter(
+    (n) =>
+      (n.type === "time-exit" || ("tradingType" in n.data && n.data.tradingType === "time-exit")) &&
+      isConnected(n)
+  );
+  timeExitNodes.forEach((node) => {
+    generateTimeExitCode(node, code);
+  });
+
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {
-    generateTradeManagementCode(node, code);
+    generateTradeManagementCode(node, indicatorNodes, code);
   });
 
   // Assemble final code

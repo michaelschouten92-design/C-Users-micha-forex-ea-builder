@@ -6,8 +6,10 @@ import type {
   StopLossNodeData,
   TakeProfitNodeData,
   RangeBreakoutNodeData,
+  TimeExitNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
+import { getTimeframe } from "../types";
 import { createInput } from "./shared";
 
 export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): void {
@@ -478,6 +480,51 @@ export function generateEntryLogic(
               `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], InpStoch${indIndex}Overbought) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Overbought))`
             );
             break;
+
+          case "cci":
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Oversold))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Overbought))`
+            );
+            break;
+
+          case "williams-r":
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpWPR${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Oversold))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpWPR${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Overbought))`
+            );
+            break;
+
+          case "parabolic-sar":
+            buyConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) && DoubleLT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
+            );
+            sellConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) && DoubleGT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
+            );
+            break;
+
+          case "momentum":
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpMom${indIndex}Level) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpMom${indIndex}Level) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
+            );
+            break;
+
+          case "envelopes":
+            buyConditions.push(
+              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
+            );
+            break;
         }
       }
     });
@@ -591,5 +638,43 @@ export function generateEntryLogic(
     code.onTick.push("   }");
   }
 
+  code.onTick.push("}");
+}
+
+export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): void {
+  const data = node.data as TimeExitNodeData;
+  const group = "Time Exit";
+
+  code.inputs.push(
+    createInput(
+      node,
+      "exitAfterBars",
+      "InpTimeExitBars",
+      "int",
+      data.exitAfterBars,
+      "Exit After N Bars",
+      group
+    )
+  );
+
+  code.onTick.push("");
+  code.onTick.push("//--- Time-Based Exit");
+  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
+  code.onTick.push("{");
+  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
+  code.onTick.push("   if(PositionSelectByTicket(ticket))");
+  code.onTick.push("   {");
+  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push("      {");
+  code.onTick.push("         datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);");
+  code.onTick.push(
+    `         int barsSinceEntry = iBarShift(_Symbol, ${getTimeframe(data.exitTimeframe)}, openTime);`
+  );
+  code.onTick.push("         if(barsSinceEntry >= InpTimeExitBars)");
+  code.onTick.push("         {");
+  code.onTick.push("            trade.PositionClose(ticket);");
+  code.onTick.push("         }");
+  code.onTick.push("      }");
+  code.onTick.push("   }");
   code.onTick.push("}");
 }

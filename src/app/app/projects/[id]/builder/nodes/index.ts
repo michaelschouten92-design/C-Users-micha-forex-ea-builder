@@ -11,6 +11,11 @@ import { BollingerBandsNode } from "./indicators/bollinger-bands-node";
 import { ATRNode } from "./indicators/atr-node";
 import { ADXNode } from "./indicators/adx-node";
 import { StochasticNode } from "./indicators/stochastic-node";
+import { CCINode } from "./indicators/cci-node";
+import { WilliamsRNode } from "./indicators/williams-r-node";
+import { ParabolicSARNode } from "./indicators/parabolic-sar-node";
+import { MomentumNode } from "./indicators/momentum-node";
+import { EnvelopesNode } from "./indicators/envelopes-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
@@ -18,6 +23,7 @@ import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
 import { StopLossNode } from "./stop-loss-node";
 import { TakeProfitNode } from "./take-profit-node";
 import { CloseConditionNode } from "./close-condition-node";
+import { TimeExitNode } from "./trading/time-exit-node";
 import {
   BreakevenStopNode,
   TrailingStopNode,
@@ -28,15 +34,20 @@ import {
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
-  "always": AlwaysNode,
+  always: AlwaysNode,
   "custom-times": CustomTimesNode,
   "moving-average": MovingAverageNode,
-  "rsi": RSINode,
-  "macd": MACDNode,
+  rsi: RSINode,
+  macd: MACDNode,
   "bollinger-bands": BollingerBandsNode,
-  "atr": ATRNode,
-  "adx": ADXNode,
-  "stochastic": StochasticNode,
+  atr: ATRNode,
+  adx: ADXNode,
+  stochastic: StochasticNode,
+  cci: CCINode,
+  "williams-r": WilliamsRNode,
+  "parabolic-sar": ParabolicSARNode,
+  momentum: MomentumNode,
+  envelopes: EnvelopesNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
   "range-breakout": RangeBreakoutNode,
@@ -45,6 +56,7 @@ export const nodeTypes: NodeTypes = {
   "stop-loss": StopLossNode,
   "take-profit": TakeProfitNode,
   "close-condition": CloseConditionNode,
+  "time-exit": TimeExitNode,
   "breakeven-stop": BreakevenStopNode,
   "trailing-stop": TrailingStopNode,
   "partial-close": PartialCloseNode,
@@ -63,6 +75,11 @@ export {
   ATRNode,
   ADXNode,
   StochasticNode,
+  CCINode,
+  WilliamsRNode,
+  ParabolicSARNode,
+  MomentumNode,
+  EnvelopesNode,
   CandlestickPatternNode,
   SupportResistanceNode,
   RangeBreakoutNode,
@@ -71,6 +88,7 @@ export {
   StopLossNode,
   TakeProfitNode,
   CloseConditionNode,
+  TimeExitNode,
   BreakevenStopNode,
   TrailingStopNode,
   PartialCloseNode,

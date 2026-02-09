@@ -7,6 +7,11 @@ import type {
   ATRNodeData,
   ADXNodeData,
   StochasticNodeData,
+  CCINodeData,
+  WilliamsRNodeData,
+  ParabolicSARNodeData,
+  MomentumNodeData,
+  EnvelopesNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, getTimeframe } from "../types";
@@ -405,6 +410,251 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code); // %K
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code); // %D
+        break;
+      }
+
+      case "cci": {
+        const cci = data as CCINodeData;
+        const price = "PRICE_CLOSE";
+        const copyBars = cci.signalMode === "candle_close" ? 4 : 3;
+        const group = `CCI ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "period",
+            `InpCCI${index}Period`,
+            "int",
+            cci.period,
+            `CCI ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "overboughtLevel",
+            `InpCCI${index}Overbought`,
+            "double",
+            cci.overboughtLevel,
+            `CCI ${index + 1} Overbought`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "oversoldLevel",
+            `InpCCI${index}Oversold`,
+            "double",
+            cci.oversoldLevel,
+            `CCI ${index + 1} Oversold`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iCCI(_Symbol, ${getTimeframe(cci.timeframe)}, InpCCI${index}Period, ${price});`
+        );
+        addHandleValidation(varPrefix, `CCI ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        break;
+      }
+
+      case "williams-r": {
+        const wpr = data as WilliamsRNodeData;
+        const copyBars = wpr.signalMode === "candle_close" ? 4 : 3;
+        const group = `Williams %R ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "period",
+            `InpWPR${index}Period`,
+            "int",
+            wpr.period,
+            `Williams %R ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "overboughtLevel",
+            `InpWPR${index}Overbought`,
+            "double",
+            wpr.overboughtLevel,
+            `Williams %R ${index + 1} Overbought`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "oversoldLevel",
+            `InpWPR${index}Oversold`,
+            "double",
+            wpr.oversoldLevel,
+            `Williams %R ${index + 1} Oversold`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iWPR(_Symbol, ${getTimeframe(wpr.timeframe)}, InpWPR${index}Period);`
+        );
+        addHandleValidation(varPrefix, `Williams %R ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        break;
+      }
+
+      case "parabolic-sar": {
+        const sar = data as ParabolicSARNodeData;
+        const copyBars = sar.signalMode === "candle_close" ? 4 : 3;
+        const group = `Parabolic SAR ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "step",
+            `InpSAR${index}Step`,
+            "double",
+            sar.step,
+            `Parabolic SAR ${index + 1} Step`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "maximum",
+            `InpSAR${index}Maximum`,
+            "double",
+            sar.maximum,
+            `Parabolic SAR ${index + 1} Maximum`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iSAR(_Symbol, ${getTimeframe(sar.timeframe)}, InpSAR${index}Step, InpSAR${index}Maximum);`
+        );
+        addHandleValidation(varPrefix, `Parabolic SAR ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        break;
+      }
+
+      case "momentum": {
+        const mom = data as MomentumNodeData;
+        const price = "PRICE_CLOSE";
+        const copyBars = mom.signalMode === "candle_close" ? 4 : 3;
+        const group = `Momentum ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "period",
+            `InpMom${index}Period`,
+            "int",
+            mom.period,
+            `Momentum ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "level",
+            `InpMom${index}Level`,
+            "double",
+            mom.level,
+            `Momentum ${index + 1} Level`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iMomentum(_Symbol, ${getTimeframe(mom.timeframe)}, InpMom${index}Period, ${price});`
+        );
+        addHandleValidation(varPrefix, `Momentum ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        break;
+      }
+
+      case "envelopes": {
+        const env = data as EnvelopesNodeData;
+        const method = MA_METHOD_MAP[env.method as keyof typeof MA_METHOD_MAP] ?? "MODE_SMA";
+        const price = "PRICE_CLOSE";
+        const copyBars = env.signalMode === "candle_close" ? 4 : 3;
+        const group = `Envelopes ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "period",
+            `InpEnv${index}Period`,
+            "int",
+            env.period,
+            `Envelopes ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "deviation",
+            `InpEnv${index}Deviation`,
+            "double",
+            env.deviation,
+            `Envelopes ${index + 1} Deviation`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "shift",
+            `InpEnv${index}Shift`,
+            "int",
+            env.shift,
+            `Envelopes ${index + 1} Shift`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}UpperBuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}LowerBuffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iEnvelopes(_Symbol, ${getTimeframe(env.timeframe)}, InpEnv${index}Period, InpEnv${index}Shift, ${method}, ${price}, InpEnv${index}Deviation);`
+        );
+        addHandleValidation(varPrefix, `Envelopes ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}UpperBuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}LowerBuffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}UpperBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}LowerBuffer`, code);
         break;
       }
     }

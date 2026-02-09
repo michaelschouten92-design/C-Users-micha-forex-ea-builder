@@ -2,11 +2,32 @@
 
 import { useId, useState, useEffect } from "react";
 
+function TooltipIcon({ text }: { text: string }) {
+  return (
+    <span className="inline-flex items-center ml-1 cursor-help" title={text}>
+      <svg
+        className="w-3.5 h-3.5 text-[#64748B] hover:text-[#94A3B8] transition-colors"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 interface SelectFieldProps<T extends string> {
   label: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
+  tooltip?: string;
 }
 
 export function SelectField<T extends string>({
@@ -14,6 +35,7 @@ export function SelectField<T extends string>({
   value,
   options,
   onChange,
+  tooltip,
 }: SelectFieldProps<T>) {
   const id = useId();
 
@@ -21,6 +43,7 @@ export function SelectField<T extends string>({
     <div>
       <label htmlFor={id} className="block text-xs font-medium text-[#CBD5E1] mb-1">
         {label}
+        {tooltip && <TooltipIcon text={tooltip} />}
       </label>
       <select
         id={id}
@@ -49,6 +72,7 @@ interface NumberFieldProps {
   max?: number;
   step?: number;
   onChange: (value: number) => void;
+  tooltip?: string;
 }
 
 export function NumberField({
@@ -58,6 +82,7 @@ export function NumberField({
   max = Infinity,
   step = 1,
   onChange,
+  tooltip,
 }: NumberFieldProps) {
   const id = useId();
   const [localValue, setLocalValue] = useState(String(value));
@@ -70,6 +95,7 @@ export function NumberField({
     <div>
       <label htmlFor={id} className="block text-xs font-medium text-[#CBD5E1] mb-1">
         {label}
+        {tooltip && <TooltipIcon text={tooltip} />}
       </label>
       <input
         id={id}
@@ -111,9 +137,17 @@ interface TimeFieldProps {
   minute: number;
   onHourChange: (value: number) => void;
   onMinuteChange: (value: number) => void;
+  tooltip?: string;
 }
 
-export function TimeField({ label, hour, minute, onHourChange, onMinuteChange }: TimeFieldProps) {
+export function TimeField({
+  label,
+  hour,
+  minute,
+  onHourChange,
+  onMinuteChange,
+  tooltip,
+}: TimeFieldProps) {
   const hourId = useId();
   const minuteId = useId();
   const [localHour, setLocalHour] = useState(String(hour));
@@ -129,7 +163,10 @@ export function TimeField({ label, hour, minute, onHourChange, onMinuteChange }:
 
   return (
     <div className="min-w-0 flex-1">
-      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
+        {label}
+        {tooltip && <TooltipIcon text={tooltip} />}
+      </label>
       <div className="flex items-center gap-0.5">
         <input
           id={hourId}

@@ -27,9 +27,24 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
         className="w-full flex items-center justify-between px-3 py-3 text-sm font-semibold text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
       >
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <svg
+            className="w-4 h-4 text-[#94A3B8]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
           <span>Strategy Settings</span>
         </div>
@@ -97,7 +112,52 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               />
               <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
             </label>
-            <p className="text-[10px] text-[#64748B] mt-1 ml-6">Allow both buy and sell positions at the same time</p>
+            <p className="text-[10px] text-[#64748B] mt-1 ml-6">
+              Allow both buy and sell positions at the same time
+            </p>
+          </div>
+
+          {/* Max Spread Filter */}
+          <div>
+            <SettingsNumberField
+              label="Max Spread (pips)"
+              value={settings.maxSpreadPips ?? 0}
+              min={0}
+              max={100}
+              step={1}
+              onChange={(v) => update({ maxSpreadPips: v })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">0 = no spread filter</p>
+          </div>
+
+          {/* Daily Profit Target */}
+          <div>
+            <SettingsNumberField
+              label="Daily Profit Target (%)"
+              value={settings.maxDailyProfitPercent ?? 0}
+              min={0}
+              max={100}
+              step={0.5}
+              onChange={(v) => update({ maxDailyProfitPercent: v })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">
+              0 = disabled. Closes all trades when hit
+            </p>
+          </div>
+
+          {/* Daily Loss Limit */}
+          <div>
+            <SettingsNumberField
+              label="Daily Loss Limit (%)"
+              value={settings.maxDailyLossPercent ?? 0}
+              min={0}
+              max={100}
+              step={0.5}
+              onChange={(v) => update({ maxDailyLossPercent: v })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">
+              0 = disabled. Closes all trades when hit
+            </p>
           </div>
         </div>
       )}
@@ -131,7 +191,7 @@ function SettingsNumberField({
         step={step}
         onChange={(e) => {
           e.stopPropagation();
-          const v = parseInt(e.target.value, 10);
+          const v = step % 1 === 0 ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
           if (!isNaN(v) && v >= min && v <= max) {
             onChange(v);
           }

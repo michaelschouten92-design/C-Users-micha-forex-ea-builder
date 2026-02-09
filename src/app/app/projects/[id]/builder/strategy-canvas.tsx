@@ -19,6 +19,7 @@ import { PropertiesPanel } from "./properties-panel";
 import { VersionControls } from "./version-controls";
 import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
+import { StrategySummary } from "./strategy-summary";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
 import { WelcomeModal } from "./welcome-modal";
@@ -186,6 +187,26 @@ export function StrategyCanvas({
     window.addEventListener("keydown", handleShortcutHelp);
     return () => window.removeEventListener("keydown", handleShortcutHelp);
   }, []);
+
+  // Handle node duplication from base-node button
+  useEffect(() => {
+    const handleDuplicate = (e: Event) => {
+      const { nodeId } = (e as CustomEvent).detail;
+      const sourceNode = nodes.find((n) => n.id === nodeId);
+      if (!sourceNode) return;
+
+      const newNode: Node = {
+        ...sourceNode,
+        id: getNextNodeId(sourceNode.type as string),
+        position: { x: sourceNode.position.x + 50, y: sourceNode.position.y + 50 },
+        data: { ...sourceNode.data },
+        selected: false,
+      };
+      setNodes((nds) => [...nds, newNode]);
+    };
+    window.addEventListener("node-duplicate", handleDuplicate);
+    return () => window.removeEventListener("node-duplicate", handleDuplicate);
+  }, [nodes, setNodes, getNextNodeId]);
 
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
@@ -630,6 +651,14 @@ export function StrategyCanvas({
             <div className="absolute top-4 right-4 z-10">
               <ValidationStatus validation={validation} />
             </div>
+          )}
+
+          {/* Strategy Summary Panel */}
+          {nodes.length > 0 && (
+            <StrategySummary
+              nodes={nodes as BuilderNode[]}
+              edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
+            />
           )}
 
           {/* Floating Undo/Redo + Help buttons */}

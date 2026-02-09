@@ -146,6 +146,58 @@ export interface StochasticNodeData extends BaseNodeData {
   signalMode?: "every_tick" | "candle_close";
 }
 
+export interface CCINodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "cci";
+  timeframe: Timeframe;
+  period: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
+  overboughtLevel: number;
+  oversoldLevel: number;
+}
+
+export interface WilliamsRNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "williams-r";
+  timeframe: Timeframe;
+  period: number;
+  signalMode?: "every_tick" | "candle_close";
+  overboughtLevel: number;
+  oversoldLevel: number;
+}
+
+export interface ParabolicSARNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "parabolic-sar";
+  timeframe: Timeframe;
+  step: number;
+  maximum: number;
+  signalMode?: "every_tick" | "candle_close";
+}
+
+export interface MomentumNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "momentum";
+  timeframe: Timeframe;
+  period: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
+  level: number;
+}
+
+export interface EnvelopesNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "envelopes";
+  timeframe: Timeframe;
+  period: number;
+  deviation: number;
+  method: "SMA" | "EMA";
+  shift: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
+}
+
 export type IndicatorNodeData =
   | MovingAverageNodeData
   | RSINodeData
@@ -153,7 +205,12 @@ export type IndicatorNodeData =
   | BollingerBandsNodeData
   | ATRNodeData
   | ADXNodeData
-  | StochasticNodeData;
+  | StochasticNodeData
+  | CCINodeData
+  | WilliamsRNodeData
+  | ParabolicSARNodeData
+  | MomentumNodeData
+  | EnvelopesNodeData;
 
 // Price Action Nodes
 export type CandlestickPattern =
@@ -272,12 +329,20 @@ export interface CloseConditionNodeData extends BaseNodeData {
   closeDirection: CloseDirection;
 }
 
+export interface TimeExitNodeData extends BaseNodeData {
+  category: "trading";
+  tradingType: "time-exit";
+  exitAfterBars: number;
+  exitTimeframe: Timeframe;
+}
+
 export type TradingNodeData =
   | PlaceBuyNodeData
   | PlaceSellNodeData
   | StopLossNodeData
   | TakeProfitNodeData
-  | CloseConditionNodeData;
+  | CloseConditionNodeData
+  | TimeExitNodeData;
 
 // Trade Management Nodes (Pro only)
 export type BreakevenTrigger = "PIPS" | "ATR" | "PERCENTAGE";
@@ -293,7 +358,7 @@ export interface BreakevenStopNodeData extends BaseNodeData {
   lockPips: number; // Extra pips above breakeven to lock
 }
 
-export type TrailingStopMethod = "FIXED_PIPS" | "ATR_BASED" | "PERCENTAGE";
+export type TrailingStopMethod = "FIXED_PIPS" | "ATR_BASED" | "PERCENTAGE" | "INDICATOR";
 
 export interface TrailingStopNodeData extends BaseNodeData {
   category: "trademanagement";
@@ -304,6 +369,7 @@ export interface TrailingStopNodeData extends BaseNodeData {
   trailAtrPeriod: number;
   trailPercent: number;
   startAfterPips: number; // Only start trailing after X pips profit
+  indicatorNodeId?: string; // For INDICATOR method
 }
 
 export interface PartialCloseNodeData extends BaseNodeData {
@@ -354,6 +420,11 @@ export type BuilderNodeType =
   | "atr"
   | "adx"
   | "stochastic"
+  | "cci"
+  | "williams-r"
+  | "parabolic-sar"
+  | "momentum"
+  | "envelopes"
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
@@ -362,6 +433,7 @@ export type BuilderNodeType =
   | "stop-loss"
   | "take-profit"
   | "close-condition"
+  | "time-exit"
   | "breakeven-stop"
   | "trailing-stop"
   | "partial-close"
@@ -383,6 +455,9 @@ export interface BuildJsonSettings {
   maxSellPositions?: number;
   conditionMode?: "AND" | "OR";
   maxTradesPerDay?: number; // 0 = unlimited
+  maxDailyProfitPercent?: number; // 0 = disabled
+  maxDailyLossPercent?: number; // 0 = disabled (drawdown protection)
+  maxSpreadPips?: number; // 0 = disabled
 }
 
 export interface BuildJsonMetadata {
@@ -593,6 +668,85 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       oversoldLevel: 20,
     } as StochasticNodeData,
   },
+  {
+    type: "cci",
+    label: "CCI",
+    category: "indicator",
+    description: "Commodity Channel Index",
+    defaultData: {
+      label: "CCI",
+      category: "indicator",
+      indicatorType: "cci",
+      timeframe: "H1",
+      period: 14,
+      signalMode: "every_tick",
+      overboughtLevel: 100,
+      oversoldLevel: -100,
+    } as CCINodeData,
+  },
+  {
+    type: "williams-r",
+    label: "Williams %R",
+    category: "indicator",
+    description: "Williams Percent Range",
+    defaultData: {
+      label: "Williams %R",
+      category: "indicator",
+      indicatorType: "williams-r",
+      timeframe: "H1",
+      period: 14,
+      signalMode: "every_tick",
+      overboughtLevel: -20,
+      oversoldLevel: -80,
+    } as WilliamsRNodeData,
+  },
+  {
+    type: "parabolic-sar",
+    label: "Parabolic SAR",
+    category: "indicator",
+    description: "Parabolic Stop and Reverse",
+    defaultData: {
+      label: "Parabolic SAR",
+      category: "indicator",
+      indicatorType: "parabolic-sar",
+      timeframe: "H1",
+      step: 0.02,
+      maximum: 0.2,
+      signalMode: "every_tick",
+    } as ParabolicSARNodeData,
+  },
+  {
+    type: "momentum",
+    label: "Momentum",
+    category: "indicator",
+    description: "Momentum indicator",
+    defaultData: {
+      label: "Momentum",
+      category: "indicator",
+      indicatorType: "momentum",
+      timeframe: "H1",
+      period: 14,
+      signalMode: "every_tick",
+      level: 100,
+    } as MomentumNodeData,
+  },
+  {
+    type: "envelopes",
+    label: "Envelopes",
+    category: "indicator",
+    description: "Moving Average Envelopes",
+    defaultData: {
+      label: "Envelopes",
+      category: "indicator",
+      indicatorType: "envelopes",
+      timeframe: "H1",
+      period: 14,
+      deviation: 0.1,
+      method: "SMA",
+      shift: 0,
+      signalMode: "every_tick",
+    } as EnvelopesNodeData,
+  },
   // Price Action
   {
     type: "candlestick-pattern",
@@ -657,7 +811,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "Place Buy",
       category: "trading",
       tradingType: "place-buy",
-      method: "FIXED_LOT",
+      method: "RISK_PERCENT",
       fixedLot: 0.1,
       riskPercent: 2,
       minLot: 0.01,
@@ -673,7 +827,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "Place Sell",
       category: "trading",
       tradingType: "place-sell",
-      method: "FIXED_LOT",
+      method: "RISK_PERCENT",
       fixedLot: 0.1,
       riskPercent: 2,
       minLot: 0.01,
@@ -722,6 +876,19 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       tradingType: "close-condition",
       closeDirection: "BOTH",
     } as CloseConditionNodeData,
+  },
+  {
+    type: "time-exit",
+    label: "Time Exit",
+    category: "trading",
+    description: "Close after N bars",
+    defaultData: {
+      label: "Time Exit",
+      category: "trading",
+      tradingType: "time-exit",
+      exitAfterBars: 10,
+      exitTimeframe: "H1",
+    } as TimeExitNodeData,
   },
   // Trade Management (Pro only)
   {

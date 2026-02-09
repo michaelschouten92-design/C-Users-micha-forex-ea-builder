@@ -11,6 +11,7 @@ export function TrailingStopNode({ id, data, selected }: Props) {
     FIXED_PIPS: `${data.trailPips} pips`,
     ATR_BASED: `${data.trailAtrMultiplier}x ATR`,
     PERCENTAGE: `${data.trailPercent}%`,
+    INDICATOR: "Indicator",
   }[data.method];
 
   return (

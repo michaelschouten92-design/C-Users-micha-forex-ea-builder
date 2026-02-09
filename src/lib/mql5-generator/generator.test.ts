@@ -1,11 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateMQL5Code } from "./generator";
-import type {
-  BuildJsonSchema,
-  BuilderNode,
-  BuilderEdge,
-  BuildJsonSettings,
-} from "@/types/builder";
+import type { BuildJsonSchema, BuilderNode, BuilderEdge, BuildJsonSettings } from "@/types/builder";
 
 // ============================================
 // HELPERS
@@ -19,10 +14,7 @@ const DEFAULT_SETTINGS: BuildJsonSettings = {
   maxTradesPerDay: 0,
 };
 
-function makeBuild(
-  nodes: BuilderNode[],
-  edges: BuilderEdge[] = []
-): BuildJsonSchema {
+function makeBuild(nodes: BuilderNode[], edges: BuilderEdge[] = []): BuildJsonSchema {
   // Auto-generate edges: chain all nodes sequentially if none provided
   if (edges.length === 0 && nodes.length > 1) {
     edges = nodes.slice(0, -1).map((n, i) => ({
@@ -45,11 +37,7 @@ function makeBuild(
   };
 }
 
-function makeNode(
-  id: string,
-  type: string,
-  data: Record<string, unknown>
-): BuilderNode {
+function makeNode(id: string, type: string, data: Record<string, unknown>): BuilderNode {
   return {
     id,
     type,
@@ -71,7 +59,7 @@ describe("generateMQL5Code", () => {
       const code = generateMQL5Code(build, "TestEA");
 
       expect(code).toContain("#property copyright");
-      expect(code).toContain('#include <Trade\\Trade.mqh>');
+      expect(code).toContain("#include <Trade\\Trade.mqh>");
       expect(code).toContain("CTrade trade;");
       expect(code).toContain("int OnInit()");
       expect(code).toContain("void OnDeinit(");
@@ -1183,8 +1171,13 @@ describe("generateMQL5Code", () => {
           category: "timing",
           timingType: "custom-times",
           days: {
-            monday: true, tuesday: true, wednesday: true,
-            thursday: true, friday: true, saturday: false, sunday: false,
+            monday: true,
+            tuesday: true,
+            wednesday: true,
+            thursday: true,
+            friday: true,
+            saturday: false,
+            sunday: false,
           },
           timeSlots: [{ startHour: 9, startMinute: 0, endHour: 17, endMinute: 0 }],
           useServerTime: true,
@@ -1785,7 +1778,7 @@ describe("generateMQL5Code", () => {
   describe("strategy presets", () => {
     it("preset buildJson objects are valid for generation", async () => {
       const { STRATEGY_PRESETS } = await import("@/lib/strategy-presets");
-      expect(STRATEGY_PRESETS.length).toBe(3);
+      expect(STRATEGY_PRESETS.length).toBe(10);
       for (const preset of STRATEGY_PRESETS) {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();
