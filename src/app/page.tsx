@@ -960,10 +960,10 @@ export default async function Home() {
                 </li>
                 <li>
                   <a
-                    href="mailto:contact@algo-studio.com"
+                    href="mailto:support@algo-studio.com"
                     className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                   >
-                    contact@algo-studio.com
+                    support@algo-studio.com
                   </a>
                 </li>
               </ul>

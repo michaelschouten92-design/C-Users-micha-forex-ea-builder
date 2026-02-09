@@ -53,10 +53,10 @@ export default function ContactPage() {
                 <h2 className="text-lg font-semibold text-white mb-1">Email</h2>
                 <p className="text-sm text-[#94A3B8] mb-3">Prefer to email directly?</p>
                 <a
-                  href="mailto:contact@algo-studio.com"
+                  href="mailto:support@algo-studio.com"
                   className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"
                 >
-                  contact@algo-studio.com
+                  support@algo-studio.com
                 </a>
               </div>
             </div>

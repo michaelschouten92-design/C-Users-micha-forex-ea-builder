@@ -292,7 +292,7 @@ export async function sendAccountDeletedEmail(email: string) {
               If your Stripe subscription was active, it has been cancelled automatically.
             </p>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you did not request this, please contact us immediately at contact@algo-studio.com.
+              If you did not request this, please contact us immediately at support@algo-studio.com.
             </p>
           </div>
         </body>
@@ -320,7 +320,7 @@ export async function sendContactFormEmail(
 
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
-    to: "contact@algo-studio.com",
+    to: "support@algo-studio.com",
     replyTo: senderEmail,
     subject: `[Contact] ${subject || "New message"}`,
     html: `
@@ -393,7 +393,7 @@ export async function sendPlanChangeEmail(
               Go to Dashboard
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at contact@algo-studio.com.
+              Questions? Contact us at support@algo-studio.com.
             </p>
           </div>
         </body>
@@ -438,7 +438,7 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
               Complete Payment
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at contact@algo-studio.com.
+              Questions? Contact us at support@algo-studio.com.
             </p>
           </div>
         </body>
@@ -486,7 +486,7 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
               Update Payment Method
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you believe this is an error, please contact us at contact@algo-studio.com.
+              If you believe this is an error, please contact us at support@algo-studio.com.
             </p>
           </div>
         </body>
