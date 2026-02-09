@@ -118,13 +118,13 @@ function FieldWarning({ message }: { message: string }) {
 }
 
 const APPLIED_PRICE_OPTIONS = [
-  { value: "CLOSE", label: "Close" },
-  { value: "OPEN", label: "Open" },
-  { value: "HIGH", label: "High" },
-  { value: "LOW", label: "Low" },
-  { value: "MEDIAN", label: "Median (HL/2)" },
-  { value: "TYPICAL", label: "Typical (HLC/3)" },
-  { value: "WEIGHTED", label: "Weighted (HLCC/4)" },
+  { value: "CLOSE", label: "Close Price (current price on live bar)" },
+  { value: "OPEN", label: "Open Price" },
+  { value: "HIGH", label: "High Price" },
+  { value: "LOW", label: "Low Price" },
+  { value: "MEDIAN", label: "Median Price (High+Low / 2)" },
+  { value: "TYPICAL", label: "Typical Price (High+Low+Close / 3)" },
+  { value: "WEIGHTED", label: "Weighted Price (High+Low+2×Close / 4)" },
 ] as const;
 
 const TIMEFRAME_OPTIONS: { value: Timeframe; label: string }[] = [
