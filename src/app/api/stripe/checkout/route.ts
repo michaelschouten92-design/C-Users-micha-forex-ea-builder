@@ -78,11 +78,24 @@ export async function POST(request: NextRequest) {
     // Get or create Stripe customer
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { subscription: true },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        subscription: true,
+      },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Require email verification before checkout
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: "Please verify your email before subscribing" },
+        { status: 403 }
+      );
     }
 
     let stripeCustomerId = user.subscription?.stripeCustomerId;
@@ -105,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has ever had a paid subscription (no trial for returning users)
-    const hadPaidSub = user.subscription?.stripeSubId != null;
+    const hadPaidSub = user.subscription?.trialUsed === true;
 
     // Create checkout session with 7-day trial for new subscribers
     const checkoutSession = await getStripe().checkout.sessions.create({

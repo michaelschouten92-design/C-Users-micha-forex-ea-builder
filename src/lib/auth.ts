@@ -33,6 +33,35 @@ class RateLimitError extends CredentialsSignin {
 
 const SALT_ROUNDS = 12;
 
+/**
+ * Normalize email to prevent trial abuse via +tag aliases and dot tricks.
+ * - Lowercases the entire email
+ * - For Gmail/Googlemail: removes dots and +tag from local part
+ * - For other providers: removes +tag from local part
+ */
+export function normalizeEmail(email: string): string {
+  const lower = email.toLowerCase().trim();
+  const [localPart, domain] = lower.split("@");
+  if (!localPart || !domain) return lower;
+
+  const isGmail = domain === "gmail.com" || domain === "googlemail.com";
+
+  let normalized = localPart;
+
+  // Remove +tag suffix
+  const plusIndex = normalized.indexOf("+");
+  if (plusIndex !== -1) {
+    normalized = normalized.substring(0, plusIndex);
+  }
+
+  // Remove dots for Gmail (Gmail ignores dots in local part)
+  if (isGmail) {
+    normalized = normalized.replace(/\./g, "");
+  }
+
+  return `${normalized}@${domain}`;
+}
+
 // Build providers list dynamically based on available credentials
 const providers: Provider[] = [];
 
@@ -70,9 +99,12 @@ providers.push(
         return null;
       }
 
-      const email = credentials.email as string;
+      const rawEmail = credentials.email as string;
       const password = credentials.password as string;
       const isRegistration = credentials.isRegistration === "true";
+
+      // Normalize email to prevent +tag and dot-trick abuse
+      const email = isRegistration ? normalizeEmail(rawEmail) : rawEmail.toLowerCase().trim();
 
       // Validate password strength
       if (password.length < 8) {
@@ -195,6 +227,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return false;
         }
 
+        const normalizedEmail = normalizeEmail(user.email);
         const authProviderId = `${account.provider}_${account.providerAccountId}`;
 
         // Check if user exists by authProviderId
@@ -205,7 +238,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!existingUser) {
           // Check if user exists by email (might have registered with credentials)
           existingUser = await prisma.user.findUnique({
-            where: { email: user.email },
+            where: { email: normalizedEmail },
           });
 
           if (existingUser) {
@@ -217,7 +250,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // Create new user (OAuth users are pre-verified)
             existingUser = await prisma.user.create({
               data: {
-                email: user.email,
+                email: normalizedEmail,
                 authProviderId,
                 emailVerified: true,
                 emailVerifiedAt: new Date(),

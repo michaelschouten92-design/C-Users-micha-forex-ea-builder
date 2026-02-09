@@ -183,6 +183,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       status: "active",
       stripeSubId: subscriptionId,
       stripeCustomerId: customerId,
+      trialUsed: true,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
