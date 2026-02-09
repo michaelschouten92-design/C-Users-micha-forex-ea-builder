@@ -409,67 +409,73 @@ export function generateEntryLogic(
     indicatorNodes.forEach((indNode, indIndex) => {
       const varPrefix = `ind${indIndex}`;
       const indData = indNode.data;
+      // Bar offset: candle_close shifts all bar indices by +1 (uses confirmed bars only)
+      const s = "signalMode" in indData && indData.signalMode === "candle_close" ? 1 : 0;
 
       if ("indicatorType" in indData) {
         switch (indData.indicatorType) {
           case "moving-average":
             buyConditions.push(
-              `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+              `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
             );
             sellConditions.push(
-              `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}Buffer[1]))`
+              `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
             );
             break;
 
           case "rsi":
             buyConditions.push(
-              `(DoubleLE(${varPrefix}Buffer[1], InpRSI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[0], InpRSI${indIndex}Oversold))`
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpRSI${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`
             );
             sellConditions.push(
-              `(DoubleGE(${varPrefix}Buffer[1], InpRSI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[0], InpRSI${indIndex}Overbought))`
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpRSI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`
             );
             break;
 
           case "macd":
             buyConditions.push(
-              `(DoubleLE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleGT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+              `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
             );
             sellConditions.push(
-              `(DoubleGE(${varPrefix}MainBuffer[1], ${varPrefix}SignalBuffer[1]) && DoubleLT(${varPrefix}MainBuffer[0], ${varPrefix}SignalBuffer[0]))`
+              `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
             );
             break;
 
           case "bollinger-bands":
             buyConditions.push(
-              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}LowerBuffer[1]))`
+              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
             );
             sellConditions.push(
-              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, 1), ${varPrefix}UpperBuffer[1]))`
+              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
             );
             break;
 
           case "atr":
-            buyConditions.push(`(DoubleGT(${varPrefix}Buffer[0], ${varPrefix}Buffer[1]))`);
-            sellConditions.push(`(DoubleGT(${varPrefix}Buffer[0], ${varPrefix}Buffer[1]))`);
+            buyConditions.push(
+              `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+            );
             break;
 
           case "adx":
             buyConditions.push(
-              `(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[0], ${varPrefix}MinusDIBuffer[0]))`
+              `(DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[${0 + s}], ${varPrefix}MinusDIBuffer[${0 + s}]))`
             );
             sellConditions.push(
-              `(DoubleGT(${varPrefix}MainBuffer[0], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[0], ${varPrefix}PlusDIBuffer[0]))`
+              `(DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[${0 + s}], ${varPrefix}PlusDIBuffer[${0 + s}]))`
             );
             break;
 
           case "stochastic":
             // Buy: %K crosses up from oversold zone
             buyConditions.push(
-              `(DoubleLE(${varPrefix}MainBuffer[1], InpStoch${indIndex}Oversold) && DoubleGT(${varPrefix}MainBuffer[0], InpStoch${indIndex}Oversold))`
+              `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], InpStoch${indIndex}Oversold) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Oversold))`
             );
             // Sell: %K crosses down from overbought zone
             sellConditions.push(
-              `(DoubleGE(${varPrefix}MainBuffer[1], InpStoch${indIndex}Overbought) && DoubleLT(${varPrefix}MainBuffer[0], InpStoch${indIndex}Overbought))`
+              `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], InpStoch${indIndex}Overbought) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Overbought))`
             );
             break;
         }

@@ -70,6 +70,8 @@ const appliedPriceSchema = z.enum([
   "WEIGHTED",
 ]);
 
+const signalModeSchema = z.enum(["every_tick", "candle_close"]);
+
 const nodeCategorySchema = z.enum([
   "timing",
   "indicator",
@@ -141,7 +143,8 @@ const movingAverageNodeDataSchema = baseNodeDataSchema
     timeframe: timeframeSchema,
     period: z.number().int().min(1).max(1000),
     method: z.enum(["SMA", "EMA"]),
-    appliedPrice: appliedPriceSchema,
+    appliedPrice: appliedPriceSchema.optional(),
+    signalMode: signalModeSchema.optional(),
     shift: z.number().int().min(0).max(1000),
   })
   .strip();
@@ -152,7 +155,8 @@ const rsiNodeDataSchema = baseNodeDataSchema
     indicatorType: z.literal("rsi"),
     timeframe: timeframeSchema,
     period: z.number().int().min(1).max(1000),
-    appliedPrice: appliedPriceSchema,
+    appliedPrice: appliedPriceSchema.optional(),
+    signalMode: signalModeSchema.optional(),
     overboughtLevel: z.number().min(0).max(100),
     oversoldLevel: z.number().min(0).max(100),
   })
@@ -166,7 +170,8 @@ const macdNodeDataSchema = baseNodeDataSchema
     fastPeriod: z.number().int().min(1).max(1000),
     slowPeriod: z.number().int().min(1).max(1000),
     signalPeriod: z.number().int().min(1).max(1000),
-    appliedPrice: appliedPriceSchema,
+    appliedPrice: appliedPriceSchema.optional(),
+    signalMode: signalModeSchema.optional(),
   })
   .strip();
 
@@ -177,7 +182,8 @@ const bollingerBandsNodeDataSchema = baseNodeDataSchema
     timeframe: timeframeSchema,
     period: z.number().int().min(1).max(1000),
     deviation: z.number().min(0.1).max(10),
-    appliedPrice: appliedPriceSchema,
+    appliedPrice: appliedPriceSchema.optional(),
+    signalMode: signalModeSchema.optional(),
     shift: z.number().int().min(0).max(1000),
   })
   .strip();
@@ -188,6 +194,7 @@ const atrNodeDataSchema = baseNodeDataSchema
     indicatorType: z.literal("atr"),
     timeframe: timeframeSchema,
     period: z.number().int().min(1).max(1000),
+    signalMode: signalModeSchema.optional(),
   })
   .strip();
 
@@ -198,6 +205,7 @@ const adxNodeDataSchema = baseNodeDataSchema
     timeframe: timeframeSchema,
     period: z.number().int().min(1).max(1000),
     trendLevel: z.number().min(0).max(100),
+    signalMode: signalModeSchema.optional(),
   })
   .strip();
 

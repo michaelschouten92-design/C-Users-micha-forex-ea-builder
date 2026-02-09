@@ -16,7 +16,8 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
   {
     id: "ma-crossover",
     name: "MA Crossover",
-    description: "Classic moving average crossover strategy using a fast (10) and slow (50) EMA. Buys when fast crosses above slow, sells when fast crosses below.",
+    description:
+      "Classic moving average crossover strategy using a fast (10) and slow (50) EMA. Buys when fast crosses above slow, sells when fast crosses below.",
     tier: "FREE",
     buildJson: {
       version: "1.0",
@@ -42,7 +43,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
             timeframe: "H1",
             period: 10,
             method: "EMA",
-            appliedPrice: "CLOSE",
+            signalMode: "every_tick",
             shift: 0,
           },
         },
@@ -57,7 +58,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
             timeframe: "H1",
             period: 50,
             method: "EMA",
-            appliedPrice: "CLOSE",
+            signalMode: "every_tick",
             shift: 0,
           },
         },
@@ -174,7 +175,8 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
   {
     id: "rsi-mean-reversion",
     name: "RSI Mean Reversion",
-    description: "Mean reversion strategy trading RSI oversold/overbought levels during the London session. Buys when RSI crosses above 30, sells when RSI crosses below 70.",
+    description:
+      "Mean reversion strategy trading RSI oversold/overbought levels during the London session. Buys when RSI crosses above 30, sells when RSI crosses below 70.",
     tier: "FREE",
     buildJson: {
       version: "1.0",
@@ -201,7 +203,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
             indicatorType: "rsi",
             timeframe: "H1",
             period: 14,
-            appliedPrice: "CLOSE",
+            signalMode: "every_tick",
             overboughtLevel: 70,
             oversoldLevel: 30,
           },
@@ -318,7 +320,8 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
   {
     id: "breakout-strategy",
     name: "Breakout Strategy",
-    description: "Breakout strategy trading the Asian session range during custom weekday hours (8-17). Uses ATR-based stop loss and 1.5:1 risk-reward take profit.",
+    description:
+      "Breakout strategy trading the Asian session range during custom weekday hours (8-17). Uses ATR-based stop loss and 1.5:1 risk-reward take profit.",
     tier: "FREE",
     buildJson: {
       version: "1.0",

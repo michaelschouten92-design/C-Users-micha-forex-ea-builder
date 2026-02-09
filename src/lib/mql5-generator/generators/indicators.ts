@@ -9,7 +9,7 @@ import type {
   StochasticNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
-import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframe } from "../types";
+import { MA_METHOD_MAP, getTimeframe } from "../types";
 import { createInput } from "./shared";
 
 // Helper to add handle validation after creation.
@@ -46,8 +46,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
       case "moving-average": {
         const ma = data as MovingAverageNodeData;
         const method = MA_METHOD_MAP[ma.method as keyof typeof MA_METHOD_MAP] ?? "MODE_SMA";
-        const price =
-          APPLIED_PRICE_MAP[ma.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
+        const price = "PRICE_CLOSE";
+        const copyBars = ma.signalMode === "candle_close" ? 4 : 3;
         const group = `Moving Average ${index + 1}`;
 
         code.inputs.push(
@@ -82,14 +82,14 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
         break;
       }
 
       case "rsi": {
         const rsi = data as RSINodeData;
-        const price =
-          APPLIED_PRICE_MAP[rsi.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
+        const price = "PRICE_CLOSE";
+        const copyBars = rsi.signalMode === "candle_close" ? 4 : 3;
         const group = `RSI ${index + 1}`;
 
         code.inputs.push(
@@ -135,14 +135,14 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
         break;
       }
 
       case "macd": {
         const macd = data as MACDNodeData;
-        const price =
-          APPLIED_PRICE_MAP[macd.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
+        const price = "PRICE_CLOSE";
+        const copyBars = macd.signalMode === "candle_close" ? 4 : 3;
         const group = `MACD ${index + 1}`;
 
         code.inputs.push(
@@ -190,15 +190,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code);
-        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}SignalBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
         break;
       }
 
       case "bollinger-bands": {
         const bb = data as BollingerBandsNodeData;
-        const price =
-          APPLIED_PRICE_MAP[bb.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
+        const price = "PRICE_CLOSE";
+        const copyBars = bb.signalMode === "candle_close" ? 4 : 3;
         const group = `Bollinger Bands ${index + 1}`;
 
         code.inputs.push(
@@ -248,14 +248,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}UpperBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MiddleBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}LowerBuffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MiddleBuffer`, code);
-        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}UpperBuffer`, code);
-        addCopyBuffer(`${varPrefix}Handle`, 2, 3, `${varPrefix}LowerBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MiddleBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}UpperBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 2, copyBars, `${varPrefix}LowerBuffer`, code);
         break;
       }
 
       case "atr": {
         const atr = data as ATRNodeData;
+        const copyBars = atr.signalMode === "candle_close" ? 4 : 3;
         const group = `ATR ${index + 1}`;
 
         code.inputs.push(
@@ -279,12 +280,13 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}Buffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
         break;
       }
 
       case "adx": {
         const adx = data as ADXNodeData;
+        const copyBars = adx.signalMode === "candle_close" ? 4 : 3;
         const group = `ADX ${index + 1}`;
 
         code.inputs.push(
@@ -323,14 +325,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}PlusDIBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MinusDIBuffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code); // ADX
-        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}PlusDIBuffer`, code); // +DI
-        addCopyBuffer(`${varPrefix}Handle`, 2, 3, `${varPrefix}MinusDIBuffer`, code); // -DI
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code); // ADX
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}PlusDIBuffer`, code); // +DI
+        addCopyBuffer(`${varPrefix}Handle`, 2, copyBars, `${varPrefix}MinusDIBuffer`, code); // -DI
         break;
       }
 
       case "stochastic": {
         const stoch = data as StochasticNodeData;
+        const copyBars = stoch.signalMode === "candle_close" ? 4 : 3;
         const group = `Stochastic ${index + 1}`;
 
         code.inputs.push(
@@ -400,8 +403,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, 0, 3, `${varPrefix}MainBuffer`, code); // %K
-        addCopyBuffer(`${varPrefix}Handle`, 1, 3, `${varPrefix}SignalBuffer`, code); // %D
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code); // %K
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code); // %D
         break;
       }
     }

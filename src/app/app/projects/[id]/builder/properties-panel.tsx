@@ -117,14 +117,9 @@ function FieldWarning({ message }: { message: string }) {
   );
 }
 
-const APPLIED_PRICE_OPTIONS = [
-  { value: "CLOSE", label: "Close Price (current price on live bar)" },
-  { value: "OPEN", label: "Open Price" },
-  { value: "HIGH", label: "High Price" },
-  { value: "LOW", label: "Low Price" },
-  { value: "MEDIAN", label: "Median Price (High+Low / 2)" },
-  { value: "TYPICAL", label: "Typical Price (High+Low+Close / 3)" },
-  { value: "WEIGHTED", label: "Weighted Price (High+Low+2×Close / 4)" },
+const SIGNAL_MODE_OPTIONS = [
+  { value: "every_tick", label: "Every tick (current price)" },
+  { value: "candle_close", label: "Wait for candle close" },
 ] as const;
 
 const TIMEFRAME_OPTIONS: { value: Timeframe; label: string }[] = [
@@ -625,10 +620,10 @@ function MovingAverageFields({
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <SelectField
-        label="Applied Price"
-        value={data.appliedPrice}
-        options={[...APPLIED_PRICE_OPTIONS]}
-        onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as MovingAverageNodeData["signalMode"] })}
       />
       <div>
         <NumberField
@@ -670,10 +665,10 @@ function RSIFields({
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
       <SelectField
-        label="Applied Price"
-        value={data.appliedPrice}
-        options={[...APPLIED_PRICE_OPTIONS]}
-        onChange={(v) => onChange({ appliedPrice: v as RSINodeData["appliedPrice"] })}
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as RSINodeData["signalMode"] })}
       />
       <div>
         <NumberField
@@ -748,10 +743,10 @@ function MACDFields({
         <OptimizableFieldCheckbox fieldName="signalPeriod" data={data} onChange={onChange} />
       </div>
       <SelectField
-        label="Applied Price"
-        value={data.appliedPrice}
-        options={[...APPLIED_PRICE_OPTIONS]}
-        onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as MACDNodeData["signalMode"] })}
       />
       {data.fastPeriod >= data.slowPeriod && (
         <FieldWarning message="Fast period should be smaller than slow period" />
@@ -797,10 +792,10 @@ function BollingerBandsFields({
         <OptimizableFieldCheckbox fieldName="deviation" data={data} onChange={onChange} />
       </div>
       <SelectField
-        label="Applied Price"
-        value={data.appliedPrice}
-        options={[...APPLIED_PRICE_OPTIONS]}
-        onChange={(v) => onChange({ appliedPrice: v as BollingerBandsNodeData["appliedPrice"] })}
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as BollingerBandsNodeData["signalMode"] })}
       />
       <div>
         <NumberField
@@ -841,6 +836,12 @@ function ATRFields({
         />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as ATRNodeData["signalMode"] })}
+      />
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
@@ -886,6 +887,12 @@ function ADXFields({
         />
         <OptimizableFieldCheckbox fieldName="trendLevel" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as ADXNodeData["signalMode"] })}
+      />
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
@@ -962,6 +969,12 @@ function StochasticFields({
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as StochasticNodeData["signalMode"] })}
+      />
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"

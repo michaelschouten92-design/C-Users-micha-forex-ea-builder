@@ -79,7 +79,8 @@ export interface MovingAverageNodeData extends BaseNodeData {
   timeframe: Timeframe;
   period: number;
   method: "SMA" | "EMA";
-  appliedPrice: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
   shift: number;
 }
 
@@ -88,7 +89,8 @@ export interface RSINodeData extends BaseNodeData {
   indicatorType: "rsi";
   timeframe: Timeframe;
   period: number;
-  appliedPrice: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
   overboughtLevel: number;
   oversoldLevel: number;
 }
@@ -100,7 +102,8 @@ export interface MACDNodeData extends BaseNodeData {
   fastPeriod: number;
   slowPeriod: number;
   signalPeriod: number;
-  appliedPrice: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
 }
 
 export interface BollingerBandsNodeData extends BaseNodeData {
@@ -109,7 +112,8 @@ export interface BollingerBandsNodeData extends BaseNodeData {
   timeframe: Timeframe;
   period: number;
   deviation: number;
-  appliedPrice: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  signalMode?: "every_tick" | "candle_close";
   shift: number;
 }
 
@@ -118,6 +122,7 @@ export interface ATRNodeData extends BaseNodeData {
   indicatorType: "atr";
   timeframe: Timeframe;
   period: number;
+  signalMode?: "every_tick" | "candle_close";
 }
 
 export interface ADXNodeData extends BaseNodeData {
@@ -125,7 +130,8 @@ export interface ADXNodeData extends BaseNodeData {
   indicatorType: "adx";
   timeframe: Timeframe;
   period: number;
-  trendLevel: number; // Level above which market is considered trending (default: 25)
+  trendLevel: number;
+  signalMode?: "every_tick" | "candle_close";
 }
 
 export interface StochasticNodeData extends BaseNodeData {
@@ -137,6 +143,7 @@ export interface StochasticNodeData extends BaseNodeData {
   slowing: number;
   overboughtLevel: number;
   oversoldLevel: number;
+  signalMode?: "every_tick" | "candle_close";
 }
 
 export type IndicatorNodeData =
@@ -490,7 +497,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       timeframe: "H1",
       period: 14,
       method: "SMA",
-      appliedPrice: "CLOSE",
+      signalMode: "every_tick",
       shift: 0,
     } as MovingAverageNodeData,
   },
@@ -505,7 +512,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       indicatorType: "rsi",
       timeframe: "H1",
       period: 14,
-      appliedPrice: "CLOSE",
+      signalMode: "every_tick",
       overboughtLevel: 70,
       oversoldLevel: 30,
     } as RSINodeData,
@@ -523,7 +530,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       fastPeriod: 12,
       slowPeriod: 26,
       signalPeriod: 9,
-      appliedPrice: "CLOSE",
+      signalMode: "every_tick",
     } as MACDNodeData,
   },
   {
@@ -538,7 +545,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       timeframe: "H1",
       period: 20,
       deviation: 2,
-      appliedPrice: "CLOSE",
+      signalMode: "every_tick",
       shift: 0,
     } as BollingerBandsNodeData,
   },
