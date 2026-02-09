@@ -10,24 +10,24 @@ const parsePrice = (envVal: string | undefined, fallback: number) => {
 const DISPLAY_PRICES = {
   starter: {
     monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_MONTHLY, 1900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_MONTHLY, 2400),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_YEARLY, 20900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_YEARLY, 19200),
       currency: "eur",
       interval: "year" as const,
     },
   },
   pro: {
     monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 4900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 5900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 53900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 46800),
       currency: "eur",
       interval: "year" as const,
     },
