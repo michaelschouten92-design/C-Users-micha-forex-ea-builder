@@ -126,7 +126,7 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
-  const { buildJson, expectedVersion } = validation.data;
+  const { buildJson, expectedVersion, isAutosave } = validation.data;
 
   // Use transaction for atomic version check + create (optimistic locking)
   try {
@@ -158,13 +158,32 @@ export async function POST(request: Request, { params }: Params) {
       };
 
       // Create the new version
-      return tx.buildVersion.create({
+      const newVersion = await tx.buildVersion.create({
         data: {
           projectId: id,
           versionNo: nextVersionNo,
           buildJson: updatedBuildJson as Prisma.InputJsonValue,
+          isAutosave: isAutosave ?? false,
         },
       });
+
+      // Cleanup: keep only the last 5 autosaves per project
+      if (isAutosave) {
+        const autosaves = await tx.buildVersion.findMany({
+          where: { projectId: id, isAutosave: true },
+          orderBy: { versionNo: "desc" },
+          select: { id: true },
+          skip: 5,
+        });
+
+        if (autosaves.length > 0) {
+          await tx.buildVersion.deleteMany({
+            where: { id: { in: autosaves.map((v) => v.id) } },
+          });
+        }
+      }
+
+      return newVersion;
     });
 
     // Quick validation warnings (non-blocking, helps users catch issues before export)

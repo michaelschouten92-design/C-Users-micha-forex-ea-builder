@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
@@ -53,7 +54,11 @@ export function useAutoSave({
   const prevEdgesRef = useRef(edges);
   const prevSettingsRef = useRef(settings);
 
-  if (nodes !== prevNodesRef.current || edges !== prevEdgesRef.current || settings !== prevSettingsRef.current) {
+  if (
+    nodes !== prevNodesRef.current ||
+    edges !== prevEdgesRef.current ||
+    settings !== prevSettingsRef.current
+  ) {
     changeCounterRef.current += 1;
     prevNodesRef.current = nodes;
     prevEdgesRef.current = edges;
@@ -84,13 +89,14 @@ export function useAutoSave({
           createdAt: currentInitialData?.metadata?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        settings: currentSettings ?? currentInitialData?.settings ?? {
-          magicNumber: 123456,
-          comment: "EA Builder Strategy",
-          maxOpenTrades: 1,
-          allowHedging: false,
-          maxTradesPerDay: 0,
-        },
+        settings: currentSettings ??
+          currentInitialData?.settings ?? {
+            magicNumber: 123456,
+            comment: "EA Builder Strategy",
+            maxOpenTrades: 1,
+            allowHedging: false,
+            maxTradesPerDay: 0,
+          },
       };
 
       if (isAutosave) {
@@ -104,6 +110,7 @@ export function useAutoSave({
           body: JSON.stringify({
             buildJson,
             expectedVersion: lastSavedVersionRef.current || undefined,
+            isAutosave,
           }),
         });
 
@@ -131,7 +138,9 @@ export function useAutoSave({
           } else {
             showError(
               res.status === 409 ? "Version conflict" : "Failed to save",
-              res.status === 409 ? "Another save was detected. Try saving again." : "Please try again."
+              res.status === 409
+                ? "Another save was detected. Try saving again."
+                : "Please try again."
             );
           }
           return false;
