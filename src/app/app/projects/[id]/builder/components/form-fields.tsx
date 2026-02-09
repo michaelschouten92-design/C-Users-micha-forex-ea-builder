@@ -113,55 +113,79 @@ interface TimeFieldProps {
   onMinuteChange: (value: number) => void;
 }
 
-export function TimeField({
-  label,
-  hour,
-  minute,
-  onHourChange,
-  onMinuteChange,
-}: TimeFieldProps) {
+export function TimeField({ label, hour, minute, onHourChange, onMinuteChange }: TimeFieldProps) {
   const hourId = useId();
   const minuteId = useId();
+  const [localHour, setLocalHour] = useState(String(hour));
+  const [localMinute, setLocalMinute] = useState(String(minute).padStart(2, "0"));
+
+  useEffect(() => {
+    setLocalHour(String(hour));
+  }, [hour]);
+
+  useEffect(() => {
+    setLocalMinute(String(minute).padStart(2, "0"));
+  }, [minute]);
 
   return (
-    <div className="flex-1">
-      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
-        {label}
-      </label>
-      <div className="flex items-center gap-1">
+    <div className="min-w-0 flex-1">
+      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
+      <div className="flex items-center gap-0.5">
         <input
           id={hourId}
           type="number"
-          value={hour}
+          value={localHour}
           min={0}
           max={23}
           onChange={(e) => {
             e.stopPropagation();
-            const val = parseInt(e.target.value);
+            const raw = e.target.value;
+            setLocalHour(raw);
+            const val = parseInt(raw);
             if (!isNaN(val) && val >= 0 && val <= 23) {
               onHourChange(val);
             }
           }}
+          onBlur={() => {
+            const val = parseInt(localHour);
+            if (isNaN(val) || val < 0 || val > 23) {
+              setLocalHour(String(hour));
+            } else {
+              setLocalHour(String(val));
+              if (val !== hour) onHourChange(val);
+            }
+          }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="w-14 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-11 px-1 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           aria-label={`${label} hour`}
         />
-        <span className="text-[#64748B]">:</span>
+        <span className="text-[#64748B] text-xs">:</span>
         <input
           id={minuteId}
           type="number"
-          value={minute.toString().padStart(2, "0")}
+          value={localMinute}
           min={0}
           max={59}
           onChange={(e) => {
             e.stopPropagation();
-            const val = parseInt(e.target.value);
+            const raw = e.target.value;
+            setLocalMinute(raw);
+            const val = parseInt(raw);
             if (!isNaN(val) && val >= 0 && val <= 59) {
               onMinuteChange(val);
             }
           }}
+          onBlur={() => {
+            const val = parseInt(localMinute);
+            if (isNaN(val) || val < 0 || val > 59) {
+              setLocalMinute(String(minute).padStart(2, "0"));
+            } else {
+              setLocalMinute(String(val).padStart(2, "0"));
+              if (val !== minute) onMinuteChange(val);
+            }
+          }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="w-14 px-2 py-1.5 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-11 px-1 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           aria-label={`${label} minute`}
         />
       </div>

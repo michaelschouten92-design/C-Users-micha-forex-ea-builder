@@ -110,14 +110,11 @@ export const BaseNode = memo(function BaseNode({
 
       {/* Header - compact design, title only */}
       <div
-        className={`${styles.header} px-3 py-2.5 ${children ? "rounded-t-[10px]" : "rounded-[10px]"} flex items-center justify-center gap-2`}
+        className={`${styles.header} px-3 py-2.5 rounded-[10px] flex items-center justify-center gap-2`}
       >
         <span className="text-white">{icon}</span>
         <span className="text-white text-sm font-medium truncate">{label}</span>
       </div>
-
-      {/* Content */}
-      {children && <div className="px-3 py-2 overflow-hidden">{children}</div>}
 
       {/* Output Handle - BOTTOM */}
       {outputHandles > 0 && (
