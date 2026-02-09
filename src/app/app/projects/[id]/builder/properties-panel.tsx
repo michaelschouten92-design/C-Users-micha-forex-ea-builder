@@ -387,31 +387,6 @@ function TradingSessionFields({
           Weekdays only (Mon-Fri)
         </label>
       </div>
-      <div className="mt-2">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={!(data.useServerTime ?? true)}
-            onChange={(e) => {
-              e.stopPropagation();
-              onChange({ useServerTime: !e.target.checked });
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
-          />
-          Use GMT time
-        </label>
-      </div>
-      {!(data.useServerTime ?? true) && (
-        <div className="text-[10px] text-[#FBBF24] mt-1">
-          Session times will be compared against GMT (TimeGMT) instead of your broker&apos;s server
-          clock.
-        </div>
-      )}
-      <div className="mt-2 text-[10px] text-[#64748B]">
-        By default, times use your broker&apos;s server clock. Check the Market Watch clock in MT5
-        for the timezone offset.
-      </div>
     </>
   );
 }
