@@ -77,10 +77,10 @@ function generateCustomTimesCode(
   const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
   if (needsTimeDecl) {
     code.onTick.push("MqlDateTime dt;");
-    if (data.useServerTime) {
+    if (data.useServerTime ?? true) {
       code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
     } else {
-      code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+      code.onTick.push("TimeToStruct(TimeGMT(), dt); // Using GMT time");
     }
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   }
@@ -145,7 +145,7 @@ function generateCustomTimesCode(
       }
     });
 
-    code.onTick.push(`   // Time slots (${data.useServerTime ? "Server Time" : "GMT"})`);
+    code.onTick.push(`   // Time slots (${(data.useServerTime ?? true) ? "Server Time" : "GMT"})`);
     timeSlots.forEach((slot, i) => {
       const startStr = `${slot.startHour.toString().padStart(2, "0")}:${slot.startMinute.toString().padStart(2, "0")}`;
       const endStr = `${slot.endHour.toString().padStart(2, "0")}:${slot.endMinute.toString().padStart(2, "0")}`;
@@ -194,7 +194,7 @@ function generateTradingSessionCode(
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
 
-  const timeLabel = data.useServerTime ? "Server Time" : "GMT";
+  const timeLabel = (data.useServerTime ?? true) ? "Server Time" : "GMT";
   code.onTick.push(
     `// Trading Session: ${sessionInfo.label} (${sessionInfo.start} - ${sessionInfo.end} ${timeLabel})`
   );
@@ -204,10 +204,10 @@ function generateTradingSessionCode(
   const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
   if (needsTimeDecl) {
     code.onTick.push("MqlDateTime dt;");
-    if (data.useServerTime) {
+    if (data.useServerTime ?? true) {
       code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
     } else {
-      code.onTick.push("TimeToStruct(TimeGMT(), dt);");
+      code.onTick.push("TimeToStruct(TimeGMT(), dt); // Using GMT time");
     }
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   }

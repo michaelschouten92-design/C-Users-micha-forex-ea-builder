@@ -391,26 +391,26 @@ function TradingSessionFields({
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input
             type="checkbox"
-            checked={data.useServerTime ?? false}
+            checked={!(data.useServerTime ?? true)}
             onChange={(e) => {
               e.stopPropagation();
-              onChange({ useServerTime: e.target.checked });
+              onChange({ useServerTime: !e.target.checked });
             }}
             onPointerDown={(e) => e.stopPropagation()}
             className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
           />
-          Use broker server time
+          Use GMT time
         </label>
       </div>
-      {data.useServerTime && (
+      {!(data.useServerTime ?? true) && (
         <div className="text-[10px] text-[#FBBF24] mt-1">
-          Session times will be compared against your broker&apos;s server clock (TimeCurrent)
-          instead of GMT.
+          Session times will be compared against GMT (TimeGMT) instead of your broker&apos;s server
+          clock.
         </div>
       )}
       <div className="mt-2 text-[10px] text-[#64748B]">
-        Your broker&apos;s MT5 server may use a different timezone than GMT — check the Market Watch
-        clock for the offset.
+        By default, times use your broker&apos;s server clock. Check the Market Watch clock in MT5
+        for the timezone offset.
       </div>
     </>
   );
@@ -512,7 +512,9 @@ function CustomTimesFields({
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-xs font-medium text-[#CBD5E1]">Time Slots (GMT)</label>
+          <label className="block text-xs font-medium text-[#CBD5E1]">
+            Time Slots ({(data.useServerTime ?? true) ? "Server Time" : "GMT"})
+          </label>
           <button
             onClick={addTimeSlot}
             onPointerDown={(e) => e.stopPropagation()}
@@ -578,15 +580,15 @@ function CustomTimesFields({
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input
             type="checkbox"
-            checked={data.useServerTime ?? false}
+            checked={!(data.useServerTime ?? true)}
             onChange={(e) => {
               e.stopPropagation();
-              onChange({ useServerTime: e.target.checked });
+              onChange({ useServerTime: !e.target.checked });
             }}
             onPointerDown={(e) => e.stopPropagation()}
             className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
           />
-          Use broker server time
+          Use GMT time
         </label>
       </div>
       {data.closeOnSessionEnd && (
@@ -594,10 +596,10 @@ function CustomTimesFields({
           All open positions will be closed when the trading session ends.
         </div>
       )}
-      {data.useServerTime && (
+      {!(data.useServerTime ?? true) && (
         <div className="text-[10px] text-[#FBBF24] mt-1">
-          Time slots will be compared against your broker&apos;s server clock (TimeCurrent) instead
-          of GMT.
+          Time slots will be compared against GMT (TimeGMT) instead of your broker&apos;s server
+          clock.
         </div>
       )}
       <div
@@ -605,9 +607,9 @@ function CustomTimesFields({
         role="note"
       >
         Define custom trading days and time windows.{" "}
-        {data.useServerTime ? "Times use broker server time." : "All times are in GMT."} Your
-        broker&apos;s MT5 server may use a different timezone — check the Market Watch clock for the
-        offset.
+        {(data.useServerTime ?? true) ? "Times use broker server time." : "All times are in GMT."}{" "}
+        Your broker&apos;s MT5 server may use a different timezone — check the Market Watch clock
+        for the offset.
       </div>
     </>
   );
@@ -1217,7 +1219,32 @@ function RangeBreakoutFields({
               onMinuteChange={(v) => onChange({ sessionEndMinute: v })}
             />
           </div>
-          <p className="text-[10px] text-[#64748B]">Times in GMT/UTC</p>
+          <p className="text-[10px] text-[#64748B]">
+            Times in {(data.useServerTime ?? true) ? "broker server time" : "GMT/UTC"}
+          </p>
+        </div>
+      )}
+
+      {/* Timezone toggle */}
+      <div className="mt-2">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!(data.useServerTime ?? true)}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ useServerTime: !e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Use GMT time
+        </label>
+      </div>
+      {!(data.useServerTime ?? true) && (
+        <div className="text-[10px] text-[#FBBF24] mt-1">
+          Range times will be compared against GMT (TimeGMT) instead of your broker&apos;s server
+          clock.
         </div>
       )}
 

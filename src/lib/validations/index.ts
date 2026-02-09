@@ -119,6 +119,7 @@ const customTimesNodeDataSchema = baseNodeDataSchema
     timingType: z.literal("custom-times"),
     days: tradingDaysSchema,
     timeSlots: z.array(timeSlotSchema),
+    useServerTime: z.boolean().optional(),
   })
   .strip();
 
@@ -128,6 +129,7 @@ const tradingSessionNodeDataSchema = baseNodeDataSchema
     timingType: z.literal("trading-session"),
     session: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP"]),
     tradeMondayToFriday: z.boolean(),
+    useServerTime: z.boolean().optional(),
   })
   .strip();
 
@@ -250,6 +252,7 @@ const rangeBreakoutNodeDataSchema = baseNodeDataSchema
     bufferPips: z.number().min(0).max(1000),
     minRangePips: z.number().min(0).max(10000),
     maxRangePips: z.number().min(0).max(10000),
+    useServerTime: z.boolean().optional(),
   })
   .strip();
 

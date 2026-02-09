@@ -202,6 +202,8 @@ export interface RangeBreakoutNodeData extends BaseNodeData {
   // Filters
   minRangePips: number;
   maxRangePips: number; // 0 = no maximum
+  // Timezone
+  useServerTime?: boolean;
 }
 
 export type PriceActionNodeData =

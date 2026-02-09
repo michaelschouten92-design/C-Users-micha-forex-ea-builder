@@ -24,14 +24,16 @@ export function TradingTimesNode({ id, data, selected }: Props) {
           <span className="font-medium text-orange-400">{sessionInfo.label}</span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-zinc-500">Time (GMT):</span>
-          <span className="font-medium">{sessionInfo.start} - {sessionInfo.end}</span>
+          <span className="text-zinc-500">
+            Time ({(data.useServerTime ?? true) ? "Server" : "GMT"}):
+          </span>
+          <span className="font-medium">
+            {sessionInfo.start} - {sessionInfo.end}
+          </span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-zinc-500">Days:</span>
-          <span className="font-medium">
-            {data.tradeMondayToFriday ? "Mon-Fri" : "All days"}
-          </span>
+          <span className="font-medium">{data.tradeMondayToFriday ? "Mon-Fri" : "All days"}</span>
         </div>
       </div>
     </BaseNode>
