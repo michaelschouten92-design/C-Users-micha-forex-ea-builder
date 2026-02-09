@@ -4,7 +4,12 @@ import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { PLANS } from "@/lib/plans";
-import { checkoutRequestSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import {
+  checkoutRequestSchema,
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+} from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   apiRateLimiter,
@@ -58,16 +63,16 @@ export async function POST(request: NextRequest) {
 
     // FREE plan cannot be purchased via checkout
     if (!planConfig.prices) {
-      return NextResponse.json({ error: "This plan is not available for purchase" }, { status: 400 });
+      return NextResponse.json(
+        { error: "This plan is not available for purchase" },
+        { status: 400 }
+      );
     }
 
     const priceId = planConfig.prices[interval].priceId;
 
     if (!priceId) {
-      return NextResponse.json(
-        { error: "Price not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Price not configured" }, { status: 500 });
     }
 
     // Get or create Stripe customer
@@ -130,9 +135,13 @@ export async function POST(request: NextRequest) {
     log.info({ plan, interval, checkoutSessionId: checkoutSession.id }, "Checkout session created");
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {
-    log.error({ error: extractErrorDetails(error) }, "Checkout error");
+    const details = extractErrorDetails(error);
+    log.error({ error: details }, "Checkout error");
+
+    // Include Stripe error message for easier debugging
+    const stripeMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Failed to create checkout session", details: stripeMessage },
       { status: 500 }
     );
   }

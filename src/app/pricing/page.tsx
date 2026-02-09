@@ -38,7 +38,9 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showError(data.error || "Failed to start checkout");
+        showError(
+          data.details ? `${data.error}: ${data.details}` : data.error || "Failed to start checkout"
+        );
         setLoading(null);
       }
     } catch {
