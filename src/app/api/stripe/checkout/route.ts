@@ -111,7 +111,6 @@ export async function POST(request: NextRequest) {
     const checkoutSession = await getStripe().checkout.sessions.create({
       customer: stripeCustomerId,
       mode: "subscription",
-      payment_method_types: ["card", "ideal"],
       line_items: [
         {
           price: priceId,
