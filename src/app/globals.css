@@ -147,11 +147,6 @@ body {
   ) !important;
 }
 
-.react-flow__minimap {
-  background-color: var(--studio-black-light) !important;
-  border: 1px solid var(--border) !important;
-}
-
 .react-flow__controls {
   background-color: var(--midnight-purple-dark) !important;
   border: 1px solid var(--border) !important;

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ExportButton } from "./export-button";
-import { getCsrfHeaders } from "@/lib/api-client";
 import type { ValidationResult } from "./strategy-validation";
 import type { BuildJsonSchema, BuilderNode } from "@/types/builder";
 
@@ -73,7 +72,6 @@ interface VersionControlsProps {
   onLoad: (versionId: string, buildJson: BuildJsonSchema) => void; // Changed to sync with cached data
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   canExportMQL5?: boolean;
-  onGetBuildJson?: () => BuildJsonSchema;
   userTier?: string;
 }
 
@@ -86,15 +84,10 @@ export function VersionControls({
   onLoad,
   autoSaveStatus,
   canExportMQL5 = false,
-  onGetBuildJson,
   userTier,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
-  const [templateName, setTemplateName] = useState("");
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [templateSaving, setTemplateSaving] = useState(false);
-  const [templateStatus, setTemplateStatus] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [diffVersions, setDiffVersions] = useState<[number, number] | null>(null);
 
@@ -144,35 +137,6 @@ export function VersionControls({
     },
     [versions, onLoad]
   );
-
-  const handleSaveTemplate = async () => {
-    if (!onGetBuildJson || !templateName.trim()) return;
-    setTemplateSaving(true);
-    setTemplateStatus(null);
-    try {
-      const buildJson = onGetBuildJson();
-      const res = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ name: templateName.trim(), buildJson }),
-      });
-      if (res.ok) {
-        setTemplateStatus("Saved!");
-        setTemplateName("");
-        setTimeout(() => {
-          setShowTemplateModal(false);
-          setTemplateStatus(null);
-        }, 1200);
-      } else {
-        const data = await res.json();
-        setTemplateStatus(data.error || "Failed to save");
-      }
-    } catch {
-      setTemplateStatus("Failed to save");
-    } finally {
-      setTemplateSaving(false);
-    }
-  };
 
   const latestVersion = versions[0]?.versionNo ?? 0;
   const nextVersion = latestVersion + 1;
@@ -311,25 +275,6 @@ export function VersionControls({
           canExportMQL5={canExportMQL5}
           userTier={userTier}
         />
-
-        {/* Save as Template */}
-        {onGetBuildJson && hasNodes && (
-          <button
-            onClick={() => setShowTemplateModal(true)}
-            className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 text-[#94A3B8] text-sm hover:text-white hover:bg-[rgba(79,70,229,0.15)] rounded-lg transition-all duration-200"
-            title="Save as template"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-              />
-            </svg>
-            <span className="hidden lg:inline">Save as Template</span>
-          </button>
-        )}
       </div>
 
       {/* Right side */}
@@ -520,58 +465,6 @@ export function VersionControls({
                 className="px-4 py-1.5 text-sm text-[#CBD5E1] hover:text-white transition-colors"
               >
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Save as Template Modal */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Save as Template</h3>
-              <p className="text-[#94A3B8] text-sm mb-4">
-                Save your current strategy as a reusable template.
-              </p>
-              <input
-                type="text"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="Template name"
-                maxLength={100}
-                className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && templateName.trim()) handleSaveTemplate();
-                }}
-              />
-              {templateStatus && (
-                <p
-                  className={`mt-2 text-sm ${templateStatus === "Saved!" ? "text-[#22D3EE]" : "text-[#F87171]"}`}
-                >
-                  {templateStatus}
-                </p>
-              )}
-            </div>
-            <div className="bg-[#0F172A]/50 px-6 py-4 flex justify-end gap-3 rounded-b-xl border-t border-[rgba(79,70,229,0.2)]">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowTemplateModal(false);
-                  setTemplateStatus(null);
-                }}
-                className="px-4 py-2 text-[#94A3B8] hover:text-white transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveTemplate}
-                disabled={templateSaving || !templateName.trim()}
-                className="bg-[#4F46E5] text-white px-5 py-2 rounded-lg font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {templateSaving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

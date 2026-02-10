@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -63,8 +62,6 @@ export function StrategyCanvas({
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showMiniMap, setShowMiniMap] = useState(false);
-
   // Strategy settings state
   const [settings, setSettings] = useState<BuildJsonSettings>(
     initialData?.settings ?? { ...DEFAULT_SETTINGS }
@@ -125,22 +122,6 @@ export function StrategyCanvas({
     settings,
     debounceMs: 5000,
   });
-
-  // Get current buildJson for save-as-template
-  const getBuildJson = useCallback(
-    (): BuildJsonSchema => ({
-      version: "1.0",
-      nodes: nodes as BuilderNode[],
-      edges: edges as unknown as BuildJsonSchema["edges"],
-      viewport: { x: 0, y: 0, zoom: 1 },
-      metadata: {
-        createdAt: initialData?.metadata?.createdAt ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      settings,
-    }),
-    [nodes, edges, settings, initialData]
-  );
 
   // Helper to generate unique node IDs
   const getNextNodeId = useCallback((type: string) => {
@@ -414,19 +395,6 @@ export function StrategyCanvas({
           >
             <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
             <Controls />
-            {showMiniMap && (
-              <MiniMap
-                nodeStrokeColor="rgba(79, 70, 229, 0.5)"
-                nodeColor="rgba(79, 70, 229, 0.3)"
-                maskColor="rgba(15, 23, 42, 0.8)"
-                className="hidden sm:block"
-                style={{
-                  backgroundColor: "#1A0626",
-                  border: "1px solid rgba(79,70,229,0.2)",
-                  borderRadius: "8px",
-                }}
-              />
-            )}
           </ReactFlow>
 
           {/* Mobile: Floating button to open blocks toolbar */}
@@ -607,21 +575,6 @@ export function StrategyCanvas({
               </svg>
             </button>
             <button
-              onClick={() => setShowMiniMap(!showMiniMap)}
-              className={`hidden sm:block p-2 rounded-lg border transition-all duration-200 shadow-lg ${showMiniMap ? "bg-[rgba(79,70,229,0.3)] text-white border-[rgba(79,70,229,0.5)]" : "bg-[#1E293B] text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] hover:text-white"}`}
-              title={showMiniMap ? "Hide minimap" : "Show minimap"}
-              aria-label={showMiniMap ? "Hide minimap" : "Show minimap"}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                />
-              </svg>
-            </button>
-            <button
               onClick={() => setShowShortcuts(true)}
               className="p-2 bg-[#1E293B] text-[#94A3B8] rounded-lg border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] hover:text-white transition-all duration-200 shadow-lg"
               title="Keyboard shortcuts (Shift+?)"
@@ -777,7 +730,6 @@ export function StrategyCanvas({
         onLoad={onLoad}
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
-        onGetBuildJson={getBuildJson}
         userTier={userTier}
       />
     </div>

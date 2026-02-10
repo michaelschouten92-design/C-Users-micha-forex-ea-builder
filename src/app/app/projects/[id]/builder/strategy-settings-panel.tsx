@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BuildJsonSettings } from "@/types/builder";
 
 interface StrategySettingsPanelProps {
@@ -147,21 +147,40 @@ function SettingsNumberField({
   step: number;
   onChange: (value: number) => void;
 }) {
+  const [localValue, setLocalValue] = useState(String(value));
+
+  // Sync local state when external value changes (e.g. from parent)
+  useEffect(() => {
+    setLocalValue(String(value));
+  }, [value]);
+
+  const commit = (raw: string) => {
+    const v = step % 1 === 0 ? parseInt(raw, 10) : parseFloat(raw);
+    if (!isNaN(v)) {
+      const clamped = Math.min(max, Math.max(min, v));
+      onChange(clamped);
+      setLocalValue(String(clamped));
+    } else {
+      setLocalValue(String(value));
+    }
+  };
+
   return (
     <div>
       <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
       <input
         type="number"
-        value={value}
+        value={localValue}
         min={min}
         max={max}
         step={step}
         onChange={(e) => {
           e.stopPropagation();
-          const v = step % 1 === 0 ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
-          if (!isNaN(v) && v >= min && v <= max) {
-            onChange(v);
-          }
+          setLocalValue(e.target.value);
+        }}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit(e.currentTarget.value);
         }}
         onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"

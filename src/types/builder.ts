@@ -726,11 +726,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   // Trade Management
   {
     type: "breakeven-stop",
-    label: "Breakeven Stop",
+    label: "Stoploss to Breakeven",
     category: "trademanagement",
     description: "Move SL to breakeven at profit target",
     defaultData: {
-      label: "Breakeven Stop",
+      label: "Stoploss to Breakeven",
       category: "trademanagement",
       managementType: "breakeven-stop",
       trigger: "PIPS",
