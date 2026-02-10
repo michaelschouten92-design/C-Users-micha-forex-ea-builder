@@ -362,11 +362,15 @@ export interface TrailingStopNodeData extends BaseNodeData {
   indicatorNodeId?: string; // For INDICATOR method
 }
 
+export type PartialCloseTrigger = "PIPS" | "PERCENT";
+
 export interface PartialCloseNodeData extends BaseNodeData {
   category: "trademanagement";
   managementType: "partial-close";
   closePercent: number; // Percentage of position to close
+  triggerMethod: PartialCloseTrigger;
   triggerPips: number; // Close when profit reaches X pips
+  triggerPercent: number; // Close when profit reaches X %
   moveSLToBreakeven: boolean; // Move SL to breakeven after partial close
 }
 
@@ -834,7 +838,9 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "trademanagement",
       managementType: "partial-close",
       closePercent: 50,
+      triggerMethod: "PIPS",
       triggerPips: 30,
+      triggerPercent: 1,
       moveSLToBreakeven: true,
     } as PartialCloseNodeData,
   },

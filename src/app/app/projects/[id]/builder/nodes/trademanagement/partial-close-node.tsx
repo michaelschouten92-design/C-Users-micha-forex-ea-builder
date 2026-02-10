@@ -22,12 +22,14 @@ export function PartialCloseNode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-zinc-500">At profit:</span>
-          <span className="font-medium">{data.triggerPips} pips</span>
+          <span className="font-medium">
+            {(data.triggerMethod ?? "PIPS") === "PERCENT"
+              ? `${data.triggerPercent ?? 1}%`
+              : `${data.triggerPips} pips`}
+          </span>
         </div>
         {data.moveSLToBreakeven && (
-          <div className="text-xs text-purple-300">
-            + Move SL to breakeven
-          </div>
+          <div className="text-xs text-purple-300">+ Move SL to breakeven</div>
         )}
       </div>
     </BaseNode>

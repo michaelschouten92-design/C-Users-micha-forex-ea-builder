@@ -26,8 +26,6 @@ export function NodeToolbar({
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
     new Set(["entrystrategy"])
   );
-  const [searchQuery, setSearchQuery] = useState("");
-
   const categories: NodeCategory[] = ["entrystrategy", "timing", "trademanagement"];
 
   const toggleCategory = (category: NodeCategory) => {
@@ -144,44 +142,10 @@ export function NodeToolbar({
         )}
       </div>
 
-      {/* Search */}
-      <div className="px-2 pt-2">
-        <div className="relative">
-          <svg
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#64748B] pointer-events-none"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search blocks..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded-lg text-white placeholder-[#64748B] focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all"
-          />
-        </div>
-      </div>
-
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {categories.map((category) => {
-          const allTemplates = NODE_TEMPLATES.filter((t) => t.category === category);
-          const templates = searchQuery
-            ? allTemplates.filter(
-                (t) =>
-                  t.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  t.description.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-            : allTemplates;
-          if (searchQuery && templates.length === 0) return null;
-          const isExpanded = searchQuery ? true : expandedCategories.has(category);
+          const templates = NODE_TEMPLATES.filter((t) => t.category === category);
+          const isExpanded = expandedCategories.has(category);
           const styles = categoryStyles[category];
 
           return (

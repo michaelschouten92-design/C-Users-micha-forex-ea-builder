@@ -770,13 +770,16 @@ describe("generateMQL5Code", () => {
           category: "trademanagement",
           managementType: "partial-close",
           closePercent: 50,
+          triggerMethod: "PIPS",
           triggerPips: 30,
+          triggerPercent: 1,
           moveSLToBreakeven: true,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("Partial Close Management");
       expect(code).toContain("InpPartialClosePercent");
+      expect(code).toContain("InpPartialCloseTriggerPips");
       expect(code).toContain("PositionClosePartial");
       expect(code).toContain("Move SL to breakeven after partial close");
     });
@@ -910,7 +913,9 @@ describe("generateMQL5Code", () => {
           category: "trademanagement",
           managementType: "partial-close",
           closePercent: 50,
+          triggerMethod: "PIPS",
           triggerPips: 30,
+          triggerPercent: 1,
           moveSLToBreakeven: false,
         }),
       ]);
@@ -1436,7 +1441,9 @@ describe("generateMQL5Code", () => {
           category: "trademanagement",
           managementType: "partial-close",
           closePercent: 50,
+          triggerMethod: "PIPS",
           triggerPips: 30,
+          triggerPercent: 1,
           moveSLToBreakeven: true,
         }),
       ]);

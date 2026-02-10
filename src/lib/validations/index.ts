@@ -406,7 +406,9 @@ const partialCloseNodeDataSchema = baseNodeDataSchema
     category: z.literal("trademanagement"),
     managementType: z.literal("partial-close"),
     closePercent: z.number().min(1).max(100),
+    triggerMethod: z.enum(["PIPS", "PERCENT"]).default("PIPS"),
     triggerPips: z.number().min(0).max(10000),
+    triggerPercent: z.number().min(0.01).max(100).default(1),
     moveSLToBreakeven: z.boolean(),
   })
   .strip();

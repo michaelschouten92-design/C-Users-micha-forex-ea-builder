@@ -356,17 +356,32 @@ function generatePartialCloseCode(
       group
     )
   );
-  code.inputs.push(
-    createInput(
-      node,
-      "triggerPips",
-      "InpPartialCloseTriggerPips",
-      "double",
-      data.triggerPips,
-      "Partial Close Trigger (pips)",
-      group
-    )
-  );
+  const triggerMethod = ((data as Record<string, unknown>).triggerMethod as string) ?? "PIPS";
+  if (triggerMethod === "PERCENT") {
+    code.inputs.push(
+      createInput(
+        node,
+        "triggerPercent",
+        "InpPartialCloseTriggerPercent",
+        "double",
+        ((data as Record<string, unknown>).triggerPercent as number) ?? 1,
+        "Partial Close Trigger (%)",
+        group
+      )
+    );
+  } else {
+    code.inputs.push(
+      createInput(
+        node,
+        "triggerPips",
+        "InpPartialCloseTriggerPips",
+        "double",
+        data.triggerPips,
+        "Partial Close Trigger (pips)",
+        group
+      )
+    );
+  }
   // Only declare shared globals/helpers once (avoid duplicates with multiple partial close nodes)
   if (!code.globalVariables.includes("ulong partialClosedTickets[];")) {
     code.globalVariables.push("ulong partialClosedTickets[];");
@@ -407,15 +422,21 @@ void MarkPartialClosed(ulong ticket)
   code.onTick.push("         double volume = PositionGetDouble(POSITION_VOLUME);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double triggerPoints = InpPartialCloseTriggerPips * 10;");
+  if (triggerMethod === "PERCENT") {
+    code.onTick.push(
+      "         double triggerPrice = openPrice * InpPartialCloseTriggerPercent / 100.0;"
+    );
+  } else {
+    code.onTick.push("         double triggerPrice = InpPartialCloseTriggerPips * 10 * point;");
+  }
   code.onTick.push("");
   code.onTick.push("         bool profitReached = false;");
   code.onTick.push(
-    "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point)"
+    "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)"
   );
   code.onTick.push("            profitReached = true;");
   code.onTick.push(
-    "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)"
+    "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)"
   );
   code.onTick.push("            profitReached = true;");
   code.onTick.push("");

@@ -1778,9 +1778,6 @@ function BreakevenStopFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(168,85,247,0.1)] border border-[rgba(168,85,247,0.3)] text-[#A855F7] p-2 rounded-lg text-xs mb-3">
-        Pro Feature
-      </div>
       <SelectField
         label="Trigger Type"
         value={data.trigger}
@@ -1881,9 +1878,6 @@ function TrailingStopFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(168,85,247,0.1)] border border-[rgba(168,85,247,0.3)] text-[#A855F7] p-2 rounded-lg text-xs mb-3">
-        Pro Feature
-      </div>
       <SelectField
         label="Trail Method"
         value={data.method}
@@ -1986,9 +1980,6 @@ function PartialCloseFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(168,85,247,0.1)] border border-[rgba(168,85,247,0.3)] text-[#A855F7] p-2 rounded-lg text-xs mb-3">
-        Pro Feature
-      </div>
       <div>
         <NumberField
           label="Close Percentage"
@@ -1999,16 +1990,39 @@ function PartialCloseFields({
         />
         <OptimizableFieldCheckbox fieldName="closePercent" data={data} onChange={onChange} />
       </div>
-      <div>
-        <NumberField
-          label="At Profit (pips)"
-          value={data.triggerPips}
-          min={1}
-          max={1000}
-          onChange={(v) => onChange({ triggerPips: v })}
-        />
-        <OptimizableFieldCheckbox fieldName="triggerPips" data={data} onChange={onChange} />
-      </div>
+      <SelectField
+        label="Trigger Type"
+        value={data.triggerMethod ?? "PIPS"}
+        options={[
+          { value: "PIPS", label: "Profit in Pips" },
+          { value: "PERCENT", label: "Profit in %" },
+        ]}
+        onChange={(v) => onChange({ triggerMethod: v as "PIPS" | "PERCENT" })}
+      />
+      {(data.triggerMethod ?? "PIPS") === "PIPS" ? (
+        <div>
+          <NumberField
+            label="At Profit (pips)"
+            value={data.triggerPips}
+            min={1}
+            max={1000}
+            onChange={(v) => onChange({ triggerPips: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="triggerPips" data={data} onChange={onChange} />
+        </div>
+      ) : (
+        <div>
+          <NumberField
+            label="At Profit (%)"
+            value={data.triggerPercent ?? 1}
+            min={0.01}
+            max={100}
+            step={0.1}
+            onChange={(v) => onChange({ triggerPercent: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="triggerPercent" data={data} onChange={onChange} />
+        </div>
+      )}
       <div className="mt-3">
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input
@@ -2046,9 +2060,6 @@ function LockProfitFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(168,85,247,0.1)] border border-[rgba(168,85,247,0.3)] text-[#A855F7] p-2 rounded-lg text-xs mb-3">
-        Pro Feature
-      </div>
       <SelectField
         label="Lock Method"
         value={data.method}
@@ -2304,7 +2315,7 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
       )}
 
       <NumberField
-        label="Take Profit (× SL distance)"
+        label="Take Profit (R)"
         value={data.tpRMultiple}
         min={0.1}
         max={10}
