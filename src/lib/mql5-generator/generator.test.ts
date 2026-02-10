@@ -1778,7 +1778,7 @@ describe("generateMQL5Code", () => {
   describe("strategy presets", () => {
     it("preset buildJson objects are valid for generation", async () => {
       const { STRATEGY_PRESETS } = await import("@/lib/strategy-presets");
-      expect(STRATEGY_PRESETS.length).toBe(14);
+      expect(STRATEGY_PRESETS.length).toBe(5);
       for (const preset of STRATEGY_PRESETS) {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();

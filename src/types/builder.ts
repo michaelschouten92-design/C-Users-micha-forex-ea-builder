@@ -14,8 +14,7 @@ export type NodeCategory =
   | "trading"
   | "riskmanagement"
   | "trademanagement"
-  | "entrystrategy"
-  | "advanced";
+  | "entrystrategy";
 
 // Base data all nodes have
 export interface BaseNodeData extends Record<string, unknown> {
@@ -573,7 +572,6 @@ export interface NodeTemplate {
   defaultData: Partial<BuilderNodeData>;
   proOnly?: boolean; // Only available for paid users (Starter+)
   comingSoon?: boolean; // Not yet implemented in code generation
-  advancedOnly?: boolean; // Shown in Advanced Blocks section only
 }
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
@@ -727,291 +725,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       htfEma: 200,
     } as MACDCrossoverEntryData,
   },
-  // Indicators
-  {
-    type: "moving-average",
-    label: "Moving Average",
-    category: "indicator",
-    description: "SMA, EMA",
-    advancedOnly: true,
-    defaultData: {
-      label: "Moving Average",
-      category: "indicator",
-      indicatorType: "moving-average",
-      timeframe: "H1",
-      period: 14,
-      method: "SMA",
-      signalMode: "every_tick",
-      shift: 0,
-    } as MovingAverageNodeData,
-  },
-  {
-    type: "rsi",
-    label: "RSI",
-    category: "indicator",
-    description: "Relative Strength Index",
-    advancedOnly: true,
-    defaultData: {
-      label: "RSI",
-      category: "indicator",
-      indicatorType: "rsi",
-      timeframe: "H1",
-      period: 14,
-      signalMode: "every_tick",
-      overboughtLevel: 70,
-      oversoldLevel: 30,
-    } as RSINodeData,
-  },
-  {
-    type: "macd",
-    label: "MACD",
-    category: "indicator",
-    description: "Moving Average Convergence Divergence",
-    advancedOnly: true,
-    defaultData: {
-      label: "MACD",
-      category: "indicator",
-      indicatorType: "macd",
-      timeframe: "H1",
-      fastPeriod: 12,
-      slowPeriod: 26,
-      signalPeriod: 9,
-      signalMode: "every_tick",
-    } as MACDNodeData,
-  },
-  {
-    type: "bollinger-bands",
-    label: "Bollinger Bands",
-    category: "indicator",
-    description: "Bollinger Bands indicator",
-    advancedOnly: true,
-    defaultData: {
-      label: "Bollinger Bands",
-      category: "indicator",
-      indicatorType: "bollinger-bands",
-      timeframe: "H1",
-      period: 20,
-      deviation: 2,
-      signalMode: "every_tick",
-      shift: 0,
-    } as BollingerBandsNodeData,
-  },
-  {
-    type: "atr",
-    label: "ATR",
-    category: "indicator",
-    description: "Average True Range (volatility)",
-    advancedOnly: true,
-    defaultData: {
-      label: "ATR",
-      category: "indicator",
-      indicatorType: "atr",
-      timeframe: "H1",
-      period: 14,
-      signalMode: "every_tick",
-    } as ATRNodeData,
-  },
-  {
-    type: "adx",
-    label: "ADX",
-    category: "indicator",
-    description: "Average Directional Index (trend strength)",
-    advancedOnly: true,
-    defaultData: {
-      label: "ADX",
-      category: "indicator",
-      indicatorType: "adx",
-      timeframe: "H1",
-      period: 14,
-      trendLevel: 25,
-      signalMode: "every_tick",
-    } as ADXNodeData,
-  },
-  {
-    type: "stochastic",
-    label: "Stochastic",
-    category: "indicator",
-    description: "Stochastic Oscillator (%K, %D)",
-    advancedOnly: true,
-    defaultData: {
-      label: "Stochastic",
-      category: "indicator",
-      indicatorType: "stochastic",
-      timeframe: "H1",
-      kPeriod: 14,
-      dPeriod: 3,
-      slowing: 3,
-      overboughtLevel: 80,
-      oversoldLevel: 20,
-      signalMode: "every_tick",
-    } as StochasticNodeData,
-  },
-  {
-    type: "cci",
-    label: "CCI",
-    category: "indicator",
-    description: "Commodity Channel Index",
-    advancedOnly: true,
-    defaultData: {
-      label: "CCI",
-      category: "indicator",
-      indicatorType: "cci",
-      timeframe: "H1",
-      period: 14,
-      signalMode: "every_tick",
-      overboughtLevel: 100,
-      oversoldLevel: -100,
-    } as CCINodeData,
-  },
-  // Price Action
-  {
-    type: "candlestick-pattern",
-    label: "Candlestick Patterns",
-    category: "priceaction",
-    description: "Detect candle patterns",
-    advancedOnly: true,
-    defaultData: {
-      label: "Candlestick Patterns",
-      category: "priceaction",
-      priceActionType: "candlestick-pattern",
-      timeframe: "H1",
-      patterns: ["ENGULFING_BULLISH", "ENGULFING_BEARISH"],
-      minBodySize: 5,
-    } as CandlestickPatternNodeData,
-  },
-  {
-    type: "support-resistance",
-    label: "Support/Resistance",
-    category: "priceaction",
-    description: "Key price levels",
-    advancedOnly: true,
-    defaultData: {
-      label: "Support/Resistance",
-      category: "priceaction",
-      priceActionType: "support-resistance",
-      timeframe: "H1",
-      lookbackPeriod: 100,
-      touchCount: 2,
-      zoneSize: 10,
-    } as SupportResistanceNodeData,
-  },
-  {
-    type: "range-breakout",
-    label: "Range Breakout",
-    category: "priceaction",
-    description: "Trade breakouts from price ranges",
-    advancedOnly: true,
-    defaultData: {
-      label: "Range Breakout",
-      category: "priceaction",
-      priceActionType: "range-breakout",
-      timeframe: "H1",
-      rangeType: "PREVIOUS_CANDLES",
-      lookbackCandles: 20,
-      rangeSession: "ASIAN",
-      sessionStartHour: 0,
-      sessionStartMinute: 0,
-      sessionEndHour: 8,
-      sessionEndMinute: 0,
-      breakoutDirection: "BOTH",
-      entryMode: "ON_CLOSE",
-      bufferPips: 2,
-      minRangePips: 10,
-      maxRangePips: 0,
-    } as RangeBreakoutNodeData,
-  },
-  // Entry
-  {
-    type: "place-buy",
-    label: "Place Buy",
-    category: "entry",
-    description: "Open a buy position",
-    advancedOnly: true,
-    defaultData: {
-      label: "Place Buy",
-      category: "entry",
-      tradingType: "place-buy",
-      method: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-    } as PlaceBuyNodeData,
-  },
-  {
-    type: "place-sell",
-    label: "Place Sell",
-    category: "entry",
-    description: "Open a sell position",
-    advancedOnly: true,
-    defaultData: {
-      label: "Place Sell",
-      category: "entry",
-      tradingType: "place-sell",
-      method: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-    } as PlaceSellNodeData,
-  },
-  // Risk Management
-  {
-    type: "stop-loss",
-    label: "Stoploss",
-    category: "riskmanagement",
-    description: "Stop loss placement",
-    defaultData: {
-      label: "Stoploss",
-      category: "riskmanagement",
-      tradingType: "stop-loss",
-      method: "FIXED_PIPS",
-      fixedPips: 50,
-      atrMultiplier: 1.5,
-      atrPeriod: 14,
-    } as StopLossNodeData,
-  },
-  {
-    type: "take-profit",
-    label: "Take Profit",
-    category: "riskmanagement",
-    description: "Take profit placement",
-    defaultData: {
-      label: "Take Profit",
-      category: "riskmanagement",
-      tradingType: "take-profit",
-      method: "FIXED_PIPS",
-      fixedPips: 100,
-      riskRewardRatio: 2,
-      atrMultiplier: 3,
-      atrPeriod: 14,
-    } as TakeProfitNodeData,
-  },
-  {
-    type: "close-condition",
-    label: "Exit Conditions",
-    category: "riskmanagement",
-    description: "Additional exit rules beyond SL/TP",
-    defaultData: {
-      label: "Exit Conditions",
-      category: "riskmanagement",
-      tradingType: "close-condition",
-      closeDirection: "BOTH",
-    } as CloseConditionNodeData,
-  },
-  {
-    type: "time-exit",
-    label: "Time Exit",
-    category: "riskmanagement",
-    description: "Additional: close after N bars",
-    defaultData: {
-      label: "Time Exit",
-      category: "riskmanagement",
-      tradingType: "time-exit",
-      exitAfterBars: 10,
-      exitTimeframe: "H1",
-    } as TimeExitNodeData,
-  },
   // Trade Management (Pro only)
   {
     type: "breakeven-stop",
@@ -1106,8 +819,6 @@ export function getCategoryColor(category: NodeCategory): string {
       return "rose";
     case "trademanagement":
       return "purple";
-    case "advanced":
-      return "gray";
     default:
       return "gray";
   }
@@ -1131,8 +842,6 @@ export function getCategoryLabel(category: NodeCategory): string {
       return "Risk Management";
     case "trademanagement":
       return "Trade Management";
-    case "advanced":
-      return "Advanced Blocks";
     default:
       return "Other";
   }

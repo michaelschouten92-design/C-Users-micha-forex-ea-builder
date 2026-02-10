@@ -67,12 +67,6 @@ const categoryStyles: Record<
     header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
     glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
   },
-  advanced: {
-    bg: "bg-[rgba(148,163,184,0.08)]",
-    border: "border-[rgba(148,163,184,0.3)]",
-    header: "bg-gradient-to-r from-[#475569] to-[#64748B]",
-    glow: "shadow-[0_0_16px_rgba(148,163,184,0.25)]",
-  },
 };
 
 export const BaseNode = memo(function BaseNode({

@@ -81,7 +81,6 @@ const nodeCategorySchema = z.enum([
   "riskmanagement",
   "trademanagement",
   "entrystrategy",
-  "advanced",
 ]);
 
 const timeframeSchema = z.enum(["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"]);

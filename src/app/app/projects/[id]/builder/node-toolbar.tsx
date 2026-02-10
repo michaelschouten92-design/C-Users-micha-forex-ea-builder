@@ -30,14 +30,7 @@ export function NodeToolbar({
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Primary categories in display order. "advanced" is a virtual group for advancedOnly blocks.
-  const categories: NodeCategory[] = [
-    "entrystrategy",
-    "timing",
-    "riskmanagement",
-    "trademanagement",
-    "advanced",
-  ];
+  const categories: NodeCategory[] = ["entrystrategy", "timing", "trademanagement"];
 
   const toggleCategory = (category: NodeCategory) => {
     setExpandedCategories((prev) => {
@@ -109,12 +102,6 @@ export function NodeToolbar({
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)]",
       border: "border-[#10B981]/30",
     },
-    advanced: {
-      gradient: "bg-gradient-to-r from-[#475569] to-[#64748B]",
-      shadow: "shadow-[0_2px_8px_rgba(100,116,139,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(100,116,139,0.4)]",
-      border: "border-[#64748B]/30",
-    },
   };
 
   const blockColors: Record<NodeCategory, string> = {
@@ -126,7 +113,6 @@ export function NodeToolbar({
     riskmanagement: "text-[#FB7185]",
     trademanagement: "text-[#A855F7]",
     entrystrategy: "text-[#10B981]",
-    advanced: "text-[#94A3B8]",
   };
 
   return (
@@ -188,11 +174,7 @@ export function NodeToolbar({
 
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {categories.map((category) => {
-          // "advanced" is a virtual group that collects all templates with advancedOnly flag
-          const allTemplates =
-            category === "advanced"
-              ? NODE_TEMPLATES.filter((t) => t.advancedOnly)
-              : NODE_TEMPLATES.filter((t) => t.category === category && !t.advancedOnly);
+          const allTemplates = NODE_TEMPLATES.filter((t) => t.category === category);
           const templates = searchQuery
             ? allTemplates.filter(
                 (t) =>
