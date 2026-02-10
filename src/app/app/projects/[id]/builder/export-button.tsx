@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 interface ExportButtonProps {
@@ -8,6 +9,7 @@ interface ExportButtonProps {
   hasNodes: boolean;
   canExport: boolean;
   canExportMQL5?: boolean;
+  userTier?: string;
 }
 
 interface ExportResult {
@@ -27,6 +29,7 @@ export function ExportButton({
   hasNodes,
   canExport,
   canExportMQL5 = false,
+  userTier,
 }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [exportStep, setExportStep] = useState(0);
@@ -129,7 +132,7 @@ export function ExportButton({
             : !canExport
               ? "Fix errors before exporting"
               : !canExportMQL5
-                ? "Upgrade to Starter or Pro to export"
+                ? "Upgrade to Pro to export"
                 : "Export to MQL5"
         }
       >
@@ -370,6 +373,53 @@ export function ExportButton({
                       </li>
                     </ol>
                   </div>
+
+                  {/* Upsell for FREE users */}
+                  {userTier === "FREE" && (
+                    <div className="bg-gradient-to-r from-[#4F46E5]/20 via-[#A78BFA]/20 to-[#22D3EE]/20 border border-[rgba(79,70,229,0.3)] rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5 text-[#22D3EE]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-white">
+                          Your strategy has been exported.
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#CBD5E1]">
+                        Ready to build and test multiple systems? Unlock unlimited exports and
+                        projects.
+                      </p>
+                      <Link
+                        href="/pricing"
+                        className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+                      >
+                        Upgrade to Pro
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

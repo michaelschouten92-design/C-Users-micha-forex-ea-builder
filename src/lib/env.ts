@@ -49,8 +49,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
 
   // Stripe Price IDs (required when Stripe is enabled)
-  STRIPE_STARTER_MONTHLY_PRICE_ID: z.string().optional(),
-  STRIPE_STARTER_YEARLY_PRICE_ID: z.string().optional(),
   STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional(),
   STRIPE_PRO_YEARLY_PRICE_ID: z.string().optional(),
 
@@ -116,8 +114,6 @@ const refinedEnvSchema = envSchema
     (data) => {
       // If Stripe is enabled (non-empty), price IDs are required
       if (data.STRIPE_SECRET_KEY && data.STRIPE_SECRET_KEY !== "") {
-        if (!data.STRIPE_STARTER_MONTHLY_PRICE_ID) return false;
-        if (!data.STRIPE_STARTER_YEARLY_PRICE_ID) return false;
         if (!data.STRIPE_PRO_MONTHLY_PRICE_ID) return false;
         if (!data.STRIPE_PRO_YEARLY_PRICE_ID) return false;
       }
@@ -125,7 +121,7 @@ const refinedEnvSchema = envSchema
     },
     {
       message: "When STRIPE_SECRET_KEY is set, all Stripe price IDs are required",
-      path: ["STRIPE_STARTER_MONTHLY_PRICE_ID"],
+      path: ["STRIPE_PRO_MONTHLY_PRICE_ID"],
     }
   )
   .refine(
@@ -196,8 +192,6 @@ function validateEnv() {
       EMAIL_FROM: "AlgoStudio <onboarding@resend.dev>",
       STRIPE_SECRET_KEY: undefined,
       STRIPE_WEBHOOK_SECRET: undefined,
-      STRIPE_STARTER_MONTHLY_PRICE_ID: undefined,
-      STRIPE_STARTER_YEARLY_PRICE_ID: undefined,
       STRIPE_PRO_MONTHLY_PRICE_ID: undefined,
       STRIPE_PRO_YEARLY_PRICE_ID: undefined,
       SENTRY_DSN: undefined,
@@ -243,8 +237,6 @@ function validateEnv() {
         STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
         STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
-        STRIPE_STARTER_MONTHLY_PRICE_ID: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
-        STRIPE_STARTER_YEARLY_PRICE_ID: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
         STRIPE_PRO_MONTHLY_PRICE_ID: process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
         STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
         SENTRY_DSN: process.env.SENTRY_DSN,

@@ -133,7 +133,7 @@ describe("validations", () => {
   describe("checkoutRequestSchema", () => {
     it("validates valid checkout request", () => {
       const result = checkoutRequestSchema.safeParse({
-        plan: "STARTER",
+        plan: "PRO",
         interval: "monthly",
       });
       expect(result.success).toBe(true);
@@ -157,7 +157,7 @@ describe("validations", () => {
 
     it("rejects invalid interval", () => {
       const result = checkoutRequestSchema.safeParse({
-        plan: "STARTER",
+        plan: "PRO",
         interval: "weekly",
       });
       expect(result.success).toBe(false);
@@ -166,6 +166,14 @@ describe("validations", () => {
     it("rejects FREE plan", () => {
       const result = checkoutRequestSchema.safeParse({
         plan: "FREE",
+        interval: "monthly",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects STARTER plan", () => {
+      const result = checkoutRequestSchema.safeParse({
+        plan: "STARTER",
         interval: "monthly",
       });
       expect(result.success).toBe(false);

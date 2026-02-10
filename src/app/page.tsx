@@ -32,9 +32,9 @@ export default async function Home() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: "0",
-      highPrice: "49",
+      highPrice: "39",
       priceCurrency: "EUR",
-      offerCount: 3,
+      offerCount: 2,
     },
   };
 
@@ -564,7 +564,7 @@ export default async function Home() {
               },
               {
                 q: "What do I get with the free plan?",
-                a: "You get full access to the visual builder with up to 3 projects and 2 MQL5 exports per month. No credit card required.",
+                a: "You get full access to the visual builder with 1 project and 1 MQL5 export per month. No credit card required.",
               },
               {
                 q: "Can I use the exported EA in live trading?",
@@ -618,62 +618,32 @@ export default async function Home() {
             <p className="text-[#94A3B8]">Start free, upgrade when you need more</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {/* Free */}
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <h3 className="text-lg font-semibold text-white">{PLANS.FREE.name}</h3>
               <div className="mt-2 mb-4">
-                <span className="text-3xl font-bold text-white">€0</span>
+                <span className="text-3xl font-bold text-white">{formatPrice(0, "eur")}</span>
               </div>
               <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Up to 3 projects
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Visual builder
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  2 exports/month
-                </li>
+                {PLANS.FREE.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-[#22D3EE]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
               </ul>
               <Link
                 href="/login?mode=register"
@@ -683,80 +653,13 @@ export default async function Home() {
               </Link>
             </div>
 
-            {/* Starter */}
+            {/* Pro */}
             <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-6 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
                   Popular
                 </span>
               </div>
-              <h3 className="text-lg font-semibold text-white">{PLANS.STARTER.name}</h3>
-              <div className="mt-2 mb-4">
-                <span className="text-3xl font-bold text-white">
-                  {formatPrice(PLANS.STARTER.prices!.monthly.amount, "eur")}
-                </span>
-                <span className="text-[#64748B] text-sm">/mo</span>
-              </div>
-              <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Up to 15 projects
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  10 exports/month
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  MQL5 source code
-                </li>
-              </ul>
-              <Link
-                href="/pricing"
-                className="block w-full text-center py-2.5 bg-[#4F46E5] text-white rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-colors"
-              >
-                View Plans
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
               <h3 className="text-lg font-semibold text-white">{PLANS.PRO.name}</h3>
               <div className="mt-2 mb-4">
                 <span className="text-3xl font-bold text-white">
@@ -765,58 +668,28 @@ export default async function Home() {
                 <span className="text-[#64748B] text-sm">/mo</span>
               </div>
               <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Unlimited everything
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  MQL5 source code
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Priority support
-                </li>
+                {PLANS.PRO.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-[#22D3EE]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
               </ul>
               <Link
                 href="/pricing"
-                className="block w-full text-center py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg text-sm font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="block w-full text-center py-2.5 bg-[#4F46E5] text-white rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-colors"
               >
                 View Plans
               </Link>

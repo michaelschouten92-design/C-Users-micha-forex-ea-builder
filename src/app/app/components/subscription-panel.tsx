@@ -7,11 +7,10 @@ import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
-  tier: "FREE" | "STARTER" | "PRO";
+  tier: "FREE" | "PRO";
   projectCount: number;
   exportCount: number;
   hasStripeSubscription: boolean;
-  trialEndsAt?: string;
 };
 
 export function SubscriptionPanel({
@@ -19,7 +18,6 @@ export function SubscriptionPanel({
   projectCount,
   exportCount,
   hasStripeSubscription,
-  trialEndsAt,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const plan = PLANS[tier];
@@ -52,41 +50,8 @@ export function SubscriptionPanel({
     }
   }
 
-  // Calculate trial days remaining
-  const trialDaysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
-
   return (
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 mb-6">
-      {/* Trial countdown banner */}
-      {trialDaysLeft !== null && trialDaysLeft > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.25)] rounded-lg">
-          <svg
-            className="w-5 h-5 text-[#A78BFA] flex-shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="text-sm text-[#CBD5E1]">
-            <span className="font-medium text-white">
-              {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""}
-            </span>{" "}
-            left in your free trial.{" "}
-            {trialDaysLeft <= 3 && (
-              <span className="text-[#F59E0B]">Your card will be charged when the trial ends.</span>
-            )}
-          </p>
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Plan Info */}
         <div>
@@ -100,16 +65,14 @@ export function SubscriptionPanel({
           </div>
           <p className="text-sm text-[#94A3B8]">
             {tier === "FREE"
-              ? "Upgrade for more projects, more exports, and advanced trade management."
-              : tier === "STARTER"
-                ? "Upgrade to Pro for unlimited projects and exports."
-                : "You have access to all features."}
+              ? "Upgrade to Pro for unlimited projects, exports, and community access."
+              : "You have access to all features."}
           </p>
         </div>
 
         {/* Action Button */}
         <div className="flex-shrink-0">
-          {tier === "FREE" || tier === "STARTER" ? (
+          {tier === "FREE" ? (
             <Link
               href="/pricing"
               className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
@@ -122,7 +85,7 @@ export function SubscriptionPanel({
                   d="M5 10l7-7m0 0l7 7m-7-7v18"
                 />
               </svg>
-              {tier === "FREE" ? "Upgrade" : "Upgrade to Pro"}
+              Upgrade to Pro
             </Link>
           ) : hasStripeSubscription ? (
             <button
@@ -164,7 +127,7 @@ export function SubscriptionPanel({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-[#94A3B8]">Projects</span>
             <span className="text-white">
-              {projectCount} / {projectLimit === Infinity ? "∞" : projectLimit}
+              {projectCount} / {projectLimit === Infinity ? "\u221E" : projectLimit}
             </span>
           </div>
           {projectLimit !== Infinity && (
@@ -205,7 +168,7 @@ export function SubscriptionPanel({
           <div className="flex justify-between text-sm mb-2">
             <span className="text-[#94A3B8]">Exports this month</span>
             <span className="text-white">
-              {exportCount} / {exportLimit === Infinity ? "∞" : exportLimit}
+              {exportCount} / {exportLimit === Infinity ? "\u221E" : exportLimit}
             </span>
           </div>
           {exportLimit !== Infinity && (
@@ -242,20 +205,12 @@ export function SubscriptionPanel({
         </div>
       </div>
 
-      {/* Feature Highlight for Free and Starter */}
+      {/* Feature Highlight for Free */}
       {tier === "FREE" && (
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Upgrade to unlock:</span> More projects, more exports,
-            trade management blocks, and priority support
-          </p>
-        </div>
-      )}
-      {tier === "STARTER" && (
-        <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
-          <p className="text-xs text-[#A78BFA]">
-            <span className="font-medium">Pro features:</span> Unlimited projects, unlimited
-            exports, priority support, early access to new features
+            <span className="font-medium">Upgrade to unlock:</span> Unlimited projects, unlimited
+            exports, all trading blocks, community access, and priority support
           </p>
         </div>
       )}

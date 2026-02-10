@@ -74,6 +74,7 @@ interface VersionControlsProps {
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   canExportMQL5?: boolean;
   onGetBuildJson?: () => BuildJsonSchema;
+  userTier?: string;
 }
 
 export function VersionControls({
@@ -86,6 +87,7 @@ export function VersionControls({
   autoSaveStatus,
   canExportMQL5 = false,
   onGetBuildJson,
+  userTier,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
@@ -307,6 +309,7 @@ export function VersionControls({
           hasNodes={hasNodes}
           canExport={validation.canExport}
           canExportMQL5={canExportMQL5}
+          userTier={userTier}
         />
 
         {/* Save as Template */}

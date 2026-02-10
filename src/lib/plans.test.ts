@@ -3,21 +3,15 @@ import { PLANS, getPlan, formatPrice } from "./plans";
 
 describe("plans", () => {
   describe("PLANS configuration", () => {
-    it("has three tiers: FREE, STARTER, PRO", () => {
-      expect(Object.keys(PLANS)).toEqual(["FREE", "STARTER", "PRO"]);
+    it("has two tiers: FREE, PRO", () => {
+      expect(Object.keys(PLANS)).toEqual(["FREE", "PRO"]);
     });
 
     it("FREE tier has correct limits", () => {
-      expect(PLANS.FREE.limits.maxProjects).toBe(3);
-      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(2);
+      expect(PLANS.FREE.limits.maxProjects).toBe(1);
+      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(1);
       expect(PLANS.FREE.limits.canExportMQL5).toBe(true);
       expect(PLANS.FREE.limits.canUseTradeManagement).toBe(false);
-    });
-
-    it("STARTER tier has higher limits than FREE", () => {
-      expect(PLANS.STARTER.limits.maxProjects).toBeGreaterThan(PLANS.FREE.limits.maxProjects);
-      expect(PLANS.STARTER.limits.maxExportsPerMonth).toBeGreaterThan(PLANS.FREE.limits.maxExportsPerMonth);
-      expect(PLANS.STARTER.limits.canUseTradeManagement).toBe(true);
     });
 
     it("PRO tier has unlimited projects and exports", () => {
@@ -31,14 +25,12 @@ describe("plans", () => {
       expect(PLANS.FREE.prices).toBeNull();
     });
 
-    it("paid tiers have prices", () => {
-      expect(PLANS.STARTER.prices).toBeTruthy();
+    it("PRO tier has prices", () => {
       expect(PLANS.PRO.prices).toBeTruthy();
     });
 
     it("each tier has features list", () => {
       expect(PLANS.FREE.features.length).toBeGreaterThan(0);
-      expect(PLANS.STARTER.features.length).toBeGreaterThan(0);
       expect(PLANS.PRO.features.length).toBeGreaterThan(0);
     });
   });
@@ -46,7 +38,6 @@ describe("plans", () => {
   describe("getPlan", () => {
     it("returns correct plan by tier", () => {
       expect(getPlan("FREE").name).toBe("Free");
-      expect(getPlan("STARTER").name).toBe("Starter");
       expect(getPlan("PRO").name).toBe("Pro");
     });
   });

@@ -236,7 +236,7 @@ export function NodeToolbar({
                           isComingSoon
                             ? "Coming soon"
                             : isLocked
-                              ? "Upgrade to Starter or Pro to use this block"
+                              ? "Upgrade to Pro to use this block"
                               : template.description
                         }
                       >
@@ -257,7 +257,7 @@ export function NodeToolbar({
                                   : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
                               }`}
                             >
-                              {isLocked ? "🔒 STARTER+" : "STARTER+"}
+                              {isLocked ? "🔒 PRO" : "PRO"}
                             </span>
                           )}
                         </div>

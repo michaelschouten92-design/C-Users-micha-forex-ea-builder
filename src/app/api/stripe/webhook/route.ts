@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const VALID_PAID_TIERS = ["STARTER", "PRO"] as const;
+const VALID_PAID_TIERS = ["PRO"] as const;
 type PaidTier = (typeof VALID_PAID_TIERS)[number];
 
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
@@ -188,7 +188,6 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       status: "active",
       stripeSubId: subscriptionId,
       stripeCustomerId: customerId,
-      trialUsed: true,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
@@ -207,15 +206,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   // Determine plan from price - validate against known price IDs
   const priceId = subscription.items.data[0]?.price.id;
-  let tier: "STARTER" | "PRO";
+  let tier: "PRO";
 
   if (priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID || priceId === env.STRIPE_PRO_YEARLY_PRICE_ID) {
     tier = "PRO";
-  } else if (
-    priceId === env.STRIPE_STARTER_MONTHLY_PRICE_ID ||
-    priceId === env.STRIPE_STARTER_YEARLY_PRICE_ID
-  ) {
-    tier = "STARTER";
   } else {
     log.error(
       { priceId, subscriptionId: subscription.id },
@@ -273,7 +267,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
     // Audit tier changes and send confirmation email (fire-and-forget, outside transaction)
     if (result.previousTier !== tier) {
-      const tierOrder = { FREE: 0, STARTER: 1, PRO: 2 };
+      const tierOrder = { FREE: 0, PRO: 1 };
       const isUpgrade = tierOrder[tier] > tierOrder[result.previousTier as keyof typeof tierOrder];
 
       (isUpgrade

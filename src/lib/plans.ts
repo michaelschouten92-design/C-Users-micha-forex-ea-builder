@@ -8,26 +8,14 @@ const parsePrice = (envVal: string | undefined, fallback: number) => {
 };
 
 const DISPLAY_PRICES = {
-  starter: {
-    monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_MONTHLY, 2400),
-      currency: "eur",
-      interval: "month" as const,
-    },
-    yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_STARTER_YEARLY, 19200),
-      currency: "eur",
-      interval: "year" as const,
-    },
-  },
   pro: {
     monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 5900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 3900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 46800),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 39900),
       currency: "eur",
       interval: "year" as const,
     },
@@ -39,10 +27,6 @@ function getPriceConfigWithIds() {
   // On client side or when Stripe is not enabled, return display prices without IDs
   if (typeof window !== "undefined" || !features.stripe) {
     return {
-      starter: {
-        monthly: { ...DISPLAY_PRICES.starter.monthly, priceId: "" },
-        yearly: { ...DISPLAY_PRICES.starter.yearly, priceId: "" },
-      },
       pro: {
         monthly: { ...DISPLAY_PRICES.pro.monthly, priceId: "" },
         yearly: { ...DISPLAY_PRICES.pro.yearly, priceId: "" },
@@ -52,16 +36,6 @@ function getPriceConfigWithIds() {
 
   // On server with Stripe enabled, include price IDs
   return {
-    starter: {
-      monthly: {
-        ...DISPLAY_PRICES.starter.monthly,
-        priceId: env.STRIPE_STARTER_MONTHLY_PRICE_ID!,
-      },
-      yearly: {
-        ...DISPLAY_PRICES.starter.yearly,
-        priceId: env.STRIPE_STARTER_YEARLY_PRICE_ID!,
-      },
-    },
     pro: {
       monthly: {
         ...DISPLAY_PRICES.pro.monthly,
@@ -81,32 +55,14 @@ export const PLANS = {
   FREE: {
     name: "Free",
     tier: "FREE" as const,
-    features: ["Up to 3 projects", "Visual strategy builder", "2 exports per month"],
+    features: ["1 project", "Visual strategy builder", "1 export per month"],
     limits: {
-      maxProjects: 3,
-      maxExportsPerMonth: 2,
+      maxProjects: 1,
+      maxExportsPerMonth: 1,
       canExportMQL5: true,
       canUseTradeManagement: false,
     },
     prices: null,
-  },
-  STARTER: {
-    name: "Starter",
-    tier: "STARTER" as const,
-    features: [
-      "Up to 15 projects",
-      "10 exports per month",
-      "MQL5 source code export",
-      "Trade management blocks",
-      "Email support",
-    ],
-    limits: {
-      maxProjects: 15,
-      maxExportsPerMonth: 10,
-      canExportMQL5: true,
-      canUseTradeManagement: true,
-    },
-    prices: priceConfig.starter,
   },
   PRO: {
     name: "Pro",
@@ -115,9 +71,9 @@ export const PLANS = {
       "Unlimited projects",
       "Unlimited exports",
       "MQL5 source code export",
-      "Trade management blocks",
+      "All trading blocks",
+      "Community access (Whop)",
       "Priority support",
-      "Early access to new features",
     ],
     limits: {
       maxProjects: Infinity,

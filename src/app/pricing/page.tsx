@@ -7,25 +7,24 @@ import { PLANS, formatPrice } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 
-// Helper to safely get price - returns null if Stripe not configured
-function getPrice(plan: typeof PLANS.STARTER | typeof PLANS.PRO, interval: "monthly" | "yearly") {
-  if (!plan.prices) return null;
-  return plan.prices[interval];
-}
-
 export default function PricingPage() {
   const router = useRouter();
   const [interval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubscribe(plan: "STARTER" | "PRO") {
-    setLoading(plan);
+  const proPrice = PLANS.PRO.prices?.[interval];
+  const monthlyTotal = (PLANS.PRO.prices?.monthly.amount ?? 0) * 12;
+  const yearlyPrice = PLANS.PRO.prices?.yearly.amount ?? 0;
+  const yearlySavings = monthlyTotal - yearlyPrice;
+
+  async function handleSubscribe() {
+    setLoading(true);
 
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ plan, interval }),
+        body: JSON.stringify({ plan: "PRO", interval }),
       });
 
       if (res.status === 401) {
@@ -41,24 +40,24 @@ export default function PricingPage() {
         showError(
           data.details ? `${data.error}: ${data.details}` : data.error || "Failed to start checkout"
         );
-        setLoading(null);
+        setLoading(false);
       }
     } catch {
       showError("Something went wrong. Please try again.");
-      setLoading(null);
+      setLoading(false);
     }
   }
 
   return (
     <div id="main-content" className="min-h-screen py-16 px-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <Link href="/" className="text-2xl font-bold text-white mb-4 inline-block">
             AlgoStudio
           </Link>
           <h1 className="text-4xl font-bold text-white mt-4">Simple, transparent pricing</h1>
-          <p className="text-[#94A3B8] mt-2">Choose the plan that fits your trading needs</p>
+          <p className="text-[#94A3B8] mt-2">Start free, upgrade when you need more</p>
         </div>
 
         {/* Interval Toggle */}
@@ -84,19 +83,19 @@ export default function PricingPage() {
             >
               Yearly
               <span className="ml-2 text-[10px] font-bold text-[#0F172A] bg-[#22D3EE] px-1.5 py-0.5 rounded-full">
-                -33%
+                Save {formatPrice(yearlySavings, "eur")}
               </span>
             </button>
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* Free Plan */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
             <h3 className="text-xl font-semibold text-white">{PLANS.FREE.name}</h3>
             <div className="mt-4">
-              <span className="text-4xl font-bold text-white">€0</span>
+              <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
               <span className="text-[#94A3B8] ml-2">/forever</span>
             </div>
 
@@ -129,71 +128,33 @@ export default function PricingPage() {
             </Link>
           </div>
 
-          {/* Starter Plan */}
+          {/* Pro Plan */}
           <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-8 relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
                 Most Popular
               </span>
             </div>
-            <h3 className="text-xl font-semibold text-white">{PLANS.STARTER.name}</h3>
-            <div className="mt-4">
-              {getPrice(PLANS.STARTER, interval) ? (
-                <>
-                  <span className="text-4xl font-bold text-white">
-                    {formatPrice(getPrice(PLANS.STARTER, interval)!.amount, "eur")}
-                  </span>
-                  <span className="text-[#94A3B8] ml-2">
-                    /{interval === "monthly" ? "month" : "year"}
-                  </span>
-                </>
-              ) : (
-                <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
-              )}
-            </div>
-
-            <ul className="mt-6 space-y-3">
-              {PLANS.STARTER.features.map((feature, i) => (
-                <li key={i} className="flex items-center gap-3 text-[#CBD5E1]">
-                  <svg
-                    className="w-5 h-5 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleSubscribe("STARTER")}
-              disabled={loading !== null || !getPrice(PLANS.STARTER, interval)}
-              className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
-            >
-              {loading === "STARTER" ? "Loading..." : "Get Started"}
-            </button>
-          </div>
-
-          {/* Pro Plan */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
             <h3 className="text-xl font-semibold text-white">{PLANS.PRO.name}</h3>
             <div className="mt-4">
-              {getPrice(PLANS.PRO, interval) ? (
+              {proPrice ? (
                 <>
                   <span className="text-4xl font-bold text-white">
-                    {formatPrice(getPrice(PLANS.PRO, interval)!.amount, "eur")}
+                    {formatPrice(proPrice.amount, "eur")}
                   </span>
                   <span className="text-[#94A3B8] ml-2">
                     /{interval === "monthly" ? "month" : "year"}
                   </span>
+                  {interval === "yearly" && (
+                    <div className="mt-1">
+                      <span className="text-sm text-[#64748B] line-through">
+                        {formatPrice(monthlyTotal, "eur")}
+                      </span>
+                      <span className="text-sm text-[#22D3EE] ml-2 font-medium">
+                        Save {formatPrice(yearlySavings, "eur")}
+                      </span>
+                    </div>
+                  )}
                 </>
               ) : (
                 <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
@@ -222,20 +183,13 @@ export default function PricingPage() {
             </ul>
 
             <button
-              onClick={() => handleSubscribe("PRO")}
-              disabled={loading !== null || !getPrice(PLANS.PRO, interval)}
-              className="mt-8 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              onClick={handleSubscribe}
+              disabled={loading || !proPrice}
+              className="mt-8 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
             >
-              {loading === "PRO" ? "Loading..." : "Get Started"}
+              {loading ? "Loading..." : "Get Started"}
             </button>
           </div>
-        </div>
-
-        {/* Trial note */}
-        <div className="text-center mt-8">
-          <p className="text-[#94A3B8] text-sm">
-            All paid plans include a 7-day free trial. Cancel anytime.
-          </p>
         </div>
 
         {/* FAQ */}
@@ -245,10 +199,6 @@ export default function PricingPage() {
           </h2>
           <div className="space-y-3">
             {[
-              {
-                q: "How does the 7-day free trial work?",
-                a: "When you subscribe to Starter or Pro, you get 7 days free. You won't be charged until the trial ends. Cancel anytime during the trial and you won't pay a thing.",
-              },
               {
                 q: "Can I upgrade or downgrade at any time?",
                 a: "Yes. You can switch between plans at any time from your account settings. When upgrading, you'll get immediate access to the new features. When downgrading, the change takes effect at the end of your current billing period.",
@@ -268,6 +218,10 @@ export default function PricingPage() {
               {
                 q: "What counts as an export?",
                 a: "Each time you download a .mq5 file from the builder, that counts as one export. Re-downloading the same version doesn't count again.",
+              },
+              {
+                q: "What is the Whop community?",
+                a: "Pro members get access to our private Whop community where you can share strategies, get feedback from other traders, and get early access to new features.",
               },
             ].map((item, i) => (
               <details

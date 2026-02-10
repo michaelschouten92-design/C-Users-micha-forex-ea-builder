@@ -44,7 +44,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const tier = (subscription?.tier ?? "FREE") as "FREE" | "STARTER" | "PRO";
+  const tier = (subscription?.tier ?? "FREE") as "FREE" | "PRO";
 
   return (
     <div className="min-h-screen">
@@ -101,11 +101,6 @@ export default async function DashboardPage() {
           projectCount={projects.length}
           exportCount={exportCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
-          trialEndsAt={
-            subscription?.status === "trialing" && subscription.currentPeriodEnd
-              ? subscription.currentPeriodEnd.toISOString()
-              : undefined
-          }
         />
 
         <div className="flex justify-between items-center mb-6">

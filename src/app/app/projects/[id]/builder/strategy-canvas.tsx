@@ -48,6 +48,7 @@ interface StrategyCanvasProps {
   initialData: BuildJsonSchema | null;
   canExportMQL5?: boolean;
   isPro?: boolean;
+  userTier?: string;
 }
 
 let nodeIdCounter = 0;
@@ -57,6 +58,7 @@ export function StrategyCanvas({
   initialData,
   canExportMQL5 = false,
   isPro = false,
+  userTier,
 }: StrategyCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, setViewport } = useReactFlow();
@@ -858,6 +860,7 @@ export function StrategyCanvas({
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
         onGetBuildJson={getBuildJson}
+        userTier={userTier}
       />
     </div>
   );

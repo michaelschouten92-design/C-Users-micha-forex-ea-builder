@@ -22,7 +22,6 @@ type SortOption = "updated" | "created" | "name";
 
 const TIER_COLORS: Record<string, string> = {
   FREE: "bg-[rgba(16,185,129,0.15)] text-[#10B981] border-[rgba(16,185,129,0.3)]",
-  STARTER: "bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]",
   PRO: "bg-[rgba(168,85,247,0.15)] text-[#A855F7] border-[rgba(168,85,247,0.3)]",
 };
 

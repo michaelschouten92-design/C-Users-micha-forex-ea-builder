@@ -97,7 +97,7 @@ export function useProjectVersions(projectId: string | null) {
 // Hook for fetching user subscription
 export function useSubscription() {
   return useSWR<{
-    tier: "FREE" | "STARTER" | "PRO";
+    tier: "FREE" | "PRO";
     status: string;
     currentPeriodEnd: string | null;
   }>("/api/subscription", fetcher, {

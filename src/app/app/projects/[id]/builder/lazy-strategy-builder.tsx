@@ -27,6 +27,7 @@ interface LazyStrategyBuilderProps {
   } | null;
   canExportMQL5?: boolean;
   isPro?: boolean;
+  tier?: string;
 }
 
 export function LazyStrategyBuilder(props: LazyStrategyBuilderProps) {

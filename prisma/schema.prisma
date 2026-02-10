@@ -16,7 +16,6 @@ datasource db {
 
 enum PlanTier {
   FREE
-  STARTER
   PRO
 }
 
@@ -62,9 +61,6 @@ model Subscription {
   userId String   @unique
   tier   PlanTier @default(FREE)
   status String   @default("active")
-
-  // Trial abuse prevention
-  trialUsed Boolean @default(false)
 
   // Future-proof Stripe fields
   stripeCustomerId   String?

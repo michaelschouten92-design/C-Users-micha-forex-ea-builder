@@ -14,6 +14,7 @@ interface StrategyBuilderProps {
   } | null;
   canExportMQL5?: boolean;
   isPro?: boolean;
+  tier?: string;
 }
 
 export function StrategyBuilder({
@@ -21,6 +22,7 @@ export function StrategyBuilder({
   latestVersion,
   canExportMQL5 = false,
   isPro = false,
+  tier,
 }: StrategyBuilderProps) {
   return (
     <CanvasErrorBoundary>
@@ -30,6 +32,7 @@ export function StrategyBuilder({
           initialData={latestVersion?.buildJson ?? null}
           canExportMQL5={canExportMQL5}
           isPro={isPro}
+          userTier={tier}
         />
       </ReactFlowProvider>
     </CanvasErrorBoundary>
