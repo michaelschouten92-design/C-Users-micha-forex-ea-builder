@@ -77,7 +77,12 @@ function LoginForm() {
   return (
     <div className="max-w-md w-full space-y-8 p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div>
-        <h2 className="text-center text-3xl font-bold text-white">AlgoStudio</h2>
+        <Link
+          href="/"
+          className="block text-center text-3xl font-bold text-white hover:text-[#A78BFA] transition-colors"
+        >
+          AlgoStudio
+        </Link>
         <p className="mt-2 text-center text-sm text-[#94A3B8]">
           {isRegistration ? "Create a new account" : "Sign in to your account"}
         </p>
