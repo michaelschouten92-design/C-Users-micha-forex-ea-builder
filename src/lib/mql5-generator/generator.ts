@@ -157,6 +157,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         bufferPips: 2,
         minRangePips: 10,
         maxRangePips: 0,
+        useServerTime: rb.useServerTime ?? true,
       })
     );
   } else if (d.entryType === "rsi-reversal") {
@@ -572,6 +573,44 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   timeExitNodes.forEach((node) => {
     generateTimeExitCode(node, code);
   });
+
+  // Generate close-at-time code from entry strategy blocks
+  for (const node of buildJson.nodes) {
+    if (!("entryType" in node.data) || node.data.entryType !== "range-breakout") continue;
+    const rb = node.data as RangeBreakoutEntryData;
+    if (!rb.closeAtTime) continue;
+    const h = rb.closeAtHour ?? 17;
+    const m = rb.closeAtMinute ?? 0;
+    const closeMinutes = h * 60 + m;
+    const useServer = rb.useServerTime ?? true;
+    const timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
+    const timeLabel = useServer ? "Server time" : "GMT";
+    code.onTick.push("");
+    code.onTick.push(
+      `//--- Close all positions at ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} (${timeLabel})`
+    );
+    code.onTick.push("{");
+    // Ensure MqlDateTime is available
+    const needsDecl = !code.onTick.some((l) => l.includes("MqlDateTime closeTimeDt;"));
+    if (needsDecl) {
+      code.onTick.push(`   MqlDateTime closeTimeDt;`);
+      code.onTick.push(`   TimeToStruct(${timeFunc}, closeTimeDt);`);
+      code.onTick.push(`   int closeMinutes = closeTimeDt.hour * 60 + closeTimeDt.min;`);
+    }
+    code.onTick.push(`   if(closeMinutes >= ${closeMinutes})`);
+    code.onTick.push("   {");
+    code.onTick.push("      for(int i = PositionsTotal() - 1; i >= 0; i--)");
+    code.onTick.push("      {");
+    code.onTick.push("         ulong ticket = PositionGetTicket(i);");
+    code.onTick.push(
+      "         if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+    );
+    code.onTick.push("            trade.PositionClose(ticket);");
+    code.onTick.push("      }");
+    code.onTick.push("      return;");
+    code.onTick.push("   }");
+    code.onTick.push("}");
+  }
 
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {

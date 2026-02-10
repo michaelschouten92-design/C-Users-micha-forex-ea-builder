@@ -1835,10 +1835,14 @@ describe("generateMQL5Code", () => {
           customEndHour: 8,
           customEndMinute: 0,
           slMethod: "ATR",
+          useServerTime: true,
           riskPercent: 1,
           slAtrMultiplier: 1.5,
           tpRMultiple: 2,
           cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
           htfTrendFilter: false,
           htfTimeframe: "H4",
           htfEma: 200,
@@ -1868,10 +1872,14 @@ describe("generateMQL5Code", () => {
           customEndHour: 6,
           customEndMinute: 30,
           slMethod: "ATR",
+          useServerTime: true,
           riskPercent: 1,
           slAtrMultiplier: 1.5,
           tpRMultiple: 2,
           cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
           htfTrendFilter: false,
           htfTimeframe: "H4",
           htfEma: 200,
@@ -1898,10 +1906,14 @@ describe("generateMQL5Code", () => {
           customEndHour: 8,
           customEndMinute: 0,
           slMethod: "RANGE_OPPOSITE",
+          useServerTime: true,
           riskPercent: 1,
           slAtrMultiplier: 1.5,
           tpRMultiple: 2,
           cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
           htfTrendFilter: false,
           htfTimeframe: "H4",
           htfEma: 200,
@@ -1915,6 +1927,39 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("slSellPips");
       // Should NOT have ATR handle for SL
       expect(code).not.toContain("InpATRMultiplier");
+    });
+
+    it("generates close-at-time code when enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          closeAtTime: true,
+          closeAtHour: 16,
+          closeAtMinute: 30,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Close all positions at 16:30");
+      expect(code).toContain("closeMinutes >= 990");
+      expect(code).toContain("PositionClose(ticket)");
     });
   });
 

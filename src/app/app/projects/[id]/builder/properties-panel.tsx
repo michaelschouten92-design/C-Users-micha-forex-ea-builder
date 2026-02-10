@@ -2414,6 +2414,8 @@ function RangeBreakoutEntryFields({
 }) {
   const rangeMethod = data.rangeMethod ?? "CANDLES";
   const slMethod = data.slMethod ?? "ATR";
+  const useServerTime = data.useServerTime ?? true;
+  const timeLabel = useServerTime ? "Server time" : "GMT";
 
   return (
     <>
@@ -2446,40 +2448,42 @@ function RangeBreakoutEntryFields({
         </>
       ) : (
         <>
-          <NumberField
-            label="Start Hour"
-            value={data.customStartHour ?? 0}
-            min={0}
-            max={23}
-            step={1}
-            onChange={(v) => onChange({ customStartHour: v })}
+          <div className="text-xs text-[#94A3B8] mb-1">
+            Range window ({timeLabel}) — the high/low of this period defines the range
+          </div>
+          <TimeField
+            label="Range start"
+            hour={data.customStartHour ?? 0}
+            minute={data.customStartMinute ?? 0}
+            onHourChange={(h) => onChange({ customStartHour: h })}
+            onMinuteChange={(m) => onChange({ customStartMinute: m })}
           />
-          <NumberField
-            label="Start Minute"
-            value={data.customStartMinute ?? 0}
-            min={0}
-            max={59}
-            step={1}
-            onChange={(v) => onChange({ customStartMinute: v })}
-          />
-          <NumberField
-            label="End Hour"
-            value={data.customEndHour ?? 8}
-            min={0}
-            max={23}
-            step={1}
-            onChange={(v) => onChange({ customEndHour: v })}
-          />
-          <NumberField
-            label="End Minute"
-            value={data.customEndMinute ?? 0}
-            min={0}
-            max={59}
-            step={1}
-            onChange={(v) => onChange({ customEndMinute: v })}
+          <TimeField
+            label="Range end"
+            hour={data.customEndHour ?? 8}
+            minute={data.customEndMinute ?? 0}
+            onHourChange={(h) => onChange({ customEndHour: h })}
+            onMinuteChange={(m) => onChange({ customEndMinute: m })}
           />
         </>
       )}
+
+      {/* Time reference */}
+      <div className="mt-1">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!useServerTime}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ useServerTime: !e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Use GMT instead of server time
+        </label>
+      </div>
 
       {/* SL method */}
       <SelectField
@@ -2499,6 +2503,19 @@ function RangeBreakoutEntryFields({
           checked={data.cancelOpposite}
           onChange={(v) => onChange({ cancelOpposite: v })}
         />
+        <ToggleField
+          label="Close all positions at a specific time"
+          checked={data.closeAtTime ?? false}
+          onChange={(v) => onChange({ closeAtTime: v })}
+        >
+          <TimeField
+            label={`Close time (${timeLabel})`}
+            hour={data.closeAtHour ?? 17}
+            minute={data.closeAtMinute ?? 0}
+            onHourChange={(h) => onChange({ closeAtHour: h })}
+            onMinuteChange={(m) => onChange({ closeAtMinute: m })}
+          />
+        </ToggleField>
         <ToggleField
           label="HTF trend filter"
           checked={data.htfTrendFilter}

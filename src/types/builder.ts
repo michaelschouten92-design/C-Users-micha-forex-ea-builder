@@ -425,8 +425,12 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   customEndHour: number;
   customEndMinute: number;
   slMethod: "ATR" | "RANGE_OPPOSITE";
+  useServerTime: boolean;
   // Advanced toggles
   cancelOpposite: boolean;
+  closeAtTime: boolean;
+  closeAtHour: number;
+  closeAtMinute: number;
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;
   htfEma: number;
@@ -651,10 +655,14 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       customEndHour: 8,
       customEndMinute: 0,
       slMethod: "ATR",
+      useServerTime: true,
       riskPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       cancelOpposite: true,
+      closeAtTime: false,
+      closeAtHour: 17,
+      closeAtMinute: 0,
       htfTrendFilter: false,
       htfTimeframe: "H4",
       htfEma: 200,
