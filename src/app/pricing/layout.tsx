@@ -31,7 +31,7 @@ const jsonLd = {
         price: "39",
         priceCurrency: "EUR",
         description:
-          "Unlimited projects, unlimited exports, trade management blocks, community access, priority support",
+          "Unlimited projects, unlimited exports, all strategy templates, priority support",
       },
     ],
   },

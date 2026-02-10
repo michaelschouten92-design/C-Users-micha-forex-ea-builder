@@ -205,8 +205,6 @@ export default function PricingPage() {
                 "Unlimited projects",
                 "Unlimited exports",
                 "All 5 strategy templates",
-                "Trade management blocks (breakeven, trailing, partial close)",
-                "Community access",
                 "Priority support",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">

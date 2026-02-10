@@ -506,8 +506,6 @@ export default async function Home() {
                   "Unlimited projects",
                   "Unlimited exports",
                   "All strategy templates",
-                  "Trade management blocks (Pro)",
-                  "Community access",
                   "Priority support",
                 ].map((feature, i) => (
                   <li key={i} className="flex items-start gap-2">

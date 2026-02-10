@@ -229,7 +229,7 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
               You have 2 free exports per month on your current plan. That&apos;s enough to test your strategy in MetaTrader 5.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6;">
-              Need more exports or access to trade management features like trailing stops and partial closes? Check out our paid plans.
+              Need more exports or access to all strategy templates? Check out our paid plans.
             </p>
             <a href="${pricingUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               View Plans
