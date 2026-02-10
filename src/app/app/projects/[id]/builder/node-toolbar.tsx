@@ -287,12 +287,12 @@ export function NodeToolbar({
             </div>
           );
         })}
-      </div>
 
-      {/* Strategy Settings Panel */}
-      {settings && onSettingsChange && (
-        <StrategySettingsPanel settings={settings} onChange={onSettingsChange} />
-      )}
+        {/* Strategy Settings Panel */}
+        {settings && onSettingsChange && (
+          <StrategySettingsPanel settings={settings} onChange={onSettingsChange} />
+        )}
+      </div>
     </div>
   );
 }
