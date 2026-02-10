@@ -147,10 +147,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "adx",
     "stochastic",
     "cci",
-    "williams-r",
-    "parabolic-sar",
-    "momentum",
-    "envelopes",
   ]);
   const tradeManagementTypeSet = new Set([
     "breakeven-stop",

@@ -12,10 +12,6 @@ import { ATRNode } from "./indicators/atr-node";
 import { ADXNode } from "./indicators/adx-node";
 import { StochasticNode } from "./indicators/stochastic-node";
 import { CCINode } from "./indicators/cci-node";
-import { WilliamsRNode } from "./indicators/williams-r-node";
-import { ParabolicSARNode } from "./indicators/parabolic-sar-node";
-import { MomentumNode } from "./indicators/momentum-node";
-import { EnvelopesNode } from "./indicators/envelopes-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
@@ -44,10 +40,6 @@ export const nodeTypes: NodeTypes = {
   adx: ADXNode,
   stochastic: StochasticNode,
   cci: CCINode,
-  "williams-r": WilliamsRNode,
-  "parabolic-sar": ParabolicSARNode,
-  momentum: MomentumNode,
-  envelopes: EnvelopesNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
   "range-breakout": RangeBreakoutNode,
@@ -76,10 +68,6 @@ export {
   ADXNode,
   StochasticNode,
   CCINode,
-  WilliamsRNode,
-  ParabolicSARNode,
-  MomentumNode,
-  EnvelopesNode,
   CandlestickPatternNode,
   SupportResistanceNode,
   RangeBreakoutNode,

@@ -74,27 +74,6 @@ function buildIndicatorLines(nodes: BuilderNode[]): SummaryLine[] {
       case "cci":
         lines.push({ icon: "chart", text: `Signal: CCI(${"period" in d ? d.period : 14})${tf}` });
         break;
-      case "williams-r":
-        lines.push({
-          icon: "chart",
-          text: `Signal: Williams %R(${"period" in d ? d.period : 14})${tf}`,
-        });
-        break;
-      case "parabolic-sar":
-        lines.push({ icon: "chart", text: `Signal: Parabolic SAR${tf}` });
-        break;
-      case "momentum":
-        lines.push({
-          icon: "chart",
-          text: `Signal: Momentum(${"period" in d ? d.period : 14})${tf}`,
-        });
-        break;
-      case "envelopes":
-        lines.push({
-          icon: "chart",
-          text: `Signal: Envelopes(${"period" in d ? d.period : 14})${tf}`,
-        });
-        break;
     }
   }
 

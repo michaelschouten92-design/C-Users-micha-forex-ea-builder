@@ -123,46 +123,6 @@ export function generateCloseConditionCode(
             `(DoubleLE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Oversold))`
           );
           break;
-
-        case "williams-r":
-          // Close buy when WPR hits overbought, close sell when WPR hits oversold
-          closeBuyConditions.push(
-            `(DoubleGE(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Overbought))`
-          );
-          closeSellConditions.push(
-            `(DoubleLE(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Oversold))`
-          );
-          break;
-
-        case "parabolic-sar":
-          // Close buy when SAR goes above price, close sell when SAR goes below price
-          closeBuyConditions.push(
-            `(DoubleGT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
-          );
-          closeSellConditions.push(
-            `(DoubleLT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
-          );
-          break;
-
-        case "momentum":
-          // Close buy when momentum drops below level, close sell when momentum rises above level
-          closeBuyConditions.push(
-            `(DoubleLT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
-          );
-          closeSellConditions.push(
-            `(DoubleGT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
-          );
-          break;
-
-        case "envelopes":
-          // Close buy when price hits upper band, close sell when price hits lower band
-          closeBuyConditions.push(
-            `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
-          );
-          closeSellConditions.push(
-            `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
-          );
-          break;
       }
     }
   }

@@ -306,31 +306,7 @@ function generateIndicatorTrailingStop(
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
 
-  if (indType === "parabolic-sar") {
-    // Use SAR value directly as trailing SL
-    code.onTick.push(`         double sarValue = ${varPrefix}Buffer[0];`);
-    code.onTick.push("");
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_BUY && sarValue < SymbolInfoDouble(_Symbol, SYMBOL_BID))"
-    );
-    code.onTick.push("         {");
-    code.onTick.push("            double newSL = NormalizeDouble(sarValue, _Digits);");
-    code.onTick.push("            if(newSL > currentSL)");
-    code.onTick.push(
-      "               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
-    );
-    code.onTick.push("         }");
-    code.onTick.push(
-      "         else if(posType == POSITION_TYPE_SELL && sarValue > SymbolInfoDouble(_Symbol, SYMBOL_ASK))"
-    );
-    code.onTick.push("         {");
-    code.onTick.push("            double newSL = NormalizeDouble(sarValue, _Digits);");
-    code.onTick.push("            if(newSL < currentSL || currentSL == 0)");
-    code.onTick.push(
-      "               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
-    );
-    code.onTick.push("         }");
-  } else if (indType === "moving-average") {
+  if (indType === "moving-average") {
     // Use MA value as trailing SL
     code.onTick.push(`         double maValue = ${varPrefix}Buffer[0];`);
     code.onTick.push("");

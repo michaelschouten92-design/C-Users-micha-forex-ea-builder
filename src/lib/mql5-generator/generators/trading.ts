@@ -495,42 +495,6 @@ export function generateEntryLogic(
               `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Overbought))`
             );
             break;
-
-          case "williams-r":
-            buyConditions.push(
-              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpWPR${indIndex}Oversold) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Oversold))`
-            );
-            sellConditions.push(
-              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpWPR${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpWPR${indIndex}Overbought))`
-            );
-            break;
-
-          case "parabolic-sar":
-            buyConditions.push(
-              `(DoubleGE(${varPrefix}Buffer[${1 + s}], iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) && DoubleLT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
-            );
-            sellConditions.push(
-              `(DoubleLE(${varPrefix}Buffer[${1 + s}], iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) && DoubleGT(${varPrefix}Buffer[${0 + s}], iClose(_Symbol, PERIOD_CURRENT, ${0 + s})))`
-            );
-            break;
-
-          case "momentum":
-            buyConditions.push(
-              `(DoubleLE(${varPrefix}Buffer[${1 + s}], InpMom${indIndex}Level) && DoubleGT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
-            );
-            sellConditions.push(
-              `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpMom${indIndex}Level) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpMom${indIndex}Level))`
-            );
-            break;
-
-          case "envelopes":
-            buyConditions.push(
-              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
-            );
-            sellConditions.push(
-              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
-            );
-            break;
         }
       }
     });

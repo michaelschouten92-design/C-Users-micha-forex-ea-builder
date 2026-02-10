@@ -157,47 +157,6 @@ export interface CCINodeData extends BaseNodeData {
   oversoldLevel: number;
 }
 
-export interface WilliamsRNodeData extends BaseNodeData {
-  category: "indicator";
-  indicatorType: "williams-r";
-  timeframe: Timeframe;
-  period: number;
-  signalMode?: "every_tick" | "candle_close";
-  overboughtLevel: number;
-  oversoldLevel: number;
-}
-
-export interface ParabolicSARNodeData extends BaseNodeData {
-  category: "indicator";
-  indicatorType: "parabolic-sar";
-  timeframe: Timeframe;
-  step: number;
-  maximum: number;
-  signalMode?: "every_tick" | "candle_close";
-}
-
-export interface MomentumNodeData extends BaseNodeData {
-  category: "indicator";
-  indicatorType: "momentum";
-  timeframe: Timeframe;
-  period: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-  signalMode?: "every_tick" | "candle_close";
-  level: number;
-}
-
-export interface EnvelopesNodeData extends BaseNodeData {
-  category: "indicator";
-  indicatorType: "envelopes";
-  timeframe: Timeframe;
-  period: number;
-  deviation: number;
-  method: "SMA" | "EMA";
-  shift: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-  signalMode?: "every_tick" | "candle_close";
-}
-
 export type IndicatorNodeData =
   | MovingAverageNodeData
   | RSINodeData
@@ -206,11 +165,7 @@ export type IndicatorNodeData =
   | ATRNodeData
   | ADXNodeData
   | StochasticNodeData
-  | CCINodeData
-  | WilliamsRNodeData
-  | ParabolicSARNodeData
-  | MomentumNodeData
-  | EnvelopesNodeData;
+  | CCINodeData;
 
 // Price Action Nodes
 export type CandlestickPattern =
@@ -421,10 +376,6 @@ export type BuilderNodeType =
   | "adx"
   | "stochastic"
   | "cci"
-  | "williams-r"
-  | "parabolic-sar"
-  | "momentum"
-  | "envelopes"
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
@@ -689,69 +640,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       overboughtLevel: 100,
       oversoldLevel: -100,
     } as CCINodeData,
-  },
-  {
-    type: "williams-r",
-    label: "Williams %R",
-    category: "indicator",
-    description: "Williams Percent Range",
-    defaultData: {
-      label: "Williams %R",
-      category: "indicator",
-      indicatorType: "williams-r",
-      timeframe: "H1",
-      period: 14,
-      signalMode: "every_tick",
-      overboughtLevel: -20,
-      oversoldLevel: -80,
-    } as WilliamsRNodeData,
-  },
-  {
-    type: "parabolic-sar",
-    label: "Parabolic SAR",
-    category: "indicator",
-    description: "Parabolic Stop and Reverse",
-    defaultData: {
-      label: "Parabolic SAR",
-      category: "indicator",
-      indicatorType: "parabolic-sar",
-      timeframe: "H1",
-      step: 0.02,
-      maximum: 0.2,
-      signalMode: "every_tick",
-    } as ParabolicSARNodeData,
-  },
-  {
-    type: "momentum",
-    label: "Momentum",
-    category: "indicator",
-    description: "Momentum indicator",
-    defaultData: {
-      label: "Momentum",
-      category: "indicator",
-      indicatorType: "momentum",
-      timeframe: "H1",
-      period: 14,
-      signalMode: "every_tick",
-      level: 100,
-    } as MomentumNodeData,
-  },
-  {
-    type: "envelopes",
-    label: "Envelopes",
-    category: "indicator",
-    description: "Moving Average Envelopes",
-    defaultData: {
-      label: "Envelopes",
-      category: "indicator",
-      indicatorType: "envelopes",
-      timeframe: "H1",
-      period: 14,
-      deviation: 0.1,
-      method: "SMA",
-      shift: 0,
-      signalMode: "every_tick",
-    } as EnvelopesNodeData,
   },
   // Price Action
   {
