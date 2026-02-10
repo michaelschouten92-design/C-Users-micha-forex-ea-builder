@@ -4,15 +4,16 @@ import { getAllPosts } from "@/lib/blog/posts";
 import { BlogList } from "./blog-list";
 
 export const metadata: Metadata = {
-  title: "Blog | AlgoStudio",
+  title: "Blog — MT5 Automation Tutorials",
   description:
-    "Learn about automated forex trading, EA development, and strategy building with AlgoStudio.",
+    "Practical MT5 automation tutorials. Learn to build trading bots with EMA crossovers, RSI reversals, range breakouts, and more — no coding required.",
   alternates: {
     canonical: "/blog",
   },
   openGraph: {
-    title: "Blog | AlgoStudio",
-    description: "Learn about automated forex trading, EA development, and strategy building.",
+    title: "Blog — MT5 Automation Tutorials | AlgoStudio",
+    description:
+      "Practical MT5 automation tutorials. Build each strategy in minutes with AlgoStudio.",
   },
 };
 
@@ -29,7 +30,7 @@ export default function BlogPage() {
           </Link>
           <h1 className="text-4xl font-bold text-white mt-4">Blog</h1>
           <p className="text-[#94A3B8] mt-2">
-            Tips, tutorials, and strategies for building profitable Expert Advisors.
+            Practical MT5 automation tutorials. Build each strategy in minutes.
           </p>
         </div>
 

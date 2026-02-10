@@ -57,10 +57,10 @@ export default function PricingPage() {
             AlgoStudio
           </Link>
           <h1 className="text-4xl md:text-5xl font-bold text-white mt-4">
-            Choose the plan that matches your trading ambition
+            Simple pricing. No hidden complexity.
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            Instantly build, export and automate MT5 trading systems — no coding required.
+            Start free with all templates. Upgrade when you need unlimited exports.
           </p>
         </div>
 
@@ -77,20 +77,20 @@ export default function PricingPage() {
               <span className="text-[#94A3B8] ml-2">/ forever</span>
             </div>
             <p className="mt-3 text-white font-medium text-sm">
-              Build and export your first MT5 strategy
+              Build and export your first MT5 bot
             </p>
             <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-              Try the full builder experience — design, configure, and export a working Expert
-              Advisor for free.
+              Access all 6 strategy templates, customize settings, and export a working Expert
+              Advisor — free forever.
             </p>
 
             <ul className="mt-6 space-y-3 flex-1">
               {[
-                "Full visual strategy builder",
-                "All trading blocks available",
+                "All 6 strategy templates",
+                "Full builder access",
                 "1 active project",
                 "1 MQL5 export per month",
-                "Complete source code included",
+                "Clean, well-commented source code",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                   <svg
@@ -111,15 +111,20 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <p className="mt-6 text-xs text-[#64748B]">
-              Start building your first EA today — no credit card required.
-            </p>
+            <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
+              <p className="text-xs text-[#A78BFA]">
+                <strong>Who it&apos;s for:</strong> Traders building their first automated strategy.
+                Test the full workflow before committing.
+              </p>
+            </div>
+
+            <p className="mt-4 text-xs text-[#64748B]">No credit card required.</p>
 
             <Link
               href="/login?mode=register"
               className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
             >
-              Get Started Free
+              Start Free
             </Link>
           </div>
 
@@ -161,11 +166,11 @@ export default function PricingPage() {
               )}
             </div>
             <p className="mt-3 text-white font-medium text-sm">
-              Build and export unlimited MT5 strategies
+              Unlimited projects, unlimited exports
             </p>
             <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-              Full source code export, all pro trading blocks, community access, and priority
-              support.
+              Build as many strategies as you want. Export without limits. Access Pro-only trade
+              management blocks.
             </p>
 
             {/* Interval Toggle */}
@@ -197,11 +202,11 @@ export default function PricingPage() {
 
             <ul className="mt-6 space-y-3 flex-1">
               {[
-                "Unlimited projects — build as many EAs as you want",
-                "Unlimited exports — no monthly caps",
-                "Full MQL5 source code export",
-                "All trading & risk management blocks",
-                "Private trader community access",
+                "Unlimited projects",
+                "Unlimited exports",
+                "All 6 strategy templates",
+                "Trade management blocks (breakeven, trailing, partial close)",
+                "Community access",
                 "Priority support",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -223,9 +228,12 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <p className="mt-6 text-xs text-[#64748B]">
-              Deploy unlimited automated trading systems and iterate without limits.
-            </p>
+            <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
+              <p className="text-xs text-[#A78BFA]">
+                <strong>Who it&apos;s for:</strong> Active traders who want to build, test, and
+                iterate on multiple strategies without limits.
+              </p>
+            </div>
 
             <button
               onClick={handleSubscribe}
@@ -234,44 +242,6 @@ export default function PricingPage() {
             >
               {loading ? "Loading..." : "Upgrade to Pro"}
             </button>
-          </div>
-        </div>
-
-        {/* Social Proof Section */}
-        <div className="mt-20 max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold text-white mb-8">Built for traders who want control</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4", text: "No coding required" },
-              {
-                icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-                text: "Works with any MT5 broker",
-              },
-              {
-                icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-                text: "Clean, ready-to-run MQL5 code",
-              },
-              { icon: "M13 10V3L4 14h7v7l9-11h-7z", text: "Fast idea-to-execution workflow" },
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center gap-3 p-4">
-                <div className="w-12 h-12 rounded-full bg-[rgba(79,70,229,0.15)] flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d={item.icon}
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm text-[#CBD5E1] text-center">{item.text}</span>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -284,19 +254,19 @@ export default function PricingPage() {
             {[
               {
                 q: "Do I need coding experience?",
-                a: "No. AlgoStudio is fully visual. You build your strategy using blocks — no programming required.",
+                a: "No. You pick a strategy template, adjust a few settings, and export. No programming required.",
               },
               {
                 q: "Does this work with any MT5 broker?",
-                a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker.",
+                a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker — forex, indices, commodities, crypto.",
               },
               {
                 q: "What happens if I reach my export limit on Free?",
-                a: "You can upgrade anytime to unlock unlimited exports and continue building.",
+                a: "You can upgrade anytime to unlock unlimited exports. Your project stays saved.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. You can cancel your subscription at any time. No long-term contracts.",
+                a: "Yes. Cancel from your account settings at any time. No long-term contracts.",
               },
               {
                 q: "What happens to my projects if I downgrade?",
@@ -304,7 +274,7 @@ export default function PricingPage() {
               },
               {
                 q: "What payment methods do you accept?",
-                a: "We accept all major credit and debit cards (Visa, Mastercard, American Express) through Stripe. All payments are processed securely.",
+                a: "All major credit and debit cards (Visa, Mastercard, American Express) through Stripe. All payments are processed securely.",
               },
             ].map((item, i) => (
               <details

@@ -6,14 +6,14 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
-  title: "Free EA Templates | Pre-Built MT5 Expert Advisor Strategies",
+  title: "Strategy Templates | 6 Ready-to-Export MT5 Expert Advisors",
   description:
-    "Start with free, proven Expert Advisor templates for MetaTrader 5. MA Crossover, RSI Mean Reversion, and Breakout strategies — customize and export in minutes.",
+    "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor. 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, London Session Breakout.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Free EA Templates | Pre-Built MT5 Expert Advisor Strategies",
+    title: "Strategy Templates | 6 Ready-to-Export MT5 Expert Advisors",
     description:
-      "Start with free, proven Expert Advisor templates for MetaTrader 5. MA Crossover, RSI Mean Reversion, and Breakout strategies — customize and export in minutes.",
+      "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor in minutes. No coding required.",
     url: "/templates",
   },
 };
@@ -25,57 +25,84 @@ const breadcrumbs = [
 
 const faqQuestions = [
   {
-    q: "Are the EA templates really free?",
-    a: "Yes. All templates are available on the free plan. You can view the strategy details, build the EA in AlgoStudio's visual builder, and export it as MQL5. The free plan includes up to 3 projects and 2 exports per month — no credit card required.",
+    q: "Are the strategy templates free?",
+    a: "Yes. All 6 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
   },
   {
-    q: "Can I modify the template parameters?",
-    a: "Absolutely. Templates are starting points, not locked configurations. You can change every parameter — indicator periods, stop loss values, session timing, position sizing — in AlgoStudio's visual builder before exporting.",
+    q: "Can I change the template settings?",
+    a: "Absolutely. Templates are starting points with sensible defaults. You can adjust every setting — indicator periods, risk percentage, stop loss, take profit, and advanced toggles — before exporting.",
   },
   {
-    q: "Do I need coding experience to use these templates?",
-    a: "No. AlgoStudio is a visual drag-and-drop builder. You replicate the template by connecting blocks on a canvas and configuring parameters through input fields. No MQL5 or any other programming knowledge required.",
+    q: "Do I need coding experience?",
+    a: "No. You pick a template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
   },
   {
-    q: "Which template should I start with as a beginner?",
-    a: "Start with the Moving Average Crossover template. It's the simplest strategy with the fewest parameters, making it easy to understand, backtest, and optimize. Once you're comfortable, try the RSI or Breakout templates.",
+    q: "Which template should I start with?",
+    a: "Start with EMA Crossover — it's the simplest template with the fewest settings. Once you're comfortable with the workflow, try Range Breakout or RSI Reversal.",
   },
   {
     q: "Can I combine elements from different templates?",
-    a: "Yes. The visual builder lets you mix and match any blocks. For example, you could use an MA crossover entry with RSI filtering and breakout-style session timing. Templates are inspiration — your final strategy can be anything you design.",
+    a: "Yes. The builder also has an Advanced Blocks section where you can mix and match individual indicators, conditions, and actions. Templates are the fastest way to start, but you can build anything.",
   },
 ];
 
 const templates = [
   {
-    name: "Moving Average Crossover EA",
-    type: "Trend Following",
-    description:
-      "The most popular beginner strategy. Buy when the fast EMA crosses above the slow EMA, sell on the opposite cross. Uses ATR-based stops and London session timing for high-probability trend trades.",
-    href: "/templates/moving-average-crossover-ea",
-    color: "#A78BFA",
-    pairs: "EURUSD, GBPUSD, USDJPY",
-    timeframe: "H1, H4",
-  },
-  {
-    name: "RSI Mean Reversion EA",
-    type: "Mean Reversion",
-    description:
-      "Buy oversold, sell overbought. RSI-based strategy with EMA trend filter to avoid false signals and London session timing for optimal liquidity. Works best in range-bound conditions.",
-    href: "/templates/rsi-ea-template",
-    color: "#22D3EE",
-    pairs: "EURUSD, AUDUSD, EURGBP",
-    timeframe: "H1",
-  },
-  {
-    name: "Breakout EA",
+    name: "Range Breakout",
     type: "Breakout",
     description:
-      "Trade the Asian session range breakout at the London open. Captures the volatility surge when European markets open, with ATR-based stops and a 1.5:1 risk-reward ratio.",
+      "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter and cancel-opposite-on-fill toggle.",
     href: "/templates/breakout-ea-template",
     color: "#F59E0B",
-    pairs: "EURUSD, GBPUSD",
-    timeframe: "M15, M30",
+    basicFields: "Range Period, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "London session filter, Cancel opposite order",
+  },
+  {
+    name: "EMA Crossover",
+    type: "Trend Following",
+    description:
+      "Enter when the fast EMA crosses the slow EMA. Set your EMA periods, risk %, and ATR stop loss. Optional higher-timeframe trend filter and RSI confirmation.",
+    href: "/templates/moving-average-crossover-ea",
+    color: "#A78BFA",
+    basicFields: "Fast EMA, Slow EMA, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "HTF trend filter, RSI confirmation",
+  },
+  {
+    name: "Trend Pullback",
+    type: "Trend Following",
+    description:
+      "Wait for a trend (EMA direction) then enter on an RSI pullback. Set the trend EMA, RSI dip level, risk %, and ATR stop loss.",
+    color: "#10B981",
+    basicFields: "Trend EMA, RSI Period, Dip Level, Risk %, SL (ATR)",
+    advanced: "London session filter, EMA buffer",
+  },
+  {
+    name: "RSI Reversal",
+    type: "Mean Reversion",
+    description:
+      "Buy oversold, sell overbought. Set the RSI period, overbought/oversold levels, risk %, and ATR stop loss. Optional session filter and trend confirmation.",
+    href: "/templates/rsi-ea-template",
+    color: "#22D3EE",
+    basicFields: "RSI Period, OB Level, OS Level, Risk %, SL (ATR)",
+    advanced: "Session filter, Trend filter",
+  },
+  {
+    name: "London Session Breakout",
+    type: "Breakout",
+    description:
+      "Trade the Asian session range breakout at the London open. Set the range hours, risk %, and ATR stop loss. Optional trade hour limits and max-one-trade-per-day toggle.",
+    color: "#F472B6",
+    basicFields: "Asia Start/End, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Trade hours, Cancel opposite, Max 1 trade/day",
+  },
+  {
+    name: "MACD Crossover",
+    type: "Momentum",
+    description:
+      "Enter on MACD signal line crossover. Set the MACD parameters, risk %, and ATR stop loss. Optional higher-timeframe trend filter.",
+    color: "#FB923C",
+    basicFields: "Fast/Slow/Signal, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "HTF trend filter",
   },
 ];
 
@@ -83,9 +110,9 @@ export default function TemplatesPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Free Expert Advisor Templates",
+    name: "MT5 Strategy Templates",
     description:
-      "Pre-built MetaTrader 5 Expert Advisor templates. MA Crossover, RSI Mean Reversion, and Breakout strategies.",
+      "6 ready-to-export MetaTrader 5 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and London Session Breakout.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -108,53 +135,25 @@ export default function TemplatesPage() {
       <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Breadcrumbs items={breadcrumbs} />
 
-        {/* H1 + Intro */}
+        {/* Header */}
         <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            Free Expert Advisor Templates for MetaTrader 5
+            6 strategy templates, ready to export
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
-            Don&apos;t start from scratch. Choose a proven EA strategy template, customize the
-            parameters in AlgoStudio&apos;s visual builder, and export a working MetaTrader 5 Expert
-            Advisor in minutes. Each template includes pre-configured indicators, risk management
-            settings, session timing, and optimizable parameters — all based on strategies that real
-            traders use every day.
+            Pick a template, adjust a few settings, and export a working MetaTrader 5 Expert
+            Advisor. Each template includes built-in risk management with ATR-based stop loss,
+            risk-reward take profit, and proper position sizing. No coding required.
           </p>
         </header>
 
-        {/* H2 – Why Start with a Template? */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">Why Start with an EA Template?</h2>
-          <div className="space-y-4 text-[#94A3B8] leading-relaxed">
-            <p>
-              Building an Expert Advisor from a blank canvas can feel overwhelming — which
-              indicators should you use? What timeframe works best? How should you set your stop
-              loss? Templates solve this by giving you a proven starting point with sensible
-              defaults that you can customize.
-            </p>
-            <p>
-              Each template in AlgoStudio is built around a well-documented trading strategy with
-              proper risk management, session timing, and parameters that have been tested across
-              major forex pairs. You don&apos;t need to reinvent the wheel — start with what works,
-              modify it to fit your style, and backtest it with your own parameters.
-            </p>
-            <p>
-              Templates are also the fastest way to learn how AlgoStudio works. Open a template, see
-              how the blocks are connected, understand the logic, then make it your own. Most users
-              go from first login to exported EA in under 5 minutes using a template.
-            </p>
-          </div>
-        </section>
-
         {/* Template Grid */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">Available EA Templates</h2>
           <div className="space-y-6">
             {templates.map((template) => (
-              <Link
-                key={template.href}
-                href={template.href}
-                className="block bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] transition-all"
+              <div
+                key={template.name}
+                className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div
@@ -165,121 +164,113 @@ export default function TemplatesPage() {
                     {template.type}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{template.name}</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed mb-3">
+                <h2 className="text-xl font-bold text-white mb-2">{template.name}</h2>
+                <p className="text-sm text-[#94A3B8] leading-relaxed mb-4">
                   {template.description}
                 </p>
-                <div className="flex flex-wrap gap-4 text-xs text-[#64748B] mb-4">
-                  <span>Pairs: {template.pairs}</span>
-                  <span>Timeframe: {template.timeframe}</span>
+                <div className="space-y-2 text-xs text-[#64748B] mb-4">
+                  <p>
+                    <span className="text-[#94A3B8]">Basic:</span> {template.basicFields}
+                  </p>
+                  <p>
+                    <span className="text-[#94A3B8]">Advanced:</span> {template.advanced}
+                  </p>
                 </div>
-                <span className="text-sm text-[#A78BFA] font-medium">View Template &rarr;</span>
-              </Link>
+                {template.href ? (
+                  <Link
+                    href={template.href}
+                    className="text-sm text-[#A78BFA] font-medium hover:underline"
+                  >
+                    View details &rarr;
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login?mode=register"
+                    className="text-sm text-[#A78BFA] font-medium hover:underline"
+                  >
+                    Use template &rarr;
+                  </Link>
+                )}
+              </div>
             ))}
           </div>
         </section>
 
-        {/* H2 – Comparison Table */}
+        {/* How to use */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">
-            Which Strategy Type Is Right for You?
-          </h2>
-          <p className="text-[#94A3B8] leading-relaxed mb-6">
-            Each template uses a fundamentally different approach to the market. Here&apos;s how
-            they compare:
-          </p>
+          <h2 className="text-2xl font-bold text-white mb-6">How to build an EA from a template</h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">1. Pick a template</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Choose the strategy that matches how you trade. Prefer riding trends? Start with EMA
+                Crossover. Like buying dips? Try RSI Reversal. Want session-based entries? Go with
+                Range Breakout or London Session Breakout.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">2. Adjust a few settings</h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Each template has 3-5 basic settings with sensible defaults. Change what you want,
+                or leave the defaults — every template exports a valid EA immediately. Optional
+                advanced toggles let you add filters without complexity.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                3. Export, backtest, optimize
+              </h3>
+              <p className="text-[#94A3B8] leading-relaxed">
+                Export clean MQL5 code, load it into MetaTrader 5, and backtest in Strategy Tester.
+                Use MT5&apos;s built-in optimization to find the best parameters. Start with a demo
+                account and at least 6 months of historical data.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Comparison Table */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-white mb-6">Which template is right for you?</h2>
           <div className="overflow-x-auto mb-6">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[rgba(79,70,229,0.2)]">
                   <th className="text-left py-3 pr-4 text-[#94A3B8] font-medium"></th>
-                  <th className="text-left py-3 px-4 text-[#A78BFA] font-medium">MA Crossover</th>
-                  <th className="text-left py-3 px-4 text-[#22D3EE] font-medium">RSI Reversion</th>
-                  <th className="text-left py-3 pl-4 text-[#F59E0B] font-medium">Breakout</th>
+                  <th className="text-left py-3 px-3 text-[#94A3B8] font-medium">Market</th>
+                  <th className="text-left py-3 px-3 text-[#94A3B8] font-medium">Complexity</th>
+                  <th className="text-left py-3 pl-3 text-[#94A3B8] font-medium">Key strength</th>
                 </tr>
               </thead>
               <tbody className="text-[#CBD5E1]">
-                <tr className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-3 pr-4 text-[#94A3B8]">Market condition</td>
-                  <td className="py-3 px-4">Trending markets</td>
-                  <td className="py-3 px-4">Range-bound markets</td>
-                  <td className="py-3 pl-4">Session opens</td>
-                </tr>
-                <tr className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-3 pr-4 text-[#94A3B8]">Win rate</td>
-                  <td className="py-3 px-4">35–45%</td>
-                  <td className="py-3 px-4">50–60%</td>
-                  <td className="py-3 pl-4">40–50%</td>
-                </tr>
-                <tr className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-3 pr-4 text-[#94A3B8]">Trade frequency</td>
-                  <td className="py-3 px-4">Several per week</td>
-                  <td className="py-3 px-4">Several per week</td>
-                  <td className="py-3 pl-4">1 per day max</td>
-                </tr>
-                <tr className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-3 pr-4 text-[#94A3B8]">Complexity</td>
-                  <td className="py-3 px-4">Simple — great for beginners</td>
-                  <td className="py-3 px-4">Moderate</td>
-                  <td className="py-3 pl-4">Moderate</td>
-                </tr>
-                <tr>
-                  <td className="py-3 pr-4 text-[#94A3B8]">Key strength</td>
-                  <td className="py-3 px-4">Catches big moves</td>
-                  <td className="py-3 px-4">Higher win rate</td>
-                  <td className="py-3 pl-4">Clear entry rules</td>
-                </tr>
+                {[
+                  ["Range Breakout", "Session opens", "Simple", "Clear entry rules"],
+                  ["EMA Crossover", "Trending", "Simple", "Catches big moves"],
+                  ["Trend Pullback", "Trending", "Moderate", "Better entries in trends"],
+                  ["RSI Reversal", "Range-bound", "Simple", "Higher win rate"],
+                  ["London Breakout", "Session opens", "Moderate", "Volatility capture"],
+                  ["MACD Crossover", "Momentum", "Simple", "Momentum confirmation"],
+                ].map(([name, market, complexity, strength]) => (
+                  <tr key={name} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 pr-4 text-white font-medium">{name}</td>
+                    <td className="py-3 px-3">{market}</td>
+                    <td className="py-3 px-3">{complexity}</td>
+                    <td className="py-3 pl-3">{strength}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
           <p className="text-[#94A3B8] leading-relaxed">
-            Not sure which one to choose? Start with the{" "}
+            Not sure? Start with{" "}
             <Link
               href="/templates/moving-average-crossover-ea"
               className="text-[#22D3EE] hover:underline"
             >
-              MA Crossover template
+              EMA Crossover
             </Link>{" "}
-            — it&apos;s the simplest to understand and backtest. Once you&apos;re comfortable with
-            the workflow, try the others.
+            — it&apos;s the simplest to understand and backtest.
           </p>
-        </section>
-
-        {/* H2 – How to Use Templates */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-white mb-6">How to Build an EA from a Template</h2>
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-3">
-                1. Choose a template that matches your style
-              </h3>
-              <p className="text-[#94A3B8] leading-relaxed">
-                Pick the strategy type that fits how you think about the market. Prefer riding
-                trends? Start with MA Crossover. Like buying dips? Try RSI Reversion. Want clean
-                session-based entries? Go with Breakout.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-3">
-                2. Review and adjust parameters
-              </h3>
-              <p className="text-[#94A3B8] leading-relaxed">
-                Each template comes with sensible defaults, but you should adjust them to match your
-                preferences. Change indicator periods, stop loss values, session timing, or position
-                sizing — all through simple input fields in the visual builder.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-3">
-                3. Export, backtest, and optimize
-              </h3>
-              <p className="text-[#94A3B8] leading-relaxed">
-                Export the EA as MQL5, load it into MetaTrader 5, and backtest on at least 1–2 years
-                of historical data. Use the MT5 Strategy Tester&apos;s optimization feature to find
-                the best parameter combinations. Demo trade for 1–3 months before going live.
-              </p>
-            </div>
-          </div>
         </section>
 
         {/* FAQ */}
@@ -291,38 +282,32 @@ export default function TemplatesPage() {
             <Link href="/" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
               Home
             </Link>
-            <span className="text-[#64748B]">·</span>
+            <span className="text-[#64748B]">&middot;</span>
+            <Link
+              href="/features"
+              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            >
+              Features
+            </Link>
+            <span className="text-[#64748B]">&middot;</span>
             <Link href="/pricing" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
               Pricing
             </Link>
-            <span className="text-[#64748B]">·</span>
-            <Link
-              href="/no-code-mt5-ea-builder"
-              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
-            >
-              No-Code MT5 EA Builder
+            <span className="text-[#64748B]">&middot;</span>
+            <Link href="/blog" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
+              Blog
             </Link>
-            <span className="text-[#64748B]">·</span>
-            <Link
-              href="/visual-strategy-builder"
-              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
-            >
-              Visual Strategy Builder
-            </Link>
-            <span className="text-[#64748B]">·</span>
-            <Link
-              href="/automated-trading-for-beginners"
-              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
-            >
-              Beginner Guide
+            <span className="text-[#64748B]">&middot;</span>
+            <Link href="/help" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
+              Help
             </Link>
           </div>
         </section>
       </article>
 
       <CTASection
-        title="Build your own strategy or start from a template"
-        description="Customize any template or design something entirely new. Free plan available — no credit card required."
+        title="Start building. Export your first bot today."
+        description="Pick a template, adjust a few settings, and export clean MQL5 code to MetaTrader 5."
       />
     </div>
   );
