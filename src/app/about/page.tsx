@@ -54,9 +54,9 @@ export default function AboutPage() {
 
             <p>
               The templates are designed around real strategies that traders actually use: EMA
-              crossovers, RSI reversals, range breakouts, trend pullbacks, MACD momentum, and London
-              session breakouts. Each template produces a fully functional Expert Advisor that you
-              can load into MetaTrader 5 and test immediately.
+              crossovers, RSI reversals, range breakouts, trend pullbacks, and MACD momentum. Each
+              template produces a fully functional Expert Advisor that you can load into MetaTrader
+              5 and test immediately.
             </p>
 
             <p>

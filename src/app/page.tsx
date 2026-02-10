@@ -63,7 +63,7 @@ export default async function Home() {
         name: "What strategy templates are available?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and London Session Breakout. Each produces a fully functional Expert Advisor.",
+          text: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor.",
         },
       },
     ],
@@ -176,7 +176,7 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Choose a template</h3>
               <p className="text-sm text-[#94A3B8]">
-                Pick from 6 proven strategies: EMA Crossover, Range Breakout, RSI Reversal, and
+                Pick from 5 proven strategies: EMA Crossover, Range Breakout, RSI Reversal, and
                 more. Each comes with sensible defaults that work out of the box.
               </p>
             </div>
@@ -209,7 +209,7 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
-              6 strategy templates, ready to export
+              5 strategy templates, ready to export
             </h2>
             <p className="text-[#94A3B8]">
               Each template produces a fully functional Expert Advisor with built-in risk
@@ -264,9 +264,9 @@ export default async function Home() {
           </div>
 
           <p className="text-center mt-8 text-sm text-[#94A3B8]">
-            Plus 3 more:{" "}
+            Plus 2 more:{" "}
             <Link href="/templates" className="text-[#22D3EE] hover:underline">
-              Trend Pullback, MACD Crossover, London Session Breakout
+              Trend Pullback and MACD Crossover
             </Link>
           </p>
         </div>
@@ -355,7 +355,7 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: "6", label: "Strategy templates" },
+              { value: "5", label: "Strategy templates" },
               { value: "100%", label: "Valid MQL5 output" },
               { value: "< 5 min", label: "To first export" },
               { value: "Any", label: "MT5 broker" },
@@ -451,7 +451,7 @@ export default async function Home() {
               <p className="text-sm text-[#94A3B8] mb-4">Build and export your first MT5 bot.</p>
               <ul className="space-y-2 text-sm text-[#CBD5E1] mb-6 flex-1">
                 {[
-                  "All 6 strategy templates",
+                  "All 5 strategy templates",
                   "Full builder access",
                   "1 project",
                   "1 export per month",

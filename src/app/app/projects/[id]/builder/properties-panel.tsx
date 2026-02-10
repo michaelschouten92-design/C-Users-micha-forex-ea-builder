@@ -47,7 +47,6 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
-  LondonBreakoutEntryData,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -270,10 +269,6 @@ function NodeFields({
       case "macd-crossover":
         return (
           <MACDCrossoverEntryFields data={data as MACDCrossoverEntryData} onChange={onChange} />
-        );
-      case "london-breakout":
-        return (
-          <LondonBreakoutEntryFields data={data as LondonBreakoutEntryData} onChange={onChange} />
         );
     }
   }
@@ -2580,48 +2575,6 @@ function MACDCrossoverEntryFields({
             onChange={(v) => onChange({ htfEma: v })}
           />
         </ToggleField>
-      </AdvancedToggleSection>
-    </>
-  );
-}
-
-function LondonBreakoutEntryFields({
-  data,
-  onChange,
-}: {
-  data: LondonBreakoutEntryData;
-  onChange: (updates: Partial<LondonBreakoutEntryData>) => void;
-}) {
-  return (
-    <>
-      {/* Basic fields */}
-      <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
-        role="note"
-      >
-        Range window: Asia session (00:00–08:00 GMT). Pending orders placed at London open.
-      </div>
-      <EntryStrategyRiskSection data={data} onChange={onChange} />
-
-      {/* Advanced */}
-      <AdvancedToggleSection>
-        <NumberField
-          label="Trade first N hours of London"
-          value={data.tradeLondonHours}
-          min={1}
-          max={8}
-          onChange={(v) => onChange({ tradeLondonHours: v })}
-        />
-        <ToggleField
-          label="Cancel opposite pending after trigger"
-          checked={data.cancelOpposite}
-          onChange={(v) => onChange({ cancelOpposite: v })}
-        />
-        <ToggleField
-          label="Max 1 trade per day"
-          checked={data.maxOneTradePerDay}
-          onChange={(v) => onChange({ maxOneTradePerDay: v })}
-        />
       </AdvancedToggleSection>
     </>
   );

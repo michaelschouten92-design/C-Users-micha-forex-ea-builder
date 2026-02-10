@@ -491,17 +491,6 @@ const macdCrossoverEntryDataSchema = baseNodeDataSchema
   })
   .strip();
 
-const londonBreakoutEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("london-breakout"),
-    tradeLondonHours: z.number().int().min(1).max(12),
-    cancelOpposite: z.boolean(),
-    maxOneTradePerDay: z.boolean(),
-  })
-  .strip();
-
 // Node data schema - permissive validation with base field check.
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
 // IMPORTANT: passthrough() preserves all extra properties (timingType, indicatorType, days, timeSlots, etc.)

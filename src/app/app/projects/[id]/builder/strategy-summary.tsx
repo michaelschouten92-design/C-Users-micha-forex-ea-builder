@@ -58,9 +58,6 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
           lines.push(`Enter on MACD(${d.macdFast},${d.macdSlow},${d.macdSignal}) crossover`);
         }
         break;
-      case "london-breakout":
-        lines.push("Enter on London session breakout of Asia range");
-        break;
     }
 
     // Consistent risk model summary

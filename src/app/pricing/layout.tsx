@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Pricing — Simple Plans for Every Trader",
   description:
-    "Simple pricing. Start free with all 6 strategy templates. Upgrade to Pro for unlimited projects and exports. No hidden complexity.",
+    "Simple pricing. Start free with all 5 strategy templates. Upgrade to Pro for unlimited projects and exports. No hidden complexity.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -23,7 +23,7 @@ const jsonLd = {
         price: "0",
         priceCurrency: "EUR",
         description:
-          "All 6 strategy templates, full builder access, 1 project, 1 MQL5 export per month",
+          "All 5 strategy templates, full builder access, 1 project, 1 MQL5 export per month",
       },
       {
         "@type": "Offer",

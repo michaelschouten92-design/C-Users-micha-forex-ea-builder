@@ -6,12 +6,12 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { SiteNav } from "@/components/marketing/site-nav";
 
 export const metadata: Metadata = {
-  title: "Strategy Templates | 6 Ready-to-Export MT5 Expert Advisors",
+  title: "Strategy Templates | 5 Ready-to-Export MT5 Expert Advisors",
   description:
-    "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor. 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, London Session Breakout.",
+    "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor. 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Strategy Templates | 6 Ready-to-Export MT5 Expert Advisors",
+    title: "Strategy Templates | 5 Ready-to-Export MT5 Expert Advisors",
     description:
       "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor in minutes. No coding required.",
     url: "/templates",
@@ -26,7 +26,7 @@ const breadcrumbs = [
 const faqQuestions = [
   {
     q: "Are the strategy templates free?",
-    a: "Yes. All 6 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
+    a: "Yes. All 5 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
   },
   {
     q: "Can I change the template settings?",
@@ -87,15 +87,6 @@ const templates = [
     advanced: "Session filter, Trend filter",
   },
   {
-    name: "London Session Breakout",
-    type: "Breakout",
-    description:
-      "Trade the Asian session range breakout at the London open. Set the range hours, risk %, and ATR stop loss. Optional trade hour limits and max-one-trade-per-day toggle.",
-    color: "#F472B6",
-    basicFields: "Asia Start/End, Risk %, SL (ATR), TP (R-multiple)",
-    advanced: "Trade hours, Cancel opposite, Max 1 trade/day",
-  },
-  {
     name: "MACD Crossover",
     type: "Momentum",
     description:
@@ -112,7 +103,7 @@ export default function TemplatesPage() {
     "@type": "CollectionPage",
     name: "MT5 Strategy Templates",
     description:
-      "6 ready-to-export MetaTrader 5 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and London Session Breakout.",
+      "5 ready-to-export MetaTrader 5 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -138,7 +129,7 @@ export default function TemplatesPage() {
         {/* Header */}
         <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            6 strategy templates, ready to export
+            5 strategy templates, ready to export
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
             Pick a template, adjust a few settings, and export a working MetaTrader 5 Expert
@@ -205,7 +196,7 @@ export default function TemplatesPage() {
               <p className="text-[#94A3B8] leading-relaxed">
                 Choose the strategy that matches how you trade. Prefer riding trends? Start with EMA
                 Crossover. Like buying dips? Try RSI Reversal. Want session-based entries? Go with
-                Range Breakout or London Session Breakout.
+                Range Breakout.
               </p>
             </div>
             <div>
@@ -248,7 +239,6 @@ export default function TemplatesPage() {
                   ["EMA Crossover", "Trending", "Simple", "Catches big moves"],
                   ["Trend Pullback", "Trending", "Moderate", "Better entries in trends"],
                   ["RSI Reversal", "Range-bound", "Simple", "Higher win rate"],
-                  ["London Breakout", "Session opens", "Moderate", "Volatility capture"],
                   ["MACD Crossover", "Momentum", "Simple", "Momentum confirmation"],
                 ].map(([name, market, complexity, strength]) => (
                   <tr key={name} className="border-b border-[rgba(79,70,229,0.1)]">

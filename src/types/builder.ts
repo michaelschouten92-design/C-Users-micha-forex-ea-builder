@@ -448,23 +448,12 @@ export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyF
   htfEma: number;
 }
 
-// 6) London Session Breakout — Asia range → London breakout
-export interface LondonBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "london-breakout";
-  // Advanced toggles
-  tradeLondonHours: number;
-  cancelOpposite: boolean;
-  maxOneTradePerDay: boolean;
-}
-
 export type EntryStrategyNodeData =
   | EMACrossoverEntryData
   | RangeBreakoutEntryData
   | RSIReversalEntryData
   | TrendPullbackEntryData
-  | MACDCrossoverEntryData
-  | LondonBreakoutEntryData;
+  | MACDCrossoverEntryData;
 
 // Union of all node data types
 export type BuilderNodeData =
@@ -508,8 +497,7 @@ export type BuilderNodeType =
   | "range-breakout-entry"
   | "rsi-reversal-entry"
   | "trend-pullback-entry"
-  | "macd-crossover-entry"
-  | "london-breakout-entry";
+  | "macd-crossover-entry";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -718,23 +706,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       trendFilter: false,
       trendEma: 200,
     } as RSIReversalEntryData,
-  },
-  {
-    type: "london-breakout-entry",
-    label: "London Breakout",
-    category: "entrystrategy",
-    description: "Asia range → London session breakout",
-    defaultData: {
-      label: "London Breakout",
-      category: "entrystrategy",
-      entryType: "london-breakout",
-      riskPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-      tradeLondonHours: 2,
-      cancelOpposite: true,
-      maxOneTradePerDay: true,
-    } as LondonBreakoutEntryData,
   },
   {
     type: "macd-crossover-entry",

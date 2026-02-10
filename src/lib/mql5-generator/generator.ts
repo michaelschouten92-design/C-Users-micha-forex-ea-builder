@@ -11,7 +11,6 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
-  LondonBreakoutEntryData,
   EntryStrategyNodeData,
 } from "@/types/builder";
 
@@ -209,28 +208,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         slowPeriod: macd.macdSlow,
         signalPeriod: macd.macdSignal,
         signalMode: "candle_close",
-      })
-    );
-  } else if (d.entryType === "london-breakout") {
-    // London Breakout uses Asia session range
-    virtualNodes.push(
-      vNode("rb", "range-breakout", {
-        label: "Asia Range Breakout",
-        category: "priceaction",
-        priceActionType: "range-breakout",
-        timeframe: "H1",
-        rangeType: "SESSION",
-        lookbackCandles: 20,
-        rangeSession: "ASIAN",
-        sessionStartHour: 0,
-        sessionStartMinute: 0,
-        sessionEndHour: 8,
-        sessionEndMinute: 0,
-        breakoutDirection: "BOTH",
-        entryMode: "ON_CLOSE",
-        bufferPips: 2,
-        minRangePips: 10,
-        maxRangePips: 0,
       })
     );
   }

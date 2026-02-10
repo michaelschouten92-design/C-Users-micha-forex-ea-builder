@@ -80,13 +80,13 @@ export default function PricingPage() {
               Build and export your first MT5 bot
             </p>
             <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-              Access all 6 strategy templates, customize settings, and export a working Expert
+              Access all 5 strategy templates, customize settings, and export a working Expert
               Advisor — free forever.
             </p>
 
             <ul className="mt-6 space-y-3 flex-1">
               {[
-                "All 6 strategy templates",
+                "All 5 strategy templates",
                 "Full builder access",
                 "1 active project",
                 "1 MQL5 export per month",
@@ -204,7 +204,7 @@ export default function PricingPage() {
               {[
                 "Unlimited projects",
                 "Unlimited exports",
-                "All 6 strategy templates",
+                "All 5 strategy templates",
                 "Trade management blocks (breakeven, trailing, partial close)",
                 "Community access",
                 "Priority support",
