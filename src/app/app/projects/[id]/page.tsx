@@ -95,7 +95,6 @@ export default async function ProjectPage({ params }: Props) {
           projectId={project.id}
           latestVersion={latestVersion}
           canExportMQL5={planLimits.limits.canExportMQL5}
-          isPro={planLimits.limits.canUseTradeManagement}
           tier={planLimits.tier}
         />
       </main>

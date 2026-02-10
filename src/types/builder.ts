@@ -590,7 +590,6 @@ export interface NodeTemplate {
   category: NodeCategory;
   description: string;
   defaultData: Partial<BuilderNodeData>;
-  proOnly?: boolean; // Only available for paid users (Starter+)
   comingSoon?: boolean; // Not yet implemented in code generation
 }
 

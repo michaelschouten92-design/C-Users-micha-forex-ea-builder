@@ -45,7 +45,6 @@ interface StrategyCanvasProps {
   projectId: string;
   initialData: BuildJsonSchema | null;
   canExportMQL5?: boolean;
-  isPro?: boolean;
   userTier?: string;
 }
 
@@ -55,7 +54,6 @@ export function StrategyCanvas({
   projectId,
   initialData,
   canExportMQL5 = false,
-  isPro = false,
   userTier,
 }: StrategyCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -373,7 +371,6 @@ export function StrategyCanvas({
         <div className="hidden md:block">
           <NodeToolbar
             onDragStart={onDragStart}
-            isPro={isPro}
             settings={settings}
             onSettingsChange={setSettings}
           />
@@ -385,7 +382,6 @@ export function StrategyCanvas({
             <div className="w-[240px] h-full shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
               <NodeToolbar
                 onDragStart={onDragStart}
-                isPro={isPro}
                 onClose={() => setMobileToolbarOpen(false)}
                 settings={settings}
                 onSettingsChange={setSettings}

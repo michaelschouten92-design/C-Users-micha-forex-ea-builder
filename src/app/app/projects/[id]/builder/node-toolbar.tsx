@@ -12,7 +12,6 @@ import { StrategySettingsPanel } from "./strategy-settings-panel";
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
-  isPro?: boolean;
   onClose?: () => void;
   settings?: BuildJsonSettings;
   onSettingsChange?: (settings: BuildJsonSettings) => void;
@@ -20,7 +19,6 @@ interface NodeToolbarProps {
 
 export function NodeToolbar({
   onDragStart,
-  isPro = false,
   onClose,
   settings,
   onSettingsChange,
@@ -228,9 +226,8 @@ export function NodeToolbar({
               {isExpanded && (
                 <div className="mt-2 space-y-1 pl-1">
                   {templates.map((template, index) => {
-                    const isLocked = template.proOnly && !isPro;
                     const isComingSoon = template.comingSoon;
-                    const isDisabled = isLocked || isComingSoon;
+                    const isDisabled = isComingSoon;
 
                     return (
                       <div
@@ -249,13 +246,7 @@ export function NodeToolbar({
                             ? "opacity-60 cursor-not-allowed"
                             : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
                         }`}
-                        title={
-                          isComingSoon
-                            ? "Coming soon"
-                            : isLocked
-                              ? "Upgrade to Pro to use this block"
-                              : template.description
-                        }
+                        title={isComingSoon ? "Coming soon" : template.description}
                       >
                         <div className="flex items-center justify-between">
                           <div className={`text-sm font-medium ${blockColors[template.category]}`}>
@@ -264,17 +255,6 @@ export function NodeToolbar({
                           {isComingSoon && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(100,116,139,0.3)] text-[#94A3B8]">
                               SOON
-                            </span>
-                          )}
-                          {template.proOnly && !isComingSoon && (
-                            <span
-                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                isPro
-                                  ? "bg-[rgba(168,85,247,0.2)] text-[#A855F7]"
-                                  : "bg-[rgba(168,85,247,0.3)] text-[#A855F7]"
-                              }`}
-                            >
-                              {isLocked ? "🔒 PRO" : "PRO"}
                             </span>
                           )}
                         </div>
