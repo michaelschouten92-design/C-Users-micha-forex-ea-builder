@@ -29,7 +29,16 @@ export function sanitizeHtml(input: string): string {
           .match(/\s+([a-zA-Z-]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*))?/g)
           ?.filter((attr: string) => {
             const name = attr.trim().split(/[\s=]/)[0].toLowerCase();
-            return allowedAttrs.has(name);
+            if (!allowedAttrs.has(name)) return false;
+            // Validate href values to prevent javascript: protocol XSS
+            if (name === "href") {
+              const valueMatch = attr.match(/=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/);
+              const value = (valueMatch?.[1] ?? valueMatch?.[2] ?? valueMatch?.[3] ?? "")
+                .trim()
+                .toLowerCase();
+              if (value && !/^(https?:\/\/|mailto:|\/[^/])/.test(value)) return false;
+            }
+            return true;
           })
           .join("") ?? "";
 

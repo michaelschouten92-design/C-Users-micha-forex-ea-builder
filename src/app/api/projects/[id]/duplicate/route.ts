@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkProjectLimit } from "@/lib/plan-limits";
+import { getCachedTier } from "@/lib/plan-limits";
+import { PLANS } from "@/lib/plans";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -36,10 +37,14 @@ export async function POST(request: Request, { params }: Params) {
 
     // Verify ownership, check limit, and create — all in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Check project limit inside transaction to prevent race condition
-      const projectLimit = await checkProjectLimit(session!.user!.id!);
-      if (!projectLimit.allowed) {
-        return { error: true as const, status: 403, max: projectLimit.max };
+      // Check project limit inside transaction using tx to prevent race condition
+      const tier = await getCachedTier(session!.user!.id!);
+      const max = PLANS[tier].limits.maxProjects;
+      const projectCount = await tx.project.count({
+        where: { userId: session!.user!.id!, deletedAt: null },
+      });
+      if (projectCount >= max) {
+        return { error: true as const, status: 403, max: max === Infinity ? -1 : max };
       }
 
       const sourceProject = await tx.project.findFirst({

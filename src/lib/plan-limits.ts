@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import { PLANS, type PlanTier } from "./plans";
 
 // ============================================
-// SUBSCRIPTION TIER CACHE (60s TTL)
+// SUBSCRIPTION TIER CACHE (5 minute TTL)
 // ============================================
 
 interface CacheEntry {

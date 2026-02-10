@@ -150,15 +150,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Valid template ID required" }, { status: 400 });
   }
 
-  const template = await prisma.userTemplate.findFirst({
-    where: { id, userId: session.user.id },
-  });
-
-  if (!template) {
+  try {
+    await prisma.userTemplate.delete({ where: { id, userId: session.user.id } });
+    return NextResponse.json({ success: true });
+  } catch {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
-
-  await prisma.userTemplate.delete({ where: { id, userId: session.user.id } });
-
-  return NextResponse.json({ success: true });
 }

@@ -14,10 +14,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Get start of current month for export count
+  // Get start of current month for export count (UTC to match backend)
   const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
 
   const [projects, subscription, exportCount, user] = await Promise.all([
     prisma.project.findMany({

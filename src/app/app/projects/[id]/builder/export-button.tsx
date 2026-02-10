@@ -33,6 +33,7 @@ export function ExportButton({
   const [showModal, setShowModal] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
+  const [stepTimers, setStepTimers] = useState<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -42,6 +43,13 @@ export function ExportButton({
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [showModal]);
+
+  // Clean up step timers on unmount
+  useEffect(() => {
+    return () => {
+      stepTimers.forEach(clearTimeout);
+    };
+  }, [stepTimers]);
 
   const exportSteps = ["Validating strategy...", "Generating MQL5 code...", "Finalizing export..."];
 
@@ -55,6 +63,7 @@ export function ExportButton({
     // Simulate progress steps while waiting for API
     const stepTimer1 = setTimeout(() => setExportStep(1), 800);
     const stepTimer2 = setTimeout(() => setExportStep(2), 2500);
+    setStepTimers([stepTimer1, stepTimer2]);
 
     try {
       const res = await fetch(`/api/projects/${projectId}/export`, {

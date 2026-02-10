@@ -277,6 +277,22 @@ export async function POST(request: Request, { params }: Params) {
         { status: 409 }
       );
     }
+    // Handle Prisma unique constraint violation (concurrent saves with same versionNo)
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.VERSION_CONFLICT,
+          "Version conflict",
+          "Concurrent save detected. Please try again."
+        ),
+        { status: 409 }
+      );
+    }
     throw error;
   }
 }
