@@ -22,7 +22,9 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
       ? "Range SL"
       : data.slMethod === "PIPS"
         ? `${data.slFixedPips ?? 50} pips`
-        : `${data.slAtrMultiplier}× ATR`;
+        : data.slMethod === "PERCENT"
+          ? `${data.slPercent ?? 1}%`
+          : `${data.slAtrMultiplier}× ATR`;
 
   return (
     <BaseNode

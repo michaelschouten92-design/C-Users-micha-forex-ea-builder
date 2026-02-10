@@ -35,8 +35,10 @@ export const MACDCrossoverEntryNode = memo(function MACDCrossoverEntryNode({
           <span className="text-[#94A3B8]">SL / TP</span>
           <span className="text-white font-medium">
             {data.slMethod === "PIPS"
-              ? `${data.slFixedPips ?? 50}p`
-              : `${data.slAtrMultiplier}× ATR`}{" "}
+              ? `${data.slFixedPips ?? 50} pips`
+              : data.slMethod === "PERCENT"
+                ? `${data.slPercent ?? 1}%`
+                : `${data.slAtrMultiplier}× ATR`}{" "}
             / {data.tpRMultiple}R
           </span>
         </div>

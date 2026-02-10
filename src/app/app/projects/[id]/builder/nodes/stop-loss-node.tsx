@@ -9,6 +9,7 @@ type Props = NodeProps & { data: StopLossNodeData };
 const methodLabels: Record<string, string> = {
   FIXED_PIPS: "Fixed Pips",
   ATR_BASED: "ATR-Based",
+  PERCENT: "Percentage",
   INDICATOR: "Indicator",
   RANGE_OPPOSITE: "Range Opposite",
 };
@@ -20,6 +21,8 @@ export function StopLossNode({ id, data, selected }: Props) {
         return `${data.fixedPips} pips`;
       case "ATR_BASED":
         return `ATR(${data.atrPeriod}) x ${data.atrMultiplier}`;
+      case "PERCENT":
+        return `${((data as Record<string, unknown>).slPercent as number) ?? 1}%`;
       case "INDICATOR":
         return "From indicator";
     }

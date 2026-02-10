@@ -2215,11 +2215,13 @@ function TimeExitFields({
 const BASE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
   { value: "ATR", label: "ATR Based" },
   { value: "PIPS", label: "Fixed Pips" },
+  { value: "PERCENT", label: "Percentage (%)" },
 ];
 
 const RANGE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
   { value: "ATR", label: "ATR Based" },
   { value: "PIPS", label: "Fixed Pips" },
+  { value: "PERCENT", label: "Percentage (%)" },
   { value: "RANGE_OPPOSITE", label: "Range Opposite" },
 ];
 
@@ -2234,6 +2236,7 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
     riskPercent: number;
     slMethod?: EntrySlMethod;
     slFixedPips?: number;
+    slPercent?: number;
     slAtrMultiplier: number;
     tpRMultiple: number;
   };
@@ -2271,13 +2274,13 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
       {slMethod === "ATR" && (
         <>
           <NumberField
-            label="Stop Loss (ATR ×)"
+            label="ATR Multiplier"
             value={data.slAtrMultiplier}
             min={0.1}
             max={10}
             step={0.1}
             onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
-            tooltip="SL distance = ATR(14) × this multiplier"
+            tooltip="SL distance in pips = ATR(14) × this value. Example: ATR = 50 pips, multiplier = 1.5 → SL = 75 pips"
           />
           <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
         </>
@@ -2291,20 +2294,34 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10000}
             step={1}
             onChange={(v) => onChange({ slFixedPips: v } as Partial<T>)}
-            tooltip="Fixed stop loss distance in pips"
+            tooltip="Fixed stop loss distance in pips from entry price"
           />
           <OptimizableFieldCheckbox fieldName="slFixedPips" data={data} onChange={onChange} />
         </>
       )}
+      {slMethod === "PERCENT" && (
+        <>
+          <NumberField
+            label="Stop Loss (%)"
+            value={data.slPercent ?? 1}
+            min={0.01}
+            max={50}
+            step={0.1}
+            onChange={(v) => onChange({ slPercent: v } as Partial<T>)}
+            tooltip="SL distance as a percentage of the current price. Example: price = 1.1000, SL% = 0.5 → SL = 55 pips"
+          />
+          <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
+        </>
+      )}
 
       <NumberField
-        label="Take Profit (R multiple)"
+        label="Take Profit (× SL distance)"
         value={data.tpRMultiple}
         min={0.1}
         max={10}
         step={0.1}
         onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
-        tooltip="TP = this × SL distance (risk:reward ratio)"
+        tooltip="TP as a multiple of your SL distance. Example: SL = 50 pips, multiplier = 2 → TP = 100 pips"
       />
       <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
     </>

@@ -128,6 +128,23 @@ export function generateStopLossCode(
       code.onTick.push("double slPips = InpStopLoss * 10; // Convert to points");
       break;
 
+    case "PERCENT":
+      code.inputs.push(
+        createInput(
+          node,
+          "slPercent",
+          "InpSLPercent",
+          "double",
+          ((data as Record<string, unknown>).slPercent as number) ?? 1,
+          "Stop Loss (%)",
+          slGroup
+        )
+      );
+      code.onTick.push(
+        "double slPips = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) * InpSLPercent / 100.0) / _Point;"
+      );
+      break;
+
     case "ATR_BASED":
       code.inputs.push(
         createInput(

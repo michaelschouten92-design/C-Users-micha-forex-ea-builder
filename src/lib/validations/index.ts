@@ -335,8 +335,9 @@ const stopLossNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.enum(["riskmanagement", "trading"]),
     tradingType: z.literal("stop-loss"),
-    method: z.enum(["FIXED_PIPS", "ATR_BASED", "INDICATOR", "RANGE_OPPOSITE"]),
+    method: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENT", "INDICATOR", "RANGE_OPPOSITE"]),
     fixedPips: z.number().min(1).max(10000),
+    slPercent: z.number().min(0.01).max(50).optional(),
     atrMultiplier: z.number().min(0.1).max(100),
     atrPeriod: z.number().int().min(1).max(1000),
     indicatorNodeId: z.string().optional(),
@@ -426,8 +427,9 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 const baseEntryStrategyFieldsSchema = z.object({
   direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
   riskPercent: z.number().min(0.1).max(100),
-  slMethod: z.enum(["ATR", "PIPS", "RANGE_OPPOSITE"]).default("ATR"),
+  slMethod: z.enum(["ATR", "PIPS", "PERCENT", "RANGE_OPPOSITE"]).default("ATR"),
   slFixedPips: z.number().min(1).max(10000).default(50),
+  slPercent: z.number().min(0.01).max(50).default(1),
   slAtrMultiplier: z.number().min(0.1).max(20),
   tpRMultiple: z.number().min(0.1).max(20),
 });

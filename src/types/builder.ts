@@ -281,13 +281,19 @@ export interface PlaceSellNodeData extends BaseNodeData, PositionSizingFields {
   tradingType: "place-sell";
 }
 
-export type StopLossMethod = "FIXED_PIPS" | "ATR_BASED" | "INDICATOR" | "RANGE_OPPOSITE";
+export type StopLossMethod =
+  | "FIXED_PIPS"
+  | "ATR_BASED"
+  | "PERCENT"
+  | "INDICATOR"
+  | "RANGE_OPPOSITE";
 
 export interface StopLossNodeData extends BaseNodeData {
   category: "riskmanagement" | "trading";
   tradingType: "stop-loss";
   method: StopLossMethod;
   fixedPips: number;
+  slPercent: number;
   atrMultiplier: number;
   atrPeriod: number;
   indicatorNodeId?: string;
@@ -391,13 +397,14 @@ export type TradeManagementNodeData =
 //   TP = tpRMultiple * SL distance
 export type EntryDirection = "BUY" | "SELL" | "BOTH";
 
-export type EntrySlMethod = "ATR" | "PIPS" | "RANGE_OPPOSITE";
+export type EntrySlMethod = "ATR" | "PIPS" | "PERCENT" | "RANGE_OPPOSITE";
 
 export interface BaseEntryStrategyFields {
   direction: EntryDirection;
   riskPercent: number;
   slMethod: EntrySlMethod;
   slFixedPips: number;
+  slPercent: number;
   slAtrMultiplier: number;
   tpRMultiple: number;
 }
@@ -665,6 +672,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
+      slPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       cancelOpposite: true,
@@ -691,6 +699,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
+      slPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       htfTrendFilter: false,
@@ -718,6 +727,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
+      slPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       londonSessionOnly: false,
@@ -740,6 +750,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
+      slPercent: 1,
       slAtrMultiplier: 1.2,
       tpRMultiple: 1.5,
       sessionFilter: false,
@@ -764,6 +775,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
+      slPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       htfTrendFilter: false,
