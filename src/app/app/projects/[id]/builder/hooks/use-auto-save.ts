@@ -124,12 +124,17 @@ export function useAutoSave({
           }
           return true;
         } else {
-          const error = await res.json();
-          console.error("Save failed:", error);
+          let error: Record<string, unknown> = {};
+          try {
+            error = await res.json();
+          } catch {
+            // Response may not be valid JSON (e.g., proxy error page)
+          }
+          console.error("Save failed:", res.status, error);
 
           // On version conflict, update our tracked version and retry
           if (res.status === 409 && error.currentVersion) {
-            lastSavedVersionRef.current = error.currentVersion;
+            lastSavedVersionRef.current = error.currentVersion as number;
           }
 
           if (isAutosave) {

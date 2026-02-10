@@ -103,8 +103,8 @@ providers.push(
       const password = credentials.password as string;
       const isRegistration = credentials.isRegistration === "true";
 
-      // Normalize email to prevent +tag and dot-trick abuse
-      const email = isRegistration ? normalizeEmail(rawEmail) : rawEmail.toLowerCase().trim();
+      // Normalize email consistently for both registration and login
+      const email = normalizeEmail(rawEmail);
 
       // Validate password strength
       if (password.length < 8) {

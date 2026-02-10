@@ -45,6 +45,8 @@ export interface GeneratedCode {
   onDeinit: string[];
   onTick: string[];
   helperFunctions: string[];
+  /** When true, a `slSellPips` variable is generated alongside `slPips` for direction-aware SL */
+  hasDirectionalSL?: boolean;
 }
 
 export type MAMethod = "SMA" | "EMA";

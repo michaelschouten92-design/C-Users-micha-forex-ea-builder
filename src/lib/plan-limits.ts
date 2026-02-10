@@ -13,7 +13,7 @@ interface CacheEntry {
 const tierCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — tier changes are rare
 
-async function getCachedTier(userId: string): Promise<PlanTier> {
+export async function getCachedTier(userId: string): Promise<PlanTier> {
   const cached = tierCache.get(userId);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.tier;
@@ -114,15 +114,14 @@ export async function getExportPermissions(userId: string) {
 }
 
 export async function getUserPlanLimits(userId: string) {
-  const tier = await getCachedTier(userId);
+  const [tier, subscription] = await Promise.all([
+    getCachedTier(userId),
+    prisma.subscription.findUnique({ where: { userId } }),
+  ]);
   const plan = PLANS[tier];
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
   return {
-    tier,
+    tier, // Always reflects actual active tier (expired/cancelled → FREE)
     plan: plan.name,
     limits: plan.limits,
     subscription: subscription ?? null,

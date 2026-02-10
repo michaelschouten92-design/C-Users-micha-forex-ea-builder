@@ -209,6 +209,82 @@ const adxNodeDataSchema = baseNodeDataSchema
   })
   .strip();
 
+const stochasticNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("stochastic"),
+    timeframe: timeframeSchema,
+    kPeriod: z.number().int().min(1).max(1000),
+    dPeriod: z.number().int().min(1).max(1000),
+    slowing: z.number().int().min(1).max(1000),
+    overboughtLevel: z.number().min(0).max(100),
+    oversoldLevel: z.number().min(0).max(100),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
+const cciNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("cci"),
+    timeframe: timeframeSchema,
+    period: z.number().int().min(1).max(1000),
+    appliedPrice: appliedPriceSchema.optional(),
+    overboughtLevel: z.number().min(-1000).max(1000),
+    oversoldLevel: z.number().min(-1000).max(1000),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
+const williamsRNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("williams-r"),
+    timeframe: timeframeSchema,
+    period: z.number().int().min(1).max(1000),
+    overboughtLevel: z.number().min(-100).max(0),
+    oversoldLevel: z.number().min(-100).max(0),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
+const parabolicSARNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("parabolic-sar"),
+    timeframe: timeframeSchema,
+    step: z.number().min(0.001).max(1),
+    maximum: z.number().min(0.01).max(10),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
+const momentumNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("momentum"),
+    timeframe: timeframeSchema,
+    period: z.number().int().min(1).max(1000),
+    appliedPrice: appliedPriceSchema.optional(),
+    level: z.number().min(0).max(1000),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
+const envelopesNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("indicator"),
+    indicatorType: z.literal("envelopes"),
+    timeframe: timeframeSchema,
+    period: z.number().int().min(1).max(1000),
+    deviation: z.number().min(0.01).max(100),
+    method: z.enum(["SMA", "EMA"]),
+    shift: z.number().int().min(0).max(1000),
+    appliedPrice: appliedPriceSchema.optional(),
+    signalMode: signalModeSchema.optional(),
+  })
+  .strip();
+
 // ---- Price Action node data schemas ----
 const candlestickPatternNodeDataSchema = baseNodeDataSchema
   .extend({
@@ -318,6 +394,15 @@ const closeConditionNodeDataSchema = baseNodeDataSchema
     category: z.literal("trading"),
     tradingType: z.literal("close-condition"),
     closeDirection: z.enum(["BUY", "SELL", "BOTH"]),
+  })
+  .strip();
+
+const timeExitNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("trading"),
+    tradingType: z.literal("time-exit"),
+    exitAfterBars: z.number().int().min(1).max(10000),
+    exitTimeframe: timeframeSchema,
   })
   .strip();
 

@@ -37,6 +37,8 @@ async function handleCleanup(request: NextRequest) {
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
     // Batched delete helper to avoid long-running queries
+    const MAX_ITERATIONS = 100; // Cap at 100K records per model to prevent cron timeout
+
     async function batchDelete(
       model: {
         deleteMany: (args: { where: { id: { in: string[] } } }) => Promise<{ count: number }>;
@@ -50,7 +52,7 @@ async function handleCleanup(request: NextRequest) {
     ): Promise<number> {
       let totalDeleted = 0;
 
-      while (true) {
+      for (let i = 0; i < MAX_ITERATIONS; i++) {
         const batch = await model.findMany({ where, select: { id: true }, take: BATCH_SIZE });
         if (batch.length === 0) break;
         const result = await model.deleteMany({ where: { id: { in: batch.map((r) => r.id) } } });

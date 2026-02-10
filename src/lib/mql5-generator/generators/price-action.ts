@@ -173,7 +173,7 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
    int startBar = iBarShift(_Symbol, tf, startTime, false);
    int endBar = iBarShift(_Symbol, tf, endTime, false);
 
-   if(startBar <= 0 || endBar < 0 || startBar <= endBar) {
+   if(startBar < 0 || endBar < 0 || startBar <= endBar) {
       high = 0;
       low = 0;
       return;

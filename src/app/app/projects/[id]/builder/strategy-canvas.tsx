@@ -198,11 +198,13 @@ export function StrategyCanvas({
     return () => window.removeEventListener("keydown", handleShortcutHelp);
   }, []);
 
-  // Handle node duplication from base-node button
+  // Handle node duplication from base-node button (use ref to avoid re-registering on every node change)
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
   useEffect(() => {
     const handleDuplicate = (e: Event) => {
       const { nodeId } = (e as CustomEvent).detail;
-      const sourceNode = nodes.find((n) => n.id === nodeId);
+      const sourceNode = nodesRef.current.find((n) => n.id === nodeId);
       if (!sourceNode) return;
 
       const newNode: Node = {
@@ -216,7 +218,7 @@ export function StrategyCanvas({
     };
     window.addEventListener("node-duplicate", handleDuplicate);
     return () => window.removeEventListener("node-duplicate", handleDuplicate);
-  }, [nodes, setNodes, getNextNodeId]);
+  }, [setNodes, getNextNodeId]);
 
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;

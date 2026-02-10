@@ -1,7 +1,13 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkProjectLimit } from "@/lib/plan-limits";
-import { createProjectSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import { checkProjectLimit, getCachedTier } from "@/lib/plan-limits";
+import { PLANS } from "@/lib/plans";
+import {
+  createProjectSchema,
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+} from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -54,7 +60,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     logger.error({ error }, "Failed to list projects");
-    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+      status: 500,
+    });
   }
 }
 
@@ -87,7 +95,11 @@ export async function POST(request: Request) {
 
     if (!validation.success) {
       return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "Validation failed", formatZodErrors(validation.error)),
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          "Validation failed",
+          formatZodErrors(validation.error)
+        ),
         { status: 400 }
       );
     }
@@ -96,9 +108,15 @@ export async function POST(request: Request) {
 
     // Use transaction to atomically check limit and create project
     const result = await prisma.$transaction(async (tx) => {
-      const projectLimit = await checkProjectLimit(session.user.id);
-      if (!projectLimit.allowed) {
-        return { error: true as const, max: projectLimit.max };
+      // Count inside transaction to prevent race conditions
+      const [tier, projectCount] = await Promise.all([
+        getCachedTier(session.user.id),
+        tx.project.count({ where: { userId: session.user.id, deletedAt: null } }),
+      ]);
+      const max = PLANS[tier].limits.maxProjects;
+
+      if (projectCount >= max) {
+        return { error: true as const, max: max === Infinity ? -1 : max };
       }
 
       const project = await tx.project.create({
@@ -114,7 +132,11 @@ export async function POST(request: Request) {
 
     if (result.error) {
       return NextResponse.json(
-        apiError(ErrorCode.PROJECT_LIMIT, "Project limit reached", `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to Pro for unlimited projects.`),
+        apiError(
+          ErrorCode.PROJECT_LIMIT,
+          "Project limit reached",
+          `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to Pro for unlimited projects.`
+        ),
         { status: 403 }
       );
     }
@@ -122,6 +144,8 @@ export async function POST(request: Request) {
     return NextResponse.json(result.project, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Failed to create project");
-    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+      status: 500,
+    });
   }
 }

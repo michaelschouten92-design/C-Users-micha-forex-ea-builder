@@ -221,18 +221,20 @@ function generateIndicatorBasedSL(
           comment: "Additional buffer pips for BB SL",
           isOptimizable: true,
         });
-        code.onTick.push("// Indicator-based SL using Bollinger Bands");
-        code.onTick.push("double slPips;");
+        code.onTick.push("// Indicator-based SL using Bollinger Bands (direction-aware)");
         code.onTick.push("double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
         code.onTick.push(`double bbLower = ${varPrefix}LowerBuffer[0];`);
         code.onTick.push(`double bbUpper = ${varPrefix}UpperBuffer[0];`);
-        code.onTick.push("// For BUY: SL at lower band, for SELL: SL at upper band");
         code.onTick.push("double distToLower = MathAbs(currentPrice - bbLower) / _Point;");
         code.onTick.push("double distToUpper = MathAbs(bbUpper - currentPrice) / _Point;");
-        code.onTick.push("// Use lower band distance for buy SL, upper band distance for sell SL");
-        code.onTick.push("double slBuy = distToLower + (InpBBSLBuffer * 10);");
-        code.onTick.push("double slSell = distToUpper + (InpBBSLBuffer * 10);");
-        code.onTick.push("slPips = MathMax(slBuy, slSell);");
+        code.onTick.push("// Buy SL: distance to lower band, Sell SL: distance to upper band");
+        code.onTick.push(
+          "double slPips = MathMax(distToLower + (InpBBSLBuffer * 10), 100); // Buy direction"
+        );
+        code.onTick.push(
+          "double slSellPips = MathMax(distToUpper + (InpBBSLBuffer * 10), 100); // Sell direction"
+        );
+        code.hasDirectionalSL = true;
         break;
 
       case "moving-average":
@@ -461,7 +463,7 @@ export function generateEntryLogic(
               `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
             );
             sellConditions.push(
-              `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+              `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
             );
             break;
 
@@ -630,13 +632,18 @@ export function generateEntryLogic(
       : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
     code.onTick.push(sellCheck);
     code.onTick.push("   {");
+    // Use direction-aware SL for sell if available (e.g., BB-based SL)
+    const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
+    const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
+    // Only override TP if it's risk-reward based; otherwise use the same tpPips
+    const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
     if (hasDaily) {
       code.onTick.push(
-        "      if(OpenSell(sellLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+        `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
       );
     } else {
       code.onTick.push(
-        "      if(OpenSell(sellLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+        `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
       );
     }
     code.onTick.push("   }");

@@ -391,10 +391,12 @@ function generatePartialCloseCode(
       group
     )
   );
-  code.globalVariables.push("ulong partialClosedTickets[];");
+  // Only declare shared globals/helpers once (avoid duplicates with multiple partial close nodes)
+  if (!code.globalVariables.includes("ulong partialClosedTickets[];")) {
+    code.globalVariables.push("ulong partialClosedTickets[];");
 
-  // Generate helper functions for partial close tracking
-  code.helperFunctions.push(`//+------------------------------------------------------------------+
+    code.helperFunctions
+      .push(`//+------------------------------------------------------------------+
 //| Check if ticket has been partially closed                         |
 //+------------------------------------------------------------------+
 bool IsPartialClosed(ulong ticket)
@@ -415,6 +417,7 @@ void MarkPartialClosed(ulong ticket)
    ArrayResize(partialClosedTickets, size + 1);
    partialClosedTickets[size] = ticket;
 }`);
+  }
 
   code.onTick.push("// Partial Close Management");
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
