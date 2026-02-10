@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { BuilderNode, BuilderEdge } from "@/types/builder";
 
 interface StrategySummaryProps {
@@ -206,12 +206,16 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
 }
 
 export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNode {
+  const [expanded, setExpanded] = useState(false);
   const lines = useMemo(() => buildNaturalLanguageSummary(nodes), [nodes]);
 
-  if (nodes.length === 0) {
-    return (
-      <div className="p-4">
-        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-white">
           <svg
             className="w-4 h-4 text-[#A78BFA]"
             fill="none"
@@ -226,61 +230,61 @@ export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNod
             />
           </svg>
           Strategy Summary
-        </h3>
-        <p className="text-xs text-[#64748B] leading-relaxed">
-          Add blocks to the canvas to see a live summary of your strategy.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4">
-      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          {lines.length > 0 && (
+            <span className="text-[10px] font-medium text-[#64748B] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
+              {lines.length}
+            </span>
+          )}
+        </span>
         <svg
-          className="w-4 h-4 text-[#A78BFA]"
+          className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-        Strategy Summary
-      </h3>
+      </button>
 
-      {lines.length > 0 ? (
-        <div className="space-y-0">
-          <p className="text-xs font-medium text-[#94A3B8] mb-2">This strategy will:</p>
-          <ul className="space-y-1.5">
-            {lines.map((line, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed">
-                <svg
-                  className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                {line}
-              </li>
-            ))}
-          </ul>
+      {expanded && (
+        <div className="px-4 pb-4">
+          {nodes.length === 0 ? (
+            <p className="text-xs text-[#64748B] leading-relaxed">
+              Add blocks to the canvas to see a live summary of your strategy.
+            </p>
+          ) : lines.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-[#94A3B8] mb-2">This strategy will:</p>
+              <ul className="space-y-1.5">
+                {lines.map((line, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-[#64748B] leading-relaxed">
+              Connect your blocks to see the strategy description.
+            </p>
+          )}
         </div>
-      ) : (
-        <p className="text-xs text-[#64748B] leading-relaxed">
-          Connect your blocks to see the strategy description.
-        </p>
       )}
     </div>
   );
