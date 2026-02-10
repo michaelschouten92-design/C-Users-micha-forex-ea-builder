@@ -424,6 +424,7 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 // ---- Entry Strategy node data schemas ----
 // Consistent risk model: Risk %, ATR-based SL, R-multiple TP
 const baseEntryStrategyFieldsSchema = z.object({
+  direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
   riskPercent: z.number().min(0.1).max(100),
   slAtrMultiplier: z.number().min(0.1).max(20),
   tpRMultiple: z.number().min(0.1).max(20),

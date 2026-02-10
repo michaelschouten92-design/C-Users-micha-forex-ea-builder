@@ -1827,6 +1827,7 @@ describe("generateMQL5Code", () => {
         makeNode("entry1", "range-breakout-entry", {
           category: "entrystrategy",
           entryType: "range-breakout",
+          direction: "BOTH",
           rangePeriod: 20,
           rangeMethod: "CANDLES",
           rangeTimeframe: "H1",
@@ -1864,6 +1865,7 @@ describe("generateMQL5Code", () => {
         makeNode("entry1", "range-breakout-entry", {
           category: "entrystrategy",
           entryType: "range-breakout",
+          direction: "BOTH",
           rangePeriod: 20,
           rangeMethod: "CUSTOM_TIME",
           rangeTimeframe: "H1",
@@ -1898,6 +1900,7 @@ describe("generateMQL5Code", () => {
         makeNode("entry1", "range-breakout-entry", {
           category: "entrystrategy",
           entryType: "range-breakout",
+          direction: "BOTH",
           rangePeriod: 20,
           rangeMethod: "CANDLES",
           rangeTimeframe: "H1",
@@ -1935,6 +1938,7 @@ describe("generateMQL5Code", () => {
         makeNode("entry1", "range-breakout-entry", {
           category: "entrystrategy",
           entryType: "range-breakout",
+          direction: "BOTH",
           rangePeriod: 20,
           rangeMethod: "CANDLES",
           rangeTimeframe: "H1",

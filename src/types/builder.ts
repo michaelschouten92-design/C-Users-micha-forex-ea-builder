@@ -389,7 +389,10 @@ export type TradeManagementNodeData =
 //   Risk % → position sizing
 //   SL = ATR(14) * slAtrMultiplier
 //   TP = tpRMultiple * SL distance
+export type EntryDirection = "BUY" | "SELL" | "BOTH";
+
 export interface BaseEntryStrategyFields {
+  direction: EntryDirection;
   riskPercent: number;
   slAtrMultiplier: number;
   tpRMultiple: number;
@@ -647,6 +650,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "Range Breakout",
       category: "entrystrategy",
       entryType: "range-breakout",
+      direction: "BOTH",
       rangePeriod: 20,
       rangeMethod: "CANDLES",
       rangeTimeframe: "H1",
@@ -677,6 +681,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "EMA Crossover",
       category: "entrystrategy",
       entryType: "ema-crossover",
+      direction: "BOTH",
       fastEma: 50,
       slowEma: 200,
       riskPercent: 1,
@@ -700,6 +705,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "Trend Pullback",
       category: "entrystrategy",
       entryType: "trend-pullback",
+      direction: "BOTH",
       trendEma: 200,
       pullbackRsiPeriod: 14,
       rsiPullbackLevel: 40,
@@ -719,6 +725,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "RSI Reversal",
       category: "entrystrategy",
       entryType: "rsi-reversal",
+      direction: "BOTH",
       rsiPeriod: 14,
       oversoldLevel: 30,
       overboughtLevel: 70,
@@ -740,6 +747,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "MACD Crossover",
       category: "entrystrategy",
       entryType: "macd-crossover",
+      direction: "BOTH",
       macdFast: 12,
       macdSlow: 26,
       macdSignal: 9,

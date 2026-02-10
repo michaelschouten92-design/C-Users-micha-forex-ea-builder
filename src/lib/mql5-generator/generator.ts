@@ -216,7 +216,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   }
 
-  // Create buy + sell nodes (always both — direction is internal to the logic)
+  // Create buy + sell nodes based on direction setting
+  const direction = d.direction ?? "BOTH";
   const sizingData = {
     method: "RISK_PERCENT" as const,
     fixedLot: 0.1,
@@ -225,20 +226,26 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     maxLot: 10,
   };
 
-  virtualNodes.push(
-    vNode("buy", "place-buy", {
-      label: "Place Buy",
-      category: "entry",
-      tradingType: "place-buy",
-      ...sizingData,
-    }),
-    vNode("sell", "place-sell", {
-      label: "Place Sell",
-      category: "entry",
-      tradingType: "place-sell",
-      ...sizingData,
-    })
-  );
+  if (direction === "BUY" || direction === "BOTH") {
+    virtualNodes.push(
+      vNode("buy", "place-buy", {
+        label: "Place Buy",
+        category: "entry",
+        tradingType: "place-buy",
+        ...sizingData,
+      })
+    );
+  }
+  if (direction === "SELL" || direction === "BOTH") {
+    virtualNodes.push(
+      vNode("sell", "place-sell", {
+        label: "Place Sell",
+        category: "entry",
+        tradingType: "place-sell",
+        ...sizingData,
+      })
+    );
+  }
 
   // Create SL node
   const slMethod =
@@ -275,18 +282,34 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     .map((n) => n.id);
 
   for (const indId of indicatorIds) {
-    virtualEdges.push(
-      { id: `${baseId}__e-${indId}-buy`, source: indId, target: `${baseId}__buy` },
-      { id: `${baseId}__e-${indId}-sell`, source: indId, target: `${baseId}__sell` }
-    );
+    if (direction === "BUY" || direction === "BOTH") {
+      virtualEdges.push({
+        id: `${baseId}__e-${indId}-buy`,
+        source: indId,
+        target: `${baseId}__buy`,
+      });
+    }
+    if (direction === "SELL" || direction === "BOTH") {
+      virtualEdges.push({
+        id: `${baseId}__e-${indId}-sell`,
+        source: indId,
+        target: `${baseId}__sell`,
+      });
+    }
   }
 
-  virtualEdges.push(
-    { id: `${baseId}__e-buy-sl`, source: `${baseId}__buy`, target: `${baseId}__sl` },
-    { id: `${baseId}__e-buy-tp`, source: `${baseId}__buy`, target: `${baseId}__tp` },
-    { id: `${baseId}__e-sell-sl`, source: `${baseId}__sell`, target: `${baseId}__sl` },
-    { id: `${baseId}__e-sell-tp`, source: `${baseId}__sell`, target: `${baseId}__tp` }
-  );
+  if (direction === "BUY" || direction === "BOTH") {
+    virtualEdges.push(
+      { id: `${baseId}__e-buy-sl`, source: `${baseId}__buy`, target: `${baseId}__sl` },
+      { id: `${baseId}__e-buy-tp`, source: `${baseId}__buy`, target: `${baseId}__tp` }
+    );
+  }
+  if (direction === "SELL" || direction === "BOTH") {
+    virtualEdges.push(
+      { id: `${baseId}__e-sell-sl`, source: `${baseId}__sell`, target: `${baseId}__sl` },
+      { id: `${baseId}__e-sell-tp`, source: `${baseId}__sell`, target: `${baseId}__tp` }
+    );
+  }
 
   return { nodes: virtualNodes, edges: virtualEdges };
 }

@@ -48,6 +48,7 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
+  EntryDirection,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -97,7 +98,7 @@ function OptimizableFieldCheckbox<T extends BuilderNodeData>({
           <path d="M3 3v18h18" />
           <path d="M18 9l-5 5-4-4-3 3" />
         </svg>
-        Optimize in tester
+        Optimize in MT5
       </span>
     </label>
   );
@@ -2309,6 +2310,29 @@ const TRADING_SESSION_OPTIONS_SHORT: { value: TradingSession; label: string }[] 
   { value: "CUSTOM", label: "Custom" },
 ];
 
+const DIRECTION_OPTIONS: { value: EntryDirection; label: string }[] = [
+  { value: "BOTH", label: "Buy & Sell" },
+  { value: "BUY", label: "Buy Only" },
+  { value: "SELL", label: "Sell Only" },
+];
+
+function DirectionSelector({
+  direction,
+  onChange,
+}: {
+  direction: EntryDirection;
+  onChange: (v: EntryDirection) => void;
+}) {
+  return (
+    <SelectField
+      label="Direction"
+      value={direction}
+      options={DIRECTION_OPTIONS}
+      onChange={(v) => onChange(v as EntryDirection)}
+    />
+  );
+}
+
 // ============================================
 // ENTRY STRATEGY FIELD COMPONENTS
 // ============================================
@@ -2322,6 +2346,11 @@ function EMACrossoverEntryFields({
 }) {
   return (
     <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+
       {/* Basic fields */}
       <NumberField
         label="Fast EMA"
@@ -2330,6 +2359,7 @@ function EMACrossoverEntryFields({
         max={500}
         onChange={(v) => onChange({ fastEma: v })}
       />
+      <OptimizableFieldCheckbox fieldName="fastEma" data={data} onChange={onChange} />
       <NumberField
         label="Slow EMA"
         value={data.slowEma}
@@ -2337,10 +2367,14 @@ function EMACrossoverEntryFields({
         max={1000}
         onChange={(v) => onChange({ slowEma: v })}
       />
+      <OptimizableFieldCheckbox fieldName="slowEma" data={data} onChange={onChange} />
       {data.fastEma >= data.slowEma && (
         <FieldWarning message="Fast EMA should be smaller than Slow EMA" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2362,6 +2396,7 @@ function EMACrossoverEntryFields({
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
           />
+          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>
         <ToggleField
           label="RSI confirmation"
@@ -2375,6 +2410,7 @@ function EMACrossoverEntryFields({
             max={500}
             onChange={(v) => onChange({ rsiPeriod: v })}
           />
+          <OptimizableFieldCheckbox fieldName="rsiPeriod" data={data} onChange={onChange} />
           <NumberField
             label="Long max RSI"
             value={data.rsiLongMax}
@@ -2382,6 +2418,7 @@ function EMACrossoverEntryFields({
             max={100}
             onChange={(v) => onChange({ rsiLongMax: v })}
           />
+          <OptimizableFieldCheckbox fieldName="rsiLongMax" data={data} onChange={onChange} />
           <NumberField
             label="Short min RSI"
             value={data.rsiShortMin}
@@ -2389,6 +2426,7 @@ function EMACrossoverEntryFields({
             max={100}
             onChange={(v) => onChange({ rsiShortMin: v })}
           />
+          <OptimizableFieldCheckbox fieldName="rsiShortMin" data={data} onChange={onChange} />
         </ToggleField>
       </AdvancedToggleSection>
     </>
@@ -2419,6 +2457,11 @@ function RangeBreakoutEntryFields({
 
   return (
     <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+
       {/* Range method */}
       <SelectField
         label="Range Method"
@@ -2437,6 +2480,7 @@ function RangeBreakoutEntryFields({
             onChange={(v) => onChange({ rangePeriod: v })}
             tooltip="Number of candles to determine range high/low"
           />
+          <OptimizableFieldCheckbox fieldName="rangePeriod" data={data} onChange={onChange} />
           <SelectField
             label="Timeframe"
             value={data.rangeTimeframe ?? "H1"}
@@ -2495,6 +2539,11 @@ function RangeBreakoutEntryFields({
 
       {/* Risk section */}
       <EntryStrategyRiskSection data={data} onChange={onChange} showSlAtr={slMethod === "ATR"} />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+      {slMethod === "ATR" && (
+        <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+      )}
+      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2536,6 +2585,7 @@ function RangeBreakoutEntryFields({
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
           />
+          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>
       </AdvancedToggleSection>
     </>
@@ -2551,6 +2601,11 @@ function RSIReversalEntryFields({
 }) {
   return (
     <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+
       {/* Basic fields */}
       <NumberField
         label="RSI Period"
@@ -2559,6 +2614,7 @@ function RSIReversalEntryFields({
         max={500}
         onChange={(v) => onChange({ rsiPeriod: v })}
       />
+      <OptimizableFieldCheckbox fieldName="rsiPeriod" data={data} onChange={onChange} />
       <NumberField
         label="Oversold Level"
         value={data.oversoldLevel}
@@ -2566,6 +2622,7 @@ function RSIReversalEntryFields({
         max={50}
         onChange={(v) => onChange({ oversoldLevel: v })}
       />
+      <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       <NumberField
         label="Overbought Level"
         value={data.overboughtLevel}
@@ -2573,10 +2630,13 @@ function RSIReversalEntryFields({
         max={100}
         onChange={(v) => onChange({ overboughtLevel: v })}
       />
+      <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldWarning message="Overbought must be higher than oversold" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2589,6 +2649,7 @@ function RSIReversalEntryFields({
           onChange={(v) => onChange({ tpRMultiple: v })}
           tooltip="TP = this × SL distance"
         />
+        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="Session filter"
           checked={data.sessionFilter}
@@ -2613,6 +2674,7 @@ function RSIReversalEntryFields({
             max={500}
             onChange={(v) => onChange({ trendEma: v })}
           />
+          <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
         </ToggleField>
       </AdvancedToggleSection>
     </>
@@ -2628,6 +2690,11 @@ function TrendPullbackEntryFields({
 }) {
   return (
     <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+
       {/* Basic fields */}
       <NumberField
         label="Trend EMA"
@@ -2637,6 +2704,7 @@ function TrendPullbackEntryFields({
         onChange={(v) => onChange({ trendEma: v })}
         tooltip="EMA period to define the trend direction"
       />
+      <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
       <NumberField
         label="Pullback RSI Period"
         value={data.pullbackRsiPeriod}
@@ -2644,6 +2712,7 @@ function TrendPullbackEntryFields({
         max={500}
         onChange={(v) => onChange({ pullbackRsiPeriod: v })}
       />
+      <OptimizableFieldCheckbox fieldName="pullbackRsiPeriod" data={data} onChange={onChange} />
       <NumberField
         label="RSI Pullback Level"
         value={data.rsiPullbackLevel}
@@ -2652,7 +2721,10 @@ function TrendPullbackEntryFields({
         onChange={(v) => onChange({ rsiPullbackLevel: v })}
         tooltip={`Long: RSI dips below ${data.rsiPullbackLevel} then crosses up. Short: RSI rises above ${100 - data.rsiPullbackLevel} then crosses down.`}
       />
+      <OptimizableFieldCheckbox fieldName="rsiPullbackLevel" data={data} onChange={onChange} />
       <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2664,6 +2736,7 @@ function TrendPullbackEntryFields({
           step={0.1}
           onChange={(v) => onChange({ tpRMultiple: v })}
         />
+        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="London session only"
           checked={data.londonSessionOnly}
@@ -2688,6 +2761,11 @@ function MACDCrossoverEntryFields({
 }) {
   return (
     <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+
       {/* Basic fields */}
       <NumberField
         label="MACD Fast"
@@ -2696,6 +2774,7 @@ function MACDCrossoverEntryFields({
         max={500}
         onChange={(v) => onChange({ macdFast: v })}
       />
+      <OptimizableFieldCheckbox fieldName="macdFast" data={data} onChange={onChange} />
       <NumberField
         label="MACD Slow"
         value={data.macdSlow}
@@ -2703,6 +2782,7 @@ function MACDCrossoverEntryFields({
         max={500}
         onChange={(v) => onChange({ macdSlow: v })}
       />
+      <OptimizableFieldCheckbox fieldName="macdSlow" data={data} onChange={onChange} />
       <NumberField
         label="MACD Signal"
         value={data.macdSignal}
@@ -2710,10 +2790,13 @@ function MACDCrossoverEntryFields({
         max={500}
         onChange={(v) => onChange({ macdSignal: v })}
       />
+      <OptimizableFieldCheckbox fieldName="macdSignal" data={data} onChange={onChange} />
       {data.macdFast >= data.macdSlow && (
         <FieldWarning message="MACD fast should be smaller than slow" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2725,6 +2808,7 @@ function MACDCrossoverEntryFields({
           step={0.1}
           onChange={(v) => onChange({ tpRMultiple: v })}
         />
+        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="HTF trend filter"
           checked={data.htfTrendFilter}
@@ -2745,6 +2829,7 @@ function MACDCrossoverEntryFields({
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
           />
+          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>
       </AdvancedToggleSection>
     </>
