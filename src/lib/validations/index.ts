@@ -318,14 +318,6 @@ const placeSellNodeDataSchema = baseNodeDataSchema
   })
   .strip();
 
-const positionSizeNodeDataSchema = baseNodeDataSchema
-  .merge(positionSizingFieldsSchema)
-  .extend({
-    category: z.enum(["riskmanagement", "trading"]),
-    tradingType: z.literal("position-size"),
-  })
-  .strip();
-
 const stopLossNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.enum(["riskmanagement", "trading"]),

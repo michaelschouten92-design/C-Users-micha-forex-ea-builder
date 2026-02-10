@@ -29,7 +29,6 @@ import type {
   Timeframe,
   PlaceBuyNodeData,
   PlaceSellNodeData,
-  PositionSizeNodeData,
   StopLossNodeData,
   TakeProfitNodeData,
   CloseConditionNodeData,
@@ -304,8 +303,6 @@ function NodeFields({
         return <PlaceBuyFields data={data as PlaceBuyNodeData} onChange={onChange} />;
       case "place-sell":
         return <PlaceSellFields data={data as PlaceSellNodeData} onChange={onChange} />;
-      case "position-size":
-        return <PositionSizeFields data={data as PositionSizeNodeData} onChange={onChange} />;
       case "stop-loss":
         return <StopLossFields data={data as StopLossNodeData} onChange={onChange} />;
       case "take-profit":
@@ -1457,91 +1454,6 @@ function PlaceSellFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ riskPercent: v })}
-          />
-          <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-        </div>
-      )}
-      <NumberField
-        label="Min Lot"
-        value={data.minLot}
-        min={0.01}
-        max={100}
-        step={0.01}
-        onChange={(v) => onChange({ minLot: v })}
-      />
-      <NumberField
-        label="Max Lot"
-        value={data.maxLot}
-        min={0.01}
-        max={1000}
-        step={0.01}
-        onChange={(v) => onChange({ maxLot: v })}
-      />
-      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
-      {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
-        <FieldWarning message="Risk above 5% per trade is considered aggressive" />
-      )}
-    </>
-  );
-}
-
-function PositionSizeFields({
-  data,
-  onChange,
-}: {
-  data: PositionSizeNodeData;
-  onChange: (updates: Partial<PositionSizeNodeData>) => void;
-}) {
-  return (
-    <>
-      <div className="bg-[rgba(225,29,72,0.1)] border border-[rgba(225,29,72,0.3)] text-[#FB7185] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-          />
-        </svg>
-        How much to risk per trade
-      </div>
-      <SelectField
-        label="Sizing Method"
-        value={data.method}
-        options={[
-          { value: "FIXED_LOT", label: "Fixed Lot" },
-          { value: "RISK_PERCENT", label: "Risk %" },
-        ]}
-        onChange={(v) => onChange({ method: v as PositionSizeNodeData["method"] })}
-      />
-      {data.method === "FIXED_LOT" && (
-        <div>
-          <NumberField
-            label="Lot Size"
-            value={data.fixedLot}
-            min={0.01}
-            max={100}
-            step={0.01}
-            onChange={(v) => onChange({ fixedLot: v })}
-          />
-          <OptimizableFieldCheckbox fieldName="fixedLot" data={data} onChange={onChange} />
-        </div>
-      )}
-      {data.method === "RISK_PERCENT" && (
-        <div>
-          <NumberField
-            label="Risk %"
-            value={data.riskPercent}
-            min={0.1}
-            max={100}
-            step={0.1}
-            onChange={(v) => onChange({ riskPercent: v })}
-            tooltip="Percentage of account balance risked per trade"
           />
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>

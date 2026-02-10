@@ -170,7 +170,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   const priceActionNodes: BuilderNode[] = [];
   const closeConditionNodes: BuilderNode[] = [];
   const timeExitNodes: BuilderNode[] = [];
-  const positionSizeNodes: BuilderNode[] = [];
 
   for (const n of buildJson.nodes) {
     const nodeType = n.type as string;
@@ -196,11 +195,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
       priceActionNodes.push(n);
     } else if (tradeManagementTypeSet.has(nodeType) || "managementType" in data) {
       tradeManagementNodes.push(n);
-    } else if (
-      nodeType === "position-size" ||
-      ("tradingType" in data && data.tradingType === "position-size")
-    ) {
-      positionSizeNodes.push(n);
     } else if (
       nodeType === "place-buy" ||
       ("tradingType" in data && data.tradingType === "place-buy")
@@ -254,27 +248,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   const hasSell = placeSellNodes.length > 0;
   const hasStopLoss = stopLossNodes.length > 0;
   const hasTakeProfit = takeProfitNodes.length > 0;
-
-  // If a Position Size node exists, override buy/sell sizing data
-  if (positionSizeNodes.length > 0) {
-    const psData = positionSizeNodes[0].data as import("@/types/builder").PositionSizeNodeData;
-    for (const buyNode of placeBuyNodes) {
-      const d = buyNode.data as import("@/types/builder").PlaceBuyNodeData;
-      d.method = psData.method;
-      d.fixedLot = psData.fixedLot;
-      d.riskPercent = psData.riskPercent;
-      d.minLot = psData.minLot;
-      d.maxLot = psData.maxLot;
-    }
-    for (const sellNode of placeSellNodes) {
-      const d = sellNode.data as import("@/types/builder").PlaceSellNodeData;
-      d.method = psData.method;
-      d.fixedLot = psData.fixedLot;
-      d.riskPercent = psData.riskPercent;
-      d.minLot = psData.minLot;
-      d.maxLot = psData.maxLot;
-    }
-  }
 
   // Generate position sizing code for buy/sell (only if connected)
   if (hasBuy) {

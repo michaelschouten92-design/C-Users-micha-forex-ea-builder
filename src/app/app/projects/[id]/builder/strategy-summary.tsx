@@ -110,10 +110,8 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     lines.push("Go short (sell only)");
   }
 
-  // Position sizing - prefer position-size node, fall back to buy/sell data
-  const posNode = nodes.find((n) => n.type === "position-size");
-  const sizingSource =
-    posNode ?? nodes.find((n) => n.type === "place-buy" || n.type === "place-sell");
+  // Position sizing from buy/sell data
+  const sizingSource = nodes.find((n) => n.type === "place-buy" || n.type === "place-sell");
   if (sizingSource) {
     const d = sizingSource.data;
     if ("method" in d) {

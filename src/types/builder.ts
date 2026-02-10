@@ -261,11 +261,6 @@ export interface PlaceSellNodeData extends BaseNodeData, PositionSizingFields {
 
 export type StopLossMethod = "FIXED_PIPS" | "ATR_BASED" | "INDICATOR";
 
-export interface PositionSizeNodeData extends BaseNodeData, PositionSizingFields {
-  category: "riskmanagement" | "trading";
-  tradingType: "position-size";
-}
-
 export interface StopLossNodeData extends BaseNodeData {
   category: "riskmanagement" | "trading";
   tradingType: "stop-loss";
@@ -306,7 +301,6 @@ export interface TimeExitNodeData extends BaseNodeData {
 export type TradingNodeData =
   | PlaceBuyNodeData
   | PlaceSellNodeData
-  | PositionSizeNodeData
   | StopLossNodeData
   | TakeProfitNodeData
   | CloseConditionNodeData
@@ -394,7 +388,6 @@ export type BuilderNodeType =
   | "range-breakout"
   | "place-buy"
   | "place-sell"
-  | "position-size"
   | "stop-loss"
   | "take-profit"
   | "close-condition"
@@ -743,22 +736,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     } as PlaceSellNodeData,
   },
   // Risk Management
-  {
-    type: "position-size",
-    label: "Position Size",
-    category: "riskmanagement",
-    description: "Configure lot sizing method",
-    defaultData: {
-      label: "Position Size",
-      category: "riskmanagement",
-      tradingType: "position-size",
-      method: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-    } as PositionSizeNodeData,
-  },
   {
     type: "stop-loss",
     label: "Stoploss",
