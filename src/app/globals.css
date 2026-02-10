@@ -7,37 +7,37 @@
 
 :root {
   /* Primary Colors */
-  --midnight-purple: #2B0A3D;
-  --midnight-purple-light: #3D1254;
-  --midnight-purple-dark: #1A0626;
+  --midnight-purple: #2b0a3d;
+  --midnight-purple-light: #3d1254;
+  --midnight-purple-dark: #1a0626;
 
   /* Secondary Colors */
-  --indigo-tech: #4F46E5;
-  --indigo-tech-light: #6366F1;
-  --indigo-tech-dark: #3730A3;
+  --indigo-tech: #4f46e5;
+  --indigo-tech-light: #6366f1;
+  --indigo-tech-dark: #3730a3;
   --indigo-tech-muted: rgba(79, 70, 229, 0.15);
 
   /* Accent Colors */
-  --neon-cyan: #22D3EE;
+  --neon-cyan: #22d3ee;
   --neon-cyan-muted: rgba(34, 211, 238, 0.15);
   --neon-cyan-glow: rgba(34, 211, 238, 0.35);
-  --soft-violet: #A78BFA;
+  --soft-violet: #a78bfa;
   --soft-violet-muted: rgba(167, 139, 250, 0.15);
 
   /* Neutrals */
-  --studio-black: #0F172A;
-  --studio-black-light: #1E293B;
-  --cool-gray: #CBD5E1;
-  --cool-gray-dark: #94A3B8;
-  --cool-gray-muted: #64748B;
-  --pure-white: #FFFFFF;
+  --studio-black: #0f172a;
+  --studio-black-light: #1e293b;
+  --cool-gray: #cbd5e1;
+  --cool-gray-dark: #94a3b8;
+  --cool-gray-muted: #64748b;
+  --pure-white: #ffffff;
 
   /* Semantic Colors */
-  --success: #10B981;
+  --success: #10b981;
   --success-muted: rgba(16, 185, 129, 0.15);
-  --error: #EF4444;
+  --error: #ef4444;
   --error-muted: rgba(239, 68, 68, 0.15);
-  --warning: #F59E0B;
+  --warning: #f59e0b;
   --warning-muted: rgba(245, 158, 11, 0.15);
 
   /* Surface Colors */
@@ -84,8 +84,12 @@ body {
 }
 
 body {
-  background: linear-gradient(135deg, var(--midnight-purple) 0%, var(--studio-black) 50%, var(--studio-black) 100%);
-  background-attachment: fixed;
+  background: linear-gradient(
+    135deg,
+    var(--midnight-purple) 0%,
+    var(--studio-black) 50%,
+    var(--studio-black) 100%
+  );
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   min-height: 100vh;
@@ -136,7 +140,11 @@ body {
    ============================================ */
 
 .react-flow__background {
-  background: linear-gradient(180deg, var(--midnight-purple-dark) 0%, var(--studio-black) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    var(--midnight-purple-dark) 0%,
+    var(--studio-black) 100%
+  ) !important;
 }
 
 .react-flow__minimap {
@@ -214,7 +222,9 @@ body {
 
 /* Border with glow on hover */
 .border-glow-hover {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .border-glow-hover:hover {

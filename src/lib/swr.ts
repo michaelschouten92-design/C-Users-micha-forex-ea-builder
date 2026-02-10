@@ -47,9 +47,9 @@ export async function mutationFetcher<T>(
 // Default SWR configuration
 export const defaultSwrConfig: SWRConfiguration = {
   fetcher,
-  revalidateOnFocus: true,
+  revalidateOnFocus: false,
   revalidateOnReconnect: true,
-  dedupingInterval: 2000,
+  dedupingInterval: 60000,
   errorRetryCount: 3,
 };
 
@@ -59,14 +59,16 @@ export const defaultSwrConfig: SWRConfiguration = {
 
 // Hook for fetching projects list
 export function useProjects() {
-  return useSWR<{
-    id: string;
-    name: string;
-    description: string | null;
-    createdAt: string;
-    updatedAt: string;
-    _count: { versions: number };
-  }[]>("/api/projects", fetcher);
+  return useSWR<
+    {
+      id: string;
+      name: string;
+      description: string | null;
+      createdAt: string;
+      updatedAt: string;
+      _count: { versions: number };
+    }[]
+  >("/api/projects", fetcher);
 }
 
 // Hook for fetching a single project
@@ -82,12 +84,14 @@ export function useProject(projectId: string | null) {
 
 // Hook for fetching project versions
 export function useProjectVersions(projectId: string | null) {
-  return useSWR<{
-    id: string;
-    versionNo: number;
-    createdAt: string;
-    buildJson: unknown;
-  }[]>(projectId ? `/api/projects/${projectId}/versions` : null, fetcher);
+  return useSWR<
+    {
+      id: string;
+      versionNo: number;
+      createdAt: string;
+      buildJson: unknown;
+    }[]
+  >(projectId ? `/api/projects/${projectId}/versions` : null, fetcher);
 }
 
 // Hook for fetching user subscription
@@ -98,6 +102,7 @@ export function useSubscription() {
     currentPeriodEnd: string | null;
   }>("/api/subscription", fetcher, {
     revalidateOnFocus: false,
+    dedupingInterval: 300000, // 5 minutes — subscription data rarely changes
   });
 }
 
@@ -118,12 +123,9 @@ export function useUpdateProject(projectId: string) {
 
 // Hook for deleting a project
 export function useDeleteProject(projectId: string) {
-  return useSWRMutation(
-    `/api/projects/${projectId}`,
-    async (url: string) => {
-      return mutationFetcher(url, { arg: { method: "DELETE" } });
-    }
-  );
+  return useSWRMutation(`/api/projects/${projectId}`, async (url: string) => {
+    return mutationFetcher(url, { arg: { method: "DELETE" } });
+  });
 }
 
 // ============================================
@@ -131,15 +133,25 @@ export function useDeleteProject(projectId: string) {
 // ============================================
 
 export function invalidateProjects() {
-  return mutate("/api/projects");
+  return mutate((key) => typeof key === "string" && key.startsWith("/api/projects"), undefined, {
+    revalidate: true,
+  });
 }
 
 export function invalidateProject(projectId: string) {
-  return mutate(`/api/projects/${projectId}`);
+  return mutate(
+    (key) => typeof key === "string" && key.startsWith(`/api/projects/${projectId}`),
+    undefined,
+    { revalidate: true }
+  );
 }
 
 export function invalidateProjectVersions(projectId: string) {
-  return mutate(`/api/projects/${projectId}/versions`);
+  return mutate(
+    (key) => typeof key === "string" && key.startsWith(`/api/projects/${projectId}/versions`),
+    undefined,
+    { revalidate: true }
+  );
 }
 
 export function invalidateSubscription() {

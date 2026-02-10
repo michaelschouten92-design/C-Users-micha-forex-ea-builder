@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { CCINodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: CCINodeData };
 
-export function CCINode({ id, data, selected }: Props) {
+export const CCINode = memo(function CCINode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -33,4 +34,4 @@ export function CCINode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

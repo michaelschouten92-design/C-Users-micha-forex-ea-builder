@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { RSINodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: RSINodeData };
 
-export function RSINode({ id, data, selected }: Props) {
+export const RSINode = memo(function RSINode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -26,9 +27,11 @@ export function RSINode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">OB/OS:</span>
-          <span className="font-medium">{data.overboughtLevel}/{data.oversoldLevel}</span>
+          <span className="font-medium">
+            {data.overboughtLevel}/{data.oversoldLevel}
+          </span>
         </div>
       </div>
     </BaseNode>
   );
-}
+});

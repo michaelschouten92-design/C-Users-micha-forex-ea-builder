@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { EnvelopesNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: EnvelopesNodeData };
 
-export function EnvelopesNode({ id, data, selected }: Props) {
+export const EnvelopesNode = memo(function EnvelopesNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -31,4 +32,4 @@ export function EnvelopesNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

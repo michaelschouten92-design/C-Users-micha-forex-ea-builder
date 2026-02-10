@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 import { logger } from "./logger";
 
-const SLOW_QUERY_THRESHOLD_MS = 1000;
+const SLOW_QUERY_THRESHOLD_MS = 200;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -22,10 +22,7 @@ function createPrismaClient() {
   // Log slow queries in all environments
   client.$on("query" as never, (e: { duration: number; query: string }) => {
     if (e.duration > SLOW_QUERY_THRESHOLD_MS) {
-      logger.warn(
-        { durationMs: e.duration, query: e.query },
-        "Slow database query detected"
-      );
+      logger.warn({ durationMs: e.duration, query: e.query }, "Slow database query detected");
     }
   });
 

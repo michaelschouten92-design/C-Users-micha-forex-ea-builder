@@ -60,6 +60,8 @@ export async function GET() {
         where: { userId },
         include: {
           versions: {
+            orderBy: { versionNo: "desc" },
+            take: 20, // Limit versions per project to prevent OOM
             select: {
               versionNo: true,
               buildJson: true,
@@ -70,6 +72,7 @@ export async function GET() {
       }),
       prisma.exportJob.findMany({
         where: { userId },
+        take: 1000, // Cap exports in GDPR data
         select: {
           exportType: true,
           status: true,
@@ -87,6 +90,7 @@ export async function GET() {
       }),
       prisma.auditLog.findMany({
         where: { userId },
+        take: 10000, // Cap audit logs to prevent OOM
         select: {
           eventType: true,
           resourceType: true,

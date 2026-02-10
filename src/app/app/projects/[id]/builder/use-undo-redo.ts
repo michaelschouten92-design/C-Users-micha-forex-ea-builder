@@ -17,58 +17,69 @@ export function useUndoRedo(
 ) {
   const { maxHistorySize = 50 } = options;
 
-  // History stack
-  const historyRef = useRef<HistoryState[]>([
-    { nodes: initialNodes, edges: initialEdges },
-  ]);
-  const historyIndexRef = useRef(0);
+  // History stack (ref to avoid re-renders on every snapshot)
+  const historyRef = useRef<HistoryState[]>([{ nodes: initialNodes, edges: initialEdges }]);
+  // Index ref for use inside callbacks only
+  const indexRef = useRef(0);
 
-  // Force re-render when history changes
-  const [, setRenderTrigger] = useState(0);
+  // State mirrors of index/length so canUndo/canRedo are reactive without ref access during render
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [historyLength, setHistoryLength] = useState(1);
 
-  const canUndo = historyIndexRef.current > 0;
-  const canRedo = historyIndexRef.current < historyRef.current.length - 1;
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < historyLength - 1;
 
   // Take a snapshot of the current state
-  const takeSnapshot = useCallback((nodes: Node[], edges: Edge[]) => {
-    // Remove any future history if we're not at the end
-    if (historyIndexRef.current < historyRef.current.length - 1) {
-      historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
-    }
+  const takeSnapshot = useCallback(
+    (nodes: Node[], edges: Edge[]) => {
+      // Remove any future history if we're not at the end
+      if (indexRef.current < historyRef.current.length - 1) {
+        historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
+      }
 
-    // Don't add duplicate states
-    const lastState = historyRef.current[historyRef.current.length - 1];
-    const newStateStr = JSON.stringify({ nodes, edges });
-    const lastStateStr = JSON.stringify(lastState);
+      // Don't add duplicate states — lightweight check instead of full JSON.stringify
+      const lastState = historyRef.current[historyRef.current.length - 1];
+      if (
+        lastState &&
+        lastState.nodes.length === nodes.length &&
+        lastState.edges.length === edges.length &&
+        lastState.nodes.every(
+          (n, i) =>
+            n.id === nodes[i].id &&
+            n.position.x === nodes[i].position.x &&
+            n.position.y === nodes[i].position.y
+        )
+      ) {
+        return;
+      }
 
-    if (newStateStr === lastStateStr) {
-      return;
-    }
+      // Add new state using structuredClone (faster than JSON roundtrip)
+      historyRef.current.push({
+        nodes: structuredClone(nodes),
+        edges: structuredClone(edges),
+      });
 
-    // Add new state
-    historyRef.current.push({
-      nodes: JSON.parse(JSON.stringify(nodes)),
-      edges: JSON.parse(JSON.stringify(edges))
-    });
+      // Trim history if too long
+      if (historyRef.current.length > maxHistorySize) {
+        historyRef.current = historyRef.current.slice(-maxHistorySize);
+      }
 
-    // Trim history if too long
-    if (historyRef.current.length > maxHistorySize) {
-      historyRef.current = historyRef.current.slice(-maxHistorySize);
-    }
-
-    historyIndexRef.current = historyRef.current.length - 1;
-    setRenderTrigger((n) => n + 1);
-  }, [maxHistorySize]);
+      indexRef.current = historyRef.current.length - 1;
+      setHistoryIndex(indexRef.current);
+      setHistoryLength(historyRef.current.length);
+    },
+    [maxHistorySize]
+  );
 
   // Undo to previous state
   const undo = useCallback((): HistoryState | null => {
-    if (historyIndexRef.current > 0) {
-      historyIndexRef.current -= 1;
-      setRenderTrigger((n) => n + 1);
-      const state = historyRef.current[historyIndexRef.current];
+    if (indexRef.current > 0) {
+      indexRef.current -= 1;
+      setHistoryIndex(indexRef.current);
+      const state = historyRef.current[indexRef.current];
       return {
-        nodes: JSON.parse(JSON.stringify(state.nodes)),
-        edges: JSON.parse(JSON.stringify(state.edges)),
+        nodes: structuredClone(state.nodes),
+        edges: structuredClone(state.edges),
       };
     }
     return null;
@@ -76,13 +87,13 @@ export function useUndoRedo(
 
   // Redo to next state
   const redo = useCallback((): HistoryState | null => {
-    if (historyIndexRef.current < historyRef.current.length - 1) {
-      historyIndexRef.current += 1;
-      setRenderTrigger((n) => n + 1);
-      const state = historyRef.current[historyIndexRef.current];
+    if (indexRef.current < historyRef.current.length - 1) {
+      indexRef.current += 1;
+      setHistoryIndex(indexRef.current);
+      const state = historyRef.current[indexRef.current];
       return {
-        nodes: JSON.parse(JSON.stringify(state.nodes)),
-        edges: JSON.parse(JSON.stringify(state.edges)),
+        nodes: structuredClone(state.nodes),
+        edges: structuredClone(state.edges),
       };
     }
     return null;
@@ -90,12 +101,15 @@ export function useUndoRedo(
 
   // Reset history (e.g., when loading a new version)
   const resetHistory = useCallback((nodes: Node[], edges: Edge[]) => {
-    historyRef.current = [{
-      nodes: JSON.parse(JSON.stringify(nodes)),
-      edges: JSON.parse(JSON.stringify(edges))
-    }];
-    historyIndexRef.current = 0;
-    setRenderTrigger((n) => n + 1);
+    historyRef.current = [
+      {
+        nodes: structuredClone(nodes),
+        edges: structuredClone(edges),
+      },
+    ];
+    indexRef.current = 0;
+    setHistoryIndex(0);
+    setHistoryLength(1);
   }, []);
 
   return {
@@ -105,7 +119,7 @@ export function useUndoRedo(
     resetHistory,
     canUndo,
     canRedo,
-    historyLength: historyRef.current.length,
-    currentIndex: historyIndexRef.current,
+    historyLength,
+    currentIndex: historyIndex,
   };
 }

@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { MovingAverageNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: MovingAverageNodeData };
 
-export function MovingAverageNode({ id, data, selected }: Props) {
+export const MovingAverageNode = memo(function MovingAverageNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -31,4 +32,4 @@ export function MovingAverageNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

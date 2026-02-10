@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { StochasticNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: StochasticNodeData };
 
-export function StochasticNode({ id, data, selected }: Props) {
+export const StochasticNode = memo(function StochasticNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -22,13 +23,17 @@ export function StochasticNode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">K/D/Slowing:</span>
-          <span className="font-medium">{data.kPeriod}/{data.dPeriod}/{data.slowing}</span>
+          <span className="font-medium">
+            {data.kPeriod}/{data.dPeriod}/{data.slowing}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">OB/OS:</span>
-          <span className="font-medium">{data.overboughtLevel}/{data.oversoldLevel}</span>
+          <span className="font-medium">
+            {data.overboughtLevel}/{data.oversoldLevel}
+          </span>
         </div>
       </div>
     </BaseNode>
   );
-}
+});

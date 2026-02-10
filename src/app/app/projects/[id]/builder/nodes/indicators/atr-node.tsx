@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { ATRNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: ATRNodeData };
 
-export function ATRNode({ id, data, selected }: Props) {
+export const ATRNode = memo(function ATRNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -27,4 +28,4 @@ export function ATRNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

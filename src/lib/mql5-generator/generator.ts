@@ -16,7 +16,7 @@ import {
 } from "./templates";
 
 import { sanitizeName } from "./generators/shared";
-import { generateTimingCode, generateMultipleTimingCode } from "./generators/timing";
+import { generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
 import {
@@ -38,6 +38,17 @@ function getConnectedNodeIds(
 ): Set<string> {
   const connectedIds = new Set<string>();
 
+  // Build adjacency map once instead of filtering edges per node
+  const adjacencyMap = new Map<string, string[]>();
+  for (const edge of edges) {
+    const targets = adjacencyMap.get(edge.source);
+    if (targets) {
+      targets.push(edge.target);
+    } else {
+      adjacencyMap.set(edge.source, [edge.target]);
+    }
+  }
+
   // Find all starting nodes (timing nodes)
   const startNodes = nodes.filter(
     (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
@@ -51,11 +62,13 @@ function getConnectedNodeIds(
     if (connectedIds.has(currentId)) continue;
     connectedIds.add(currentId);
 
-    // Find all edges where current node is the source
-    const outgoingEdges = edges.filter((e) => e.source === currentId);
-    for (const edge of outgoingEdges) {
-      if (!connectedIds.has(edge.target)) {
-        queue.push(edge.target);
+    // Use adjacency map for O(1) lookup
+    const targets = adjacencyMap.get(currentId);
+    if (targets) {
+      for (const target of targets) {
+        if (!connectedIds.has(target)) {
+          queue.push(target);
+        }
       }
     }
   }
@@ -124,9 +137,8 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   // Helper to check if a node is connected to the strategy
   const isConnected = (node: BuilderNode) => connectedNodeIds.has(node.id);
 
-  // Process nodes by type (check both node.type and node.data properties)
-  // Only include nodes that are connected to the strategy
-  const indicatorTypes = [
+  // Single-pass node categorization (instead of 11 separate .filter() passes)
+  const indicatorTypeSet = new Set([
     "moving-average",
     "rsi",
     "macd",
@@ -139,55 +151,86 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "parabolic-sar",
     "momentum",
     "envelopes",
-  ];
-  const indicatorNodes = buildJson.nodes.filter(
-    (n) =>
-      (indicatorTypes.includes(n.type as string) || "indicatorType" in n.data) && isConnected(n)
-  );
-  const placeBuyNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "place-buy" || ("tradingType" in n.data && n.data.tradingType === "place-buy")) &&
-      isConnected(n)
-  );
-  const placeSellNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "place-sell" ||
-        ("tradingType" in n.data && n.data.tradingType === "place-sell")) &&
-      isConnected(n)
-  );
-  const stopLossNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "stop-loss" || ("tradingType" in n.data && n.data.tradingType === "stop-loss")) &&
-      isConnected(n)
-  );
-  const takeProfitNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "take-profit" ||
-        ("tradingType" in n.data && n.data.tradingType === "take-profit")) &&
-      isConnected(n)
-  );
-  const timingNodes = buildJson.nodes.filter(
-    (n) =>
-      n.type === "trading-session" ||
-      n.type === "always" ||
-      n.type === "custom-times" ||
-      "timingType" in n.data
-  );
+  ]);
+  const tradeManagementTypeSet = new Set([
+    "breakeven-stop",
+    "trailing-stop",
+    "partial-close",
+    "lock-profit",
+  ]);
+  const priceActionTypeSet = new Set([
+    "candlestick-pattern",
+    "support-resistance",
+    "range-breakout",
+  ]);
 
-  // Trade Management nodes (Pro only) - only connected ones
-  const tradeManagementTypes = ["breakeven-stop", "trailing-stop", "partial-close", "lock-profit"];
-  const tradeManagementNodes = buildJson.nodes.filter(
-    (n) =>
-      (tradeManagementTypes.includes(n.type as string) || "managementType" in n.data) &&
-      isConnected(n)
-  );
+  const indicatorNodes: BuilderNode[] = [];
+  const placeBuyNodes: BuilderNode[] = [];
+  const placeSellNodes: BuilderNode[] = [];
+  const stopLossNodes: BuilderNode[] = [];
+  const takeProfitNodes: BuilderNode[] = [];
+  const timingNodes: BuilderNode[] = [];
+  const tradeManagementNodes: BuilderNode[] = [];
+  const priceActionNodes: BuilderNode[] = [];
+  const closeConditionNodes: BuilderNode[] = [];
+  const timeExitNodes: BuilderNode[] = [];
 
-  // Price Action nodes - only connected ones
-  const priceActionTypes = ["candlestick-pattern", "support-resistance", "range-breakout"];
-  const priceActionNodes = buildJson.nodes.filter(
-    (n) =>
-      (priceActionTypes.includes(n.type as string) || "priceActionType" in n.data) && isConnected(n)
-  );
+  for (const n of buildJson.nodes) {
+    const nodeType = n.type as string;
+    const data = n.data;
+    const connected = isConnected(n);
+
+    // Timing nodes (always included regardless of connection)
+    if (
+      nodeType === "trading-session" ||
+      nodeType === "always" ||
+      nodeType === "custom-times" ||
+      "timingType" in data
+    ) {
+      timingNodes.push(n);
+      continue;
+    }
+
+    if (!connected) continue;
+
+    if (indicatorTypeSet.has(nodeType) || "indicatorType" in data) {
+      indicatorNodes.push(n);
+    } else if (priceActionTypeSet.has(nodeType) || "priceActionType" in data) {
+      priceActionNodes.push(n);
+    } else if (tradeManagementTypeSet.has(nodeType) || "managementType" in data) {
+      tradeManagementNodes.push(n);
+    } else if (
+      nodeType === "place-buy" ||
+      ("tradingType" in data && data.tradingType === "place-buy")
+    ) {
+      placeBuyNodes.push(n);
+    } else if (
+      nodeType === "place-sell" ||
+      ("tradingType" in data && data.tradingType === "place-sell")
+    ) {
+      placeSellNodes.push(n);
+    } else if (
+      nodeType === "stop-loss" ||
+      ("tradingType" in data && data.tradingType === "stop-loss")
+    ) {
+      stopLossNodes.push(n);
+    } else if (
+      nodeType === "take-profit" ||
+      ("tradingType" in data && data.tradingType === "take-profit")
+    ) {
+      takeProfitNodes.push(n);
+    } else if (
+      nodeType === "close-condition" ||
+      ("tradingType" in data && data.tradingType === "close-condition")
+    ) {
+      closeConditionNodes.push(n);
+    } else if (
+      nodeType === "time-exit" ||
+      ("tradingType" in data && data.tradingType === "time-exit")
+    ) {
+      timeExitNodes.push(n);
+    }
+  }
 
   // Generate timing code (supports multiple timing nodes OR'd together)
   if (timingNodes.length > 0) {
@@ -237,22 +280,11 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   generateEntryLogic(indicatorNodes, priceActionNodes, hasBuy, hasSell, ctx, code);
 
   // Generate close condition code
-  const closeConditionNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "close-condition" ||
-        ("tradingType" in n.data && n.data.tradingType === "close-condition")) &&
-      isConnected(n)
-  );
   closeConditionNodes.forEach((ccNode) => {
     generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);
   });
 
   // Generate time-based exit code
-  const timeExitNodes = buildJson.nodes.filter(
-    (n) =>
-      (n.type === "time-exit" || ("tradingType" in n.data && n.data.tradingType === "time-exit")) &&
-      isConnected(n)
-  );
   timeExitNodes.forEach((node) => {
     generateTimeExitCode(node, code);
   });
@@ -262,17 +294,18 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     generateTradeManagementCode(node, indicatorNodes, code);
   });
 
-  // Assemble final code
-  let output = "";
-  output += generateFileHeader(ctx);
-  output += generateTradeIncludes();
-  output += generateInputsSection(code.inputs);
-  output += generateGlobalVariablesSection(code.globalVariables);
-  output += generateOnInit(ctx, code.onInit);
-  output += generateOnDeinit(code.onDeinit);
-  output += generateOnTick(ctx, code.onTick);
-  output += generateHelperFunctions(ctx);
-  output += code.helperFunctions.join("\n\n");
+  // Assemble final code (array join avoids repeated string allocation)
+  const parts = [
+    generateFileHeader(ctx),
+    generateTradeIncludes(),
+    generateInputsSection(code.inputs),
+    generateGlobalVariablesSection(code.globalVariables),
+    generateOnInit(ctx, code.onInit),
+    generateOnDeinit(code.onDeinit),
+    generateOnTick(ctx, code.onTick),
+    generateHelperFunctions(ctx),
+    code.helperFunctions.join("\n\n"),
+  ];
 
-  return output;
+  return parts.join("");
 }

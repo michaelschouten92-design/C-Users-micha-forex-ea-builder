@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -80,9 +80,9 @@ export function StrategyCanvas({
     (initialData?.edges as Edge[]) ?? []
   );
 
-  // Track previous state for snapshot detection
+  // Track previous state for snapshot detection (lightweight signature instead of JSON.stringify)
   const prevStateRef = useRef<string>(
-    JSON.stringify({ nodes: initialData?.nodes ?? [], edges: initialData?.edges ?? [] })
+    `${(initialData?.nodes ?? []).length}-${(initialData?.edges ?? []).length}-${(initialData?.nodes ?? [])[0]?.id ?? ""}`
   );
 
   // Flag to skip snapshot after undo/redo
@@ -93,17 +93,26 @@ export function StrategyCanvas({
     // Skip snapshot if this change came from undo/redo
     if (skipSnapshotRef.current) {
       skipSnapshotRef.current = false;
-      prevStateRef.current = JSON.stringify({ nodes, edges });
+      // Use lightweight signature: count + first node id + positions of first few nodes
+      const posKey = nodes
+        .slice(0, 3)
+        .map((n) => `${n.position.x.toFixed(0)},${n.position.y.toFixed(0)}`)
+        .join("|");
+      prevStateRef.current = `${nodes.length}-${edges.length}-${nodes[0]?.id ?? ""}-${posKey}`;
       return;
     }
 
-    const currentState = JSON.stringify({ nodes, edges });
+    const posKey = nodes
+      .slice(0, 3)
+      .map((n) => `${n.position.x.toFixed(0)},${n.position.y.toFixed(0)}`)
+      .join("|");
+    const currentState = `${nodes.length}-${edges.length}-${nodes[0]?.id ?? ""}-${posKey}`;
     if (currentState !== prevStateRef.current) {
       // Debounce snapshot to avoid too many history entries during dragging
       const timeout = setTimeout(() => {
         takeSnapshot(nodes, edges);
         prevStateRef.current = currentState;
-      }, 300);
+      }, 500);
       return () => clearTimeout(timeout);
     }
   }, [nodes, edges, takeSnapshot]);
@@ -212,8 +221,11 @@ export function StrategyCanvas({
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
-  // Validate strategy
-  const validation = validateStrategy(nodes as Node<BuilderNodeData>[], edges);
+  // Validate strategy (memoized to avoid recalculating on every render)
+  const validation = useMemo(
+    () => validateStrategy(nodes as Node<BuilderNodeData>[], edges),
+    [nodes, edges]
+  );
 
   // Handle drag start from toolbar
   const onDragStart = useCallback((event: React.DragEvent, template: NodeTemplate) => {
@@ -433,6 +445,7 @@ export function StrategyCanvas({
               nodeStrokeColor="rgba(79, 70, 229, 0.5)"
               nodeColor="rgba(79, 70, 229, 0.3)"
               maskColor="rgba(15, 23, 42, 0.8)"
+              className="hidden sm:block"
               style={{
                 backgroundColor: "#1A0626",
                 border: "1px solid rgba(79,70,229,0.2)",

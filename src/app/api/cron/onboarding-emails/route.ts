@@ -48,16 +48,21 @@ async function handleOnboardingEmails(request: NextRequest) {
         projects: { none: {} },
       },
       select: { id: true, email: true },
+      take: 500, // Cap to prevent OOM on large user bases
     });
 
     let day1Sent = 0;
     let day1Failed = 0;
-    for (const user of day1Users) {
-      try {
-        await sendOnboardingDay1Email(user.email, appUrl);
-        day1Sent++;
-      } catch {
-        day1Failed++;
+    // Send in concurrent batches of 10 to avoid timeout
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < day1Users.length; i += BATCH_SIZE) {
+      const batch = day1Users.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map((user) => sendOnboardingDay1Email(user.email, appUrl))
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled") day1Sent++;
+        else day1Failed++;
       }
     }
 
@@ -72,16 +77,19 @@ async function handleOnboardingEmails(request: NextRequest) {
         exports: { none: {} },
       },
       select: { id: true, email: true },
+      take: 500, // Cap to prevent OOM on large user bases
     });
 
     let day3Sent = 0;
     let day3Failed = 0;
-    for (const user of day3Users) {
-      try {
-        await sendOnboardingDay3Email(user.email, pricingUrl);
-        day3Sent++;
-      } catch {
-        day3Failed++;
+    for (let i = 0; i < day3Users.length; i += BATCH_SIZE) {
+      const batch = day3Users.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map((user) => sendOnboardingDay3Email(user.email, pricingUrl))
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled") day3Sent++;
+        else day3Failed++;
       }
     }
 
