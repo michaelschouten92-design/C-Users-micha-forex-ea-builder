@@ -484,6 +484,9 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
   maxOpenTrades: 1,
   allowHedging: false,
   maxTradesPerDay: 0,
+  maxDailyProfitPercent: 0,
+  maxDailyLossPercent: 0,
+  maxSpreadPips: 0,
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {
@@ -635,6 +638,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       indicatorType: "atr",
       timeframe: "H1",
       period: 14,
+      signalMode: "every_tick",
     } as ATRNodeData,
   },
   {
@@ -649,6 +653,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       timeframe: "H1",
       period: 14,
       trendLevel: 25,
+      signalMode: "every_tick",
     } as ADXNodeData,
   },
   {
@@ -666,6 +671,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slowing: 3,
       overboughtLevel: 80,
       oversoldLevel: 20,
+      signalMode: "every_tick",
     } as StochasticNodeData,
   },
   {

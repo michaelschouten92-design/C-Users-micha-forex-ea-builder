@@ -315,7 +315,7 @@ export function StrategyCanvas({
     apiClient
       .get<UserTemplate[]>("/api/templates")
       .then((data) => setUserTemplates(data))
-      .catch(() => {});
+      .catch((err) => console.warn("Failed to load templates:", err));
   }, [nodes.length]);
 
   // Load buildJson onto canvas (shared by presets and user templates)

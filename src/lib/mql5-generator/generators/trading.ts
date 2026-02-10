@@ -227,9 +227,12 @@ function generateIndicatorBasedSL(
         code.onTick.push(`double bbLower = ${varPrefix}LowerBuffer[0];`);
         code.onTick.push(`double bbUpper = ${varPrefix}UpperBuffer[0];`);
         code.onTick.push("// For BUY: SL at lower band, for SELL: SL at upper band");
-        code.onTick.push("double distToLower = (currentPrice - bbLower) / _Point;");
-        code.onTick.push("double distToUpper = (bbUpper - currentPrice) / _Point;");
-        code.onTick.push("slPips = MathMax(distToLower, distToUpper) + (InpBBSLBuffer * 10);");
+        code.onTick.push("double distToLower = MathAbs(currentPrice - bbLower) / _Point;");
+        code.onTick.push("double distToUpper = MathAbs(bbUpper - currentPrice) / _Point;");
+        code.onTick.push("// Use lower band distance for buy SL, upper band distance for sell SL");
+        code.onTick.push("double slBuy = distToLower + (InpBBSLBuffer * 10);");
+        code.onTick.push("double slSell = distToUpper + (InpBBSLBuffer * 10);");
+        code.onTick.push("slPips = MathMax(slBuy, slSell);");
         break;
 
       case "moving-average":
@@ -453,11 +456,12 @@ export function generateEntryLogic(
             break;
 
           case "atr":
+            // ATR is non-directional (volatility filter) - rising ATR confirms both buy and sell
             buyConditions.push(
               `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
             );
             sellConditions.push(
-              `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+              `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
             );
             break;
 

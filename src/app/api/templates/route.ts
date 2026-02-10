@@ -64,26 +64,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check template limit
-  const count = await prisma.userTemplate.count({
-    where: { userId: session.user.id },
+  // Check template limit (atomic transaction to prevent race conditions)
+  const template = await prisma.$transaction(async (tx) => {
+    const count = await tx.userTemplate.count({
+      where: { userId: session.user.id },
+    });
+
+    if (count >= MAX_TEMPLATES) {
+      return null;
+    }
+
+    return tx.userTemplate.create({
+      data: {
+        userId: session.user.id,
+        name: validation.data.name,
+        buildJson: validation.data.buildJson as object,
+      },
+      select: { id: true, name: true, createdAt: true },
+    });
   });
 
-  if (count >= MAX_TEMPLATES) {
+  if (!template) {
     return NextResponse.json(
       { error: `Maximum ${MAX_TEMPLATES} templates allowed. Delete an existing template first.` },
       { status: 400 }
     );
   }
-
-  const template = await prisma.userTemplate.create({
-    data: {
-      userId: session.user.id,
-      name: validation.data.name,
-      buildJson: validation.data.buildJson as object,
-    },
-    select: { id: true, name: true, createdAt: true },
-  });
 
   return NextResponse.json(template, { status: 201 });
 }
@@ -124,7 +130,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updated = await prisma.userTemplate.update({
-    where: { id: validation.data.id },
+    where: { id: validation.data.id, userId: session.user.id },
     data: { name: validation.data.name },
     select: { id: true, name: true, createdAt: true },
   });
@@ -152,7 +158,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
-  await prisma.userTemplate.delete({ where: { id } });
+  await prisma.userTemplate.delete({ where: { id, userId: session.user.id } });
 
   return NextResponse.json({ success: true });
 }

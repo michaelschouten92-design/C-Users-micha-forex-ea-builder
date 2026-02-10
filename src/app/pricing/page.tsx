@@ -15,7 +15,7 @@ function getPrice(plan: typeof PLANS.STARTER | typeof PLANS.PRO, interval: "mont
 
 export default function PricingPage() {
   const router = useRouter();
-  const [interval, setInterval] = useState<"monthly" | "yearly">("monthly");
+  const [interval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleSubscribe(plan: "STARTER" | "PRO") {
@@ -65,7 +65,7 @@ export default function PricingPage() {
         <div className="flex justify-center mb-10">
           <div className="flex rounded-lg bg-[#1E293B] p-1">
             <button
-              onClick={() => setInterval("monthly")}
+              onClick={() => setBillingInterval("monthly")}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 interval === "monthly"
                   ? "bg-[#4F46E5] text-white"
@@ -75,7 +75,7 @@ export default function PricingPage() {
               Monthly
             </button>
             <button
-              onClick={() => setInterval("yearly")}
+              onClick={() => setBillingInterval("yearly")}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 interval === "yearly"
                   ? "bg-[#4F46E5] text-white"

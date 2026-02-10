@@ -266,7 +266,7 @@ function buildSummary(nodes: BuilderNode[]): SummaryLine[] {
 export function StrategySummary({ nodes, edges }: StrategySummaryProps): React.ReactNode {
   const [isOpen, setIsOpen] = useState(false);
 
-  const summary = useMemo(() => buildSummary(nodes), [nodes, edges]);
+  const summary = useMemo(() => buildSummary(nodes), [nodes]);
 
   if (nodes.length === 0) return null;
 

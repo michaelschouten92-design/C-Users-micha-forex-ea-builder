@@ -339,12 +339,13 @@ const trailingStopNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("trademanagement"),
     managementType: z.literal("trailing-stop"),
-    method: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENTAGE"]),
+    method: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENTAGE", "INDICATOR"]),
     trailPips: z.number().min(0).max(10000),
     trailAtrMultiplier: z.number().min(0.1).max(100),
     trailAtrPeriod: z.number().int().min(1).max(1000),
     trailPercent: z.number().min(0).max(100),
     startAfterPips: z.number().min(0).max(10000),
+    indicatorNodeId: z.string().optional(),
   })
   .strip();
 
@@ -426,8 +427,13 @@ const buildSettingsSchema = z.object({
   comment: z.string().max(100),
   maxOpenTrades: z.number().int().min(1).max(100),
   allowHedging: z.boolean(),
+  maxBuyPositions: z.number().int().min(0).max(100).optional(),
+  maxSellPositions: z.number().int().min(0).max(100).optional(),
   conditionMode: z.enum(["AND", "OR"]).optional(),
   maxTradesPerDay: z.number().int().min(0).max(100).optional(),
+  maxDailyProfitPercent: z.number().min(0).max(100).optional(),
+  maxDailyLossPercent: z.number().min(0).max(100).optional(),
+  maxSpreadPips: z.number().min(0).max(100).optional(),
 });
 
 // Build metadata schema
