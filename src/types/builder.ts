@@ -6,7 +6,14 @@ import type { Node, Edge, Viewport } from "@xyflow/react";
 // NODE DATA TYPES
 // ============================================
 
-export type NodeCategory = "timing" | "indicator" | "priceaction" | "trading" | "trademanagement";
+export type NodeCategory =
+  | "timing"
+  | "indicator"
+  | "priceaction"
+  | "entry"
+  | "trading"
+  | "riskmanagement"
+  | "trademanagement";
 
 // Base data all nodes have
 export interface BaseNodeData extends Record<string, unknown> {
@@ -243,19 +250,24 @@ interface PositionSizingFields {
 }
 
 export interface PlaceBuyNodeData extends BaseNodeData, PositionSizingFields {
-  category: "trading";
+  category: "entry" | "trading";
   tradingType: "place-buy";
 }
 
 export interface PlaceSellNodeData extends BaseNodeData, PositionSizingFields {
-  category: "trading";
+  category: "entry" | "trading";
   tradingType: "place-sell";
 }
 
 export type StopLossMethod = "FIXED_PIPS" | "ATR_BASED" | "INDICATOR";
 
+export interface PositionSizeNodeData extends BaseNodeData, PositionSizingFields {
+  category: "riskmanagement" | "trading";
+  tradingType: "position-size";
+}
+
 export interface StopLossNodeData extends BaseNodeData {
-  category: "trading";
+  category: "riskmanagement" | "trading";
   tradingType: "stop-loss";
   method: StopLossMethod;
   fixedPips: number;
@@ -267,7 +279,7 @@ export interface StopLossNodeData extends BaseNodeData {
 export type TakeProfitMethod = "FIXED_PIPS" | "RISK_REWARD" | "ATR_BASED";
 
 export interface TakeProfitNodeData extends BaseNodeData {
-  category: "trading";
+  category: "riskmanagement" | "trading";
   tradingType: "take-profit";
   method: TakeProfitMethod;
   fixedPips: number;
@@ -279,13 +291,13 @@ export interface TakeProfitNodeData extends BaseNodeData {
 export type CloseDirection = "BUY" | "SELL" | "BOTH";
 
 export interface CloseConditionNodeData extends BaseNodeData {
-  category: "trading";
+  category: "riskmanagement" | "trading";
   tradingType: "close-condition";
   closeDirection: CloseDirection;
 }
 
 export interface TimeExitNodeData extends BaseNodeData {
-  category: "trading";
+  category: "riskmanagement" | "trading";
   tradingType: "time-exit";
   exitAfterBars: number;
   exitTimeframe: Timeframe;
@@ -294,6 +306,7 @@ export interface TimeExitNodeData extends BaseNodeData {
 export type TradingNodeData =
   | PlaceBuyNodeData
   | PlaceSellNodeData
+  | PositionSizeNodeData
   | StopLossNodeData
   | TakeProfitNodeData
   | CloseConditionNodeData
@@ -381,6 +394,7 @@ export type BuilderNodeType =
   | "range-breakout"
   | "place-buy"
   | "place-sell"
+  | "position-size"
   | "stop-loss"
   | "take-profit"
   | "close-condition"
@@ -695,15 +709,15 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       maxRangePips: 0,
     } as RangeBreakoutNodeData,
   },
-  // Trading
+  // Entry
   {
     type: "place-buy",
     label: "Place Buy",
-    category: "trading",
+    category: "entry",
     description: "Open a buy position",
     defaultData: {
       label: "Place Buy",
-      category: "trading",
+      category: "entry",
       tradingType: "place-buy",
       method: "RISK_PERCENT",
       fixedLot: 0.1,
@@ -715,11 +729,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   {
     type: "place-sell",
     label: "Place Sell",
-    category: "trading",
+    category: "entry",
     description: "Open a sell position",
     defaultData: {
       label: "Place Sell",
-      category: "trading",
+      category: "entry",
       tradingType: "place-sell",
       method: "RISK_PERCENT",
       fixedLot: 0.1,
@@ -728,14 +742,31 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       maxLot: 10,
     } as PlaceSellNodeData,
   },
+  // Risk Management
+  {
+    type: "position-size",
+    label: "Position Size",
+    category: "riskmanagement",
+    description: "Configure lot sizing method",
+    defaultData: {
+      label: "Position Size",
+      category: "riskmanagement",
+      tradingType: "position-size",
+      method: "RISK_PERCENT",
+      fixedLot: 0.1,
+      riskPercent: 2,
+      minLot: 0.01,
+      maxLot: 10,
+    } as PositionSizeNodeData,
+  },
   {
     type: "stop-loss",
     label: "Stoploss",
-    category: "trading",
+    category: "riskmanagement",
     description: "Stop loss placement",
     defaultData: {
       label: "Stoploss",
-      category: "trading",
+      category: "riskmanagement",
       tradingType: "stop-loss",
       method: "FIXED_PIPS",
       fixedPips: 50,
@@ -746,11 +777,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   {
     type: "take-profit",
     label: "Take Profit",
-    category: "trading",
+    category: "riskmanagement",
     description: "Take profit placement",
     defaultData: {
       label: "Take Profit",
-      category: "trading",
+      category: "riskmanagement",
       tradingType: "take-profit",
       method: "FIXED_PIPS",
       fixedPips: 100,
@@ -761,12 +792,12 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: "close-condition",
-    label: "Exit Signal",
-    category: "trading",
-    description: "Close positions when conditions reverse",
+    label: "Exit Conditions",
+    category: "riskmanagement",
+    description: "Additional exit rules beyond SL/TP",
     defaultData: {
-      label: "Exit Signal",
-      category: "trading",
+      label: "Exit Conditions",
+      category: "riskmanagement",
       tradingType: "close-condition",
       closeDirection: "BOTH",
     } as CloseConditionNodeData,
@@ -774,11 +805,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   {
     type: "time-exit",
     label: "Time Exit",
-    category: "trading",
-    description: "Close after N bars",
+    category: "riskmanagement",
+    description: "Additional: close after N bars",
     defaultData: {
       label: "Time Exit",
-      category: "trading",
+      category: "riskmanagement",
       tradingType: "time-exit",
       exitAfterBars: 10,
       exitTimeframe: "H1",
@@ -870,8 +901,11 @@ export function getCategoryColor(category: NodeCategory): string {
       return "blue";
     case "priceaction":
       return "yellow";
+    case "entry":
     case "trading":
       return "green";
+    case "riskmanagement":
+      return "rose";
     case "trademanagement":
       return "purple";
     default:
@@ -887,8 +921,12 @@ export function getCategoryLabel(category: NodeCategory): string {
       return "Indicators";
     case "priceaction":
       return "Price Action";
+    case "entry":
+      return "Entry";
     case "trading":
       return "Trade Execution";
+    case "riskmanagement":
+      return "Risk Management";
     case "trademanagement":
       return "Trade Management";
     default:

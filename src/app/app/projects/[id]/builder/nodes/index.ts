@@ -16,6 +16,7 @@ import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
 import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
+import { PositionSizeNode } from "./position-size-node";
 import { StopLossNode } from "./stop-loss-node";
 import { TakeProfitNode } from "./take-profit-node";
 import { CloseConditionNode } from "./close-condition-node";
@@ -45,6 +46,7 @@ export const nodeTypes: NodeTypes = {
   "range-breakout": RangeBreakoutNode,
   "place-buy": PlaceBuyNode,
   "place-sell": PlaceSellNode,
+  "position-size": PositionSizeNode,
   "stop-loss": StopLossNode,
   "take-profit": TakeProfitNode,
   "close-condition": CloseConditionNode,
@@ -73,6 +75,7 @@ export {
   RangeBreakoutNode,
   PlaceBuyNode,
   PlaceSellNode,
+  PositionSizeNode,
   StopLossNode,
   TakeProfitNode,
   CloseConditionNode,

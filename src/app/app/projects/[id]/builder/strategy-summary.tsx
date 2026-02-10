@@ -110,24 +110,22 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     lines.push("Go short (sell only)");
   }
 
-  // Position sizing
-  for (const n of nodes) {
-    const d = n.data;
-    if (n.type !== "place-buy" && n.type !== "place-sell") continue;
-    if (!("lotMode" in d)) continue;
-
-    switch (d.lotMode) {
-      case "FIXED":
-        if ("fixedLots" in d) lines.push(`Risk ${d.fixedLots} lots per trade`);
-        break;
-      case "RISK_PERCENT":
-        if ("riskPercent" in d) lines.push(`Risk ${d.riskPercent}% of balance per trade`);
-        break;
-      case "BALANCE_PERCENT":
-        if ("balancePercent" in d) lines.push(`Use ${d.balancePercent}% of balance per trade`);
-        break;
+  // Position sizing - prefer position-size node, fall back to buy/sell data
+  const posNode = nodes.find((n) => n.type === "position-size");
+  const sizingSource =
+    posNode ?? nodes.find((n) => n.type === "place-buy" || n.type === "place-sell");
+  if (sizingSource) {
+    const d = sizingSource.data;
+    if ("method" in d) {
+      switch (d.method) {
+        case "FIXED_LOT":
+          if ("fixedLot" in d) lines.push(`Risk ${d.fixedLot} lots per trade`);
+          break;
+        case "RISK_PERCENT":
+          if ("riskPercent" in d) lines.push(`Risk ${d.riskPercent}% of balance per trade`);
+          break;
+      }
     }
-    break; // Only show once
   }
 
   // Stop loss

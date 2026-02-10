@@ -37,11 +37,23 @@ const categoryStyles: Record<
     header: "bg-gradient-to-r from-[#D97706] to-[#F59E0B]",
     glow: "shadow-[0_0_16px_rgba(245,158,11,0.25)]",
   },
+  entry: {
+    bg: "bg-[rgba(16,185,129,0.08)]",
+    border: "border-[rgba(16,185,129,0.3)]",
+    header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
+    glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
+  },
   trading: {
     bg: "bg-[rgba(16,185,129,0.08)]",
     border: "border-[rgba(16,185,129,0.3)]",
     header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
     glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
+  },
+  riskmanagement: {
+    bg: "bg-[rgba(225,29,72,0.08)]",
+    border: "border-[rgba(225,29,72,0.3)]",
+    header: "bg-gradient-to-r from-[#BE123C] to-[#E11D48]",
+    glow: "shadow-[0_0_16px_rgba(225,29,72,0.25)]",
   },
   trademanagement: {
     bg: "bg-[rgba(168,85,247,0.08)]",

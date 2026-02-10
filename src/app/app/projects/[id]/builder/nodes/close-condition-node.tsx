@@ -17,7 +17,7 @@ export function CloseConditionNode({ id, data, selected }: Props) {
     <BaseNode
       id={id}
       selected={selected}
-      category="trading"
+      category={data.category === "trading" ? "trading" : "riskmanagement"}
       label={data.label}
       icon={NodeIcons.exit}
       inputHandles={1}

@@ -76,7 +76,9 @@ const nodeCategorySchema = z.enum([
   "timing",
   "indicator",
   "priceaction",
+  "entry",
   "trading",
+  "riskmanagement",
   "trademanagement",
 ]);
 
@@ -303,7 +305,7 @@ const positionSizingFieldsSchema = z.object({
 const placeBuyNodeDataSchema = baseNodeDataSchema
   .merge(positionSizingFieldsSchema)
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["entry", "trading"]),
     tradingType: z.literal("place-buy"),
   })
   .strip();
@@ -311,14 +313,22 @@ const placeBuyNodeDataSchema = baseNodeDataSchema
 const placeSellNodeDataSchema = baseNodeDataSchema
   .merge(positionSizingFieldsSchema)
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["entry", "trading"]),
     tradingType: z.literal("place-sell"),
+  })
+  .strip();
+
+const positionSizeNodeDataSchema = baseNodeDataSchema
+  .merge(positionSizingFieldsSchema)
+  .extend({
+    category: z.enum(["riskmanagement", "trading"]),
+    tradingType: z.literal("position-size"),
   })
   .strip();
 
 const stopLossNodeDataSchema = baseNodeDataSchema
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["riskmanagement", "trading"]),
     tradingType: z.literal("stop-loss"),
     method: z.enum(["FIXED_PIPS", "ATR_BASED", "INDICATOR"]),
     fixedPips: z.number().min(1).max(10000),
@@ -330,7 +340,7 @@ const stopLossNodeDataSchema = baseNodeDataSchema
 
 const takeProfitNodeDataSchema = baseNodeDataSchema
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["riskmanagement", "trading"]),
     tradingType: z.literal("take-profit"),
     method: z.enum(["FIXED_PIPS", "RISK_REWARD", "ATR_BASED"]),
     fixedPips: z.number().min(1).max(10000),
@@ -342,7 +352,7 @@ const takeProfitNodeDataSchema = baseNodeDataSchema
 
 const closeConditionNodeDataSchema = baseNodeDataSchema
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["riskmanagement", "trading"]),
     tradingType: z.literal("close-condition"),
     closeDirection: z.enum(["BUY", "SELL", "BOTH"]),
   })
@@ -350,7 +360,7 @@ const closeConditionNodeDataSchema = baseNodeDataSchema
 
 const timeExitNodeDataSchema = baseNodeDataSchema
   .extend({
-    category: z.literal("trading"),
+    category: z.enum(["riskmanagement", "trading"]),
     tradingType: z.literal("time-exit"),
     exitAfterBars: z.number().int().min(1).max(10000),
     exitTimeframe: timeframeSchema,

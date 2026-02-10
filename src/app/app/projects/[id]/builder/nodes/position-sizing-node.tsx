@@ -25,10 +25,16 @@ export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
     <BaseNode
       id={id}
       selected={selected}
-      category="trading"
+      category={data.category === "trading" ? "trading" : "entry"}
       label={data.label}
       icon={
-        <svg className="w-4 h-4 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4 text-green-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M7 17l5-5 5 5M7 7l5 5 5-5" />
         </svg>
       }
@@ -46,7 +52,9 @@ export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Range:</span>
-          <span className="font-medium">{data.minLot} - {data.maxLot}</span>
+          <span className="font-medium">
+            {data.minLot} - {data.maxLot}
+          </span>
         </div>
       </div>
     </BaseNode>
@@ -69,10 +77,16 @@ export function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
     <BaseNode
       id={id}
       selected={selected}
-      category="trading"
+      category={data.category === "trading" ? "trading" : "entry"}
       label={data.label}
       icon={
-        <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4 text-red-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M7 7l5 5 5-5M7 17l5-5 5 5" />
         </svg>
       }
@@ -90,7 +104,9 @@ export function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Range:</span>
-          <span className="font-medium">{data.minLot} - {data.maxLot}</span>
+          <span className="font-medium">
+            {data.minLot} - {data.maxLot}
+          </span>
         </div>
       </div>
     </BaseNode>

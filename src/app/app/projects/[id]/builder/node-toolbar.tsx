@@ -32,7 +32,8 @@ export function NodeToolbar({
     "timing",
     "indicator",
     "priceaction",
-    "trading",
+    "entry",
+    "riskmanagement",
     "trademanagement",
   ];
 
@@ -76,11 +77,23 @@ export function NodeToolbar({
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)]",
       border: "border-[#FBBF24]/30",
     },
+    entry: {
+      gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
+      shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
+      border: "border-[#69F0AE]/30",
+    },
     trading: {
       gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
       shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
       border: "border-[#69F0AE]/30",
+    },
+    riskmanagement: {
+      gradient: "bg-gradient-to-r from-[#E11D48] to-[#FB7185]",
+      shadow: "shadow-[0_2px_8px_rgba(225,29,72,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(225,29,72,0.4)]",
+      border: "border-[#FB7185]/30",
     },
     trademanagement: {
       gradient: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
@@ -94,7 +107,9 @@ export function NodeToolbar({
     timing: "text-[#FF6B00]",
     indicator: "text-[#00B8D9]",
     priceaction: "text-[#F59E0B]",
+    entry: "text-[#00C853]",
     trading: "text-[#00C853]",
+    riskmanagement: "text-[#FB7185]",
     trademanagement: "text-[#A855F7]",
   };
 
