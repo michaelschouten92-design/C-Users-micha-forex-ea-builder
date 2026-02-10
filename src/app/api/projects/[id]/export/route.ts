@@ -11,6 +11,7 @@ import {
   checkContentType,
 } from "@/lib/validations";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { migrateProjectData } from "@/lib/migrations";
 import {
   exportRateLimiter,
   checkRateLimit,
@@ -141,8 +142,11 @@ export async function POST(request: NextRequest, { params }: Props) {
 
     const version = project.versions[0];
 
+    // Migrate data to current schema version before validation
+    const migratedBuildJson = migrateProjectData(version.buildJson);
+
     // Validate buildJson from database
-    const buildJsonValidation = buildJsonSchema.safeParse(version.buildJson);
+    const buildJsonValidation = buildJsonSchema.safeParse(migratedBuildJson);
     if (!buildJsonValidation.success) {
       return NextResponse.json(
         {

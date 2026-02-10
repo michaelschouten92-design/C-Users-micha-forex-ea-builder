@@ -261,6 +261,7 @@ export type PriceActionNodeData =
 
 // Trading Nodes
 export type PositionSizingMethod = "FIXED_LOT" | "RISK_PERCENT";
+export type OrderType = "MARKET" | "STOP" | "LIMIT";
 
 // Base interface for position sizing fields (shared by PlaceBuy and PlaceSell)
 interface PositionSizingFields {
@@ -269,6 +270,8 @@ interface PositionSizingFields {
   riskPercent: number;
   minLot: number;
   maxLot: number;
+  orderType?: OrderType;
+  pendingOffset?: number;
 }
 
 export interface PlaceBuyNodeData extends BaseNodeData, PositionSizingFields {

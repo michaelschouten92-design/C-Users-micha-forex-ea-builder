@@ -559,15 +559,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   const hasStopLoss = stopLossNodes.length > 0;
   const hasTakeProfit = takeProfitNodes.length > 0;
 
-  // Generate position sizing code for buy/sell (only if connected)
-  if (hasBuy) {
-    generatePlaceBuyCode(placeBuyNodes[0], code);
-  }
-  if (hasSell) {
-    generatePlaceSellCode(placeSellNodes[0], code);
-  }
-
-  // Generate SL/TP code (only if connected, otherwise use 0)
+  // Generate SL/TP code FIRST (so hasDirectionalSL is set before lot sizing)
   if (hasStopLoss) {
     generateStopLossCode(
       stopLossNodes[0],
@@ -588,8 +580,25 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     code.onTick.push("double tpPips = 0; // No Take Profit connected");
   }
 
+  // Generate position sizing code for buy/sell (after SL/TP so hasDirectionalSL is available)
+  if (hasBuy) {
+    generatePlaceBuyCode(placeBuyNodes[0], code);
+  }
+  if (hasSell) {
+    generatePlaceSellCode(placeSellNodes[0], code);
+  }
+
   // Generate entry logic based on connected indicators, price action nodes, and buy/sell nodes
-  generateEntryLogic(indicatorNodes, priceActionNodes, hasBuy, hasSell, ctx, code);
+  generateEntryLogic(
+    indicatorNodes,
+    priceActionNodes,
+    hasBuy,
+    hasSell,
+    ctx,
+    code,
+    hasBuy ? placeBuyNodes[0] : undefined,
+    hasSell ? placeSellNodes[0] : undefined
+  );
 
   // Generate close condition code
   closeConditionNodes.forEach((ccNode) => {

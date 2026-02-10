@@ -6,6 +6,7 @@ import { ProjectSettings } from "./project-settings";
 import { LazyStrategyBuilder } from "./builder/lazy-strategy-builder";
 import { getUserPlanLimits } from "@/lib/plan-limits";
 import type { BuildJsonSchema } from "@/types/builder";
+import { migrateProjectData } from "@/lib/migrations";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -45,7 +46,7 @@ export default async function ProjectPage({ params }: Props) {
     ? {
         id: project.versions[0].id,
         versionNo: project.versions[0].versionNo,
-        buildJson: project.versions[0].buildJson as unknown as BuildJsonSchema,
+        buildJson: migrateProjectData(project.versions[0].buildJson),
       }
     : null;
 

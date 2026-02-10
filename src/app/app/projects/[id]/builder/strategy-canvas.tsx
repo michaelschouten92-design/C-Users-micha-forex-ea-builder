@@ -15,7 +15,7 @@ import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "./nodes";
 import { NodeToolbar } from "./node-toolbar";
-import { PropertiesPanel } from "./properties-panel";
+import { PropertiesPanel } from "./properties";
 import { VersionControls } from "./version-controls";
 import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";

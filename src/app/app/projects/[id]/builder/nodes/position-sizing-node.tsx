@@ -9,6 +9,12 @@ const methodLabels = {
   RISK_PERCENT: "Risk %",
 };
 
+const orderTypeLabels: Record<string, string> = {
+  MARKET: "Market",
+  STOP: "Stop",
+  LIMIT: "Limit",
+};
+
 type PlaceBuyProps = NodeProps & { data: PlaceBuyNodeData };
 
 export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
@@ -42,6 +48,12 @@ export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
       outputHandles={1}
     >
       <div className="space-y-1">
+        {data.orderType && data.orderType !== "MARKET" && (
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Order:</span>
+            <span className="font-medium text-amber-400">Buy{orderTypeLabels[data.orderType]}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-zinc-500">Method:</span>
           <span className="font-medium">{methodLabels[data.method]}</span>
@@ -94,6 +106,14 @@ export function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
       outputHandles={1}
     >
       <div className="space-y-1">
+        {data.orderType && data.orderType !== "MARKET" && (
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Order:</span>
+            <span className="font-medium text-amber-400">
+              Sell{orderTypeLabels[data.orderType]}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-zinc-500">Method:</span>
           <span className="font-medium">{methodLabels[data.method]}</span>

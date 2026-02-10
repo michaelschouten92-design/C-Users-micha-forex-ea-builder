@@ -1991,6 +1991,238 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // Sell lot sizing with directional SL
+  // ============================================
+
+  describe("sell lot sizing with directional SL", () => {
+    it("uses slSellPips for sell lot sizing with directional SL (RANGE_OPPOSITE)", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          rangePeriod: 20,
+          breakoutMode: "CLOSE",
+          rangeTimeframe: "H1",
+          rangeMethod: "CANDLES",
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "RANGE_OPPOSITE",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Sell lot sizing should use slSellPips (not slPips)
+      expect(code).toContain("CalculateLotSize(InpSellRiskPercent, slSellPips)");
+      expect(code).not.toMatch(/sellLotSize = CalculateLotSize\(InpSellRiskPercent, slPips\)/);
+    });
+
+    it("uses slPips for sell lot sizing without directional SL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Without directional SL, sell should use regular slPips
+      expect(code).toContain("CalculateLotSize(InpSellRiskPercent, slPips)");
+      expect(code).not.toContain("slSellPips");
+    });
+  });
+
+  // ============================================
+  // FEATURE: Pending Orders
+  // ============================================
+
+  describe("pending orders", () => {
+    it("generates BuyStop code when orderType is STOP", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+          orderType: "STOP",
+          pendingOffset: 15,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PlaceBuyStop(buyLotSize, slPips, tpPips, InpBuyPendingOffset)");
+      expect(code).toContain("InpBuyPendingOffset");
+      expect(code).toContain("bool PlaceBuyStop");
+      expect(code).toContain("trade.BuyStop");
+      expect(code).toContain("DeletePendingOrders");
+      expect(code).not.toContain("OpenBuy(buyLotSize");
+    });
+
+    it("generates SellLimit code when orderType is LIMIT", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+          orderType: "LIMIT",
+          pendingOffset: 20,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PlaceSellLimit(sellLotSize, slPips, tpPips, InpSellPendingOffset)");
+      expect(code).toContain("InpSellPendingOffset");
+      expect(code).toContain("bool PlaceSellLimit");
+      expect(code).toContain("trade.SellLimit");
+      expect(code).toContain("DeletePendingOrders");
+      expect(code).not.toContain("OpenSell(sellLotSize");
+    });
+
+    it("uses OpenBuy/OpenSell for MARKET orderType (default)", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+          orderType: "MARKET",
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const edges = [
+        { id: "e1", source: "t1", target: "b1" },
+        { id: "e2", source: "t1", target: "s1" },
+      ];
+      build.edges = edges;
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("OpenBuy(buyLotSize");
+      expect(code).toContain("OpenSell(sellLotSize");
+      expect(code).not.toContain("PlaceBuyStop");
+      expect(code).not.toContain("PlaceSellLimit");
+      expect(code).not.toContain("DeletePendingOrders");
+    });
+
+    it("generates both buy stop and sell stop when both use pending orders", () => {
+      const build = makeBuild(
+        [
+          makeNode("t1", "always", { category: "timing", timingType: "always" }),
+          makeNode("b1", "place-buy", {
+            category: "trading",
+            tradingType: "place-buy",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+            orderType: "STOP",
+            pendingOffset: 10,
+          }),
+          makeNode("s1", "place-sell", {
+            category: "trading",
+            tradingType: "place-sell",
+            method: "FIXED_LOT",
+            fixedLot: 0.1,
+            riskPercent: 2,
+            minLot: 0.01,
+            maxLot: 10,
+            orderType: "STOP",
+            pendingOffset: 10,
+          }),
+        ],
+        [
+          { id: "e1", source: "t1", target: "b1" },
+          { id: "e2", source: "t1", target: "s1" },
+        ]
+      );
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PlaceBuyStop");
+      expect(code).toContain("PlaceSellStop");
+      expect(code).toContain("InpBuyPendingOffset");
+      expect(code).toContain("InpSellPendingOffset");
+      expect(code).toContain("DeletePendingOrders");
+    });
+  });
+
+  // ============================================
   // FEATURE: Task 7 — Strategy presets validation
   // ============================================
 

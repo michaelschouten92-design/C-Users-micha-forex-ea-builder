@@ -10,12 +10,28 @@ import type {
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe } from "../types";
-import { createInput } from "./shared";
+import { createInput, sanitizeMQL5String } from "./shared";
 
 export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data as PlaceBuyNodeData;
 
   const group = "Buy Order";
+  const orderType = data.orderType ?? "MARKET";
+
+  if (orderType !== "MARKET") {
+    code.inputs.push(
+      createInput(
+        node,
+        "pendingOffset",
+        "InpBuyPendingOffset",
+        "double",
+        data.pendingOffset ?? 10,
+        "Buy Pending Offset (pips)",
+        group
+      )
+    );
+  }
+
   switch (data.method) {
     case "FIXED_LOT":
       code.inputs.push(
@@ -61,6 +77,22 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
   const data = node.data as PlaceSellNodeData;
 
   const group = "Sell Order";
+  const orderType = data.orderType ?? "MARKET";
+
+  if (orderType !== "MARKET") {
+    code.inputs.push(
+      createInput(
+        node,
+        "pendingOffset",
+        "InpSellPendingOffset",
+        "double",
+        data.pendingOffset ?? 10,
+        "Sell Pending Offset (pips)",
+        group
+      )
+    );
+  }
+
   switch (data.method) {
     case "FIXED_LOT":
       code.inputs.push(
@@ -89,7 +121,11 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
           group
         )
       );
-      code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
+      if (code.hasDirectionalSL) {
+        code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slSellPips);");
+      } else {
+        code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
+      }
       break;
   }
 
@@ -436,7 +472,9 @@ export function generateEntryLogic(
   hasBuyNode: boolean,
   hasSellNode: boolean,
   ctx: GeneratorContext,
-  code: GeneratedCode
+  code: GeneratedCode,
+  buyNode?: BuilderNode,
+  sellNode?: BuilderNode
 ): void {
   code.onTick.push("");
   code.onTick.push("//--- Entry Logic");
@@ -609,6 +647,21 @@ export function generateEntryLogic(
   // Anti-hedging condition: prevent opening opposite positions when hedging is disabled
   const noHedge = !ctx.allowHedging;
 
+  // Determine order types from node data
+  const buyOrderType = buyNode
+    ? ((buyNode.data as PlaceBuyNodeData).orderType ?? "MARKET")
+    : "MARKET";
+  const sellOrderType = sellNode
+    ? ((sellNode.data as PlaceSellNodeData).orderType ?? "MARKET")
+    : "MARKET";
+  const hasPendingOrders =
+    (hasBuyNode && buyOrderType !== "MARKET") || (hasSellNode && sellOrderType !== "MARKET");
+
+  // Delete stale pending orders before placing new ones
+  if (hasPendingOrders) {
+    code.onTick.push("   DeletePendingOrders();");
+  }
+
   // Only generate buy logic if there's a Place Buy node
   if (hasBuyNode) {
     const buyCheck = noHedge
@@ -616,14 +669,28 @@ export function generateEntryLogic(
       : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
     code.onTick.push(buyCheck);
     code.onTick.push("   {");
-    if (hasDaily) {
-      code.onTick.push(
-        "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
-      );
+
+    if (buyOrderType === "MARKET") {
+      if (hasDaily) {
+        code.onTick.push(
+          "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+        );
+      } else {
+        code.onTick.push(
+          "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+        );
+      }
     } else {
-      code.onTick.push(
-        "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
-      );
+      const fn = buyOrderType === "STOP" ? "PlaceBuyStop" : "PlaceBuyLimit";
+      if (hasDaily) {
+        code.onTick.push(
+          `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+        );
+      } else {
+        code.onTick.push(
+          `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) lastEntryBar = currentBarTime;`
+        );
+      }
     }
     code.onTick.push("   }");
   }
@@ -640,19 +707,133 @@ export function generateEntryLogic(
     const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
     // Only override TP if it's risk-reward based; otherwise use the same tpPips
     const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
-    if (hasDaily) {
-      code.onTick.push(
-        `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
-      );
+
+    if (sellOrderType === "MARKET") {
+      if (hasDaily) {
+        code.onTick.push(
+          `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
+        );
+      } else {
+        code.onTick.push(
+          `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
+        );
+      }
     } else {
-      code.onTick.push(
-        `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
-      );
+      const fn = sellOrderType === "STOP" ? "PlaceSellStop" : "PlaceSellLimit";
+      if (hasDaily) {
+        code.onTick.push(
+          `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+        );
+      } else {
+        code.onTick.push(
+          `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) lastEntryBar = currentBarTime;`
+        );
+      }
     }
     code.onTick.push("   }");
   }
 
   code.onTick.push("}");
+
+  // Add pending order helper functions if needed
+  if (hasPendingOrders) {
+    addPendingOrderHelpers(code, ctx);
+  }
+}
+
+function addPendingOrderHelpers(code: GeneratedCode, ctx: GeneratorContext): void {
+  const comment = sanitizeMQL5String(ctx.comment);
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Delete Pending Orders for this EA                                  |
+//+------------------------------------------------------------------+
+void DeletePendingOrders()
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = OrderGetTicket(i);
+      if(ticket > 0)
+      {
+         if(OrderGetInteger(ORDER_MAGIC) == InpMagicNumber &&
+            OrderGetString(ORDER_SYMBOL) == _Symbol)
+         {
+            trade.OrderDelete(ticket);
+         }
+      }
+   }
+}`);
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Place Buy Stop Order                                               |
+//+------------------------------------------------------------------+
+bool PlaceBuyStop(double lots, double sl, double tp, double offsetPips)
+{
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double offset = offsetPips * 10 * _Point;
+   double entryPrice = NormalizeDouble(ask + offset, _Digits);
+   double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
+   double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
+
+   if(trade.BuyStop(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+      return true;
+
+   Print("BuyStop failed: ", trade.ResultRetcodeDescription());
+   return false;
+}`);
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Place Buy Limit Order                                              |
+//+------------------------------------------------------------------+
+bool PlaceBuyLimit(double lots, double sl, double tp, double offsetPips)
+{
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double offset = offsetPips * 10 * _Point;
+   double entryPrice = NormalizeDouble(ask - offset, _Digits);
+   double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
+   double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
+
+   if(trade.BuyLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+      return true;
+
+   Print("BuyLimit failed: ", trade.ResultRetcodeDescription());
+   return false;
+}`);
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Place Sell Stop Order                                              |
+//+------------------------------------------------------------------+
+bool PlaceSellStop(double lots, double sl, double tp, double offsetPips)
+{
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double offset = offsetPips * 10 * _Point;
+   double entryPrice = NormalizeDouble(bid - offset, _Digits);
+   double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
+   double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
+
+   if(trade.SellStop(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+      return true;
+
+   Print("SellStop failed: ", trade.ResultRetcodeDescription());
+   return false;
+}`);
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Place Sell Limit Order                                             |
+//+------------------------------------------------------------------+
+bool PlaceSellLimit(double lots, double sl, double tp, double offsetPips)
+{
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double offset = offsetPips * 10 * _Point;
+   double entryPrice = NormalizeDouble(bid + offset, _Digits);
+   double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
+   double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
+
+   if(trade.SellLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+      return true;
+
+   Print("SellLimit failed: ", trade.ResultRetcodeDescription());
+   return false;
+}`);
 }
 
 export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): void {

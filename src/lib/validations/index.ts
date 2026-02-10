@@ -313,6 +313,8 @@ const positionSizingFieldsSchema = z.object({
   riskPercent: z.number().min(0.1).max(100),
   minLot: z.number().min(0.01).max(1000),
   maxLot: z.number().min(0.01).max(1000),
+  orderType: z.enum(["MARKET", "STOP", "LIMIT"]).default("MARKET"),
+  pendingOffset: z.number().min(0).max(10000).default(10),
 });
 
 const placeBuyNodeDataSchema = baseNodeDataSchema
