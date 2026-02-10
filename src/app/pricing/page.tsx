@@ -60,7 +60,7 @@ export default function PricingPage() {
             Choose the plan that matches your trading ambition
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            Build, test and deploy automated MT5 strategies — without writing code.
+            Instantly build, export and automate MT5 trading systems — no coding required.
           </p>
         </div>
 
@@ -76,9 +76,12 @@ export default function PricingPage() {
               <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
               <span className="text-[#94A3B8] ml-2">/ forever</span>
             </div>
-            <p className="mt-4 text-[#94A3B8] text-sm leading-relaxed">
-              Build your first automated strategy. Perfect if you want to explore algorithmic
-              trading and test the builder.
+            <p className="mt-3 text-white font-medium text-sm">
+              Build and export your first MT5 strategy
+            </p>
+            <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
+              Try the full builder experience — design, configure, and export a working Expert
+              Advisor for free.
             </p>
 
             <ul className="mt-6 space-y-3 flex-1">
@@ -86,8 +89,8 @@ export default function PricingPage() {
                 "Full visual strategy builder",
                 "All trading blocks available",
                 "1 active project",
-                "1 export per month",
-                "MQL5 source code export",
+                "1 MQL5 export per month",
+                "Complete source code included",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                   <svg
@@ -121,9 +124,9 @@ export default function PricingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-8 relative flex flex-col">
+          <div className="bg-gradient-to-b from-[#1A0626] to-[#1A0626]/80 border-2 border-[#4F46E5] rounded-xl p-8 relative flex flex-col shadow-[0_0_30px_rgba(79,70,229,0.15)]">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
+              <span className="bg-[#4F46E5] text-white text-xs font-medium px-4 py-1 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.4)]">
                 Most Popular
               </span>
             </div>
@@ -143,12 +146,12 @@ export default function PricingPage() {
                     / {interval === "monthly" ? "month" : "year"}
                   </span>
                   {interval === "yearly" && (
-                    <div className="mt-1">
+                    <div className="mt-2 inline-flex items-center gap-2 bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] rounded-full px-3 py-1">
                       <span className="text-sm text-[#64748B] line-through">
                         {formatPrice(monthlyTotal, "eur")}
                       </span>
-                      <span className="text-sm text-[#22D3EE] ml-2 font-medium">
-                        Save {formatPrice(yearlySavings, "eur")} — 2 months free
+                      <span className="text-sm text-[#22D3EE] font-semibold">
+                        Save {formatPrice(yearlySavings, "eur")}/year
                       </span>
                     </div>
                   )}
@@ -157,9 +160,12 @@ export default function PricingPage() {
                 <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
               )}
             </div>
-            <p className="mt-4 text-[#94A3B8] text-sm leading-relaxed">
-              For serious traders who want to scale. Unlock the full power of AlgoStudio and build
-              as many automated systems as you want.
+            <p className="mt-3 text-white font-medium text-sm">
+              Build and export unlimited MT5 strategies
+            </p>
+            <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
+              Full source code export, all pro trading blocks, community access, and priority
+              support.
             </p>
 
             {/* Interval Toggle */}
@@ -184,18 +190,18 @@ export default function PricingPage() {
               >
                 Yearly
                 <span className="ml-1.5 text-[10px] font-bold text-[#0F172A] bg-[#22D3EE] px-1.5 py-0.5 rounded-full">
-                  -2 mo
+                  Save {formatPrice(yearlySavings, "eur")}
                 </span>
               </button>
             </div>
 
             <ul className="mt-6 space-y-3 flex-1">
               {[
-                "Unlimited projects",
-                "Unlimited exports",
+                "Unlimited projects — build as many EAs as you want",
+                "Unlimited exports — no monthly caps",
                 "Full MQL5 source code export",
                 "All trading & risk management blocks",
-                "Community access (private trader group)",
+                "Private trader community access",
                 "Priority support",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -224,7 +230,7 @@ export default function PricingPage() {
             <button
               onClick={handleSubscribe}
               disabled={loading || !proPrice}
-              className="mt-4 w-full py-3 px-4 rounded-lg font-medium bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+              className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
             >
               {loading ? "Loading..." : "Upgrade to Pro"}
             </button>
