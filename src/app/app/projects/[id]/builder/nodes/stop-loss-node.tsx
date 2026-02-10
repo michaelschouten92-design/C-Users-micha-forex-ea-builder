@@ -6,10 +6,11 @@ import { BaseNode, NodeIcons } from "./base-node";
 
 type Props = NodeProps & { data: StopLossNodeData };
 
-const methodLabels = {
+const methodLabels: Record<string, string> = {
   FIXED_PIPS: "Fixed Pips",
   ATR_BASED: "ATR-Based",
   INDICATOR: "Indicator",
+  RANGE_OPPOSITE: "Range Opposite",
 };
 
 export function StopLossNode({ id, data, selected }: Props) {

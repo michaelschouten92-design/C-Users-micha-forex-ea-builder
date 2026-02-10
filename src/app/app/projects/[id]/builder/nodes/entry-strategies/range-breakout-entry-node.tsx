@@ -12,6 +12,13 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
   data,
   selected,
 }: Props) {
+  const rangeLabel =
+    data.rangeMethod === "CUSTOM_TIME"
+      ? `${String(data.customStartHour).padStart(2, "0")}:${String(data.customStartMinute).padStart(2, "0")} - ${String(data.customEndHour).padStart(2, "0")}:${String(data.customEndMinute).padStart(2, "0")}`
+      : `${data.rangePeriod} candles (${data.rangeTimeframe ?? "H1"})`;
+
+  const slLabel = data.slMethod === "RANGE_OPPOSITE" ? "Range SL" : `${data.slAtrMultiplier}× ATR`;
+
   return (
     <BaseNode
       id={id}
@@ -23,7 +30,7 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">Range</span>
-          <span className="text-white font-medium">{data.rangePeriod} candles</span>
+          <span className="text-white font-medium">{rangeLabel}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">Risk</span>
@@ -32,21 +39,14 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">SL / TP</span>
           <span className="text-white font-medium">
-            {data.slAtrMultiplier}× ATR / {data.tpRMultiple}R
+            {slLabel} / {data.tpRMultiple}R
           </span>
         </div>
-        {(data.londonSessionOnly || data.htfTrendFilter) && (
+        {data.htfTrendFilter && (
           <div className="flex gap-1 mt-1 flex-wrap">
-            {data.londonSessionOnly && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                London
-              </span>
-            )}
-            {data.htfTrendFilter && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                HTF
-              </span>
-            )}
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+              HTF
+            </span>
           </div>
         )}
       </div>

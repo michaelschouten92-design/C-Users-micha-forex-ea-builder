@@ -2187,10 +2187,12 @@ function EntryStrategyRiskSection({
   data,
   onChange,
   showTpInBasic = true,
+  showSlAtr = true,
 }: {
   data: { riskPercent: number; slAtrMultiplier: number; tpRMultiple: number };
   onChange: (updates: Record<string, unknown>) => void;
   showTpInBasic?: boolean;
+  showSlAtr?: boolean;
 }) {
   return (
     <>
@@ -2203,15 +2205,17 @@ function EntryStrategyRiskSection({
         onChange={(v) => onChange({ riskPercent: v })}
         tooltip="Percentage of account balance risked per trade"
       />
-      <NumberField
-        label="Stop Loss (ATR ×)"
-        value={data.slAtrMultiplier}
-        min={0.1}
-        max={10}
-        step={0.1}
-        onChange={(v) => onChange({ slAtrMultiplier: v })}
-        tooltip="SL distance = ATR(14) × this multiplier"
-      />
+      {showSlAtr && (
+        <NumberField
+          label="Stop Loss (ATR ×)"
+          value={data.slAtrMultiplier}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ slAtrMultiplier: v })}
+          tooltip="SL distance = ATR(14) × this multiplier"
+        />
+      )}
       {showTpInBasic && (
         <NumberField
           label="Take Profit (R multiple)"
@@ -2363,6 +2367,16 @@ function EMACrossoverEntryFields({
   );
 }
 
+const RANGE_METHOD_OPTIONS: { value: "CANDLES" | "CUSTOM_TIME"; label: string }[] = [
+  { value: "CANDLES", label: "Candles" },
+  { value: "CUSTOM_TIME", label: "Custom Time" },
+];
+
+const SL_METHOD_OPTIONS: { value: "ATR" | "RANGE_OPPOSITE"; label: string }[] = [
+  { value: "ATR", label: "ATR Based" },
+  { value: "RANGE_OPPOSITE", label: "Range Opposite" },
+];
+
 function RangeBreakoutEntryFields({
   data,
   onChange,
@@ -2370,26 +2384,88 @@ function RangeBreakoutEntryFields({
   data: RangeBreakoutEntryData;
   onChange: (updates: Partial<RangeBreakoutEntryData>) => void;
 }) {
+  const rangeMethod = data.rangeMethod ?? "CANDLES";
+  const slMethod = data.slMethod ?? "ATR";
+
   return (
     <>
-      {/* Basic fields */}
-      <NumberField
-        label="Range period (candles)"
-        value={data.rangePeriod}
-        min={2}
-        max={500}
-        onChange={(v) => onChange({ rangePeriod: v })}
-        tooltip="Number of candles to determine range high/low"
+      {/* Range method */}
+      <SelectField
+        label="Range Method"
+        value={rangeMethod}
+        options={RANGE_METHOD_OPTIONS}
+        onChange={(v) => onChange({ rangeMethod: v as "CANDLES" | "CUSTOM_TIME" })}
       />
-      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      {rangeMethod === "CANDLES" ? (
+        <>
+          <NumberField
+            label="Range period (candles)"
+            value={data.rangePeriod}
+            min={2}
+            max={500}
+            onChange={(v) => onChange({ rangePeriod: v })}
+            tooltip="Number of candles to determine range high/low"
+          />
+          <SelectField
+            label="Timeframe"
+            value={data.rangeTimeframe ?? "H1"}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) =>
+              onChange({ rangeTimeframe: v as RangeBreakoutEntryData["rangeTimeframe"] })
+            }
+          />
+        </>
+      ) : (
+        <>
+          <NumberField
+            label="Start Hour"
+            value={data.customStartHour ?? 0}
+            min={0}
+            max={23}
+            step={1}
+            onChange={(v) => onChange({ customStartHour: v })}
+          />
+          <NumberField
+            label="Start Minute"
+            value={data.customStartMinute ?? 0}
+            min={0}
+            max={59}
+            step={1}
+            onChange={(v) => onChange({ customStartMinute: v })}
+          />
+          <NumberField
+            label="End Hour"
+            value={data.customEndHour ?? 8}
+            min={0}
+            max={23}
+            step={1}
+            onChange={(v) => onChange({ customEndHour: v })}
+          />
+          <NumberField
+            label="End Minute"
+            value={data.customEndMinute ?? 0}
+            min={0}
+            max={59}
+            step={1}
+            onChange={(v) => onChange({ customEndMinute: v })}
+          />
+        </>
+      )}
+
+      {/* SL method */}
+      <SelectField
+        label="Stop Loss Method"
+        value={slMethod}
+        options={SL_METHOD_OPTIONS}
+        onChange={(v) => onChange({ slMethod: v as "ATR" | "RANGE_OPPOSITE" })}
+      />
+
+      {/* Risk section */}
+      <EntryStrategyRiskSection data={data} onChange={onChange} showSlAtr={slMethod === "ATR"} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <ToggleField
-          label="London session only"
-          checked={data.londonSessionOnly}
-          onChange={(v) => onChange({ londonSessionOnly: v })}
-        />
         <ToggleField
           label="Cancel opposite pending after trigger"
           checked={data.cancelOpposite}

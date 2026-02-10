@@ -106,7 +106,8 @@ export function generateStopLossCode(
   node: BuilderNode,
   indicatorNodes: BuilderNode[],
   edges: BuilderEdge[],
-  code: GeneratedCode
+  code: GeneratedCode,
+  priceActionNodes: BuilderNode[] = []
 ): void {
   const data = node.data as StopLossNodeData;
 
@@ -162,10 +163,31 @@ export function generateStopLossCode(
       code.onTick.push("double slPips = (atrBuffer[0] / _Point) * InpATRMultiplier;");
       break;
 
+    case "RANGE_OPPOSITE":
+      generateRangeOppositeSL(priceActionNodes, code);
+      break;
+
     case "INDICATOR":
       generateIndicatorBasedSL(node, indicatorNodes, edges, code);
       break;
   }
+}
+
+function generateRangeOppositeSL(priceActionNodes: BuilderNode[], code: GeneratedCode): void {
+  // Find the range-breakout price action node to reference its variables
+  const rbIndex = priceActionNodes.findIndex(
+    (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
+  );
+  const prefix = rbIndex >= 0 ? `pa${rbIndex}` : "pa0";
+
+  code.onTick.push("//--- Range Opposite SL: use range high/low as stop loss");
+  code.onTick.push(
+    `double slPips = MathMax((SymbolInfoDouble(_Symbol, SYMBOL_ASK) - ${prefix}Low) / _Point, 100);`
+  );
+  code.onTick.push(
+    `double slSellPips = MathMax((${prefix}High - SymbolInfoDouble(_Symbol, SYMBOL_BID)) / _Point, 100);`
+  );
+  code.hasDirectionalSL = true;
 }
 
 function generateIndicatorBasedSL(

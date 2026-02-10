@@ -137,19 +137,21 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   } else if (d.entryType === "range-breakout") {
     const rb = d as RangeBreakoutEntryData;
+    const rangeMethod = rb.rangeMethod ?? "CANDLES";
+    const rangeTimeframe = rb.rangeTimeframe ?? "H1";
     virtualNodes.push(
       vNode("rb", "range-breakout", {
         label: "Range Breakout",
         category: "priceaction",
         priceActionType: "range-breakout",
-        timeframe: "H1",
-        rangeType: "PREVIOUS_CANDLES",
+        timeframe: rangeTimeframe,
+        rangeType: rangeMethod === "CUSTOM_TIME" ? "TIME_WINDOW" : "PREVIOUS_CANDLES",
         lookbackCandles: rb.rangePeriod,
-        rangeSession: "ASIAN",
-        sessionStartHour: 0,
-        sessionStartMinute: 0,
-        sessionEndHour: 8,
-        sessionEndMinute: 0,
+        rangeSession: "CUSTOM",
+        sessionStartHour: rb.customStartHour ?? 0,
+        sessionStartMinute: rb.customStartMinute ?? 0,
+        sessionEndHour: rb.customEndHour ?? 8,
+        sessionEndMinute: rb.customEndMinute ?? 0,
         breakoutDirection: "BOTH",
         entryMode: "ON_CLOSE",
         bufferPips: 2,
@@ -237,13 +239,15 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     })
   );
 
-  // Create SL node (always ATR-based)
+  // Create SL node
+  const slMethod =
+    "slMethod" in d && d.slMethod === "RANGE_OPPOSITE" ? "RANGE_OPPOSITE" : "ATR_BASED";
   virtualNodes.push(
     vNode("sl", "stop-loss", {
       label: "Stop Loss",
       category: "riskmanagement",
       tradingType: "stop-loss",
-      method: "ATR_BASED",
+      method: slMethod,
       fixedPips: 50,
       atrMultiplier: d.slAtrMultiplier,
       atrPeriod: 14,
@@ -531,7 +535,13 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
 
   // Generate SL/TP code (only if connected, otherwise use 0)
   if (hasStopLoss) {
-    generateStopLossCode(stopLossNodes[0], indicatorNodes, processedBuildJson.edges, code);
+    generateStopLossCode(
+      stopLossNodes[0],
+      indicatorNodes,
+      processedBuildJson.edges,
+      code,
+      priceActionNodes
+    );
   } else if (hasBuy || hasSell) {
     // No SL node connected but we have trade entries - use 0 (no stop loss)
     code.onTick.push("double slPips = 0; // No Stop Loss connected");

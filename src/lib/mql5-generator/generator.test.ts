@@ -1785,6 +1785,108 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // RANGE BREAKOUT ENTRY — new range/SL options
+  // ============================================
+
+  describe("range breakout entry strategy", () => {
+    it("generates CANDLES range with ATR SL (default behavior)", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should use candle-based range with iHighest
+      expect(code).toContain("iHighest(_Symbol");
+      expect(code).toContain("pa0High");
+      expect(code).toContain("pa0Low");
+      // Should use ATR-based SL
+      expect(code).toContain("atrHandle");
+      expect(code).toContain("InpATRMultiplier");
+    });
+
+    it("generates CUSTOM_TIME range with TIME_WINDOW", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          rangePeriod: 20,
+          rangeMethod: "CUSTOM_TIME",
+          rangeTimeframe: "H1",
+          customStartHour: 2,
+          customStartMinute: 0,
+          customEndHour: 6,
+          customEndMinute: 30,
+          slMethod: "ATR",
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should use TIME_WINDOW / GetSessionRange
+      expect(code).toContain("GetSessionRange");
+      expect(code).toContain("pa0High");
+      expect(code).toContain("pa0Low");
+    });
+
+    it("generates RANGE_OPPOSITE SL with directional SL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "RANGE_OPPOSITE",
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should use range opposite SL
+      expect(code).toContain("Range Opposite SL");
+      expect(code).toContain("pa0Low");
+      expect(code).toContain("pa0High");
+      expect(code).toContain("slSellPips");
+      // Should NOT have ATR handle for SL
+      expect(code).not.toContain("InpATRMultiplier");
+    });
+  });
+
+  // ============================================
   // FEATURE: Task 7 — Strategy presets validation
   // ============================================
 

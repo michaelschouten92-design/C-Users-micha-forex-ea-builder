@@ -45,8 +45,18 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
         }
         break;
       case "range-breakout":
-        if ("rangePeriod" in d) {
-          lines.push(`Enter on ${d.rangePeriod}-candle range breakout`);
+        if ("rangeMethod" in d && d.rangeMethod === "CUSTOM_TIME") {
+          const sh = "customStartHour" in d ? String(d.customStartHour).padStart(2, "0") : "00";
+          const sm = "customStartMinute" in d ? String(d.customStartMinute).padStart(2, "0") : "00";
+          const eh = "customEndHour" in d ? String(d.customEndHour).padStart(2, "0") : "08";
+          const em = "customEndMinute" in d ? String(d.customEndMinute).padStart(2, "0") : "00";
+          lines.push(`Enter on ${sh}:${sm}-${eh}:${em} range breakout`);
+        } else if ("rangePeriod" in d) {
+          const tf = "rangeTimeframe" in d ? ` (${d.rangeTimeframe})` : "";
+          lines.push(`Enter on ${d.rangePeriod}-candle${tf} range breakout`);
+        }
+        if ("slMethod" in d && d.slMethod === "RANGE_OPPOSITE") {
+          lines.push("SL: Range opposite");
         }
         break;
       case "rsi-reversal":

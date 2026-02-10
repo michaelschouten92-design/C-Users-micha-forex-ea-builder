@@ -281,7 +281,7 @@ export interface PlaceSellNodeData extends BaseNodeData, PositionSizingFields {
   tradingType: "place-sell";
 }
 
-export type StopLossMethod = "FIXED_PIPS" | "ATR_BASED" | "INDICATOR";
+export type StopLossMethod = "FIXED_PIPS" | "ATR_BASED" | "INDICATOR" | "RANGE_OPPOSITE";
 
 export interface StopLossNodeData extends BaseNodeData {
   category: "riskmanagement" | "trading";
@@ -418,8 +418,14 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   entryType: "range-breakout";
   // Basic
   rangePeriod: number;
+  rangeMethod: "CANDLES" | "CUSTOM_TIME";
+  rangeTimeframe: Timeframe;
+  customStartHour: number;
+  customStartMinute: number;
+  customEndHour: number;
+  customEndMinute: number;
+  slMethod: "ATR" | "RANGE_OPPOSITE";
   // Advanced toggles
-  londonSessionOnly: boolean;
   cancelOpposite: boolean;
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;
@@ -630,10 +636,16 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "range-breakout",
       rangePeriod: 20,
+      rangeMethod: "CANDLES",
+      rangeTimeframe: "H1",
+      customStartHour: 0,
+      customStartMinute: 0,
+      customEndHour: 8,
+      customEndMinute: 0,
+      slMethod: "ATR",
       riskPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
-      londonSessionOnly: false,
       cancelOpposite: true,
       htfTrendFilter: false,
       htfTimeframe: "H4",
