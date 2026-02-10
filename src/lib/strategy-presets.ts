@@ -25,9 +25,15 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       nodes: [
         {
           id: "timing1",
-          type: "always",
+          type: "trading-session",
           position: { x: 300, y: 0 },
-          data: { label: "Always", category: "timing", timingType: "always" },
+          data: {
+            label: "Trading Sessions",
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          },
         },
         {
           id: "entry1",
@@ -71,9 +77,15 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       nodes: [
         {
           id: "timing1",
-          type: "always",
+          type: "trading-session",
           position: { x: 300, y: 0 },
-          data: { label: "Always", category: "timing", timingType: "always" },
+          data: {
+            label: "Trading Sessions",
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          },
         },
         {
           id: "entry1",
@@ -120,9 +132,15 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       nodes: [
         {
           id: "timing1",
-          type: "always",
+          type: "trading-session",
           position: { x: 300, y: 0 },
-          data: { label: "Always", category: "timing", timingType: "always" },
+          data: {
+            label: "Trading Sessions",
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          },
         },
         {
           id: "entry1",
@@ -165,9 +183,15 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       nodes: [
         {
           id: "timing1",
-          type: "always",
+          type: "trading-session",
           position: { x: 300, y: 0 },
-          data: { label: "Always", category: "timing", timingType: "always" },
+          data: {
+            label: "Trading Sessions",
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          },
         },
         {
           id: "entry1",
@@ -212,9 +236,15 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       nodes: [
         {
           id: "timing1",
-          type: "always",
+          type: "trading-session",
           position: { x: 300, y: 0 },
-          data: { label: "Always", category: "timing", timingType: "always" },
+          data: {
+            label: "Trading Sessions",
+            category: "timing",
+            timingType: "trading-session",
+            session: "LONDON",
+            tradeMondayToFriday: true,
+          },
         },
         {
           id: "entry1",

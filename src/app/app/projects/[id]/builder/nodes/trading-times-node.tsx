@@ -10,6 +10,14 @@ type Props = NodeProps & { data: TradingSessionNodeData };
 export function TradingTimesNode({ id, data, selected }: Props) {
   const sessionInfo = SESSION_TIMES[data.session];
 
+  const isCustom = data.session === "CUSTOM";
+  const displayStart = isCustom
+    ? `${String(data.customStartHour ?? 8).padStart(2, "0")}:${String(data.customStartMinute ?? 0).padStart(2, "0")}`
+    : sessionInfo.start;
+  const displayEnd = isCustom
+    ? `${String(data.customEndHour ?? 17).padStart(2, "0")}:${String(data.customEndMinute ?? 0).padStart(2, "0")}`
+    : sessionInfo.end;
+
   return (
     <BaseNode
       id={id}
@@ -28,7 +36,7 @@ export function TradingTimesNode({ id, data, selected }: Props) {
             Time ({(data.useServerTime ?? true) ? "Server" : "GMT"}):
           </span>
           <span className="font-medium">
-            {sessionInfo.start} - {sessionInfo.end}
+            {displayStart} - {displayEnd}
           </span>
         </div>
         <div className="flex justify-between text-xs">

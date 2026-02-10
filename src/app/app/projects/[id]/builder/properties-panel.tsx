@@ -368,6 +368,7 @@ const TRADING_SESSION_OPTIONS: { value: TradingSession; label: string }[] = [
   { value: "TOKYO", label: "Tokyo Session (00:00-09:00 GMT)" },
   { value: "SYDNEY", label: "Sydney Session (22:00-07:00 GMT)" },
   { value: "LONDON_NY_OVERLAP", label: "London/NY Overlap (13:00-17:00 GMT)" },
+  { value: "CUSTOM", label: "Custom Session" },
 ];
 
 function TradingSessionFields({
@@ -378,6 +379,7 @@ function TradingSessionFields({
   onChange: (updates: Partial<TradingSessionNodeData>) => void;
 }) {
   const sessionInfo = SESSION_TIMES[data.session];
+  const isCustom = data.session === "CUSTOM";
 
   return (
     <>
@@ -387,19 +389,38 @@ function TradingSessionFields({
         options={TRADING_SESSION_OPTIONS}
         onChange={(v) => onChange({ session: v as TradingSession })}
       />
-      <div className="bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-[#94A3B8]">Time (GMT):</span>
-          <span className="text-white font-medium">
-            {sessionInfo.start} - {sessionInfo.end}
-          </span>
+      {isCustom ? (
+        <div className="space-y-2">
+          <TimeField
+            label="Start Time"
+            hour={data.customStartHour ?? 8}
+            minute={data.customStartMinute ?? 0}
+            onHourChange={(h) => onChange({ customStartHour: h })}
+            onMinuteChange={(m) => onChange({ customStartMinute: m })}
+          />
+          <TimeField
+            label="End Time"
+            hour={data.customEndHour ?? 17}
+            minute={data.customEndMinute ?? 0}
+            onHourChange={(h) => onChange({ customEndHour: h })}
+            onMinuteChange={(m) => onChange({ customEndMinute: m })}
+          />
         </div>
-        <div className="text-xs text-[#94A3B8]">
-          {data.session === "LONDON_NY_OVERLAP"
-            ? "Highest volatility period"
-            : `${sessionInfo.label} trading hours`}
+      ) : (
+        <div className="bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-[#94A3B8]">Time (GMT):</span>
+            <span className="text-white font-medium">
+              {sessionInfo.start} - {sessionInfo.end}
+            </span>
+          </div>
+          <div className="text-xs text-[#94A3B8]">
+            {data.session === "LONDON_NY_OVERLAP"
+              ? "Highest volatility period"
+              : `${sessionInfo.label} trading hours`}
+          </div>
         </div>
-      </div>
+      )}
       <div className="mt-3">
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input
@@ -2225,6 +2246,7 @@ const TRADING_SESSION_OPTIONS_SHORT: { value: TradingSession; label: string }[] 
   { value: "NEW_YORK", label: "New York" },
   { value: "TOKYO", label: "Tokyo" },
   { value: "LONDON_NY_OVERLAP", label: "London/NY Overlap" },
+  { value: "CUSTOM", label: "Custom" },
 ];
 
 // ============================================

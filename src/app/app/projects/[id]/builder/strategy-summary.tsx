@@ -17,7 +17,15 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     if (n.type === "always") {
       lines.push("Trade at all times (24/5)");
     } else if (n.type === "trading-session" && "session" in d) {
-      lines.push(`Trade during the ${d.session} session`);
+      if (d.session === "CUSTOM") {
+        const sh = "customStartHour" in d ? String(d.customStartHour).padStart(2, "0") : "08";
+        const sm = "customStartMinute" in d ? String(d.customStartMinute).padStart(2, "0") : "00";
+        const eh = "customEndHour" in d ? String(d.customEndHour).padStart(2, "0") : "17";
+        const em = "customEndMinute" in d ? String(d.customEndMinute).padStart(2, "0") : "00";
+        lines.push(`Trade during custom session (${sh}:${sm} - ${eh}:${em})`);
+      } else {
+        lines.push(`Trade during the ${d.session} session`);
+      }
     } else if (n.type === "custom-times") {
       lines.push("Trade during custom time windows");
     }

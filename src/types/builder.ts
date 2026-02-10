@@ -24,7 +24,13 @@ export interface BaseNodeData extends Record<string, unknown> {
 }
 
 // Timing Nodes
-export type TradingSession = "LONDON" | "NEW_YORK" | "TOKYO" | "SYDNEY" | "LONDON_NY_OVERLAP";
+export type TradingSession =
+  | "LONDON"
+  | "NEW_YORK"
+  | "TOKYO"
+  | "SYDNEY"
+  | "LONDON_NY_OVERLAP"
+  | "CUSTOM";
 
 export interface TradingSessionNodeData extends BaseNodeData {
   category: "timing";
@@ -32,6 +38,10 @@ export interface TradingSessionNodeData extends BaseNodeData {
   session: TradingSession;
   tradeMondayToFriday: boolean;
   useServerTime?: boolean;
+  customStartHour?: number;
+  customStartMinute?: number;
+  customEndHour?: number;
+  customEndMinute?: number;
 }
 
 export interface AlwaysNodeData extends BaseNodeData {
@@ -75,6 +85,7 @@ export const SESSION_TIMES: Record<TradingSession, { start: string; end: string;
     TOKYO: { start: "00:00", end: "09:00", label: "Tokyo Session" },
     SYDNEY: { start: "22:00", end: "07:00", label: "Sydney Session" },
     LONDON_NY_OVERLAP: { start: "13:00", end: "17:00", label: "London/NY Overlap" },
+    CUSTOM: { start: "08:00", end: "17:00", label: "Custom Session" },
   };
 
 // Timeframe type for indicators and price action
@@ -576,38 +587,6 @@ export interface NodeTemplate {
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
   // Timing (When to trade)
-  {
-    type: "always",
-    label: "Always",
-    category: "timing",
-    description: "Trade at all times",
-    defaultData: {
-      label: "Always",
-      category: "timing",
-      timingType: "always",
-    } as AlwaysNodeData,
-  },
-  {
-    type: "custom-times",
-    label: "Custom Times",
-    category: "timing",
-    description: "Custom days and time slots",
-    defaultData: {
-      label: "Custom Times",
-      category: "timing",
-      timingType: "custom-times",
-      days: {
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: false,
-        sunday: false,
-      },
-      timeSlots: [{ startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
-    } as CustomTimesNodeData,
-  },
   {
     type: "trading-session",
     label: "Trading Sessions",

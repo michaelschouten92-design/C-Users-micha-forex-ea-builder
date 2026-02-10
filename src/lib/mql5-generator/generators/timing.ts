@@ -188,15 +188,24 @@ function generateTradingSessionCode(
 ): void {
   const sessionInfo = SESSION_TIMES[data.session];
 
-  // Parse session times
-  const [startHour, startMin] = sessionInfo.start.split(":").map(Number);
-  const [endHour, endMin] = sessionInfo.end.split(":").map(Number);
+  // Parse session times — for CUSTOM, read from node data instead of SESSION_TIMES
+  const isCustom = data.session === "CUSTOM";
+  const startHour = isCustom
+    ? (data.customStartHour ?? 8)
+    : Number(sessionInfo.start.split(":")[0]);
+  const startMin = isCustom
+    ? (data.customStartMinute ?? 0)
+    : Number(sessionInfo.start.split(":")[1]);
+  const endHour = isCustom ? (data.customEndHour ?? 17) : Number(sessionInfo.end.split(":")[0]);
+  const endMin = isCustom ? (data.customEndMinute ?? 0) : Number(sessionInfo.end.split(":")[1]);
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
 
   const timeLabel = (data.useServerTime ?? true) ? "Server Time" : "GMT";
+  const displayStart = `${String(startHour).padStart(2, "0")}:${String(startMin).padStart(2, "0")}`;
+  const displayEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
   code.onTick.push(
-    `// Trading Session: ${sessionInfo.label} (${sessionInfo.start} - ${sessionInfo.end} ${timeLabel})`
+    `// Trading Session: ${sessionInfo.label} (${displayStart} - ${displayEnd} ${timeLabel})`
   );
   code.onTick.push(`bool ${varName} = false;`);
 

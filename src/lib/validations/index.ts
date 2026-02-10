@@ -132,9 +132,13 @@ const tradingSessionNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("timing"),
     timingType: z.literal("trading-session"),
-    session: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP"]),
+    session: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP", "CUSTOM"]),
     tradeMondayToFriday: z.boolean(),
     useServerTime: z.boolean().optional(),
+    customStartHour: z.number().int().min(0).max(23).optional(),
+    customStartMinute: z.number().int().min(0).max(59).optional(),
+    customEndHour: z.number().int().min(0).max(23).optional(),
+    customEndMinute: z.number().int().min(0).max(59).optional(),
   })
   .strip();
 
@@ -457,7 +461,7 @@ const rsiReversalEntryDataSchema = baseNodeDataSchema
     oversoldLevel: z.number().min(0).max(100),
     overboughtLevel: z.number().min(0).max(100),
     sessionFilter: z.boolean(),
-    sessionChoice: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP"]),
+    sessionChoice: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP", "CUSTOM"]),
     trendFilter: z.boolean(),
     trendEma: z.number().int().min(1).max(1000),
   })
