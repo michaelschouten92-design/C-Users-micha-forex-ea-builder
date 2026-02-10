@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
+import { sanitizeText } from "@/lib/sanitize";
 import {
   contactFormRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const log = logger.child({ route: "/api/contact" });
 
@@ -29,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
-    if (!email || typeof email !== "string" || !email.includes("@")) {
+    if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email)) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
     }
     if (!message || typeof message !== "string" || message.trim().length === 0) {
@@ -45,10 +48,10 @@ export async function POST(request: NextRequest) {
     }
 
     await sendContactFormEmail(
-      name.trim(),
+      sanitizeText(name.trim()),
       email.trim(),
-      typeof subject === "string" ? subject.trim() : "",
-      message.trim()
+      typeof subject === "string" ? sanitizeText(subject.trim()) : "",
+      sanitizeText(message.trim())
     );
 
     log.info({ from: email.substring(0, 3) + "***" }, "Contact form submitted");

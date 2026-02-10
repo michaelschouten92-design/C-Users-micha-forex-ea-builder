@@ -24,7 +24,7 @@ const envSchema = z.object({
   // NextAuth (required)
   AUTH_SECRET: z
     .string()
-    .min(1, "AUTH_SECRET is required - generate with: openssl rand -base64 32"),
+    .min(32, "AUTH_SECRET must be at least 32 characters - generate with: openssl rand -base64 32"),
   AUTH_URL: z.string().url("AUTH_URL must be a valid URL").default("http://localhost:3000"),
   AUTH_TRUST_HOST: z
     .string()
@@ -139,6 +139,20 @@ const refinedEnvSchema = envSchema
     {
       message: "RESEND_API_KEY is required in production for email functionality",
       path: ["RESEND_API_KEY"],
+    }
+  )
+  .refine(
+    (data) => {
+      // In production, Upstash Redis is required for rate limiting across instances
+      if (data.NODE_ENV === "production") {
+        if (!data.UPSTASH_REDIS_REST_URL || !data.UPSTASH_REDIS_REST_TOKEN) return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required in production for distributed rate limiting",
+      path: ["UPSTASH_REDIS_REST_URL"],
     }
   );
 

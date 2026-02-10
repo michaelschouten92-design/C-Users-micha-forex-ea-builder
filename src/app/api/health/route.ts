@@ -1,19 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { features } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const services: Record<string, "up" | "down"> = {};
+export async function GET(request: NextRequest) {
+  // Only expose detailed service info when authenticated with CRON_SECRET
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  const isAuthorized = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-  // Check database
+  // Database check (always performed)
+  let dbUp = false;
   try {
     await prisma.$queryRaw`SELECT 1`;
-    services.database = "up";
+    dbUp = true;
   } catch {
-    services.database = "down";
+    dbUp = false;
   }
+
+  // Unauthenticated: return minimal status only
+  if (!isAuthorized) {
+    return NextResponse.json(
+      { status: dbUp ? "healthy" : "unhealthy", timestamp: new Date().toISOString() },
+      { status: dbUp ? 200 : 503 }
+    );
+  }
+
+  // Authenticated: return detailed service breakdown
+  const services: Record<string, "up" | "down"> = { database: dbUp ? "up" : "down" };
 
   // Check Redis (if configured)
   if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -39,15 +54,14 @@ export async function GET() {
     }
   }
 
-  const healthy = services.database === "up";
   const allUp = Object.values(services).every((s) => s === "up");
 
   return NextResponse.json(
     {
-      status: allUp ? "healthy" : healthy ? "degraded" : "unhealthy",
+      status: allUp ? "healthy" : dbUp ? "degraded" : "unhealthy",
       services,
       timestamp: new Date().toISOString(),
     },
-    { status: healthy ? 200 : 503 }
+    { status: dbUp ? 200 : 503 }
   );
 }

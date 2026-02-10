@@ -34,6 +34,7 @@ async function handleCleanup(request: NextRequest) {
     const BATCH_SIZE = 1000;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
     // Batched delete helper to avoid long-running queries
     async function batchDelete(
@@ -76,9 +77,9 @@ async function handleCleanup(request: NextRequest) {
       processedAt: { lt: ninetyDaysAgo },
     });
 
-    // Clean up old audit logs (>90 days)
+    // Clean up old audit logs (>365 days)
     const deletedAuditLogs = await batchDelete(prisma.auditLog, {
-      createdAt: { lt: ninetyDaysAgo },
+      createdAt: { lt: oneYearAgo },
     });
 
     log.info(
