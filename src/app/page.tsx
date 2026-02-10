@@ -614,22 +614,39 @@ export default async function Home() {
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Simple pricing</h2>
-            <p className="text-[#94A3B8]">Start free, upgrade when you need more</p>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Choose the plan that matches your trading ambition
+            </h2>
+            <p className="text-[#94A3B8]">
+              Build, test and deploy automated MT5 strategies — without writing code.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {/* Free */}
-            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white">{PLANS.FREE.name}</h3>
-              <div className="mt-2 mb-4">
-                <span className="text-3xl font-bold text-white">{formatPrice(0, "eur")}</span>
+            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-[#22D3EE]" />
+                <h3 className="text-lg font-semibold text-white">Free</h3>
               </div>
-              <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
-                {PLANS.FREE.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2">
+              <div className="mt-2 mb-3">
+                <span className="text-3xl font-bold text-white">{formatPrice(0, "eur")}</span>
+                <span className="text-[#94A3B8] ml-2 text-sm">/ forever</span>
+              </div>
+              <p className="text-sm text-[#94A3B8] mb-4">
+                Build your first automated strategy. Perfect for exploring algorithmic trading.
+              </p>
+              <ul className="space-y-2 text-sm text-[#CBD5E1] mb-6 flex-1">
+                {[
+                  "Full visual strategy builder",
+                  "All trading blocks available",
+                  "1 active project",
+                  "1 export per month",
+                  "MQL5 source code export",
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2">
                     <svg
-                      className="w-4 h-4 text-[#22D3EE]"
+                      className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -645,33 +662,48 @@ export default async function Home() {
                   </li>
                 ))}
               </ul>
+              <p className="text-xs text-[#64748B] mb-3">No credit card required.</p>
               <Link
                 href="/login?mode=register"
-                className="block w-full text-center py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg text-sm font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="block w-full text-center py-2.5 border border-[rgba(79,70,229,0.5)] text-white rounded-lg text-sm font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
               >
-                Get Started
+                Get Started Free
               </Link>
             </div>
 
             {/* Pro */}
-            <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-6 relative">
+            <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-6 relative flex flex-col">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
-                  Popular
+                  Most Popular
                 </span>
               </div>
-              <h3 className="text-lg font-semibold text-white">{PLANS.PRO.name}</h3>
-              <div className="mt-2 mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-[#4F46E5]" />
+                <h3 className="text-lg font-semibold text-white">Pro</h3>
+              </div>
+              <div className="mt-2 mb-3">
                 <span className="text-3xl font-bold text-white">
                   {formatPrice(PLANS.PRO.prices!.monthly.amount, "eur")}
                 </span>
-                <span className="text-[#64748B] text-sm">/mo</span>
+                <span className="text-[#94A3B8] ml-2 text-sm">/ month</span>
               </div>
-              <ul className="space-y-2 text-sm text-[#94A3B8] mb-6">
-                {PLANS.PRO.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2">
+              <p className="text-sm text-[#94A3B8] mb-4">
+                For serious traders who want to scale. Unlimited projects, exports, and community
+                access.
+              </p>
+              <ul className="space-y-2 text-sm text-[#CBD5E1] mb-6 flex-1">
+                {[
+                  "Unlimited projects",
+                  "Unlimited exports",
+                  "Full MQL5 source code export",
+                  "All trading & risk management blocks",
+                  "Community access (private trader group)",
+                  "Priority support",
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2">
                     <svg
-                      className="w-4 h-4 text-[#22D3EE]"
+                      className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -687,11 +719,20 @@ export default async function Home() {
                   </li>
                 ))}
               </ul>
+              <p className="text-xs text-[#64748B] mb-3">
+                Also available yearly at {formatPrice(PLANS.PRO.prices!.yearly.amount, "eur")}/year
+                — save{" "}
+                {formatPrice(
+                  PLANS.PRO.prices!.monthly.amount * 12 - PLANS.PRO.prices!.yearly.amount,
+                  "eur"
+                )}
+                .
+              </p>
               <Link
                 href="/pricing"
-                className="block w-full text-center py-2.5 bg-[#4F46E5] text-white rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-colors"
+                className="block w-full text-center py-2.5 bg-[#4F46E5] text-white rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-colors hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
               >
-                View Plans
+                Upgrade to Pro
               </Link>
             </div>
           </div>
