@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { BuilderNode, BuilderEdge } from "@/types/builder";
 
 interface StrategySummaryProps {
@@ -8,119 +8,129 @@ interface StrategySummaryProps {
   edges: BuilderEdge[];
 }
 
-interface SummaryLine {
-  icon: string;
-  text: string;
-}
+function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
+  const lines: string[] = [];
 
-function buildTimingLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Timing
   for (const n of nodes) {
     const d = n.data;
-
     if (n.type === "always") {
-      lines.push({ icon: "clock", text: "Timing: Always active" });
+      lines.push("Trade at all times (24/5)");
     } else if (n.type === "trading-session" && "session" in d) {
-      lines.push({ icon: "clock", text: `Timing: ${d.session} Session` });
+      lines.push(`Trade during the ${d.session} session`);
     } else if (n.type === "custom-times") {
-      lines.push({ icon: "clock", text: "Timing: Custom schedule" });
+      lines.push("Trade during custom time windows");
     }
   }
 
-  return lines;
-}
-
-function buildIndicatorLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Indicators — build descriptive entry conditions
+  const indicatorDescriptions: string[] = [];
   for (const n of nodes) {
     const d = n.data;
     if (!("indicatorType" in d)) continue;
 
-    const tf = "timeframe" in d ? ` on ${d.timeframe}` : "";
+    const tf = "timeframe" in d ? ` (${d.timeframe})` : "";
 
     switch (d.indicatorType) {
-      case "moving-average":
-        lines.push({
-          icon: "chart",
-          text: `Signal: ${"method" in d ? d.method : "MA"}(${"period" in d ? d.period : ""})${tf}`,
-        });
+      case "moving-average": {
+        const method = "method" in d ? d.method : "MA";
+        const period = "period" in d ? d.period : "";
+        indicatorDescriptions.push(`${method} ${period} crossover signal${tf}`);
         break;
-      case "rsi":
-        lines.push({
-          icon: "chart",
-          text: `Signal: RSI(${"period" in d ? d.period : 14}) OB:${"overboughtLevel" in d ? d.overboughtLevel : 70} OS:${"oversoldLevel" in d ? d.oversoldLevel : 30}${tf}`,
-        });
+      }
+      case "rsi": {
+        const period = "period" in d ? d.period : 14;
+        const ob = "overboughtLevel" in d ? d.overboughtLevel : 70;
+        const os = "oversoldLevel" in d ? d.oversoldLevel : 30;
+        indicatorDescriptions.push(`RSI(${period}) crosses ${os}/${ob} levels${tf}`);
         break;
+      }
       case "macd":
-        lines.push({ icon: "chart", text: `Signal: MACD crossover${tf}` });
+        indicatorDescriptions.push(`MACD signal line crossover${tf}`);
         break;
-      case "bollinger-bands":
-        lines.push({
-          icon: "chart",
-          text: `Signal: Bollinger Bands(${"period" in d ? d.period : 20})${tf}`,
-        });
+      case "bollinger-bands": {
+        const period = "period" in d ? d.period : 20;
+        indicatorDescriptions.push(`Bollinger Bands(${period}) breakout${tf}`);
         break;
-      case "atr":
-        lines.push({ icon: "chart", text: `Signal: ATR(${"period" in d ? d.period : 14})${tf}` });
+      }
+      case "atr": {
+        const period = "period" in d ? d.period : 14;
+        indicatorDescriptions.push(`ATR(${period}) volatility filter${tf}`);
         break;
-      case "adx":
-        lines.push({ icon: "chart", text: `Signal: ADX(${"period" in d ? d.period : 14})${tf}` });
+      }
+      case "adx": {
+        const period = "period" in d ? d.period : 14;
+        indicatorDescriptions.push(`ADX(${period}) trend strength filter${tf}`);
         break;
+      }
       case "stochastic":
-        lines.push({ icon: "chart", text: `Signal: Stochastic${tf}` });
+        indicatorDescriptions.push(`Stochastic oscillator crossover${tf}`);
         break;
-      case "cci":
-        lines.push({ icon: "chart", text: `Signal: CCI(${"period" in d ? d.period : 14})${tf}` });
+      case "cci": {
+        const period = "period" in d ? d.period : 14;
+        indicatorDescriptions.push(`CCI(${period}) level crossover${tf}`);
         break;
+      }
     }
   }
 
-  return lines;
-}
-
-function buildPriceActionLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Price action
   for (const n of nodes) {
     const d = n.data;
     if (!("priceActionType" in d)) continue;
 
     switch (d.priceActionType) {
       case "candlestick-pattern":
-        lines.push({ icon: "candle", text: "Signal: Candlestick pattern" });
+        indicatorDescriptions.push("Candlestick pattern detection");
         break;
       case "support-resistance":
-        lines.push({ icon: "candle", text: "Signal: Support/Resistance levels" });
+        indicatorDescriptions.push("Support/Resistance level reaction");
         break;
       case "range-breakout":
-        lines.push({ icon: "candle", text: "Signal: Range breakout" });
+        indicatorDescriptions.push("Range breakout entry");
         break;
     }
   }
 
-  return lines;
-}
+  if (indicatorDescriptions.length === 1) {
+    lines.push(`Enter when ${indicatorDescriptions[0]}`);
+  } else if (indicatorDescriptions.length > 1) {
+    lines.push(`Enter when ${indicatorDescriptions.join(" + ")}`);
+  }
 
-function buildDirectionLines(nodes: BuilderNode[]): SummaryLine[] {
+  // Direction
   const hasBuy = nodes.some((n) => n.type === "place-buy");
   const hasSell = nodes.some((n) => n.type === "place-sell");
 
   if (hasBuy && hasSell) {
-    return [{ icon: "trade", text: "Direction: Buy & Sell" }];
+    lines.push("Trade both long and short");
   } else if (hasBuy) {
-    return [{ icon: "trade", text: "Direction: Buy only" }];
+    lines.push("Go long (buy only)");
   } else if (hasSell) {
-    return [{ icon: "trade", text: "Direction: Sell only" }];
+    lines.push("Go short (sell only)");
   }
 
-  return [];
-}
+  // Position sizing
+  for (const n of nodes) {
+    const d = n.data;
+    if (n.type !== "place-buy" && n.type !== "place-sell") continue;
+    if (!("lotMode" in d)) continue;
 
-function buildStopLossLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
+    switch (d.lotMode) {
+      case "FIXED":
+        if ("fixedLots" in d) lines.push(`Risk ${d.fixedLots} lots per trade`);
+        break;
+      case "RISK_PERCENT":
+        if ("riskPercent" in d) lines.push(`Risk ${d.riskPercent}% of balance per trade`);
+        break;
+      case "BALANCE_PERCENT":
+        if ("balancePercent" in d) lines.push(`Use ${d.balancePercent}% of balance per trade`);
+        break;
+    }
+    break; // Only show once
+  }
 
+  // Stop loss
   for (const n of nodes) {
     if (n.type !== "stop-loss") continue;
     const d = n.data;
@@ -128,29 +138,18 @@ function buildStopLossLines(nodes: BuilderNode[]): SummaryLine[] {
 
     switch (d.method) {
       case "FIXED_PIPS":
-        lines.push({
-          icon: "shield",
-          text: `Stop Loss: ${"fixedPips" in d ? d.fixedPips : 50} pips`,
-        });
+        lines.push(`Stop loss at ${"fixedPips" in d ? d.fixedPips : 50} pips`);
         break;
       case "ATR_BASED":
-        lines.push({
-          icon: "shield",
-          text: `Stop Loss: ATR x ${"atrMultiplier" in d ? d.atrMultiplier : 1.5}`,
-        });
+        lines.push(`ATR-based stop loss (${"atrMultiplier" in d ? d.atrMultiplier : 1.5}x)`);
         break;
       case "INDICATOR":
-        lines.push({ icon: "shield", text: "Stop Loss: Indicator-based" });
+        lines.push("Indicator-based stop loss");
         break;
     }
   }
 
-  return lines;
-}
-
-function buildTakeProfitLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Take profit
   for (const n of nodes) {
     if (n.type !== "take-profit") continue;
     const d = n.data;
@@ -158,123 +157,132 @@ function buildTakeProfitLines(nodes: BuilderNode[]): SummaryLine[] {
 
     switch (d.method) {
       case "FIXED_PIPS":
-        lines.push({
-          icon: "target",
-          text: `Take Profit: ${"fixedPips" in d ? d.fixedPips : 100} pips`,
-        });
+        lines.push(`Take profit at ${"fixedPips" in d ? d.fixedPips : 100} pips`);
         break;
       case "RISK_REWARD":
-        lines.push({
-          icon: "target",
-          text: `Take Profit: ${"riskRewardRatio" in d ? d.riskRewardRatio : 2}:1 R:R`,
-        });
+        lines.push(`Close at ${"riskRewardRatio" in d ? d.riskRewardRatio : 2}:1 reward-to-risk`);
         break;
       case "ATR_BASED":
-        lines.push({
-          icon: "target",
-          text: `Take Profit: ATR x ${"atrMultiplier" in d ? d.atrMultiplier : 3}`,
-        });
+        lines.push(`ATR-based take profit (${"atrMultiplier" in d ? d.atrMultiplier : 3}x)`);
         break;
     }
   }
 
-  return lines;
-}
-
-function buildManagementLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Trade management
   for (const n of nodes) {
     const d = n.data;
     if (!("managementType" in d)) continue;
 
     switch (d.managementType) {
       case "breakeven-stop":
-        lines.push({ icon: "gear", text: "Management: Breakeven stop" });
+        lines.push("Move stop to breakeven in profit");
         break;
       case "trailing-stop":
-        lines.push({
-          icon: "gear",
-          text: `Management: Trailing stop ${"trailPips" in d ? d.trailPips + " pips" : ""}`,
-        });
+        lines.push(`Trail stop by ${"trailPips" in d ? d.trailPips + " pips" : "indicator"}`);
         break;
       case "partial-close":
-        lines.push({
-          icon: "gear",
-          text: `Management: Partial close ${"closePercent" in d ? d.closePercent + "%" : ""}`,
-        });
+        lines.push(`Partial close ${"closePercent" in d ? d.closePercent + "%" : ""} at target`);
         break;
       case "lock-profit":
-        lines.push({ icon: "gear", text: "Management: Lock profit" });
+        lines.push("Lock profit with progressive SL");
         break;
     }
   }
 
-  return lines;
-}
+  // Close conditions
+  for (const n of nodes) {
+    if (n.type !== "close-condition") continue;
+    lines.push("Close on opposite signal");
+  }
 
-function buildTimeExitLines(nodes: BuilderNode[]): SummaryLine[] {
-  const lines: SummaryLine[] = [];
-
+  // Time exit
   for (const n of nodes) {
     if (n.type !== "time-exit") continue;
     const d = n.data;
-
-    lines.push({
-      icon: "clock",
-      text: `Exit: After ${"exitAfterBars" in d ? d.exitAfterBars : "?"} bars (${"exitTimeframe" in d ? d.exitTimeframe : ""})`,
-    });
+    lines.push(
+      `Exit after ${"exitAfterBars" in d ? d.exitAfterBars : "?"} bars (${"exitTimeframe" in d ? d.exitTimeframe : ""})`
+    );
   }
 
   return lines;
 }
 
-function buildSummary(nodes: BuilderNode[]): SummaryLine[] {
-  return [
-    ...buildTimingLines(nodes),
-    ...buildIndicatorLines(nodes),
-    ...buildPriceActionLines(nodes),
-    ...buildDirectionLines(nodes),
-    ...buildStopLossLines(nodes),
-    ...buildTakeProfitLines(nodes),
-    ...buildManagementLines(nodes),
-    ...buildTimeExitLines(nodes),
-  ];
-}
+export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNode {
+  const lines = useMemo(() => buildNaturalLanguageSummary(nodes), [nodes]);
 
-export function StrategySummary({ nodes, edges }: StrategySummaryProps): React.ReactNode {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const summary = useMemo(() => buildSummary(nodes), [nodes]);
-
-  if (nodes.length === 0) return null;
+  if (nodes.length === 0) {
+    return (
+      <div className="p-4">
+        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <svg
+            className="w-4 h-4 text-[#A78BFA]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          Strategy Summary
+        </h3>
+        <p className="text-xs text-[#64748B] leading-relaxed">
+          Add blocks to the canvas to see a live summary of your strategy.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="absolute top-14 left-4 z-10">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-1.5 text-xs font-medium bg-[#1E293B]/90 backdrop-blur-sm text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] rounded-lg transition-all duration-200"
-      >
-        {isOpen ? "Hide Summary" : "Strategy Summary"}
-      </button>
+    <div className="p-4">
+      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        <svg
+          className="w-4 h-4 text-[#A78BFA]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
+        </svg>
+        Strategy Summary
+      </h3>
 
-      {isOpen && summary.length > 0 && (
-        <div className="mt-2 w-[280px] bg-[#1A0626]/95 backdrop-blur-sm border border-[rgba(79,70,229,0.3)] rounded-xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          <h4 className="text-xs font-semibold text-white mb-2">Strategy Overview</h4>
-          <div className="space-y-1.5">
-            {summary.map((line, i) => (
-              <div key={i} className="text-xs text-[#94A3B8] leading-relaxed">
-                {line.text}
-              </div>
+      {lines.length > 0 ? (
+        <div className="space-y-0">
+          <p className="text-xs font-medium text-[#94A3B8] mb-2">This strategy will:</p>
+          <ul className="space-y-1.5">
+            {lines.map((line, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed">
+                <svg
+                  className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                {line}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      )}
-
-      {isOpen && summary.length === 0 && (
-        <div className="mt-2 w-[280px] bg-[#1A0626]/95 backdrop-blur-sm border border-[rgba(79,70,229,0.3)] rounded-xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          <p className="text-xs text-[#64748B]">Add blocks to see strategy summary</p>
-        </div>
+      ) : (
+        <p className="text-xs text-[#64748B] leading-relaxed">
+          Connect your blocks to see the strategy description.
+        </p>
       )}
     </div>
   );

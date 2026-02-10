@@ -681,14 +681,6 @@ export function StrategyCanvas({
             </div>
           )}
 
-          {/* Strategy Summary Panel */}
-          {nodes.length > 0 && (
-            <StrategySummary
-              nodes={nodes as BuilderNode[]}
-              edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
-            />
-          )}
-
           {/* Floating Undo/Redo + Help buttons */}
           <div className="absolute bottom-4 right-4 flex gap-2 z-10">
             <button
@@ -825,13 +817,25 @@ export function StrategyCanvas({
             </svg>
           </button>
           {!rightPanelCollapsed && (
-            <PanelErrorBoundary>
-              <PropertiesPanel
-                selectedNode={selectedNode as Node<BuilderNodeData> | null}
-                onNodeChange={onNodeChange}
-                onNodeDelete={onNodeDelete}
-              />
-            </PanelErrorBoundary>
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto">
+                <PanelErrorBoundary>
+                  <PropertiesPanel
+                    selectedNode={selectedNode as Node<BuilderNodeData> | null}
+                    onNodeChange={onNodeChange}
+                    onNodeDelete={onNodeDelete}
+                  />
+                </PanelErrorBoundary>
+              </div>
+              {nodes.length > 0 && (
+                <div className="border-t border-[rgba(79,70,229,0.2)] overflow-y-auto max-h-[40%]">
+                  <StrategySummary
+                    nodes={nodes as BuilderNode[]}
+                    edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -845,6 +849,14 @@ export function StrategyCanvas({
                 onNodeDelete={onNodeDelete}
               />
             </PanelErrorBoundary>
+            {nodes.length > 0 && (
+              <div className="border-t border-[rgba(79,70,229,0.2)]">
+                <StrategySummary
+                  nodes={nodes as BuilderNode[]}
+                  edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
