@@ -218,7 +218,9 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
             `${varPrefix}BreakoutDown = ${varPrefix}Valid && SymbolInfoDouble(_Symbol, SYMBOL_BID) < ${varPrefix}Low - ${bufferPoints};`
           );
         } else if (rb.entryMode === "ON_CLOSE") {
-          const rbTf2 = getTimeframe(rb.timeframe);
+          const rbTf2 = getTimeframe(
+            ((rb as Record<string, unknown>).breakoutTimeframe as string) ?? rb.timeframe
+          );
           code.onTick.push(
             `${varPrefix}BreakoutUp = ${varPrefix}Valid && iClose(_Symbol, ${rbTf2}, 1) > ${varPrefix}High + ${bufferPoints};`
           );

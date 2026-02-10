@@ -736,7 +736,6 @@ function MovingAverageFields({
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MovingAverageNodeData["signalMode"] })}
-        tooltip="Every tick checks each price update. Candle close waits for bar confirmation"
       />
       <div>
         <NumberField
@@ -774,7 +773,6 @@ function RSIFields({
           min={1}
           max={500}
           onChange={(v) => onChange({ period: v })}
-          tooltip="Number of bars used for calculation. Higher values = smoother, slower signals"
         />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
@@ -783,7 +781,6 @@ function RSIFields({
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as RSINodeData["signalMode"] })}
-        tooltip="Every tick checks each price update. Candle close waits for bar confirmation"
       />
       <div>
         <NumberField
@@ -792,7 +789,6 @@ function RSIFields({
           min={50}
           max={100}
           onChange={(v) => onChange({ overboughtLevel: v })}
-          tooltip="Indicator value above which the market is considered overbought"
         />
         <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       </div>
@@ -803,7 +799,6 @@ function RSIFields({
           min={0}
           max={50}
           onChange={(v) => onChange({ oversoldLevel: v })}
-          tooltip="Indicator value below which the market is considered oversold"
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
@@ -1479,7 +1474,6 @@ function PlaceBuyFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ riskPercent: v })}
-            tooltip="Percentage of account balance risked per trade"
           />
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
@@ -1639,7 +1633,6 @@ function StopLossFields({
               max={10}
               step={0.1}
               onChange={(v) => onChange({ atrMultiplier: v })}
-              tooltip="Multiplies the ATR value. Higher = wider stop loss"
             />
             <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
           </div>
@@ -2255,7 +2248,6 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
         max={10}
         step={0.1}
         onChange={(v) => onChange({ riskPercent: v } as Partial<T>)}
-        tooltip="Percentage of account balance risked per trade"
       />
       <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
 
@@ -2280,7 +2272,6 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10}
             step={0.1}
             onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
-            tooltip="SL distance in pips = ATR(14) × this value. Example: ATR = 50 pips, multiplier = 1.5 → SL = 75 pips"
           />
           <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
         </>
@@ -2294,7 +2285,6 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10000}
             step={1}
             onChange={(v) => onChange({ slFixedPips: v } as Partial<T>)}
-            tooltip="Fixed stop loss distance in pips from entry price"
           />
           <OptimizableFieldCheckbox fieldName="slFixedPips" data={data} onChange={onChange} />
         </>
@@ -2308,7 +2298,6 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={50}
             step={0.1}
             onChange={(v) => onChange({ slPercent: v } as Partial<T>)}
-            tooltip="SL distance as a percentage of the current price. Example: price = 1.1000, SL% = 0.5 → SL = 55 pips"
           />
           <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
         </>
@@ -2321,7 +2310,6 @@ function EntryStrategyRiskSection<T extends BuilderNodeData>({
         max={10}
         step={0.1}
         onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
-        tooltip="TP as a multiple of your SL distance. Example: SL = 50 pips, multiplier = 2 → TP = 100 pips"
       />
       <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
     </>
@@ -2499,8 +2487,13 @@ function EMACrossoverEntryFields({
 }
 
 const RANGE_METHOD_OPTIONS: { value: "CANDLES" | "CUSTOM_TIME"; label: string }[] = [
-  { value: "CANDLES", label: "Candles" },
   { value: "CUSTOM_TIME", label: "Custom Time" },
+  { value: "CANDLES", label: "Candles" },
+];
+
+const BREAKOUT_ENTRY_OPTIONS: { value: "CANDLE_CLOSE" | "CURRENT_PRICE"; label: string }[] = [
+  { value: "CANDLE_CLOSE", label: "Candle Close" },
+  { value: "CURRENT_PRICE", label: "Current Price" },
 ];
 
 function RangeBreakoutEntryFields({
@@ -2510,7 +2503,8 @@ function RangeBreakoutEntryFields({
   data: RangeBreakoutEntryData;
   onChange: (updates: Partial<RangeBreakoutEntryData>) => void;
 }) {
-  const rangeMethod = data.rangeMethod ?? "CANDLES";
+  const rangeMethod = data.rangeMethod ?? "CUSTOM_TIME";
+  const breakoutEntry = data.breakoutEntry ?? "CANDLE_CLOSE";
   const useServerTime = data.useServerTime ?? true;
   const timeLabel = useServerTime ? "Server time" : "GMT";
 
@@ -2521,9 +2515,9 @@ function RangeBreakoutEntryFields({
         onChange={(v) => onChange({ direction: v })}
       />
 
-      {/* Range method */}
+      {/* Range calculation method */}
       <SelectField
-        label="Range Method"
+        label="Calculating Range"
         value={rangeMethod}
         options={RANGE_METHOD_OPTIONS}
         onChange={(v) => onChange({ rangeMethod: v as "CANDLES" | "CUSTOM_TIME" })}
@@ -2537,7 +2531,6 @@ function RangeBreakoutEntryFields({
             min={2}
             max={500}
             onChange={(v) => onChange({ rangePeriod: v })}
-            tooltip="Number of candles to determine range high/low"
           />
           <OptimizableFieldCheckbox fieldName="rangePeriod" data={data} onChange={onChange} />
           <SelectField
@@ -2587,6 +2580,24 @@ function RangeBreakoutEntryFields({
           Use GMT instead of server time
         </label>
       </div>
+
+      {/* Breakout entry mode */}
+      <SelectField
+        label="Breakout Entry"
+        value={breakoutEntry}
+        options={BREAKOUT_ENTRY_OPTIONS}
+        onChange={(v) => onChange({ breakoutEntry: v as "CANDLE_CLOSE" | "CURRENT_PRICE" })}
+      />
+      {breakoutEntry === "CANDLE_CLOSE" && (
+        <SelectField
+          label="Entry Timeframe"
+          value={data.breakoutTimeframe ?? "H1"}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) =>
+            onChange({ breakoutTimeframe: v as RangeBreakoutEntryData["breakoutTimeframe"] })
+          }
+        />
+      )}
 
       {/* Risk section (includes SL method selector with Range Opposite option) */}
       <EntryStrategyRiskSection data={data} onChange={onChange} slOptions={RANGE_SL_OPTIONS} />
@@ -2736,7 +2747,6 @@ function TrendPullbackEntryFields({
         min={1}
         max={1000}
         onChange={(v) => onChange({ trendEma: v })}
-        tooltip="EMA period to define the trend direction"
       />
       <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
       <NumberField
@@ -2753,7 +2763,6 @@ function TrendPullbackEntryFields({
         min={10}
         max={50}
         onChange={(v) => onChange({ rsiPullbackLevel: v })}
-        tooltip={`Long: RSI dips below ${data.rsiPullbackLevel} then crosses up. Short: RSI rises above ${100 - data.rsiPullbackLevel} then crosses down.`}
       />
       <OptimizableFieldCheckbox fieldName="rsiPullbackLevel" data={data} onChange={onChange} />
       <EntryStrategyRiskSection data={data} onChange={onChange} />

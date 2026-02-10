@@ -153,7 +153,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         sessionEndHour: rb.customEndHour ?? 8,
         sessionEndMinute: rb.customEndMinute ?? 0,
         breakoutDirection: "BOTH",
-        entryMode: "ON_CLOSE",
+        entryMode:
+          (rb.breakoutEntry ?? "CANDLE_CLOSE") === "CURRENT_PRICE" ? "IMMEDIATE" : "ON_CLOSE",
+        breakoutTimeframe: rb.breakoutTimeframe ?? rangeTimeframe,
         bufferPips: 2,
         minRangePips: 10,
         maxRangePips: 0,

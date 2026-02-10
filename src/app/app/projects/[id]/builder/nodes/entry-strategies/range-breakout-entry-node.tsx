@@ -40,6 +40,14 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
           <span className="text-white font-medium">{rangeLabel}</span>
         </div>
         <div className="flex justify-between">
+          <span className="text-[#94A3B8]">Entry</span>
+          <span className="text-white font-medium">
+            {(data.breakoutEntry ?? "CANDLE_CLOSE") === "CURRENT_PRICE"
+              ? "Current price"
+              : `Candle close (${data.breakoutTimeframe ?? "H1"})`}
+          </span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-[#94A3B8]">Risk</span>
           <span className="text-white font-medium">{data.riskPercent}%</span>
         </div>

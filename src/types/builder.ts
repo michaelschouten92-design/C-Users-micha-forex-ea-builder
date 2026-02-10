@@ -427,6 +427,8 @@ export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFi
 }
 
 // 2) Range Breakout — breakout of recent range
+export type BreakoutEntryMode = "CANDLE_CLOSE" | "CURRENT_PRICE";
+
 export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
   category: "entrystrategy";
   entryType: "range-breakout";
@@ -434,6 +436,8 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   rangePeriod: number;
   rangeMethod: "CANDLES" | "CUSTOM_TIME";
   rangeTimeframe: Timeframe;
+  breakoutEntry: BreakoutEntryMode;
+  breakoutTimeframe: Timeframe;
   customStartHour: number;
   customStartMinute: number;
   customEndHour: number;
@@ -662,8 +666,10 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       entryType: "range-breakout",
       direction: "BOTH",
       rangePeriod: 20,
-      rangeMethod: "CANDLES",
+      rangeMethod: "CUSTOM_TIME",
       rangeTimeframe: "H1",
+      breakoutEntry: "CANDLE_CLOSE",
+      breakoutTimeframe: "H1",
       customStartHour: 0,
       customStartMinute: 0,
       customEndHour: 8,
