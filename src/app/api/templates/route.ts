@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import {
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+  buildJsonSchema,
+} from "@/lib/validations";
 import {
   templateCreateRateLimiter,
   checkRateLimit,
@@ -14,7 +19,7 @@ const MAX_TEMPLATES = 20;
 
 const createTemplateSchema = z.object({
   name: z.string().min(1).max(100).trim(),
-  buildJson: z.record(z.unknown()),
+  buildJson: buildJsonSchema,
 });
 
 // GET /api/templates - List user's saved templates
@@ -121,21 +126,16 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const template = await prisma.userTemplate.findFirst({
-    where: { id: validation.data.id, userId: session.user.id },
-  });
-
-  if (!template) {
+  try {
+    const updated = await prisma.userTemplate.update({
+      where: { id: validation.data.id, userId: session.user.id },
+      data: { name: validation.data.name },
+      select: { id: true, name: true, createdAt: true },
+    });
+    return NextResponse.json(updated);
+  } catch {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
-
-  const updated = await prisma.userTemplate.update({
-    where: { id: validation.data.id, userId: session.user.id },
-    data: { name: validation.data.name },
-    select: { id: true, name: true, createdAt: true },
-  });
-
-  return NextResponse.json(updated);
 }
 
 // DELETE /api/templates - Delete a template by ID (via query param)
@@ -146,8 +146,8 @@ export async function DELETE(request: NextRequest) {
   }
 
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "Template ID required" }, { status: 400 });
+  if (!id || id.length < 1 || id.length > 30) {
+    return NextResponse.json({ error: "Valid template ID required" }, { status: 400 });
   }
 
   const template = await prisma.userTemplate.findFirst({

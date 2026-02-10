@@ -104,6 +104,8 @@ export function useAutoSave({
       }
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         const res = await fetch(`/api/projects/${projectId}/versions`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
@@ -112,7 +114,9 @@ export function useAutoSave({
             expectedVersion: lastSavedVersionRef.current || undefined,
             isAutosave,
           }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();

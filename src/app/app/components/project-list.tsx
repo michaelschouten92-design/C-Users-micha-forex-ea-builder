@@ -46,7 +46,10 @@ function OnboardingEmpty() {
         }),
       });
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("Failed to create project from preset:", res.status);
+        return;
+      }
       const project = await res.json();
 
       // Save preset buildJson as first version
@@ -57,6 +60,8 @@ function OnboardingEmpty() {
       });
 
       router.push(`/app/projects/${project.id}`);
+    } catch (err) {
+      console.error("Failed to create project from preset:", err);
     } finally {
       setLoadingPreset(null);
     }
@@ -157,7 +162,10 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ name: preset.name, description: preset.description }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("Failed to create project from preset:", res.status);
+        return;
+      }
       const project = await res.json();
       await fetch(`/api/projects/${project.id}/versions`, {
         method: "POST",
@@ -165,6 +173,8 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         body: JSON.stringify({ buildJson: preset.buildJson }),
       });
       router.push(`/app/projects/${project.id}`);
+    } catch (err) {
+      console.error("Failed to create project from preset:", err);
     } finally {
       setLoadingPreset(null);
     }

@@ -150,11 +150,6 @@ export async function POST(request: NextRequest) {
     const details = extractErrorDetails(error);
     log.error({ error: details }, "Checkout error");
 
-    // Include Stripe error message for easier debugging
-    const stripeMessage = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: "Failed to create checkout session", details: stripeMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

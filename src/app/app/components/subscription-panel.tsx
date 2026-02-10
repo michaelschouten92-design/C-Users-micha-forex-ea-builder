@@ -37,6 +37,10 @@ export function SubscriptionPanel({
         method: "POST",
         headers: getCsrfHeaders(),
       });
+      if (!res.ok) {
+        showError("Failed to open billing portal. Please try again.");
+        return;
+      }
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

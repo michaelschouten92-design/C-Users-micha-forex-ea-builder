@@ -518,7 +518,7 @@ const buildSettingsSchema = z.object({
   maxTradesPerDay: z.number().int().min(0).max(100).optional(),
   maxDailyProfitPercent: z.number().min(0).max(100).optional(),
   maxDailyLossPercent: z.number().min(0).max(100).optional(),
-  maxSpreadPips: z.number().min(0).max(100).optional(),
+  maxSpreadPips: z.number().min(0).max(10000).optional(),
 });
 
 // Build metadata schema

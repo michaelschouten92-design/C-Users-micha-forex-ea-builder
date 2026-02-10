@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
@@ -71,10 +72,14 @@ export async function POST(request: NextRequest) {
     await prisma.webhookEvent.create({
       data: { eventId: event.id, type: event.type },
     });
-  } catch {
-    // Unique constraint violation = duplicate event already being processed
-    log.info({ eventId: event.id }, "Duplicate webhook event, skipping");
-    return NextResponse.json({ received: true });
+  } catch (err) {
+    // Only treat unique constraint violations (P2002) as duplicates
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      log.info({ eventId: event.id }, "Duplicate webhook event, skipping");
+      return NextResponse.json({ received: true });
+    }
+    // Re-throw other errors (DB down, etc.) so Stripe retries
+    throw err;
   }
 
   try {

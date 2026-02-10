@@ -132,13 +132,16 @@ export function VersionControls({
   };
 
   // Load version from cache (no additional network request needed)
-  const handleLoad = useCallback((versionId: string) => {
-    setShowDropdown(false);
-    const version = versions.find((v) => v.id === versionId);
-    if (version) {
-      onLoad(versionId, version.buildJson);
-    }
-  }, [versions, onLoad]);
+  const handleLoad = useCallback(
+    (versionId: string) => {
+      setShowDropdown(false);
+      const version = versions.find((v) => v.id === versionId);
+      if (version?.buildJson) {
+        onLoad(versionId, version.buildJson);
+      }
+    },
+    [versions, onLoad]
+  );
 
   const handleSaveTemplate = async () => {
     if (!onGetBuildJson || !templateName.trim()) return;
@@ -193,12 +196,28 @@ export function VersionControls({
         >
           {saving ? (
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           ) : (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+              />
             </svg>
           )}
           <span className="hidden sm:inline">Save</span> v{nextVersion}
@@ -211,12 +230,32 @@ export function VersionControls({
             disabled={versions.length === 0}
             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm font-medium rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-[rgba(79,70,229,0.3)] transition-all duration-200"
           >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
             </svg>
             <span className="hidden sm:inline">Load Version</span>
-            <svg className="w-4 h-4 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="w-4 h-4 hidden sm:block"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
@@ -278,7 +317,12 @@ export function VersionControls({
             title="Save as template"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+              />
             </svg>
             <span className="hidden lg:inline">Save as Template</span>
           </button>
@@ -291,22 +335,53 @@ export function VersionControls({
         {autoSaveStatus === "saving" ? (
           <span className="flex items-center gap-1.5 text-[#94A3B8]">
             <svg className="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
             <span className="hidden md:inline">Autosaving...</span>
           </span>
         ) : autoSaveStatus === "saved" ? (
           <span className="flex items-center gap-1.5 text-[#22D3EE]">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span className="hidden md:inline">Autosaved</span>
           </span>
         ) : autoSaveStatus === "error" ? (
           <span className="flex items-center gap-1.5 text-[#F87171]">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span className="hidden md:inline">Autosave failed</span>
           </span>
@@ -317,10 +392,21 @@ export function VersionControls({
           </span>
         ) : versions.length > 0 ? (
           <span className="flex items-center gap-1.5 text-[#22D3EE]">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
-            <span className="hidden sm:inline">Saved</span> <span className="hidden md:inline">(v{latestVersion})</span>
+            <span className="hidden sm:inline">Saved</span>{" "}
+            <span className="hidden md:inline">(v{latestVersion})</span>
           </span>
         ) : (
           <span className="text-[#64748B] hidden md:inline">No versions saved yet</span>
@@ -340,12 +426,21 @@ export function VersionControls({
                 className="text-[#64748B] hover:text-white p-1 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
             <div className="p-4 overflow-y-auto space-y-4 text-sm">
-              {diff.nodesAdded.length === 0 && diff.nodesRemoved.length === 0 && diff.nodesChanged.length === 0 && diff.edgesAdded === 0 && diff.edgesRemoved === 0 ? (
+              {diff.nodesAdded.length === 0 &&
+              diff.nodesRemoved.length === 0 &&
+              diff.nodesChanged.length === 0 &&
+              diff.edgesAdded === 0 &&
+              diff.edgesRemoved === 0 ? (
                 <p className="text-[#64748B] text-center py-4">No differences found</p>
               ) : (
                 <>
@@ -357,7 +452,9 @@ export function VersionControls({
                       </h4>
                       <ul className="space-y-1 pl-4">
                         {diff.nodesAdded.map((n) => (
-                          <li key={n.id} className="text-[#CBD5E1]">{n.data.label} <span className="text-[#64748B]">({n.type})</span></li>
+                          <li key={n.id} className="text-[#CBD5E1]">
+                            {n.data.label} <span className="text-[#64748B]">({n.type})</span>
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -370,7 +467,9 @@ export function VersionControls({
                       </h4>
                       <ul className="space-y-1 pl-4">
                         {diff.nodesRemoved.map((n) => (
-                          <li key={n.id} className="text-[#CBD5E1]">{n.data.label} <span className="text-[#64748B]">({n.type})</span></li>
+                          <li key={n.id} className="text-[#CBD5E1]">
+                            {n.data.label} <span className="text-[#64748B]">({n.type})</span>
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -387,7 +486,9 @@ export function VersionControls({
                             <span className="text-[#CBD5E1] font-medium">{node.data.label}</span>
                             <ul className="mt-1 space-y-0.5">
                               {changes.map((c, i) => (
-                                <li key={i} className="text-xs text-[#94A3B8] pl-3">{c}</li>
+                                <li key={i} className="text-xs text-[#94A3B8] pl-3">
+                                  {c}
+                                </li>
                               ))}
                             </ul>
                           </li>
@@ -444,7 +545,9 @@ export function VersionControls({
                 }}
               />
               {templateStatus && (
-                <p className={`mt-2 text-sm ${templateStatus === "Saved!" ? "text-[#22D3EE]" : "text-[#F87171]"}`}>
+                <p
+                  className={`mt-2 text-sm ${templateStatus === "Saved!" ? "text-[#22D3EE]" : "text-[#F87171]"}`}
+                >
                   {templateStatus}
                 </p>
               )}
@@ -452,7 +555,10 @@ export function VersionControls({
             <div className="bg-[#0F172A]/50 px-6 py-4 flex justify-end gap-3 rounded-b-xl border-t border-[rgba(79,70,229,0.2)]">
               <button
                 type="button"
-                onClick={() => { setShowTemplateModal(false); setTemplateStatus(null); }}
+                onClick={() => {
+                  setShowTemplateModal(false);
+                  setTemplateStatus(null);
+                }}
                 className="px-4 py-2 text-[#94A3B8] hover:text-white transition-colors duration-200"
               >
                 Cancel
