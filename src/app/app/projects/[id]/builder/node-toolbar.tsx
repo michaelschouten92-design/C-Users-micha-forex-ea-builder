@@ -225,45 +225,25 @@ export function NodeToolbar({
               {/* Block List */}
               {isExpanded && (
                 <div className="mt-2 space-y-1 pl-1">
-                  {templates.map((template, index) => {
-                    const isComingSoon = template.comingSoon;
-                    const isDisabled = isComingSoon;
-
-                    return (
-                      <div
-                        key={`${template.type}-${index}`}
-                        draggable={!isDisabled}
-                        onDragStart={(e) => {
-                          if (isDisabled) {
-                            e.preventDefault();
-                            return;
-                          }
-                          onDragStart(e, template);
-                        }}
-                        aria-label={`${template.label} block`}
-                        className={`px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 ${
-                          isDisabled
-                            ? "opacity-60 cursor-not-allowed"
-                            : "cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
-                        }`}
-                        title={isComingSoon ? "Coming soon" : template.description}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className={`text-sm font-medium ${blockColors[template.category]}`}>
-                            {template.label}
-                          </div>
-                          {isComingSoon && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[rgba(100,116,139,0.3)] text-[#94A3B8]">
-                              SOON
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-[#94A3B8] truncate mt-0.5">
-                          {template.description}
+                  {templates.map((template, index) => (
+                    <div
+                      key={`${template.type}-${index}`}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, template)}
+                      aria-label={`${template.label} block`}
+                      className="px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
+                      title={template.description}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`text-sm font-medium ${blockColors[template.category]}`}>
+                          {template.label}
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="text-xs text-[#94A3B8] truncate mt-0.5">
+                        {template.description}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

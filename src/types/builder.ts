@@ -590,7 +590,6 @@ export interface NodeTemplate {
   category: NodeCategory;
   description: string;
   defaultData: Partial<BuilderNodeData>;
-  comingSoon?: boolean; // Not yet implemented in code generation
 }
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
