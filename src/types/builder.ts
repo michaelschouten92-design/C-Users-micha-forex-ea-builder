@@ -13,7 +13,9 @@ export type NodeCategory =
   | "entry"
   | "trading"
   | "riskmanagement"
-  | "trademanagement";
+  | "trademanagement"
+  | "entrystrategy"
+  | "advanced";
 
 // Base data all nodes have
 export interface BaseNodeData extends Record<string, unknown> {
@@ -359,13 +361,82 @@ export type TradeManagementNodeData =
   | PartialCloseNodeData
   | LockProfitNodeData;
 
+// ============================================
+// ENTRY STRATEGY NODES (composite blocks)
+// ============================================
+
+// Shared fields for all entry strategy blocks
+export interface BaseEntryStrategyFields {
+  direction: "BOTH" | "BUY_ONLY" | "SELL_ONLY";
+  // Position sizing
+  sizingMethod: PositionSizingMethod;
+  fixedLot: number;
+  riskPercent: number;
+  minLot: number;
+  maxLot: number;
+  // Stop loss
+  slMethod: "FIXED_PIPS" | "ATR_BASED";
+  slFixedPips: number;
+  slAtrMultiplier: number;
+  slAtrPeriod: number;
+  // Take profit
+  tpMethod: "FIXED_PIPS" | "RISK_REWARD" | "ATR_BASED";
+  tpFixedPips: number;
+  tpRiskRewardRatio: number;
+  tpAtrMultiplier: number;
+  tpAtrPeriod: number;
+}
+
+export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "ema-crossover";
+  timeframe: Timeframe;
+  fastPeriod: number;
+  slowPeriod: number;
+  signalMode: "every_tick" | "candle_close";
+}
+
+export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "rsi-reversal";
+  timeframe: Timeframe;
+  period: number;
+  overboughtLevel: number;
+  oversoldLevel: number;
+  signalMode: "every_tick" | "candle_close";
+}
+
+export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "range-breakout";
+  timeframe: Timeframe;
+  rangeType: RangeType;
+  lookbackCandles: number;
+  rangeSession: RangeSession;
+  sessionStartHour: number;
+  sessionStartMinute: number;
+  sessionEndHour: number;
+  sessionEndMinute: number;
+  breakoutDirection: BreakoutDirection;
+  entryMode: EntryMode;
+  bufferPips: number;
+  minRangePips: number;
+  maxRangePips: number;
+}
+
+export type EntryStrategyNodeData =
+  | EMACrossoverEntryData
+  | RSIReversalEntryData
+  | RangeBreakoutEntryData;
+
 // Union of all node data types
 export type BuilderNodeData =
   | TimingNodeData
   | IndicatorNodeData
   | PriceActionNodeData
   | TradingNodeData
-  | TradeManagementNodeData;
+  | TradeManagementNodeData
+  | EntryStrategyNodeData;
 
 // ============================================
 // NODE TYPES
@@ -395,7 +466,10 @@ export type BuilderNodeType =
   | "breakeven-stop"
   | "trailing-stop"
   | "partial-close"
-  | "lock-profit";
+  | "lock-profit"
+  | "ema-crossover-entry"
+  | "rsi-reversal-entry"
+  | "range-breakout-entry";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -471,6 +545,7 @@ export interface NodeTemplate {
   defaultData: Partial<BuilderNodeData>;
   proOnly?: boolean; // Only available for paid users (Starter+)
   comingSoon?: boolean; // Not yet implemented in code generation
+  advancedOnly?: boolean; // Shown in Advanced Blocks section only
 }
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
@@ -520,12 +595,114 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       tradeMondayToFriday: true,
     } as TradingSessionNodeData,
   },
+  // Entry Strategies (composite blocks)
+  {
+    type: "ema-crossover-entry",
+    label: "EMA Crossover",
+    category: "entrystrategy",
+    description: "Enter on EMA crossover with built-in SL/TP",
+    defaultData: {
+      label: "EMA Crossover",
+      category: "entrystrategy",
+      entryType: "ema-crossover",
+      timeframe: "H1",
+      fastPeriod: 10,
+      slowPeriod: 50,
+      signalMode: "candle_close",
+      direction: "BOTH",
+      sizingMethod: "RISK_PERCENT",
+      fixedLot: 0.1,
+      riskPercent: 2,
+      minLot: 0.01,
+      maxLot: 10,
+      slMethod: "FIXED_PIPS",
+      slFixedPips: 50,
+      slAtrMultiplier: 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "RISK_REWARD",
+      tpFixedPips: 100,
+      tpRiskRewardRatio: 2,
+      tpAtrMultiplier: 3,
+      tpAtrPeriod: 14,
+    } as EMACrossoverEntryData,
+  },
+  {
+    type: "rsi-reversal-entry",
+    label: "RSI Reversal",
+    category: "entrystrategy",
+    description: "Enter on RSI overbought/oversold reversal",
+    defaultData: {
+      label: "RSI Reversal",
+      category: "entrystrategy",
+      entryType: "rsi-reversal",
+      timeframe: "H1",
+      period: 14,
+      overboughtLevel: 70,
+      oversoldLevel: 30,
+      signalMode: "candle_close",
+      direction: "BOTH",
+      sizingMethod: "RISK_PERCENT",
+      fixedLot: 0.1,
+      riskPercent: 2,
+      minLot: 0.01,
+      maxLot: 10,
+      slMethod: "FIXED_PIPS",
+      slFixedPips: 30,
+      slAtrMultiplier: 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "FIXED_PIPS",
+      tpFixedPips: 60,
+      tpRiskRewardRatio: 2,
+      tpAtrMultiplier: 3,
+      tpAtrPeriod: 14,
+    } as RSIReversalEntryData,
+  },
+  {
+    type: "range-breakout-entry",
+    label: "Range Breakout",
+    category: "entrystrategy",
+    description: "Enter on session range breakout",
+    defaultData: {
+      label: "Range Breakout",
+      category: "entrystrategy",
+      entryType: "range-breakout",
+      timeframe: "H1",
+      rangeType: "SESSION",
+      lookbackCandles: 20,
+      rangeSession: "ASIAN",
+      sessionStartHour: 0,
+      sessionStartMinute: 0,
+      sessionEndHour: 8,
+      sessionEndMinute: 0,
+      breakoutDirection: "BOTH",
+      entryMode: "ON_CLOSE",
+      bufferPips: 2,
+      minRangePips: 10,
+      maxRangePips: 0,
+      direction: "BOTH",
+      sizingMethod: "RISK_PERCENT",
+      fixedLot: 0.1,
+      riskPercent: 2,
+      minLot: 0.01,
+      maxLot: 10,
+      slMethod: "ATR_BASED",
+      slFixedPips: 50,
+      slAtrMultiplier: 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "RISK_REWARD",
+      tpFixedPips: 100,
+      tpRiskRewardRatio: 2,
+      tpAtrMultiplier: 3,
+      tpAtrPeriod: 14,
+    } as RangeBreakoutEntryData,
+  },
   // Indicators
   {
     type: "moving-average",
     label: "Moving Average",
     category: "indicator",
     description: "SMA, EMA",
+    advancedOnly: true,
     defaultData: {
       label: "Moving Average",
       category: "indicator",
@@ -542,6 +719,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "RSI",
     category: "indicator",
     description: "Relative Strength Index",
+    advancedOnly: true,
     defaultData: {
       label: "RSI",
       category: "indicator",
@@ -558,6 +736,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "MACD",
     category: "indicator",
     description: "Moving Average Convergence Divergence",
+    advancedOnly: true,
     defaultData: {
       label: "MACD",
       category: "indicator",
@@ -574,6 +753,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Bollinger Bands",
     category: "indicator",
     description: "Bollinger Bands indicator",
+    advancedOnly: true,
     defaultData: {
       label: "Bollinger Bands",
       category: "indicator",
@@ -590,6 +770,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "ATR",
     category: "indicator",
     description: "Average True Range (volatility)",
+    advancedOnly: true,
     defaultData: {
       label: "ATR",
       category: "indicator",
@@ -604,6 +785,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "ADX",
     category: "indicator",
     description: "Average Directional Index (trend strength)",
+    advancedOnly: true,
     defaultData: {
       label: "ADX",
       category: "indicator",
@@ -619,6 +801,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Stochastic",
     category: "indicator",
     description: "Stochastic Oscillator (%K, %D)",
+    advancedOnly: true,
     defaultData: {
       label: "Stochastic",
       category: "indicator",
@@ -637,6 +820,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "CCI",
     category: "indicator",
     description: "Commodity Channel Index",
+    advancedOnly: true,
     defaultData: {
       label: "CCI",
       category: "indicator",
@@ -654,6 +838,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Candlestick Patterns",
     category: "priceaction",
     description: "Detect candle patterns",
+    advancedOnly: true,
     defaultData: {
       label: "Candlestick Patterns",
       category: "priceaction",
@@ -668,6 +853,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Support/Resistance",
     category: "priceaction",
     description: "Key price levels",
+    advancedOnly: true,
     defaultData: {
       label: "Support/Resistance",
       category: "priceaction",
@@ -683,6 +869,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Range Breakout",
     category: "priceaction",
     description: "Trade breakouts from price ranges",
+    advancedOnly: true,
     defaultData: {
       label: "Range Breakout",
       category: "priceaction",
@@ -708,6 +895,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Place Buy",
     category: "entry",
     description: "Open a buy position",
+    advancedOnly: true,
     defaultData: {
       label: "Place Buy",
       category: "entry",
@@ -724,6 +912,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Place Sell",
     category: "entry",
     description: "Open a sell position",
+    advancedOnly: true,
     defaultData: {
       label: "Place Sell",
       category: "entry",
@@ -880,11 +1069,14 @@ export function getCategoryColor(category: NodeCategory): string {
       return "yellow";
     case "entry":
     case "trading":
+    case "entrystrategy":
       return "green";
     case "riskmanagement":
       return "rose";
     case "trademanagement":
       return "purple";
+    case "advanced":
+      return "gray";
     default:
       return "gray";
   }
@@ -893,19 +1085,23 @@ export function getCategoryColor(category: NodeCategory): string {
 export function getCategoryLabel(category: NodeCategory): string {
   switch (category) {
     case "timing":
-      return "When to trade";
+      return "Filters";
     case "indicator":
       return "Indicators";
     case "priceaction":
       return "Price Action";
     case "entry":
       return "Entry";
+    case "entrystrategy":
+      return "Entry Strategies";
     case "trading":
       return "Trade Execution";
     case "riskmanagement":
       return "Risk Management";
     case "trademanagement":
       return "Trade Management";
+    case "advanced":
+      return "Advanced Blocks";
     default:
       return "Other";
   }

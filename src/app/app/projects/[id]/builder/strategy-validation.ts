@@ -21,28 +21,39 @@ export interface ValidationResult {
   };
 }
 
-export function validateStrategy(nodes: Node<BuilderNodeData>[], edges: Edge[] = []): ValidationResult {
+export function validateStrategy(
+  nodes: Node<BuilderNodeData>[],
+  edges: Edge[] = []
+): ValidationResult {
   const issues: ValidationIssue[] = [];
+
+  // Check for entry strategy composite blocks
+  const hasEntryStrategy = nodes.some((n) => "entryType" in n.data);
 
   // Check for each node type
   const hasTradingTimes = nodes.some((n) => "timingType" in n.data);
-  const hasIndicator = nodes.some((n) => "indicatorType" in n.data);
-  const hasPriceAction = nodes.some((n) => "priceActionType" in n.data);
-  const hasStopLoss = nodes.some(
-    (n) => "tradingType" in n.data && n.data.tradingType === "stop-loss"
-  );
-  const hasTakeProfit = nodes.some(
-    (n) => "tradingType" in n.data && n.data.tradingType === "take-profit"
-  );
-  const hasPositionSizing = nodes.some(
-    (n) => "tradingType" in n.data && (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
-  );
+  const hasIndicator = hasEntryStrategy || nodes.some((n) => "indicatorType" in n.data);
+  const hasPriceAction = hasEntryStrategy || nodes.some((n) => "priceActionType" in n.data);
+  const hasStopLoss =
+    hasEntryStrategy ||
+    nodes.some((n) => "tradingType" in n.data && n.data.tradingType === "stop-loss");
+  const hasTakeProfit =
+    hasEntryStrategy ||
+    nodes.some((n) => "tradingType" in n.data && n.data.tradingType === "take-profit");
+  const hasPositionSizing =
+    hasEntryStrategy ||
+    nodes.some(
+      (n) =>
+        "tradingType" in n.data &&
+        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
+    );
 
   // Required: Timing block (When to trade)
   if (!hasTradingTimes) {
     issues.push({
       type: "error",
-      message: "A timing block is required - add one from 'When to trade' (Always, Custom Times, or Trading Sessions)",
+      message:
+        "A timing block is required - add one from 'When to trade' (Always, Custom Times, or Trading Sessions)",
       nodeType: "timing",
     });
   }
@@ -86,10 +97,12 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[], edges: Edge[] =
   // Warning: Buy/Sell nodes exist but are disconnected from flow
   if (hasPositionSizing && edges.length > 0) {
     const buySellNodes = nodes.filter(
-      (n) => "tradingType" in n.data && (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
+      (n) =>
+        "tradingType" in n.data &&
+        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
     );
     const disconnectedBuySell = buySellNodes.filter(
-      (n) => !edges.some(e => e.source === n.id || e.target === n.id)
+      (n) => !edges.some((e) => e.source === n.id || e.target === n.id)
     );
     if (disconnectedBuySell.length > 0) {
       issues.push({
@@ -105,16 +118,19 @@ export function validateStrategy(nodes: Node<BuilderNodeData>[], edges: Edge[] =
     (n) => "tradingType" in n.data && n.data.tradingType === "close-condition"
   );
   for (const ccNode of closeConditionNodes) {
-    const connectedEdges = edges.filter(e => e.source === ccNode.id || e.target === ccNode.id);
-    const connectedNodeIds = connectedEdges.map(e => e.source === ccNode.id ? e.target : e.source);
-    const hasConnectedSignal = connectedNodeIds.some(id => {
-      const node = nodes.find(n => n.id === id);
+    const connectedEdges = edges.filter((e) => e.source === ccNode.id || e.target === ccNode.id);
+    const connectedNodeIds = connectedEdges.map((e) =>
+      e.source === ccNode.id ? e.target : e.source
+    );
+    const hasConnectedSignal = connectedNodeIds.some((id) => {
+      const node = nodes.find((n) => n.id === id);
       return node && ("indicatorType" in node.data || "priceActionType" in node.data);
     });
     if (!hasConnectedSignal) {
       issues.push({
         type: "warning",
-        message: "Exit Signal node has no indicator or price action connected — it won't close any positions",
+        message:
+          "Exit Signal node has no indicator or price action connected — it won't close any positions",
         nodeType: "close-condition",
       });
     }

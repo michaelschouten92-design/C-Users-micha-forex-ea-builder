@@ -244,6 +244,9 @@ export function StrategyCanvas({
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  // Entry strategy drop error
+  const [entryStrategyError, setEntryStrategyError] = useState<string | null>(null);
+
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
@@ -252,6 +255,17 @@ export function StrategyCanvas({
       if (!data) return;
 
       const template: NodeTemplate = JSON.parse(data);
+
+      // Enforce: only one entry strategy block on canvas
+      if (template.defaultData && "entryType" in template.defaultData) {
+        const hasExisting = nodes.some((n) => n.data && "entryType" in n.data);
+        if (hasExisting) {
+          setEntryStrategyError("Only one entry strategy allowed. Remove the current one first.");
+          setTimeout(() => setEntryStrategyError(null), 4000);
+          return;
+        }
+      }
+
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -266,7 +280,7 @@ export function StrategyCanvas({
 
       setNodes((nds) => [...nds, newNode as Node]);
     },
-    [screenToFlowPosition, setNodes, getNextNodeId]
+    [screenToFlowPosition, setNodes, getNextNodeId, nodes]
   );
 
   // Handle node data changes from properties panel
@@ -674,6 +688,30 @@ export function StrategyCanvas({
                   d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
+            </div>
+          )}
+
+          {/* Entry strategy duplicate error toast */}
+          {entryStrategyError && (
+            <div
+              role="alert"
+              onClick={() => setEntryStrategyError(null)}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
+            >
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm font-medium">{entryStrategyError}</span>
             </div>
           )}
 

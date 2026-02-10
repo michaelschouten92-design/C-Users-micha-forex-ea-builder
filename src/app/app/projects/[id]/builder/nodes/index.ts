@@ -26,6 +26,9 @@ import {
   PartialCloseNode,
   LockProfitNode,
 } from "./trademanagement";
+import { EMACrossoverEntryNode } from "./entry-strategies/ema-crossover-entry-node";
+import { RSIReversalEntryNode } from "./entry-strategies/rsi-reversal-entry-node";
+import { RangeBreakoutEntryNode } from "./entry-strategies/range-breakout-entry-node";
 
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
@@ -53,6 +56,9 @@ export const nodeTypes: NodeTypes = {
   "trailing-stop": TrailingStopNode,
   "partial-close": PartialCloseNode,
   "lock-profit": LockProfitNode,
+  "ema-crossover-entry": EMACrossoverEntryNode,
+  "rsi-reversal-entry": RSIReversalEntryNode,
+  "range-breakout-entry": RangeBreakoutEntryNode,
 };
 
 // Re-export individual nodes for direct imports
@@ -81,4 +87,7 @@ export {
   TrailingStopNode,
   PartialCloseNode,
   LockProfitNode,
+  EMACrossoverEntryNode,
+  RSIReversalEntryNode,
+  RangeBreakoutEntryNode,
 };

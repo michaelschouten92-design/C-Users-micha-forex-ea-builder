@@ -1,6 +1,15 @@
 // Main MQL5 Code Generator — orchestrates modular generators
 
-import type { BuildJsonSchema, BuilderNode, BuilderEdge } from "@/types/builder";
+import type {
+  BuildJsonSchema,
+  BuilderNode,
+  BuilderEdge,
+  BuilderNodeData,
+  EMACrossoverEntryData,
+  RSIReversalEntryData,
+  RangeBreakoutEntryData,
+  EntryStrategyNodeData,
+} from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode } from "./types";
 
@@ -76,7 +85,266 @@ function getConnectedNodeIds(
   return connectedIds;
 }
 
+// Decompose entry strategy composite nodes into virtual primitive nodes
+function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: BuilderEdge[] } {
+  const d = node.data as EntryStrategyNodeData;
+  const baseId = node.id;
+  const virtualNodes: BuilderNode[] = [];
+  const virtualEdges: BuilderEdge[] = [];
+
+  // Determine direction
+  const wantBuy = d.direction === "BOTH" || d.direction === "BUY_ONLY";
+  const wantSell = d.direction === "BOTH" || d.direction === "SELL_ONLY";
+
+  // Create indicator/priceaction nodes based on entry type
+  if (d.entryType === "ema-crossover") {
+    const ema = d as EMACrossoverEntryData;
+    virtualNodes.push({
+      id: `${baseId}__ma-fast`,
+      type: "moving-average",
+      position: node.position,
+      data: {
+        label: `Fast EMA(${ema.fastPeriod})`,
+        category: "indicator",
+        indicatorType: "moving-average",
+        timeframe: ema.timeframe,
+        period: ema.fastPeriod,
+        method: "EMA",
+        signalMode: ema.signalMode,
+        shift: 0,
+      } as BuilderNodeData,
+    });
+    virtualNodes.push({
+      id: `${baseId}__ma-slow`,
+      type: "moving-average",
+      position: node.position,
+      data: {
+        label: `Slow EMA(${ema.slowPeriod})`,
+        category: "indicator",
+        indicatorType: "moving-average",
+        timeframe: ema.timeframe,
+        period: ema.slowPeriod,
+        method: "EMA",
+        signalMode: ema.signalMode,
+        shift: 0,
+      } as BuilderNodeData,
+    });
+  } else if (d.entryType === "rsi-reversal") {
+    const rsi = d as RSIReversalEntryData;
+    virtualNodes.push({
+      id: `${baseId}__rsi`,
+      type: "rsi",
+      position: node.position,
+      data: {
+        label: `RSI(${rsi.period})`,
+        category: "indicator",
+        indicatorType: "rsi",
+        timeframe: rsi.timeframe,
+        period: rsi.period,
+        overboughtLevel: rsi.overboughtLevel,
+        oversoldLevel: rsi.oversoldLevel,
+        signalMode: rsi.signalMode,
+      } as BuilderNodeData,
+    });
+  } else if (d.entryType === "range-breakout") {
+    const rb = d as RangeBreakoutEntryData;
+    virtualNodes.push({
+      id: `${baseId}__rb`,
+      type: "range-breakout",
+      position: node.position,
+      data: {
+        label: "Range Breakout",
+        category: "priceaction",
+        priceActionType: "range-breakout",
+        timeframe: rb.timeframe,
+        rangeType: rb.rangeType,
+        lookbackCandles: rb.lookbackCandles,
+        rangeSession: rb.rangeSession,
+        sessionStartHour: rb.sessionStartHour,
+        sessionStartMinute: rb.sessionStartMinute,
+        sessionEndHour: rb.sessionEndHour,
+        sessionEndMinute: rb.sessionEndMinute,
+        breakoutDirection: rb.breakoutDirection,
+        entryMode: rb.entryMode,
+        bufferPips: rb.bufferPips,
+        minRangePips: rb.minRangePips,
+        maxRangePips: rb.maxRangePips,
+      } as BuilderNodeData,
+    });
+  }
+
+  // Create buy node
+  if (wantBuy) {
+    virtualNodes.push({
+      id: `${baseId}__buy`,
+      type: "place-buy",
+      position: node.position,
+      data: {
+        label: "Place Buy",
+        category: "entry",
+        tradingType: "place-buy",
+        method: d.sizingMethod,
+        fixedLot: d.fixedLot,
+        riskPercent: d.riskPercent,
+        minLot: d.minLot,
+        maxLot: d.maxLot,
+      } as BuilderNodeData,
+    });
+  }
+
+  // Create sell node
+  if (wantSell) {
+    virtualNodes.push({
+      id: `${baseId}__sell`,
+      type: "place-sell",
+      position: node.position,
+      data: {
+        label: "Place Sell",
+        category: "entry",
+        tradingType: "place-sell",
+        method: d.sizingMethod,
+        fixedLot: d.fixedLot,
+        riskPercent: d.riskPercent,
+        minLot: d.minLot,
+        maxLot: d.maxLot,
+      } as BuilderNodeData,
+    });
+  }
+
+  // Create SL node
+  virtualNodes.push({
+    id: `${baseId}__sl`,
+    type: "stop-loss",
+    position: node.position,
+    data: {
+      label: "Stop Loss",
+      category: "riskmanagement",
+      tradingType: "stop-loss",
+      method: d.slMethod,
+      fixedPips: d.slFixedPips,
+      atrMultiplier: d.slAtrMultiplier,
+      atrPeriod: d.slAtrPeriod,
+    } as BuilderNodeData,
+  });
+
+  // Create TP node
+  virtualNodes.push({
+    id: `${baseId}__tp`,
+    type: "take-profit",
+    position: node.position,
+    data: {
+      label: "Take Profit",
+      category: "riskmanagement",
+      tradingType: "take-profit",
+      method: d.tpMethod,
+      fixedPips: d.tpFixedPips,
+      riskRewardRatio: d.tpRiskRewardRatio,
+      atrMultiplier: d.tpAtrMultiplier,
+      atrPeriod: d.tpAtrPeriod,
+    } as BuilderNodeData,
+  });
+
+  // Create edges: indicators → buy/sell → sl/tp
+  const indicatorIds = virtualNodes
+    .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
+    .map((n) => n.id);
+
+  for (const indId of indicatorIds) {
+    if (wantBuy) {
+      virtualEdges.push({
+        id: `${baseId}__e-${indId}-buy`,
+        source: indId,
+        target: `${baseId}__buy`,
+      });
+    }
+    if (wantSell) {
+      virtualEdges.push({
+        id: `${baseId}__e-${indId}-sell`,
+        source: indId,
+        target: `${baseId}__sell`,
+      });
+    }
+  }
+
+  if (wantBuy) {
+    virtualEdges.push({
+      id: `${baseId}__e-buy-sl`,
+      source: `${baseId}__buy`,
+      target: `${baseId}__sl`,
+    });
+    virtualEdges.push({
+      id: `${baseId}__e-buy-tp`,
+      source: `${baseId}__buy`,
+      target: `${baseId}__tp`,
+    });
+  }
+  if (wantSell) {
+    virtualEdges.push({
+      id: `${baseId}__e-sell-sl`,
+      source: `${baseId}__sell`,
+      target: `${baseId}__sl`,
+    });
+    virtualEdges.push({
+      id: `${baseId}__e-sell-tp`,
+      source: `${baseId}__sell`,
+      target: `${baseId}__tp`,
+    });
+  }
+
+  return { nodes: virtualNodes, edges: virtualEdges };
+}
+
+function decomposeEntryStrategies(
+  nodes: BuilderNode[],
+  edges: BuilderEdge[]
+): { nodes: BuilderNode[]; edges: BuilderEdge[] } {
+  const resultNodes: BuilderNode[] = [];
+  const resultEdges: BuilderEdge[] = [...edges];
+
+  for (const node of nodes) {
+    if (!("entryType" in node.data)) {
+      resultNodes.push(node);
+      continue;
+    }
+
+    const { nodes: virtualNodes, edges: virtualEdges } = expandEntryStrategy(node);
+    resultNodes.push(...virtualNodes);
+    resultEdges.push(...virtualEdges);
+
+    // Re-wire: any edge pointing TO the entry strategy node should point to the virtual indicators
+    const indicatorIds = virtualNodes
+      .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
+      .map((n) => n.id);
+
+    for (let i = 0; i < resultEdges.length; i++) {
+      const edge = resultEdges[i];
+      if (edge.target === node.id && indicatorIds.length > 0) {
+        // Replace this edge with edges to each virtual indicator
+        resultEdges.splice(i, 1);
+        for (const indId of indicatorIds) {
+          resultEdges.push({
+            id: `${edge.id}__rewire-${indId}`,
+            source: edge.source,
+            target: indId,
+          });
+        }
+        i--; // Adjust index after splice
+      }
+    }
+  }
+
+  return { nodes: resultNodes, edges: resultEdges };
+}
+
 export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string): string {
+  // Preprocess: decompose entry strategy composite blocks into virtual primitive nodes
+  const decomposed = decomposeEntryStrategies(buildJson.nodes, buildJson.edges);
+  const processedBuildJson: BuildJsonSchema = {
+    ...buildJson,
+    nodes: decomposed.nodes,
+    edges: decomposed.edges,
+  };
+
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
     magicNumber: buildJson.settings?.magicNumber ?? 123456,
@@ -128,7 +396,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   };
 
   // Get all nodes that are connected to the strategy (starting from timing nodes)
-  const connectedNodeIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, [
+  const connectedNodeIds = getConnectedNodeIds(processedBuildJson.nodes, processedBuildJson.edges, [
     "trading-session",
     "always",
     "custom-times",
@@ -171,7 +439,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   const closeConditionNodes: BuilderNode[] = [];
   const timeExitNodes: BuilderNode[] = [];
 
-  for (const n of buildJson.nodes) {
+  for (const n of processedBuildJson.nodes) {
     const nodeType = n.type as string;
     const data = n.data;
     const connected = isConnected(n);
@@ -259,7 +527,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
 
   // Generate SL/TP code (only if connected, otherwise use 0)
   if (hasStopLoss) {
-    generateStopLossCode(stopLossNodes[0], indicatorNodes, buildJson.edges, code);
+    generateStopLossCode(stopLossNodes[0], indicatorNodes, processedBuildJson.edges, code);
   } else if (hasBuy || hasSell) {
     // No SL node connected but we have trade entries - use 0 (no stop loss)
     code.onTick.push("double slPips = 0; // No Stop Loss connected");
@@ -277,7 +545,13 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
 
   // Generate close condition code
   closeConditionNodes.forEach((ccNode) => {
-    generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);
+    generateCloseConditionCode(
+      ccNode,
+      indicatorNodes,
+      priceActionNodes,
+      processedBuildJson.edges,
+      code
+    );
   });
 
   // Generate time-based exit code

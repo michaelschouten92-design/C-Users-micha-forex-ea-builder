@@ -25,16 +25,18 @@ export function NodeToolbar({
   settings,
   onSettingsChange,
 }: NodeToolbarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
+    new Set(["entrystrategy"])
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Primary categories in display order. "advanced" is a virtual group for advancedOnly blocks.
   const categories: NodeCategory[] = [
+    "entrystrategy",
     "timing",
-    "indicator",
-    "priceaction",
-    "entry",
     "riskmanagement",
     "trademanagement",
+    "advanced",
   ];
 
   const toggleCategory = (category: NodeCategory) => {
@@ -101,6 +103,18 @@ export function NodeToolbar({
       hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
       border: "border-[#A855F7]/30",
     },
+    entrystrategy: {
+      gradient: "bg-gradient-to-r from-[#059669] to-[#10B981]",
+      shadow: "shadow-[0_2px_8px_rgba(16,185,129,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)]",
+      border: "border-[#10B981]/30",
+    },
+    advanced: {
+      gradient: "bg-gradient-to-r from-[#475569] to-[#64748B]",
+      shadow: "shadow-[0_2px_8px_rgba(100,116,139,0.3)]",
+      hoverShadow: "hover:shadow-[0_4px_16px_rgba(100,116,139,0.4)]",
+      border: "border-[#64748B]/30",
+    },
   };
 
   const blockColors: Record<NodeCategory, string> = {
@@ -111,6 +125,8 @@ export function NodeToolbar({
     trading: "text-[#00C853]",
     riskmanagement: "text-[#FB7185]",
     trademanagement: "text-[#A855F7]",
+    entrystrategy: "text-[#10B981]",
+    advanced: "text-[#94A3B8]",
   };
 
   return (
@@ -172,7 +188,11 @@ export function NodeToolbar({
 
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {categories.map((category) => {
-          const allTemplates = NODE_TEMPLATES.filter((t) => t.category === category);
+          // "advanced" is a virtual group that collects all templates with advancedOnly flag
+          const allTemplates =
+            category === "advanced"
+              ? NODE_TEMPLATES.filter((t) => t.advancedOnly)
+              : NODE_TEMPLATES.filter((t) => t.category === category && !t.advancedOnly);
           const templates = searchQuery
             ? allTemplates.filter(
                 (t) =>

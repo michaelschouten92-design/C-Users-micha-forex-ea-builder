@@ -42,6 +42,10 @@ import type {
   LockProfitMethod,
   CCINodeData,
   TimeExitNodeData,
+  EMACrossoverEntryData,
+  RSIReversalEntryData,
+  RangeBreakoutEntryData,
+  PositionSizingMethod,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -246,6 +250,20 @@ function NodeFields({
   data: BuilderNodeData;
   onChange: (updates: Partial<BuilderNodeData>) => void;
 }) {
+  // Entry Strategy nodes
+  if ("entryType" in data) {
+    switch (data.entryType) {
+      case "ema-crossover":
+        return <EMACrossoverEntryFields data={data as EMACrossoverEntryData} onChange={onChange} />;
+      case "rsi-reversal":
+        return <RSIReversalEntryFields data={data as RSIReversalEntryData} onChange={onChange} />;
+      case "range-breakout":
+        return (
+          <RangeBreakoutEntryFields data={data as RangeBreakoutEntryData} onChange={onChange} />
+        );
+    }
+  }
+
   // Timing nodes
   if ("timingType" in data) {
     switch (data.timingType) {
@@ -2098,6 +2116,476 @@ function TimeExitFields({
       >
         Automatically closes positions after the specified number of bars on the selected timeframe.
       </div>
+    </>
+  );
+}
+
+// ============================================
+// ENTRY STRATEGY SHARED SECTIONS
+// ============================================
+
+const DIRECTION_OPTIONS = [
+  { value: "BOTH", label: "Both (Buy & Sell)" },
+  { value: "BUY_ONLY", label: "Buy Only" },
+  { value: "SELL_ONLY", label: "Sell Only" },
+] as const;
+
+function EntryStrategyPositionSizingSection({
+  data,
+  onChange,
+}: {
+  data: EMACrossoverEntryData | RSIReversalEntryData | RangeBreakoutEntryData;
+  onChange: (updates: Record<string, unknown>) => void;
+}) {
+  return (
+    <>
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Position Sizing
+        </span>
+      </div>
+      <SelectField
+        label="Sizing Method"
+        value={data.sizingMethod}
+        options={[
+          { value: "FIXED_LOT", label: "Fixed Lot" },
+          { value: "RISK_PERCENT", label: "Risk %" },
+        ]}
+        onChange={(v) => onChange({ sizingMethod: v as PositionSizingMethod })}
+      />
+      {data.sizingMethod === "FIXED_LOT" && (
+        <NumberField
+          label="Lot Size"
+          value={data.fixedLot}
+          min={0.01}
+          max={100}
+          step={0.01}
+          onChange={(v) => onChange({ fixedLot: v })}
+        />
+      )}
+      {data.sizingMethod === "RISK_PERCENT" && (
+        <NumberField
+          label="Risk %"
+          value={data.riskPercent}
+          min={0.1}
+          max={100}
+          step={0.1}
+          onChange={(v) => onChange({ riskPercent: v })}
+        />
+      )}
+      <NumberField
+        label="Min Lot"
+        value={data.minLot}
+        min={0.01}
+        max={100}
+        step={0.01}
+        onChange={(v) => onChange({ minLot: v })}
+      />
+      <NumberField
+        label="Max Lot"
+        value={data.maxLot}
+        min={0.01}
+        max={1000}
+        step={0.01}
+        onChange={(v) => onChange({ maxLot: v })}
+      />
+      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
+    </>
+  );
+}
+
+function EntryStrategySLTPSection({
+  data,
+  onChange,
+}: {
+  data: EMACrossoverEntryData | RSIReversalEntryData | RangeBreakoutEntryData;
+  onChange: (updates: Record<string, unknown>) => void;
+}) {
+  return (
+    <>
+      {/* Stop Loss */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Stop Loss
+        </span>
+      </div>
+      <SelectField
+        label="SL Method"
+        value={data.slMethod}
+        options={[
+          { value: "FIXED_PIPS", label: "Fixed Pips" },
+          { value: "ATR_BASED", label: "ATR-Based" },
+        ]}
+        onChange={(v) => onChange({ slMethod: v })}
+      />
+      {data.slMethod === "FIXED_PIPS" && (
+        <NumberField
+          label="SL Pips"
+          value={data.slFixedPips}
+          min={1}
+          max={1000}
+          onChange={(v) => onChange({ slFixedPips: v })}
+        />
+      )}
+      {data.slMethod === "ATR_BASED" && (
+        <>
+          <NumberField
+            label="ATR Period"
+            value={data.slAtrPeriod}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ slAtrPeriod: v })}
+          />
+          <NumberField
+            label="ATR Multiplier"
+            value={data.slAtrMultiplier}
+            min={0.1}
+            max={10}
+            step={0.1}
+            onChange={(v) => onChange({ slAtrMultiplier: v })}
+          />
+        </>
+      )}
+
+      {/* Take Profit */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Take Profit
+        </span>
+      </div>
+      <SelectField
+        label="TP Method"
+        value={data.tpMethod}
+        options={[
+          { value: "FIXED_PIPS", label: "Fixed Pips" },
+          { value: "RISK_REWARD", label: "Risk:Reward Ratio" },
+          { value: "ATR_BASED", label: "ATR-Based" },
+        ]}
+        onChange={(v) => onChange({ tpMethod: v })}
+      />
+      {data.tpMethod === "FIXED_PIPS" && (
+        <NumberField
+          label="TP Pips"
+          value={data.tpFixedPips}
+          min={1}
+          max={1000}
+          onChange={(v) => onChange({ tpFixedPips: v })}
+        />
+      )}
+      {data.tpMethod === "RISK_REWARD" && (
+        <NumberField
+          label="R:R Ratio"
+          value={data.tpRiskRewardRatio}
+          min={0.1}
+          max={20}
+          step={0.1}
+          onChange={(v) => onChange({ tpRiskRewardRatio: v })}
+        />
+      )}
+      {data.tpMethod === "ATR_BASED" && (
+        <>
+          <NumberField
+            label="ATR Period"
+            value={data.tpAtrPeriod}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ tpAtrPeriod: v })}
+          />
+          <NumberField
+            label="ATR Multiplier"
+            value={data.tpAtrMultiplier}
+            min={0.1}
+            max={20}
+            step={0.1}
+            onChange={(v) => onChange({ tpAtrMultiplier: v })}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+// ============================================
+// ENTRY STRATEGY FIELD COMPONENTS
+// ============================================
+
+function EMACrossoverEntryFields({
+  data,
+  onChange,
+}: {
+  data: EMACrossoverEntryData;
+  onChange: (updates: Partial<EMACrossoverEntryData>) => void;
+}) {
+  return (
+    <>
+      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        All-in-one EMA crossover entry with built-in SL/TP
+      </div>
+
+      {/* Strategy Settings */}
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="Fast Period"
+        value={data.fastPeriod}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ fastPeriod: v })}
+      />
+      <NumberField
+        label="Slow Period"
+        value={data.slowPeriod}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ slowPeriod: v })}
+      />
+      {data.fastPeriod >= data.slowPeriod && (
+        <FieldWarning message="Fast period should be smaller than slow period" />
+      )}
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as EMACrossoverEntryData["signalMode"] })}
+      />
+
+      {/* Direction */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Direction
+        </span>
+      </div>
+      <SelectField
+        label="Trade Direction"
+        value={data.direction}
+        options={[...DIRECTION_OPTIONS]}
+        onChange={(v) => onChange({ direction: v as EMACrossoverEntryData["direction"] })}
+      />
+
+      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
+      <EntryStrategySLTPSection data={data} onChange={onChange} />
+    </>
+  );
+}
+
+function RSIReversalEntryFields({
+  data,
+  onChange,
+}: {
+  data: RSIReversalEntryData;
+  onChange: (updates: Partial<RSIReversalEntryData>) => void;
+}) {
+  return (
+    <>
+      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        All-in-one RSI reversal entry with built-in SL/TP
+      </div>
+
+      {/* Strategy Settings */}
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="RSI Period"
+        value={data.period}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ period: v })}
+      />
+      <NumberField
+        label="Overbought Level"
+        value={data.overboughtLevel}
+        min={50}
+        max={100}
+        onChange={(v) => onChange({ overboughtLevel: v })}
+      />
+      <NumberField
+        label="Oversold Level"
+        value={data.oversoldLevel}
+        min={0}
+        max={50}
+        onChange={(v) => onChange({ oversoldLevel: v })}
+      />
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought level must be higher than oversold level" />
+      )}
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as RSIReversalEntryData["signalMode"] })}
+      />
+
+      {/* Direction */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Direction
+        </span>
+      </div>
+      <SelectField
+        label="Trade Direction"
+        value={data.direction}
+        options={[...DIRECTION_OPTIONS]}
+        onChange={(v) => onChange({ direction: v as RSIReversalEntryData["direction"] })}
+      />
+
+      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
+      <EntryStrategySLTPSection data={data} onChange={onChange} />
+    </>
+  );
+}
+
+function RangeBreakoutEntryFields({
+  data,
+  onChange,
+}: {
+  data: RangeBreakoutEntryData;
+  onChange: (updates: Partial<RangeBreakoutEntryData>) => void;
+}) {
+  return (
+    <>
+      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        All-in-one range breakout entry with built-in SL/TP
+      </div>
+
+      {/* Strategy Settings */}
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Range Type"
+        value={data.rangeType}
+        options={RANGE_TYPE_OPTIONS}
+        onChange={(v) => onChange({ rangeType: v as RangeType })}
+      />
+      {data.rangeType === "PREVIOUS_CANDLES" && (
+        <NumberField
+          label="Lookback Candles"
+          value={data.lookbackCandles}
+          min={2}
+          max={500}
+          onChange={(v) => onChange({ lookbackCandles: v })}
+        />
+      )}
+      {data.rangeType === "SESSION" && (
+        <SelectField
+          label="Session"
+          value={data.rangeSession}
+          options={RANGE_SESSION_OPTIONS}
+          onChange={(v) => onChange({ rangeSession: v as RangeSession })}
+        />
+      )}
+      {(data.rangeType === "TIME_WINDOW" ||
+        (data.rangeType === "SESSION" && data.rangeSession === "CUSTOM")) && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <TimeField
+              label="Start"
+              hour={data.sessionStartHour}
+              minute={data.sessionStartMinute}
+              onHourChange={(v) => onChange({ sessionStartHour: v })}
+              onMinuteChange={(v) => onChange({ sessionStartMinute: v })}
+            />
+            <span className="text-[#64748B] text-xs mt-4">to</span>
+            <TimeField
+              label="End"
+              hour={data.sessionEndHour}
+              minute={data.sessionEndMinute}
+              onHourChange={(v) => onChange({ sessionEndHour: v })}
+              onMinuteChange={(v) => onChange({ sessionEndMinute: v })}
+            />
+          </div>
+        </div>
+      )}
+      <SelectField
+        label="Breakout Direction"
+        value={data.breakoutDirection}
+        options={BREAKOUT_DIRECTION_OPTIONS}
+        onChange={(v) => onChange({ breakoutDirection: v as BreakoutDirection })}
+      />
+      <SelectField
+        label="Entry Mode"
+        value={data.entryMode}
+        options={ENTRY_MODE_OPTIONS}
+        onChange={(v) => onChange({ entryMode: v as EntryMode })}
+      />
+      <NumberField
+        label="Buffer (pips)"
+        value={data.bufferPips}
+        min={0}
+        max={50}
+        onChange={(v) => onChange({ bufferPips: v })}
+      />
+      <NumberField
+        label="Min Range (pips)"
+        value={data.minRangePips}
+        min={0}
+        max={500}
+        onChange={(v) => onChange({ minRangePips: v })}
+      />
+      <NumberField
+        label="Max Range (pips, 0=no limit)"
+        value={data.maxRangePips}
+        min={0}
+        max={1000}
+        onChange={(v) => onChange({ maxRangePips: v })}
+      />
+      {data.maxRangePips > 0 && data.minRangePips > data.maxRangePips && (
+        <FieldWarning message="Min range should not exceed max range" />
+      )}
+
+      {/* Direction */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+          Direction
+        </span>
+      </div>
+      <SelectField
+        label="Trade Direction"
+        value={data.direction}
+        options={[...DIRECTION_OPTIONS]}
+        onChange={(v) => onChange({ direction: v as RangeBreakoutEntryData["direction"] })}
+      />
+
+      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
+      <EntryStrategySLTPSection data={data} onChange={onChange} />
     </>
   );
 }

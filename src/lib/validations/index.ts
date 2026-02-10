@@ -80,6 +80,8 @@ const nodeCategorySchema = z.enum([
   "trading",
   "riskmanagement",
   "trademanagement",
+  "entrystrategy",
+  "advanced",
 ]);
 
 const timeframeSchema = z.enum(["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"]);
@@ -405,6 +407,71 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
     lockPercent: z.number().min(0).max(100),
     lockPips: z.number().min(0).max(10000),
     checkIntervalPips: z.number().min(0).max(10000),
+  })
+  .strip();
+
+// ---- Entry Strategy node data schemas ----
+const baseEntryStrategyFieldsSchema = z.object({
+  direction: z.enum(["BOTH", "BUY_ONLY", "SELL_ONLY"]),
+  sizingMethod: z.enum(["FIXED_LOT", "RISK_PERCENT"]),
+  fixedLot: z.number().min(0.01).max(1000),
+  riskPercent: z.number().min(0.1).max(100),
+  minLot: z.number().min(0.01).max(1000),
+  maxLot: z.number().min(0.01).max(1000),
+  slMethod: z.enum(["FIXED_PIPS", "ATR_BASED"]),
+  slFixedPips: z.number().min(1).max(10000),
+  slAtrMultiplier: z.number().min(0.1).max(100),
+  slAtrPeriod: z.number().int().min(1).max(1000),
+  tpMethod: z.enum(["FIXED_PIPS", "RISK_REWARD", "ATR_BASED"]),
+  tpFixedPips: z.number().min(1).max(10000),
+  tpRiskRewardRatio: z.number().min(0.1).max(100),
+  tpAtrMultiplier: z.number().min(0.1).max(100),
+  tpAtrPeriod: z.number().int().min(1).max(1000),
+});
+
+const emaCrossoverEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("ema-crossover"),
+    timeframe: timeframeSchema,
+    fastPeriod: z.number().int().min(1).max(1000),
+    slowPeriod: z.number().int().min(1).max(1000),
+    signalMode: signalModeSchema,
+  })
+  .strip();
+
+const rsiReversalEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("rsi-reversal"),
+    timeframe: timeframeSchema,
+    period: z.number().int().min(1).max(1000),
+    overboughtLevel: z.number().min(0).max(100),
+    oversoldLevel: z.number().min(0).max(100),
+    signalMode: signalModeSchema,
+  })
+  .strip();
+
+const rangeBreakoutEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("range-breakout"),
+    timeframe: timeframeSchema,
+    rangeType: z.enum(["PREVIOUS_CANDLES", "SESSION", "TIME_WINDOW"]),
+    lookbackCandles: z.number().int().min(1).max(10000),
+    rangeSession: z.enum(["ASIAN", "LONDON", "NEW_YORK", "CUSTOM"]),
+    sessionStartHour: z.number().int().min(0).max(23),
+    sessionStartMinute: z.number().int().min(0).max(59),
+    sessionEndHour: z.number().int().min(0).max(23),
+    sessionEndMinute: z.number().int().min(0).max(59),
+    breakoutDirection: z.enum(["BUY_ON_HIGH", "SELL_ON_LOW", "BOTH"]),
+    entryMode: z.enum(["IMMEDIATE", "ON_CLOSE", "AFTER_RETEST"]),
+    bufferPips: z.number().min(0).max(1000),
+    minRangePips: z.number().min(0).max(10000),
+    maxRangePips: z.number().min(0).max(10000),
   })
   .strip();
 
