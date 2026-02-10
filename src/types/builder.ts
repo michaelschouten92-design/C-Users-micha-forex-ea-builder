@@ -725,13 +725,12 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       htfEma: 200,
     } as MACDCrossoverEntryData,
   },
-  // Trade Management (Pro only)
+  // Trade Management
   {
     type: "breakeven-stop",
     label: "Breakeven Stop",
     category: "trademanagement",
     description: "Move SL to breakeven at profit target",
-    proOnly: true,
     defaultData: {
       label: "Breakeven Stop",
       category: "trademanagement",
@@ -749,7 +748,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Trailing Stop",
     category: "trademanagement",
     description: "Dynamic stop that follows price",
-    proOnly: true,
     defaultData: {
       label: "Trailing Stop",
       category: "trademanagement",
@@ -767,7 +765,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Partial Close",
     category: "trademanagement",
     description: "Close portion of position at target",
-    proOnly: true,
     defaultData: {
       label: "Partial Close",
       category: "trademanagement",
@@ -782,7 +779,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     label: "Lock Profit",
     category: "trademanagement",
     description: "Move SL to lock in profits",
-    proOnly: true,
     defaultData: {
       label: "Lock Profit",
       category: "trademanagement",
