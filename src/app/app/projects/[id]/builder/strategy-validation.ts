@@ -12,12 +12,8 @@ export interface ValidationResult {
   canExport: boolean;
   issues: ValidationIssue[];
   summary: {
-    hasTradingTimes: boolean;
-    hasIndicator: boolean;
-    hasPriceAction: boolean;
-    hasStopLoss: boolean;
-    hasTakeProfit: boolean;
-    hasPositionSizing: boolean;
+    hasTiming: boolean;
+    hasEntryStrategy: boolean;
   };
 }
 
@@ -27,112 +23,46 @@ export function validateStrategy(
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
 
-  // Check for entry strategy composite blocks
+  // Check for entry strategy composite blocks (contain signal, SL, TP, position sizing)
   const hasEntryStrategy = nodes.some((n) => "entryType" in n.data);
 
-  // Check for each node type
-  const hasTradingTimes = nodes.some((n) => "timingType" in n.data);
-  const hasIndicator = hasEntryStrategy || nodes.some((n) => "indicatorType" in n.data);
-  const hasPriceAction = hasEntryStrategy || nodes.some((n) => "priceActionType" in n.data);
-  const hasStopLoss =
-    hasEntryStrategy ||
-    nodes.some((n) => "tradingType" in n.data && n.data.tradingType === "stop-loss");
-  const hasTakeProfit =
-    hasEntryStrategy ||
-    nodes.some((n) => "tradingType" in n.data && n.data.tradingType === "take-profit");
-  const hasPositionSizing =
-    hasEntryStrategy ||
-    nodes.some(
-      (n) =>
-        "tradingType" in n.data &&
-        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
-    );
+  // Check for timing block
+  const hasTiming = nodes.some((n) => "timingType" in n.data);
 
-  // Required: Timing block (When to trade)
-  if (!hasTradingTimes) {
+  // An entry strategy block is the minimum requirement
+  if (!hasEntryStrategy) {
+    issues.push({
+      type: "error",
+      message: "Add an entry strategy block to define your trading logic",
+      nodeType: "entrystrategy",
+    });
+  }
+
+  // Timing is required (when to trade)
+  if (!hasTiming) {
     issues.push({
       type: "error",
       message:
-        "A timing block is required - add one from 'When to trade' (Always, Custom Times, or Trading Sessions)",
+        "Add a timing block (Always, Custom Times, or Trading Sessions) to define when the strategy runs",
       nodeType: "timing",
     });
   }
 
-  // Required: At least one indicator or price action node for entry logic
-  if (!hasIndicator && !hasPriceAction) {
-    issues.push({
-      type: "error",
-      message: "At least one Indicator or Price Action node is required for entry/exit logic",
-      nodeType: "indicator",
-    });
-  }
+  // Check that entry strategy is connected to a timing block
+  if (hasEntryStrategy && hasTiming && edges.length > 0) {
+    const entryNodes = nodes.filter((n) => "entryType" in n.data);
+    const timingNodes = nodes.filter((n) => "timingType" in n.data);
+    const timingIds = new Set(timingNodes.map((n) => n.id));
 
-  // Recommended: Stop Loss
-  if (!hasStopLoss) {
-    issues.push({
-      type: "warning",
-      message: "Stoploss is recommended for risk management",
-      nodeType: "stop-loss",
-    });
-  }
-
-  // Recommended: Take Profit
-  if (!hasTakeProfit) {
-    issues.push({
-      type: "warning",
-      message: "Take Profit is recommended to secure profits",
-      nodeType: "take-profit",
-    });
-  }
-
-  // Recommended: Position Sizing
-  if (!hasPositionSizing) {
-    issues.push({
-      type: "warning",
-      message: "Place Buy or Place Sell is recommended - using default 0.1 lot",
-      nodeType: "place-buy",
-    });
-  }
-
-  // Warning: Buy/Sell nodes exist but are disconnected from flow
-  if (hasPositionSizing && edges.length > 0) {
-    const buySellNodes = nodes.filter(
-      (n) =>
-        "tradingType" in n.data &&
-        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell")
-    );
-    const disconnectedBuySell = buySellNodes.filter(
-      (n) => !edges.some((e) => e.source === n.id || e.target === n.id)
-    );
-    if (disconnectedBuySell.length > 0) {
-      issues.push({
-        type: "warning",
-        message: "No Place Buy or Place Sell connected — strategy won't open any trades",
-        nodeType: "place-buy",
-      });
-    }
-  }
-
-  // Warning: Close condition node exists but no indicator/price action connected
-  const closeConditionNodes = nodes.filter(
-    (n) => "tradingType" in n.data && n.data.tradingType === "close-condition"
-  );
-  for (const ccNode of closeConditionNodes) {
-    const connectedEdges = edges.filter((e) => e.source === ccNode.id || e.target === ccNode.id);
-    const connectedNodeIds = connectedEdges.map((e) =>
-      e.source === ccNode.id ? e.target : e.source
-    );
-    const hasConnectedSignal = connectedNodeIds.some((id) => {
-      const node = nodes.find((n) => n.id === id);
-      return node && ("indicatorType" in node.data || "priceActionType" in node.data);
-    });
-    if (!hasConnectedSignal) {
-      issues.push({
-        type: "warning",
-        message:
-          "Exit Signal node has no indicator or price action connected — it won't close any positions",
-        nodeType: "close-condition",
-      });
+    for (const entry of entryNodes) {
+      const isConnected = edges.some((e) => e.target === entry.id && timingIds.has(e.source));
+      if (!isConnected) {
+        issues.push({
+          type: "warning",
+          message: `"${entry.data.label}" is not connected to a timing block`,
+          nodeType: "entrystrategy",
+        });
+      }
     }
   }
 
@@ -145,12 +75,8 @@ export function validateStrategy(
     canExport,
     issues,
     summary: {
-      hasTradingTimes,
-      hasIndicator,
-      hasPriceAction,
-      hasStopLoss,
-      hasTakeProfit,
-      hasPositionSizing,
+      hasTiming,
+      hasEntryStrategy,
     },
   };
 }

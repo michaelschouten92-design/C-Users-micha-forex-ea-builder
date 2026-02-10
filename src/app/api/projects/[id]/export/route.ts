@@ -287,9 +287,12 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   const errors: string[] = [];
 
   if (!buildJson.nodes || buildJson.nodes.length === 0) {
-    errors.push("No nodes found. Add at least one timing block and indicator.");
+    errors.push("No nodes found. Add a timing block and an entry strategy.");
     return errors;
   }
+
+  // Entry strategy blocks contain signal, SL, TP, and position sizing
+  const hasEntryStrategy = buildJson.nodes.some((n) => n.data && "entryType" in n.data);
 
   // Check for timing node (required)
   const timingTypes = ["always", "custom-times", "trading-session"];
@@ -299,123 +302,17 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
 
   if (!hasTimingNode) {
     errors.push(
-      "No timing block found. Add a 'When to trade' block (Always, Custom Times, or Trading Sessions)."
+      "No timing block found. Add a timing block (Always, Custom Times, or Trading Sessions)."
     );
   }
 
-  // Check by node type OR by data properties (for flexibility)
-  const indicatorTypes = [
-    "moving-average",
-    "rsi",
-    "macd",
-    "bollinger-bands",
-    "atr",
-    "adx",
-    "stochastic",
-  ];
-  const hasIndicator = buildJson.nodes.some(
-    (n) => indicatorTypes.includes(n.type as string) || (n.data && "indicatorType" in n.data)
-  );
-
-  const priceActionTypes = ["candlestick-pattern", "support-resistance", "range-breakout"];
-  const hasPriceAction = buildJson.nodes.some(
-    (n) => priceActionTypes.includes(n.type as string) || (n.data && "priceActionType" in n.data)
-  );
-
-  if (!hasIndicator && !hasPriceAction) {
-    errors.push("No signal nodes found. Add at least one Indicator or Price Action node.");
-  }
-
-  // Warn about disconnected nodes (not connected to timing flow)
-  const connectedIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, timingTypes);
-  const disconnectedNodes = buildJson.nodes.filter(
-    (n) =>
-      !connectedIds.has(n.id) &&
-      !timingTypes.includes(n.type as string) &&
-      !("timingType" in n.data)
-  );
-  if (disconnectedNodes.length > 0) {
-    const labels = disconnectedNodes.map((n) => n.data?.label || n.type).join(", ");
+  if (!hasEntryStrategy) {
     errors.push(
-      `Disconnected nodes found: ${labels}. Connect them to the strategy flow or remove them.`
+      "No entry strategy found. Add an entry strategy block to define your trading logic."
     );
-  }
-
-  // Warn about buy/sell nodes that exist but are disconnected
-  const buySellNodes = buildJson.nodes.filter(
-    (n) =>
-      n.type === "place-buy" ||
-      n.type === "place-sell" ||
-      (n.data &&
-        "tradingType" in n.data &&
-        (n.data.tradingType === "place-buy" || n.data.tradingType === "place-sell"))
-  );
-  if (buySellNodes.length > 0) {
-    const disconnectedBuySell = buySellNodes.filter(
-      (n) => !buildJson.edges.some((e) => e.source === n.id || e.target === n.id)
-    );
-    if (disconnectedBuySell.length > 0) {
-      errors.push("No Place Buy or Place Sell connected — strategy won't open any trades.");
-    }
-  }
-
-  // Warn about close condition nodes without connected indicators
-  const closeConditionNodes = buildJson.nodes.filter(
-    (n) =>
-      n.type === "close-condition" ||
-      (n.data && "tradingType" in n.data && n.data.tradingType === "close-condition")
-  );
-  for (const ccNode of closeConditionNodes) {
-    const connectedEdges = buildJson.edges.filter(
-      (e) => e.source === ccNode.id || e.target === ccNode.id
-    );
-    const connectedNodeIds = connectedEdges.map((e) =>
-      e.source === ccNode.id ? e.target : e.source
-    );
-    const hasConnectedSignal = connectedNodeIds.some((id) => {
-      const node = buildJson.nodes.find((n) => n.id === id);
-      return (
-        node &&
-        (indicatorTypes.includes(node.type as string) ||
-          "indicatorType" in node.data ||
-          priceActionTypes.includes(node.type as string) ||
-          "priceActionType" in node.data)
-      );
-    });
-    if (!hasConnectedSignal) {
-      errors.push(
-        "Exit Signal node has no indicator or price action connected — it won't close any positions."
-      );
-    }
   }
 
   return errors;
-}
-
-// BFS to find all nodes connected from timing nodes
-function getConnectedNodeIds(
-  nodes: BuildJsonSchema["nodes"],
-  edges: BuildJsonSchema["edges"],
-  startNodeTypes: string[]
-): Set<string> {
-  const connectedIds = new Set<string>();
-  const startNodes = nodes.filter(
-    (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
-  );
-  const queue: string[] = startNodes.map((n) => n.id);
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    if (connectedIds.has(currentId)) continue;
-    connectedIds.add(currentId);
-    const outgoing = edges.filter((e) => e.source === currentId);
-    for (const edge of outgoing) {
-      if (!connectedIds.has(edge.target)) {
-        queue.push(edge.target);
-      }
-    }
-  }
-  return connectedIds;
 }
 
 function sanitizeFileName(name: string): string {
