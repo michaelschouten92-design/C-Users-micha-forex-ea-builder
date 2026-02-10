@@ -16,7 +16,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
   };
 
   return (
-    <div className="border-t border-[rgba(79,70,229,0.2)]">
+    <div>
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -24,30 +24,10 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
         }}
         onMouseDown={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="w-full flex items-center justify-between px-3 py-3 text-sm font-semibold text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+        className="w-full flex items-center justify-between px-4 py-3 text-white font-semibold text-sm tracking-wide rounded-xl border transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-[#4F46E5] to-[#6366F1] shadow-[0_2px_8px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_16px_rgba(79,70,229,0.4)] border-[#6366F1]/30"
+        aria-expanded={isExpanded}
       >
-        <div className="flex items-center gap-2">
-          <svg
-            className="w-4 h-4 text-[#94A3B8]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-          <span>Strategy Settings</span>
-        </div>
+        <span className="whitespace-nowrap">Strategy Settings</span>
         <svg
           className={`w-4 h-4 opacity-80 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
           fill="none"
@@ -60,7 +40,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
       </button>
 
       {isExpanded && (
-        <div className="px-3 pb-3 space-y-3">
+        <div className="mt-2 pl-1 space-y-3 px-3 pb-2">
           {/* Magic Number */}
           <SettingsNumberField
             label="Magic Number"
