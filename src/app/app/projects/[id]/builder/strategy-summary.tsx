@@ -271,7 +271,7 @@ export function StrategySummary({ nodes, edges }: StrategySummaryProps): React.R
   if (nodes.length === 0) return null;
 
   return (
-    <div className="absolute top-14 right-4 z-10">
+    <div className="absolute top-14 left-4 z-10">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="px-3 py-1.5 text-xs font-medium bg-[#1E293B]/90 backdrop-blur-sm text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] rounded-lg transition-all duration-200"

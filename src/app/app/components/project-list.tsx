@@ -228,9 +228,9 @@ export function ProjectList({ projects }: { projects: Project[] }) {
           onChange={(e) => setSort(e.target.value as SortOption)}
           className="px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
         >
-          <option value="updated">Last updated</option>
-          <option value="created">Newest first</option>
-          <option value="name">Name (A-Z)</option>
+          <option value="updated">Last updated ↓</option>
+          <option value="created">Newest first ↓</option>
+          <option value="name">Name (A→Z)</option>
         </select>
       </div>
 
@@ -272,10 +272,23 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         )}
       </div>
 
+      {/* Results count */}
+      {search.trim() && filtered.length > 0 && (
+        <p className="text-xs text-[#64748B] mb-3">
+          {filtered.length} project{filtered.length !== 1 ? "s" : ""} found
+        </p>
+      )}
+
       {/* Results */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-[#64748B]">
           <p className="text-sm">No projects match &ldquo;{search}&rdquo;</p>
+          <button
+            onClick={() => setSearch("")}
+            className="mt-2 text-xs text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+          >
+            Clear search
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -5,6 +5,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MiniMap,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -428,6 +429,16 @@ export function StrategyCanvas({
           >
             <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
             <Controls />
+            <MiniMap
+              nodeStrokeColor="rgba(79, 70, 229, 0.5)"
+              nodeColor="rgba(79, 70, 229, 0.3)"
+              maskColor="rgba(15, 23, 42, 0.8)"
+              style={{
+                backgroundColor: "#1A0626",
+                border: "1px solid rgba(79,70,229,0.2)",
+                borderRadius: "8px",
+              }}
+            />
           </ReactFlow>
 
           {/* Empty canvas: Template cards on the right */}
@@ -727,6 +738,7 @@ export function StrategyCanvas({
                   <button
                     onClick={() => setShowShortcuts(false)}
                     className="text-[#64748B] hover:text-white p-1 transition-colors"
+                    aria-label="Close shortcuts"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path

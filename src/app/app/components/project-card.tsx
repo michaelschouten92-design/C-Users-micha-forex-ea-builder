@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
@@ -23,6 +23,20 @@ export function ProjectCard({ project }: { project: Project }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const deleteModalRef = useRef<HTMLDivElement>(null);
+
+  // ESC key + focus management for delete confirmation modal
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowDeleteConfirm(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    // Focus the cancel button when modal opens
+    const cancelBtn = deleteModalRef.current?.querySelector<HTMLButtonElement>("button");
+    cancelBtn?.focus();
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [showDeleteConfirm]);
 
   async function handleDuplicate() {
     setDuplicating(true);
@@ -86,7 +100,7 @@ export function ProjectCard({ project }: { project: Project }) {
               setShowMenu(!showMenu);
             }}
             aria-label="Project options"
-            className="text-[#64748B] hover:text-[#CBD5E1] p-1 -mr-2 -mt-1 transition-colors duration-200"
+            className="text-[#64748B] hover:text-[#CBD5E1] p-2 -mr-2 -mt-1 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -143,6 +157,10 @@ export function ProjectCard({ project }: { project: Project }) {
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
+            ref={deleteModalRef}
+            role="alertdialog"
+            aria-labelledby="delete-modal-title"
+            aria-describedby="delete-modal-desc"
             className="bg-[#1A0626] border border-[rgba(239,68,68,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
@@ -161,8 +179,13 @@ export function ProjectCard({ project }: { project: Project }) {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white text-center mb-2">Delete Project</h3>
-            <p className="text-sm text-[#94A3B8] text-center mb-6">
+            <h3
+              id="delete-modal-title"
+              className="text-lg font-semibold text-white text-center mb-2"
+            >
+              Delete Project
+            </h3>
+            <p id="delete-modal-desc" className="text-sm text-[#94A3B8] text-center mb-6">
               Are you sure you want to delete{" "}
               <span className="text-white font-medium">&ldquo;{project.name}&rdquo;</span>? This
               action cannot be undone.

@@ -68,11 +68,21 @@ export function CreateProjectButton() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4">
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-labelledby="create-project-title"
+            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <form onSubmit={handleSubmit}>
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">New Project</h3>
+                <h3 id="create-project-title" className="text-lg font-semibold text-white mb-4">
+                  New Project
+                </h3>
 
                 {error && (
                   <div
@@ -112,11 +122,16 @@ export function CreateProjectButton() {
                       id="name"
                       type="text"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => setName(e.target.value.slice(0, 100))}
                       placeholder="My EA Strategy"
                       required
+                      autoFocus
+                      maxLength={100}
                       className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
                     />
+                    <span className="text-[10px] text-[#64748B] mt-0.5 block text-right">
+                      {name.length}/100
+                    </span>
                   </div>
 
                   <div>
@@ -129,11 +144,15 @@ export function CreateProjectButton() {
                     <textarea
                       id="description"
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => setDescription(e.target.value.slice(0, 500))}
                       placeholder="Optional description..."
                       rows={3}
+                      maxLength={500}
                       className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
                     />
+                    <span className="text-[10px] text-[#64748B] mt-0.5 block text-right">
+                      {description.length}/500
+                    </span>
                   </div>
                 </div>
               </div>

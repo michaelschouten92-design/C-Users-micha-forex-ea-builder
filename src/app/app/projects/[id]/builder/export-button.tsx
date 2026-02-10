@@ -97,9 +97,13 @@ export function ExportButton({
     URL.revokeObjectURL(url);
   }
 
+  const [copied, setCopied] = useState(false);
+
   function copyToClipboard() {
     if (!result) return;
     navigator.clipboard.writeText(result.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   const isDisabled = exporting || !hasNodes || !canExport || !canExportMQL5;
@@ -165,6 +169,7 @@ export function ExportButton({
               <button
                 onClick={() => setShowModal(false)}
                 className="text-[#64748B] hover:text-white p-1 transition-colors duration-200"
+                aria-label="Close export modal"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -283,7 +288,7 @@ export function ExportButton({
                             d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                           />
                         </svg>
-                        Copy
+                        {copied ? "Copied!" : "Copy"}
                       </button>
                       <button
                         onClick={downloadFile}
