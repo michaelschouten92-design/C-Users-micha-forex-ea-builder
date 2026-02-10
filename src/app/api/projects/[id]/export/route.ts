@@ -166,31 +166,6 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    // Check if user is using trade management nodes (Pro only)
-    const tradeManagementTypes = [
-      "breakeven-stop",
-      "trailing-stop",
-      "partial-close",
-      "lock-profit",
-    ];
-    const hasTradeManagement = buildJson.nodes.some(
-      (n) =>
-        tradeManagementTypes.includes(n.type as string) || (n.data && "managementType" in n.data)
-    );
-
-    if (hasTradeManagement) {
-      if (!permissions.canUseTradeManagement) {
-        return NextResponse.json(
-          apiError(
-            ErrorCode.PRO_FEATURE,
-            "Pro feature required",
-            "Trade Management blocks (Breakeven Stop, Trailing Stop, Partial Close, Lock Profit) are only available for Pro users. Upgrade to Pro to use these features."
-          ),
-          { status: 403 }
-        );
-      }
-    }
-
     // Generate MQL5 code
     const mql5Code = generateMQL5Code(buildJson, project.name);
 

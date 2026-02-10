@@ -11,14 +11,12 @@ describe("plans", () => {
       expect(PLANS.FREE.limits.maxProjects).toBe(1);
       expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(1);
       expect(PLANS.FREE.limits.canExportMQL5).toBe(true);
-      expect(PLANS.FREE.limits.canUseTradeManagement).toBe(false);
     });
 
     it("PRO tier has unlimited projects and exports", () => {
       expect(PLANS.PRO.limits.maxProjects).toBe(Infinity);
       expect(PLANS.PRO.limits.maxExportsPerMonth).toBe(Infinity);
       expect(PLANS.PRO.limits.canExportMQL5).toBe(true);
-      expect(PLANS.PRO.limits.canUseTradeManagement).toBe(true);
     });
 
     it("FREE tier has no prices", () => {
