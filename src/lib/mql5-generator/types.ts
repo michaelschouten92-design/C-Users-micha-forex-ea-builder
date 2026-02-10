@@ -12,7 +12,6 @@ export interface GeneratorContext {
   maxTradesPerDay: number;
   maxDailyProfitPercent: number;
   maxDailyLossPercent: number;
-  maxSpreadPips: number;
 }
 
 export interface IndicatorVariable {

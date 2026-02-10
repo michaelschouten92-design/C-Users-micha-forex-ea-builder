@@ -75,7 +75,17 @@ export interface CustomTimesNodeData extends BaseNodeData {
   closeOnSessionEnd?: boolean;
 }
 
-export type TimingNodeData = TradingSessionNodeData | AlwaysNodeData | CustomTimesNodeData;
+export interface MaxSpreadNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "max-spread";
+  maxSpreadPips: number;
+}
+
+export type TimingNodeData =
+  | TradingSessionNodeData
+  | AlwaysNodeData
+  | CustomTimesNodeData
+  | MaxSpreadNodeData;
 
 // Session time definitions (GMT)
 export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
@@ -507,7 +517,8 @@ export type BuilderNodeType =
   | "range-breakout-entry"
   | "rsi-reversal-entry"
   | "trend-pullback-entry"
-  | "macd-crossover-entry";
+  | "macd-crossover-entry"
+  | "max-spread";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -527,7 +538,6 @@ export interface BuildJsonSettings {
   maxTradesPerDay?: number; // 0 = unlimited
   maxDailyProfitPercent?: number; // 0 = disabled
   maxDailyLossPercent?: number; // 0 = disabled (drawdown protection)
-  maxSpreadPips?: number; // 0 = disabled
 }
 
 export interface BuildJsonMetadata {
@@ -556,7 +566,6 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
   maxTradesPerDay: 0,
   maxDailyProfitPercent: 0,
   maxDailyLossPercent: 0,
-  maxSpreadPips: 0,
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {
@@ -599,6 +608,18 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       session: "LONDON",
       tradeMondayToFriday: true,
     } as TradingSessionNodeData,
+  },
+  {
+    type: "max-spread",
+    label: "Max Spread",
+    category: "timing",
+    description: "Skip trading when spread is too wide",
+    defaultData: {
+      label: "Max Spread",
+      category: "timing",
+      filterType: "max-spread",
+      maxSpreadPips: 30,
+    } as MaxSpreadNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {

@@ -61,9 +61,10 @@ function getConnectedNodeIds(
     }
   }
 
-  // Find all starting nodes (timing nodes)
+  // Find all starting nodes (timing nodes and filter nodes)
   const startNodes = nodes.filter(
-    (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
+    (n) =>
+      startNodeTypes.includes(n.type as string) || "timingType" in n.data || "filterType" in n.data
   );
 
   // BFS to find all connected nodes
@@ -349,7 +350,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     maxTradesPerDay: buildJson.settings?.maxTradesPerDay ?? 0,
     maxDailyProfitPercent: buildJson.settings?.maxDailyProfitPercent ?? 0,
     maxDailyLossPercent: buildJson.settings?.maxDailyLossPercent ?? 0,
-    maxSpreadPips: buildJson.settings?.maxSpreadPips ?? 0,
   };
 
   const code: GeneratedCode = {
@@ -370,14 +370,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
         isOptimizable: false,
         group: "Risk Management",
       },
-      {
-        name: "InpMaxSpread",
-        type: "int",
-        value: 0,
-        comment: "Max Spread (points, 0=no limit)",
-        isOptimizable: false,
-        group: "Risk Management",
-      },
     ],
     globalVariables: [],
     onInit: [],
@@ -391,6 +383,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "trading-session",
     "always",
     "custom-times",
+    "max-spread",
   ]);
 
   // Helper to check if a node is connected to the strategy
@@ -429,11 +422,18 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   const priceActionNodes: BuilderNode[] = [];
   const closeConditionNodes: BuilderNode[] = [];
   const timeExitNodes: BuilderNode[] = [];
+  const maxSpreadNodes: BuilderNode[] = [];
 
   for (const n of processedBuildJson.nodes) {
     const nodeType = n.type as string;
     const data = n.data;
     const connected = isConnected(n);
+
+    // Max spread filter nodes (always included regardless of connection)
+    if (nodeType === "max-spread" || "filterType" in data) {
+      maxSpreadNodes.push(n);
+      continue;
+    }
 
     // Timing nodes (always included regardless of connection)
     if (
@@ -490,6 +490,19 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
   // Generate timing code (supports multiple timing nodes OR'd together)
   if (timingNodes.length > 0) {
     generateMultipleTimingCode(timingNodes, code);
+  }
+
+  // Generate spread filter code from max-spread nodes
+  if (maxSpreadNodes.length > 0) {
+    const spreadNode = maxSpreadNodes[0];
+    const spreadPips = (spreadNode.data as { maxSpreadPips: number }).maxSpreadPips ?? 30;
+    const spreadPoints = spreadPips * 10;
+    code.onTick.push(`//--- Spread filter`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);`);
+    code.onTick.push(`   if(currentSpread > ${spreadPoints})`);
+    code.onTick.push(`      return;`);
+    code.onTick.push(`}`);
   }
 
   // Generate indicator code (only connected indicators)

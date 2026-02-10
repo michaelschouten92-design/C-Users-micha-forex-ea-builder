@@ -142,6 +142,14 @@ const tradingSessionNodeDataSchema = baseNodeDataSchema
   })
   .strip();
 
+const maxSpreadNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("timing"),
+    filterType: z.literal("max-spread"),
+    maxSpreadPips: z.number().int().min(1).max(10000),
+  })
+  .strip();
+
 // ---- Indicator node data schemas ----
 const movingAverageNodeDataSchema = baseNodeDataSchema
   .extend({
@@ -557,7 +565,6 @@ const buildSettingsSchema = z.object({
   maxTradesPerDay: z.number().int().min(0).max(100).optional(),
   maxDailyProfitPercent: z.number().min(0).max(100).optional(),
   maxDailyLossPercent: z.number().min(0).max(100).optional(),
-  maxSpreadPips: z.number().min(0).max(10000).optional(),
 });
 
 // Build metadata schema

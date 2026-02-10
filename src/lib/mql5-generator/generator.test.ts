@@ -1051,7 +1051,7 @@ describe("generateMQL5Code", () => {
   // ============================================
 
   describe("connectivity", () => {
-    it("generates InpMaxSlippage and InpMaxSpread inputs", () => {
+    it("generates InpMaxSlippage input (no InpMaxSpread — now node-based)", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
         makeNode("b1", "place-buy", {
@@ -1066,7 +1066,7 @@ describe("generateMQL5Code", () => {
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("InpMaxSlippage");
-      expect(code).toContain("InpMaxSpread");
+      expect(code).not.toContain("InpMaxSpread");
       expect(code).toContain("SetDeviationInPoints(InpMaxSlippage)");
     });
 
@@ -1078,13 +1078,26 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Bars(_Symbol, PERIOD_CURRENT) < 100");
     });
 
-    it("generates spread filter in OnTick", () => {
+    it("generates spread filter in OnTick when max-spread node is present", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ms1", "max-spread", {
+          category: "timing",
+          filterType: "max-spread",
+          maxSpreadPips: 30,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("SYMBOL_SPREAD");
+      expect(code).toContain("currentSpread > 300"); // 30 pips * 10 = 300 points
+    });
+
+    it("does not generate spread filter when no max-spread node is present", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("InpMaxSpread > 0");
-      expect(code).toContain("SYMBOL_SPREAD");
+      expect(code).not.toContain("SYMBOL_SPREAD");
     });
 
     it("generates OpenBuy with retry logic", () => {

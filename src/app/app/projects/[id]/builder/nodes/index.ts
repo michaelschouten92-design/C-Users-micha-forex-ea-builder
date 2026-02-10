@@ -3,6 +3,7 @@ import type { NodeTypes } from "@xyflow/react";
 
 import { TradingTimesNode } from "./trading-times-node";
 import { AlwaysNode } from "./always-node";
+import { MaxSpreadNode } from "./max-spread-node";
 import { CustomTimesNode } from "./custom-times-node";
 import { MovingAverageNode } from "./indicators/moving-average-node";
 import { RSINode } from "./indicators/rsi-node";
@@ -36,6 +37,7 @@ import { MACDCrossoverEntryNode } from "./entry-strategies/macd-crossover-entry-
 export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
   always: AlwaysNode,
+  "max-spread": MaxSpreadNode,
   "custom-times": CustomTimesNode,
   "moving-average": MovingAverageNode,
   rsi: RSINode,
@@ -69,6 +71,7 @@ export const nodeTypes: NodeTypes = {
 export {
   TradingTimesNode,
   AlwaysNode,
+  MaxSpreadNode,
   CustomTimesNode,
   MovingAverageNode,
   RSINode,

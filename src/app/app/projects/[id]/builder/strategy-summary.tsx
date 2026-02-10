@@ -28,6 +28,8 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
       }
     } else if (n.type === "custom-times") {
       lines.push("Trade during custom time windows");
+    } else if (n.type === "max-spread" && "maxSpreadPips" in d) {
+      lines.push(`Max spread filter: ${d.maxSpreadPips} pips`);
     }
   }
 

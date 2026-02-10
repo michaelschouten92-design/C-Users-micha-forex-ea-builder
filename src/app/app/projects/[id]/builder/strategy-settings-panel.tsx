@@ -97,19 +97,6 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
             </p>
           </div>
 
-          {/* Max Spread Filter */}
-          <div>
-            <SettingsNumberField
-              label="Max Spread (pips)"
-              value={settings.maxSpreadPips ?? 0}
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) => update({ maxSpreadPips: v })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">0 = no spread filter</p>
-          </div>
-
           {/* Daily Profit Target */}
           <div>
             <SettingsNumberField

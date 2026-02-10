@@ -189,9 +189,6 @@ export function generateOnTick(ctx: GeneratorContext, tickCode: string[]): strin
     dailyPnlCode += "   }\n";
   }
 
-  // Use configurable spread from settings if provided
-  const spreadValue = ctx.maxSpreadPips > 0 ? `${ctx.maxSpreadPips * 10}` : "InpMaxSpread";
-
   return `//+------------------------------------------------------------------+
 //| Expert tick function                                               |
 //+------------------------------------------------------------------+
@@ -215,13 +212,6 @@ void OnTick()
       return;
    }
 
-   //--- Spread filter
-   if(${spreadValue} > 0)
-   {
-      int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
-      if(currentSpread > ${spreadValue})
-         return;
-   }
 ${dailyPnlCode}
    //--- Count current positions
    int positionsCount = CountPositions();

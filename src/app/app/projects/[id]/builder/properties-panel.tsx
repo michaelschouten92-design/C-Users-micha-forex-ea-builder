@@ -8,6 +8,7 @@ import type {
   TradingSessionNodeData,
   TradingSession,
   AlwaysNodeData,
+  MaxSpreadNodeData,
   CustomTimesNodeData,
   TradingDays,
   TimeSlot,
@@ -285,6 +286,14 @@ function NodeFields({
     }
   }
 
+  // Filter nodes (timing category with filterType)
+  if ("filterType" in data) {
+    switch (data.filterType) {
+      case "max-spread":
+        return <MaxSpreadFields data={data as MaxSpreadNodeData} onChange={onChange} />;
+    }
+  }
+
   // Indicators
   if ("indicatorType" in data) {
     switch (data.indicatorType) {
@@ -454,6 +463,25 @@ function AlwaysFields({
     >
       Trading is enabled at all times. No time restrictions apply.
     </div>
+  );
+}
+
+function MaxSpreadFields({
+  data,
+  onChange,
+}: {
+  data: MaxSpreadNodeData;
+  onChange: (updates: Partial<MaxSpreadNodeData>) => void;
+}) {
+  return (
+    <NumberField
+      label="Max Spread (pips)"
+      value={data.maxSpreadPips}
+      min={1}
+      max={100}
+      step={1}
+      onChange={(v) => onChange({ maxSpreadPips: v })}
+    />
   );
 }
 
