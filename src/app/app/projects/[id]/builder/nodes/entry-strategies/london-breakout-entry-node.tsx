@@ -2,12 +2,12 @@
 
 import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
-import type { RangeBreakoutEntryData } from "@/types/builder";
+import type { LondonBreakoutEntryData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
-type Props = NodeProps & { data: RangeBreakoutEntryData };
+type Props = NodeProps & { data: LondonBreakoutEntryData };
 
-export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
+export const LondonBreakoutEntryNode = memo(function LondonBreakoutEntryNode({
   id,
   data,
   selected,
@@ -23,7 +23,7 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">Range</span>
-          <span className="text-white font-medium">{data.rangePeriod} candles</span>
+          <span className="text-white font-medium">Asia Session</span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">Risk</span>
@@ -35,20 +35,16 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
             {data.slAtrMultiplier}× ATR / {data.tpRMultiple}R
           </span>
         </div>
-        {(data.londonSessionOnly || data.htfTrendFilter) && (
-          <div className="flex gap-1 mt-1 flex-wrap">
-            {data.londonSessionOnly && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                London
-              </span>
-            )}
-            {data.htfTrendFilter && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                HTF
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex gap-1 mt-1 flex-wrap">
+          {data.maxOneTradePerDay && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+              1/day
+            </span>
+          )}
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+            {data.tradeLondonHours}h window
+          </span>
+        </div>
       </div>
     </BaseNode>
   );

@@ -27,8 +27,11 @@ import {
   LockProfitNode,
 } from "./trademanagement";
 import { EMACrossoverEntryNode } from "./entry-strategies/ema-crossover-entry-node";
-import { RSIReversalEntryNode } from "./entry-strategies/rsi-reversal-entry-node";
 import { RangeBreakoutEntryNode } from "./entry-strategies/range-breakout-entry-node";
+import { RSIReversalEntryNode } from "./entry-strategies/rsi-reversal-entry-node";
+import { TrendPullbackEntryNode } from "./entry-strategies/trend-pullback-entry-node";
+import { MACDCrossoverEntryNode } from "./entry-strategies/macd-crossover-entry-node";
+import { LondonBreakoutEntryNode } from "./entry-strategies/london-breakout-entry-node";
 
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
@@ -57,8 +60,11 @@ export const nodeTypes: NodeTypes = {
   "partial-close": PartialCloseNode,
   "lock-profit": LockProfitNode,
   "ema-crossover-entry": EMACrossoverEntryNode,
-  "rsi-reversal-entry": RSIReversalEntryNode,
   "range-breakout-entry": RangeBreakoutEntryNode,
+  "rsi-reversal-entry": RSIReversalEntryNode,
+  "trend-pullback-entry": TrendPullbackEntryNode,
+  "macd-crossover-entry": MACDCrossoverEntryNode,
+  "london-breakout-entry": LondonBreakoutEntryNode,
 };
 
 // Re-export individual nodes for direct imports
@@ -88,6 +94,9 @@ export {
   PartialCloseNode,
   LockProfitNode,
   EMACrossoverEntryNode,
-  RSIReversalEntryNode,
   RangeBreakoutEntryNode,
+  RSIReversalEntryNode,
+  TrendPullbackEntryNode,
+  MACDCrossoverEntryNode,
+  LondonBreakoutEntryNode,
 };

@@ -43,9 +43,11 @@ import type {
   CCINodeData,
   TimeExitNodeData,
   EMACrossoverEntryData,
-  RSIReversalEntryData,
   RangeBreakoutEntryData,
-  PositionSizingMethod,
+  RSIReversalEntryData,
+  TrendPullbackEntryData,
+  MACDCrossoverEntryData,
+  LondonBreakoutEntryData,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -255,11 +257,23 @@ function NodeFields({
     switch (data.entryType) {
       case "ema-crossover":
         return <EMACrossoverEntryFields data={data as EMACrossoverEntryData} onChange={onChange} />;
-      case "rsi-reversal":
-        return <RSIReversalEntryFields data={data as RSIReversalEntryData} onChange={onChange} />;
       case "range-breakout":
         return (
           <RangeBreakoutEntryFields data={data as RangeBreakoutEntryData} onChange={onChange} />
+        );
+      case "rsi-reversal":
+        return <RSIReversalEntryFields data={data as RSIReversalEntryData} onChange={onChange} />;
+      case "trend-pullback":
+        return (
+          <TrendPullbackEntryFields data={data as TrendPullbackEntryData} onChange={onChange} />
+        );
+      case "macd-crossover":
+        return (
+          <MACDCrossoverEntryFields data={data as MACDCrossoverEntryData} onChange={onChange} />
+        );
+      case "london-breakout":
+        return (
+          <LondonBreakoutEntryFields data={data as LondonBreakoutEntryData} onChange={onChange} />
         );
     }
   }
@@ -2124,186 +2138,99 @@ function TimeExitFields({
 // ENTRY STRATEGY SHARED SECTIONS
 // ============================================
 
-const DIRECTION_OPTIONS = [
-  { value: "BOTH", label: "Both (Buy & Sell)" },
-  { value: "BUY_ONLY", label: "Buy Only" },
-  { value: "SELL_ONLY", label: "Sell Only" },
-] as const;
-
-function EntryStrategyPositionSizingSection({
+// Consistent risk model section used by all entry strategies
+function EntryStrategyRiskSection({
   data,
   onChange,
+  showTpInBasic = true,
 }: {
-  data: EMACrossoverEntryData | RSIReversalEntryData | RangeBreakoutEntryData;
+  data: { riskPercent: number; slAtrMultiplier: number; tpRMultiple: number };
   onChange: (updates: Record<string, unknown>) => void;
+  showTpInBasic?: boolean;
 }) {
   return (
     <>
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Position Sizing
-        </span>
-      </div>
-      <SelectField
-        label="Sizing Method"
-        value={data.sizingMethod}
-        options={[
-          { value: "FIXED_LOT", label: "Fixed Lot" },
-          { value: "RISK_PERCENT", label: "Risk %" },
-        ]}
-        onChange={(v) => onChange({ sizingMethod: v as PositionSizingMethod })}
+      <NumberField
+        label="Risk %"
+        value={data.riskPercent}
+        min={0.1}
+        max={10}
+        step={0.1}
+        onChange={(v) => onChange({ riskPercent: v })}
+        tooltip="Percentage of account balance risked per trade"
       />
-      {data.sizingMethod === "FIXED_LOT" && (
+      <NumberField
+        label="Stop Loss (ATR ×)"
+        value={data.slAtrMultiplier}
+        min={0.1}
+        max={10}
+        step={0.1}
+        onChange={(v) => onChange({ slAtrMultiplier: v })}
+        tooltip="SL distance = ATR(14) × this multiplier"
+      />
+      {showTpInBasic && (
         <NumberField
-          label="Lot Size"
-          value={data.fixedLot}
-          min={0.01}
-          max={100}
-          step={0.01}
-          onChange={(v) => onChange({ fixedLot: v })}
-        />
-      )}
-      {data.sizingMethod === "RISK_PERCENT" && (
-        <NumberField
-          label="Risk %"
-          value={data.riskPercent}
+          label="Take Profit (R multiple)"
+          value={data.tpRMultiple}
           min={0.1}
-          max={100}
+          max={10}
           step={0.1}
-          onChange={(v) => onChange({ riskPercent: v })}
+          onChange={(v) => onChange({ tpRMultiple: v })}
+          tooltip="TP = this × SL distance (risk:reward ratio)"
         />
       )}
-      <NumberField
-        label="Min Lot"
-        value={data.minLot}
-        min={0.01}
-        max={100}
-        step={0.01}
-        onChange={(v) => onChange({ minLot: v })}
-      />
-      <NumberField
-        label="Max Lot"
-        value={data.maxLot}
-        min={0.01}
-        max={1000}
-        step={0.01}
-        onChange={(v) => onChange({ maxLot: v })}
-      />
-      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
     </>
   );
 }
 
-function EntryStrategySLTPSection({
-  data,
-  onChange,
-}: {
-  data: EMACrossoverEntryData | RSIReversalEntryData | RangeBreakoutEntryData;
-  onChange: (updates: Record<string, unknown>) => void;
-}) {
+// Collapsible advanced section wrapper
+function AdvancedToggleSection({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      {/* Stop Loss */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Stop Loss
-        </span>
-      </div>
-      <SelectField
-        label="SL Method"
-        value={data.slMethod}
-        options={[
-          { value: "FIXED_PIPS", label: "Fixed Pips" },
-          { value: "ATR_BASED", label: "ATR-Based" },
-        ]}
-        onChange={(v) => onChange({ slMethod: v })}
-      />
-      {data.slMethod === "FIXED_PIPS" && (
-        <NumberField
-          label="SL Pips"
-          value={data.slFixedPips}
-          min={1}
-          max={1000}
-          onChange={(v) => onChange({ slFixedPips: v })}
-        />
-      )}
-      {data.slMethod === "ATR_BASED" && (
-        <>
-          <NumberField
-            label="ATR Period"
-            value={data.slAtrPeriod}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ slAtrPeriod: v })}
-          />
-          <NumberField
-            label="ATR Multiplier"
-            value={data.slAtrMultiplier}
-            min={0.1}
-            max={10}
-            step={0.1}
-            onChange={(v) => onChange({ slAtrMultiplier: v })}
-          />
-        </>
-      )}
-
-      {/* Take Profit */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Take Profit
-        </span>
-      </div>
-      <SelectField
-        label="TP Method"
-        value={data.tpMethod}
-        options={[
-          { value: "FIXED_PIPS", label: "Fixed Pips" },
-          { value: "RISK_REWARD", label: "Risk:Reward Ratio" },
-          { value: "ATR_BASED", label: "ATR-Based" },
-        ]}
-        onChange={(v) => onChange({ tpMethod: v })}
-      />
-      {data.tpMethod === "FIXED_PIPS" && (
-        <NumberField
-          label="TP Pips"
-          value={data.tpFixedPips}
-          min={1}
-          max={1000}
-          onChange={(v) => onChange({ tpFixedPips: v })}
-        />
-      )}
-      {data.tpMethod === "RISK_REWARD" && (
-        <NumberField
-          label="R:R Ratio"
-          value={data.tpRiskRewardRatio}
-          min={0.1}
-          max={20}
-          step={0.1}
-          onChange={(v) => onChange({ tpRiskRewardRatio: v })}
-        />
-      )}
-      {data.tpMethod === "ATR_BASED" && (
-        <>
-          <NumberField
-            label="ATR Period"
-            value={data.tpAtrPeriod}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ tpAtrPeriod: v })}
-          />
-          <NumberField
-            label="ATR Multiplier"
-            value={data.tpAtrMultiplier}
-            min={0.1}
-            max={20}
-            step={0.1}
-            onChange={(v) => onChange({ tpAtrMultiplier: v })}
-          />
-        </>
-      )}
-    </>
+    <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+      <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Advanced</span>
+      <div className="mt-2 space-y-3">{children}</div>
+    </div>
   );
 }
+
+// Toggle with inline label
+function ToggleField({
+  label,
+  checked,
+  onChange,
+  children,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(e.target.checked);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#10B981] focus:ring-[#10B981]"
+        />
+        {label}
+      </label>
+      {checked && children && <div className="mt-2 ml-5 space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+const TRADING_SESSION_OPTIONS_SHORT: { value: TradingSession; label: string }[] = [
+  { value: "LONDON", label: "London" },
+  { value: "NEW_YORK", label: "New York" },
+  { value: "TOKYO", label: "Tokyo" },
+  { value: "LONDON_NY_OVERLAP", label: "London/NY Overlap" },
+];
 
 // ============================================
 // ENTRY STRATEGY FIELD COMPONENTS
@@ -2318,144 +2245,75 @@ function EMACrossoverEntryFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        All-in-one EMA crossover entry with built-in SL/TP
-      </div>
-
-      {/* Strategy Settings */}
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      {/* Basic fields */}
       <NumberField
-        label="Fast Period"
-        value={data.fastPeriod}
+        label="Fast EMA"
+        value={data.fastEma}
         min={1}
         max={500}
-        onChange={(v) => onChange({ fastPeriod: v })}
+        onChange={(v) => onChange({ fastEma: v })}
       />
       <NumberField
-        label="Slow Period"
-        value={data.slowPeriod}
+        label="Slow EMA"
+        value={data.slowEma}
         min={1}
-        max={500}
-        onChange={(v) => onChange({ slowPeriod: v })}
+        max={1000}
+        onChange={(v) => onChange({ slowEma: v })}
       />
-      {data.fastPeriod >= data.slowPeriod && (
-        <FieldWarning message="Fast period should be smaller than slow period" />
+      {data.fastEma >= data.slowEma && (
+        <FieldWarning message="Fast EMA should be smaller than Slow EMA" />
       )}
-      <SelectField
-        label="Signal Mode"
-        value={data.signalMode}
-        options={[...SIGNAL_MODE_OPTIONS]}
-        onChange={(v) => onChange({ signalMode: v as EMACrossoverEntryData["signalMode"] })}
-      />
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
 
-      {/* Direction */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Direction
-        </span>
-      </div>
-      <SelectField
-        label="Trade Direction"
-        value={data.direction}
-        options={[...DIRECTION_OPTIONS]}
-        onChange={(v) => onChange({ direction: v as EMACrossoverEntryData["direction"] })}
-      />
-
-      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
-      <EntryStrategySLTPSection data={data} onChange={onChange} />
-    </>
-  );
-}
-
-function RSIReversalEntryFields({
-  data,
-  onChange,
-}: {
-  data: RSIReversalEntryData;
-  onChange: (updates: Partial<RSIReversalEntryData>) => void;
-}) {
-  return (
-    <>
-      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth="2"
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <ToggleField
+          label="HTF trend filter"
+          checked={data.htfTrendFilter}
+          onChange={(v) => onChange({ htfTrendFilter: v })}
         >
-          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        All-in-one RSI reversal entry with built-in SL/TP
-      </div>
-
-      {/* Strategy Settings */}
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="RSI Period"
-        value={data.period}
-        min={1}
-        max={500}
-        onChange={(v) => onChange({ period: v })}
-      />
-      <NumberField
-        label="Overbought Level"
-        value={data.overboughtLevel}
-        min={50}
-        max={100}
-        onChange={(v) => onChange({ overboughtLevel: v })}
-      />
-      <NumberField
-        label="Oversold Level"
-        value={data.oversoldLevel}
-        min={0}
-        max={50}
-        onChange={(v) => onChange({ oversoldLevel: v })}
-      />
-      {data.overboughtLevel <= data.oversoldLevel && (
-        <FieldWarning message="Overbought level must be higher than oversold level" />
-      )}
-      <SelectField
-        label="Signal Mode"
-        value={data.signalMode}
-        options={[...SIGNAL_MODE_OPTIONS]}
-        onChange={(v) => onChange({ signalMode: v as RSIReversalEntryData["signalMode"] })}
-      />
-
-      {/* Direction */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Direction
-        </span>
-      </div>
-      <SelectField
-        label="Trade Direction"
-        value={data.direction}
-        options={[...DIRECTION_OPTIONS]}
-        onChange={(v) => onChange({ direction: v as RSIReversalEntryData["direction"] })}
-      />
-
-      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
-      <EntryStrategySLTPSection data={data} onChange={onChange} />
+          <SelectField
+            label="HTF Timeframe"
+            value={data.htfTimeframe}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) => onChange({ htfTimeframe: v as EMACrossoverEntryData["htfTimeframe"] })}
+          />
+          <NumberField
+            label="HTF EMA"
+            value={data.htfEma}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ htfEma: v })}
+          />
+        </ToggleField>
+        <ToggleField
+          label="RSI confirmation"
+          checked={data.rsiConfirmation}
+          onChange={(v) => onChange({ rsiConfirmation: v })}
+        >
+          <NumberField
+            label="RSI Period"
+            value={data.rsiPeriod}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ rsiPeriod: v })}
+          />
+          <NumberField
+            label="Long max RSI"
+            value={data.rsiLongMax}
+            min={0}
+            max={100}
+            onChange={(v) => onChange({ rsiLongMax: v })}
+          />
+          <NumberField
+            label="Short min RSI"
+            value={data.rsiShortMin}
+            min={0}
+            max={100}
+            onChange={(v) => onChange({ rsiShortMin: v })}
+          />
+        </ToggleField>
+      </AdvancedToggleSection>
     </>
   );
 }
@@ -2469,123 +2327,302 @@ function RangeBreakoutEntryFields({
 }) {
   return (
     <>
-      <div className="bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] p-2 rounded-lg text-xs mb-3 flex items-center gap-2">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-        All-in-one range breakout entry with built-in SL/TP
-      </div>
+      {/* Basic fields */}
+      <NumberField
+        label="Range period (candles)"
+        value={data.rangePeriod}
+        min={2}
+        max={500}
+        onChange={(v) => onChange({ rangePeriod: v })}
+        tooltip="Number of candles to determine range high/low"
+      />
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
 
-      {/* Strategy Settings */}
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <SelectField
-        label="Range Type"
-        value={data.rangeType}
-        options={RANGE_TYPE_OPTIONS}
-        onChange={(v) => onChange({ rangeType: v as RangeType })}
-      />
-      {data.rangeType === "PREVIOUS_CANDLES" && (
-        <NumberField
-          label="Lookback Candles"
-          value={data.lookbackCandles}
-          min={2}
-          max={500}
-          onChange={(v) => onChange({ lookbackCandles: v })}
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <ToggleField
+          label="London session only"
+          checked={data.londonSessionOnly}
+          onChange={(v) => onChange({ londonSessionOnly: v })}
         />
-      )}
-      {data.rangeType === "SESSION" && (
-        <SelectField
-          label="Session"
-          value={data.rangeSession}
-          options={RANGE_SESSION_OPTIONS}
-          onChange={(v) => onChange({ rangeSession: v as RangeSession })}
+        <ToggleField
+          label="Cancel opposite pending after trigger"
+          checked={data.cancelOpposite}
+          onChange={(v) => onChange({ cancelOpposite: v })}
         />
-      )}
-      {(data.rangeType === "TIME_WINDOW" ||
-        (data.rangeType === "SESSION" && data.rangeSession === "CUSTOM")) && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <TimeField
-              label="Start"
-              hour={data.sessionStartHour}
-              minute={data.sessionStartMinute}
-              onHourChange={(v) => onChange({ sessionStartHour: v })}
-              onMinuteChange={(v) => onChange({ sessionStartMinute: v })}
-            />
-            <span className="text-[#64748B] text-xs mt-4">to</span>
-            <TimeField
-              label="End"
-              hour={data.sessionEndHour}
-              minute={data.sessionEndMinute}
-              onHourChange={(v) => onChange({ sessionEndHour: v })}
-              onMinuteChange={(v) => onChange({ sessionEndMinute: v })}
-            />
-          </div>
-        </div>
-      )}
-      <SelectField
-        label="Breakout Direction"
-        value={data.breakoutDirection}
-        options={BREAKOUT_DIRECTION_OPTIONS}
-        onChange={(v) => onChange({ breakoutDirection: v as BreakoutDirection })}
-      />
-      <SelectField
-        label="Entry Mode"
-        value={data.entryMode}
-        options={ENTRY_MODE_OPTIONS}
-        onChange={(v) => onChange({ entryMode: v as EntryMode })}
+        <ToggleField
+          label="HTF trend filter"
+          checked={data.htfTrendFilter}
+          onChange={(v) => onChange({ htfTrendFilter: v })}
+        >
+          <SelectField
+            label="HTF Timeframe"
+            value={data.htfTimeframe}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) =>
+              onChange({ htfTimeframe: v as RangeBreakoutEntryData["htfTimeframe"] })
+            }
+          />
+          <NumberField
+            label="HTF EMA"
+            value={data.htfEma}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ htfEma: v })}
+          />
+        </ToggleField>
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+function RSIReversalEntryFields({
+  data,
+  onChange,
+}: {
+  data: RSIReversalEntryData;
+  onChange: (updates: Partial<RSIReversalEntryData>) => void;
+}) {
+  return (
+    <>
+      {/* Basic fields */}
+      <NumberField
+        label="RSI Period"
+        value={data.rsiPeriod}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ rsiPeriod: v })}
       />
       <NumberField
-        label="Buffer (pips)"
-        value={data.bufferPips}
+        label="Oversold Level"
+        value={data.oversoldLevel}
         min={0}
         max={50}
-        onChange={(v) => onChange({ bufferPips: v })}
+        onChange={(v) => onChange({ oversoldLevel: v })}
       />
       <NumberField
-        label="Min Range (pips)"
-        value={data.minRangePips}
-        min={0}
-        max={500}
-        onChange={(v) => onChange({ minRangePips: v })}
+        label="Overbought Level"
+        value={data.overboughtLevel}
+        min={50}
+        max={100}
+        onChange={(v) => onChange({ overboughtLevel: v })}
       />
-      <NumberField
-        label="Max Range (pips, 0=no limit)"
-        value={data.maxRangePips}
-        min={0}
-        max={1000}
-        onChange={(v) => onChange({ maxRangePips: v })}
-      />
-      {data.maxRangePips > 0 && data.minRangePips > data.maxRangePips && (
-        <FieldWarning message="Min range should not exceed max range" />
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought must be higher than oversold" />
       )}
+      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
 
-      {/* Direction */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
-          Direction
-        </span>
-      </div>
-      <SelectField
-        label="Trade Direction"
-        value={data.direction}
-        options={[...DIRECTION_OPTIONS]}
-        onChange={(v) => onChange({ direction: v as RangeBreakoutEntryData["direction"] })}
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <NumberField
+          label="Take Profit (R multiple)"
+          value={data.tpRMultiple}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ tpRMultiple: v })}
+          tooltip="TP = this × SL distance"
+        />
+        <ToggleField
+          label="Session filter"
+          checked={data.sessionFilter}
+          onChange={(v) => onChange({ sessionFilter: v })}
+        >
+          <SelectField
+            label="Session"
+            value={data.sessionChoice}
+            options={TRADING_SESSION_OPTIONS_SHORT}
+            onChange={(v) => onChange({ sessionChoice: v as TradingSession })}
+          />
+        </ToggleField>
+        <ToggleField
+          label="Trend filter (EMA)"
+          checked={data.trendFilter}
+          onChange={(v) => onChange({ trendFilter: v })}
+        >
+          <NumberField
+            label="Trend EMA"
+            value={data.trendEma}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ trendEma: v })}
+          />
+        </ToggleField>
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+function TrendPullbackEntryFields({
+  data,
+  onChange,
+}: {
+  data: TrendPullbackEntryData;
+  onChange: (updates: Partial<TrendPullbackEntryData>) => void;
+}) {
+  return (
+    <>
+      {/* Basic fields */}
+      <NumberField
+        label="Trend EMA"
+        value={data.trendEma}
+        min={1}
+        max={1000}
+        onChange={(v) => onChange({ trendEma: v })}
+        tooltip="EMA period to define the trend direction"
       />
+      <NumberField
+        label="Pullback RSI Period"
+        value={data.pullbackRsiPeriod}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ pullbackRsiPeriod: v })}
+      />
+      <NumberField
+        label="RSI Pullback Level"
+        value={data.rsiPullbackLevel}
+        min={10}
+        max={50}
+        onChange={(v) => onChange({ rsiPullbackLevel: v })}
+        tooltip={`Long: RSI dips below ${data.rsiPullbackLevel} then crosses up. Short: RSI rises above ${100 - data.rsiPullbackLevel} then crosses down.`}
+      />
+      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
 
-      <EntryStrategyPositionSizingSection data={data} onChange={onChange} />
-      <EntryStrategySLTPSection data={data} onChange={onChange} />
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <NumberField
+          label="Take Profit (R multiple)"
+          value={data.tpRMultiple}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ tpRMultiple: v })}
+        />
+        <ToggleField
+          label="London session only"
+          checked={data.londonSessionOnly}
+          onChange={(v) => onChange({ londonSessionOnly: v })}
+        />
+        <ToggleField
+          label="Require price buffer from EMA"
+          checked={data.requireEmaBuffer}
+          onChange={(v) => onChange({ requireEmaBuffer: v })}
+        />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+function MACDCrossoverEntryFields({
+  data,
+  onChange,
+}: {
+  data: MACDCrossoverEntryData;
+  onChange: (updates: Partial<MACDCrossoverEntryData>) => void;
+}) {
+  return (
+    <>
+      {/* Basic fields */}
+      <NumberField
+        label="MACD Fast"
+        value={data.macdFast}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ macdFast: v })}
+      />
+      <NumberField
+        label="MACD Slow"
+        value={data.macdSlow}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ macdSlow: v })}
+      />
+      <NumberField
+        label="MACD Signal"
+        value={data.macdSignal}
+        min={1}
+        max={500}
+        onChange={(v) => onChange({ macdSignal: v })}
+      />
+      {data.macdFast >= data.macdSlow && (
+        <FieldWarning message="MACD fast should be smaller than slow" />
+      )}
+      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
+
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <NumberField
+          label="Take Profit (R multiple)"
+          value={data.tpRMultiple}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ tpRMultiple: v })}
+        />
+        <ToggleField
+          label="HTF trend filter"
+          checked={data.htfTrendFilter}
+          onChange={(v) => onChange({ htfTrendFilter: v })}
+        >
+          <SelectField
+            label="HTF Timeframe"
+            value={data.htfTimeframe}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) =>
+              onChange({ htfTimeframe: v as MACDCrossoverEntryData["htfTimeframe"] })
+            }
+          />
+          <NumberField
+            label="HTF EMA"
+            value={data.htfEma}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ htfEma: v })}
+          />
+        </ToggleField>
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+function LondonBreakoutEntryFields({
+  data,
+  onChange,
+}: {
+  data: LondonBreakoutEntryData;
+  onChange: (updates: Partial<LondonBreakoutEntryData>) => void;
+}) {
+  return (
+    <>
+      {/* Basic fields */}
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Range window: Asia session (00:00–08:00 GMT). Pending orders placed at London open.
+      </div>
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      {/* Advanced */}
+      <AdvancedToggleSection>
+        <NumberField
+          label="Trade first N hours of London"
+          value={data.tradeLondonHours}
+          min={1}
+          max={8}
+          onChange={(v) => onChange({ tradeLondonHours: v })}
+        />
+        <ToggleField
+          label="Cancel opposite pending after trigger"
+          checked={data.cancelOpposite}
+          onChange={(v) => onChange({ cancelOpposite: v })}
+        />
+        <ToggleField
+          label="Max 1 trade per day"
+          checked={data.maxOneTradePerDay}
+          onChange={(v) => onChange({ maxOneTradePerDay: v })}
+        />
+      </AdvancedToggleSection>
     </>
   );
 }

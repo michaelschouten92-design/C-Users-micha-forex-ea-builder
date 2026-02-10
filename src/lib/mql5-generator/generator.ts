@@ -3,11 +3,15 @@
 import type {
   BuildJsonSchema,
   BuilderNode,
+  BuilderNodeType,
   BuilderEdge,
   BuilderNodeData,
   EMACrossoverEntryData,
-  RSIReversalEntryData,
   RangeBreakoutEntryData,
+  RSIReversalEntryData,
+  TrendPullbackEntryData,
+  MACDCrossoverEntryData,
+  LondonBreakoutEntryData,
   EntryStrategyNodeData,
 } from "@/types/builder";
 
@@ -85,164 +89,202 @@ function getConnectedNodeIds(
   return connectedIds;
 }
 
-// Decompose entry strategy composite nodes into virtual primitive nodes
+// Decompose entry strategy composite nodes into virtual primitive nodes.
+// All entry strategies use: Risk %, ATR-based SL, R-multiple TP.
+// Direction is always BOTH — the entry logic determines long/short internally.
 function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: BuilderEdge[] } {
   const d = node.data as EntryStrategyNodeData;
   const baseId = node.id;
   const virtualNodes: BuilderNode[] = [];
   const virtualEdges: BuilderEdge[] = [];
 
-  // Determine direction
-  const wantBuy = d.direction === "BOTH" || d.direction === "BUY_ONLY";
-  const wantSell = d.direction === "BOTH" || d.direction === "SELL_ONLY";
+  // Helper to create a virtual node
+  const vNode = (
+    suffix: string,
+    type: BuilderNodeType,
+    data: Record<string, unknown>
+  ): BuilderNode => ({
+    id: `${baseId}__${suffix}`,
+    type,
+    position: node.position,
+    data: data as BuilderNodeData,
+  });
 
   // Create indicator/priceaction nodes based on entry type
   if (d.entryType === "ema-crossover") {
     const ema = d as EMACrossoverEntryData;
-    virtualNodes.push({
-      id: `${baseId}__ma-fast`,
-      type: "moving-average",
-      position: node.position,
-      data: {
-        label: `Fast EMA(${ema.fastPeriod})`,
+    virtualNodes.push(
+      vNode("ma-fast", "moving-average", {
+        label: `Fast EMA(${ema.fastEma})`,
         category: "indicator",
         indicatorType: "moving-average",
-        timeframe: ema.timeframe,
-        period: ema.fastPeriod,
+        timeframe: "H1",
+        period: ema.fastEma,
         method: "EMA",
-        signalMode: ema.signalMode,
+        signalMode: "candle_close",
         shift: 0,
-      } as BuilderNodeData,
-    });
-    virtualNodes.push({
-      id: `${baseId}__ma-slow`,
-      type: "moving-average",
-      position: node.position,
-      data: {
-        label: `Slow EMA(${ema.slowPeriod})`,
+      }),
+      vNode("ma-slow", "moving-average", {
+        label: `Slow EMA(${ema.slowEma})`,
         category: "indicator",
         indicatorType: "moving-average",
-        timeframe: ema.timeframe,
-        period: ema.slowPeriod,
+        timeframe: "H1",
+        period: ema.slowEma,
         method: "EMA",
-        signalMode: ema.signalMode,
+        signalMode: "candle_close",
         shift: 0,
-      } as BuilderNodeData,
-    });
-  } else if (d.entryType === "rsi-reversal") {
-    const rsi = d as RSIReversalEntryData;
-    virtualNodes.push({
-      id: `${baseId}__rsi`,
-      type: "rsi",
-      position: node.position,
-      data: {
-        label: `RSI(${rsi.period})`,
-        category: "indicator",
-        indicatorType: "rsi",
-        timeframe: rsi.timeframe,
-        period: rsi.period,
-        overboughtLevel: rsi.overboughtLevel,
-        oversoldLevel: rsi.oversoldLevel,
-        signalMode: rsi.signalMode,
-      } as BuilderNodeData,
-    });
+      })
+    );
   } else if (d.entryType === "range-breakout") {
     const rb = d as RangeBreakoutEntryData;
-    virtualNodes.push({
-      id: `${baseId}__rb`,
-      type: "range-breakout",
-      position: node.position,
-      data: {
+    virtualNodes.push(
+      vNode("rb", "range-breakout", {
         label: "Range Breakout",
         category: "priceaction",
         priceActionType: "range-breakout",
-        timeframe: rb.timeframe,
-        rangeType: rb.rangeType,
-        lookbackCandles: rb.lookbackCandles,
-        rangeSession: rb.rangeSession,
-        sessionStartHour: rb.sessionStartHour,
-        sessionStartMinute: rb.sessionStartMinute,
-        sessionEndHour: rb.sessionEndHour,
-        sessionEndMinute: rb.sessionEndMinute,
-        breakoutDirection: rb.breakoutDirection,
-        entryMode: rb.entryMode,
-        bufferPips: rb.bufferPips,
-        minRangePips: rb.minRangePips,
-        maxRangePips: rb.maxRangePips,
-      } as BuilderNodeData,
-    });
+        timeframe: "H1",
+        rangeType: "PREVIOUS_CANDLES",
+        lookbackCandles: rb.rangePeriod,
+        rangeSession: "ASIAN",
+        sessionStartHour: 0,
+        sessionStartMinute: 0,
+        sessionEndHour: 8,
+        sessionEndMinute: 0,
+        breakoutDirection: "BOTH",
+        entryMode: "ON_CLOSE",
+        bufferPips: 2,
+        minRangePips: 10,
+        maxRangePips: 0,
+      })
+    );
+  } else if (d.entryType === "rsi-reversal") {
+    const rsi = d as RSIReversalEntryData;
+    virtualNodes.push(
+      vNode("rsi", "rsi", {
+        label: `RSI(${rsi.rsiPeriod})`,
+        category: "indicator",
+        indicatorType: "rsi",
+        timeframe: "H1",
+        period: rsi.rsiPeriod,
+        overboughtLevel: rsi.overboughtLevel,
+        oversoldLevel: rsi.oversoldLevel,
+        signalMode: "candle_close",
+      })
+    );
+  } else if (d.entryType === "trend-pullback") {
+    const tp = d as TrendPullbackEntryData;
+    // Trend EMA for direction
+    virtualNodes.push(
+      vNode("ma-trend", "moving-average", {
+        label: `Trend EMA(${tp.trendEma})`,
+        category: "indicator",
+        indicatorType: "moving-average",
+        timeframe: "H1",
+        period: tp.trendEma,
+        method: "EMA",
+        signalMode: "candle_close",
+        shift: 0,
+      }),
+      // RSI for pullback detection
+      vNode("rsi-pullback", "rsi", {
+        label: `Pullback RSI(${tp.pullbackRsiPeriod})`,
+        category: "indicator",
+        indicatorType: "rsi",
+        timeframe: "H1",
+        period: tp.pullbackRsiPeriod,
+        overboughtLevel: 100 - tp.rsiPullbackLevel,
+        oversoldLevel: tp.rsiPullbackLevel,
+        signalMode: "candle_close",
+      })
+    );
+  } else if (d.entryType === "macd-crossover") {
+    const macd = d as MACDCrossoverEntryData;
+    virtualNodes.push(
+      vNode("macd", "macd", {
+        label: `MACD(${macd.macdFast},${macd.macdSlow},${macd.macdSignal})`,
+        category: "indicator",
+        indicatorType: "macd",
+        timeframe: "H1",
+        fastPeriod: macd.macdFast,
+        slowPeriod: macd.macdSlow,
+        signalPeriod: macd.macdSignal,
+        signalMode: "candle_close",
+      })
+    );
+  } else if (d.entryType === "london-breakout") {
+    // London Breakout uses Asia session range
+    virtualNodes.push(
+      vNode("rb", "range-breakout", {
+        label: "Asia Range Breakout",
+        category: "priceaction",
+        priceActionType: "range-breakout",
+        timeframe: "H1",
+        rangeType: "SESSION",
+        lookbackCandles: 20,
+        rangeSession: "ASIAN",
+        sessionStartHour: 0,
+        sessionStartMinute: 0,
+        sessionEndHour: 8,
+        sessionEndMinute: 0,
+        breakoutDirection: "BOTH",
+        entryMode: "ON_CLOSE",
+        bufferPips: 2,
+        minRangePips: 10,
+        maxRangePips: 0,
+      })
+    );
   }
 
-  // Create buy node
-  if (wantBuy) {
-    virtualNodes.push({
-      id: `${baseId}__buy`,
-      type: "place-buy",
-      position: node.position,
-      data: {
-        label: "Place Buy",
-        category: "entry",
-        tradingType: "place-buy",
-        method: d.sizingMethod,
-        fixedLot: d.fixedLot,
-        riskPercent: d.riskPercent,
-        minLot: d.minLot,
-        maxLot: d.maxLot,
-      } as BuilderNodeData,
-    });
-  }
+  // Create buy + sell nodes (always both — direction is internal to the logic)
+  const sizingData = {
+    method: "RISK_PERCENT" as const,
+    fixedLot: 0.1,
+    riskPercent: d.riskPercent,
+    minLot: 0.01,
+    maxLot: 10,
+  };
 
-  // Create sell node
-  if (wantSell) {
-    virtualNodes.push({
-      id: `${baseId}__sell`,
-      type: "place-sell",
-      position: node.position,
-      data: {
-        label: "Place Sell",
-        category: "entry",
-        tradingType: "place-sell",
-        method: d.sizingMethod,
-        fixedLot: d.fixedLot,
-        riskPercent: d.riskPercent,
-        minLot: d.minLot,
-        maxLot: d.maxLot,
-      } as BuilderNodeData,
-    });
-  }
+  virtualNodes.push(
+    vNode("buy", "place-buy", {
+      label: "Place Buy",
+      category: "entry",
+      tradingType: "place-buy",
+      ...sizingData,
+    }),
+    vNode("sell", "place-sell", {
+      label: "Place Sell",
+      category: "entry",
+      tradingType: "place-sell",
+      ...sizingData,
+    })
+  );
 
-  // Create SL node
-  virtualNodes.push({
-    id: `${baseId}__sl`,
-    type: "stop-loss",
-    position: node.position,
-    data: {
+  // Create SL node (always ATR-based)
+  virtualNodes.push(
+    vNode("sl", "stop-loss", {
       label: "Stop Loss",
       category: "riskmanagement",
       tradingType: "stop-loss",
-      method: d.slMethod,
-      fixedPips: d.slFixedPips,
+      method: "ATR_BASED",
+      fixedPips: 50,
       atrMultiplier: d.slAtrMultiplier,
-      atrPeriod: d.slAtrPeriod,
-    } as BuilderNodeData,
-  });
+      atrPeriod: 14,
+    })
+  );
 
-  // Create TP node
-  virtualNodes.push({
-    id: `${baseId}__tp`,
-    type: "take-profit",
-    position: node.position,
-    data: {
+  // Create TP node (always R-multiple)
+  virtualNodes.push(
+    vNode("tp", "take-profit", {
       label: "Take Profit",
       category: "riskmanagement",
       tradingType: "take-profit",
-      method: d.tpMethod,
-      fixedPips: d.tpFixedPips,
-      riskRewardRatio: d.tpRiskRewardRatio,
-      atrMultiplier: d.tpAtrMultiplier,
-      atrPeriod: d.tpAtrPeriod,
-    } as BuilderNodeData,
-  });
+      method: "RISK_REWARD",
+      fixedPips: 100,
+      riskRewardRatio: d.tpRMultiple,
+      atrMultiplier: 3,
+      atrPeriod: 14,
+    })
+  );
 
   // Create edges: indicators → buy/sell → sl/tp
   const indicatorIds = virtualNodes
@@ -250,46 +292,18 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     .map((n) => n.id);
 
   for (const indId of indicatorIds) {
-    if (wantBuy) {
-      virtualEdges.push({
-        id: `${baseId}__e-${indId}-buy`,
-        source: indId,
-        target: `${baseId}__buy`,
-      });
-    }
-    if (wantSell) {
-      virtualEdges.push({
-        id: `${baseId}__e-${indId}-sell`,
-        source: indId,
-        target: `${baseId}__sell`,
-      });
-    }
+    virtualEdges.push(
+      { id: `${baseId}__e-${indId}-buy`, source: indId, target: `${baseId}__buy` },
+      { id: `${baseId}__e-${indId}-sell`, source: indId, target: `${baseId}__sell` }
+    );
   }
 
-  if (wantBuy) {
-    virtualEdges.push({
-      id: `${baseId}__e-buy-sl`,
-      source: `${baseId}__buy`,
-      target: `${baseId}__sl`,
-    });
-    virtualEdges.push({
-      id: `${baseId}__e-buy-tp`,
-      source: `${baseId}__buy`,
-      target: `${baseId}__tp`,
-    });
-  }
-  if (wantSell) {
-    virtualEdges.push({
-      id: `${baseId}__e-sell-sl`,
-      source: `${baseId}__sell`,
-      target: `${baseId}__sl`,
-    });
-    virtualEdges.push({
-      id: `${baseId}__e-sell-tp`,
-      source: `${baseId}__sell`,
-      target: `${baseId}__tp`,
-    });
-  }
+  virtualEdges.push(
+    { id: `${baseId}__e-buy-sl`, source: `${baseId}__buy`, target: `${baseId}__sl` },
+    { id: `${baseId}__e-buy-tp`, source: `${baseId}__buy`, target: `${baseId}__tp` },
+    { id: `${baseId}__e-sell-sl`, source: `${baseId}__sell`, target: `${baseId}__sl` },
+    { id: `${baseId}__e-sell-tp`, source: `${baseId}__sell`, target: `${baseId}__tp` }
+  );
 
   return { nodes: virtualNodes, edges: virtualEdges };
 }

@@ -365,69 +365,106 @@ export type TradeManagementNodeData =
 // ENTRY STRATEGY NODES (composite blocks)
 // ============================================
 
-// Shared fields for all entry strategy blocks
+// Consistent risk model across all entry strategies:
+//   Risk % → position sizing
+//   SL = ATR(14) * slAtrMultiplier
+//   TP = tpRMultiple * SL distance
 export interface BaseEntryStrategyFields {
-  direction: "BOTH" | "BUY_ONLY" | "SELL_ONLY";
-  // Position sizing
-  sizingMethod: PositionSizingMethod;
-  fixedLot: number;
   riskPercent: number;
-  minLot: number;
-  maxLot: number;
-  // Stop loss
-  slMethod: "FIXED_PIPS" | "ATR_BASED";
-  slFixedPips: number;
   slAtrMultiplier: number;
-  slAtrPeriod: number;
-  // Take profit
-  tpMethod: "FIXED_PIPS" | "RISK_REWARD" | "ATR_BASED";
-  tpFixedPips: number;
-  tpRiskRewardRatio: number;
-  tpAtrMultiplier: number;
-  tpAtrPeriod: number;
+  tpRMultiple: number;
 }
 
+// 1) EMA Crossover — trend following
 export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFields {
   category: "entrystrategy";
   entryType: "ema-crossover";
-  timeframe: Timeframe;
-  fastPeriod: number;
-  slowPeriod: number;
-  signalMode: "every_tick" | "candle_close";
+  // Basic
+  fastEma: number;
+  slowEma: number;
+  // Advanced toggles
+  htfTrendFilter: boolean;
+  htfTimeframe: Timeframe;
+  htfEma: number;
+  rsiConfirmation: boolean;
+  rsiPeriod: number;
+  rsiLongMax: number;
+  rsiShortMin: number;
 }
 
-export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "rsi-reversal";
-  timeframe: Timeframe;
-  period: number;
-  overboughtLevel: number;
-  oversoldLevel: number;
-  signalMode: "every_tick" | "candle_close";
-}
-
+// 2) Range Breakout — breakout of recent range
 export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
   category: "entrystrategy";
   entryType: "range-breakout";
-  timeframe: Timeframe;
-  rangeType: RangeType;
-  lookbackCandles: number;
-  rangeSession: RangeSession;
-  sessionStartHour: number;
-  sessionStartMinute: number;
-  sessionEndHour: number;
-  sessionEndMinute: number;
-  breakoutDirection: BreakoutDirection;
-  entryMode: EntryMode;
-  bufferPips: number;
-  minRangePips: number;
-  maxRangePips: number;
+  // Basic
+  rangePeriod: number;
+  // Advanced toggles
+  londonSessionOnly: boolean;
+  cancelOpposite: boolean;
+  htfTrendFilter: boolean;
+  htfTimeframe: Timeframe;
+  htfEma: number;
+}
+
+// 3) RSI Reversal — mean reversion
+export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "rsi-reversal";
+  // Basic
+  rsiPeriod: number;
+  oversoldLevel: number;
+  overboughtLevel: number;
+  // Advanced toggles
+  sessionFilter: boolean;
+  sessionChoice: TradingSession;
+  trendFilter: boolean;
+  trendEma: number;
+}
+
+// 4) Trend Pullback — EMA trend + RSI dip entry
+export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "trend-pullback";
+  // Basic
+  trendEma: number;
+  pullbackRsiPeriod: number;
+  rsiPullbackLevel: number; // long threshold; short = 100 - this
+  // Advanced toggles
+  londonSessionOnly: boolean;
+  requireEmaBuffer: boolean;
+}
+
+// 5) MACD Crossover — momentum / trend shift
+export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "macd-crossover";
+  // Basic
+  macdFast: number;
+  macdSlow: number;
+  macdSignal: number;
+  // Advanced toggles
+  htfTrendFilter: boolean;
+  htfTimeframe: Timeframe;
+  htfEma: number;
+}
+
+// 6) London Session Breakout — Asia range → London breakout
+export interface LondonBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "london-breakout";
+  // Advanced toggles
+  tradeLondonHours: number;
+  cancelOpposite: boolean;
+  maxOneTradePerDay: boolean;
 }
 
 export type EntryStrategyNodeData =
   | EMACrossoverEntryData
+  | RangeBreakoutEntryData
   | RSIReversalEntryData
-  | RangeBreakoutEntryData;
+  | TrendPullbackEntryData
+  | MACDCrossoverEntryData
+  | LondonBreakoutEntryData;
 
 // Union of all node data types
 export type BuilderNodeData =
@@ -468,8 +505,11 @@ export type BuilderNodeType =
   | "partial-close"
   | "lock-profit"
   | "ema-crossover-entry"
+  | "range-breakout-entry"
   | "rsi-reversal-entry"
-  | "range-breakout-entry";
+  | "trend-pullback-entry"
+  | "macd-crossover-entry"
+  | "london-breakout-entry";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -595,106 +635,126 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       tradeMondayToFriday: true,
     } as TradingSessionNodeData,
   },
-  // Entry Strategies (composite blocks)
+  // Entry Strategies (composite blocks) — ordered by UX appeal
+  {
+    type: "range-breakout-entry",
+    label: "Range Breakout",
+    category: "entrystrategy",
+    description: "Breakout of recent price range",
+    defaultData: {
+      label: "Range Breakout",
+      category: "entrystrategy",
+      entryType: "range-breakout",
+      rangePeriod: 20,
+      riskPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+      londonSessionOnly: false,
+      cancelOpposite: true,
+      htfTrendFilter: false,
+      htfTimeframe: "H4",
+      htfEma: 200,
+    } as RangeBreakoutEntryData,
+  },
   {
     type: "ema-crossover-entry",
     label: "EMA Crossover",
     category: "entrystrategy",
-    description: "Enter on EMA crossover with built-in SL/TP",
+    description: "Classic trend following with EMAs",
     defaultData: {
       label: "EMA Crossover",
       category: "entrystrategy",
       entryType: "ema-crossover",
-      timeframe: "H1",
-      fastPeriod: 10,
-      slowPeriod: 50,
-      signalMode: "candle_close",
-      direction: "BOTH",
-      sizingMethod: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-      slMethod: "FIXED_PIPS",
-      slFixedPips: 50,
+      fastEma: 50,
+      slowEma: 200,
+      riskPercent: 1,
       slAtrMultiplier: 1.5,
-      slAtrPeriod: 14,
-      tpMethod: "RISK_REWARD",
-      tpFixedPips: 100,
-      tpRiskRewardRatio: 2,
-      tpAtrMultiplier: 3,
-      tpAtrPeriod: 14,
+      tpRMultiple: 2,
+      htfTrendFilter: false,
+      htfTimeframe: "H4",
+      htfEma: 200,
+      rsiConfirmation: false,
+      rsiPeriod: 14,
+      rsiLongMax: 60,
+      rsiShortMin: 40,
     } as EMACrossoverEntryData,
+  },
+  {
+    type: "trend-pullback-entry",
+    label: "Trend Pullback",
+    category: "entrystrategy",
+    description: "Enter on pullback in a trending market",
+    defaultData: {
+      label: "Trend Pullback",
+      category: "entrystrategy",
+      entryType: "trend-pullback",
+      trendEma: 200,
+      pullbackRsiPeriod: 14,
+      rsiPullbackLevel: 40,
+      riskPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+      londonSessionOnly: false,
+      requireEmaBuffer: false,
+    } as TrendPullbackEntryData,
   },
   {
     type: "rsi-reversal-entry",
     label: "RSI Reversal",
     category: "entrystrategy",
-    description: "Enter on RSI overbought/oversold reversal",
+    description: "Mean reversion at RSI extremes",
     defaultData: {
       label: "RSI Reversal",
       category: "entrystrategy",
       entryType: "rsi-reversal",
-      timeframe: "H1",
-      period: 14,
-      overboughtLevel: 70,
+      rsiPeriod: 14,
       oversoldLevel: 30,
-      signalMode: "candle_close",
-      direction: "BOTH",
-      sizingMethod: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-      slMethod: "FIXED_PIPS",
-      slFixedPips: 30,
-      slAtrMultiplier: 1.5,
-      slAtrPeriod: 14,
-      tpMethod: "FIXED_PIPS",
-      tpFixedPips: 60,
-      tpRiskRewardRatio: 2,
-      tpAtrMultiplier: 3,
-      tpAtrPeriod: 14,
+      overboughtLevel: 70,
+      riskPercent: 1,
+      slAtrMultiplier: 1.2,
+      tpRMultiple: 1.5,
+      sessionFilter: false,
+      sessionChoice: "LONDON",
+      trendFilter: false,
+      trendEma: 200,
     } as RSIReversalEntryData,
   },
   {
-    type: "range-breakout-entry",
-    label: "Range Breakout",
+    type: "london-breakout-entry",
+    label: "London Breakout",
     category: "entrystrategy",
-    description: "Enter on session range breakout",
+    description: "Asia range → London session breakout",
     defaultData: {
-      label: "Range Breakout",
+      label: "London Breakout",
       category: "entrystrategy",
-      entryType: "range-breakout",
-      timeframe: "H1",
-      rangeType: "SESSION",
-      lookbackCandles: 20,
-      rangeSession: "ASIAN",
-      sessionStartHour: 0,
-      sessionStartMinute: 0,
-      sessionEndHour: 8,
-      sessionEndMinute: 0,
-      breakoutDirection: "BOTH",
-      entryMode: "ON_CLOSE",
-      bufferPips: 2,
-      minRangePips: 10,
-      maxRangePips: 0,
-      direction: "BOTH",
-      sizingMethod: "RISK_PERCENT",
-      fixedLot: 0.1,
-      riskPercent: 2,
-      minLot: 0.01,
-      maxLot: 10,
-      slMethod: "ATR_BASED",
-      slFixedPips: 50,
+      entryType: "london-breakout",
+      riskPercent: 1,
       slAtrMultiplier: 1.5,
-      slAtrPeriod: 14,
-      tpMethod: "RISK_REWARD",
-      tpFixedPips: 100,
-      tpRiskRewardRatio: 2,
-      tpAtrMultiplier: 3,
-      tpAtrPeriod: 14,
-    } as RangeBreakoutEntryData,
+      tpRMultiple: 2,
+      tradeLondonHours: 2,
+      cancelOpposite: true,
+      maxOneTradePerDay: true,
+    } as LondonBreakoutEntryData,
+  },
+  {
+    type: "macd-crossover-entry",
+    label: "MACD Crossover",
+    category: "entrystrategy",
+    description: "Momentum shift on MACD signal cross",
+    defaultData: {
+      label: "MACD Crossover",
+      category: "entrystrategy",
+      entryType: "macd-crossover",
+      macdFast: 12,
+      macdSlow: 26,
+      macdSignal: 9,
+      riskPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+      htfTrendFilter: false,
+      htfTimeframe: "H4",
+      htfEma: 200,
+    } as MACDCrossoverEntryData,
   },
   // Indicators
   {

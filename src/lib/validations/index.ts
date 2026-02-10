@@ -411,22 +411,11 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
   .strip();
 
 // ---- Entry Strategy node data schemas ----
+// Consistent risk model: Risk %, ATR-based SL, R-multiple TP
 const baseEntryStrategyFieldsSchema = z.object({
-  direction: z.enum(["BOTH", "BUY_ONLY", "SELL_ONLY"]),
-  sizingMethod: z.enum(["FIXED_LOT", "RISK_PERCENT"]),
-  fixedLot: z.number().min(0.01).max(1000),
   riskPercent: z.number().min(0.1).max(100),
-  minLot: z.number().min(0.01).max(1000),
-  maxLot: z.number().min(0.01).max(1000),
-  slMethod: z.enum(["FIXED_PIPS", "ATR_BASED"]),
-  slFixedPips: z.number().min(1).max(10000),
-  slAtrMultiplier: z.number().min(0.1).max(100),
-  slAtrPeriod: z.number().int().min(1).max(1000),
-  tpMethod: z.enum(["FIXED_PIPS", "RISK_REWARD", "ATR_BASED"]),
-  tpFixedPips: z.number().min(1).max(10000),
-  tpRiskRewardRatio: z.number().min(0.1).max(100),
-  tpAtrMultiplier: z.number().min(0.1).max(100),
-  tpAtrPeriod: z.number().int().min(1).max(1000),
+  slAtrMultiplier: z.number().min(0.1).max(20),
+  tpRMultiple: z.number().min(0.1).max(20),
 });
 
 const emaCrossoverEntryDataSchema = baseNodeDataSchema
@@ -434,23 +423,15 @@ const emaCrossoverEntryDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("entrystrategy"),
     entryType: z.literal("ema-crossover"),
-    timeframe: timeframeSchema,
-    fastPeriod: z.number().int().min(1).max(1000),
-    slowPeriod: z.number().int().min(1).max(1000),
-    signalMode: signalModeSchema,
-  })
-  .strip();
-
-const rsiReversalEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("rsi-reversal"),
-    timeframe: timeframeSchema,
-    period: z.number().int().min(1).max(1000),
-    overboughtLevel: z.number().min(0).max(100),
-    oversoldLevel: z.number().min(0).max(100),
-    signalMode: signalModeSchema,
+    fastEma: z.number().int().min(1).max(1000),
+    slowEma: z.number().int().min(1).max(1000),
+    htfTrendFilter: z.boolean(),
+    htfTimeframe: timeframeSchema,
+    htfEma: z.number().int().min(1).max(1000),
+    rsiConfirmation: z.boolean(),
+    rsiPeriod: z.number().int().min(1).max(1000),
+    rsiLongMax: z.number().min(0).max(100),
+    rsiShortMin: z.number().min(0).max(100),
   })
   .strip();
 
@@ -459,19 +440,65 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("entrystrategy"),
     entryType: z.literal("range-breakout"),
-    timeframe: timeframeSchema,
-    rangeType: z.enum(["PREVIOUS_CANDLES", "SESSION", "TIME_WINDOW"]),
-    lookbackCandles: z.number().int().min(1).max(10000),
-    rangeSession: z.enum(["ASIAN", "LONDON", "NEW_YORK", "CUSTOM"]),
-    sessionStartHour: z.number().int().min(0).max(23),
-    sessionStartMinute: z.number().int().min(0).max(59),
-    sessionEndHour: z.number().int().min(0).max(23),
-    sessionEndMinute: z.number().int().min(0).max(59),
-    breakoutDirection: z.enum(["BUY_ON_HIGH", "SELL_ON_LOW", "BOTH"]),
-    entryMode: z.enum(["IMMEDIATE", "ON_CLOSE", "AFTER_RETEST"]),
-    bufferPips: z.number().min(0).max(1000),
-    minRangePips: z.number().min(0).max(10000),
-    maxRangePips: z.number().min(0).max(10000),
+    rangePeriod: z.number().int().min(1).max(10000),
+    londonSessionOnly: z.boolean(),
+    cancelOpposite: z.boolean(),
+    htfTrendFilter: z.boolean(),
+    htfTimeframe: timeframeSchema,
+    htfEma: z.number().int().min(1).max(1000),
+  })
+  .strip();
+
+const rsiReversalEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("rsi-reversal"),
+    rsiPeriod: z.number().int().min(1).max(1000),
+    oversoldLevel: z.number().min(0).max(100),
+    overboughtLevel: z.number().min(0).max(100),
+    sessionFilter: z.boolean(),
+    sessionChoice: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP"]),
+    trendFilter: z.boolean(),
+    trendEma: z.number().int().min(1).max(1000),
+  })
+  .strip();
+
+const trendPullbackEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("trend-pullback"),
+    trendEma: z.number().int().min(1).max(1000),
+    pullbackRsiPeriod: z.number().int().min(1).max(1000),
+    rsiPullbackLevel: z.number().min(0).max(100),
+    londonSessionOnly: z.boolean(),
+    requireEmaBuffer: z.boolean(),
+  })
+  .strip();
+
+const macdCrossoverEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("macd-crossover"),
+    macdFast: z.number().int().min(1).max(1000),
+    macdSlow: z.number().int().min(1).max(1000),
+    macdSignal: z.number().int().min(1).max(1000),
+    htfTrendFilter: z.boolean(),
+    htfTimeframe: timeframeSchema,
+    htfEma: z.number().int().min(1).max(1000),
+  })
+  .strip();
+
+const londonBreakoutEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("london-breakout"),
+    tradeLondonHours: z.number().int().min(1).max(12),
+    cancelOpposite: z.boolean(),
+    maxOneTradePerDay: z.boolean(),
   })
   .strip();
 

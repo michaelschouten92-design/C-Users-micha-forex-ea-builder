@@ -28,62 +28,50 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     const d = n.data;
     if (!("entryType" in d)) continue;
 
-    const tf = "timeframe" in d ? ` (${d.timeframe})` : "";
-
     switch (d.entryType) {
       case "ema-crossover":
-        if ("fastPeriod" in d && "slowPeriod" in d) {
-          lines.push(`Enter on EMA(${d.fastPeriod})/EMA(${d.slowPeriod}) crossover${tf}`);
-        }
-        break;
-      case "rsi-reversal":
-        if ("period" in d && "oversoldLevel" in d && "overboughtLevel" in d) {
-          lines.push(
-            `Enter on RSI(${d.period}) reversal at ${d.oversoldLevel}/${d.overboughtLevel} levels${tf}`
-          );
+        if ("fastEma" in d && "slowEma" in d) {
+          lines.push(`Enter on EMA(${d.fastEma})/EMA(${d.slowEma}) crossover`);
         }
         break;
       case "range-breakout":
-        if ("rangeSession" in d) {
-          lines.push(`Enter on ${d.rangeSession} session range breakout${tf}`);
+        if ("rangePeriod" in d) {
+          lines.push(`Enter on ${d.rangePeriod}-candle range breakout`);
         }
+        break;
+      case "rsi-reversal":
+        if ("rsiPeriod" in d && "oversoldLevel" in d && "overboughtLevel" in d) {
+          lines.push(
+            `Enter on RSI(${d.rsiPeriod}) reversal at ${d.oversoldLevel}/${d.overboughtLevel}`
+          );
+        }
+        break;
+      case "trend-pullback":
+        if ("trendEma" in d && "rsiPullbackLevel" in d) {
+          lines.push(
+            `Enter on pullback (EMA ${d.trendEma} trend, RSI dip to ${d.rsiPullbackLevel})`
+          );
+        }
+        break;
+      case "macd-crossover":
+        if ("macdFast" in d && "macdSlow" in d && "macdSignal" in d) {
+          lines.push(`Enter on MACD(${d.macdFast},${d.macdSlow},${d.macdSignal}) crossover`);
+        }
+        break;
+      case "london-breakout":
+        lines.push("Enter on London session breakout of Asia range");
         break;
     }
 
-    // Direction from entry strategy
-    if ("direction" in d) {
-      if (d.direction === "BOTH") lines.push("Trade both long and short");
-      else if (d.direction === "BUY_ONLY") lines.push("Go long (buy only)");
-      else if (d.direction === "SELL_ONLY") lines.push("Go short (sell only)");
+    // Consistent risk model summary
+    if ("riskPercent" in d) {
+      lines.push(`Risk ${d.riskPercent}% per trade`);
     }
-
-    // Position sizing from entry strategy
-    if ("sizingMethod" in d) {
-      if (d.sizingMethod === "FIXED_LOT" && "fixedLot" in d) {
-        lines.push(`Risk ${d.fixedLot} lots per trade`);
-      } else if (d.sizingMethod === "RISK_PERCENT" && "riskPercent" in d) {
-        lines.push(`Risk ${d.riskPercent}% of balance per trade`);
-      }
+    if ("slAtrMultiplier" in d) {
+      lines.push(`Stop loss at ${d.slAtrMultiplier}× ATR(14)`);
     }
-
-    // SL from entry strategy
-    if ("slMethod" in d) {
-      if (d.slMethod === "FIXED_PIPS" && "slFixedPips" in d) {
-        lines.push(`Stop loss at ${d.slFixedPips} pips`);
-      } else if (d.slMethod === "ATR_BASED" && "slAtrMultiplier" in d) {
-        lines.push(`ATR-based stop loss (${d.slAtrMultiplier}x)`);
-      }
-    }
-
-    // TP from entry strategy
-    if ("tpMethod" in d) {
-      if (d.tpMethod === "FIXED_PIPS" && "tpFixedPips" in d) {
-        lines.push(`Take profit at ${d.tpFixedPips} pips`);
-      } else if (d.tpMethod === "RISK_REWARD" && "tpRiskRewardRatio" in d) {
-        lines.push(`Close at ${d.tpRiskRewardRatio}:1 reward-to-risk`);
-      } else if (d.tpMethod === "ATR_BASED" && "tpAtrMultiplier" in d) {
-        lines.push(`ATR-based take profit (${d.tpAtrMultiplier}x)`);
-      }
+    if ("tpRMultiple" in d) {
+      lines.push(`Take profit at ${d.tpRMultiple}:1 reward-to-risk`);
     }
   }
 

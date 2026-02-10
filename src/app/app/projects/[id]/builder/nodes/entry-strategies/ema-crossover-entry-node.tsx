@@ -22,27 +22,35 @@ export const EMACrossoverEntryNode = memo(function EMACrossoverEntryNode({
     >
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Timeframe</span>
-          <span className="text-white font-medium">{data.timeframe}</span>
-        </div>
-        <div className="flex justify-between">
           <span className="text-[#94A3B8]">Fast / Slow</span>
           <span className="text-white font-medium">
-            EMA({data.fastPeriod}) / EMA({data.slowPeriod})
+            EMA({data.fastEma}) / EMA({data.slowEma})
           </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Direction</span>
-          <span className="text-white font-medium">{data.direction}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">Risk</span>
+          <span className="text-white font-medium">{data.riskPercent}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#94A3B8]">SL / TP</span>
           <span className="text-white font-medium">
-            {data.sizingMethod === "RISK_PERCENT"
-              ? `${data.riskPercent}%`
-              : `${data.fixedLot} lots`}
+            {data.slAtrMultiplier}× ATR / {data.tpRMultiple}R
           </span>
         </div>
+        {(data.htfTrendFilter || data.rsiConfirmation) && (
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {data.htfTrendFilter && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                HTF
+              </span>
+            )}
+            {data.rsiConfirmation && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                RSI
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </BaseNode>
   );

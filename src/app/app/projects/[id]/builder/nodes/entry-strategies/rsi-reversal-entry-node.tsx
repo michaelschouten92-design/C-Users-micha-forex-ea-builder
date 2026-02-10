@@ -22,12 +22,8 @@ export const RSIReversalEntryNode = memo(function RSIReversalEntryNode({
     >
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Timeframe</span>
-          <span className="text-white font-medium">{data.timeframe}</span>
-        </div>
-        <div className="flex justify-between">
           <span className="text-[#94A3B8]">RSI Period</span>
-          <span className="text-white font-medium">{data.period}</span>
+          <span className="text-white font-medium">{data.rsiPeriod}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">OB / OS</span>
@@ -36,17 +32,29 @@ export const RSIReversalEntryNode = memo(function RSIReversalEntryNode({
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Direction</span>
-          <span className="text-white font-medium">{data.direction}</span>
+          <span className="text-[#94A3B8]">Risk</span>
+          <span className="text-white font-medium">{data.riskPercent}%</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Risk</span>
+          <span className="text-[#94A3B8]">SL / TP</span>
           <span className="text-white font-medium">
-            {data.sizingMethod === "RISK_PERCENT"
-              ? `${data.riskPercent}%`
-              : `${data.fixedLot} lots`}
+            {data.slAtrMultiplier}× ATR / {data.tpRMultiple}R
           </span>
         </div>
+        {(data.sessionFilter || data.trendFilter) && (
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {data.sessionFilter && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                Session
+              </span>
+            )}
+            {data.trendFilter && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                Trend
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </BaseNode>
   );
