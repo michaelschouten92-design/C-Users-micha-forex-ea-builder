@@ -40,8 +40,6 @@ import type {
   NodeTemplate,
 } from "@/types/builder";
 import { DEFAULT_SETTINGS } from "@/types/builder";
-import { STRATEGY_PRESETS, type StrategyPreset } from "@/lib/strategy-presets";
-import { apiClient } from "@/lib/api-client";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -334,46 +332,6 @@ export function StrategyCanvas({
     [setNodes, setEdges, setViewport, resetHistory]
   );
 
-  // User saved templates
-  interface UserTemplate {
-    id: string;
-    name: string;
-    buildJson: BuildJsonSchema;
-  }
-  const [userTemplates, setUserTemplates] = useState<UserTemplate[]>([]);
-
-  useEffect(() => {
-    if (nodes.length > 0) return;
-    apiClient
-      .get<UserTemplate[]>("/api/templates")
-      .then((data) => setUserTemplates(data))
-      .catch((err) => console.warn("Failed to load templates:", err));
-  }, [nodes.length]);
-
-  // Load buildJson onto canvas (shared by presets and user templates)
-  const loadBuildJson = useCallback(
-    (buildJson: BuildJsonSchema) => {
-      setNodes(buildJson.nodes as Node[]);
-      setEdges(buildJson.edges as Edge[]);
-      setSettings(buildJson.settings ?? { ...DEFAULT_SETTINGS });
-
-      if (buildJson.viewport) {
-        setViewport(buildJson.viewport);
-      }
-
-      resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
-    },
-    [setNodes, setEdges, setSettings, setViewport, resetHistory]
-  );
-
-  // Load a template preset
-  const onLoadTemplate = useCallback(
-    (preset: StrategyPreset) => {
-      loadBuildJson(preset.buildJson);
-    },
-    [loadBuildJson]
-  );
-
   // Undo handler for button
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -474,110 +432,6 @@ export function StrategyCanvas({
               />
             )}
           </ReactFlow>
-
-          {/* Empty canvas: Template cards on the right */}
-          {nodes.length === 0 && (
-            <div
-              className="absolute top-4 right-4 z-10 w-[260px] space-y-3"
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <div className="px-1">
-                <h3 className="text-sm font-semibold text-white">Start from a template</h3>
-                <p className="text-xs text-[#64748B] mt-0.5">Or drag blocks from the left panel</p>
-              </div>
-              {STRATEGY_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => onLoadTemplate(preset)}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.5)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#C4B5FD] group-hover:text-white transition-colors">
-                      {preset.name}
-                    </span>
-                    <svg
-                      className="w-4 h-4 text-[#64748B] group-hover:text-[#4F46E5] transition-colors"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-[#64748B] mt-1 line-clamp-2">{preset.description}</p>
-                </button>
-              ))}
-
-              {/* User saved templates */}
-              {userTemplates.length > 0 && (
-                <>
-                  <div className="px-1 pt-2">
-                    <h3 className="text-sm font-semibold text-white">Your templates</h3>
-                  </div>
-                  {userTemplates.map((t) => (
-                    <div key={t.id} className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => loadBuildJson(t.buildJson)}
-                        className="flex-1 text-left px-4 py-3 rounded-xl bg-[#1A0626]/90 backdrop-blur-sm border border-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] hover:bg-[#1A0626] hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all duration-200 group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-[#22D3EE] group-hover:text-white transition-colors">
-                            {t.name}
-                          </span>
-                          <svg
-                            className="w-4 h-4 text-[#64748B] group-hover:text-[#22D3EE] transition-colors"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => {
-                          apiClient
-                            .delete(`/api/templates?id=${t.id}`)
-                            .then(() =>
-                              setUserTemplates((prev) => prev.filter((ut) => ut.id !== t.id))
-                            )
-                            .catch(() => {});
-                        }}
-                        className="p-2 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200 flex-shrink-0"
-                        title="Delete template"
-                        aria-label="Delete template"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          )}
 
           {/* Mobile: Floating button to open blocks toolbar */}
           <button
