@@ -430,21 +430,20 @@ function TradingSessionFields({
           </div>
         </div>
       )}
-      <div className="mt-3">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.tradeMondayToFriday}
-            onChange={(e) => {
-              e.stopPropagation();
-              onChange({ tradeMondayToFriday: e.target.checked });
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
-          />
-          Weekdays only (Mon-Fri)
-        </label>
-      </div>
+      <TradingDaysCheckboxes
+        days={
+          data.tradingDays ?? {
+            monday: true,
+            tuesday: true,
+            wednesday: true,
+            thursday: true,
+            friday: true,
+            saturday: false,
+            sunday: false,
+          }
+        }
+        onChange={(days) => onChange({ tradingDays: days })}
+      />
     </>
   );
 }
@@ -494,6 +493,35 @@ const DAY_LABELS: { key: keyof TradingDays; label: string }[] = [
   { key: "saturday", label: "Saturday" },
   { key: "sunday", label: "Sunday" },
 ];
+
+function TradingDaysCheckboxes({
+  days,
+  onChange,
+}: {
+  days: TradingDays;
+  onChange: (days: TradingDays) => void;
+}) {
+  return (
+    <div className="mt-3 space-y-1.5">
+      <span className="text-xs font-medium text-[#CBD5E1]">Trading Days</span>
+      {DAY_LABELS.map(({ key, label }) => (
+        <label key={key} className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={days[key]}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ ...days, [key]: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 function CustomTimesFields({
   data,

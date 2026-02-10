@@ -36,7 +36,7 @@ export interface TradingSessionNodeData extends BaseNodeData {
   category: "timing";
   timingType: "trading-session";
   session: TradingSession;
-  tradeMondayToFriday: boolean;
+  tradingDays: TradingDays;
   useServerTime?: boolean;
   customStartHour?: number;
   customStartMinute?: number;
@@ -610,7 +610,15 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "timing",
       timingType: "trading-session",
       session: "LONDON",
-      tradeMondayToFriday: true,
+      tradingDays: {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false,
+      },
     } as TradingSessionNodeData,
   },
   {

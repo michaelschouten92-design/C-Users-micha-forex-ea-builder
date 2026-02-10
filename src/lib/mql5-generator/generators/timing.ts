@@ -221,9 +221,50 @@ function generateTradingSessionCode(
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   }
 
-  if (data.tradeMondayToFriday) {
-    code.onTick.push("// Only trade on weekdays (Mon-Fri)");
-    code.onTick.push("if(dt.day_of_week >= 1 && dt.day_of_week <= 5)");
+  // Day-of-week filter
+  const days = data.tradingDays ?? {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+  const dayMap: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+  };
+  const activeDays = Object.entries(days)
+    .filter(([, active]) => active)
+    .map(([day]) => dayMap[day]);
+  const allDays = activeDays.length === 7;
+
+  if (!allDays) {
+    if (activeDays.length === 0) {
+      code.onTick.push("// No trading days selected");
+      code.onTick.push("");
+      return;
+    }
+    // Check if exactly Mon-Fri
+    const isWeekdays =
+      activeDays.length === 5 &&
+      [1, 2, 3, 4, 5].every((d) => activeDays.includes(d)) &&
+      !activeDays.includes(0) &&
+      !activeDays.includes(6);
+    if (isWeekdays) {
+      code.onTick.push("// Only trade on weekdays (Mon-Fri)");
+      code.onTick.push("if(dt.day_of_week >= 1 && dt.day_of_week <= 5)");
+    } else {
+      const dayConditions = activeDays.map((d) => `dt.day_of_week == ${d}`).join(" || ");
+      code.onTick.push(`// Day-of-week filter`);
+      code.onTick.push(`if(${dayConditions})`);
+    }
     code.onTick.push("{");
   }
 
@@ -239,7 +280,7 @@ function generateTradingSessionCode(
     );
   }
 
-  if (data.tradeMondayToFriday) {
+  if (!allDays) {
     code.onTick.push("}");
   }
 

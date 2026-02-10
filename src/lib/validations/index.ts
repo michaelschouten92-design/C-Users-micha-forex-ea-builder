@@ -133,7 +133,7 @@ const tradingSessionNodeDataSchema = baseNodeDataSchema
     category: z.literal("timing"),
     timingType: z.literal("trading-session"),
     session: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP", "CUSTOM"]),
-    tradeMondayToFriday: z.boolean(),
+    tradingDays: tradingDaysSchema,
     useServerTime: z.boolean().optional(),
     customStartHour: z.number().int().min(0).max(23).optional(),
     customStartMinute: z.number().int().min(0).max(59).optional(),
