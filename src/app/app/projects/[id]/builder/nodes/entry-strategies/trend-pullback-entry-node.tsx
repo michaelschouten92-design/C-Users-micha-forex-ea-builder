@@ -38,7 +38,10 @@ export const TrendPullbackEntryNode = memo(function TrendPullbackEntryNode({
         <div className="flex justify-between">
           <span className="text-[#94A3B8]">SL / TP</span>
           <span className="text-white font-medium">
-            {data.slAtrMultiplier}× ATR / {data.tpRMultiple}R
+            {data.slMethod === "PIPS"
+              ? `${data.slFixedPips ?? 50}p`
+              : `${data.slAtrMultiplier}× ATR`}{" "}
+            / {data.tpRMultiple}R
           </span>
         </div>
         {data.londonSessionOnly && (

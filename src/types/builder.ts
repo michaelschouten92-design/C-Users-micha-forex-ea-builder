@@ -391,9 +391,13 @@ export type TradeManagementNodeData =
 //   TP = tpRMultiple * SL distance
 export type EntryDirection = "BUY" | "SELL" | "BOTH";
 
+export type EntrySlMethod = "ATR" | "PIPS" | "RANGE_OPPOSITE";
+
 export interface BaseEntryStrategyFields {
   direction: EntryDirection;
   riskPercent: number;
+  slMethod: EntrySlMethod;
+  slFixedPips: number;
   slAtrMultiplier: number;
   tpRMultiple: number;
 }
@@ -427,7 +431,6 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   customStartMinute: number;
   customEndHour: number;
   customEndMinute: number;
-  slMethod: "ATR" | "RANGE_OPPOSITE";
   useServerTime: boolean;
   // Advanced toggles
   cancelOpposite: boolean;
@@ -658,9 +661,10 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       customStartMinute: 0,
       customEndHour: 8,
       customEndMinute: 0,
-      slMethod: "ATR",
       useServerTime: true,
       riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       cancelOpposite: true,
@@ -685,6 +689,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       fastEma: 50,
       slowEma: 200,
       riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       htfTrendFilter: false,
@@ -710,6 +716,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       pullbackRsiPeriod: 14,
       rsiPullbackLevel: 40,
       riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       londonSessionOnly: false,
@@ -730,6 +738,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       oversoldLevel: 30,
       overboughtLevel: 70,
       riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
       slAtrMultiplier: 1.2,
       tpRMultiple: 1.5,
       sessionFilter: false,
@@ -752,6 +762,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       macdSlow: 26,
       macdSignal: 9,
       riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       htfTrendFilter: false,

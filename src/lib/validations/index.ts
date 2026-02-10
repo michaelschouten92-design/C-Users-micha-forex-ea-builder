@@ -426,6 +426,8 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 const baseEntryStrategyFieldsSchema = z.object({
   direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
   riskPercent: z.number().min(0.1).max(100),
+  slMethod: z.enum(["ATR", "PIPS", "RANGE_OPPOSITE"]).default("ATR"),
+  slFixedPips: z.number().min(1).max(10000).default(50),
   slAtrMultiplier: z.number().min(0.1).max(20),
   tpRMultiple: z.number().min(0.1).max(20),
 });
@@ -459,7 +461,6 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
     customStartMinute: z.number().int().min(0).max(59),
     customEndHour: z.number().int().min(0).max(23),
     customEndMinute: z.number().int().min(0).max(59),
-    slMethod: z.enum(["ATR", "RANGE_OPPOSITE"]),
     useServerTime: z.boolean(),
     cancelOpposite: z.boolean(),
     closeAtTime: z.boolean(),

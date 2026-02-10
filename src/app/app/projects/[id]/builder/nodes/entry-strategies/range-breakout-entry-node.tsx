@@ -17,7 +17,12 @@ export const RangeBreakoutEntryNode = memo(function RangeBreakoutEntryNode({
       ? `${String(data.customStartHour).padStart(2, "0")}:${String(data.customStartMinute).padStart(2, "0")} - ${String(data.customEndHour).padStart(2, "0")}:${String(data.customEndMinute).padStart(2, "0")}`
       : `${data.rangePeriod} candles (${data.rangeTimeframe ?? "H1"})`;
 
-  const slLabel = data.slMethod === "RANGE_OPPOSITE" ? "Range SL" : `${data.slAtrMultiplier}× ATR`;
+  const slLabel =
+    data.slMethod === "RANGE_OPPOSITE"
+      ? "Range SL"
+      : data.slMethod === "PIPS"
+        ? `${data.slFixedPips ?? 50} pips`
+        : `${data.slAtrMultiplier}× ATR`;
 
   return (
     <BaseNode

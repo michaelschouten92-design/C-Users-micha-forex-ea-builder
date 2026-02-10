@@ -57,6 +57,8 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
         }
         if ("slMethod" in d && d.slMethod === "RANGE_OPPOSITE") {
           lines.push("SL: Range opposite");
+        } else if ("slMethod" in d && d.slMethod === "PIPS" && "slFixedPips" in d) {
+          lines.push(`SL: ${d.slFixedPips} pips`);
         }
         break;
       case "rsi-reversal":

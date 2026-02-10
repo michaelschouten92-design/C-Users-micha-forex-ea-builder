@@ -248,15 +248,20 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   }
 
   // Create SL node
-  const slMethod =
-    "slMethod" in d && d.slMethod === "RANGE_OPPOSITE" ? "RANGE_OPPOSITE" : "ATR_BASED";
+  const rawSlMethod = d.slMethod ?? "ATR";
+  const slNodeMethod =
+    rawSlMethod === "RANGE_OPPOSITE"
+      ? "RANGE_OPPOSITE"
+      : rawSlMethod === "PIPS"
+        ? "FIXED_PIPS"
+        : "ATR_BASED";
   virtualNodes.push(
     vNode("sl", "stop-loss", {
       label: "Stop Loss",
       category: "riskmanagement",
       tradingType: "stop-loss",
-      method: slMethod,
-      fixedPips: 50,
+      method: slNodeMethod,
+      fixedPips: d.slFixedPips ?? 50,
       atrMultiplier: d.slAtrMultiplier,
       atrPeriod: 14,
     })

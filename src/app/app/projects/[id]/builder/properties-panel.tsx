@@ -49,6 +49,7 @@ import type {
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
   EntryDirection,
+  EntrySlMethod,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 
@@ -2211,18 +2212,37 @@ function TimeExitFields({
 // ENTRY STRATEGY SHARED SECTIONS
 // ============================================
 
+const BASE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
+  { value: "ATR", label: "ATR Based" },
+  { value: "PIPS", label: "Fixed Pips" },
+];
+
+const RANGE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
+  { value: "ATR", label: "ATR Based" },
+  { value: "PIPS", label: "Fixed Pips" },
+  { value: "RANGE_OPPOSITE", label: "Range Opposite" },
+];
+
 // Consistent risk model section used by all entry strategies
-function EntryStrategyRiskSection({
+// Order: Risk % + optimize, SL method + field + optimize, TP + optimize
+function EntryStrategyRiskSection<T extends BuilderNodeData>({
   data,
   onChange,
-  showTpInBasic = true,
-  showSlAtr = true,
+  slOptions,
 }: {
-  data: { riskPercent: number; slAtrMultiplier: number; tpRMultiple: number };
-  onChange: (updates: Record<string, unknown>) => void;
-  showTpInBasic?: boolean;
-  showSlAtr?: boolean;
+  data: T & {
+    riskPercent: number;
+    slMethod?: EntrySlMethod;
+    slFixedPips?: number;
+    slAtrMultiplier: number;
+    tpRMultiple: number;
+  };
+  onChange: (updates: Partial<T>) => void;
+  slOptions?: { value: EntrySlMethod; label: string }[];
 }) {
+  const slMethod = data.slMethod ?? "ATR";
+  const options = slOptions ?? BASE_SL_OPTIONS;
+
   return (
     <>
       <NumberField
@@ -2231,31 +2251,62 @@ function EntryStrategyRiskSection({
         min={0.1}
         max={10}
         step={0.1}
-        onChange={(v) => onChange({ riskPercent: v })}
+        onChange={(v) => onChange({ riskPercent: v } as Partial<T>)}
         tooltip="Percentage of account balance risked per trade"
       />
-      {showSlAtr && (
-        <NumberField
-          label="Stop Loss (ATR ×)"
-          value={data.slAtrMultiplier}
-          min={0.1}
-          max={10}
-          step={0.1}
-          onChange={(v) => onChange({ slAtrMultiplier: v })}
-          tooltip="SL distance = ATR(14) × this multiplier"
-        />
+      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Stop Loss Method"
+        value={slMethod}
+        options={options}
+        onChange={(v) => onChange({ slMethod: v } as Partial<T>)}
+      />
+      {slMethod === "RANGE_OPPOSITE" && (
+        <p className="text-[11px] text-[#94A3B8] -mt-1">
+          SL at the opposite side of the range. Buy: SL = range low. Sell: SL = range high. Lot size
+          calculated from risk %.
+        </p>
       )}
-      {showTpInBasic && (
-        <NumberField
-          label="Take Profit (R multiple)"
-          value={data.tpRMultiple}
-          min={0.1}
-          max={10}
-          step={0.1}
-          onChange={(v) => onChange({ tpRMultiple: v })}
-          tooltip="TP = this × SL distance (risk:reward ratio)"
-        />
+      {slMethod === "ATR" && (
+        <>
+          <NumberField
+            label="Stop Loss (ATR ×)"
+            value={data.slAtrMultiplier}
+            min={0.1}
+            max={10}
+            step={0.1}
+            onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
+            tooltip="SL distance = ATR(14) × this multiplier"
+          />
+          <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+        </>
       )}
+      {slMethod === "PIPS" && (
+        <>
+          <NumberField
+            label="Stop Loss (Pips)"
+            value={data.slFixedPips ?? 50}
+            min={1}
+            max={10000}
+            step={1}
+            onChange={(v) => onChange({ slFixedPips: v } as Partial<T>)}
+            tooltip="Fixed stop loss distance in pips"
+          />
+          <OptimizableFieldCheckbox fieldName="slFixedPips" data={data} onChange={onChange} />
+        </>
+      )}
+
+      <NumberField
+        label="Take Profit (R multiple)"
+        value={data.tpRMultiple}
+        min={0.1}
+        max={10}
+        step={0.1}
+        onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
+        tooltip="TP = this × SL distance (risk:reward ratio)"
+      />
+      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
     </>
   );
 }
@@ -2372,9 +2423,6 @@ function EMACrossoverEntryFields({
         <FieldWarning message="Fast EMA should be smaller than Slow EMA" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2438,11 +2486,6 @@ const RANGE_METHOD_OPTIONS: { value: "CANDLES" | "CUSTOM_TIME"; label: string }[
   { value: "CUSTOM_TIME", label: "Custom Time" },
 ];
 
-const SL_METHOD_OPTIONS: { value: "ATR" | "RANGE_OPPOSITE"; label: string }[] = [
-  { value: "ATR", label: "ATR Based" },
-  { value: "RANGE_OPPOSITE", label: "Range Opposite" },
-];
-
 function RangeBreakoutEntryFields({
   data,
   onChange,
@@ -2451,7 +2494,6 @@ function RangeBreakoutEntryFields({
   onChange: (updates: Partial<RangeBreakoutEntryData>) => void;
 }) {
   const rangeMethod = data.rangeMethod ?? "CANDLES";
-  const slMethod = data.slMethod ?? "ATR";
   const useServerTime = data.useServerTime ?? true;
   const timeLabel = useServerTime ? "Server time" : "GMT";
 
@@ -2529,27 +2571,8 @@ function RangeBreakoutEntryFields({
         </label>
       </div>
 
-      {/* SL method */}
-      <SelectField
-        label="Stop Loss Method"
-        value={slMethod}
-        options={SL_METHOD_OPTIONS}
-        onChange={(v) => onChange({ slMethod: v as "ATR" | "RANGE_OPPOSITE" })}
-      />
-      {slMethod === "RANGE_OPPOSITE" && (
-        <p className="text-[11px] text-[#94A3B8] -mt-1">
-          Stop loss is placed at the opposite side of the range. For a buy, SL = range low. For a
-          sell, SL = range high. Lot size is calculated automatically from your risk %.
-        </p>
-      )}
-
-      {/* Risk section */}
-      <EntryStrategyRiskSection data={data} onChange={onChange} showSlAtr={slMethod === "ATR"} />
-      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-      {slMethod === "ATR" && (
-        <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
-      )}
-      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
+      {/* Risk section (includes SL method selector with Range Opposite option) */}
+      <EntryStrategyRiskSection data={data} onChange={onChange} slOptions={RANGE_SL_OPTIONS} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
@@ -2640,22 +2663,10 @@ function RSIReversalEntryFields({
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldWarning message="Overbought must be higher than oversold" />
       )}
-      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
-      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <NumberField
-          label="Take Profit (R multiple)"
-          value={data.tpRMultiple}
-          min={0.1}
-          max={10}
-          step={0.1}
-          onChange={(v) => onChange({ tpRMultiple: v })}
-          tooltip="TP = this × SL distance"
-        />
-        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="Session filter"
           checked={data.sessionFilter}
@@ -2728,21 +2739,10 @@ function TrendPullbackEntryFields({
         tooltip={`Long: RSI dips below ${data.rsiPullbackLevel} then crosses up. Short: RSI rises above ${100 - data.rsiPullbackLevel} then crosses down.`}
       />
       <OptimizableFieldCheckbox fieldName="rsiPullbackLevel" data={data} onChange={onChange} />
-      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
-      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <NumberField
-          label="Take Profit (R multiple)"
-          value={data.tpRMultiple}
-          min={0.1}
-          max={10}
-          step={0.1}
-          onChange={(v) => onChange({ tpRMultiple: v })}
-        />
-        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="London session only"
           checked={data.londonSessionOnly}
@@ -2800,21 +2800,10 @@ function MACDCrossoverEntryFields({
       {data.macdFast >= data.macdSlow && (
         <FieldWarning message="MACD fast should be smaller than slow" />
       )}
-      <EntryStrategyRiskSection data={data} onChange={onChange} showTpInBasic={false} />
-      <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
-      <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <NumberField
-          label="Take Profit (R multiple)"
-          value={data.tpRMultiple}
-          min={0.1}
-          max={10}
-          step={0.1}
-          onChange={(v) => onChange({ tpRMultiple: v })}
-        />
-        <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         <ToggleField
           label="HTF trend filter"
           checked={data.htfTrendFilter}
