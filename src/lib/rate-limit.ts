@@ -284,15 +284,6 @@ export const projectDeleteRateLimiter = createRateLimiter({
 });
 
 /**
- * Rate limiter for template creation
- * Limits: 20 creates per hour per user
- */
-export const templateCreateRateLimiter = createRateLimiter({
-  limit: 20,
-  windowMs: 60 * 60 * 1000, // 1 hour
-});
-
-/**
  * Rate limiter for resend verification email
  * Limits: 3 requests per 15 minutes per user
  */
