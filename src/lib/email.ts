@@ -141,15 +141,6 @@ export async function sendWelcomeEmail(email: string, loginUrl: string) {
             <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Open AlgoStudio
             </a>
-            <div style="margin: 24px 0 0 0; padding: 24px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2);">
-              <p style="margin: 0 0 12px 0; color: #ffffff; font-weight: 600;">Join our community</p>
-              <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6;">
-                Connect with other traders, share strategies, get support, and stay up to date with the latest features.
-              </p>
-              <a href="https://whop.com/algostudio" style="display: inline-block; background-color: transparent; color: #A78BFA; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; border: 1px solid rgba(79, 70, 229, 0.5);">
-                Join on Whop
-              </a>
-            </div>
           </div>
         </body>
       </html>
@@ -244,7 +235,7 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
               View Plans
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Reply to this email or join our community on <a href="https://whop.com/algostudio" style="color: #A78BFA; text-decoration: none;">Whop</a>.
+              Questions? Reply to this email.
             </p>
           </div>
         </body>

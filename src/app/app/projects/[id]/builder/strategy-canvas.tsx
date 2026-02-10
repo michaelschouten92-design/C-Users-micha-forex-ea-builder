@@ -58,8 +58,7 @@ export function StrategyCanvas({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, setViewport } = useReactFlow();
 
-  // Panel collapse state
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  // Panel state (always visible on desktop)
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   // Strategy settings state
@@ -644,58 +643,26 @@ export function StrategyCanvas({
 
         {/* Right: Properties Panel - overlay on mobile, side panel on md+ */}
         {/* Desktop side panel */}
-        <div
-          id="properties-panel"
-          className={`hidden md:block relative transition-all duration-300 ${rightPanelCollapsed ? "w-0" : "w-[300px]"}`}
-        >
-          {/* Right panel toggle button */}
-          <button
-            onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-            className={`absolute top-1/2 -left-10 -translate-y-full z-10 bg-gradient-to-r from-[#A78BFA] to-[#8B5CF6] border border-[rgba(167,139,250,0.5)] border-b-0 rounded-tl-xl flex items-center gap-1 text-white hover:from-[#C4B5FD] hover:to-[#A78BFA] hover:shadow-[0_0_20px_rgba(167,139,250,0.4)] transition-all duration-200 ${rightPanelCollapsed ? "px-3 py-4" : "px-2 py-3"}`}
-            title={rightPanelCollapsed ? "Show properties panel" : "Hide properties panel"}
-          >
-            {rightPanelCollapsed && (
-              <span
-                className="text-xs font-semibold whitespace-nowrap"
-                style={{
-                  writingMode: "vertical-rl",
-                  textOrientation: "mixed",
-                  transform: "rotate(180deg)",
-                }}
-              >
-                Properties
-              </span>
-            )}
-            <svg
-              className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${rightPanelCollapsed ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          {!rightPanelCollapsed && (
-            <div className="h-full flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
-                <PanelErrorBoundary>
-                  <PropertiesPanel
-                    selectedNode={selectedNode as Node<BuilderNodeData> | null}
-                    onNodeChange={onNodeChange}
-                    onNodeDelete={onNodeDelete}
-                  />
-                </PanelErrorBoundary>
-              </div>
-              {nodes.length > 0 && (
-                <div className="border-t border-[rgba(79,70,229,0.2)] overflow-y-auto max-h-[40%]">
-                  <StrategySummary
-                    nodes={nodes as BuilderNode[]}
-                    edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
-                  />
-                </div>
-              )}
+        <div id="properties-panel" className="hidden md:block relative w-[300px]">
+          <div className="h-full flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+              <PanelErrorBoundary>
+                <PropertiesPanel
+                  selectedNode={selectedNode as Node<BuilderNodeData> | null}
+                  onNodeChange={onNodeChange}
+                  onNodeDelete={onNodeDelete}
+                />
+              </PanelErrorBoundary>
             </div>
-          )}
+            {nodes.length > 0 && (
+              <div className="border-t border-[rgba(79,70,229,0.2)] overflow-y-auto max-h-[40%]">
+                <StrategySummary
+                  nodes={nodes as BuilderNode[]}
+                  edges={edges as unknown as import("@/types/builder").BuilderEdge[]}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Mobile properties panel - slide up from bottom */}

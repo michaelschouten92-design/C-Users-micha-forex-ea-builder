@@ -2536,6 +2536,12 @@ function RangeBreakoutEntryFields({
         options={SL_METHOD_OPTIONS}
         onChange={(v) => onChange({ slMethod: v as "ATR" | "RANGE_OPPOSITE" })}
       />
+      {slMethod === "RANGE_OPPOSITE" && (
+        <p className="text-[11px] text-[#94A3B8] -mt-1">
+          Stop loss is placed at the opposite side of the range. For a buy, SL = range low. For a
+          sell, SL = range high. Lot size is calculated automatically from your risk %.
+        </p>
+      )}
 
       {/* Risk section */}
       <EntryStrategyRiskSection data={data} onChange={onChange} showSlAtr={slMethod === "ATR"} />

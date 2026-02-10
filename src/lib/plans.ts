@@ -71,7 +71,6 @@ export const PLANS = {
       "Unlimited exports",
       "MQL5 source code export",
       "All trading blocks",
-      "Community access (Whop)",
       "Priority support",
     ],
     limits: {
