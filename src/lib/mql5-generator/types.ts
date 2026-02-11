@@ -30,7 +30,7 @@ export interface InputParameter {
 
 export interface OptimizableInput {
   name: string;
-  type: "int" | "double" | "string" | "bool";
+  type: "int" | "double" | "string" | "bool" | "ENUM_MA_METHOD" | "ENUM_APPLIED_PRICE";
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;

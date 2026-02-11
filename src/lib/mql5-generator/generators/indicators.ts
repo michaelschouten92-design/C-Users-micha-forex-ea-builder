@@ -10,7 +10,7 @@ import type {
   CCINodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
-import { MA_METHOD_MAP, getTimeframe } from "../types";
+import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframe } from "../types";
 import { createInput } from "./shared";
 
 // Helper to add handle validation after creation.
@@ -47,7 +47,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
       case "moving-average": {
         const ma = data as MovingAverageNodeData;
         const method = MA_METHOD_MAP[ma.method as keyof typeof MA_METHOD_MAP] ?? "MODE_SMA";
-        const price = "PRICE_CLOSE";
+        const price =
+          APPLIED_PRICE_MAP[ma.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
         const copyBars = ma.signalMode === "candle_close" ? 4 : 3;
         const group = `Moving Average ${index + 1}`;
 
@@ -73,10 +74,32 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             group
           )
         );
+        code.inputs.push(
+          createInput(
+            node,
+            "method",
+            `InpMA${index}Method`,
+            "ENUM_MA_METHOD",
+            method,
+            `MA ${index + 1} Method`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "appliedPrice",
+            `InpMA${index}Price`,
+            "ENUM_APPLIED_PRICE",
+            price,
+            `MA ${index + 1} Applied Price`,
+            group
+          )
+        );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iMA(_Symbol, ${getTimeframe(ma.timeframe)}, InpMA${index}Period, InpMA${index}Shift, ${method}, ${price});`
+          `${varPrefix}Handle = iMA(_Symbol, ${getTimeframe(ma.timeframe)}, InpMA${index}Period, InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price);`
         );
         addHandleValidation(varPrefix, `MA ${index + 1}`, code);
         code.onDeinit.push(
@@ -89,7 +112,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
       case "rsi": {
         const rsi = data as RSINodeData;
-        const price = "PRICE_CLOSE";
+        const price =
+          APPLIED_PRICE_MAP[rsi.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
         const copyBars = rsi.signalMode === "candle_close" ? 4 : 3;
         const group = `RSI ${index + 1}`;
 
@@ -101,6 +125,17 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             "int",
             rsi.period,
             `RSI ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "appliedPrice",
+            `InpRSI${index}Price`,
+            "ENUM_APPLIED_PRICE",
+            price,
+            `RSI ${index + 1} Applied Price`,
             group
           )
         );
@@ -129,7 +164,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iRSI(_Symbol, ${getTimeframe(rsi.timeframe)}, InpRSI${index}Period, ${price});`
+          `${varPrefix}Handle = iRSI(_Symbol, ${getTimeframe(rsi.timeframe)}, InpRSI${index}Period, InpRSI${index}Price);`
         );
         addHandleValidation(varPrefix, `RSI ${index + 1}`, code);
         code.onDeinit.push(
@@ -142,7 +177,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
       case "macd": {
         const macd = data as MACDNodeData;
-        const price = "PRICE_CLOSE";
+        const price =
+          APPLIED_PRICE_MAP[macd.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
         const copyBars = macd.signalMode === "candle_close" ? 4 : 3;
         const group = `MACD ${index + 1}`;
 
@@ -179,11 +215,22 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             group
           )
         );
+        code.inputs.push(
+          createInput(
+            node,
+            "appliedPrice",
+            `InpMACD${index}Price`,
+            "ENUM_APPLIED_PRICE",
+            price,
+            `MACD ${index + 1} Applied Price`,
+            group
+          )
+        );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iMACD(_Symbol, ${getTimeframe(macd.timeframe)}, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, ${price});`
+          `${varPrefix}Handle = iMACD(_Symbol, ${getTimeframe(macd.timeframe)}, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price);`
         );
         addHandleValidation(varPrefix, `MACD ${index + 1}`, code);
         code.onDeinit.push(
@@ -198,7 +245,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
       case "bollinger-bands": {
         const bb = data as BollingerBandsNodeData;
-        const price = "PRICE_CLOSE";
+        const price =
+          APPLIED_PRICE_MAP[bb.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
         const copyBars = bb.signalMode === "candle_close" ? 4 : 3;
         const group = `Bollinger Bands ${index + 1}`;
 
@@ -235,12 +283,23 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             group
           )
         );
+        code.inputs.push(
+          createInput(
+            node,
+            "appliedPrice",
+            `InpBB${index}Price`,
+            "ENUM_APPLIED_PRICE",
+            price,
+            `BB ${index + 1} Applied Price`,
+            group
+          )
+        );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}UpperBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}MiddleBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}LowerBuffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iBands(_Symbol, ${getTimeframe(bb.timeframe)}, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, ${price});`
+          `${varPrefix}Handle = iBands(_Symbol, ${getTimeframe(bb.timeframe)}, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, InpBB${index}Price);`
         );
         addHandleValidation(varPrefix, `BB ${index + 1}`, code);
         code.onDeinit.push(
@@ -411,7 +470,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
       case "cci": {
         const cci = data as CCINodeData;
-        const price = "PRICE_CLOSE";
+        const price =
+          APPLIED_PRICE_MAP[cci.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
         const copyBars = cci.signalMode === "candle_close" ? 4 : 3;
         const group = `CCI ${index + 1}`;
 
@@ -423,6 +483,17 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             "int",
             cci.period,
             `CCI ${index + 1} Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "appliedPrice",
+            `InpCCI${index}Price`,
+            "ENUM_APPLIED_PRICE",
+            price,
+            `CCI ${index + 1} Applied Price`,
             group
           )
         );
@@ -451,7 +522,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iCCI(_Symbol, ${getTimeframe(cci.timeframe)}, InpCCI${index}Period, ${price});`
+          `${varPrefix}Handle = iCCI(_Symbol, ${getTimeframe(cci.timeframe)}, InpCCI${index}Period, InpCCI${index}Price);`
         );
         addHandleValidation(varPrefix, `CCI ${index + 1}`, code);
         code.onDeinit.push(
