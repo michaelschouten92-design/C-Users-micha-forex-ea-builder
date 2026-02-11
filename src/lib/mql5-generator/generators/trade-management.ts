@@ -146,12 +146,11 @@ function generateBreakevenStopCode(
       "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point);"
     );
   } else if (data.trigger === "PERCENTAGE") {
-    code.onTick.push("         // Calculate position value and profit percentage");
+    code.onTick.push("         // Trigger when unrealised profit reaches X% of account balance");
+    code.onTick.push("         double beBalance = AccountInfoDouble(ACCOUNT_BALANCE);");
     code.onTick.push(
-      "         double contractSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_CONTRACT_SIZE);"
+      "         double profitPercent = (beBalance > 0) ? (positionProfit / beBalance) * 100.0 : 0;"
     );
-    code.onTick.push("         double positionValue = positionVolume * contractSize * openPrice;");
-    code.onTick.push("         double profitPercent = (positionProfit / positionValue) * 100.0;");
     code.onTick.push("         triggerReached = (profitPercent >= InpBETriggerPercent);");
   } else if (data.trigger === "ATR") {
     code.onTick.push(
