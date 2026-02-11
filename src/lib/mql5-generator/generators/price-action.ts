@@ -24,6 +24,11 @@ export function generatePriceActionCode(
       case "range-breakout": {
         const rb = data as RangeBreakoutNodeData;
 
+        // Track range end time for RangeReady check (set in SESSION/TIME_WINDOW branch)
+        let rangeEndHourExpr: string | null = null;
+        let rangeEndMinExpr: string | null = null;
+        let rangeTimeFunc = "TimeCurrent()";
+
         // Add inputs
         if (rb.rangeType === "PREVIOUS_CANDLES") {
           code.inputs.push(
@@ -75,11 +80,32 @@ export function generatePriceActionCode(
         code.globalVariables.push(`double ${varPrefix}Low;`);
         code.globalVariables.push(`double ${varPrefix}Size;`);
         code.globalVariables.push(`bool ${varPrefix}Valid;`);
+        code.globalVariables.push(`datetime ${varPrefix}LastResetDay;`);
         code.globalVariables.push(`bool ${varPrefix}BreakoutUp;`);
         code.globalVariables.push(`bool ${varPrefix}BreakoutDown;`);
 
-        // Generate range calculation code (only on new bar for efficiency)
+        // Generate range calculation code
         code.onTick.push(`// Range Breakout ${index + 1}`);
+        code.onTick.push(`datetime ${varPrefix}Today = iTime(_Symbol, PERIOD_D1, 0);`);
+        code.onTick.push("");
+        code.onTick.push(`//--- Midnight reset: clean slate for new day`);
+        code.onTick.push(`if(${varPrefix}Today != ${varPrefix}LastResetDay) {`);
+        code.onTick.push(`   ${varPrefix}LastResetDay = ${varPrefix}Today;`);
+        code.onTick.push(
+          `   ${varPrefix}High = 0; ${varPrefix}Low = 0; ${varPrefix}Valid = false;`
+        );
+        code.onTick.push(`   for(int i = OrdersTotal() - 1; i >= 0; i--) {`);
+        code.onTick.push(`      ulong ticket = OrderGetTicket(i);`);
+        code.onTick.push(
+          `      if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)`
+        );
+        code.onTick.push(`         trade.OrderDelete(ticket);`);
+        code.onTick.push(`   }`);
+        code.onTick.push(
+          `   Print("Range ${index + 1}: New day - range reset, pending orders cleared");`
+        );
+        code.onTick.push(`}`);
+        code.onTick.push("");
         code.onTick.push(`if(isNewBar) {`);
 
         if (rb.rangeType === "PREVIOUS_CANDLES") {
@@ -250,6 +276,16 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
               `GetSessionRange(${getTimeframe(rb.timeframe)}, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
             );
           }
+
+          // Track range end time for RangeReady check
+          if (isCustomRange) {
+            rangeEndHourExpr = `InpRange${index}EndHour`;
+            rangeEndMinExpr = `InpRange${index}EndMin`;
+          } else {
+            rangeEndHourExpr = String(endHour);
+            rangeEndMinExpr = String(endMinute);
+          }
+          rangeTimeFunc = useServerTime ? "TimeCurrent()" : "TimeGMT()";
         }
 
         // Calculate range size and validity
@@ -298,11 +334,25 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
           );
         }
 
-        // Daily range reset: recalculate range each new day
+        // NewRange: fires once per day when range is valid and ready
         code.globalVariables.push(`datetime ${varPrefix}RangeDay;`);
-        code.onTick.push(`datetime ${varPrefix}Today = iTime(_Symbol, PERIOD_D1, 0);`);
         code.onTick.push(`bool ${varPrefix}NewDay = (${varPrefix}Today != ${varPrefix}RangeDay);`);
-        code.onTick.push(`bool ${varPrefix}NewRange = (${varPrefix}Valid && ${varPrefix}NewDay);`);
+        if (rangeEndHourExpr !== null) {
+          // TIME_WINDOW/SESSION: only place orders after range window has closed
+          code.onTick.push(`MqlDateTime ${varPrefix}DtNow;`);
+          code.onTick.push(`TimeToStruct(${rangeTimeFunc}, ${varPrefix}DtNow);`);
+          code.onTick.push(
+            `bool ${varPrefix}RangeReady = ((${varPrefix}DtNow.hour * 60 + ${varPrefix}DtNow.min) >= (${rangeEndHourExpr} * 60 + ${rangeEndMinExpr}));`
+          );
+          code.onTick.push(
+            `bool ${varPrefix}NewRange = (${varPrefix}Valid && ${varPrefix}NewDay && ${varPrefix}RangeReady);`
+          );
+        } else {
+          // PREVIOUS_CANDLES: range is always ready once valid
+          code.onTick.push(
+            `bool ${varPrefix}NewRange = (${varPrefix}Valid && ${varPrefix}NewDay);`
+          );
+        }
         code.onTick.push(`if(${varPrefix}NewRange) ${varPrefix}RangeDay = ${varPrefix}Today;`);
 
         // Visual range lines on chart
