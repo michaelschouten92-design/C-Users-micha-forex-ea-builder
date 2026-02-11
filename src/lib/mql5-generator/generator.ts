@@ -180,10 +180,14 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           (rb.breakoutEntry ?? "CANDLE_CLOSE") === "CURRENT_PRICE" ? "IMMEDIATE" : "ON_CLOSE",
         breakoutTimeframe: rb.breakoutTimeframe ?? rangeTimeframe,
         bufferPips: 2,
-        minRangePips: 10,
-        maxRangePips: 0,
+        minRangePips: rb.minRangePips ?? 0,
+        maxRangePips: rb.maxRangePips ?? 0,
         useServerTime: rb.useServerTime ?? true,
-        optimizableFields: mapOpt(["rangePeriod", "lookbackCandles"]),
+        optimizableFields: mapOpt(
+          ["rangePeriod", "lookbackCandles"],
+          ["minRangePips", "minRangePips"],
+          ["maxRangePips", "maxRangePips"]
+        ),
       })
     );
   } else if (d.entryType === "rsi-reversal") {

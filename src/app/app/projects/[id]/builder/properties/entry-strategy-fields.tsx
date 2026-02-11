@@ -231,6 +231,29 @@ export function RangeBreakoutEntryFields({
 
       {/* Advanced */}
       <AdvancedToggleSection>
+        <div>
+          <NumberField
+            label="Min Range (pips)"
+            value={data.minRangePips ?? 0}
+            min={0}
+            max={500}
+            onChange={(v) => onChange({ minRangePips: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="minRangePips" data={data} onChange={onChange} />
+        </div>
+        <div>
+          <NumberField
+            label="Max Range (pips, 0=no limit)"
+            value={data.maxRangePips ?? 0}
+            min={0}
+            max={1000}
+            onChange={(v) => onChange({ maxRangePips: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
+        </div>
+        {(data.maxRangePips ?? 0) > 0 && (data.minRangePips ?? 0) > (data.maxRangePips ?? 0) && (
+          <FieldWarning message="Min range should not exceed max range" />
+        )}
         <ToggleField
           label="Cancel opposite pending after trigger"
           checked={data.cancelOpposite}

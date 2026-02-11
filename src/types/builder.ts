@@ -463,6 +463,8 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;
   htfEma: number;
+  minRangePips: number;
+  maxRangePips: number;
 }
 
 // 3) RSI Reversal — mean reversion
@@ -695,6 +697,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       closeAtTime: false,
       closeAtHour: 17,
       closeAtMinute: 0,
+      minRangePips: 0,
+      maxRangePips: 0,
       htfTrendFilter: false,
       htfTimeframe: "H4",
       htfEma: 200,
