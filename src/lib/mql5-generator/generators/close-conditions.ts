@@ -167,13 +167,21 @@ export function generateCloseConditionCode(
   const closeBuyExpr = closeBuyConditions.length > 0 ? closeBuyConditions.join(" || ") : "false";
   const closeSellExpr = closeSellConditions.length > 0 ? closeSellConditions.join(" || ") : "false";
 
+  code.onTick.push(
+    "// Exit signals use reverse indicator conditions (e.g., buy exit triggers on bearish signal)"
+  );
+
   if (data.closeDirection === "BUY" || data.closeDirection === "BOTH") {
     code.onTick.push(`bool closeBuyCondition = ${closeBuyExpr};`);
-    code.onTick.push("if(closeBuyCondition) CloseBuyPositions();");
+    code.onTick.push(
+      'if(closeBuyCondition) { Print("Exit signal: closing buy positions"); CloseBuyPositions(); }'
+    );
   }
 
   if (data.closeDirection === "SELL" || data.closeDirection === "BOTH") {
     code.onTick.push(`bool closeSellCondition = ${closeSellExpr};`);
-    code.onTick.push("if(closeSellCondition) CloseSellPositions();");
+    code.onTick.push(
+      'if(closeSellCondition) { Print("Exit signal: closing sell positions"); CloseSellPositions(); }'
+    );
   }
 }

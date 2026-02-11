@@ -191,9 +191,64 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
 }`);
           }
 
-          code.onTick.push(
-            `GetSessionRange(${getTimeframe(rb.timeframe)}, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
-          );
+          // Make custom time window hours optimizable input parameters
+          const isCustomRange =
+            rb.rangeType === "TIME_WINDOW" ||
+            (rb.rangeType === "SESSION" && rb.rangeSession === "CUSTOM");
+          if (isCustomRange) {
+            const rangeGroup = `Range ${index + 1}`;
+            code.inputs.push(
+              createInput(
+                node,
+                "sessionStartHour",
+                `InpRange${index}StartHour`,
+                "int",
+                startHour,
+                `Range ${index + 1} Start Hour`,
+                rangeGroup
+              )
+            );
+            code.inputs.push(
+              createInput(
+                node,
+                "sessionStartMinute",
+                `InpRange${index}StartMin`,
+                "int",
+                startMinute,
+                `Range ${index + 1} Start Minute`,
+                rangeGroup
+              )
+            );
+            code.inputs.push(
+              createInput(
+                node,
+                "sessionEndHour",
+                `InpRange${index}EndHour`,
+                "int",
+                endHour,
+                `Range ${index + 1} End Hour`,
+                rangeGroup
+              )
+            );
+            code.inputs.push(
+              createInput(
+                node,
+                "sessionEndMinute",
+                `InpRange${index}EndMin`,
+                "int",
+                endMinute,
+                `Range ${index + 1} End Minute`,
+                rangeGroup
+              )
+            );
+            code.onTick.push(
+              `GetSessionRange(${getTimeframe(rb.timeframe)}, InpRange${index}StartHour, InpRange${index}StartMin, InpRange${index}EndHour, InpRange${index}EndMin, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
+            );
+          } else {
+            code.onTick.push(
+              `GetSessionRange(${getTimeframe(rb.timeframe)}, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
+            );
+          }
         }
 
         // Calculate range size and validity

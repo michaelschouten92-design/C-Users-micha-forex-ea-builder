@@ -859,7 +859,9 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);");
   code.onTick.push(

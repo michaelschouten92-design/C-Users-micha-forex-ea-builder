@@ -121,7 +121,9 @@ function generateBreakevenStopCode(
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
@@ -231,7 +233,9 @@ function generateTrailingStopCode(
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
@@ -285,8 +289,12 @@ function generateIndicatorTrailingStop(
   }
 
   if (!connectedIndicator) {
-    // Fallback: no indicator connected, skip
+    // Fallback: no indicator connected, warn user and skip
     code.onTick.push("// Indicator Trailing Stop: no indicator connected");
+    code.onTick.push("static bool trailWarnShown = false;");
+    code.onTick.push(
+      'if(!trailWarnShown) { Print("Warning: Indicator trailing stop has no indicator connected. Connect an indicator (e.g. Moving Average) to enable trailing."); trailWarnShown = true; }'
+    );
     return;
   }
 
@@ -301,7 +309,9 @@ function generateIndicatorTrailingStop(
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
@@ -416,7 +426,9 @@ void MarkPartialClosed(ulong ticket)
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
   code.onTick.push("         double volume = PositionGetDouble(POSITION_VOLUME);");
@@ -518,7 +530,9 @@ function generateLockProfitCode(
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
   code.onTick.push("   if(PositionSelectByTicket(ticket))");
   code.onTick.push("   {");
-  code.onTick.push("      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)");
+  code.onTick.push(
+    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
   code.onTick.push("      {");
   code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");

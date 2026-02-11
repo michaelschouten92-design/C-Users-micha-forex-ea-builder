@@ -532,15 +532,22 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     generateMultipleTimingCode(timingNodes, code);
   }
 
-  // Generate spread filter code from max-spread nodes
+  // Generate spread filter code from max-spread nodes (optimizable input)
   if (maxSpreadNodes.length > 0) {
     const spreadNode = maxSpreadNodes[0];
     const spreadPips = (spreadNode.data as { maxSpreadPips: number }).maxSpreadPips ?? 30;
-    const spreadPoints = spreadPips * 10;
+    code.inputs.push({
+      name: "InpMaxSpread",
+      type: "int",
+      value: spreadPips * 10,
+      comment: "Max Spread (points)",
+      isOptimizable: true,
+      group: "Risk Management",
+    });
     code.onTick.push(`//--- Spread filter`);
     code.onTick.push(`{`);
     code.onTick.push(`   int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);`);
-    code.onTick.push(`   if(currentSpread > ${spreadPoints})`);
+    code.onTick.push(`   if(currentSpread > InpMaxSpread)`);
     code.onTick.push(`      return;`);
     code.onTick.push(`}`);
   }
