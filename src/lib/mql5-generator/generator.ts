@@ -61,10 +61,9 @@ function getConnectedNodeIds(
     }
   }
 
-  // Find all starting nodes (timing nodes and filter nodes)
+  // Find all starting nodes (timing nodes only — filter nodes like max-spread are global)
   const startNodes = nodes.filter(
-    (n) =>
-      startNodeTypes.includes(n.type as string) || "timingType" in n.data || "filterType" in n.data
+    (n) => startNodeTypes.includes(n.type as string) || "timingType" in n.data
   );
 
   // BFS to find all connected nodes
@@ -369,6 +368,23 @@ function decomposeEntryStrategies(
         i--; // Adjust index after splice
       }
     }
+
+    // Re-wire: any edge going FROM the entry strategy node to downstream nodes
+    // (e.g., entry-strategy → breakeven-stop) should come from virtual indicator nodes
+    for (let i = 0; i < resultEdges.length; i++) {
+      const edge = resultEdges[i];
+      if (edge.source === node.id && indicatorIds.length > 0) {
+        resultEdges.splice(i, 1);
+        for (const indId of indicatorIds) {
+          resultEdges.push({
+            id: `${edge.id}__rewire-out-${indId}`,
+            source: indId,
+            target: edge.target,
+          });
+        }
+        i--;
+      }
+    }
   }
 
   return { nodes: resultNodes, edges: resultEdges };
@@ -429,7 +445,6 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "trading-session",
     "always",
     "custom-times",
-    "max-spread",
   ]);
 
   // Helper to check if a node is connected to the strategy.
