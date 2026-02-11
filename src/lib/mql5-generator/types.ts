@@ -23,14 +23,28 @@ export interface IndicatorVariable {
 
 export interface InputParameter {
   name: string;
-  type: "int" | "double" | "string" | "bool" | "ENUM_MA_METHOD" | "ENUM_APPLIED_PRICE";
+  type:
+    | "int"
+    | "double"
+    | "string"
+    | "bool"
+    | "ENUM_MA_METHOD"
+    | "ENUM_APPLIED_PRICE"
+    | "ENUM_STO_PRICE";
   defaultValue: string | number | boolean;
   comment: string;
 }
 
 export interface OptimizableInput {
   name: string;
-  type: "int" | "double" | "string" | "bool" | "ENUM_MA_METHOD" | "ENUM_APPLIED_PRICE";
+  type:
+    | "int"
+    | "double"
+    | "string"
+    | "bool"
+    | "ENUM_MA_METHOD"
+    | "ENUM_APPLIED_PRICE"
+    | "ENUM_STO_PRICE";
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;

@@ -394,6 +394,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
       case "stochastic": {
         const stoch = data as StochasticNodeData;
         const method = MA_METHOD_MAP[stoch.maMethod as keyof typeof MA_METHOD_MAP] ?? "MODE_SMA";
+        const priceField = stoch.priceField === "CLOSECLOSE" ? "STO_CLOSECLOSE" : "STO_LOWHIGH";
         const copyBars = stoch.signalMode === "candle_close" ? 4 : 3;
         const group = `Stochastic ${index + 1}`;
 
@@ -444,6 +445,17 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.inputs.push(
           createInput(
             node,
+            "priceField",
+            `InpStoch${index}PriceField`,
+            "ENUM_STO_PRICE",
+            priceField,
+            `Stochastic ${index + 1} Price Field`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
             "overboughtLevel",
             `InpStoch${index}Overbought`,
             "double",
@@ -467,7 +479,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`); // %K line
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`); // %D line
         code.onInit.push(
-          `${varPrefix}Handle = iStochastic(_Symbol, ${getTimeframe(stoch.timeframe)}, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, InpStoch${index}MAMethod, STO_LOWHIGH);`
+          `${varPrefix}Handle = iStochastic(_Symbol, ${getTimeframe(stoch.timeframe)}, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, InpStoch${index}MAMethod, InpStoch${index}PriceField);`
         );
         addHandleValidation(varPrefix, `Stochastic ${index + 1}`, code);
         code.onDeinit.push(
