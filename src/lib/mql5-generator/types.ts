@@ -2,6 +2,7 @@
 
 export interface GeneratorContext {
   projectName: string;
+  description: string;
   magicNumber: number;
   comment: string;
   maxOpenTrades: number;

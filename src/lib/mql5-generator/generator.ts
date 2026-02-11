@@ -530,7 +530,11 @@ function decomposeEntryStrategies(
   return { nodes: resultNodes, edges: resultEdges };
 }
 
-export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string): string {
+export function generateMQL5Code(
+  buildJson: BuildJsonSchema,
+  projectName: string,
+  description?: string
+): string {
   // Preprocess: decompose entry strategy composite blocks into virtual primitive nodes
   const decomposed = decomposeEntryStrategies(buildJson.nodes, buildJson.edges);
   const processedBuildJson: BuildJsonSchema = {
@@ -541,6 +545,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
 
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
+    description: description ?? "",
     magicNumber: buildJson.settings?.magicNumber ?? 123456,
     comment: buildJson.settings?.comment ?? "AlgoStudio EA",
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
@@ -554,6 +559,8 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     maxDailyLossPercent: buildJson.settings?.maxDailyLossPercent ?? 0,
   };
 
+  const descValue = `"${sanitizeName(ctx.description || ctx.projectName)}"`;
+
   const code: GeneratedCode = {
     inputs: [
       {
@@ -562,6 +569,14 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
         value: ctx.magicNumber,
         comment: "Magic Number",
         isOptimizable: true,
+        group: "General Settings",
+      },
+      {
+        name: "InpStrategyDescription",
+        type: "string",
+        value: descValue,
+        comment: "Strategy Description (shown on chart)",
+        isOptimizable: false,
         group: "General Settings",
       },
       {

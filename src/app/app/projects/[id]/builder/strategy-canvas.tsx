@@ -78,11 +78,13 @@ export function StrategyCanvas({
     initialData?.settings ?? { ...DEFAULT_SETTINGS }
   );
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(() => {
-    const initial = (initialData?.nodes as Node[]) ?? [];
-    initNodeIdCounter(initial);
-    return initial;
-  });
+  const initialNodes = useMemo(() => {
+    const nodes = (initialData?.nodes as Node[]) ?? [];
+    initNodeIdCounter(nodes);
+    return nodes;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState((initialData?.edges as Edge[]) ?? []);
 
   // Undo/Redo history

@@ -171,7 +171,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     // Generate MQL5 code
-    const mql5Code = generateMQL5Code(buildJson, project.name);
+    const mql5Code = generateMQL5Code(buildJson, project.name, project.description ?? undefined);
 
     // Create export job record
     const exportJob = await prisma.exportJob.create({
