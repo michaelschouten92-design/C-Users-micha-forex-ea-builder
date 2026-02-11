@@ -179,11 +179,11 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
       return;
    }
 
-   // Get high/low
+   // Get high/low — use endBar+1 to exclude the bar at session end (it extends past the session)
    int count = startBar - endBar;
    if(count <= 0) { high = 0; low = 0; return; }
-   int highestBar = iHighest(_Symbol, tf, MODE_HIGH, count, endBar);
-   int lowestBar = iLowest(_Symbol, tf, MODE_LOW, count, endBar);
+   int highestBar = iHighest(_Symbol, tf, MODE_HIGH, count, endBar + 1);
+   int lowestBar = iLowest(_Symbol, tf, MODE_LOW, count, endBar + 1);
    if(highestBar < 0 || lowestBar < 0) { high = 0; low = 0; return; }
 
    high = iHigh(_Symbol, tf, highestBar);
