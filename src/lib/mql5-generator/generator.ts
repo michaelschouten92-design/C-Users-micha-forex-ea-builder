@@ -109,6 +109,21 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     data: data as BuilderNodeData,
   });
 
+  // Map parent entry strategy optimizableFields to virtual node fields.
+  // When the parent has no optimizableFields (undefined), returns undefined → all optimizable.
+  // When the parent has an explicit array, maps parent field names to virtual field names.
+  const parentOpt = d.optimizableFields;
+  const mapOpt = (...mappings: [string, string][]): string[] | undefined => {
+    if (!parentOpt || !Array.isArray(parentOpt)) return undefined;
+    const result: string[] = [];
+    for (const [parentField, virtualField] of mappings) {
+      if (parentOpt.includes(parentField) && !result.includes(virtualField)) {
+        result.push(virtualField);
+      }
+    }
+    return result;
+  };
+
   // Create indicator/priceaction nodes based on entry type
   if (d.entryType === "ema-crossover") {
     const ema = d as EMACrossoverEntryData;
@@ -123,6 +138,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: "EMA",
         signalMode: "candle_close",
         shift: 0,
+        optimizableFields: mapOpt(["fastEma", "period"]),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "fast",
@@ -136,6 +152,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: "EMA",
         signalMode: "candle_close",
         shift: 0,
+        optimizableFields: mapOpt(["slowEma", "period"]),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "slow",
@@ -166,6 +183,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         minRangePips: 10,
         maxRangePips: 0,
         useServerTime: rb.useServerTime ?? true,
+        optimizableFields: mapOpt(["rangePeriod", "lookbackCandles"]),
       })
     );
   } else if (d.entryType === "rsi-reversal") {
@@ -180,6 +198,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         overboughtLevel: rsi.overboughtLevel,
         oversoldLevel: rsi.oversoldLevel,
         signalMode: "candle_close",
+        optimizableFields: mapOpt(
+          ["rsiPeriod", "period"],
+          ["overboughtLevel", "overboughtLevel"],
+          ["oversoldLevel", "oversoldLevel"]
+        ),
       })
     );
   } else if (d.entryType === "trend-pullback") {
@@ -196,6 +219,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: "EMA",
         signalMode: "candle_close",
         shift: 0,
+        optimizableFields: mapOpt(["trendEma", "period"]),
       }),
       // RSI for pullback detection
       vNode("rsi-pullback", "rsi", {
@@ -207,6 +231,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         overboughtLevel: 100 - tp.rsiPullbackLevel,
         oversoldLevel: tp.rsiPullbackLevel,
         signalMode: "candle_close",
+        optimizableFields: mapOpt(
+          ["pullbackRsiPeriod", "period"],
+          ["rsiPullbackLevel", "oversoldLevel"],
+          ["rsiPullbackLevel", "overboughtLevel"]
+        ),
       })
     );
   } else if (d.entryType === "macd-crossover") {
@@ -221,6 +250,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         slowPeriod: macd.macdSlow,
         signalPeriod: macd.macdSignal,
         signalMode: "candle_close",
+        optimizableFields: mapOpt(
+          ["macdFast", "fastPeriod"],
+          ["macdSlow", "slowPeriod"],
+          ["macdSignal", "signalPeriod"]
+        ),
       })
     );
   }
@@ -233,6 +267,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     riskPercent: d.riskPercent,
     minLot: 0.01,
     maxLot: 10,
+    optimizableFields: mapOpt(["riskPercent", "riskPercent"]),
   };
 
   if (direction === "BUY" || direction === "BOTH") {
@@ -276,6 +311,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
       slPercent: d.slPercent ?? 1,
       atrMultiplier: d.slAtrMultiplier,
       atrPeriod: 14,
+      optimizableFields: mapOpt(
+        ["slFixedPips", "fixedPips"],
+        ["slPercent", "slPercent"],
+        ["slAtrMultiplier", "atrMultiplier"]
+      ),
     })
   );
 
@@ -290,6 +330,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
       riskRewardRatio: d.tpRMultiple,
       atrMultiplier: 3,
       atrPeriod: 14,
+      optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
     })
   );
 
@@ -421,7 +462,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
         type: "int",
         value: ctx.magicNumber,
         comment: "Magic Number",
-        isOptimizable: false,
+        isOptimizable: true,
         group: "General Settings",
       },
       {
@@ -429,7 +470,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
         type: "int",
         value: 10,
         comment: "Max Slippage (points)",
-        isOptimizable: false,
+        isOptimizable: true,
         group: "Risk Management",
       },
     ],
