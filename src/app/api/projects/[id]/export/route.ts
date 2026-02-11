@@ -291,7 +291,7 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   const errors: string[] = [];
 
   if (!buildJson.nodes || buildJson.nodes.length === 0) {
-    errors.push("No nodes found. Add a timing block and an entry strategy.");
+    errors.push("No nodes found. Add an entry strategy.");
     return errors;
   }
 
@@ -304,11 +304,7 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     (n) => timingTypes.includes(n.type as string) || (n.data && "timingType" in n.data)
   );
 
-  if (!hasTimingNode) {
-    errors.push(
-      "No timing block found. Add a timing block (Always, Custom Times, or Trading Sessions)."
-    );
-  }
+  // Timing is optional — without it, the strategy trades whenever conditions are met
 
   if (!hasEntryStrategy) {
     errors.push(

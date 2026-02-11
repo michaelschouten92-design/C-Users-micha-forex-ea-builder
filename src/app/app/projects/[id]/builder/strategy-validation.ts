@@ -38,15 +38,7 @@ export function validateStrategy(
     });
   }
 
-  // Timing is required (when to trade)
-  if (!hasTiming) {
-    issues.push({
-      type: "error",
-      message:
-        "Add a timing block (Always, Custom Times, or Trading Sessions) to define when the strategy runs",
-      nodeType: "timing",
-    });
-  }
+  // Timing is optional — without it, the strategy trades whenever conditions are met
 
   // Check that entry strategy is connected to a timing block
   if (hasEntryStrategy && hasTiming && edges.length > 0) {
