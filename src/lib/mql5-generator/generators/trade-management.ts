@@ -204,17 +204,67 @@ function generateTrailingStopCode(
   }
 
   const group = "Trailing Stop";
-  code.inputs.push(
-    createInput(
-      node,
-      "trailPips",
-      "InpTrailPips",
-      "double",
-      data.trailPips,
-      "Trail Distance (pips)",
-      group
-    )
-  );
+
+  // Method-specific inputs and setup
+  if (data.method === "ATR_BASED") {
+    code.inputs.push(
+      createInput(
+        node,
+        "trailAtrPeriod",
+        "InpTrailATRPeriod",
+        "int",
+        data.trailAtrPeriod,
+        "Trail ATR Period",
+        group
+      )
+    );
+    code.inputs.push(
+      createInput(
+        node,
+        "trailAtrMultiplier",
+        "InpTrailATRMultiplier",
+        "double",
+        data.trailAtrMultiplier,
+        "Trail ATR Multiplier",
+        group
+      )
+    );
+    code.globalVariables.push("int trailATRHandle = INVALID_HANDLE;");
+    code.globalVariables.push("double trailATRBuffer[];");
+    code.onInit.push("trailATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpTrailATRPeriod);");
+    code.onInit.push(
+      'if(trailATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Trailing Stop"); return(INIT_FAILED); }'
+    );
+    code.onInit.push("ArraySetAsSeries(trailATRBuffer, true);");
+    code.onDeinit.push("if(trailATRHandle != INVALID_HANDLE) IndicatorRelease(trailATRHandle);");
+  } else if (data.method === "PERCENTAGE") {
+    code.inputs.push(
+      createInput(
+        node,
+        "trailPercent",
+        "InpTrailPercent",
+        "double",
+        data.trailPercent,
+        "Trail Distance (%)",
+        group
+      )
+    );
+  } else {
+    // FIXED_PIPS
+    code.inputs.push(
+      createInput(
+        node,
+        "trailPips",
+        "InpTrailPips",
+        "double",
+        data.trailPips,
+        "Trail Distance (pips)",
+        group
+      )
+    );
+  }
+
+  // Start-after threshold (shared by all non-indicator methods)
   code.inputs.push(
     createInput(
       node,
@@ -228,6 +278,11 @@ function generateTrailingStopCode(
   );
 
   code.onTick.push("// Trailing Stop Management");
+
+  if (data.method === "ATR_BASED") {
+    code.onTick.push("if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;");
+  }
+
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
   code.onTick.push("{");
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");
@@ -241,8 +296,22 @@ function generateTrailingStopCode(
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double trailPoints = InpTrailPips * 10;");
   code.onTick.push("         double startPoints = InpTrailStartPips * 10;");
+
+  // Calculate trailPoints based on method
+  if (data.method === "ATR_BASED") {
+    code.onTick.push(
+      "         double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;"
+    );
+  } else if (data.method === "PERCENTAGE") {
+    code.onTick.push(
+      "         double trailPoints = (openPrice * InpTrailPercent / 100.0) / point;"
+    );
+  } else {
+    // FIXED_PIPS
+    code.onTick.push("         double trailPoints = InpTrailPips * 10;");
+  }
+
   code.onTick.push("");
   code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
   code.onTick.push("         {");
