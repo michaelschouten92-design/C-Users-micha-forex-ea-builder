@@ -170,6 +170,7 @@ export interface StochasticNodeData extends BaseNodeData {
   kPeriod: number;
   dPeriod: number;
   slowing: number;
+  maMethod?: "SMA" | "EMA";
   overboughtLevel: number;
   oversoldLevel: number;
   signalMode?: "every_tick" | "candle_close";
