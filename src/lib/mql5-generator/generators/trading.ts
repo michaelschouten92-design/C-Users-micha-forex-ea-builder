@@ -146,6 +146,7 @@ export function generateStopLossCode(
   priceActionNodes: BuilderNode[] = []
 ): void {
   const data = node.data as StopLossNodeData;
+  code.slMethod = data.method;
 
   const slGroup = "Stop Loss";
   switch (data.method) {
@@ -161,7 +162,7 @@ export function generateStopLossCode(
           slGroup
         )
       );
-      code.onTick.push("double slPips = InpStopLoss * 10; // Convert to points");
+      code.onTick.push("double slPips = InpStopLoss * _pipFactor; // Convert to points");
       break;
 
     case "PERCENT":
@@ -281,7 +282,9 @@ function generateIndicatorBasedSL(
       comment: "Stop Loss (pips) - No indicator connected",
       isOptimizable: false,
     });
-    code.onTick.push("double slPips = InpStopLoss * 10; // Fallback: no indicator connected");
+    code.onTick.push(
+      "double slPips = InpStopLoss * _pipFactor; // Fallback: no indicator connected"
+    );
     return;
   }
 
@@ -308,10 +311,10 @@ function generateIndicatorBasedSL(
         code.onTick.push("double distToUpper = MathAbs(bbUpper - currentPrice) / _Point;");
         code.onTick.push("// Buy SL: distance to lower band, Sell SL: distance to upper band");
         code.onTick.push(
-          "double slPips = MathMax(distToLower + (InpBBSLBuffer * 10), 100); // Buy direction"
+          "double slPips = MathMax(distToLower + (InpBBSLBuffer * _pipFactor), 100); // Buy direction"
         );
         code.onTick.push(
-          "double slSellPips = MathMax(distToUpper + (InpBBSLBuffer * 10), 100); // Sell direction"
+          "double slSellPips = MathMax(distToUpper + (InpBBSLBuffer * _pipFactor), 100); // Sell direction"
         );
         code.hasDirectionalSL = true;
         break;
@@ -360,7 +363,7 @@ function generateIndicatorBasedSL(
         code.onTick.push(`double adxValue = ${varPrefix}MainBuffer[0];`);
         code.onTick.push("// Stronger trend = tighter SL, weaker trend = wider SL");
         code.onTick.push("double slMultiplier = 2.0 - (adxValue / 100.0); // Range: 1.0 to 2.0");
-        code.onTick.push("double slPips = InpADXSLBase * slMultiplier * 10;");
+        code.onTick.push("double slPips = InpADXSLBase * slMultiplier * _pipFactor;");
         break;
 
       default:
@@ -373,7 +376,7 @@ function generateIndicatorBasedSL(
           isOptimizable: false,
         });
         code.onTick.push(
-          `double slPips = InpStopLoss * 10; // ${indData.indicatorType} not suitable for SL calculation`
+          `double slPips = InpStopLoss * _pipFactor; // ${indData.indicatorType} not suitable for SL calculation`
         );
         break;
     }
@@ -386,7 +389,7 @@ function generateIndicatorBasedSL(
       comment: "Stop Loss (pips)",
       isOptimizable: false,
     });
-    code.onTick.push("double slPips = InpStopLoss * 10; // Unknown indicator type");
+    code.onTick.push("double slPips = InpStopLoss * _pipFactor; // Unknown indicator type");
   }
 }
 
@@ -407,7 +410,7 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
           tpGroup
         )
       );
-      code.onTick.push("double tpPips = InpTakeProfit * 10; // Convert to points");
+      code.onTick.push("double tpPips = InpTakeProfit * _pipFactor; // Convert to points");
       break;
 
     case "RISK_REWARD":
@@ -675,6 +678,17 @@ export function generateEntryLogic(
     code.onTick.push(`bool sellCondition = ${sellConditions.join(joiner)};`);
   }
 
+  // When range breakout is the only signal source, skip the market entry block
+  const rangeBreakoutOnly =
+    rangeBreakoutPAIndex >= 0 &&
+    indicatorNodes.filter((n) => {
+      const d = n.data as Record<string, unknown>;
+      return !d._filterRole && !d._entryStrategyType;
+    }).length === 0 &&
+    priceActionNodes.every(
+      (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
+    );
+
   // One-trade-per-bar protection (reuse currentBarTime declared in OnTick template)
   code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
   code.onTick.push("");
@@ -692,18 +706,6 @@ export function generateEntryLogic(
     code.onTick.push("if(today != lastTradeDay) { lastTradeDay = today; tradesToday = 0; }");
   }
 
-  // Generate entry execution
-  code.onTick.push("");
-  code.onTick.push("//--- Execute Entry");
-  const entryCondition = hasDaily
-    ? `if(positionsCount < ${ctx.maxOpenTrades} && newBar && tradesToday < ${ctx.maxTradesPerDay})`
-    : `if(positionsCount < ${ctx.maxOpenTrades} && newBar)`;
-  code.onTick.push(entryCondition);
-  code.onTick.push("{");
-
-  // Anti-hedging condition: prevent opening opposite positions when hedging is disabled
-  const noHedge = !ctx.allowHedging;
-
   // Determine order types from node data
   const buyOrderType = buyNode
     ? ((buyNode.data as PlaceBuyNodeData).orderType ?? "MARKET")
@@ -714,83 +716,98 @@ export function generateEntryLogic(
   const hasPendingOrders =
     (hasBuyNode && buyOrderType !== "MARKET") || (hasSellNode && sellOrderType !== "MARKET");
 
-  // Delete stale pending orders before placing new ones
-  if (hasPendingOrders) {
-    code.onTick.push("   DeletePendingOrders();");
-  }
+  // Skip market entry block when range breakout is the sole signal (entries via pending orders)
+  if (!rangeBreakoutOnly) {
+    // Generate entry execution
+    code.onTick.push("");
+    code.onTick.push("//--- Execute Entry");
+    const entryCondition = hasDaily
+      ? `if(positionsCount < ${ctx.maxOpenTrades} && newBar && tradesToday < ${ctx.maxTradesPerDay})`
+      : `if(positionsCount < ${ctx.maxOpenTrades} && newBar)`;
+    code.onTick.push(entryCondition);
+    code.onTick.push("{");
 
-  // Only generate buy logic if there's a Place Buy node
-  if (hasBuyNode) {
-    const buyCheck = noHedge
-      ? `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions} && CountPositionsByType(POSITION_TYPE_SELL) == 0)`
-      : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
-    code.onTick.push(buyCheck);
-    code.onTick.push("   {");
+    // Anti-hedging condition: prevent opening opposite positions when hedging is disabled
+    const noHedge = !ctx.allowHedging;
 
-    if (buyOrderType === "MARKET") {
-      if (hasDaily) {
-        code.onTick.push(
-          "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
-        );
-      } else {
-        code.onTick.push(
-          "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
-        );
-      }
-    } else {
-      const fn = buyOrderType === "STOP" ? "PlaceBuyStop" : "PlaceBuyLimit";
-      if (hasDaily) {
-        code.onTick.push(
-          `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
-        );
-      } else {
-        code.onTick.push(
-          `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) lastEntryBar = currentBarTime;`
-        );
-      }
+    // Delete stale pending orders before placing new ones
+    if (hasPendingOrders) {
+      code.onTick.push("   DeletePendingOrders();");
     }
-    code.onTick.push("   }");
-  }
 
-  // Only generate sell logic if there's a Place Sell node
-  if (hasSellNode) {
-    const sellCheck = noHedge
-      ? `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions} && CountPositionsByType(POSITION_TYPE_BUY) == 0)`
-      : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
-    code.onTick.push(sellCheck);
-    code.onTick.push("   {");
-    // Use direction-aware SL for sell if available (e.g., BB-based SL)
-    const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
-    const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
-    // Only override TP if it's risk-reward based; otherwise use the same tpPips
-    const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
+    // Only generate buy logic if there's a Place Buy node
+    if (hasBuyNode) {
+      const buyCheck = noHedge
+        ? `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions} && CountPositionsByType(POSITION_TYPE_SELL) == 0)`
+        : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
+      code.onTick.push(buyCheck);
+      code.onTick.push("   {");
 
-    if (sellOrderType === "MARKET") {
-      if (hasDaily) {
-        code.onTick.push(
-          `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
-        );
+      if (buyOrderType === "MARKET") {
+        if (hasDaily) {
+          code.onTick.push(
+            "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+          );
+        } else {
+          code.onTick.push(
+            "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+          );
+        }
       } else {
-        code.onTick.push(
-          `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
-        );
+        const fn = buyOrderType === "STOP" ? "PlaceBuyStop" : "PlaceBuyLimit";
+        if (hasDaily) {
+          code.onTick.push(
+            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+          );
+        } else {
+          code.onTick.push(
+            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) lastEntryBar = currentBarTime;`
+          );
+        }
       }
-    } else {
-      const fn = sellOrderType === "STOP" ? "PlaceSellStop" : "PlaceSellLimit";
-      if (hasDaily) {
-        code.onTick.push(
-          `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
-        );
-      } else {
-        code.onTick.push(
-          `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) lastEntryBar = currentBarTime;`
-        );
-      }
+      code.onTick.push("   }");
     }
-    code.onTick.push("   }");
-  }
 
-  code.onTick.push("}");
+    // Only generate sell logic if there's a Place Sell node
+    if (hasSellNode) {
+      const sellCheck = noHedge
+        ? `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions} && CountPositionsByType(POSITION_TYPE_BUY) == 0)`
+        : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
+      code.onTick.push(sellCheck);
+      code.onTick.push("   {");
+      // Use direction-aware SL for sell if available (e.g., BB-based SL)
+      const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
+      const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
+      // Only override TP if it's risk-reward based; otherwise use the same tpPips
+      const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
+
+      if (sellOrderType === "MARKET") {
+        if (hasDaily) {
+          code.onTick.push(
+            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
+          );
+        } else {
+          code.onTick.push(
+            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
+          );
+        }
+      } else {
+        const fn = sellOrderType === "STOP" ? "PlaceSellStop" : "PlaceSellLimit";
+        if (hasDaily) {
+          code.onTick.push(
+            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+          );
+        } else {
+          code.onTick.push(
+            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) lastEntryBar = currentBarTime;`
+          );
+        }
+      }
+      code.onTick.push("   }");
+    }
+
+    code.onTick.push("}");
+  } // end if (!rangeBreakoutOnly)
 
   // Add pending order helper functions if needed
   if (hasPendingOrders) {
@@ -821,7 +838,7 @@ export function generateEntryLogic(
     code.onTick.push("");
 
     // Calculate entry prices
-    code.onTick.push(`   double bufferPts = InpRange${pi}Buffer * 10 * _Point;`);
+    code.onTick.push(`   double bufferPts = InpRange${pi}Buffer * _pipFactor * _Point;`);
     code.onTick.push(`   double buyStopPrice = NormalizeDouble(${pv}High + bufferPts, _Digits);`);
     code.onTick.push(`   double sellStopPrice = NormalizeDouble(${pv}Low - bufferPts, _Digits);`);
     code.onTick.push("");
@@ -832,8 +849,20 @@ export function generateEntryLogic(
       code.onTick.push(`   // SL at opposite side of range`);
       code.onTick.push(`   double pendBuySL = NormalizeDouble(${pv}Low - bufferPts, _Digits);`);
       code.onTick.push(`   double pendSellSL = NormalizeDouble(${pv}High + bufferPts, _Digits);`);
+    } else if (code.slMethod === "PERCENT") {
+      // PERCENT: recalculate SL based on pending entry price, not current Ask
+      code.onTick.push(`   double pendBuySLPips = (buyStopPrice * InpSLPercent / 100.0) / _Point;`);
+      code.onTick.push(
+        `   double pendBuySL = NormalizeDouble(buyStopPrice - pendBuySLPips * _Point, _Digits);`
+      );
+      code.onTick.push(
+        `   double pendSellSLPips = (sellStopPrice * InpSLPercent / 100.0) / _Point;`
+      );
+      code.onTick.push(
+        `   double pendSellSL = NormalizeDouble(sellStopPrice + pendSellSLPips * _Point, _Digits);`
+      );
     } else {
-      // ATR/FIXED/PERCENT: use slPips (distance-based, doesn't depend on entry price)
+      // ATR/FIXED: use slPips (distance-based, doesn't depend on entry price)
       code.onTick.push(
         `   double pendBuySL = NormalizeDouble(buyStopPrice - slPips * _Point, _Digits);`
       );
@@ -955,7 +984,7 @@ void DeletePendingOrders()
 bool PlaceBuyStop(double lots, double sl, double tp, double offsetPips)
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double offset = offsetPips * 10 * _Point;
+   double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(ask + offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
@@ -973,7 +1002,7 @@ bool PlaceBuyStop(double lots, double sl, double tp, double offsetPips)
 bool PlaceBuyLimit(double lots, double sl, double tp, double offsetPips)
 {
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double offset = offsetPips * 10 * _Point;
+   double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(ask - offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
@@ -991,7 +1020,7 @@ bool PlaceBuyLimit(double lots, double sl, double tp, double offsetPips)
 bool PlaceSellStop(double lots, double sl, double tp, double offsetPips)
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double offset = offsetPips * 10 * _Point;
+   double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(bid - offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
@@ -1009,7 +1038,7 @@ bool PlaceSellStop(double lots, double sl, double tp, double offsetPips)
 bool PlaceSellLimit(double lots, double sl, double tp, double offsetPips)
 {
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double offset = offsetPips * 10 * _Point;
+   double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(bid + offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;

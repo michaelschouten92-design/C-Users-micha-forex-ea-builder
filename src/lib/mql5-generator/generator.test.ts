@@ -1102,7 +1102,7 @@ describe("generateMQL5Code", () => {
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("SYMBOL_SPREAD");
-      expect(code).toContain("currentSpread > 300"); // 30 pips * 10 = 300 points
+      expect(code).toContain("currentSpread > InpMaxSpread * _pipFactor");
     });
 
     it("does not generate spread filter when no max-spread node is present", () => {

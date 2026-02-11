@@ -61,6 +61,8 @@ export interface GeneratedCode {
   helperFunctions: string[];
   /** When true, a `slSellPips` variable is generated alongside `slPips` for direction-aware SL */
   hasDirectionalSL?: boolean;
+  /** Tracks the SL method used (e.g. PERCENT) so pending order logic can adjust */
+  slMethod?: string;
 }
 
 export type MAMethod = "SMA" | "EMA";

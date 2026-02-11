@@ -588,8 +588,8 @@ export function generateMQL5Code(
         group: "Risk Management",
       },
     ],
-    globalVariables: [],
-    onInit: [],
+    globalVariables: ["int _pipFactor = 10; // 10 for 5/3-digit brokers, 1 for 4/2-digit"],
+    onInit: ["_pipFactor = (_Digits == 3 || _Digits == 5) ? 10 : 1;"],
     onDeinit: [],
     onTick: [],
     helperFunctions: [],
@@ -717,15 +717,15 @@ export function generateMQL5Code(
     code.inputs.push({
       name: "InpMaxSpread",
       type: "int",
-      value: spreadPips * 10,
-      comment: "Max Spread (points)",
+      value: spreadPips,
+      comment: "Max Spread (pips)",
       isOptimizable: isFieldOptimizable(spreadNode, "maxSpreadPips"),
       group: "Risk Management",
     });
     code.onTick.push(`//--- Spread filter`);
     code.onTick.push(`{`);
     code.onTick.push(`   int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);`);
-    code.onTick.push(`   if(currentSpread > InpMaxSpread)`);
+    code.onTick.push(`   if(currentSpread > InpMaxSpread * _pipFactor)`);
     code.onTick.push(`      return;`);
     code.onTick.push(`}`);
   }
@@ -775,35 +775,7 @@ export function generateMQL5Code(
     generatePlaceSellCode(placeSellNodes[0], code);
   }
 
-  // Generate entry logic based on connected indicators, price action nodes, and buy/sell nodes
-  generateEntryLogic(
-    indicatorNodes,
-    priceActionNodes,
-    hasBuy,
-    hasSell,
-    ctx,
-    code,
-    hasBuy ? placeBuyNodes[0] : undefined,
-    hasSell ? placeSellNodes[0] : undefined
-  );
-
-  // Generate close condition code
-  closeConditionNodes.forEach((ccNode) => {
-    generateCloseConditionCode(
-      ccNode,
-      indicatorNodes,
-      priceActionNodes,
-      processedBuildJson.edges,
-      code
-    );
-  });
-
-  // Generate time-based exit code
-  timeExitNodes.forEach((node) => {
-    generateTimeExitCode(node, code);
-  });
-
-  // Generate close-at-time code from entry strategy blocks
+  // Generate close-at-time code BEFORE entry logic so positions are closed before new orders
   for (const node of buildJson.nodes) {
     if (!("entryType" in node.data) || node.data.entryType !== "range-breakout") continue;
     const rb = node.data as RangeBreakoutEntryData;
@@ -819,7 +791,6 @@ export function generateMQL5Code(
       `//--- Close all positions at ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} (${timeLabel})`
     );
     code.onTick.push("{");
-    // Ensure MqlDateTime is available
     const needsDecl = !code.onTick.some((l) => l.includes("MqlDateTime closeTimeDt;"));
     if (needsDecl) {
       code.onTick.push(`   MqlDateTime closeTimeDt;`);
@@ -849,6 +820,34 @@ export function generateMQL5Code(
     code.onTick.push("   }");
     code.onTick.push("}");
   }
+
+  // Generate entry logic based on connected indicators, price action nodes, and buy/sell nodes
+  generateEntryLogic(
+    indicatorNodes,
+    priceActionNodes,
+    hasBuy,
+    hasSell,
+    ctx,
+    code,
+    hasBuy ? placeBuyNodes[0] : undefined,
+    hasSell ? placeSellNodes[0] : undefined
+  );
+
+  // Generate close condition code
+  closeConditionNodes.forEach((ccNode) => {
+    generateCloseConditionCode(
+      ccNode,
+      indicatorNodes,
+      priceActionNodes,
+      processedBuildJson.edges,
+      code
+    );
+  });
+
+  // Generate time-based exit code
+  timeExitNodes.forEach((node) => {
+    generateTimeExitCode(node, code);
+  });
 
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {

@@ -290,7 +290,7 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
 
         // Calculate range size and validity
         code.onTick.push(
-          `${varPrefix}Size = (${varPrefix}High - ${varPrefix}Low) / _Point / 10; // Range size in pips`
+          `${varPrefix}Size = (${varPrefix}High - ${varPrefix}Low) / _Point / _pipFactor; // Range size in pips`
         );
 
         let validityCondition = `${varPrefix}High > 0 && ${varPrefix}Low > 0 && ${varPrefix}Size >= InpRange${index}MinRange`;
@@ -301,7 +301,7 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
         code.onTick.push(`}`); // end if(isNewBar)
 
         // Generate breakout detection based on entry mode
-        const bufferPoints = `InpRange${index}Buffer * 10 * _Point`;
+        const bufferPoints = `InpRange${index}Buffer * _pipFactor * _Point`;
 
         if (rb.entryMode === "IMMEDIATE") {
           code.onTick.push(
@@ -412,7 +412,9 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
         code.onTick.push(`// Candlestick Pattern Detection ${index + 1}`);
         code.onTick.push(`${varPrefix}BuySignal = false;`);
         code.onTick.push(`${varPrefix}SellSignal = false;`);
-        code.onTick.push(`double ${varPrefix}MinBody = InpCP${index}MinBody * 10 * _Point;`);
+        code.onTick.push(
+          `double ${varPrefix}MinBody = InpCP${index}MinBody * _pipFactor * _Point;`
+        );
         code.onTick.push(`double ${varPrefix}O1 = iOpen(_Symbol, ${cpTf}, 1);`);
         code.onTick.push(`double ${varPrefix}C1 = iClose(_Symbol, ${cpTf}, 1);`);
         code.onTick.push(`double ${varPrefix}H1 = iHigh(_Symbol, ${cpTf}, 1);`);
@@ -626,7 +628,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
    support = 0;
    resistance = 0;
    double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double zonePoints = zonePips * 10 * _Point;
+   double zonePoints = zonePips * _pipFactor * _Point;
 
    // Collect swing highs and swing lows
    double levels[];
@@ -716,7 +718,9 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
           `   ${fnName}(${getTimeframe(sr.timeframe)}, InpSR${index}Lookback, InpSR${index}Touches, InpSR${index}ZoneSize, ${varPrefix}Support, ${varPrefix}Resistance);`
         );
         code.onTick.push(`}`);
-        code.onTick.push(`double ${varPrefix}ZonePoints = InpSR${index}ZoneSize * 10 * _Point;`);
+        code.onTick.push(
+          `double ${varPrefix}ZonePoints = InpSR${index}ZoneSize * _pipFactor * _Point;`
+        );
         code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
         code.onTick.push(
           `${varPrefix}NearSupport = (${varPrefix}Support > 0 && MathAbs(${varPrefix}Bid - ${varPrefix}Support) <= ${varPrefix}ZonePoints);`

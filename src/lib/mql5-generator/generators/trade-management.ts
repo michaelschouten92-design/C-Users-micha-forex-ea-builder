@@ -131,12 +131,12 @@ function generateBreakevenStopCode(
   code.onTick.push("         double positionVolume = PositionGetDouble(POSITION_VOLUME);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double lockPoints = InpBELockPips * 10;");
+  code.onTick.push("         double lockPoints = InpBELockPips * _pipFactor;");
   code.onTick.push("");
   code.onTick.push("         bool triggerReached = false;");
 
   if (data.trigger === "PIPS") {
-    code.onTick.push("         double triggerPoints = InpBETriggerPips * 10;");
+    code.onTick.push("         double triggerPoints = InpBETriggerPips * _pipFactor;");
     code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
     code.onTick.push(
       "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);"
@@ -295,7 +295,7 @@ function generateTrailingStopCode(
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double startPoints = InpTrailStartPips * 10;");
+  code.onTick.push("         double startPoints = InpTrailStartPips * _pipFactor;");
 
   // Calculate trailPoints based on method
   if (data.method === "ATR_BASED") {
@@ -308,7 +308,7 @@ function generateTrailingStopCode(
     );
   } else {
     // FIXED_PIPS
-    code.onTick.push("         double trailPoints = InpTrailPips * 10;");
+    code.onTick.push("         double trailPoints = InpTrailPips * _pipFactor;");
   }
 
   code.onTick.push("");
@@ -507,7 +507,9 @@ void MarkPartialClosed(ulong ticket)
       "         double triggerPrice = openPrice * InpPartialCloseTriggerPercent / 100.0;"
     );
   } else {
-    code.onTick.push("         double triggerPrice = InpPartialCloseTriggerPips * 10 * point;");
+    code.onTick.push(
+      "         double triggerPrice = InpPartialCloseTriggerPips * _pipFactor * point;"
+    );
   }
   code.onTick.push("");
   code.onTick.push("         bool profitReached = false;");
@@ -606,7 +608,7 @@ function generateLockProfitCode(
   code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double checkPoints = InpLockCheckInterval * 10;");
+  code.onTick.push("         double checkPoints = InpLockCheckInterval * _pipFactor;");
   code.onTick.push("");
   code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
   code.onTick.push("         {");
@@ -620,7 +622,7 @@ function generateLockProfitCode(
       "               double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
     );
   } else {
-    code.onTick.push("               double lockPoints = InpLockProfitPips * 10;");
+    code.onTick.push("               double lockPoints = InpLockProfitPips * _pipFactor;");
   }
 
   code.onTick.push("               double newSL = openPrice + lockPoints * point;");
@@ -644,7 +646,7 @@ function generateLockProfitCode(
       "               double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
     );
   } else {
-    code.onTick.push("               double lockPoints = InpLockProfitPips * 10;");
+    code.onTick.push("               double lockPoints = InpLockProfitPips * _pipFactor;");
   }
 
   code.onTick.push("               double newSL = openPrice - lockPoints * point;");
