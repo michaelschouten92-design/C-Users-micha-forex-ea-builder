@@ -310,11 +310,13 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
       fixedPips: d.slFixedPips ?? 50,
       slPercent: d.slPercent ?? 1,
       atrMultiplier: d.slAtrMultiplier,
-      atrPeriod: 14,
+      atrPeriod: d.slAtrPeriod ?? 14,
+      atrTimeframe: d.slAtrTimeframe,
       optimizableFields: mapOpt(
         ["slFixedPips", "fixedPips"],
         ["slPercent", "slPercent"],
-        ["slAtrMultiplier", "atrMultiplier"]
+        ["slAtrMultiplier", "atrMultiplier"],
+        ["slAtrPeriod", "atrPeriod"]
       ),
     })
   );

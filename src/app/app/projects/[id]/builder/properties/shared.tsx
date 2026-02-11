@@ -1,9 +1,9 @@
 "use client";
 
 import { SelectField } from "../components/form-fields";
-import type { BuilderNodeData, EntryDirection, EntrySlMethod } from "@/types/builder";
+import type { BuilderNodeData, EntryDirection, EntrySlMethod, Timeframe } from "@/types/builder";
 import { NumberField } from "../components/form-fields";
-import { DIRECTION_OPTIONS, BASE_SL_OPTIONS } from "./constants";
+import { DIRECTION_OPTIONS, BASE_SL_OPTIONS, TIMEFRAME_OPTIONS } from "./constants";
 
 export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   fieldName,
@@ -139,6 +139,8 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
     slFixedPips?: number;
     slPercent?: number;
     slAtrMultiplier: number;
+    slAtrPeriod?: number;
+    slAtrTimeframe?: Timeframe;
     tpRMultiple: number;
   };
   onChange: (updates: Partial<T>) => void;
@@ -182,6 +184,23 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
           />
           <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
+          <NumberField
+            label="ATR Period"
+            value={data.slAtrPeriod ?? 14}
+            min={1}
+            max={500}
+            step={1}
+            onChange={(v) => onChange({ slAtrPeriod: v } as Partial<T>)}
+          />
+          <OptimizableFieldCheckbox fieldName="slAtrPeriod" data={data} onChange={onChange} />
+          <SelectField
+            label="ATR Timeframe"
+            value={data.slAtrTimeframe ?? ""}
+            options={[{ value: "", label: "Current (chart)" }, ...TIMEFRAME_OPTIONS]}
+            onChange={(v) =>
+              onChange({ slAtrTimeframe: (v || undefined) as Timeframe | undefined } as Partial<T>)
+            }
+          />
         </>
       )}
       {slMethod === "PIPS" && (

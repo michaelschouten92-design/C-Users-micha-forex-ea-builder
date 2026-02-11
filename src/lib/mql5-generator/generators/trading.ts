@@ -181,7 +181,10 @@ export function generateStopLossCode(
       );
       break;
 
-    case "ATR_BASED":
+    case "ATR_BASED": {
+      const atrTf = getTimeframe(
+        (node.data as Record<string, unknown>).atrTimeframe as string | undefined
+      );
       code.inputs.push(
         createInput(
           node,
@@ -206,7 +209,7 @@ export function generateStopLossCode(
       );
       code.globalVariables.push("int atrHandle = INVALID_HANDLE;");
       code.globalVariables.push("double atrBuffer[];");
-      code.onInit.push("atrHandle = iATR(_Symbol, PERIOD_CURRENT, InpATRPeriod);");
+      code.onInit.push(`atrHandle = iATR(_Symbol, ${atrTf}, InpATRPeriod);`);
       code.onInit.push(
         'if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }'
       );
@@ -215,6 +218,7 @@ export function generateStopLossCode(
       code.onTick.push("if(CopyBuffer(atrHandle, 0, 0, 1, atrBuffer) < 1) return;");
       code.onTick.push("double slPips = (atrBuffer[0] / _Point) * InpATRMultiplier;");
       break;
+    }
 
     case "RANGE_OPPOSITE":
       generateRangeOppositeSL(priceActionNodes, code);

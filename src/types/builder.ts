@@ -416,6 +416,8 @@ export interface BaseEntryStrategyFields {
   slFixedPips: number;
   slPercent: number;
   slAtrMultiplier: number;
+  slAtrPeriod?: number;
+  slAtrTimeframe?: Timeframe;
   tpRMultiple: number;
 }
 
