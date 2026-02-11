@@ -86,8 +86,13 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     if ("riskPercent" in d) {
       lines.push(`Risk ${d.riskPercent}% per trade`);
     }
-    if ("slAtrMultiplier" in d) {
+    const slMethod = "slMethod" in d ? d.slMethod : "ATR";
+    if (slMethod === "ATR" && "slAtrMultiplier" in d) {
       lines.push(`Stop loss at ${d.slAtrMultiplier}× ATR(14)`);
+    } else if (slMethod === "PIPS" && "slFixedPips" in d) {
+      lines.push(`Stop loss at ${d.slFixedPips} pips`);
+    } else if (slMethod === "PERCENT" && "slPercent" in d) {
+      lines.push(`Stop loss at ${d.slPercent}%`);
     }
     if ("tpRMultiple" in d) {
       lines.push(`Take profit at ${d.tpRMultiple}:1 reward-to-risk`);

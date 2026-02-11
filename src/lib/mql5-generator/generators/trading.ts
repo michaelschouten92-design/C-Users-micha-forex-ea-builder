@@ -877,6 +877,21 @@ export function generateEntryLogic(
     }
 
     code.onTick.push("}");
+
+    // OCO: Cancel remaining pending order when a position is filled
+    code.onTick.push("");
+    code.onTick.push("//--- OCO: Cancel pending orders when a position is open");
+    code.onTick.push("if(positionsCount > 0)");
+    code.onTick.push("{");
+    code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
+    code.onTick.push("   {");
+    code.onTick.push("      ulong ticket = OrderGetTicket(i);");
+    code.onTick.push(
+      "      if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)"
+    );
+    code.onTick.push("         trade.OrderDelete(ticket);");
+    code.onTick.push("   }");
+    code.onTick.push("}");
   }
 }
 

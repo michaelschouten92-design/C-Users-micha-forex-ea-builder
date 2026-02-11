@@ -78,8 +78,9 @@ export function generatePriceActionCode(
         code.globalVariables.push(`bool ${varPrefix}BreakoutUp;`);
         code.globalVariables.push(`bool ${varPrefix}BreakoutDown;`);
 
-        // Generate range calculation code
+        // Generate range calculation code (only on new bar for efficiency)
         code.onTick.push(`// Range Breakout ${index + 1}`);
+        code.onTick.push(`if(isNewBar) {`);
 
         if (rb.rangeType === "PREVIOUS_CANDLES") {
           // Calculate range from previous X candles
@@ -261,6 +262,7 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
           validityCondition += ` && ${varPrefix}Size <= InpRange${index}MaxRange`;
         }
         code.onTick.push(`${varPrefix}Valid = (${validityCondition});`);
+        code.onTick.push(`}`); // end if(isNewBar)
 
         // Generate breakout detection based on entry mode
         const bufferPoints = `InpRange${index}Buffer * 10 * _Point`;
