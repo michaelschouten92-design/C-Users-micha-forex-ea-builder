@@ -226,6 +226,17 @@ export function RangeBreakoutEntryFields({
         />
       )}
 
+      <div>
+        <NumberField
+          label="Buffer (pips)"
+          value={data.bufferPips ?? 2}
+          min={0}
+          max={50}
+          onChange={(v) => onChange({ bufferPips: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="bufferPips" data={data} onChange={onChange} />
+      </div>
+
       {/* Risk section (includes SL method selector with Range Opposite option) */}
       <EntryStrategyRiskSection data={data} onChange={onChange} slOptions={RANGE_SL_OPTIONS} />
 

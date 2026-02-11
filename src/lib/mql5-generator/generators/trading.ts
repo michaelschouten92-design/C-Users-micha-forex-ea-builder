@@ -526,7 +526,31 @@ export function generateEntryLogic(
       }
     }
 
-    // Process indicator conditions (skip EMA crossover indicators already handled above)
+    // Process filter nodes (HTF trend, RSI confirmation) — these add additional conditions
+    indicatorNodes.forEach((indNode, indIndex) => {
+      const d = indNode.data as Record<string, unknown>;
+      if (d._filterRole === "htf-trend") {
+        // Price above EMA = allow buy, below = allow sell
+        const vp = `ind${indIndex}`;
+        const s = d.signalMode === "candle_close" ? 1 : 0;
+        buyConditions.push(
+          `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${vp}Buffer[${1 + s}]))`
+        );
+        sellConditions.push(
+          `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${vp}Buffer[${1 + s}]))`
+        );
+        handledIndices.add(indIndex);
+      } else if (d._filterRole === "rsi-confirm") {
+        // RSI < longMax for buy, RSI > shortMin for sell
+        const vp = `ind${indIndex}`;
+        const s = d.signalMode === "candle_close" ? 1 : 0;
+        buyConditions.push(`(DoubleLT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`);
+        sellConditions.push(`(DoubleGT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`);
+        handledIndices.add(indIndex);
+      }
+    });
+
+    // Process indicator conditions (skip EMA crossover indicators and filters already handled above)
     indicatorNodes.forEach((indNode, indIndex) => {
       if (handledIndices.has(indIndex)) return;
 
@@ -883,19 +907,23 @@ export function generateEntryLogic(
     code.onTick.push("}");
 
     // OCO: Cancel remaining pending order when a position is filled
-    code.onTick.push("");
-    code.onTick.push("//--- OCO: Cancel pending orders when a position is open");
-    code.onTick.push("if(positionsCount > 0)");
-    code.onTick.push("{");
-    code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
-    code.onTick.push("   {");
-    code.onTick.push("      ulong ticket = OrderGetTicket(i);");
-    code.onTick.push(
-      "      if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)"
-    );
-    code.onTick.push("         trade.OrderDelete(ticket);");
-    code.onTick.push("   }");
-    code.onTick.push("}");
+    const rbData = priceActionNodes[rangeBreakoutPAIndex].data as Record<string, unknown>;
+    const cancelOpposite = rbData._cancelOpposite !== false;
+    if (cancelOpposite) {
+      code.onTick.push("");
+      code.onTick.push("//--- OCO: Cancel pending orders when a position is open");
+      code.onTick.push("if(positionsCount > 0)");
+      code.onTick.push("{");
+      code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
+      code.onTick.push("   {");
+      code.onTick.push("      ulong ticket = OrderGetTicket(i);");
+      code.onTick.push(
+        "      if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)"
+      );
+      code.onTick.push("         trade.OrderDelete(ticket);");
+      code.onTick.push("   }");
+      code.onTick.push("}");
+    }
   }
 }
 

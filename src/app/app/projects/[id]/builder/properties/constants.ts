@@ -113,6 +113,26 @@ export const DIRECTION_OPTIONS: { value: EntryDirection; label: string }[] = [
   { value: "SELL", label: "Sell Only" },
 ];
 
+export const APPLIED_PRICE_OPTIONS: { value: string; label: string }[] = [
+  { value: "CLOSE", label: "Close" },
+  { value: "OPEN", label: "Open" },
+  { value: "HIGH", label: "High" },
+  { value: "LOW", label: "Low" },
+  { value: "MEDIAN", label: "Median (HL/2)" },
+  { value: "TYPICAL", label: "Typical (HLC/3)" },
+  { value: "WEIGHTED", label: "Weighted (HLCC/4)" },
+];
+
+export const MA_METHOD_OPTIONS: { value: string; label: string }[] = [
+  { value: "SMA", label: "Simple (SMA)" },
+  { value: "EMA", label: "Exponential (EMA)" },
+];
+
+export const STO_PRICE_FIELD_OPTIONS: { value: string; label: string }[] = [
+  { value: "LOWHIGH", label: "Low/High" },
+  { value: "CLOSECLOSE", label: "Close/Close" },
+];
+
 export const RANGE_METHOD_OPTIONS: { value: "CANDLES" | "CUSTOM_TIME"; label: string }[] = [
   { value: "CUSTOM_TIME", label: "Custom Time" },
   { value: "CANDLES", label: "Candles" },

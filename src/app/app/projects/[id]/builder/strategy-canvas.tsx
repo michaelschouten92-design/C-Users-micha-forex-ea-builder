@@ -49,6 +49,18 @@ interface StrategyCanvasProps {
 
 let nodeIdCounter = 0;
 
+function initNodeIdCounter(nodes: Node[]) {
+  let max = 0;
+  for (const n of nodes) {
+    const match = n.id.match(/-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > max) max = num;
+    }
+  }
+  nodeIdCounter = max;
+}
+
 export function StrategyCanvas({
   projectId,
   initialData,
@@ -66,7 +78,11 @@ export function StrategyCanvas({
     initialData?.settings ?? { ...DEFAULT_SETTINGS }
   );
 
-  const [nodes, setNodes, onNodesChange] = useNodesState((initialData?.nodes as Node[]) ?? []);
+  const [nodes, setNodes, onNodesChange] = useNodesState(() => {
+    const initial = (initialData?.nodes as Node[]) ?? [];
+    initNodeIdCounter(initial);
+    return initial;
+  });
   const [edges, setEdges, onEdgesChange] = useEdgesState((initialData?.edges as Edge[]) ?? []);
 
   // Undo/Redo history

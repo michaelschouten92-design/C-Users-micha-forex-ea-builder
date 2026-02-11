@@ -455,6 +455,7 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   customEndHour: number;
   customEndMinute: number;
   useServerTime: boolean;
+  bufferPips: number;
   // Advanced toggles
   cancelOpposite: boolean;
   closeAtTime: boolean;
@@ -687,6 +688,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       customEndHour: 8,
       customEndMinute: 0,
       useServerTime: true,
+      bufferPips: 2,
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,

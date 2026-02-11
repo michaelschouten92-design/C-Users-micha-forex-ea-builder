@@ -158,6 +158,46 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         _role: "slow",
       })
     );
+    // HTF trend filter: price must be above/below HTF EMA
+    if (ema.htfTrendFilter) {
+      virtualNodes.push(
+        vNode("htf-ema", "moving-average", {
+          label: `HTF EMA(${ema.htfEma})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: ema.htfTimeframe ?? "H4",
+          period: ema.htfEma,
+          method: "EMA",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["htfEma", "period"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
+    // RSI confirmation filter
+    if (ema.rsiConfirmation) {
+      virtualNodes.push(
+        vNode("rsi-confirm", "rsi", {
+          label: `RSI Filter(${ema.rsiPeriod})`,
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: emaTf,
+          period: ema.rsiPeriod,
+          overboughtLevel: ema.rsiShortMin,
+          oversoldLevel: ema.rsiLongMax,
+          signalMode: "candle_close",
+          optimizableFields: mapOpt(
+            ["rsiPeriod", "period"],
+            ["rsiLongMax", "oversoldLevel"],
+            ["rsiShortMin", "overboughtLevel"]
+          ),
+          _filterRole: "rsi-confirm",
+          _rsiLongMax: ema.rsiLongMax,
+          _rsiShortMin: ema.rsiShortMin,
+        })
+      );
+    }
   } else if (d.entryType === "range-breakout") {
     const rb = d as RangeBreakoutEntryData;
     const rangeMethod = rb.rangeMethod ?? "CANDLES";
@@ -179,17 +219,36 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         entryMode:
           (rb.breakoutEntry ?? "CANDLE_CLOSE") === "CURRENT_PRICE" ? "IMMEDIATE" : "ON_CLOSE",
         breakoutTimeframe: rb.breakoutTimeframe ?? rangeTimeframe,
-        bufferPips: 2,
+        bufferPips: rb.bufferPips ?? 2,
         minRangePips: rb.minRangePips ?? 0,
         maxRangePips: rb.maxRangePips ?? 0,
         useServerTime: rb.useServerTime ?? true,
+        _cancelOpposite: rb.cancelOpposite ?? true,
         optimizableFields: mapOpt(
           ["rangePeriod", "lookbackCandles"],
+          ["bufferPips", "bufferPips"],
           ["minRangePips", "minRangePips"],
           ["maxRangePips", "maxRangePips"]
         ),
       })
     );
+    // HTF trend filter
+    if (rb.htfTrendFilter) {
+      virtualNodes.push(
+        vNode("htf-ema", "moving-average", {
+          label: `HTF EMA(${rb.htfEma})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: rb.htfTimeframe ?? "H4",
+          period: rb.htfEma,
+          method: "EMA",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["htfEma", "period"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
   } else if (d.entryType === "rsi-reversal") {
     const rsi = d as RSIReversalEntryData;
     virtualNodes.push(
@@ -209,6 +268,23 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         ),
       })
     );
+    // Trend filter: price above/below EMA
+    if (rsi.trendFilter) {
+      virtualNodes.push(
+        vNode("trend-ema", "moving-average", {
+          label: `Trend EMA(${rsi.trendEma})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: rsi.timeframe ?? "H1",
+          period: rsi.trendEma,
+          method: "EMA",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["trendEma", "period"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
   } else if (d.entryType === "trend-pullback") {
     const tp = d as TrendPullbackEntryData;
     const tpTf = tp.timeframe ?? "H1";
@@ -261,6 +337,23 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         ),
       })
     );
+    // HTF trend filter
+    if (macd.htfTrendFilter) {
+      virtualNodes.push(
+        vNode("htf-ema", "moving-average", {
+          label: `HTF EMA(${macd.htfEma})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: macd.htfTimeframe ?? "H4",
+          period: macd.htfEma,
+          method: "EMA",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["htfEma", "period"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
   }
 
   // Create buy + sell nodes based on direction setting

@@ -230,6 +230,7 @@ export function StopLossFields({
         options={[
           { value: "FIXED_PIPS", label: "Fixed Pips" },
           { value: "ATR_BASED", label: "ATR-Based" },
+          { value: "PERCENT", label: "Percentage" },
           { value: "INDICATOR", label: "From Indicator" },
         ]}
         onChange={(v) => onChange({ method: v as StopLossNodeData["method"] })}
@@ -270,6 +271,19 @@ export function StopLossFields({
             <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
           </div>
         </>
+      )}
+      {data.method === "PERCENT" && (
+        <div>
+          <NumberField
+            label="Stop Loss (%)"
+            value={data.slPercent ?? 1}
+            min={0.01}
+            max={50}
+            step={0.1}
+            onChange={(v) => onChange({ slPercent: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
+        </div>
       )}
       {data.method === "INDICATOR" && (
         <div

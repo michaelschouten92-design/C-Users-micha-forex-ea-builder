@@ -58,6 +58,53 @@ export function validateStrategy(
     }
   }
 
+  // Check for risk-based sizing without stop loss
+  const placeBuyNodes = nodes.filter(
+    (n) => n.type === "place-buy" || ("tradingType" in n.data && n.data.tradingType === "place-buy")
+  );
+  const placeSellNodes = nodes.filter(
+    (n) =>
+      n.type === "place-sell" || ("tradingType" in n.data && n.data.tradingType === "place-sell")
+  );
+  const stopLossNodes = nodes.filter(
+    (n) => n.type === "stop-loss" || ("tradingType" in n.data && n.data.tradingType === "stop-loss")
+  );
+
+  for (const buyNode of placeBuyNodes) {
+    const d = buyNode.data as Record<string, unknown>;
+    if (d.method === "RISK_PERCENT") {
+      const hasSL =
+        stopLossNodes.length > 0 ||
+        edges.some((e) => e.source === buyNode.id && stopLossNodes.some((s) => s.id === e.target));
+      if (!hasSL && stopLossNodes.length === 0) {
+        issues.push({
+          type: "warning",
+          message:
+            "Place Buy uses Risk % sizing but no Stop Loss is connected — lot size will fall back to minimum",
+          nodeType: "place-buy",
+        });
+        break;
+      }
+    }
+  }
+  for (const sellNode of placeSellNodes) {
+    const d = sellNode.data as Record<string, unknown>;
+    if (d.method === "RISK_PERCENT") {
+      const hasSL =
+        stopLossNodes.length > 0 ||
+        edges.some((e) => e.source === sellNode.id && stopLossNodes.some((s) => s.id === e.target));
+      if (!hasSL && stopLossNodes.length === 0) {
+        issues.push({
+          type: "warning",
+          message:
+            "Place Sell uses Risk % sizing but no Stop Loss is connected — lot size will fall back to minimum",
+          nodeType: "place-sell",
+        });
+        break;
+      }
+    }
+  }
+
   // Calculate if strategy can be exported (no errors)
   const hasErrors = issues.some((i) => i.type === "error");
   const canExport = !hasErrors && nodes.length > 0;

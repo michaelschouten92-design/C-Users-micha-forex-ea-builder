@@ -12,7 +12,13 @@ import type {
   CCINodeData,
   Timeframe,
 } from "@/types/builder";
-import { SIGNAL_MODE_OPTIONS, TIMEFRAME_OPTIONS } from "./constants";
+import {
+  SIGNAL_MODE_OPTIONS,
+  TIMEFRAME_OPTIONS,
+  APPLIED_PRICE_OPTIONS,
+  MA_METHOD_OPTIONS,
+  STO_PRICE_FIELD_OPTIONS,
+} from "./constants";
 import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
 
 export function MovingAverageFields({
@@ -65,6 +71,12 @@ export function MovingAverageFields({
         />
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
+      />
     </>
   );
 }
@@ -123,6 +135,12 @@ export function RSIFields({
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldWarning message="Overbought level must be higher than oversold level" />
       )}
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as RSINodeData["appliedPrice"] })}
+      />
     </>
   );
 }
@@ -177,6 +195,12 @@ export function MACDFields({
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MACDNodeData["signalMode"] })}
+      />
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
       />
       {data.fastPeriod >= data.slowPeriod && (
         <FieldWarning message="Fast period should be smaller than slow period" />
@@ -237,6 +261,12 @@ export function BollingerBandsFields({
         />
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as BollingerBandsNodeData["appliedPrice"] })}
+      />
     </>
   );
 }
@@ -400,11 +430,26 @@ export function StochasticFields({
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
       <SelectField
+        label="MA Method"
+        value={data.maMethod ?? "SMA"}
+        options={MA_METHOD_OPTIONS}
+        onChange={(v) => onChange({ maMethod: v as StochasticNodeData["maMethod"] })}
+      />
+      <SelectField
+        label="Price Field"
+        value={data.priceField ?? "LOWHIGH"}
+        options={STO_PRICE_FIELD_OPTIONS}
+        onChange={(v) => onChange({ priceField: v as StochasticNodeData["priceField"] })}
+      />
+      <SelectField
         label="Signal Mode"
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as StochasticNodeData["signalMode"] })}
       />
+      {data.overboughtLevel <= data.oversoldLevel && (
+        <FieldWarning message="Overbought level must be higher than oversold level" />
+      )}
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
@@ -467,6 +512,12 @@ export function CCIFields({
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as CCINodeData["appliedPrice"] })}
+      />
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldWarning message="Overbought level must be higher than oversold level" />
       )}

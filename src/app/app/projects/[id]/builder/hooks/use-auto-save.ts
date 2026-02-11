@@ -136,9 +136,28 @@ export function useAutoSave({
           }
           console.error("Save failed:", res.status, error);
 
-          // On version conflict, update our tracked version and retry
+          // On version conflict, update version and retry once
           if (res.status === 409 && error.currentVersion) {
             lastSavedVersionRef.current = error.currentVersion as number;
+            const retryRes = await fetch(`/api/projects/${projectId}/versions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+              body: JSON.stringify({
+                buildJson,
+                expectedVersion: lastSavedVersionRef.current || undefined,
+                isAutosave,
+              }),
+            });
+            if (retryRes.ok) {
+              const retryData = await retryRes.json();
+              lastSavedVersionRef.current = retryData.versionNo;
+              savedCounterRef.current = changeCounterRef.current;
+              if (isAutosave) {
+                setAutoSaveStatus("saved");
+                setTimeout(() => setAutoSaveStatus("idle"), 2000);
+              }
+              return true;
+            }
           }
 
           if (isAutosave) {

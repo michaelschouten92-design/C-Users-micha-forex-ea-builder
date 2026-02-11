@@ -178,8 +178,9 @@ export function TrailingStopFields({
           <NumberField
             label="Trail Percentage"
             value={data.trailPercent}
-            min={1}
+            min={0.1}
             max={100}
+            step={0.1}
             onChange={(v) => onChange({ trailPercent: v })}
           />
           <OptimizableFieldCheckbox fieldName="trailPercent" data={data} onChange={onChange} />
