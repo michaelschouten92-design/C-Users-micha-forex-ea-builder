@@ -20,7 +20,7 @@ import {
   BREAKOUT_DIRECTION_OPTIONS,
   ENTRY_MODE_OPTIONS,
 } from "./constants";
-import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
+import { OptimizableFieldCheckbox, FieldWarning, AdvancedToggleSection } from "./shared";
 
 export function CandlestickPatternFields({
   data,
@@ -263,37 +263,6 @@ export function RangeBreakoutFields({
         <OptimizableFieldCheckbox fieldName="bufferPips" data={data} onChange={onChange} />
       </div>
 
-      {/* Filters */}
-      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Filters</span>
-      </div>
-
-      <div>
-        <NumberField
-          label="Min Range (pips)"
-          value={data.minRangePips}
-          min={0}
-          max={500}
-          onChange={(v) => onChange({ minRangePips: v })}
-        />
-        <OptimizableFieldCheckbox fieldName="minRangePips" data={data} onChange={onChange} />
-      </div>
-
-      <div>
-        <NumberField
-          label="Max Range (pips, 0=no limit)"
-          value={data.maxRangePips}
-          min={0}
-          max={1000}
-          onChange={(v) => onChange({ maxRangePips: v })}
-        />
-        <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
-      </div>
-
-      {data.maxRangePips > 0 && data.minRangePips > data.maxRangePips && (
-        <FieldWarning message="Min range should not exceed max range" />
-      )}
-
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
         role="note"
@@ -301,6 +270,35 @@ export function RangeBreakoutFields({
         Triggers entry when price breaks above range high (buy) or below range low (sell). Connect
         to Place Buy/Sell blocks.
       </div>
+
+      {/* Advanced Settings */}
+      <AdvancedToggleSection>
+        <div>
+          <NumberField
+            label="Min Range (pips)"
+            value={data.minRangePips}
+            min={0}
+            max={500}
+            onChange={(v) => onChange({ minRangePips: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="minRangePips" data={data} onChange={onChange} />
+        </div>
+
+        <div>
+          <NumberField
+            label="Max Range (pips, 0=no limit)"
+            value={data.maxRangePips}
+            min={0}
+            max={1000}
+            onChange={(v) => onChange({ maxRangePips: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
+        </div>
+
+        {data.maxRangePips > 0 && data.minRangePips > data.maxRangePips && (
+          <FieldWarning message="Min range should not exceed max range" />
+        )}
+      </AdvancedToggleSection>
     </>
   );
 }
