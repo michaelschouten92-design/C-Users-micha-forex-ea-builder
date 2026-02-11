@@ -124,6 +124,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: "EMA",
         signalMode: "candle_close",
         shift: 0,
+        _entryStrategyType: "ema-crossover",
+        _entryStrategyId: baseId,
+        _role: "fast",
       }),
       vNode("ma-slow", "moving-average", {
         label: `Slow EMA(${ema.slowEma})`,
@@ -134,6 +137,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: "EMA",
         signalMode: "candle_close",
         shift: 0,
+        _entryStrategyType: "ema-crossover",
+        _entryStrategyId: baseId,
+        _role: "slow",
       })
     );
   } else if (d.entryType === "range-breakout") {
@@ -426,8 +432,10 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
     "max-spread",
   ]);
 
-  // Helper to check if a node is connected to the strategy
-  const isConnected = (node: BuilderNode) => connectedNodeIds.has(node.id);
+  // Helper to check if a node is connected to the strategy.
+  // When no timing/filter nodes exist, all nodes are reachable (timing is optional).
+  const isConnected = (node: BuilderNode) =>
+    connectedNodeIds.size === 0 || connectedNodeIds.has(node.id);
 
   // Single-pass node categorization (instead of 11 separate .filter() passes)
   const indicatorTypeSet = new Set([

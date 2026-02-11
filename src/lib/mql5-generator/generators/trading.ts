@@ -489,8 +489,40 @@ export function generateEntryLogic(
     const buyConditions: string[] = [];
     const sellConditions: string[] = [];
 
-    // Process indicator conditions
+    // Handle EMA Crossover entry strategies (need cross-indicator comparison, not price vs MA)
+    const handledIndices = new Set<number>();
+    const emaCrossGroups = new Map<string, { fast?: number; slow?: number }>();
     indicatorNodes.forEach((indNode, indIndex) => {
+      const d = indNode.data as Record<string, unknown>;
+      if (d._entryStrategyType === "ema-crossover" && d._entryStrategyId) {
+        const esId = d._entryStrategyId as string;
+        if (!emaCrossGroups.has(esId)) emaCrossGroups.set(esId, {});
+        const group = emaCrossGroups.get(esId)!;
+        if (d._role === "fast") group.fast = indIndex;
+        if (d._role === "slow") group.slow = indIndex;
+      }
+    });
+    for (const [, group] of emaCrossGroups) {
+      if (group.fast !== undefined && group.slow !== undefined) {
+        const fp = `ind${group.fast}`;
+        const sp = `ind${group.slow}`;
+        // Fast EMA crosses above Slow EMA (bullish crossover)
+        buyConditions.push(
+          `(DoubleLE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleGT(${fp}Buffer[1], ${sp}Buffer[1]))`
+        );
+        // Fast EMA crosses below Slow EMA (bearish crossover)
+        sellConditions.push(
+          `(DoubleGE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleLT(${fp}Buffer[1], ${sp}Buffer[1]))`
+        );
+        handledIndices.add(group.fast);
+        handledIndices.add(group.slow);
+      }
+    }
+
+    // Process indicator conditions (skip EMA crossover indicators already handled above)
+    indicatorNodes.forEach((indNode, indIndex) => {
+      if (handledIndices.has(indIndex)) return;
+
       const varPrefix = `ind${indIndex}`;
       const indData = indNode.data;
       // Bar offset: candle_close shifts all bar indices by +1 (uses confirmed bars only)
