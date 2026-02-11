@@ -479,6 +479,9 @@ export function generateEntryLogic(
   code.onTick.push("");
   code.onTick.push("//--- Entry Logic");
 
+  // Track range breakout nodes for pending order generation (set in condition loop below)
+  let rangeBreakoutPAIndex = -1;
+
   const hasConditions = indicatorNodes.length > 0 || priceActionNodes.length > 0;
 
   if (!hasConditions) {
@@ -616,14 +619,8 @@ export function generateEntryLogic(
       if ("priceActionType" in paData) {
         switch (paData.priceActionType) {
           case "range-breakout": {
-            const rb = paData as RangeBreakoutNodeData;
-            // Add conditions based on breakout direction
-            if (rb.breakoutDirection === "BUY_ON_HIGH" || rb.breakoutDirection === "BOTH") {
-              buyConditions.push(`(${varPrefix}BreakoutUp)`);
-            }
-            if (rb.breakoutDirection === "SELL_ON_LOW" || rb.breakoutDirection === "BOTH") {
-              sellConditions.push(`(${varPrefix}BreakoutDown)`);
-            }
+            // Don't add to buyConditions/sellConditions — handled via pending orders
+            rangeBreakoutPAIndex = paIndex;
             break;
           }
 
@@ -770,6 +767,116 @@ export function generateEntryLogic(
   // Add pending order helper functions if needed
   if (hasPendingOrders) {
     addPendingOrderHelpers(code, ctx);
+  }
+
+  // Range Breakout: place pending orders at range boundaries instead of market orders
+  if (rangeBreakoutPAIndex >= 0) {
+    const pv = `pa${rangeBreakoutPAIndex}`;
+    const pi = rangeBreakoutPAIndex;
+    const comment = sanitizeMQL5String(ctx.comment);
+    const hasRR = code.inputs.some((i) => i.name === "InpRiskReward");
+
+    code.onTick.push("");
+    code.onTick.push("//--- Range Breakout Pending Orders");
+    code.onTick.push(`if(${pv}NewRange)`);
+    code.onTick.push("{");
+    // Delete old pending orders
+    code.onTick.push("   // Delete old pending orders from this EA");
+    code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
+    code.onTick.push("   {");
+    code.onTick.push("      ulong ticket = OrderGetTicket(i);");
+    code.onTick.push(
+      "      if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)"
+    );
+    code.onTick.push("         trade.OrderDelete(ticket);");
+    code.onTick.push("   }");
+    code.onTick.push("");
+
+    // Calculate entry prices
+    code.onTick.push(`   double bufferPts = InpRange${pi}Buffer * 10 * _Point;`);
+    code.onTick.push(`   double buyStopPrice = NormalizeDouble(${pv}High + bufferPts, _Digits);`);
+    code.onTick.push(`   double sellStopPrice = NormalizeDouble(${pv}Low - bufferPts, _Digits);`);
+    code.onTick.push("");
+
+    // SL calculation — from pending entry price (not current market price)
+    if (code.hasDirectionalSL) {
+      // RANGE_OPPOSITE: SL at opposite range boundary
+      code.onTick.push(`   // SL at opposite side of range`);
+      code.onTick.push(`   double pendBuySL = NormalizeDouble(${pv}Low - bufferPts, _Digits);`);
+      code.onTick.push(`   double pendSellSL = NormalizeDouble(${pv}High + bufferPts, _Digits);`);
+    } else {
+      // ATR/FIXED/PERCENT: use slPips (distance-based, doesn't depend on entry price)
+      code.onTick.push(
+        `   double pendBuySL = NormalizeDouble(buyStopPrice - slPips * _Point, _Digits);`
+      );
+      code.onTick.push(
+        `   double pendSellSL = NormalizeDouble(sellStopPrice + slPips * _Point, _Digits);`
+      );
+    }
+    code.onTick.push(`   double pendBuySLDist = (buyStopPrice - pendBuySL) / _Point;`);
+    code.onTick.push(`   double pendSellSLDist = (pendSellSL - sellStopPrice) / _Point;`);
+    code.onTick.push("");
+
+    // TP calculation
+    if (hasRR) {
+      code.onTick.push(
+        `   double pendBuyTP = NormalizeDouble(buyStopPrice + pendBuySLDist * InpRiskReward * _Point, _Digits);`
+      );
+      code.onTick.push(
+        `   double pendSellTP = NormalizeDouble(sellStopPrice - pendSellSLDist * InpRiskReward * _Point, _Digits);`
+      );
+    } else {
+      code.onTick.push(
+        `   double pendBuyTP = NormalizeDouble(buyStopPrice + tpPips * _Point, _Digits);`
+      );
+      code.onTick.push(
+        `   double pendSellTP = NormalizeDouble(sellStopPrice - tpPips * _Point, _Digits);`
+      );
+    }
+    code.onTick.push("");
+
+    // Lot sizing from pending SL distance
+    const hasBuyRisk = code.inputs.some((i) => i.name === "InpBuyRiskPercent");
+    const hasSellRisk = code.inputs.some((i) => i.name === "InpSellRiskPercent");
+    if (hasBuyRisk) {
+      code.onTick.push(
+        `   double pendBuyLot = CalculateLotSize(InpBuyRiskPercent, pendBuySLDist);`
+      );
+      code.onTick.push(`   pendBuyLot = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, pendBuyLot));`);
+    } else {
+      code.onTick.push(`   double pendBuyLot = buyLotSize;`);
+    }
+    if (hasSellRisk) {
+      code.onTick.push(
+        `   double pendSellLot = CalculateLotSize(InpSellRiskPercent, pendSellSLDist);`
+      );
+      code.onTick.push(
+        `   pendSellLot = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, pendSellLot));`
+      );
+    } else {
+      code.onTick.push(`   double pendSellLot = sellLotSize;`);
+    }
+    code.onTick.push("");
+
+    // Place pending orders
+    if (hasBuyNode) {
+      code.onTick.push(
+        `   if(trade.BuyStop(pendBuyLot, buyStopPrice, _Symbol, pendBuySL, pendBuyTP, ORDER_TIME_GTC, 0, "${comment}"))`
+      );
+      code.onTick.push(
+        `      Print("Range Buy Stop at ", buyStopPrice, " SL:", pendBuySL, " TP:", pendBuyTP, " Lot:", pendBuyLot);`
+      );
+    }
+    if (hasSellNode) {
+      code.onTick.push(
+        `   if(trade.SellStop(pendSellLot, sellStopPrice, _Symbol, pendSellSL, pendSellTP, ORDER_TIME_GTC, 0, "${comment}"))`
+      );
+      code.onTick.push(
+        `      Print("Range Sell Stop at ", sellStopPrice, " SL:", pendSellSL, " TP:", pendSellTP, " Lot:", pendSellLot);`
+      );
+    }
+
+    code.onTick.push("}");
   }
 }
 

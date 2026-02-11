@@ -296,6 +296,42 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
           );
         }
 
+        // Daily range reset: recalculate range each new day
+        code.globalVariables.push(`datetime ${varPrefix}RangeDay;`);
+        code.onTick.push(`datetime ${varPrefix}Today = iTime(_Symbol, PERIOD_D1, 0);`);
+        code.onTick.push(`bool ${varPrefix}NewDay = (${varPrefix}Today != ${varPrefix}RangeDay);`);
+        code.onTick.push(`bool ${varPrefix}NewRange = (${varPrefix}Valid && ${varPrefix}NewDay);`);
+        code.onTick.push(`if(${varPrefix}NewRange) ${varPrefix}RangeDay = ${varPrefix}Today;`);
+
+        // Visual range lines on chart
+        code.onTick.push(`if(${varPrefix}Valid && isNewBar) {`);
+        code.onTick.push(
+          `   ObjectDelete(0, "Range${index}_High"); ObjectDelete(0, "Range${index}_Low");`
+        );
+        code.onTick.push(
+          `   ObjectCreate(0, "Range${index}_High", OBJ_HLINE, 0, 0, ${varPrefix}High);`
+        );
+        code.onTick.push(
+          `   ObjectSetInteger(0, "Range${index}_High", OBJPROP_COLOR, clrDodgerBlue);`
+        );
+        code.onTick.push(
+          `   ObjectSetInteger(0, "Range${index}_High", OBJPROP_STYLE, STYLE_DASH);`
+        );
+        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_High", OBJPROP_WIDTH, 2);`);
+        code.onTick.push(
+          `   ObjectCreate(0, "Range${index}_Low", OBJ_HLINE, 0, 0, ${varPrefix}Low);`
+        );
+        code.onTick.push(
+          `   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_COLOR, clrOrangeRed);`
+        );
+        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_STYLE, STYLE_DASH);`);
+        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_WIDTH, 2);`);
+        code.onTick.push(`}`);
+
+        // Clean up chart objects on deinit
+        code.onDeinit.push(`ObjectDelete(0, "Range${index}_High");`);
+        code.onDeinit.push(`ObjectDelete(0, "Range${index}_Low");`);
+
         code.onTick.push("");
         break;
       }
