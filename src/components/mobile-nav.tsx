@@ -44,11 +44,11 @@ export function MobileNav() {
             Templates
           </Link>
           <Link
-            href="/features"
+            href="/product"
             onClick={() => setIsOpen(false)}
             className="text-sm text-[#94A3B8] hover:text-white transition-colors"
           >
-            Features
+            Product
           </Link>
           <Link
             href="/pricing"

@@ -19,6 +19,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: `${baseUrl}/product`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/product/how-it-works`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/product/mt5-export`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/product/simplicity`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/pricing`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -32,28 +56,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...blogPosts,
     {
-      url: `${baseUrl}/no-code-mt5-ea-builder`,
+      url: `${baseUrl}/build-mt5-expert-advisor-without-coding`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/no-code-ea-builder`,
+      url: `${baseUrl}/visual-trading-bot-builder`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/visual-strategy-builder`,
+      url: `${baseUrl}/trading-strategy-templates-mt5`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/automated-trading-for-beginners`,
+      url: `${baseUrl}/compare/algostudio-vs-complex-ea-builders`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.8,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/templates`,
@@ -92,22 +122,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/features`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
       url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/help`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
     },
     {
       url: `${baseUrl}/contact`,

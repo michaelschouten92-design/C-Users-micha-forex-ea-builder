@@ -5,11 +5,12 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio — Build Your First MT5 Trading Bot in 5 Minutes | No-Code EA Builder",
+  title: "AlgoStudio — Build Your MT5 Expert Advisor. No Coding Required.",
   description:
-    "The simplest way to turn a trading idea into an MT5 bot. Pick a strategy template, adjust a few settings, export clean MQL5 code, and test in MetaTrader 5. No coding required.",
+    "The simplest way to build an MT5 Expert Advisor. Pick a strategy template, adjust a few settings, and export clean MQL5 code. No coding required. Free to start.",
   alternates: { canonical: "/" },
 };
 
@@ -25,7 +26,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "The simplest no-code builder for MetaTrader 5 Expert Advisors. Pick a strategy template, adjust a few settings, and export clean MQL5 code.",
+      "The simplest way to build an MT5 Expert Advisor. Pick a strategy template, adjust a few settings, and export clean MQL5 code. No coding required.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -38,35 +39,44 @@ export default async function Home() {
     },
   };
 
+  const faqItems = [
+    {
+      q: "Do I need coding experience to use AlgoStudio?",
+      a: "No. You pick a strategy template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
+    },
+    {
+      q: "What do I get with the free plan?",
+      a: "Full access to all templates and the visual builder. 1 project and 1 MQL5 export per month. No credit card required.",
+    },
+    {
+      q: "Can I use the exported EA in live trading?",
+      a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 broker.",
+    },
+    {
+      q: "What strategy templates are available?",
+      a: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor with built-in risk management.",
+    },
+    {
+      q: "Is the generated MQL5 code editable?",
+      a: "Yes. You get clean, well-commented MQL5 source code that you can open and modify in MetaEditor or any text editor.",
+    },
+    {
+      q: "How is AlgoStudio different from other EA builders?",
+      a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. No drag-and-drop wiring, no block programming, no 50-field forms.",
+    },
+  ];
+
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "Do I need coding experience to use AlgoStudio?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "No. You pick a strategy template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
-        },
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
       },
-      {
-        "@type": "Question",
-        name: "Can I use the exported EA in live trading?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. You can backtest it in the MT5 Strategy Tester and run it on any broker that supports MT5.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "What strategy templates are available?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor.",
-        },
-      },
-    ],
+    })),
   };
 
   return (
@@ -90,14 +100,14 @@ export default async function Home() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6">
-            Build your first MT5 trading bot
+            Build your MT5 Expert Advisor.
             <br />
-            <span className="text-[#A78BFA]">in 5 minutes</span>
+            <span className="text-[#A78BFA]">No coding required.</span>
           </h1>
 
           <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-10">
-            Pick a strategy template, adjust a few settings, and export clean MQL5 code to
-            MetaTrader 5. The simplest way to turn a trading idea into a working bot.
+            The simplest way to turn a trading idea into a working MT5 bot. Pick a strategy
+            template, adjust a few settings, and export clean MQL5 code.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -108,7 +118,7 @@ export default async function Home() {
               Start Free
             </Link>
             <Link
-              href="/help"
+              href="/product/how-it-works"
               className="w-full sm:w-auto border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] px-8 py-3.5 rounded-lg font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
             >
               See How It Works
@@ -146,74 +156,41 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Problem */}
-      <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">
+      {/* Positioning Statement */}
+      <section className="py-16 px-6 border-t border-[rgba(79,70,229,0.1)]">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">
-            Automation shouldn&apos;t feel like engineering
-          </h2>
-          <p className="text-[#94A3B8] leading-relaxed max-w-2xl mx-auto">
-            Most EA builders give you a blank canvas with hundreds of options. You spend hours
-            figuring out blocks, wiring logic, and debugging configurations — before you even test
-            your idea. AlgoStudio takes the opposite approach: start with a working strategy, adjust
-            what matters, export.
+          <p className="text-xl md:text-2xl text-[#CBD5E1] font-medium leading-relaxed">
+            AlgoStudio is built for traders who want to automate — not for developers who want
+            another IDE. Start with a working template, adjust what matters, export.
           </p>
         </div>
       </section>
 
-      {/* How it Works */}
+      {/* Problem */}
       <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">How it works</h2>
-            <p className="text-[#94A3B8]">From idea to running bot in three steps</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
-                1
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Choose a template</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Pick from 5 proven strategies: EMA Crossover, Range Breakout, RSI Reversal, and
-                more. Each comes with sensible defaults that work out of the box.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
-                2
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Adjust 3-5 settings</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Set your risk percentage, stop loss, and take profit. Optional advanced toggles for
-                trend filters and session timing. No 50-field forms.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
-                3
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Export & test in MT5</h3>
-              <p className="text-sm text-[#94A3B8]">
-                Download clean MQL5 code. Load it into MetaTrader 5 Strategy Tester. Backtest,
-                optimize, and go live when you&apos;re ready.
-              </p>
-            </div>
-          </div>
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            Most EA builders weren&apos;t made for traders
+          </h2>
+          <p className="text-[#94A3B8] leading-relaxed max-w-2xl mx-auto">
+            They give you a blank canvas with hundreds of blocks, nodes, and wires. You spend hours
+            figuring out logic flows and debugging configurations — before you even test your idea.
+            AlgoStudio takes the opposite approach: start with a working strategy, adjust what
+            matters, export.
+          </p>
         </div>
       </section>
 
-      {/* Template Preview */}
+      {/* Solution + Templates */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
-              5 strategy templates, ready to export
+              Start with a working strategy, not a blank canvas
             </h2>
             <p className="text-[#94A3B8]">
-              Each template produces a fully functional Expert Advisor with built-in risk
-              management.
+              Every template produces a fully functional Expert Advisor with built-in risk
+              management. Adjust what matters, skip the rest.
             </p>
           </div>
 
@@ -272,8 +249,60 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Why AlgoStudio */}
+      {/* How it Works */}
       <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4">How it works</h2>
+            <p className="text-[#94A3B8]">From idea to running bot in three steps</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
+                1
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Choose a template</h3>
+              <p className="text-sm text-[#94A3B8]">
+                Pick from 5 proven strategies: EMA Crossover, Range Breakout, RSI Reversal, and
+                more. Each comes with sensible defaults that work out of the box.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
+                2
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Adjust a few settings</h3>
+              <p className="text-sm text-[#94A3B8]">
+                Set your risk percentage, stop loss, and take profit. Optional advanced toggles for
+                trend filters and session timing. No 50-field forms.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
+                3
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Export & test in MT5</h3>
+              <p className="text-sm text-[#94A3B8]">
+                Download clean MQL5 code. Load it into MetaTrader 5 Strategy Tester. Backtest,
+                optimize, and go live when you&apos;re ready.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/product/how-it-works"
+              className="text-sm text-[#A78BFA] font-medium hover:underline"
+            >
+              Learn more about how it works &rarr;
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Why traders choose AlgoStudio</h2>
@@ -296,7 +325,9 @@ export default async function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Simple defaults that work</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Templates that work instantly
+              </h3>
               <p className="text-sm text-[#94A3B8]">
                 Every template exports a valid EA immediately. ATR-based stop loss, risk-reward take
                 profit, and proper position sizing — all pre-configured.
@@ -318,7 +349,9 @@ export default async function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Guided customization</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Only the settings that matter
+              </h3>
               <p className="text-sm text-[#94A3B8]">
                 3-5 basic settings per template. Optional advanced toggles when you want more
                 control. No blank canvas, no guesswork.
@@ -340,7 +373,7 @@ export default async function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Clean MQL5 export</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Clean, readable MQL5 code</h3>
               <p className="text-sm text-[#94A3B8]">
                 Readable, well-commented source code. Load it into MetaTrader 5, backtest in
                 Strategy Tester, or edit it further. The code is yours.
@@ -350,58 +383,62 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { value: "5", label: "Strategy templates" },
-              { value: "100%", label: "Valid MQL5 output" },
-              { value: "< 5 min", label: "To first export" },
-              { value: "Any", label: "MT5 broker" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-[#A78BFA] mb-1">{stat.value}</div>
-                <div className="text-sm text-[#94A3B8]">{stat.label}</div>
-              </div>
-            ))}
+      {/* Comparison Snapshot */}
+      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">How AlgoStudio compares</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(79,70,229,0.2)]">
+                  <th className="text-left py-3 px-4 text-[#64748B] font-medium">Feature</th>
+                  <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">AlgoStudio</th>
+                  <th className="text-center py-3 px-4 text-[#64748B] font-medium">
+                    Complex EA Builders
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-[#94A3B8]">
+                {[
+                  ["Time to first EA", "< 5 minutes", "Hours to days"],
+                  ["Coding required", "None", "Often required"],
+                  ["Starting point", "Working templates", "Blank canvas"],
+                  ["Settings per strategy", "3-5 basic", "50+ fields"],
+                  ["Output format", "Clean MQL5", "Varies"],
+                  ["Free tier", "Yes", "Rarely"],
+                ].map(([feature, algo, others]) => (
+                  <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                    <td className="py-3 px-4 text-center text-[#22D3EE]">{algo}</td>
+                    <td className="py-3 px-4 text-center">{others}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="text-center mt-8">
+            <Link
+              href="/compare/algostudio-vs-complex-ea-builders"
+              className="text-sm text-[#A78BFA] font-medium hover:underline"
+            >
+              See full comparison &rarr;
+            </Link>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+      <section className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Frequently asked questions</h2>
           </div>
           <div className="space-y-4">
-            {[
-              {
-                q: "Do I need coding experience?",
-                a: "No. You pick a strategy template, adjust 3-5 settings, and export. No MQL5 or any other programming knowledge required.",
-              },
-              {
-                q: "What do I get with the free plan?",
-                a: "Full access to all templates and the builder. 1 project and 1 MQL5 export per month. No credit card required.",
-              },
-              {
-                q: "Can I use the exported EA in live trading?",
-                a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 broker.",
-              },
-              {
-                q: "Which template should I start with?",
-                a: "Start with EMA Crossover — it's the simplest template with the fewest settings. Once you're comfortable, try Range Breakout or RSI Reversal.",
-              },
-              {
-                q: "Is the generated code editable?",
-                a: "Yes. You get clean, well-commented MQL5 source code that you can open and modify in MetaEditor.",
-              },
-              {
-                q: "Can I cancel anytime?",
-                a: "Yes. Cancel from your account settings at any time. Your access continues until the end of your billing period.",
-              },
-            ].map((item, i) => (
+            {faqItems.map((item, i) => (
               <details
                 key={i}
                 className="group bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
@@ -430,7 +467,7 @@ export default async function Home() {
       </section>
 
       {/* Pricing Preview */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Simple pricing</h2>
@@ -541,13 +578,14 @@ export default async function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">
+      <section className="py-20 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Start building. Export your first bot today.
+            Start building your Expert Advisor today
           </h2>
           <p className="text-[#94A3B8] mb-8">
-            Pick a template and export clean MQL5 code in minutes. No credit card required.
+            Pick a template, adjust a few settings, and export clean MQL5 code. No credit card
+            required.
           </p>
           <Link
             href="/login?mode=register"
@@ -558,119 +596,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-[rgba(79,70,229,0.1)]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/templates"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Templates
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/features"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/pricing"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-4">Learn</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/blog"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/help"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Help
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/about"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    About
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Terms of Service
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/contact"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="mailto:support@algo-studio.com"
-                    className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                  >
-                    support@algo-studio.com
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-[rgba(79,70,229,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-sm text-[#64748B]">
-              &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.
-            </span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

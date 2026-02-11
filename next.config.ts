@@ -2,6 +2,41 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // Redirects for old pages
+  async redirects() {
+    return [
+      {
+        source: "/no-code-mt5-ea-builder",
+        destination: "/build-mt5-expert-advisor-without-coding",
+        permanent: true,
+      },
+      {
+        source: "/no-code-ea-builder",
+        destination: "/build-mt5-expert-advisor-without-coding",
+        permanent: true,
+      },
+      {
+        source: "/visual-strategy-builder",
+        destination: "/visual-trading-bot-builder",
+        permanent: true,
+      },
+      {
+        source: "/automated-trading-for-beginners",
+        destination: "/product/simplicity",
+        permanent: true,
+      },
+      {
+        source: "/features",
+        destination: "/product",
+        permanent: true,
+      },
+      {
+        source: "/help",
+        destination: "/product/how-it-works",
+        permanent: true,
+      },
+    ];
+  },
   // Security headers
   async headers() {
     return [

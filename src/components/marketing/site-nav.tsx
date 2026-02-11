@@ -18,10 +18,10 @@ export function SiteNav() {
             Templates
           </Link>
           <Link
-            href="/features"
+            href="/product"
             className="text-sm text-[#94A3B8] hover:text-white transition-colors"
           >
-            Features
+            Product
           </Link>
           <Link
             href="/pricing"
