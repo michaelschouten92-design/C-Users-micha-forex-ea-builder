@@ -46,13 +46,6 @@ export const TrendPullbackEntryNode = memo(function TrendPullbackEntryNode({
             / {data.tpRMultiple}R
           </span>
         </div>
-        {data.londonSessionOnly && (
-          <div className="flex gap-1 mt-1">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-              London
-            </span>
-          </div>
-        )}
       </div>
     </BaseNode>
   );

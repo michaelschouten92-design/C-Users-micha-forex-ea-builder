@@ -2,7 +2,6 @@
 
 import { SelectField, NumberField, TimeField } from "../components/form-fields";
 import type {
-  TradingSession,
   EMACrossoverEntryData,
   RangeBreakoutEntryData,
   RSIReversalEntryData,
@@ -12,7 +11,6 @@ import type {
 import {
   TIMEFRAME_OPTIONS,
   RANGE_SL_OPTIONS,
-  TRADING_SESSION_OPTIONS_SHORT,
   RANGE_METHOD_OPTIONS,
   BREAKOUT_ENTRY_OPTIONS,
 } from "./constants";
@@ -318,18 +316,6 @@ export function RSIReversalEntryFields({
       {/* Advanced */}
       <AdvancedToggleSection>
         <ToggleField
-          label="Session filter"
-          checked={data.sessionFilter}
-          onChange={(v) => onChange({ sessionFilter: v })}
-        >
-          <SelectField
-            label="Session"
-            value={data.sessionChoice}
-            options={TRADING_SESSION_OPTIONS_SHORT}
-            onChange={(v) => onChange({ sessionChoice: v as TradingSession })}
-          />
-        </ToggleField>
-        <ToggleField
           label="Trend filter (EMA)"
           checked={data.trendFilter}
           onChange={(v) => onChange({ trendFilter: v })}
@@ -391,11 +377,6 @@ export function TrendPullbackEntryFields({
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <ToggleField
-          label="London session only"
-          checked={data.londonSessionOnly}
-          onChange={(v) => onChange({ londonSessionOnly: v })}
-        />
         <ToggleField
           label="Require price buffer from EMA"
           checked={data.requireEmaBuffer}

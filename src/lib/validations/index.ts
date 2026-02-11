@@ -488,8 +488,6 @@ const rsiReversalEntryDataSchema = baseNodeDataSchema
     rsiPeriod: z.number().int().min(1).max(1000),
     oversoldLevel: z.number().min(0).max(100),
     overboughtLevel: z.number().min(0).max(100),
-    sessionFilter: z.boolean(),
-    sessionChoice: z.enum(["LONDON", "NEW_YORK", "TOKYO", "SYDNEY", "LONDON_NY_OVERLAP", "CUSTOM"]),
     trendFilter: z.boolean(),
     trendEma: z.number().int().min(1).max(1000),
   })
@@ -503,7 +501,6 @@ const trendPullbackEntryDataSchema = baseNodeDataSchema
     trendEma: z.number().int().min(1).max(1000),
     pullbackRsiPeriod: z.number().int().min(1).max(1000),
     rsiPullbackLevel: z.number().min(0).max(100),
-    londonSessionOnly: z.boolean(),
     requireEmaBuffer: z.boolean(),
   })
   .strip();

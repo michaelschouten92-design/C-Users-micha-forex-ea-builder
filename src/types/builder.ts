@@ -469,8 +469,6 @@ export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFie
   oversoldLevel: number;
   overboughtLevel: number;
   // Advanced toggles
-  sessionFilter: boolean;
-  sessionChoice: TradingSession;
   trendFilter: boolean;
   trendEma: number;
 }
@@ -484,7 +482,6 @@ export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyF
   pullbackRsiPeriod: number;
   rsiPullbackLevel: number; // long threshold; short = 100 - this
   // Advanced toggles
-  londonSessionOnly: boolean;
   requireEmaBuffer: boolean;
 }
 
@@ -743,7 +740,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slPercent: 1,
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
-      londonSessionOnly: false,
       requireEmaBuffer: false,
     } as TrendPullbackEntryData,
   },
@@ -766,8 +762,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slPercent: 1,
       slAtrMultiplier: 1.2,
       tpRMultiple: 1.5,
-      sessionFilter: false,
-      sessionChoice: "LONDON",
       trendFilter: false,
       trendEma: 200,
     } as RSIReversalEntryData,

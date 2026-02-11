@@ -46,18 +46,11 @@ export const RSIReversalEntryNode = memo(function RSIReversalEntryNode({
             / {data.tpRMultiple}R
           </span>
         </div>
-        {(data.sessionFilter || data.trendFilter) && (
+        {data.trendFilter && (
           <div className="flex gap-1 mt-1 flex-wrap">
-            {data.sessionFilter && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                Session
-              </span>
-            )}
-            {data.trendFilter && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                Trend
-              </span>
-            )}
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+              Trend
+            </span>
           </div>
         )}
       </div>

@@ -50,3 +50,5 @@ next-env.d.ts
 
 .vercel
 e2e/.auth/
+
+.env*.local
