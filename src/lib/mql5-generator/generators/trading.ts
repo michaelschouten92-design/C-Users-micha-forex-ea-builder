@@ -275,7 +275,7 @@ function generateIndicatorBasedSL(
       type: "double",
       value: 50,
       comment: "Stop Loss (pips) - No indicator connected",
-      isOptimizable: true,
+      isOptimizable: false,
     });
     code.onTick.push("double slPips = InpStopLoss * 10; // Fallback: no indicator connected");
     return;
@@ -294,7 +294,7 @@ function generateIndicatorBasedSL(
           type: "double",
           value: 5,
           comment: "Additional buffer pips for BB SL",
-          isOptimizable: true,
+          isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using Bollinger Bands (direction-aware)");
         code.onTick.push("double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
@@ -319,7 +319,7 @@ function generateIndicatorBasedSL(
           type: "double",
           value: 1.5,
           comment: "MA SL distance multiplier",
-          isOptimizable: true,
+          isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using Moving Average");
         code.onTick.push("double slPips;");
@@ -337,7 +337,7 @@ function generateIndicatorBasedSL(
           type: "double",
           value: 1.5,
           comment: "ATR SL multiplier",
-          isOptimizable: true,
+          isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using ATR");
         code.onTick.push(`double slPips = (${varPrefix}Buffer[0] / _Point) * InpATRSLMultiplier;`);
@@ -350,7 +350,7 @@ function generateIndicatorBasedSL(
           type: "double",
           value: 50,
           comment: "Base SL pips when ADX is at trend level",
-          isOptimizable: true,
+          isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using ADX (scaled by trend strength)");
         code.onTick.push(`double adxValue = ${varPrefix}MainBuffer[0];`);
@@ -366,7 +366,7 @@ function generateIndicatorBasedSL(
           type: "double",
           value: 50,
           comment: "Stop Loss (pips)",
-          isOptimizable: true,
+          isOptimizable: false,
         });
         code.onTick.push(
           `double slPips = InpStopLoss * 10; // ${indData.indicatorType} not suitable for SL calculation`
@@ -380,7 +380,7 @@ function generateIndicatorBasedSL(
       type: "double",
       value: 50,
       comment: "Stop Loss (pips)",
-      isOptimizable: true,
+      isOptimizable: false,
     });
     code.onTick.push("double slPips = InpStopLoss * 10; // Unknown indicator type");
   }

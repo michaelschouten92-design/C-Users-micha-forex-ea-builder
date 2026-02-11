@@ -27,7 +27,7 @@ import {
   generateHelperFunctions,
 } from "./templates";
 
-import { sanitizeName } from "./generators/shared";
+import { sanitizeName, isFieldOptimizable } from "./generators/shared";
 import { generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
@@ -470,7 +470,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
         type: "int",
         value: 10,
         comment: "Max Slippage (points)",
-        isOptimizable: true,
+        isOptimizable: false,
         group: "Risk Management",
       },
     ],
@@ -605,7 +605,7 @@ export function generateMQL5Code(buildJson: BuildJsonSchema, projectName: string
       type: "int",
       value: spreadPips * 10,
       comment: "Max Spread (points)",
-      isOptimizable: true,
+      isOptimizable: isFieldOptimizable(spreadNode, "maxSpreadPips"),
       group: "Risk Management",
     });
     code.onTick.push(`//--- Spread filter`);
