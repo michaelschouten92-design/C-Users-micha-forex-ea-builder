@@ -113,12 +113,13 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   // Create indicator/priceaction nodes based on entry type
   if (d.entryType === "ema-crossover") {
     const ema = d as EMACrossoverEntryData;
+    const emaTf = ema.timeframe ?? "H1";
     virtualNodes.push(
       vNode("ma-fast", "moving-average", {
         label: `Fast EMA(${ema.fastEma})`,
         category: "indicator",
         indicatorType: "moving-average",
-        timeframe: "H1",
+        timeframe: emaTf,
         period: ema.fastEma,
         method: "EMA",
         signalMode: "candle_close",
@@ -128,7 +129,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         label: `Slow EMA(${ema.slowEma})`,
         category: "indicator",
         indicatorType: "moving-average",
-        timeframe: "H1",
+        timeframe: emaTf,
         period: ema.slowEma,
         method: "EMA",
         signalMode: "candle_close",
@@ -169,7 +170,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         label: `RSI(${rsi.rsiPeriod})`,
         category: "indicator",
         indicatorType: "rsi",
-        timeframe: "H1",
+        timeframe: rsi.timeframe ?? "H1",
         period: rsi.rsiPeriod,
         overboughtLevel: rsi.overboughtLevel,
         oversoldLevel: rsi.oversoldLevel,
@@ -178,13 +179,14 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   } else if (d.entryType === "trend-pullback") {
     const tp = d as TrendPullbackEntryData;
+    const tpTf = tp.timeframe ?? "H1";
     // Trend EMA for direction
     virtualNodes.push(
       vNode("ma-trend", "moving-average", {
         label: `Trend EMA(${tp.trendEma})`,
         category: "indicator",
         indicatorType: "moving-average",
-        timeframe: "H1",
+        timeframe: tpTf,
         period: tp.trendEma,
         method: "EMA",
         signalMode: "candle_close",
@@ -195,7 +197,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         label: `Pullback RSI(${tp.pullbackRsiPeriod})`,
         category: "indicator",
         indicatorType: "rsi",
-        timeframe: "H1",
+        timeframe: tpTf,
         period: tp.pullbackRsiPeriod,
         overboughtLevel: 100 - tp.rsiPullbackLevel,
         oversoldLevel: tp.rsiPullbackLevel,
@@ -209,7 +211,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         label: `MACD(${macd.macdFast},${macd.macdSlow},${macd.macdSignal})`,
         category: "indicator",
         indicatorType: "macd",
-        timeframe: "H1",
+        timeframe: macd.timeframe ?? "H1",
         fastPeriod: macd.macdFast,
         slowPeriod: macd.macdSlow,
         signalPeriod: macd.macdSignal,

@@ -430,6 +430,7 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 // Consistent risk model: Risk %, ATR-based SL, R-multiple TP
 const baseEntryStrategyFieldsSchema = z.object({
   direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
+  timeframe: timeframeSchema.default("H1"),
   riskPercent: z.number().min(0.1).max(100),
   slMethod: z.enum(["ATR", "PIPS", "PERCENT", "RANGE_OPPOSITE"]).default("ATR"),
   slFixedPips: z.number().min(1).max(10000).default(50),

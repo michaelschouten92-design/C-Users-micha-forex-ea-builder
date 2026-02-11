@@ -22,6 +22,10 @@ export const EMACrossoverEntryNode = memo(function EMACrossoverEntryNode({
     >
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
+          <span className="text-[#94A3B8]">Timeframe</span>
+          <span className="text-white font-medium">{data.timeframe ?? "H1"}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-[#94A3B8]">Fast / Slow</span>
           <span className="text-white font-medium">
             EMA({data.fastEma}) / EMA({data.slowEma})

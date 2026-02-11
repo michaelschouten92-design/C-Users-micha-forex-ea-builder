@@ -22,6 +22,10 @@ export const TrendPullbackEntryNode = memo(function TrendPullbackEntryNode({
     >
       <div className="px-3 py-2 space-y-1 text-xs">
         <div className="flex justify-between">
+          <span className="text-[#94A3B8]">Timeframe</span>
+          <span className="text-white font-medium">{data.timeframe ?? "H1"}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-[#94A3B8]">Trend EMA</span>
           <span className="text-white font-medium">{data.trendEma}</span>
         </div>

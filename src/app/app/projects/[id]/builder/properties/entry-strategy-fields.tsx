@@ -2,6 +2,7 @@
 
 import { SelectField, NumberField, TimeField } from "../components/form-fields";
 import type {
+  Timeframe,
   EMACrossoverEntryData,
   RangeBreakoutEntryData,
   RSIReversalEntryData,
@@ -35,6 +36,12 @@ export function EMACrossoverEntryFields({
       <DirectionSelector
         direction={data.direction ?? "BOTH"}
         onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
 
       {/* Basic fields */}
@@ -282,6 +289,12 @@ export function RSIReversalEntryFields({
         direction={data.direction ?? "BOTH"}
         onChange={(v) => onChange({ direction: v })}
       />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
 
       {/* Basic fields */}
       <NumberField
@@ -347,6 +360,12 @@ export function TrendPullbackEntryFields({
         direction={data.direction ?? "BOTH"}
         onChange={(v) => onChange({ direction: v })}
       />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
 
       {/* Basic fields */}
       <NumberField
@@ -399,6 +418,12 @@ export function MACDCrossoverEntryFields({
       <DirectionSelector
         direction={data.direction ?? "BOTH"}
         onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
 
       {/* Basic fields */}

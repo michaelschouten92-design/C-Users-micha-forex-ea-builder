@@ -408,6 +408,7 @@ export type EntrySlMethod = "ATR" | "PIPS" | "PERCENT" | "RANGE_OPPOSITE";
 
 export interface BaseEntryStrategyFields {
   direction: EntryDirection;
+  timeframe: Timeframe;
   riskPercent: number;
   slMethod: EntrySlMethod;
   slFixedPips: number;
@@ -669,6 +670,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "range-breakout",
       direction: "BOTH",
+      timeframe: "H1",
       rangePeriod: 20,
       rangeMethod: "CUSTOM_TIME",
       rangeTimeframe: "H1",
@@ -704,6 +706,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "ema-crossover",
       direction: "BOTH",
+      timeframe: "H1",
       fastEma: 50,
       slowEma: 200,
       riskPercent: 1,
@@ -731,6 +734,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "trend-pullback",
       direction: "BOTH",
+      timeframe: "H1",
       trendEma: 200,
       pullbackRsiPeriod: 14,
       rsiPullbackLevel: 40,
@@ -753,6 +757,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "rsi-reversal",
       direction: "BOTH",
+      timeframe: "H1",
       rsiPeriod: 14,
       oversoldLevel: 30,
       overboughtLevel: 70,
@@ -776,6 +781,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "entrystrategy",
       entryType: "macd-crossover",
       direction: "BOTH",
+      timeframe: "H1",
       macdFast: 12,
       macdSlow: 26,
       macdSignal: 9,
