@@ -25,7 +25,7 @@ const faqItems = [
   },
   {
     q: "Can I customize the templates?",
-    a: "Yes. Each template has 3-5 adjustable settings (risk %, stop loss, take profit, strategy parameters). You can also toggle advanced features like trend filters and session timing.",
+    a: "Yes. Each template has adjustable settings (risk %, stop loss, take profit, strategy parameters) with sensible defaults. You can also toggle advanced features like trend filters and session timing.",
   },
   {
     q: "Are the templates profitable?",

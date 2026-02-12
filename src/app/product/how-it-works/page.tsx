@@ -37,7 +37,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 2,
         name: "Adjust a few settings",
-        text: "Set your risk percentage, stop loss multiplier, and take profit ratio. Optional advanced toggles for trend filters and session timing. Each template has 3-5 basic settings.",
+        text: "Set your risk percentage, stop loss multiplier, and take profit ratio. Optional advanced toggles for trend filters and session timing. Each template has sensible defaults for every setting.",
       },
       {
         "@type": "HowToStep",
@@ -131,7 +131,7 @@ export default function HowItWorksPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Adjust a few settings</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  Each template has 3-5 basic settings. Set your risk percentage, stop loss
+                  Each template has sensible defaults. Set your risk percentage, stop loss
                   multiplier, and take profit ratio. That&apos;s usually all you need to change.
                 </p>
                 <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">

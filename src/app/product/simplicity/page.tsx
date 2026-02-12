@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Why Simplicity Wins — AlgoStudio's Approach to EA Building",
   description:
-    "AlgoStudio is designed around one principle: simplicity. Templates instead of blank canvases. 3-5 settings instead of 50. Clean output instead of complexity. Here's why.",
+    "AlgoStudio is designed around one principle: simplicity. Templates instead of blank canvases. Sensible defaults instead of 50-field forms. Clean output instead of complexity. Here's why.",
   alternates: { canonical: "/product/simplicity" },
 };
 
@@ -102,11 +102,12 @@ export default function SimplicityPage() {
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">3-5 settings, not 50</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Sensible defaults, not 50 fields
+                </h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
                   Each template exposes only the settings that matter: risk %, stop loss, take
-                  profit, and 1-2 strategy-specific parameters. Everything else has sensible
-                  defaults.
+                  profit, and strategy-specific parameters. Everything else has sensible defaults.
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">

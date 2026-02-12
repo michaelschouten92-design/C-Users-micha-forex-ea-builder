@@ -24,8 +24,8 @@ const faqItems = [
     a: "AlgoStudio shows your strategy as a clear visual flow diagram. You see exactly how your EA works — entry logic, exit logic, risk management — without reading code.",
   },
   {
-    q: "Is this a drag-and-drop builder?",
-    a: "No. Drag-and-drop builders often create more complexity than they remove. AlgoStudio uses a template-based approach: your strategy is already structured. You adjust settings, not wires.",
+    q: "How does AlgoStudio's visual builder work?",
+    a: "AlgoStudio uses pre-configured strategy blocks that you can add to a visual canvas. Unlike complex node editors with hundreds of individual blocks to wire together, AlgoStudio's blocks come with sensible defaults — so you focus on settings, not wiring.",
   },
   {
     q: "Can I build any strategy visually?",
@@ -87,9 +87,9 @@ export default function VisualBotBuilderPage() {
                 understand programming concepts to connect everything correctly.
               </p>
               <p>
-                AlgoStudio is different. Your strategy template is already wired. The visual builder
-                shows you what your EA does and lets you adjust the settings that matter. No nodes,
-                no wires, no debugging.
+                AlgoStudio is different. Strategy blocks come pre-configured with sensible defaults.
+                The visual builder shows you what your EA does and lets you adjust the settings that
+                matter — without complex logic wiring.
               </p>
             </div>
           </section>
@@ -108,8 +108,8 @@ export default function VisualBotBuilderPage() {
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-3">Settings panel</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Adjust 3-5 key parameters with simple controls. Risk percentage, stop loss
-                  multiplier, take profit ratio. Optional advanced toggles for more control.
+                  Adjust key parameters with simple controls. Risk percentage, stop loss multiplier,
+                  take profit ratio. Optional advanced toggles for more control.
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
@@ -143,7 +143,7 @@ export default function VisualBotBuilderPage() {
                     ["Interface", "Template + settings", "Nodes + wires"],
                     ["Learning curve", "Minutes", "Hours to days"],
                     ["Starting point", "Working strategy", "Empty canvas"],
-                    ["Configuration", "3-5 settings", "Dozens of connections"],
+                    ["Configuration", "Key settings with defaults", "Dozens of connections"],
                     ["Debugging", "Not needed", "Frequent"],
                     ["Output", "Clean MQL5 code", "Varies"],
                   ].map(([aspect, algo, others]) => (

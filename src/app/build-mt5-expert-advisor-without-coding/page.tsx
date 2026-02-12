@@ -21,7 +21,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Can I really build an EA without coding?",
-    a: "Yes. AlgoStudio uses strategy templates with pre-built logic. You adjust 3-5 settings and export a fully functional .mq5 Expert Advisor. No MQL5 knowledge required.",
+    a: "Yes. AlgoStudio uses strategy templates with pre-built logic. You adjust the key settings and export a fully functional .mq5 Expert Advisor. No MQL5 knowledge required.",
   },
   {
     q: "What does 'no coding required' actually mean?",
@@ -118,8 +118,8 @@ export default function BuildWithoutCodingPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Adjust settings</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Set risk %, stop loss, and take profit. 3-5 settings total. No coding, no complex
-                  configuration.
+                  Set risk %, stop loss, and take profit. Sensible defaults for everything. No
+                  coding, no complex configuration.
                 </p>
               </div>
               <div className="text-center">

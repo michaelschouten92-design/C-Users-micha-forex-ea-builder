@@ -34,7 +34,7 @@ const faqQuestions = [
   },
   {
     q: "Do I need coding experience?",
-    a: "No. You pick a template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. You pick a template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
   },
   {
     q: "Which template should I start with?",
@@ -202,8 +202,8 @@ export default function TemplatesPage() {
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">2. Adjust a few settings</h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Each template has 3-5 basic settings with sensible defaults. Change what you want,
-                or leave the defaults — every template exports a valid EA immediately. Optional
+                Each template has sensible defaults for every setting. Change what you want, or
+                leave the defaults — every template exports a valid EA immediately. Optional
                 advanced toggles let you add filters without complexity.
               </p>
             </div>
