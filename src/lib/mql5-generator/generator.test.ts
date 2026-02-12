@@ -1995,7 +1995,7 @@ describe("generateMQL5Code", () => {
   // ============================================
 
   describe("sell lot sizing with directional SL", () => {
-    it("uses slSellPips for sell lot sizing with directional SL (RANGE_OPPOSITE)", () => {
+    it("uses pendSellSLDist for sell lot sizing with directional SL in range-breakout-only mode", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
         makeNode("rb1", "range-breakout", {
@@ -2025,9 +2025,10 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      // Sell lot sizing should use slSellPips (not slPips)
-      expect(code).toContain("CalculateLotSize(InpSellRiskPercent, slSellPips)");
-      expect(code).not.toMatch(/sellLotSize = CalculateLotSize\(InpSellRiskPercent, slPips\)/);
+      // In range-breakout-only mode, lot sizing uses pendSellSLDist (not sellLotSize on every tick)
+      expect(code).toContain("CalculateLotSize(InpSellRiskPercent, pendSellSLDist)");
+      // Should NOT have dead sellLotSize computation
+      expect(code).not.toContain("double sellLotSize = CalculateLotSize");
     });
 
     it("uses slPips for sell lot sizing without directional SL", () => {

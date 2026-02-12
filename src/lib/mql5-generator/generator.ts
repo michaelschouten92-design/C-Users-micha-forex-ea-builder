@@ -912,12 +912,33 @@ export function generateMQL5Code(
     code.onTick.push("double tpPips = 0; // No Take Profit connected");
   }
 
+  // Determine if range breakout is the sole entry mechanism (lot sizing handled by pending orders)
+  const isRangeBreakoutOnly =
+    priceActionNodes.some(
+      (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
+    ) &&
+    indicatorNodes.filter((n) => {
+      const d = n.data as Record<string, unknown>;
+      return !d._filterRole && !d._entryStrategyType;
+    }).length === 0 &&
+    priceActionNodes.every(
+      (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
+    );
+
   // Generate position sizing code for buy/sell (after SL/TP so hasDirectionalSL is available)
+  // Skip onTick lot sizing when range breakout is the only entry and method is RISK_PERCENT,
+  // because the pending order section calculates lots from the actual SL distance independently.
   if (hasBuy) {
-    generatePlaceBuyCode(placeBuyNodes[0], code);
+    const skipBuyLot =
+      isRangeBreakoutOnly &&
+      (placeBuyNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
+    generatePlaceBuyCode(placeBuyNodes[0], code, skipBuyLot);
   }
   if (hasSell) {
-    generatePlaceSellCode(placeSellNodes[0], code);
+    const skipSellLot =
+      isRangeBreakoutOnly &&
+      (placeSellNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
+    generatePlaceSellCode(placeSellNodes[0], code, skipSellLot);
   }
 
   // Generate close-at-time code BEFORE entry logic so positions are closed before new orders

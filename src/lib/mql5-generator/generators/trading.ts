@@ -12,7 +12,11 @@ import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe } from "../types";
 import { createInput, sanitizeMQL5String } from "./shared";
 
-export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): void {
+export function generatePlaceBuyCode(
+  node: BuilderNode,
+  code: GeneratedCode,
+  skipOnTickLotSizing = false
+): void {
   const data = node.data as PlaceBuyNodeData;
 
   const group = "Buy Order";
@@ -45,7 +49,7 @@ export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): vo
           group
         )
       );
-      code.onTick.push("double buyLotSize = InpBuyLotSize;");
+      if (!skipOnTickLotSizing) code.onTick.push("double buyLotSize = InpBuyLotSize;");
       break;
 
     case "RISK_PERCENT":
@@ -60,17 +64,19 @@ export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): vo
           group
         )
       );
-      code.onTick.push("double buyLotSize = CalculateLotSize(InpBuyRiskPercent, slPips);");
-      // For pending orders with PERCENT SL, recalculate lot size based on entry price
-      if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
-        const dir = orderType === "STOP" ? "+" : "-";
-        code.onTick.push(`{`);
-        code.onTick.push(
-          `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_ASK) ${dir} InpBuyPendingOffset * _pipFactor * _Point;`
-        );
-        code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
-        code.onTick.push(`   buyLotSize = CalculateLotSize(InpBuyRiskPercent, adjSlPips);`);
-        code.onTick.push(`}`);
+      if (!skipOnTickLotSizing) {
+        code.onTick.push("double buyLotSize = CalculateLotSize(InpBuyRiskPercent, slPips);");
+        // For pending orders with PERCENT SL, recalculate lot size based on entry price
+        if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
+          const dir = orderType === "STOP" ? "+" : "-";
+          code.onTick.push(`{`);
+          code.onTick.push(
+            `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_ASK) ${dir} InpBuyPendingOffset * _pipFactor * _Point;`
+          );
+          code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
+          code.onTick.push(`   buyLotSize = CalculateLotSize(InpBuyRiskPercent, adjSlPips);`);
+          code.onTick.push(`}`);
+        }
       }
       break;
   }
@@ -81,10 +87,15 @@ export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): vo
   code.inputs.push(
     createInput(node, "maxLot", "InpBuyMaxLot", "double", data.maxLot, "Buy Maximum Lot", group)
   );
-  code.onTick.push("buyLotSize = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, buyLotSize));");
+  if (!skipOnTickLotSizing)
+    code.onTick.push("buyLotSize = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, buyLotSize));");
 }
 
-export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): void {
+export function generatePlaceSellCode(
+  node: BuilderNode,
+  code: GeneratedCode,
+  skipOnTickLotSizing = false
+): void {
   const data = node.data as PlaceSellNodeData;
 
   const group = "Sell Order";
@@ -117,7 +128,7 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
           group
         )
       );
-      code.onTick.push("double sellLotSize = InpSellLotSize;");
+      if (!skipOnTickLotSizing) code.onTick.push("double sellLotSize = InpSellLotSize;");
       break;
 
     case "RISK_PERCENT":
@@ -132,21 +143,25 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
           group
         )
       );
-      if (code.hasDirectionalSL) {
-        code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slSellPips);");
-      } else {
-        code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
-      }
-      // For pending orders with PERCENT SL, recalculate lot size based on entry price
-      if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
-        const dir = orderType === "STOP" ? "-" : "+";
-        code.onTick.push(`{`);
-        code.onTick.push(
-          `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_BID) ${dir} InpSellPendingOffset * _pipFactor * _Point;`
-        );
-        code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
-        code.onTick.push(`   sellLotSize = CalculateLotSize(InpSellRiskPercent, adjSlPips);`);
-        code.onTick.push(`}`);
+      if (!skipOnTickLotSizing) {
+        if (code.hasDirectionalSL) {
+          code.onTick.push(
+            "double sellLotSize = CalculateLotSize(InpSellRiskPercent, slSellPips);"
+          );
+        } else {
+          code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
+        }
+        // For pending orders with PERCENT SL, recalculate lot size based on entry price
+        if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
+          const dir = orderType === "STOP" ? "-" : "+";
+          code.onTick.push(`{`);
+          code.onTick.push(
+            `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_BID) ${dir} InpSellPendingOffset * _pipFactor * _Point;`
+          );
+          code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
+          code.onTick.push(`   sellLotSize = CalculateLotSize(InpSellRiskPercent, adjSlPips);`);
+          code.onTick.push(`}`);
+        }
       }
       break;
   }
@@ -157,7 +172,8 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
   code.inputs.push(
     createInput(node, "maxLot", "InpSellMaxLot", "double", data.maxLot, "Sell Maximum Lot", group)
   );
-  code.onTick.push("sellLotSize = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, sellLotSize));");
+  if (!skipOnTickLotSizing)
+    code.onTick.push("sellLotSize = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, sellLotSize));");
 }
 
 export function generateStopLossCode(
