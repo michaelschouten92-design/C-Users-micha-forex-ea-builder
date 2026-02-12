@@ -37,10 +37,10 @@ export default function TermsOfServicePage() {
               for MetaTrader 5. The platform offers:
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
-              <li>A drag-and-drop interface for building trading strategies</li>
+              <li>A visual interface for building trading strategies</li>
               <li>Export of strategies to MQL5 code</li>
               <li>Version control for strategy designs</li>
-              <li>Multiple subscription tiers (Free, Starter, Pro)</li>
+              <li>Multiple subscription tiers (Free, Pro, Elite)</li>
             </ul>
           </section>
 

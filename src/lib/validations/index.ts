@@ -234,6 +234,8 @@ const stochasticNodeDataSchema = baseNodeDataSchema
     slowing: z.number().int().min(1).max(1000),
     overboughtLevel: z.number().min(0).max(100),
     oversoldLevel: z.number().min(0).max(100),
+    maMethod: z.enum(["SMA", "EMA"]).optional(),
+    priceField: z.enum(["LOWHIGH", "CLOSECLOSE"]).optional(),
     signalMode: signalModeSchema.optional(),
   })
   .strip();
@@ -507,7 +509,11 @@ const trendPullbackEntryDataSchema = baseNodeDataSchema
     trendEma: z.number().int().min(1).max(1000),
     pullbackRsiPeriod: z.number().int().min(1).max(1000),
     rsiPullbackLevel: z.number().min(0).max(100),
+    pullbackMaxDistance: z.number().min(0).max(100),
     requireEmaBuffer: z.boolean(),
+    useAdxFilter: z.boolean(),
+    adxPeriod: z.number().int().min(1).max(500),
+    adxThreshold: z.number().min(0).max(100),
   })
   .strip();
 
@@ -519,6 +525,10 @@ const macdCrossoverEntryDataSchema = baseNodeDataSchema
     macdFast: z.number().int().min(1).max(1000),
     macdSlow: z.number().int().min(1).max(1000),
     macdSignal: z.number().int().min(1).max(1000),
+    appliedPrice: z
+      .enum(["CLOSE", "OPEN", "HIGH", "LOW", "MEDIAN", "TYPICAL", "WEIGHTED"])
+      .optional(),
+    macdSignalType: z.enum(["SIGNAL_CROSS", "ZERO_CROSS", "HISTOGRAM_SIGN"]).optional(),
     htfTrendFilter: z.boolean(),
     htfTimeframe: timeframeSchema,
     htfEma: z.number().int().min(1).max(1000),

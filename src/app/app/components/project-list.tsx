@@ -83,8 +83,8 @@ function OnboardingEmpty() {
         </div>
         <h3 className="text-xl font-bold text-white mb-2">Welcome to AlgoStudio</h3>
         <p className="text-[#94A3B8] max-w-md mx-auto mb-6">
-          Build automated trading strategies for MetaTrader 5 with a visual drag-and-drop builder.
-          Start from a template or create a blank project.
+          Build automated trading strategies for MetaTrader 5 with a visual builder. Start from a
+          template or create a blank project.
         </p>
         <CreateProjectButton />
       </div>

@@ -47,7 +47,7 @@ const organizationJsonLd = {
   url: process.env.AUTH_URL || "https://algo-studio.com",
   logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
   description:
-    "No-code platform for building, testing, and exporting MetaTrader 5 Expert Advisors with a visual drag-and-drop strategy builder.",
+    "No-code platform for building, testing, and exporting MetaTrader 5 Expert Advisors with a visual strategy builder.",
   foundingDate: "2025",
   sameAs: [],
 };

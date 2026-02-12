@@ -20,7 +20,7 @@ export const BLOG_POSTS: BlogPost[] = [
     readTime: "8 min read",
     tags: ["tutorial", "beginner"],
     content: `
-      <p>Building automated trading strategies has traditionally required deep programming knowledge — months of learning MQL5, debugging syntax errors, and wrestling with MetaEditor. AlgoStudio changes that by giving you a visual drag-and-drop builder for MetaTrader 5 Expert Advisors. In this tutorial, you'll build a complete, working EA from scratch in under 5 minutes.</p>
+      <p>Building automated trading strategies has traditionally required deep programming knowledge — months of learning MQL5, debugging syntax errors, and wrestling with MetaEditor. AlgoStudio changes that by giving you a visual builder for MetaTrader 5 Expert Advisors. In this tutorial, you'll build a complete, working EA from scratch in under 5 minutes.</p>
 
       <h2>What You'll Build</h2>
       <p>By the end of this tutorial, you'll have a fully functional Moving Average crossover EA that:</p>
@@ -422,7 +422,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The best approach for beginners follows a disciplined, step-by-step process:</p>
       <ol>
         <li><strong>Choose a simple strategy:</strong> Start with an <a href="/templates/moving-average-crossover-ea">MA crossover</a> or <a href="/templates/rsi-ea-template">RSI mean reversion</a>. Don't try to build a complex multi-indicator system on your first attempt.</li>
-        <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/visual-strategy-builder">drag-and-drop builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
+        <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/visual-strategy-builder">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
         <li><strong>Export the MQL5 file:</strong> Download and compile in MetaTrader 5's MetaEditor.</li>
         <li><strong>Backtest on 2+ years of data:</strong> Use "Every tick based on real ticks" for accurate results. Look for profit factor above 1.3 and drawdown below 25%.</li>
         <li><strong>Validate on out-of-sample data:</strong> Test on a period the optimizer never saw to confirm robustness.</li>
