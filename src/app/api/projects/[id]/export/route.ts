@@ -298,14 +298,6 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   // Entry strategy blocks contain signal, SL, TP, and position sizing
   const hasEntryStrategy = buildJson.nodes.some((n) => n.data && "entryType" in n.data);
 
-  // Check for timing node (required)
-  const timingTypes = ["always", "custom-times", "trading-session"];
-  const hasTimingNode = buildJson.nodes.some(
-    (n) => timingTypes.includes(n.type as string) || (n.data && "timingType" in n.data)
-  );
-
-  // Timing is optional — without it, the strategy trades whenever conditions are met
-
   if (!hasEntryStrategy) {
     errors.push(
       "No entry strategy found. Add an entry strategy block to define your trading logic."

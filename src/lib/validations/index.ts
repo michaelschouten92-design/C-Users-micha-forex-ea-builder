@@ -431,11 +431,13 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 const baseEntryStrategyFieldsSchema = z.object({
   direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
   timeframe: timeframeSchema.default("H1"),
-  riskPercent: z.number().min(0.1).max(100),
+  riskPercent: z.number().min(0.1).max(10),
   slMethod: z.enum(["ATR", "PIPS", "PERCENT", "RANGE_OPPOSITE"]).default("ATR"),
   slFixedPips: z.number().min(1).max(10000).default(50),
   slPercent: z.number().min(0.01).max(50).default(1),
   slAtrMultiplier: z.number().min(0.1).max(20),
+  slAtrPeriod: z.number().int().min(1).max(500).optional(),
+  slAtrTimeframe: timeframeSchema.optional(),
   tpRMultiple: z.number().min(0.1).max(20),
 });
 
@@ -461,7 +463,7 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("entrystrategy"),
     entryType: z.literal("range-breakout"),
-    rangePeriod: z.number().int().min(1).max(10000),
+    rangePeriod: z.number().int().min(2).max(10000),
     rangeMethod: z.enum(["CANDLES", "CUSTOM_TIME"]).default("CUSTOM_TIME"),
     rangeTimeframe: timeframeSchema,
     breakoutEntry: z.enum(["CANDLE_CLOSE", "CURRENT_PRICE"]).default("CANDLE_CLOSE"),
@@ -471,6 +473,7 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
     customEndHour: z.number().int().min(0).max(23),
     customEndMinute: z.number().int().min(0).max(59),
     useServerTime: z.boolean(),
+    bufferPips: z.number().min(0).max(1000),
     cancelOpposite: z.boolean(),
     closeAtTime: z.boolean(),
     closeAtHour: z.number().int().min(0).max(23),
@@ -478,6 +481,8 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
     htfTrendFilter: z.boolean(),
     htfTimeframe: timeframeSchema,
     htfEma: z.number().int().min(1).max(1000),
+    minRangePips: z.number().min(0).max(10000),
+    maxRangePips: z.number().min(0).max(10000),
   })
   .strip();
 
@@ -520,15 +525,33 @@ const macdCrossoverEntryDataSchema = baseNodeDataSchema
   })
   .strip();
 
-// Node data schema - permissive validation with base field check.
+// Node data schema - validates entry strategy nodes strictly, other nodes permissively.
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
-// IMPORTANT: passthrough() preserves all extra properties (timingType, indicatorType, days, timeSlots, etc.)
+const entryStrategyNodeDataSchema = z.discriminatedUnion("entryType", [
+  emaCrossoverEntryDataSchema,
+  rangeBreakoutEntryDataSchema,
+  rsiReversalEntryDataSchema,
+  trendPullbackEntryDataSchema,
+  macdCrossoverEntryDataSchema,
+]);
+
 const builderNodeDataSchema = z
   .object({
     label: z.string(),
     category: nodeCategorySchema,
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((data, ctx) => {
+    // Entry strategy nodes get strict per-field validation
+    if (data.category === "entrystrategy" && "entryType" in data) {
+      const result = entryStrategyNodeDataSchema.safeParse(data);
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          ctx.addIssue(issue);
+        }
+      }
+    }
+  });
 
 // React Flow node structure - passthrough() preserves additional React Flow internal properties
 const builderNodeSchema = z

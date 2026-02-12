@@ -300,6 +300,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         signalMode: "candle_close",
         shift: 0,
         optimizableFields: mapOpt(["trendEma", "period"]),
+        _requireEmaBuffer: tp.requireEmaBuffer ?? false,
       }),
       // RSI for pullback detection
       vNode("rsi-pullback", "rsi", {

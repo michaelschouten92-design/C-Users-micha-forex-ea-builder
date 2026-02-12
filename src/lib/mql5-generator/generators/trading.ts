@@ -564,14 +564,26 @@ export function generateEntryLogic(
 
       if ("indicatorType" in indData) {
         switch (indData.indicatorType) {
-          case "moving-average":
-            buyConditions.push(
-              `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
-            );
-            sellConditions.push(
-              `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
-            );
+          case "moving-average": {
+            const requireBuffer = "_requireEmaBuffer" in indData && indData._requireEmaBuffer;
+            if (requireBuffer) {
+              // Price above EMA but within 2% distance (not overextended)
+              buyConditions.push(
+                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (iClose(_Symbol, PERIOD_CURRENT, ${1 + s}) - ${varPrefix}Buffer[${1 + s}]) / ${varPrefix}Buffer[${1 + s}] < 0.02)`
+              );
+              sellConditions.push(
+                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (${varPrefix}Buffer[${1 + s}] - iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) / ${varPrefix}Buffer[${1 + s}] < 0.02)`
+              );
+            } else {
+              buyConditions.push(
+                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
+              );
+              sellConditions.push(
+                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]))`
+              );
+            }
             break;
+          }
 
           case "rsi":
             buyConditions.push(

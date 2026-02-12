@@ -38,10 +38,14 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     const d = n.data;
     if (!("entryType" in d)) continue;
 
+    // Direction
+    const dir = "direction" in d ? d.direction : "BOTH";
+    const dirLabel = dir === "BOTH" ? "" : dir === "BUY" ? " (long only)" : " (short only)";
+
     switch (d.entryType) {
       case "ema-crossover":
         if ("fastEma" in d && "slowEma" in d) {
-          lines.push(`Enter on EMA(${d.fastEma})/EMA(${d.slowEma}) crossover`);
+          lines.push(`Enter on EMA(${d.fastEma})/EMA(${d.slowEma}) crossover${dirLabel}`);
         }
         break;
       case "range-breakout":
@@ -50,34 +54,31 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
           const sm = "customStartMinute" in d ? String(d.customStartMinute).padStart(2, "0") : "00";
           const eh = "customEndHour" in d ? String(d.customEndHour).padStart(2, "0") : "08";
           const em = "customEndMinute" in d ? String(d.customEndMinute).padStart(2, "0") : "00";
-          lines.push(`Enter on ${sh}:${sm}-${eh}:${em} range breakout`);
+          lines.push(`Enter on ${sh}:${sm}-${eh}:${em} range breakout${dirLabel}`);
         } else if ("rangePeriod" in d) {
           const tf = "rangeTimeframe" in d ? ` (${d.rangeTimeframe})` : "";
-          lines.push(`Enter on ${d.rangePeriod}-candle${tf} range breakout`);
-        }
-        if ("slMethod" in d && d.slMethod === "RANGE_OPPOSITE") {
-          lines.push("SL: Range opposite");
-        } else if ("slMethod" in d && d.slMethod === "PIPS" && "slFixedPips" in d) {
-          lines.push(`SL: ${d.slFixedPips} pips`);
+          lines.push(`Enter on ${d.rangePeriod}-candle${tf} range breakout${dirLabel}`);
         }
         break;
       case "rsi-reversal":
         if ("rsiPeriod" in d && "oversoldLevel" in d && "overboughtLevel" in d) {
           lines.push(
-            `Enter on RSI(${d.rsiPeriod}) reversal at ${d.oversoldLevel}/${d.overboughtLevel}`
+            `Enter on RSI(${d.rsiPeriod}) reversal at ${d.oversoldLevel}/${d.overboughtLevel}${dirLabel}`
           );
         }
         break;
       case "trend-pullback":
         if ("trendEma" in d && "rsiPullbackLevel" in d) {
           lines.push(
-            `Enter on pullback (EMA ${d.trendEma} trend, RSI dip to ${d.rsiPullbackLevel})`
+            `Enter on pullback (EMA ${d.trendEma} trend, RSI dip to ${d.rsiPullbackLevel})${dirLabel}`
           );
         }
         break;
       case "macd-crossover":
         if ("macdFast" in d && "macdSlow" in d && "macdSignal" in d) {
-          lines.push(`Enter on MACD(${d.macdFast},${d.macdSlow},${d.macdSignal}) crossover`);
+          lines.push(
+            `Enter on MACD(${d.macdFast},${d.macdSlow},${d.macdSignal}) crossover${dirLabel}`
+          );
         }
         break;
     }
@@ -88,11 +89,14 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     }
     const slMethod = "slMethod" in d ? d.slMethod : "ATR";
     if (slMethod === "ATR" && "slAtrMultiplier" in d) {
-      lines.push(`Stop loss at ${d.slAtrMultiplier}× ATR(14)`);
+      const atrPeriod = "slAtrPeriod" in d && d.slAtrPeriod ? d.slAtrPeriod : 14;
+      lines.push(`Stop loss at ${d.slAtrMultiplier}× ATR(${atrPeriod})`);
     } else if (slMethod === "PIPS" && "slFixedPips" in d) {
       lines.push(`Stop loss at ${d.slFixedPips} pips`);
     } else if (slMethod === "PERCENT" && "slPercent" in d) {
       lines.push(`Stop loss at ${d.slPercent}%`);
+    } else if (slMethod === "RANGE_OPPOSITE") {
+      lines.push("Stop loss at range opposite");
     }
     if ("tpRMultiple" in d) {
       lines.push(`Take profit at ${d.tpRMultiple}:1 reward-to-risk`);
