@@ -95,17 +95,17 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Try different pairs</strong> — GBPUSD and USDJPY also trend well</li>
         <li><strong>Explore other strategies</strong> — try the <a href="/templates/rsi-ea-template">RSI Mean Reversion template</a> or the <a href="/templates/breakout-ea-template">Breakout EA template</a></li>
       </ul>
-      <p>Each change takes seconds in AlgoStudio's <a href="/visual-strategy-builder">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
+      <p>Each change takes seconds in AlgoStudio's <a href="/product">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
 
-      <p>Want to learn more about building EAs without code? Read our in-depth guide on <a href="/no-code-mt5-ea-builder">no-code MT5 EA building</a>, or explore all available <a href="/templates">EA templates</a>. And before you go live, make sure to read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most common mistakes traders make when automating strategies</a>.</p>
+      <p>Want to learn more about building EAs without code? Read our in-depth guide on <a href="/product">no-code MT5 EA building</a>, or explore all available <a href="/templates">EA templates</a>. And before you go live, make sure to read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most common mistakes traders make when automating strategies</a>.</p>
     `,
   },
   {
     slug: "best-indicators-for-forex-ea",
-    title: "The 5 Best Indicators for Forex Expert Advisors in 2025",
+    title: "The 5 Best Indicators for Forex Expert Advisors in 2026",
     description:
       "Discover which technical indicators work best in automated forex strategies. Compare MA, RSI, Stochastic, Bollinger Bands, and ADX with practical EA examples.",
-    date: "2025-03-10",
+    date: "2026-03-10",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["strategy", "indicators"],
@@ -211,7 +211,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p><strong>Important:</strong> More than 3 indicators increases <a href="/blog/avoid-overfitting-expert-advisor">overfitting risk</a> significantly. Keep it simple — 2-3 indicators with 4-6 total parameters is the sweet spot.</p>
 
-      <p>Ready to put these indicators to work? Try our <a href="/templates/rsi-ea-template">RSI EA template</a> or <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in AlgoStudio's <a href="/visual-strategy-builder">visual builder</a>.</p>
+      <p>Ready to put these indicators to work? Try our <a href="/templates/rsi-ea-template">RSI EA template</a> or <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in AlgoStudio's <a href="/product">visual builder</a>.</p>
     `,
   },
   {
@@ -416,13 +416,13 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Hire a developer:</strong> Costs $500-$2,000+ per EA. Communication issues, revision cycles, and you can't easily modify the result.</li>
         <li><strong>Buy a pre-made EA:</strong> No customization, unknown strategy logic, and most commercial EAs are overfitted to past data.</li>
       </ul>
-      <p>Today, <a href="/no-code-mt5-ea-builder">no-code EA builders</a> like <strong>AlgoStudio</strong> eliminate this barrier entirely. You build Expert Advisors visually by dragging and connecting blocks on a canvas — indicators, conditions, trade actions, and risk management. The tool generates production-ready MQL5 code that you can export, backtest, and deploy in MetaTrader 5. No programming required.</p>
+      <p>Today, <a href="/product">no-code EA builders</a> like <strong>AlgoStudio</strong> eliminate this barrier entirely. You build Expert Advisors visually by selecting strategy blocks and configuring settings — indicators, conditions, trade actions, and risk management. The tool generates production-ready MQL5 code that you can export, backtest, and deploy in MetaTrader 5. No programming required.</p>
 
       <h2>Getting Started with Your First EA</h2>
       <p>The best approach for beginners follows a disciplined, step-by-step process:</p>
       <ol>
         <li><strong>Choose a simple strategy:</strong> Start with an <a href="/templates/moving-average-crossover-ea">MA crossover</a> or <a href="/templates/rsi-ea-template">RSI mean reversion</a>. Don't try to build a complex multi-indicator system on your first attempt.</li>
-        <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/visual-strategy-builder">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
+        <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/product">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
         <li><strong>Export the MQL5 file:</strong> Download and compile in MetaTrader 5's MetaEditor.</li>
         <li><strong>Backtest on 2+ years of data:</strong> Use "Every tick based on real ticks" for accurate results. Look for profit factor above 1.3 and drawdown below 25%.</li>
         <li><strong>Validate on out-of-sample data:</strong> Test on a period the optimizer never saw to confirm robustness.</li>
@@ -562,10 +562,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "automated-trading-vs-manual-trading",
-    title: "Automated Trading vs Manual Trading: Which Is Better in 2025?",
+    title: "Automated Trading vs Manual Trading: Which Is Better in 2026?",
     description:
       "Honest comparison of automated and manual forex trading: pros, cons, win rates, time investment, and the hybrid approach most professionals use.",
-    date: "2025-04-01",
+    date: "2026-04-01",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["beginner", "strategy", "automated-trading"],
@@ -667,17 +667,17 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Want automated execution for core strategies plus manual discretion for special situations</li>
       </ul>
 
-      <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/no-code-mt5-ea-builder">no-code EA builders</a> like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
+      <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/product">no-code EA builders</a> like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
 
       <p>New to automated trading? Read our complete <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>. For an even deeper dive into the pros and cons of each approach, see our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">detailed manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
     slug: "metatrader-5-vs-metatrader-4",
-    title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use in 2025?",
+    title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use in 2026?",
     description:
       "Complete MT5 vs MT4 comparison for forex traders and EA developers. Strategy Tester, MQL5 vs MQL4, timeframes, order types, and why MT5 wins for new development.",
-    date: "2025-04-05",
+    date: "2026-04-05",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["metatrader", "beginner", "platform"],
@@ -764,7 +764,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>The Verdict: Use MT5 for New Development</h2>
-      <p>For new EA development in 2025, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
+      <p>For new EA development in 2026, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
       <p>MetaQuotes has officially discontinued new MT4 broker licenses — the future is MT5. Starting new development on MT4 is building on a platform with no future updates.</p>
       <p>If you're building an EA with AlgoStudio, your exported code is MQL5 — optimized for MetaTrader 5's latest features and designed to take advantage of the superior Strategy Tester. Ready to start? Try our <a href="/templates">free EA templates</a> or learn the basics with our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a>.</p>
     `,
@@ -822,7 +822,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The key principle: maintain enough separation between the fast and slow periods. If they're too close (like 10/15), you get constant crossovers in any sideways movement. If they're too far apart (like 5/200), signals come too late to be useful.</p>
 
       <h2>Building the MA Crossover EA</h2>
-      <p>Here's how to build it in AlgoStudio's <a href="/visual-strategy-builder">visual builder</a>:</p>
+      <p>Here's how to build it in AlgoStudio's <a href="/product">visual builder</a>:</p>
       <ol>
         <li><strong>Timing:</strong> Drag a <strong>Trading Sessions</strong> block and select London (08:00-17:00 GMT). This limits trading to the most liquid hours with the tightest spreads.</li>
         <li><strong>Indicators:</strong> Add two <strong>Moving Average</strong> blocks — set one to EMA period 10 (fast) and the other to EMA period 50 (slow). Connect both to the timing block.</li>
@@ -999,10 +999,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "best-forex-pairs-for-automated-trading",
-    title: "The Best Forex Pairs for Automated Trading in 2025",
+    title: "The Best Forex Pairs for Automated Trading in 2026",
     description:
       "Which forex pairs work best for Expert Advisors? Compare spreads, volatility, and trend behavior of EURUSD, GBPUSD, USDJPY, AUDUSD, and EURGBP for EAs.",
-    date: "2025-04-20",
+    date: "2026-04-20",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["strategy", "beginner", "forex"],
@@ -1219,7 +1219,7 @@ export const BLOG_POSTS: BlogPost[] = [
     readTime: "11 min read",
     tags: ["tutorial", "beginner", "no-code"],
     content: `
-      <p>Building an Expert Advisor used to mean learning MQL5 — a C++-like programming language that takes months to master. You'd spend weeks debugging semicolons and pointer errors before your EA could even place a single trade. Today, <a href="/no-code-mt5-ea-builder">visual EA builders</a> have changed the game completely. In this tutorial, you'll build a complete, working MT5 EA without writing a single line of code — from blank canvas to backtestable MQL5 file.</p>
+      <p>Building an Expert Advisor used to mean learning MQL5 — a C++-like programming language that takes months to master. You'd spend weeks debugging semicolons and pointer errors before your EA could even place a single trade. Today, <a href="/product">visual EA builders</a> have changed the game completely. In this tutorial, you'll build a complete, working MT5 EA without writing a single line of code — from blank canvas to backtestable MQL5 file.</p>
 
       <h2>Why Build Without Code?</h2>
       <p>Most forex traders are not programmers. They have strategy ideas — entry rules, indicator combinations, risk management approaches — but translating those ideas into MQL5 code is a massive barrier. The traditional alternatives each have significant drawbacks:</p>
@@ -1236,7 +1236,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </tbody>
       </table>
 
-      <p>A <a href="/no-code-mt5-ea-builder">no-code MT5 EA builder</a> combines the best of all worlds: you get full control over your strategy, instant results, and zero coding required. You think in terms of "buy when RSI is below 30 and price crosses above the 50 EMA" — and that's exactly how you build it.</p>
+      <p>A <a href="/product">no-code MT5 EA builder</a> combines the best of all worlds: you get full control over your strategy, instant results, and zero coding required. You think in terms of "buy when RSI is below 30 and price crosses above the 50 EMA" — and that's exactly how you build it.</p>
 
       <h2>What You'll Build</h2>
       <p>In this tutorial, we'll create a simple but effective EA that you can actually backtest and trade:</p>
@@ -1253,10 +1253,10 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h2>Step 1: Create Your Project</h2>
       <p>Sign up for a free AlgoStudio account (no credit card required) and click <strong>"New Project"</strong> on your dashboard. Name it something descriptive like "RSI Mean Reversion London" — this helps you stay organized as you build more EAs.</p>
-      <p>The <a href="/visual-strategy-builder">visual builder</a> canvas opens automatically. You'll see a clean workspace with a block toolbar on the left, organized into categories: Timing, Indicators, Price Action, Trading, and Trade Management.</p>
+      <p>The <a href="/product">visual builder</a> canvas opens automatically. You'll see a clean workspace with a block toolbar on the left, organized into categories: Timing, Indicators, Price Action, Trading, and Trade Management.</p>
 
       <h2>Step 2: Set the Timing</h2>
-      <p>Every EA needs a timing foundation — this controls when the EA is active. From the Timing category, drag a <strong>Trading Sessions</strong> block onto the canvas and select <strong>"London Session"</strong> (08:00-17:00 GMT).</p>
+      <p>Every EA needs a timing foundation — this controls when the EA is active. From the Timing category, add a <strong>Trading Sessions</strong> block to the canvas and select <strong>"London Session"</strong> (08:00-17:00 GMT).</p>
       <p>Why London? It's the <a href="/blog/forex-trading-sessions-explained">most liquid forex session</a> with the tightest spreads and strongest institutional flow. RSI signals generated during low-volume Asian sessions are more likely to be noise. The London session filter alone typically improves any strategy's profit factor by 20-30%.</p>
 
       <h2>Step 3: Add Your Indicators</h2>
@@ -1469,7 +1469,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>RSI alone generates false buy signals during strong downtrends (price keeps getting "more oversold"). MACD filters these out by requiring the broader trend to be bullish. MACD alone generates false crossover signals in choppy markets. RSI adds timing precision by only entering when momentum has temporarily exhausted.</p>
 
       <h2>Try Both Approaches</h2>
-      <p>The best way to decide is to build and backtest both. In AlgoStudio's <a href="/visual-strategy-builder">visual builder</a>, drag the blocks onto the canvas and compare results on the same pair and timeframe.</p>
+      <p>The best way to decide is to build and backtest both. In AlgoStudio's <a href="/product">visual builder</a>, add the blocks to the canvas and compare results on the same pair and timeframe.</p>
       <ul>
         <li><strong>RSI strategy:</strong> Start with our <a href="/templates/rsi-ea-template">RSI EA template</a> — pre-configured with EMA trend filter and London session timing</li>
         <li><strong>Trend-following:</strong> Try the <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a> — uses similar trend-following logic as MACD</li>
@@ -1545,7 +1545,7 @@ export const BLOG_POSTS: BlogPost[] = [
           <tr><td>Adaptability</td><td>Instant</td><td>Requires code change</td></tr>
           <tr><td>Consistency</td><td>Variable (human factor)</td><td>Perfect</td></tr>
           <tr><td>Scalability</td><td>Very limited</td><td>Highly scalable</td></tr>
-          <tr><td>Entry barrier</td><td>Low (open a chart)</td><td>Low (with <a href="/no-code-mt5-ea-builder">no-code tools</a>)</td></tr>
+          <tr><td>Entry barrier</td><td>Low (open a chart)</td><td>Low (with <a href="/product">no-code tools</a>)</td></tr>
         </tbody>
       </table>
 
@@ -1581,7 +1581,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>You understand when to let the EA trade and when to intervene</li>
       </ul>
 
-      <p>The barrier to automated trading has never been lower. With <a href="/no-code-mt5-ea-builder">no-code EA builders</a>, you can build, backtest, and deploy strategies in minutes.</p>
+      <p>The barrier to automated trading has never been lower. With <a href="/product">no-code EA builders</a>, you can build, backtest, and deploy strategies in minutes.</p>
 
       <p>Ready to explore? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or jump straight to building with our <a href="/templates">free EA templates</a>. For a quicker overview of the key differences, see our <a href="/blog/automated-trading-vs-manual-trading">automated trading vs manual trading comparison</a>. And if you decide to automate, follow our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> to build your first EA in minutes.</p>
     `,
@@ -1691,7 +1691,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </tbody>
       </table>
 
-      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio tutorial</a> and use the <a href="/visual-strategy-builder">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
+      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio tutorial</a> and use the <a href="/product">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
@@ -1740,7 +1740,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>If any of these answers are vague ("I'll decide based on how the chart looks"), it can't be automated. The beauty of this exercise: it forces clarity. Many traders realize their "strategy" is actually a collection of gut feelings — and that's exactly why automation produces better results.</p>
 
       <h2>Phase 2: Build It Visually</h2>
-      <p>With your rules clearly defined, open <a href="/no-code-mt5-ea-builder">AlgoStudio's no-code MT5 EA builder</a> and translate each rule into visual blocks:</p>
+      <p>With your rules clearly defined, open <a href="/product">AlgoStudio's no-code MT5 EA builder</a> and translate each rule into visual blocks:</p>
 
       <ol>
         <li><strong>Start with timing:</strong> Drag a Trading Sessions block (e.g., London) or Custom Times block to define when the EA is active</li>
@@ -1750,7 +1750,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Set risk management:</strong> Add Stop Loss (ATR-based recommended), Take Profit (R:R ratio), Position Sizing (% risk), and Max Trades Per Day</li>
       </ol>
 
-      <p>The <a href="/visual-strategy-builder">visual builder</a> gives you something traditional coding can't: you can see your entire strategy logic at a glance. If the canvas looks like spaghetti, your strategy is too complex. If you can't explain the flow in 30 seconds, simplify. Read more about <a href="/blog/best-indicators-for-forex-ea">choosing the right indicators</a>.</p>
+      <p>The <a href="/product">visual builder</a> gives you something traditional coding can't: you can see your entire strategy logic at a glance. If the canvas looks like spaghetti, your strategy is too complex. If you can't explain the flow in 30 seconds, simplify. Read more about <a href="/blog/best-indicators-for-forex-ea">choosing the right indicators</a>.</p>
 
       <h2>Phase 3: First Backtest</h2>
       <p>Export your EA from AlgoStudio (click Export MQL5) and load it into MetaTrader 5. Run an initial <a href="/blog/backtest-your-ea-metatrader5">backtest</a> with these settings:</p>

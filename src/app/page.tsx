@@ -38,9 +38,9 @@ export default async function Home() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: "0",
-      highPrice: "39",
+      highPrice: "79",
       priceCurrency: "EUR",
-      offerCount: 2,
+      offerCount: 3,
     },
     featureList: [
       "No-code MT5 bot builder",
@@ -226,7 +226,7 @@ export default async function Home() {
               </div>
               <Image
                 src="/demo-screenshot.png"
-                alt="AlgoStudio visual strategy builder — Range Breakout entry connected to Stoploss to Breakeven trade management block"
+                alt="AlgoStudio visual strategy builder — Range Breakout entry connected to Stop Loss to Breakeven trade management block"
                 width={1918}
                 height={907}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
@@ -559,7 +559,7 @@ export default async function Home() {
               {
                 title: "No-code visual interface",
                 description:
-                  "Build your trading bot with a visual interface. No programming, no drag-and-drop wiring, no block coding. Just clear settings organized by function — entry, exit, risk, timing.",
+                  "Build your trading bot with a visual interface. No programming, no complex logic wiring. Just clear settings organized by function — entry, exit, risk, timing.",
                 icon: (
                   <path
                     strokeLinecap="round"

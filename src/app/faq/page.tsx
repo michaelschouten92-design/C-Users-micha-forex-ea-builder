@@ -24,7 +24,7 @@ const faqItems = [
   },
   {
     q: "Do I need coding experience?",
-    a: "No. You pick a strategy template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
   },
   {
     q: "What strategy templates are available?",
@@ -56,7 +56,7 @@ const faqItems = [
   },
   {
     q: "What does the Pro plan include?",
-    a: "Unlimited projects, unlimited exports, all strategy templates, and priority support. Cancel anytime from your account settings.",
+    a: "Unlimited projects, unlimited exports, all strategy templates, Private Discord community, and priority support. Cancel anytime from your account settings.",
   },
   {
     q: "Can I cancel anytime?",
@@ -64,7 +64,7 @@ const faqItems = [
   },
   {
     q: "How is AlgoStudio different from other EA builders?",
-    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. No drag-and-drop wiring, no block programming, no 50-field forms.",
+    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. Pre-configured blocks with sensible defaults instead of complex logic wiring and 50-field forms.",
   },
 ];
 

@@ -21,7 +21,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Do I need coding experience to use AlgoStudio?",
-    a: "No. You pick a strategy template, adjust 3-5 settings, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
   },
   {
     q: "What strategy templates are included?",
@@ -37,7 +37,7 @@ const faqItems = [
   },
   {
     q: "What makes AlgoStudio different from other EA builders?",
-    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. No drag-and-drop wiring, no block programming.",
+    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. Pre-configured blocks with sensible defaults instead of complex logic wiring.",
   },
   {
     q: "Is there a free plan?",
@@ -148,8 +148,8 @@ export default function ProductPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Simple</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  3-5 settings per strategy. No 50-field forms, no block programming, no
-                  drag-and-drop wiring. Only the controls that matter.
+                  Sensible defaults for every strategy. No 50-field forms, no complex logic wiring.
+                  Only the controls that matter.
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
@@ -279,11 +279,11 @@ export default function ProductPage() {
                 <ul className="space-y-3 text-sm text-[#94A3B8]">
                   <li className="flex items-start gap-2">
                     <span className="text-[#64748B] mt-0.5">&#10007;</span>
-                    No drag-and-drop block programming
+                    No complex logic programming
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#64748B] mt-0.5">&#10007;</span>
-                    No wire-connecting between nodes
+                    No tangled node graphs
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#64748B] mt-0.5">&#10007;</span>
@@ -401,7 +401,7 @@ export default function ProductPage() {
                     ["Time to first EA", "< 5 minutes", "Hours to days"],
                     ["Coding required", "None", "Often required"],
                     ["Starting point", "Working templates", "Blank canvas"],
-                    ["Settings per strategy", "3-5 basic", "50+ fields"],
+                    ["Settings per strategy", "Key settings with defaults", "50+ fields"],
                     ["Output format", "Clean MQL5", "Varies"],
                     ["Risk management", "Built-in", "Manual setup"],
                     ["Free tier", "Yes", "Rarely"],

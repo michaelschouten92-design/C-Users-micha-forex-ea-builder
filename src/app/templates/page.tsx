@@ -42,7 +42,7 @@ const faqQuestions = [
   },
   {
     q: "Can I combine elements from different templates?",
-    a: "Yes. The builder also has an Advanced Blocks section where you can mix and match individual indicators, conditions, and actions. Templates are the fastest way to start, but you can build anything.",
+    a: "Yes. The builder also has individual blocks for indicators, conditions, and actions that you can combine freely. Templates are the fastest way to start, but you can customize and extend them.",
   },
 ];
 
@@ -273,11 +273,8 @@ export default function TemplatesPage() {
               Home
             </Link>
             <span className="text-[#64748B]">&middot;</span>
-            <Link
-              href="/features"
-              className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
-            >
-              Features
+            <Link href="/product" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
+              Product
             </Link>
             <span className="text-[#64748B]">&middot;</span>
             <Link href="/pricing" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
@@ -288,8 +285,8 @@ export default function TemplatesPage() {
               Blog
             </Link>
             <span className="text-[#64748B]">&middot;</span>
-            <Link href="/help" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Help
+            <Link href="/faq" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
+              FAQ
             </Link>
           </div>
         </section>

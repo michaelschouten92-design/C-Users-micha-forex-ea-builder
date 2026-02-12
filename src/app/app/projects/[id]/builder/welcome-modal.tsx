@@ -27,7 +27,7 @@ const STEPS = [
   {
     title: "1. Add an Entry Strategy",
     description:
-      "Drag an entry strategy block (EMA Crossover, Range Breakout, RSI Reversal, etc.) onto the canvas. It includes signals, stop loss, take profit and position sizing.",
+      "Add an entry strategy block (EMA Crossover, Range Breakout, RSI Reversal, etc.) to the canvas. It includes signals, stop loss, take profit and position sizing.",
     icon: (
       <svg
         className="w-10 h-10 text-[#10B981]"

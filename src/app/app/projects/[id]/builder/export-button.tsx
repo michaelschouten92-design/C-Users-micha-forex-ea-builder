@@ -155,7 +155,7 @@ export function ExportButton({
             : !canExport
               ? "Fix errors before exporting"
               : !canExportMQL5
-                ? "Upgrade to Pro to export"
+                ? "Export limit reached — upgrade for unlimited exports"
                 : "Export to MQL5"
         }
       >

@@ -40,7 +40,7 @@ export default function PricingPage() {
     },
     {
       q: "Does this work with any MT5 broker?",
-      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, MyForexFunds, and others.",
+      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, The Funded Trader, and others.",
     },
     {
       q: "What happens if I reach my export limit on Free?",
@@ -60,7 +60,7 @@ export default function PricingPage() {
     },
     {
       q: "Is there a money-back guarantee?",
-      a: "We offer a 14-day refund policy. If AlgoStudio isn\u2019t right for you, contact support within 14 days of your first payment for a full refund.",
+      a: "All sales are final. You can cancel your subscription at any time from your account settings \u2014 your access continues until the end of the current billing period. We recommend starting with the free plan to make sure AlgoStudio is right for you.",
     },
     {
       q: "What is the difference between Pro and Elite?",
