@@ -1094,6 +1094,7 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
   code.onTick.push(
     `         int barsSinceEntry = iBarShift(_Symbol, ${getTimeframe(data.exitTimeframe)}, openTime);`
   );
+  code.onTick.push("         if(barsSinceEntry < 0) continue; // iBarShift failed");
   code.onTick.push("         if(barsSinceEntry >= InpTimeExitBars)");
   code.onTick.push("         {");
   code.onTick.push("            trade.PositionClose(ticket);");

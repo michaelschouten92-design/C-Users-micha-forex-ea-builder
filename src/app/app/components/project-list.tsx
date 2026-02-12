@@ -6,6 +6,7 @@ import { ProjectCard } from "./project-card";
 import { CreateProjectButton } from "./create-project-button";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { STRATEGY_PRESETS } from "@/lib/strategy-presets";
+import { showError } from "@/lib/toast";
 
 type Project = {
   id: string;
@@ -46,7 +47,7 @@ function OnboardingEmpty() {
       });
 
       if (!res.ok) {
-        console.error("Failed to create project from preset:", res.status);
+        showError("Failed to create project from template. Please try again.");
         return;
       }
       const project = await res.json();
@@ -59,8 +60,8 @@ function OnboardingEmpty() {
       });
 
       router.push(`/app/projects/${project.id}`);
-    } catch (err) {
-      console.error("Failed to create project from preset:", err);
+    } catch {
+      showError("Failed to create project from template. Please try again.");
     } finally {
       setLoadingPreset(null);
     }
@@ -162,7 +163,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         body: JSON.stringify({ name: preset.name, description: preset.description }),
       });
       if (!res.ok) {
-        console.error("Failed to create project from preset:", res.status);
+        showError("Failed to create project from template. Please try again.");
         return;
       }
       const project = await res.json();
@@ -172,8 +173,8 @@ export function ProjectList({ projects }: { projects: Project[] }) {
         body: JSON.stringify({ buildJson: preset.buildJson }),
       });
       router.push(`/app/projects/${project.id}`);
-    } catch (err) {
-      console.error("Failed to create project from preset:", err);
+    } catch {
+      showError("Failed to create project from template. Please try again.");
     } finally {
       setLoadingPreset(null);
     }

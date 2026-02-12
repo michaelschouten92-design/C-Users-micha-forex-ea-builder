@@ -63,6 +63,8 @@ export interface GeneratedCode {
   hasDirectionalSL?: boolean;
   /** Tracks the SL method used (e.g. PERCENT) so pending order logic can adjust */
   slMethod?: string;
+  /** Tracks the max indicator period to calculate minimum bars needed in OnTick */
+  maxIndicatorPeriod: number;
 }
 
 export type MAMethod = "SMA" | "EMA";

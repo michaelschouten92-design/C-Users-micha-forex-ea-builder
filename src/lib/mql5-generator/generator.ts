@@ -594,6 +594,7 @@ export function generateMQL5Code(
     onDeinit: [],
     onTick: [],
     helperFunctions: [],
+    maxIndicatorPeriod: 0,
   };
 
   // Get all nodes that are connected to the strategy (starting from timing nodes)
@@ -863,7 +864,7 @@ export function generateMQL5Code(
     generateGlobalVariablesSection(code.globalVariables),
     generateOnInit(ctx, code.onInit),
     generateOnDeinit(code.onDeinit),
-    generateOnTick(ctx, code.onTick),
+    generateOnTick(ctx, code.onTick, code.maxIndicatorPeriod),
     generateHelperFunctions(ctx),
     code.helperFunctions.join("\n\n"),
   ];

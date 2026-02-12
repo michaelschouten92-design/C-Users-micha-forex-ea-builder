@@ -485,10 +485,27 @@ void MarkPartialClosed(ulong ticket)
    int size = ArraySize(partialClosedTickets);
    ArrayResize(partialClosedTickets, size + 1);
    partialClosedTickets[size] = ticket;
+}
+
+//+------------------------------------------------------------------+
+//| Remove tickets for positions that no longer exist                 |
+//+------------------------------------------------------------------+
+void CleanPartialClosedTickets()
+{
+   for(int i = ArraySize(partialClosedTickets) - 1; i >= 0; i--)
+   {
+      if(!PositionSelectByTicket(partialClosedTickets[i]))
+      {
+         int last = ArraySize(partialClosedTickets) - 1;
+         partialClosedTickets[i] = partialClosedTickets[last];
+         ArrayResize(partialClosedTickets, last);
+      }
+   }
 }`);
   }
 
   code.onTick.push("// Partial Close Management");
+  code.onTick.push("CleanPartialClosedTickets();");
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
   code.onTick.push("{");
   code.onTick.push("   ulong ticket = PositionGetTicket(i);");

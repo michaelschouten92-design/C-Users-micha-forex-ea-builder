@@ -162,7 +162,6 @@ export function useAutoSave({
 
           if (isAutosave) {
             setAutoSaveStatus("error");
-            setTimeout(() => setAutoSaveStatus("idle"), 3000);
           } else {
             showError(
               res.status === 409 ? "Version conflict" : "Failed to save",
@@ -177,7 +176,6 @@ export function useAutoSave({
         console.error("Save error:", error);
         if (isAutosave) {
           setAutoSaveStatus("error");
-          setTimeout(() => setAutoSaveStatus("idle"), 3000);
         }
         return false;
       }

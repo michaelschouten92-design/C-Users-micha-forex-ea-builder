@@ -107,6 +107,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(ma.period) || 14);
         break;
       }
 
@@ -172,6 +173,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(rsi.period) || 14);
         break;
       }
 
@@ -240,6 +242,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
+        code.maxIndicatorPeriod = Math.max(
+          code.maxIndicatorPeriod,
+          (Number(macd.slowPeriod) || 26) + (Number(macd.signalPeriod) || 9)
+        );
         break;
       }
 
@@ -311,6 +317,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MiddleBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}UpperBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 2, copyBars, `${varPrefix}LowerBuffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(bb.period) || 20);
         break;
       }
 
@@ -341,6 +348,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(atr.period) || 14);
         break;
       }
 
@@ -388,6 +396,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code); // ADX
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}PlusDIBuffer`, code); // +DI
         addCopyBuffer(`${varPrefix}Handle`, 2, copyBars, `${varPrefix}MinusDIBuffer`, code); // -DI
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, (Number(adx.period) || 14) * 2);
         break;
       }
 
@@ -489,6 +498,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code); // %K
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code); // %D
+        code.maxIndicatorPeriod = Math.max(
+          code.maxIndicatorPeriod,
+          (Number(stoch.kPeriod) || 5) + (Number(stoch.dPeriod) || 3) + (Number(stoch.slowing) || 3)
+        );
         break;
       }
 
@@ -554,6 +567,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(cci.period) || 14);
         break;
       }
     }

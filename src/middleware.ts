@@ -58,13 +58,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Continue with the request and ensure CSRF cookie is set
-  const response = NextResponse.next();
-
-  // Add request ID for tracing
+  // Add request ID for tracing (set on request headers so downstream handlers can read it)
   const requestId = crypto.randomUUID();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-request-id", requestId);
+
+  // Continue with the request and ensure CSRF cookie is set
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
   response.headers.set("x-request-id", requestId);
-  request.headers.set("x-request-id", requestId);
 
   return createCsrfResponse(response, request);
 }

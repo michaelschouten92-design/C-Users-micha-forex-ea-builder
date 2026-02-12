@@ -145,7 +145,11 @@ ${deinitCode.length > 0 ? deinitCode.map((line) => "   " + line).join("\n") : " 
 `;
 }
 
-export function generateOnTick(ctx: GeneratorContext, tickCode: string[]): string {
+export function generateOnTick(
+  ctx: GeneratorContext,
+  tickCode: string[],
+  maxIndicatorPeriod: number = 0
+): string {
   // Build daily P&L check code if enabled
   let dailyPnlCode = "";
   if (ctx.maxDailyProfitPercent > 0 || ctx.maxDailyLossPercent > 0) {
@@ -222,10 +226,10 @@ void OnTick()
    if(isNewBar) lastBarTime = currentBarTime;
 
    //--- Check minimum bars available
-   if(Bars(_Symbol, PERIOD_CURRENT) < 100)
+   if(Bars(_Symbol, PERIOD_CURRENT) < ${Math.max(maxIndicatorPeriod * 3, 100)})
    {
       static bool barsWarned = false;
-      if(!barsWarned) { Print("Waiting for minimum bars (100) on ", _Symbol); barsWarned = true; }
+      if(!barsWarned) { Print("Waiting for minimum bars (${Math.max(maxIndicatorPeriod * 3, 100)}) on ", _Symbol); barsWarned = true; }
       return;
    }
 

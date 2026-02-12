@@ -69,12 +69,17 @@ export function ExportButton({
     setStepTimers([stepTimer1, stepTimer2]);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ exportType: "MQ5" }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
 
@@ -86,10 +91,14 @@ export function ExportButton({
       }
 
       setResult(data);
-    } catch {
+    } catch (err) {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
-      setError({ error: "Failed to export. Please try again." });
+      const message =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Export timed out. Please try again."
+          : "Failed to export. Please try again.";
+      setError({ error: message });
     } finally {
       setExporting(false);
     }
