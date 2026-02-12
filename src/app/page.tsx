@@ -3,9 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { PLANS, formatPrice } from "@/lib/plans";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { PricingSection } from "@/components/marketing/pricing-section";
 
 export const metadata: Metadata = {
   title: "MT5 Bot Builder — No-Code Expert Advisor | AlgoStudio",
@@ -783,117 +783,8 @@ export default async function Home() {
       {/* PRICING                                                           */}
       {/* ================================================================ */}
       <section className="py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Simple, transparent pricing</h2>
-            <p className="text-[#94A3B8]">Start free. Upgrade when you need unlimited exports.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {/* Free */}
-            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 flex flex-col">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-[#22D3EE]" />
-                <h3 className="text-lg font-semibold text-white">Free</h3>
-              </div>
-              <div className="mt-2 mb-3">
-                <span className="text-3xl font-bold text-white">{formatPrice(0, "eur")}</span>
-                <span className="text-[#94A3B8] ml-2 text-sm">/ forever</span>
-              </div>
-              <p className="text-sm text-[#94A3B8] mb-4">
-                Build and export your first MT5 Expert Advisor.
-              </p>
-              <ul className="space-y-2 text-sm text-[#CBD5E1] mb-6 flex-1">
-                {[
-                  "All 5 strategy templates",
-                  "Full visual builder",
-                  "1 project",
-                  "1 MQL5 export per month",
-                  "No credit card required",
-                ].map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <svg
-                      className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login?mode=register"
-                className="block w-full text-center py-2.5 border border-[rgba(79,70,229,0.5)] text-white rounded-lg text-sm font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
-              >
-                Start Free
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="bg-[#1A0626] border-2 border-[#4F46E5] rounded-xl p-6 relative flex flex-col">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
-                  Most Popular
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-[#4F46E5]" />
-                <h3 className="text-lg font-semibold text-white">Pro</h3>
-              </div>
-              <div className="mt-2 mb-3">
-                <span className="text-3xl font-bold text-white">
-                  {formatPrice(PLANS.PRO.prices!.monthly.amount, "eur")}
-                </span>
-                <span className="text-[#94A3B8] ml-2 text-sm">/ month</span>
-              </div>
-              <p className="text-sm text-[#94A3B8] mb-4">
-                Unlimited projects and exports for serious traders.
-              </p>
-              <ul className="space-y-2 text-sm text-[#CBD5E1] mb-6 flex-1">
-                {[
-                  "Unlimited projects",
-                  "Unlimited MQL5 exports",
-                  "All strategy templates",
-                  "Priority support",
-                ].map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <svg
-                      className="w-4 h-4 text-[#22D3EE] flex-shrink-0 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-[#64748B] mb-3">
-                Also available at {formatPrice(PLANS.PRO.prices!.yearly.amount, "eur")}/year (save
-                15%).
-              </p>
-              <Link
-                href="/pricing"
-                className="block w-full text-center py-2.5 bg-[#4F46E5] text-white rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-colors"
-              >
-                Upgrade to Pro
-              </Link>
-            </div>
-          </div>
+        <div className="max-w-5xl mx-auto">
+          <PricingSection />
         </div>
       </section>
 
