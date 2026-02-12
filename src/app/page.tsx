@@ -226,9 +226,9 @@ export default async function Home() {
               </div>
               <Image
                 src="/demo-screenshot.png"
-                alt="AlgoStudio MT5 bot builder interface — strategy template with risk management settings and MQL5 code export"
-                width={3830}
-                height={1820}
+                alt="AlgoStudio visual strategy builder — Range Breakout entry connected to Stoploss to Breakeven trade management block"
+                width={1918}
+                height={907}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                 className="w-full"
                 quality={85}
