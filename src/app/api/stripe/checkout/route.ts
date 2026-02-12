@@ -98,6 +98,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent duplicate subscriptions
+    if (
+      user.subscription?.tier === "PRO" &&
+      (user.subscription?.status === "active" || user.subscription?.status === "trialing")
+    ) {
+      return NextResponse.json(
+        { error: "You already have an active Pro subscription" },
+        { status: 400 }
+      );
+    }
+
     let stripeCustomerId = user.subscription?.stripeCustomerId;
 
     if (!stripeCustomerId) {
@@ -110,10 +121,11 @@ export async function POST(request: NextRequest) {
       });
       stripeCustomerId = customer.id;
 
-      // Save customer ID
-      await prisma.subscription.update({
+      // Save customer ID (upsert in case subscription row doesn't exist yet)
+      await prisma.subscription.upsert({
         where: { userId: user.id },
-        data: { stripeCustomerId },
+        update: { stripeCustomerId },
+        create: { userId: user.id, tier: "FREE", stripeCustomerId },
       });
     }
 

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { showError } from "@/lib/toast";
 
 type Project = {
   id: string;
@@ -54,11 +55,14 @@ export function ProjectSettings({ project }: { project: Project }) {
         body: JSON.stringify({ name, description }),
       });
 
-      if (res.ok) {
-        setShowEdit(false);
-        setOpen(false);
-        router.refresh();
+      if (!res.ok) {
+        showError("Failed to update project");
+        return;
       }
+
+      setShowEdit(false);
+      setOpen(false);
+      router.refresh();
     } finally {
       setSaving(false);
     }
@@ -72,10 +76,13 @@ export function ProjectSettings({ project }: { project: Project }) {
         headers: getCsrfHeaders(),
       });
 
-      if (res.ok) {
-        router.push("/app");
-        router.refresh();
+      if (!res.ok) {
+        showError("Failed to delete project");
+        return;
       }
+
+      router.push("/app");
+      router.refresh();
     } finally {
       setDeleting(false);
     }

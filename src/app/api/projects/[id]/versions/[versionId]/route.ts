@@ -13,25 +13,32 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify ownership
-  const project = await prisma.project.findFirst({
-    where: { id, userId: session.user.id, deletedAt: null },
-  });
+  try {
+    // Verify ownership
+    const project = await prisma.project.findFirst({
+      where: { id, userId: session.user.id, deletedAt: null },
+    });
 
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const version = await prisma.buildVersion.findFirst({
+      where: {
+        id: versionId,
+        projectId: id,
+      },
+    });
+
+    if (!version) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
+
+    // Suppress unused variable warning for request (required by Next.js route signature)
+    void request;
+
+    return NextResponse.json(version);
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const version = await prisma.buildVersion.findFirst({
-    where: {
-      id: versionId,
-      projectId: id,
-    },
-  });
-
-  if (!version) {
-    return NextResponse.json({ error: "Version not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(version);
 }

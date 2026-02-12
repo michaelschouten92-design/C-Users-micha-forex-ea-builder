@@ -71,15 +71,48 @@ export type MAMethod = "SMA" | "EMA";
 export type AppliedPrice = "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 export type TradeDirection = "BUY" | "SELL" | "BOTH";
 
-export type Timeframe = "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1" | "W1" | "MN1";
+export type Timeframe =
+  | "M1"
+  | "M2"
+  | "M3"
+  | "M4"
+  | "M5"
+  | "M6"
+  | "M10"
+  | "M12"
+  | "M15"
+  | "M20"
+  | "M30"
+  | "H1"
+  | "H2"
+  | "H3"
+  | "H4"
+  | "H6"
+  | "H8"
+  | "H12"
+  | "D1"
+  | "W1"
+  | "MN1";
 
 export const TIMEFRAME_MAP: Record<Timeframe, string> = {
   M1: "PERIOD_M1",
+  M2: "PERIOD_M2",
+  M3: "PERIOD_M3",
+  M4: "PERIOD_M4",
   M5: "PERIOD_M5",
+  M6: "PERIOD_M6",
+  M10: "PERIOD_M10",
+  M12: "PERIOD_M12",
   M15: "PERIOD_M15",
+  M20: "PERIOD_M20",
   M30: "PERIOD_M30",
   H1: "PERIOD_H1",
+  H2: "PERIOD_H2",
+  H3: "PERIOD_H3",
   H4: "PERIOD_H4",
+  H6: "PERIOD_H6",
+  H8: "PERIOD_H8",
+  H12: "PERIOD_H12",
   D1: "PERIOD_D1",
   W1: "PERIOD_W1",
   MN1: "PERIOD_MN1",

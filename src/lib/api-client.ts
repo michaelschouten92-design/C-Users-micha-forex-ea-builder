@@ -33,15 +33,6 @@ function getCsrfToken(): string | null {
 }
 
 /**
- * API response type
- */
-export interface ApiResponse<T = unknown> {
-  ok: boolean;
-  status: number;
-  data: T;
-}
-
-/**
  * API error class
  */
 export class ApiError extends Error {
@@ -61,10 +52,7 @@ export class ApiError extends Error {
 /**
  * Make an API request with CSRF token
  */
-async function request<T = unknown>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
   const csrfToken = getCsrfToken();
 
   const headers: HeadersInit = {

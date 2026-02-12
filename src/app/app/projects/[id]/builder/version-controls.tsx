@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ExportButton } from "./export-button";
 import type { ValidationResult } from "./strategy-validation";
 import type { BuildJsonSchema, BuilderNode } from "@/types/builder";
@@ -90,9 +90,10 @@ export function VersionControls({
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [diffVersions, setDiffVersions] = useState<[number, number] | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch versions list
-  const fetchVersions = async () => {
+  const fetchVersions = useCallback(async () => {
     try {
       const res = await fetch(`/api/projects/${projectId}/versions?limit=20`);
       if (res.ok) {
@@ -103,18 +104,47 @@ export function VersionControls({
     } catch {
       // Silently fail — versions panel will show empty state
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     fetchVersions();
-  }, [projectId]);
+  }, [projectId, fetchVersions]);
 
   // Refresh versions when autosave completes
   useEffect(() => {
     if (autoSaveStatus === "saved") {
       fetchVersions();
     }
-  }, [autoSaveStatus]);
+  }, [autoSaveStatus, fetchVersions]);
+
+  // Close dropdown on outside click and Escape key
+  useEffect(() => {
+    if (!showDropdown) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowDropdown(false);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showDropdown]);
+
+  // Close diff modal on Escape key
+  useEffect(() => {
+    if (!diffVersions) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setDiffVersions(null);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [diffVersions]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -190,7 +220,7 @@ export function VersionControls({
         </button>
 
         {/* Version dropdown */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             disabled={versions.length === 0}
@@ -364,7 +394,11 @@ export function VersionControls({
       {/* Version Diff Modal */}
       {diff && diffVersions && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 max-h-[70vh] flex flex-col">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 max-h-[70vh] flex flex-col"
+          >
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">
                 Changes: v{diffVersions[0]} → v{diffVersions[1]}

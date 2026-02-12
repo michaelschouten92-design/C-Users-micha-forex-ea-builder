@@ -97,36 +97,16 @@ export async function DELETE(request: Request) {
 
     // Delete all user data in a transaction
     await prisma.$transaction(async (tx) => {
-      // Delete exports
-      await tx.exportJob.deleteMany({ where: { userId } });
-
-      // Delete versions via projects
-      const projects = await tx.project.findMany({
-        where: { userId },
-        select: { id: true },
-      });
-      const projectIds = projects.map((p) => p.id);
-
-      if (projectIds.length > 0) {
-        await tx.buildVersion.deleteMany({ where: { projectId: { in: projectIds } } });
-      }
-
-      // Delete projects
-      await tx.project.deleteMany({ where: { userId } });
-
-      // Delete subscription
-      await tx.subscription.deleteMany({ where: { userId } });
-
-      // Delete tokens by email
+      // Delete tokens by email (not FK-based, won't cascade)
       if (userRecord) {
         await tx.passwordResetToken.deleteMany({ where: { email: userRecord.email } });
         await tx.emailVerificationToken.deleteMany({ where: { email: userRecord.email } });
       }
 
-      // Delete audit logs
+      // Delete audit logs (no cascade FK)
       await tx.auditLog.deleteMany({ where: { userId } });
 
-      // Delete user (cascades to UserTemplates)
+      // Delete user (cascades to Subscription, Project, BuildVersion, ExportJob, UserTemplate)
       await tx.user.delete({ where: { id: userId } });
     });
 

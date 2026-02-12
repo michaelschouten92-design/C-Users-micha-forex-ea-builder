@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { forgotPasswordSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
-import { env } from "@/lib/env";
 import {
-  passwordResetRateLimiter,
-  checkRateLimit,
-  createRateLimitHeaders,
-} from "@/lib/rate-limit";
+  forgotPasswordSchema,
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+} from "@/lib/validations";
+import { env } from "@/lib/env";
+import { normalizeEmail } from "@/lib/auth";
+import { passwordResetRateLimiter, checkRateLimit, createRateLimitHeaders } from "@/lib/rate-limit";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import crypto from "crypto";
 
@@ -31,10 +33,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email } = validation.data;
+    const email = normalizeEmail(validation.data.email);
 
     // Check rate limit (5 requests per 15 minutes per email)
-    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, email.toLowerCase());
+    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, email);
     const rateLimitHeaders = createRateLimitHeaders(rateLimitResult);
 
     if (!rateLimitResult.success) {
@@ -100,9 +102,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     log.error({ error: extractErrorDetails(error) }, "Forgot password error");
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }

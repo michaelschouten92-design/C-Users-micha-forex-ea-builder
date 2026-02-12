@@ -62,9 +62,12 @@ export async function POST(request: Request, { params }: Params) {
         return { error: true as const, status: 404, max: 0 };
       }
 
+      const baseName = sourceProject.name.replace(/\s*\(copy(?:\s+\d+)?\)$/, "");
+      const truncatedName = baseName.substring(0, 93) + " (copy)";
+
       const newProject = await tx.project.create({
         data: {
-          name: `${sourceProject.name} (copy)`,
+          name: truncatedName,
           description: sourceProject.description,
           userId: session!.user!.id!,
           ...(sourceProject.versions.length > 0

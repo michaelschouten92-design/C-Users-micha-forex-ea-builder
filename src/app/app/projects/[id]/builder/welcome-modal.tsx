@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "algostudio-builder-onboarded";
 
@@ -83,13 +83,30 @@ export function WelcomeModal() {
     setDismissed(true);
   }
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        localStorage.setItem(STORAGE_KEY, "1");
+        setDismissed(true);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
   if (!open) return null;
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
       <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl p-8 max-w-md w-full mx-4 shadow-[0_8px_32px_rgba(79,70,229,0.2)]">
         <div className="flex justify-center mb-6">{current.icon}</div>
         <h2 className="text-xl font-bold text-white text-center mb-3">{current.title}</h2>

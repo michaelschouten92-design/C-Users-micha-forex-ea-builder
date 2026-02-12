@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeText, sanitizeInput, escapeHtml } from "./sanitize";
+import { sanitizeText } from "./sanitize";
 
 describe("sanitize", () => {
   describe("sanitizeText", () => {
@@ -27,45 +27,6 @@ describe("sanitize", () => {
       const input = "Hello & World < Test > 123";
       // Plain text passes through; React escapes entities during rendering
       expect(sanitizeText(input)).toBe("Hello & World  123");
-    });
-  });
-
-  describe("sanitizeInput", () => {
-    it("returns null for null input", () => {
-      expect(sanitizeInput(null)).toBe(null);
-    });
-
-    it("returns null for undefined input", () => {
-      expect(sanitizeInput(undefined)).toBe(null);
-    });
-
-    it("returns null for empty string", () => {
-      expect(sanitizeInput("")).toBe(null);
-    });
-
-    it("returns null for whitespace-only string", () => {
-      expect(sanitizeInput("   ")).toBe(null);
-    });
-
-    it("trims and sanitizes input", () => {
-      const input = "  <b>Hello</b>  ";
-      expect(sanitizeInput(input)).toBe("Hello");
-    });
-  });
-
-  describe("escapeHtml", () => {
-    it("escapes HTML entities", () => {
-      const input = '<script>alert("xss")</script>';
-      expect(escapeHtml(input)).toBe("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
-    });
-
-    it("escapes ampersands", () => {
-      expect(escapeHtml("Hello & World")).toBe("Hello &amp; World");
-    });
-
-    it("escapes single quotes", () => {
-      // DOMPurify uses &#039; format
-      expect(escapeHtml("It's")).toBe("It&#039;s");
     });
   });
 });

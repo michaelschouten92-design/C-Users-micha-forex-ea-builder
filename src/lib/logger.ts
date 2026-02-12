@@ -70,20 +70,9 @@ export const logger = pino({
 // ============================================
 
 /**
- * Create a child logger with additional context
- */
-export function createLogger(context: Record<string, unknown>) {
-  return logger.child(context);
-}
-
-/**
  * Logger for API routes - includes request context
  */
-export function createApiLogger(
-  route: string,
-  method: string,
-  userId?: string
-) {
+export function createApiLogger(route: string, method: string, userId?: string) {
   return logger.child({
     route,
     method,
@@ -91,40 +80,9 @@ export function createApiLogger(
   });
 }
 
-/**
- * Logger for background jobs
- */
-export function createJobLogger(jobName: string, jobId?: string) {
-  return logger.child({
-    job: jobName,
-    jobId: jobId || crypto.randomUUID(),
-  });
-}
-
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-
-/**
- * Log an API request with timing
- */
-export function logApiRequest(
-  log: pino.Logger,
-  status: number,
-  durationMs: number,
-  extra?: Record<string, unknown>
-) {
-  const level = status >= 500 ? "error" : status >= 400 ? "warn" : "info";
-
-  log[level](
-    {
-      status,
-      durationMs,
-      ...extra,
-    },
-    `${status >= 400 ? "Request failed" : "Request completed"}`
-  );
-}
 
 /**
  * Safely extract error details for logging

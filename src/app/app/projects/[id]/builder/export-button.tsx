@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
 
@@ -36,7 +36,7 @@ export function ExportButton({
   const [showModal, setShowModal] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
-  const [stepTimers, setStepTimers] = useState<NodeJS.Timeout[]>([]);
+  const stepTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
     if (!showModal) return;
@@ -50,9 +50,9 @@ export function ExportButton({
   // Clean up step timers on unmount
   useEffect(() => {
     return () => {
-      stepTimers.forEach(clearTimeout);
+      stepTimersRef.current.forEach(clearTimeout);
     };
-  }, [stepTimers]);
+  }, []);
 
   const exportSteps = ["Validating strategy...", "Generating MQL5 code...", "Finalizing export..."];
 
@@ -66,7 +66,7 @@ export function ExportButton({
     // Simulate progress steps while waiting for API
     const stepTimer1 = setTimeout(() => setExportStep(1), 800);
     const stepTimer2 = setTimeout(() => setExportStep(2), 2500);
-    setStepTimers([stepTimer1, stepTimer2]);
+    stepTimersRef.current = [stepTimer1, stepTimer2];
 
     try {
       const controller = new AbortController();
@@ -120,11 +120,15 @@ export function ExportButton({
 
   const [copied, setCopied] = useState(false);
 
-  function copyToClipboard() {
+  async function copyToClipboard() {
     if (!result) return;
-    navigator.clipboard.writeText(result.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(result.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Silently fail for clipboard errors
+    }
   }
 
   const isDisabled = exporting || !hasNodes || !canExport || !canExportMQL5;

@@ -21,26 +21,27 @@ function getStringId(field: string | { id: string } | null | undefined): string 
   return typeof field === "string" ? field : field.id;
 }
 
-// Helper to get subscription period dates
+// Helper to get subscription period dates with runtime validation
 function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date; end: Date } {
-  // Access via items data which has the period info
+  // Try items data first, then subscription level
   const item = subscription.items.data[0];
-  if (item) {
-    return {
-      start: new Date(
-        (item as unknown as { current_period_start: number }).current_period_start * 1000
-      ),
-      end: new Date((item as unknown as { current_period_end: number }).current_period_end * 1000),
-    };
+  const raw = item as unknown as Record<string, unknown> | undefined;
+  const subRaw = subscription as unknown as Record<string, unknown>;
+
+  const startRaw = raw?.current_period_start ?? subRaw.current_period_start;
+  const endRaw = raw?.current_period_end ?? subRaw.current_period_end;
+
+  if (typeof startRaw !== "number" || typeof endRaw !== "number") {
+    log.warn(
+      { subscriptionId: subscription.id, startRaw, endRaw },
+      "Missing period dates on subscription, using current time"
+    );
+    return { start: new Date(), end: new Date() };
   }
-  // Fallback to subscription level if available
-  const sub = subscription as unknown as {
-    current_period_start?: number;
-    current_period_end?: number;
-  };
+
   return {
-    start: sub.current_period_start ? new Date(sub.current_period_start * 1000) : new Date(),
-    end: sub.current_period_end ? new Date(sub.current_period_end * 1000) : new Date(),
+    start: new Date(startRaw * 1000),
+    end: new Date(endRaw * 1000),
   };
 }
 
@@ -139,6 +140,9 @@ export async function POST(request: NextRequest) {
     log.info({ eventType: event.type, eventId: event.id }, "Webhook processed successfully");
     return NextResponse.json({ received: true });
   } catch (error) {
+    // Remove idempotency claim so Stripe can retry this event
+    await prisma.webhookEvent.delete({ where: { eventId: event.id } }).catch(() => {});
+
     log.error(
       { error: extractErrorDetails(error), eventType: event.type },
       "Webhook handler error"
@@ -155,8 +159,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const plan = session.metadata?.plan;
 
   if (!userId || !plan) {
-    log.error({ sessionId: session.id }, "Missing metadata in checkout session");
-    return;
+    throw new Error(`Missing metadata in checkout session ${session.id}`);
   }
 
   if (!VALID_PAID_TIERS.includes(plan as PaidTier)) {
@@ -328,9 +331,9 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  // Access subscription from invoice
-  const inv = invoice as unknown as { subscription?: string | { id: string } };
-  const subscriptionId = getStringId(inv.subscription);
+  const subscriptionId = getStringId(
+    (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null
+  );
   if (!subscriptionId) return;
 
   const customerId = getStringId(invoice.customer);
@@ -362,6 +365,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   });
 
   if (userId) {
+    invalidateSubscriptionCache(userId);
     audit
       .paymentSuccess(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment recorded"));

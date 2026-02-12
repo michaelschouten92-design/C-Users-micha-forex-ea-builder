@@ -366,6 +366,12 @@ export async function sendPlanChangeEmail(
     return;
   }
 
+  // Escape user-provided plan names for safe HTML embedding
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safePreviousPlan = esc(previousPlan);
+  const safeNewPlan = esc(newPlan);
+
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
@@ -381,11 +387,11 @@ export async function sendPlanChangeEmail(
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Plan ${isUpgrade ? "upgraded" : "changed"}</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6;">
-              Your plan has been ${isUpgrade ? "upgraded" : "changed"} from <strong style="color: #ffffff;">${previousPlan}</strong> to <strong style="color: #ffffff;">${newPlan}</strong>.
+              Your plan has been ${isUpgrade ? "upgraded" : "changed"} from <strong style="color: #ffffff;">${safePreviousPlan}</strong> to <strong style="color: #ffffff;">${safeNewPlan}</strong>.
             </p>
             ${
               isUpgrade
-                ? `<p style="margin: 0 0 24px 0; line-height: 1.6;">You now have access to all ${newPlan} features. Enjoy!</p>`
+                ? `<p style="margin: 0 0 24px 0; line-height: 1.6;">You now have access to all ${safeNewPlan} features. Enjoy!</p>`
                 : `<p style="margin: 0 0 24px 0; line-height: 1.6;">Your new plan takes effect at the end of your current billing period.</p>`
             }
             <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">

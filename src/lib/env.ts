@@ -150,6 +150,17 @@ const refinedEnvSchema = envSchema
         "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required in production for distributed rate limiting",
       path: ["UPSTASH_REDIS_REST_URL"],
     }
+  )
+  .refine(
+    (data) => {
+      // In production, CRON_SECRET is required for cron job authentication
+      if (data.NODE_ENV === "production" && !data.CRON_SECRET) return false;
+      return true;
+    },
+    {
+      message: "CRON_SECRET is required in production for cron job authentication",
+      path: ["CRON_SECRET"],
+    }
   );
 
 // Client-safe schema (only NEXT_PUBLIC_* variables)

@@ -22,7 +22,6 @@ export function generateFileHeader(ctx: GeneratorContext): string {
 #property copyright "AlgoStudio"
 #property link      "https://algo-studio.com"
 #property version   "1.00"
-#property strict
 ${descLines}
 
 `;
@@ -55,7 +54,7 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
     if (input.isOptimizable) {
       lines.push(`input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
     } else {
-      lines.push(`const ${input.type} ${input.name} = ${input.value}; // ${input.comment} (fixed)`);
+      lines.push(`sinput ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
     }
   }
 
@@ -84,10 +83,11 @@ export function generateOnInit(ctx: GeneratorContext, initCode: string[]): strin
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   //--- Validate symbol is tradeable
-   if(!SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE))
+   //--- Validate symbol allows full trading
+   if(SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL)
    {
-      Print("Symbol ", _Symbol, " is not available for trading");
+      Print("Symbol ", _Symbol, " does not allow full trading (mode: ",
+            EnumToString((ENUM_SYMBOL_TRADE_MODE)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE)), ")");
       return(INIT_FAILED);
    }
 
@@ -164,7 +164,8 @@ export function generateOnTick(
       for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
       {
          ulong dealTicket = HistoryDealGetTicket(i);
-         if(dealTicket > 0 && HistoryDealGetInteger(dealTicket, DEAL_MAGIC) == InpMagicNumber)
+         if(dealTicket > 0 && HistoryDealGetInteger(dealTicket, DEAL_MAGIC) == InpMagicNumber
+            && HistoryDealGetString(dealTicket, DEAL_SYMBOL) == _Symbol)
          {
             dailyPnL += HistoryDealGetDouble(dealTicket, DEAL_PROFIT)
                       + HistoryDealGetDouble(dealTicket, DEAL_SWAP)
@@ -176,12 +177,17 @@ export function generateOnTick(
       for(int i = PositionsTotal() - 1; i >= 0; i--)
       {
          ulong ticket = PositionGetTicket(i);
-         if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+         if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber
+            && PositionGetString(POSITION_SYMBOL) == _Symbol)
             dailyPnL += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
       }
 
       double balance = AccountInfoDouble(ACCOUNT_BALANCE);
       double dailyPnLPercent = (balance > 0) ? (dailyPnL / balance) * 100.0 : 0;
+
+      // Reset daily limit flags on new day
+      static datetime lastPnLDay = 0;
+      if(todayStart != lastPnLDay) { lastPnLDay = todayStart; }
 `;
     if (ctx.maxDailyProfitPercent > 0) {
       dailyPnlCode += `
@@ -189,8 +195,8 @@ export function generateOnTick(
       {
          CloseAllPositions();
          static bool profitLimitHit = false;
+         if(todayStart != lastPnLDay) profitLimitHit = false;
          if(!profitLimitHit) { Print("Daily profit target reached: ", DoubleToString(dailyPnLPercent, 2), "%"); profitLimitHit = true; }
-         if(iTime(_Symbol, PERIOD_D1, 0) != todayStart) profitLimitHit = false;
          return;
       }
 `;
@@ -201,8 +207,8 @@ export function generateOnTick(
       {
          CloseAllPositions();
          static bool lossLimitHit = false;
+         if(todayStart != lastPnLDay) lossLimitHit = false;
          if(!lossLimitHit) { Print("Daily loss limit reached: ", DoubleToString(dailyPnLPercent, 2), "%"); lossLimitHit = true; }
-         if(iTime(_Symbol, PERIOD_D1, 0) != todayStart) lossLimitHit = false;
          return;
       }
 `;
@@ -427,8 +433,9 @@ double CalculateLotSize(double riskPercent, double slPips)
    //--- Normalize lot size
    lots = MathFloor(lots / lotStep) * lotStep;
    lots = MathMax(minLot, MathMin(maxLot, lots));
+   int lotDigits = (int)MathMax(-MathLog10(lotStep), 0);
 
-   return NormalizeDouble(lots, 2);
+   return NormalizeDouble(lots, lotDigits);
 }
 
 //+------------------------------------------------------------------+

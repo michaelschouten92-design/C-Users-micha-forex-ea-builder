@@ -533,15 +533,12 @@ export function generateEntryLogic(
     indicatorNodes.forEach((indNode, indIndex) => {
       const d = indNode.data as Record<string, unknown>;
       if (d._filterRole === "htf-trend") {
-        // Price above EMA = allow buy, below = allow sell
+        // Price above HTF EMA = allow buy, below = allow sell
+        // Use buffer[0] for current HTF bar value and current-TF close for price
         const vp = `ind${indIndex}`;
         const s = d.signalMode === "candle_close" ? 1 : 0;
-        buyConditions.push(
-          `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${vp}Buffer[${1 + s}]))`
-        );
-        sellConditions.push(
-          `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${vp}Buffer[${1 + s}]))`
-        );
+        buyConditions.push(`(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${s}), ${vp}Buffer[0]))`);
+        sellConditions.push(`(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${s}), ${vp}Buffer[0]))`);
         handledIndices.add(indIndex);
       } else if (d._filterRole === "rsi-confirm") {
         // RSI < longMax for buy, RSI > shortMin for sell

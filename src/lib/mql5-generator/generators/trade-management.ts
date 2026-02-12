@@ -542,7 +542,8 @@ void CleanPartialClosedTickets()
   code.onTick.push("         if(profitReached && !IsPartialClosed(ticket))");
   code.onTick.push("         {");
   code.onTick.push(
-    "            double closeVolume = NormalizeDouble(volume * InpPartialClosePercent / 100.0, 2);"
+    "            double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
+    "            double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;"
   );
   code.onTick.push("            if(closeVolume >= SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))");
   code.onTick.push("            {");

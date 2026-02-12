@@ -75,14 +75,26 @@ function generateCustomTimesCode(
 
   // Only declare MqlDateTime/currentMinutes if not already declared
   const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
+  const timeSource = (data.useServerTime ?? true) ? "TimeCurrent()" : "TimeGMT()";
   if (needsTimeDecl) {
     code.onTick.push("MqlDateTime dt;");
-    if (data.useServerTime ?? true) {
-      code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
-    } else {
-      code.onTick.push("TimeToStruct(TimeGMT(), dt); // Using GMT time");
-    }
+    code.onTick.push(
+      `TimeToStruct(${timeSource}, dt); // Using ${(data.useServerTime ?? true) ? "broker server" : "GMT"} time`
+    );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
+  } else {
+    // Re-initialize dt if a different timing node needs a different time source
+    const usesGMT = code.onTick.some((l) => l.includes("TimeToStruct(TimeGMT()"));
+    const usesServer = code.onTick.some((l) => l.includes("TimeToStruct(TimeCurrent()"));
+    const needsReinit =
+      ((data.useServerTime ?? true) && usesGMT && !usesServer) ||
+      (!(data.useServerTime ?? true) && usesServer && !usesGMT);
+    if (needsReinit) {
+      code.onTick.push(
+        `TimeToStruct(${timeSource}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
+      );
+      code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
+    }
   }
   code.onTick.push("");
 
@@ -115,16 +127,18 @@ function generateCustomTimesCode(
     return;
   }
 
+  // Use varName-derived suffix to avoid collisions with multiple timing nodes
+  const daySuffix = varName.replace("timingOK", "");
   if (activeDays.length === 7) {
     code.onTick.push("// Trading all days");
-    code.onTick.push("bool isDayAllowed = true;");
+    code.onTick.push(`bool isDayAllowed${daySuffix} = true;`);
   } else {
     const dayConditions = activeDays.map((d) => `dt.day_of_week == ${d}`).join(" || ");
-    code.onTick.push(`bool isDayAllowed = (${dayConditions});`);
+    code.onTick.push(`bool isDayAllowed${daySuffix} = (${dayConditions});`);
   }
 
   code.onTick.push("");
-  code.onTick.push("if(isDayAllowed)");
+  code.onTick.push(`if(isDayAllowed${daySuffix})`);
   code.onTick.push("{");
 
   // Generate time slot conditions
@@ -210,15 +224,27 @@ function generateTradingSessionCode(
   code.onTick.push(`bool ${varName} = false;`);
 
   // Only declare MqlDateTime/currentMinutes if not already declared
-  const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
-  if (needsTimeDecl) {
+  const needsTimeDecl2 = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
+  const timeSource2 = (data.useServerTime ?? true) ? "TimeCurrent()" : "TimeGMT()";
+  if (needsTimeDecl2) {
     code.onTick.push("MqlDateTime dt;");
-    if (data.useServerTime ?? true) {
-      code.onTick.push("TimeToStruct(TimeCurrent(), dt); // Using broker server time");
-    } else {
-      code.onTick.push("TimeToStruct(TimeGMT(), dt); // Using GMT time");
-    }
+    code.onTick.push(
+      `TimeToStruct(${timeSource2}, dt); // Using ${(data.useServerTime ?? true) ? "broker server" : "GMT"} time`
+    );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
+  } else {
+    // Re-initialize dt if a different timing node needs a different time source
+    const usesGMT2 = code.onTick.some((l) => l.includes("TimeToStruct(TimeGMT()"));
+    const usesServer2 = code.onTick.some((l) => l.includes("TimeToStruct(TimeCurrent()"));
+    const needsReinit2 =
+      ((data.useServerTime ?? true) && usesGMT2 && !usesServer2) ||
+      (!(data.useServerTime ?? true) && usesServer2 && !usesGMT2);
+    if (needsReinit2) {
+      code.onTick.push(
+        `TimeToStruct(${timeSource2}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
+      );
+      code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
+    }
   }
 
   // Day-of-week filter

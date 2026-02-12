@@ -107,6 +107,7 @@ model BuildVersion {
   // Unique constraint: one version number per project
   @@unique([projectId, versionNo])
   @@index([projectId])
+  @@index([projectId, isAutosave, versionNo])
 }
 
 model ExportJob {

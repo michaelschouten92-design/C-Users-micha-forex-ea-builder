@@ -14,6 +14,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { migrateProjectData } from "@/lib/migrations";
 import {
   exportRateLimiter,
+  apiRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -207,9 +208,10 @@ export async function POST(request: NextRequest, { params }: Props) {
   } catch (error) {
     log.error({ error: extractErrorDetails(error), projectId: id }, "Export failed");
 
-    // Audit failed export
+    // Audit failed export (fire-and-forget to avoid masking the original error)
     if (session?.user?.id) {
-      await audit.exportFailed(session.user.id, id, String(error));
+      const details = extractErrorDetails(error);
+      audit.exportFailed(session.user.id, id, details.message ?? "Unknown error").catch(() => {});
     }
 
     return NextResponse.json(
@@ -229,8 +231,8 @@ export async function GET(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate limit
-  const rateLimitResult = await checkRateLimit(exportRateLimiter, session.user.id);
+  // Rate limit (use general limiter for read-only history, not the export quota)
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: formatRateLimitError(rateLimitResult) },

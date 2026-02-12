@@ -47,26 +47,13 @@ interface StrategyCanvasProps {
   userTier?: string;
 }
 
-let nodeIdCounter = 0;
-
-function initNodeIdCounter(nodes: Node[]) {
-  let max = 0;
-  for (const n of nodes) {
-    const match = n.id.match(/-(\d+)$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num > max) max = num;
-    }
-  }
-  nodeIdCounter = max;
-}
-
 export function StrategyCanvas({
   projectId,
   initialData,
   canExportMQL5 = false,
   userTier,
 }: StrategyCanvasProps) {
+  const nodeIdCounterRef = useRef(0);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, setViewport } = useReactFlow();
 
@@ -80,7 +67,15 @@ export function StrategyCanvas({
 
   const initialNodes = useMemo(() => {
     const nodes = (initialData?.nodes as Node[]) ?? [];
-    initNodeIdCounter(nodes);
+    let max = 0;
+    for (const n of nodes) {
+      const match = n.id.match(/-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > max) max = num;
+      }
+    }
+    nodeIdCounterRef.current = max;
     return nodes;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -142,7 +137,7 @@ export function StrategyCanvas({
 
   // Helper to generate unique node IDs
   const getNextNodeId = useCallback((type: string) => {
-    return `${type}-${++nodeIdCounter}`;
+    return `${type}-${++nodeIdCounterRef.current}`;
   }, []);
 
   // Clipboard hook

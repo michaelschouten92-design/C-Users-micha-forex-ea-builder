@@ -139,6 +139,8 @@ export function useAutoSave({
           // On version conflict, update version and retry once
           if (res.status === 409 && error.currentVersion) {
             lastSavedVersionRef.current = error.currentVersion as number;
+            const retryController = new AbortController();
+            const retryTimeoutId = setTimeout(() => retryController.abort(), 30000);
             const retryRes = await fetch(`/api/projects/${projectId}/versions`, {
               method: "POST",
               headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
@@ -147,7 +149,9 @@ export function useAutoSave({
                 expectedVersion: lastSavedVersionRef.current || undefined,
                 isAutosave,
               }),
+              signal: retryController.signal,
             });
+            clearTimeout(retryTimeoutId);
             if (retryRes.ok) {
               const retryData = await retryRes.json();
               lastSavedVersionRef.current = retryData.versionNo;

@@ -84,7 +84,8 @@ export function NumberField({
           setLocalValue(raw);
           const num = parseFloat(raw);
           if (!isNaN(num)) {
-            onChange(num);
+            const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, num));
+            onChange(clamped);
           }
         }}
         onBlur={() => {
