@@ -120,6 +120,7 @@ export default function PricingPage() {
                     ["Early feature access", false, false, true],
                     ["Prop firm presets", false, false, true],
                     ["Direct developer support", false, false, true],
+                    ["Weekly Elite members call", false, false, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (
                   <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">

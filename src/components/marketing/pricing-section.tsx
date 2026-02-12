@@ -266,6 +266,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Early access to new features",
               "Prop firm configuration presets",
               "Direct developer support",
+              "Weekly Elite members call",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon className="w-5 h-5 text-[#A78BFA]" />
