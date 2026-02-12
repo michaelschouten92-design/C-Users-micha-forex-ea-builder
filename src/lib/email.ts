@@ -226,7 +226,7 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Take your strategy live</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6;">
-              You have 2 free exports per month on your current plan. That&apos;s enough to test your strategy in MetaTrader 5.
+              You have 1 free export per month on your current plan. That&apos;s enough to test your strategy in MetaTrader 5.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6;">
               Need more exports or access to all strategy templates? Check out our paid plans.
@@ -309,6 +309,14 @@ export async function sendContactFormEmail(
     return;
   }
 
+  // Escape all user-provided values for safe HTML embedding
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeName = esc(senderName);
+  const safeEmail = esc(senderEmail);
+  const safeSubject = esc(subject);
+  const safeMessage = esc(message);
+
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: "support@algo-studio.com",
@@ -325,12 +333,12 @@ export async function sendContactFormEmail(
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">New contact message</h1>
             <table style="width: 100%; margin: 0 0 24px 0; font-size: 14px;">
-              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">From:</td><td style="padding: 6px 0; color: #ffffff;">${senderName}</td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${senderEmail}" style="color: #A78BFA;">${senderEmail}</a></td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Subject:</td><td style="padding: 6px 0; color: #ffffff;">${subject || "—"}</td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">From:</td><td style="padding: 6px 0; color: #ffffff;">${safeName}</td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Subject:</td><td style="padding: 6px 0; color: #ffffff;">${safeSubject || "—"}</td></tr>
             </table>
             <div style="padding: 20px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); white-space: pre-wrap; line-height: 1.6;">
-              ${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+              ${safeMessage}
             </div>
           </div>
         </body>

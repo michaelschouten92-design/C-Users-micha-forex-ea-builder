@@ -55,7 +55,7 @@ export function validateCsrfToken(request: NextRequest): boolean {
 /**
  * Constant-time string comparison (Edge-compatible, no Node.js crypto)
  */
-function timingSafeEqual(a: string, b: string): boolean {
+export function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
 
   const encoder = new TextEncoder();

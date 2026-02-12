@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { sanitizeText } from "@/lib/sanitize";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 import {
   contactFormRateLimiter,
   checkRateLimit,
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
       { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
     );
   }
+
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
+  const sizeError = checkBodySize(request);
+  if (sizeError) return sizeError;
 
   try {
     const body = await request.json();

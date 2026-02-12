@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendAccountDeletedEmail } from "@/lib/email";
-import { checkBodySize } from "@/lib/validations";
+import { checkBodySize, checkContentType } from "@/lib/validations";
 import {
   gdprDeleteRateLimiter,
   checkRateLimit,
@@ -35,6 +35,8 @@ export async function DELETE(request: Request) {
     );
   }
 
+  const contentTypeError = checkContentType(request);
+  if (contentTypeError) return contentTypeError;
   const sizeError = checkBodySize(request);
   if (sizeError) return sizeError;
 

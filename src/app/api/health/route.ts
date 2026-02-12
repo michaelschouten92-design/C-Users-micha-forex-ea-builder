@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { features } from "@/lib/env";
+import { timingSafeEqual } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,8 @@ export async function GET(request: NextRequest) {
   // Only expose detailed service info when authenticated with CRON_SECRET
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  const isAuthorized = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const expected = cronSecret ? `Bearer ${cronSecret}` : "";
+  const isAuthorized = cronSecret && authHeader !== null && timingSafeEqual(authHeader, expected);
 
   // Database check (always performed)
   let dbUp = false;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { timingSafeEqual } from "@/lib/csrf";
 import { sendOnboardingDay1Email, sendOnboardingDay3Email } from "@/lib/email";
 
 const log = logger.child({ route: "/api/cron/onboarding-emails" });
@@ -22,7 +23,7 @@ async function handleOnboardingEmails(request: NextRequest) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
 
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  if (!authHeader || !timingSafeEqual(authHeader, `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
