@@ -14,6 +14,7 @@ import {
   RANGE_SL_OPTIONS,
   RANGE_METHOD_OPTIONS,
   BREAKOUT_ENTRY_OPTIONS,
+  APPLIED_PRICE_OPTIONS,
 } from "./constants";
 import {
   OptimizableFieldCheckbox,
@@ -42,6 +43,12 @@ export function EMACrossoverEntryFields({
         value={data.timeframe ?? "H1"}
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as EMACrossoverEntryData["appliedPrice"] })}
       />
 
       {/* Basic fields */}
@@ -118,6 +125,16 @@ export function EMACrossoverEntryFields({
           />
           <OptimizableFieldCheckbox fieldName="rsiShortMin" data={data} onChange={onChange} />
         </ToggleField>
+        <div>
+          <NumberField
+            label="Min EMA separation (pips, 0=off)"
+            value={data.minEmaSeparation ?? 0}
+            min={0}
+            max={500}
+            onChange={(v) => onChange({ minEmaSeparation: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="minEmaSeparation" data={data} onChange={onChange} />
+        </div>
       </AdvancedToggleSection>
     </>
   );
@@ -329,6 +346,12 @@ export function RSIReversalEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as RSIReversalEntryData["appliedPrice"] })}
+      />
 
       {/* Basic fields */}
       <NumberField
@@ -400,6 +423,12 @@ export function TrendPullbackEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as TrendPullbackEntryData["appliedPrice"] })}
+      />
 
       {/* Basic fields */}
       <NumberField
@@ -426,6 +455,14 @@ export function TrendPullbackEntryFields({
         onChange={(v) => onChange({ rsiPullbackLevel: v })}
       />
       <OptimizableFieldCheckbox fieldName="rsiPullbackLevel" data={data} onChange={onChange} />
+      <NumberField
+        label="Pullback Max Distance (%)"
+        value={data.pullbackMaxDistance ?? 2.0}
+        min={0.1}
+        max={20}
+        onChange={(v) => onChange({ pullbackMaxDistance: v })}
+      />
+      <OptimizableFieldCheckbox fieldName="pullbackMaxDistance" data={data} onChange={onChange} />
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       {/* Advanced */}
@@ -435,6 +472,26 @@ export function TrendPullbackEntryFields({
           checked={data.requireEmaBuffer}
           onChange={(v) => onChange({ requireEmaBuffer: v })}
         />
+        <ToggleField
+          label="ADX trend strength filter"
+          checked={data.useAdxFilter ?? false}
+          onChange={(v) => onChange({ useAdxFilter: v })}
+        >
+          <NumberField
+            label="ADX Period"
+            value={data.adxPeriod ?? 14}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ adxPeriod: v })}
+          />
+          <NumberField
+            label="ADX Threshold"
+            value={data.adxThreshold ?? 25}
+            min={1}
+            max={100}
+            onChange={(v) => onChange({ adxThreshold: v })}
+          />
+        </ToggleField>
       </AdvancedToggleSection>
     </>
   );
@@ -458,6 +515,12 @@ export function MACDCrossoverEntryFields({
         value={data.timeframe ?? "H1"}
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Applied Price"
+        value={data.appliedPrice ?? "CLOSE"}
+        options={APPLIED_PRICE_OPTIONS}
+        onChange={(v) => onChange({ appliedPrice: v as MACDCrossoverEntryData["appliedPrice"] })}
       />
 
       {/* Basic fields */}
@@ -485,6 +548,18 @@ export function MACDCrossoverEntryFields({
         onChange={(v) => onChange({ macdSignal: v })}
       />
       <OptimizableFieldCheckbox fieldName="macdSignal" data={data} onChange={onChange} />
+      <SelectField
+        label="Signal Type"
+        value={data.macdSignalType ?? "SIGNAL_CROSS"}
+        options={[
+          { value: "SIGNAL_CROSS", label: "Signal Line Cross" },
+          { value: "ZERO_CROSS", label: "Zero Line Cross" },
+          { value: "HISTOGRAM_SIGN", label: "Histogram Sign Change" },
+        ]}
+        onChange={(v) =>
+          onChange({ macdSignalType: v as MACDCrossoverEntryData["macdSignalType"] })
+        }
+      />
       {data.macdFast >= data.macdSlow && (
         <FieldWarning message="MACD fast should be smaller than slow" />
       )}

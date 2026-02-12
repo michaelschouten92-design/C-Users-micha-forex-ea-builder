@@ -303,8 +303,18 @@ function generateTrailingStopCode(
       "         double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;"
     );
   } else if (data.method === "PERCENTAGE") {
+    // Trail by percentage of current profit in points
+    code.onTick.push("         double currentProfitPoints = 0;");
+    code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
     code.onTick.push(
-      "         double trailPoints = (openPrice * InpTrailPercent / 100.0) / point;"
+      "            currentProfitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;"
+    );
+    code.onTick.push("         else");
+    code.onTick.push(
+      "            currentProfitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;"
+    );
+    code.onTick.push(
+      "         double trailPoints = MathMax(currentProfitPoints * (InpTrailPercent / 100.0), _pipFactor);"
     );
   } else {
     // FIXED_PIPS
@@ -519,25 +529,28 @@ void CleanPartialClosedTickets()
   code.onTick.push("         double volume = PositionGetDouble(POSITION_VOLUME);");
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
+  code.onTick.push("         bool profitReached = false;");
   if (triggerMethod === "PERCENT") {
+    // Profit-based: trigger when position profit as % of balance reaches threshold
+    code.onTick.push("         double posProfit = PositionGetDouble(POSITION_PROFIT);");
+    code.onTick.push("         double balance = AccountInfoDouble(ACCOUNT_BALANCE);");
     code.onTick.push(
-      "         double triggerPrice = openPrice * InpPartialCloseTriggerPercent / 100.0;"
+      "         if(balance > 0 && (posProfit / balance) * 100.0 >= InpPartialCloseTriggerPercent)"
     );
+    code.onTick.push("            profitReached = true;");
   } else {
     code.onTick.push(
       "         double triggerPrice = InpPartialCloseTriggerPips * _pipFactor * point;"
     );
+    code.onTick.push(
+      "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)"
+    );
+    code.onTick.push("            profitReached = true;");
+    code.onTick.push(
+      "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)"
+    );
+    code.onTick.push("            profitReached = true;");
   }
-  code.onTick.push("");
-  code.onTick.push("         bool profitReached = false;");
-  code.onTick.push(
-    "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)"
-  );
-  code.onTick.push("            profitReached = true;");
-  code.onTick.push(
-    "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)"
-  );
-  code.onTick.push("            profitReached = true;");
   code.onTick.push("");
   code.onTick.push("         if(profitReached && !IsPartialClosed(ticket))");
   code.onTick.push("         {");

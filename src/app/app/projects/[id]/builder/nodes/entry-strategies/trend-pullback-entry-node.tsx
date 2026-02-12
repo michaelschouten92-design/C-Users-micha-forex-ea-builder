@@ -36,6 +36,18 @@ export const TrendPullbackEntryNode = memo(function TrendPullbackEntryNode({
           </span>
         </div>
         <div className="flex justify-between">
+          <span className="text-[#94A3B8]">Max Distance</span>
+          <span className="text-white font-medium">{data.pullbackMaxDistance ?? 2.0}%</span>
+        </div>
+        {data.useAdxFilter && (
+          <div className="flex justify-between">
+            <span className="text-[#94A3B8]">ADX Filter</span>
+            <span className="text-white font-medium">
+              {data.adxPeriod ?? 14} &gt; {data.adxThreshold ?? 25}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between">
           <span className="text-[#94A3B8]">Risk</span>
           <span className="text-white font-medium">{data.riskPercent}%</span>
         </div>

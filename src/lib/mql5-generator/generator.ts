@@ -128,6 +128,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   if (d.entryType === "ema-crossover") {
     const ema = d as EMACrossoverEntryData;
     const emaTf = ema.timeframe ?? "H1";
+    const emaAppliedPrice = ema.appliedPrice ?? "CLOSE";
     virtualNodes.push(
       vNode("ma-fast", "moving-average", {
         label: `Fast EMA(${ema.fastEma})`,
@@ -136,12 +137,14 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         timeframe: emaTf,
         period: ema.fastEma,
         method: "EMA",
+        appliedPrice: emaAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
         optimizableFields: mapOpt(["fastEma", "period"]),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "fast",
+        _minEmaSeparation: ema.minEmaSeparation ?? 0,
       }),
       vNode("ma-slow", "moving-average", {
         label: `Slow EMA(${ema.slowEma})`,
@@ -150,6 +153,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         timeframe: emaTf,
         period: ema.slowEma,
         method: "EMA",
+        appliedPrice: emaAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
         optimizableFields: mapOpt(["slowEma", "period"]),
@@ -251,6 +255,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     }
   } else if (d.entryType === "rsi-reversal") {
     const rsi = d as RSIReversalEntryData;
+    const rsiAppliedPrice = rsi.appliedPrice ?? "CLOSE";
     virtualNodes.push(
       vNode("rsi", "rsi", {
         label: `RSI(${rsi.rsiPeriod})`,
@@ -258,6 +263,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         indicatorType: "rsi",
         timeframe: rsi.timeframe ?? "H1",
         period: rsi.rsiPeriod,
+        appliedPrice: rsiAppliedPrice,
         overboughtLevel: rsi.overboughtLevel,
         oversoldLevel: rsi.oversoldLevel,
         signalMode: "candle_close",
@@ -278,6 +284,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           timeframe: rsi.timeframe ?? "H1",
           period: rsi.trendEma,
           method: "EMA",
+          appliedPrice: rsiAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
           optimizableFields: mapOpt(["trendEma", "period"]),
@@ -288,7 +295,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   } else if (d.entryType === "trend-pullback") {
     const tp = d as TrendPullbackEntryData;
     const tpTf = tp.timeframe ?? "H1";
-    // Trend EMA for direction
+    const tpAppliedPrice = tp.appliedPrice ?? "CLOSE";
+    // Trend EMA for direction + pullback proximity
     virtualNodes.push(
       vNode("ma-trend", "moving-average", {
         label: `Trend EMA(${tp.trendEma})`,
@@ -297,10 +305,12 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         timeframe: tpTf,
         period: tp.trendEma,
         method: "EMA",
+        appliedPrice: tpAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
         optimizableFields: mapOpt(["trendEma", "period"]),
         _requireEmaBuffer: tp.requireEmaBuffer ?? false,
+        _pullbackMaxDistance: tp.pullbackMaxDistance ?? 2.0,
       }),
       // RSI for pullback detection
       vNode("rsi-pullback", "rsi", {
@@ -309,6 +319,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         indicatorType: "rsi",
         timeframe: tpTf,
         period: tp.pullbackRsiPeriod,
+        appliedPrice: tpAppliedPrice,
         overboughtLevel: 100 - tp.rsiPullbackLevel,
         oversoldLevel: tp.rsiPullbackLevel,
         signalMode: "candle_close",
@@ -319,8 +330,24 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         ),
       })
     );
+    // ADX trend strength filter
+    if (tp.useAdxFilter) {
+      virtualNodes.push(
+        vNode("adx-filter", "adx", {
+          label: `ADX(${tp.adxPeriod})`,
+          category: "indicator",
+          indicatorType: "adx",
+          timeframe: tpTf,
+          period: tp.adxPeriod,
+          trendLevel: tp.adxThreshold,
+          signalMode: "candle_close",
+          _filterRole: "adx-trend-strength",
+        })
+      );
+    }
   } else if (d.entryType === "macd-crossover") {
     const macd = d as MACDCrossoverEntryData;
+    const macdAppliedPrice = macd.appliedPrice ?? "CLOSE";
     virtualNodes.push(
       vNode("macd", "macd", {
         label: `MACD(${macd.macdFast},${macd.macdSlow},${macd.macdSignal})`,
@@ -330,7 +357,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         fastPeriod: macd.macdFast,
         slowPeriod: macd.macdSlow,
         signalPeriod: macd.macdSignal,
+        appliedPrice: macdAppliedPrice,
         signalMode: "candle_close",
+        _macdSignalType: macd.macdSignalType ?? "SIGNAL_CROSS",
         optimizableFields: mapOpt(
           ["macdFast", "fastPeriod"],
           ["macdSlow", "slowPeriod"],

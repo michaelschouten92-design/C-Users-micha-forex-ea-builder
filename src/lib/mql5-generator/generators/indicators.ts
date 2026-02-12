@@ -231,6 +231,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}HistogramBuffer[];`);
         code.onInit.push(
           `${varPrefix}Handle = iMACD(_Symbol, ${getTimeframe(macd.timeframe)}, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price);`
         );
@@ -240,8 +241,14 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}HistogramBuffer, true);`);
+        code.onInit.push(`ArrayResize(${varPrefix}HistogramBuffer, ${copyBars});`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
+        // Compute histogram (main - signal) after buffers are filled
+        code.onTick.push(
+          `for(int _h${index}=0; _h${index}<${copyBars}; _h${index}++) ${varPrefix}HistogramBuffer[_h${index}] = ${varPrefix}MainBuffer[_h${index}] - ${varPrefix}SignalBuffer[_h${index}];`
+        );
         code.maxIndicatorPeriod = Math.max(
           code.maxIndicatorPeriod,
           (Number(macd.slowPeriod) || 26) + (Number(macd.signalPeriod) || 9)

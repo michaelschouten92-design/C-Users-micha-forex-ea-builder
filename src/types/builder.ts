@@ -428,6 +428,7 @@ export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFi
   // Basic
   fastEma: number;
   slowEma: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
   // Advanced toggles
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;
@@ -436,6 +437,7 @@ export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFi
   rsiPeriod: number;
   rsiLongMax: number;
   rsiShortMin: number;
+  minEmaSeparation?: number; // pips, 0 = disabled
 }
 
 // 2) Range Breakout — breakout of recent range
@@ -476,6 +478,7 @@ export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFie
   rsiPeriod: number;
   oversoldLevel: number;
   overboughtLevel: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
   // Advanced toggles
   trendFilter: boolean;
   trendEma: number;
@@ -489,8 +492,13 @@ export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyF
   trendEma: number;
   pullbackRsiPeriod: number;
   rsiPullbackLevel: number; // long threshold; short = 100 - this
+  pullbackMaxDistance: number; // max % distance from EMA (default 2.0)
   // Advanced toggles
   requireEmaBuffer: boolean;
+  useAdxFilter: boolean;
+  adxPeriod: number;
+  adxThreshold: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 }
 
 // 5) MACD Crossover — momentum / trend shift
@@ -501,6 +509,8 @@ export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyF
   macdFast: number;
   macdSlow: number;
   macdSignal: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  macdSignalType?: "SIGNAL_CROSS" | "ZERO_CROSS" | "HISTOGRAM_SIGN";
   // Advanced toggles
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;
@@ -732,6 +742,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       rsiPeriod: 14,
       rsiLongMax: 60,
       rsiShortMin: 40,
+      minEmaSeparation: 0,
     } as EMACrossoverEntryData,
   },
   {
@@ -748,6 +759,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       trendEma: 200,
       pullbackRsiPeriod: 14,
       rsiPullbackLevel: 40,
+      pullbackMaxDistance: 2.0,
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,
@@ -755,6 +767,9 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
       requireEmaBuffer: false,
+      useAdxFilter: false,
+      adxPeriod: 14,
+      adxThreshold: 25,
     } as TrendPullbackEntryData,
   },
   {

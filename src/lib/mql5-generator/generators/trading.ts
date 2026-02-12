@@ -501,14 +501,20 @@ export function generateEntryLogic(
 
     // Handle EMA Crossover entry strategies (need cross-indicator comparison, not price vs MA)
     const handledIndices = new Set<number>();
-    const emaCrossGroups = new Map<string, { fast?: number; slow?: number }>();
+    const emaCrossGroups = new Map<
+      string,
+      { fast?: number; slow?: number; minEmaSeparation?: number }
+    >();
     indicatorNodes.forEach((indNode, indIndex) => {
       const d = indNode.data as Record<string, unknown>;
       if (d._entryStrategyType === "ema-crossover" && d._entryStrategyId) {
         const esId = d._entryStrategyId as string;
         if (!emaCrossGroups.has(esId)) emaCrossGroups.set(esId, {});
         const group = emaCrossGroups.get(esId)!;
-        if (d._role === "fast") group.fast = indIndex;
+        if (d._role === "fast") {
+          group.fast = indIndex;
+          group.minEmaSeparation = Number(d._minEmaSeparation) || 0;
+        }
         if (d._role === "slow") group.slow = indIndex;
       }
     });
@@ -517,13 +523,16 @@ export function generateEntryLogic(
         const fp = `ind${group.fast}`;
         const sp = `ind${group.slow}`;
         // Fast EMA crosses above Slow EMA (bullish crossover)
-        buyConditions.push(
-          `(DoubleLE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleGT(${fp}Buffer[1], ${sp}Buffer[1]))`
-        );
-        // Fast EMA crosses below Slow EMA (bearish crossover)
-        sellConditions.push(
-          `(DoubleGE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleLT(${fp}Buffer[1], ${sp}Buffer[1]))`
-        );
+        let buyCross = `(DoubleLE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleGT(${fp}Buffer[1], ${sp}Buffer[1]))`;
+        let sellCross = `(DoubleGE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleLT(${fp}Buffer[1], ${sp}Buffer[1]))`;
+        // Minimum EMA separation filter
+        if (group.minEmaSeparation && group.minEmaSeparation > 0) {
+          const sepCondition = `MathAbs(${fp}Buffer[1] - ${sp}Buffer[1]) / (_Point * _pipFactor) >= ${group.minEmaSeparation}`;
+          buyCross = `(${buyCross} && ${sepCondition})`;
+          sellCross = `(${sellCross} && ${sepCondition})`;
+        }
+        buyConditions.push(buyCross);
+        sellConditions.push(sellCross);
         handledIndices.add(group.fast);
         handledIndices.add(group.slow);
       }
@@ -547,6 +556,13 @@ export function generateEntryLogic(
         buyConditions.push(`(DoubleLT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`);
         sellConditions.push(`(DoubleGT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`);
         handledIndices.add(indIndex);
+      } else if (d._filterRole === "adx-trend-strength") {
+        // ADX > threshold = trend is strong enough (both directions)
+        const vp = `ind${indIndex}`;
+        const s = d.signalMode === "candle_close" ? 1 : 0;
+        buyConditions.push(`(DoubleGT(${vp}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel))`);
+        sellConditions.push(`(DoubleGT(${vp}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel))`);
+        handledIndices.add(indIndex);
       }
     });
 
@@ -563,13 +579,17 @@ export function generateEntryLogic(
         switch (indData.indicatorType) {
           case "moving-average": {
             const requireBuffer = "_requireEmaBuffer" in indData && indData._requireEmaBuffer;
-            if (requireBuffer) {
-              // Price above EMA but within 2% distance (not overextended)
+            const hasPullbackDist =
+              "_pullbackMaxDistance" in indData && Number(indData._pullbackMaxDistance) > 0;
+            if (requireBuffer || hasPullbackDist) {
+              const maxDist = hasPullbackDist ? Number(indData._pullbackMaxDistance) / 100.0 : 0.02;
+              // Buy: price > EMA (uptrend) AND price within maxDistance% of EMA (pulled back near EMA)
               buyConditions.push(
-                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (iClose(_Symbol, PERIOD_CURRENT, ${1 + s}) - ${varPrefix}Buffer[${1 + s}]) / ${varPrefix}Buffer[${1 + s}] < 0.02)`
+                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (iClose(_Symbol, PERIOD_CURRENT, ${1 + s}) - ${varPrefix}Buffer[${1 + s}]) / ${varPrefix}Buffer[${1 + s}] < ${maxDist})`
               );
+              // Sell: price < EMA (downtrend) AND price within maxDistance% of EMA (pulled back near EMA)
               sellConditions.push(
-                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (${varPrefix}Buffer[${1 + s}] - iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) / ${varPrefix}Buffer[${1 + s}] < 0.02)`
+                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (${varPrefix}Buffer[${1 + s}] - iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) / ${varPrefix}Buffer[${1 + s}] < ${maxDist})`
               );
             } else {
               buyConditions.push(
@@ -591,14 +611,37 @@ export function generateEntryLogic(
             );
             break;
 
-          case "macd":
-            buyConditions.push(
-              `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
-            );
-            sellConditions.push(
-              `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
-            );
+          case "macd": {
+            const macdSignalType = (
+              "_macdSignalType" in indData ? indData._macdSignalType : "SIGNAL_CROSS"
+            ) as string;
+            if (macdSignalType === "ZERO_CROSS") {
+              // MACD main crosses zero line
+              buyConditions.push(
+                `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], 0) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], 0))`
+              );
+              sellConditions.push(
+                `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], 0) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], 0))`
+              );
+            } else if (macdSignalType === "HISTOGRAM_SIGN") {
+              // Histogram changes sign (negative to positive = buy, positive to negative = sell)
+              buyConditions.push(
+                `(DoubleLE(${varPrefix}HistogramBuffer[${1 + s}], 0) && DoubleGT(${varPrefix}HistogramBuffer[${0 + s}], 0))`
+              );
+              sellConditions.push(
+                `(DoubleGE(${varPrefix}HistogramBuffer[${1 + s}], 0) && DoubleLT(${varPrefix}HistogramBuffer[${0 + s}], 0))`
+              );
+            } else {
+              // SIGNAL_CROSS: MACD main crosses signal line (default)
+              buyConditions.push(
+                `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+              );
+              sellConditions.push(
+                `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+              );
+            }
             break;
+          }
 
           case "bollinger-bands":
             buyConditions.push(
