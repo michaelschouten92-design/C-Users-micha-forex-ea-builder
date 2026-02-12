@@ -591,7 +591,7 @@ export function generateMQL5Code(
     maxDailyLossPercent: buildJson.settings?.maxDailyLossPercent ?? 0,
   };
 
-  const descValue = `"${sanitizeName(ctx.description || ctx.projectName)}"`;
+  const descValue = `"${sanitizeMQL5String(projectName)}"`;
 
   const code: GeneratedCode = {
     inputs: [
