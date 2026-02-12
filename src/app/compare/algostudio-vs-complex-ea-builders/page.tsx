@@ -33,8 +33,8 @@ const faqItems = [
     a: "AlgoStudio focuses on built-in indicators (EMA, RSI, MACD, ATR). For custom indicators, export your EA and add them in MetaEditor using the clean MQL5 code.",
   },
   {
-    q: "Why doesn't AlgoStudio have drag-and-drop blocks?",
-    a: "By design. Drag-and-drop block editors create the illusion of simplicity but often require hours of wiring and configuration. AlgoStudio's template approach is genuinely simpler.",
+    q: "How is AlgoStudio's visual builder different from other node editors?",
+    a: "AlgoStudio uses pre-configured strategy blocks with sensible defaults instead of hundreds of individual logic nodes. You start with a working template and adjust what matters — no complex wiring or 50-field forms.",
   },
 ];
 
@@ -89,7 +89,7 @@ export default function ComparePage() {
                     ["Time to first EA", "< 5 minutes", "Hours to days"],
                     ["Coding required", "None", "Often required"],
                     ["Learning curve", "Minimal", "Steep"],
-                    ["Settings per strategy", "3-5 basic settings", "50+ fields"],
+                    ["Settings per strategy", "Key settings with defaults", "50+ fields"],
                     ["Starting point", "Working strategy", "Empty project"],
                     ["Output format", "Clean .mq5 source code", "Varies (some proprietary)"],
                     [
