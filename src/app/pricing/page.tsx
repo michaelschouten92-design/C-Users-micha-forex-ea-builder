@@ -109,7 +109,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds early access to new features, advanced risk management modules, prop firm configuration presets, a commercial usage license, and direct developer support.",
+      a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds early access to new features, prop firm configuration presets, and direct developer support.",
     },
   ];
 
@@ -321,17 +321,15 @@ export default function PricingPage() {
               Everything in Pro, plus advanced tools
             </p>
             <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-              For serious traders who need advanced risk controls, prop firm presets, and direct
-              developer access.
+              For serious traders who want prop firm presets, early access to new features, and
+              direct developer support.
             </p>
 
             <ul className="mt-6 space-y-3 flex-1">
               {[
                 "Everything in Pro",
                 "Early access to new features",
-                "Advanced risk management modules",
                 "Prop firm configuration presets",
-                "Commercial usage license",
                 "Direct developer support",
               ].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -343,8 +341,8 @@ export default function PricingPage() {
 
             <div className="mt-6 bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3">
               <p className="text-xs text-[#A78BFA]">
-                <strong>Who it&apos;s for:</strong> Professional and prop firm traders who need
-                advanced controls and commercial rights.
+                <strong>Who it&apos;s for:</strong> Professional and prop firm traders who need prop
+                firm presets and direct developer access.
               </p>
             </div>
 
@@ -386,9 +384,7 @@ export default function PricingPage() {
                     ["Private Discord community", false, true, true],
                     ["Priority support", false, true, true],
                     ["Early feature access", false, false, true],
-                    ["Advanced risk modules", false, false, true],
                     ["Prop firm presets", false, false, true],
-                    ["Commercial usage license", false, false, true],
                     ["Direct developer support", false, false, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (

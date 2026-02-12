@@ -40,7 +40,7 @@ const jsonLd = {
         price: "79",
         priceCurrency: "EUR",
         description:
-          "Everything in Pro plus early feature access, advanced risk modules, prop firm presets, commercial license, direct developer support",
+          "Everything in Pro plus early feature access, prop firm presets, direct developer support",
       },
     ],
   },

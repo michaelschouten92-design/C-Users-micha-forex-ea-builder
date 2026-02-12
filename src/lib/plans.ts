@@ -113,9 +113,7 @@ export const PLANS = {
     features: [
       "Everything in Pro",
       "Early access to new features",
-      "Advanced risk management modules",
       "Prop firm configuration presets",
-      "Commercial usage license",
       "Direct developer support",
     ],
     limits: {
