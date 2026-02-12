@@ -660,6 +660,7 @@ export function StrategyCanvas({
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
         userTier={userTier}
+        magicNumber={settings.magicNumber}
       />
     </div>
   );

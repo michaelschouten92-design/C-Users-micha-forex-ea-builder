@@ -194,6 +194,43 @@ describe("validations", () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it("accepts optional magicNumber", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "MQ5",
+        magicNumber: 654321,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.magicNumber).toBe(654321);
+      }
+    });
+
+    it("accepts request without magicNumber", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "MQ5",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.magicNumber).toBeUndefined();
+      }
+    });
+
+    it("rejects magicNumber below 1", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "MQ5",
+        magicNumber: 0,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects magicNumber above 2147483647", () => {
+      const result = exportRequestSchema.safeParse({
+        exportType: "MQ5",
+        magicNumber: 2147483648,
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("formatZodErrors", () => {

@@ -73,6 +73,7 @@ interface VersionControlsProps {
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   canExportMQL5?: boolean;
   userTier?: string;
+  magicNumber?: number;
 }
 
 export function VersionControls({
@@ -85,6 +86,7 @@ export function VersionControls({
   autoSaveStatus,
   canExportMQL5 = false,
   userTier,
+  magicNumber,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
@@ -304,6 +306,7 @@ export function VersionControls({
           canExport={validation.canExport}
           canExportMQL5={canExportMQL5}
           userTier={userTier}
+          magicNumber={magicNumber}
         />
       </div>
 

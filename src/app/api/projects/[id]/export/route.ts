@@ -85,7 +85,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    const { versionId, exportType } = validation.data;
+    const { versionId, exportType, magicNumber } = validation.data;
 
     // Audit the export request
     await audit.exportRequest(session.user.id, id, exportType);
@@ -169,6 +169,11 @@ export async function POST(request: NextRequest, { params }: Props) {
         },
         { status: 400 }
       );
+    }
+
+    // Override magic number for this export if provided
+    if (magicNumber) {
+      buildJson.settings = { ...buildJson.settings, magicNumber };
     }
 
     // Generate MQL5 code

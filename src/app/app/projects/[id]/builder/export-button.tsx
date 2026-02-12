@@ -10,6 +10,7 @@ interface ExportButtonProps {
   canExport: boolean;
   canExportMQL5?: boolean;
   userTier?: string;
+  magicNumber?: number;
 }
 
 interface ExportResult {
@@ -30,10 +31,13 @@ export function ExportButton({
   canExport,
   canExportMQL5 = false,
   userTier,
+  magicNumber,
 }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [exportStep, setExportStep] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [configMagicNumber, setConfigMagicNumber] = useState(magicNumber ?? 123456);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
   const stepTimersRef = useRef<NodeJS.Timeout[]>([]);
@@ -75,7 +79,7 @@ export function ExportButton({
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ exportType: "MQ5" }),
+        body: JSON.stringify({ exportType: "MQ5", magicNumber: configMagicNumber }),
         signal: controller.signal,
       });
 
@@ -136,7 +140,13 @@ export function ExportButton({
   return (
     <>
       <button
-        onClick={handleExport}
+        onClick={() => {
+          setConfigMagicNumber(magicNumber ?? 123456);
+          setShowConfig(true);
+          setResult(null);
+          setError(null);
+          setShowModal(true);
+        }}
         disabled={isDisabled}
         className="flex items-center gap-2 px-4 py-1.5 bg-[#10B981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         title={
@@ -189,7 +199,13 @@ export function ExportButton({
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">
-                {exporting ? "Exporting..." : error ? "Export Failed" : "Export Successful"}
+                {showConfig
+                  ? "Export Configuration"
+                  : exporting
+                    ? "Exporting..."
+                    : error
+                      ? "Export Failed"
+                      : "Export Successful"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -209,7 +225,63 @@ export function ExportButton({
 
             {/* Content */}
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
-              {exporting ? (
+              {showConfig ? (
+                <div className="space-y-6 py-4">
+                  <div>
+                    <label
+                      htmlFor="magic-number"
+                      className="block text-sm font-medium text-[#CBD5E1] mb-2"
+                    >
+                      Magic Number
+                    </label>
+                    <p className="text-xs text-[#64748B] mb-3">
+                      Unique identifier for this EA instance. Use different numbers to run the same
+                      strategy on multiple pairs.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        id="magic-number"
+                        type="number"
+                        min={1}
+                        max={2147483647}
+                        value={configMagicNumber}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          if (!isNaN(val) && val >= 1 && val <= 2147483647) {
+                            setConfigMagicNumber(val);
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        onClick={() =>
+                          setConfigMagicNumber(Math.floor(Math.random() * 900000) + 100000)
+                        }
+                        className="px-3 py-2 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200 whitespace-nowrap"
+                      >
+                        Generate unique
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowConfig(false);
+                      handleExport();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#10B981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)] transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    Export MQL5
+                  </button>
+                </div>
+              ) : exporting ? (
                 <div aria-live="polite" className="py-8 space-y-6">
                   {exportSteps.map((step, i) => (
                     <div key={i} className="flex items-center gap-3">
