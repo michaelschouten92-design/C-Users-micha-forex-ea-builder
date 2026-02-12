@@ -7,7 +7,7 @@ import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
-  tier: "FREE" | "PRO";
+  tier: "FREE" | "PRO" | "ELITE";
   projectCount: number;
   exportCount: number;
   hasStripeSubscription: boolean;
@@ -57,8 +57,10 @@ export function SubscriptionPanel({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold text-white">{plan.name} Plan</h3>
-            {tier === "PRO" && (
-              <span className="text-xs bg-[#4F46E5] text-white px-2 py-0.5 rounded-full">
+            {tier !== "FREE" && (
+              <span
+                className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
+              >
                 Active
               </span>
             )}
@@ -210,7 +212,7 @@ export function SubscriptionPanel({
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
             <span className="font-medium">Upgrade to unlock:</span> Unlimited projects, unlimited
-            exports, all trading blocks, community access, and priority support
+            exports, community access, and priority support
           </p>
         </div>
       )}

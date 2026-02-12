@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { checkExportLimit, getExportPermissions } from "@/lib/plan-limits";
+import { checkExportLimit } from "@/lib/plan-limits";
 import {
   exportRequestSchema,
   buildJsonSchema,
@@ -98,19 +98,6 @@ export async function POST(request: NextRequest, { params }: Props) {
           ErrorCode.EXPORT_LIMIT,
           "Export limit reached",
           `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`
-        ),
-        { status: 403 }
-      );
-    }
-
-    // Check MQL5 export permission and trade management in one lookup
-    const permissions = await getExportPermissions(session.user.id);
-    if (!permissions.canExportMQL5) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.PLAN_REQUIRED,
-          "Export not available",
-          "MQL5 export requires a Starter or Pro plan. Upgrade to export your strategies."
         ),
         { status: 403 }
       );

@@ -44,7 +44,15 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const tier = (subscription?.tier ?? "FREE") as "FREE" | "PRO";
+  // Determine effective tier (mirror getCachedTier logic to account for expired/cancelled)
+  let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
+  if (tier !== "FREE") {
+    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
+    if (!isActive || isExpired) {
+      tier = "FREE";
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -61,9 +69,11 @@ export default async function DashboardPage() {
               <span className="text-sm text-[#CBD5E1] hidden sm:inline">{session.user.email}</span>
               <span
                 className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                  tier === "PRO"
-                    ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
-                    : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
+                  tier === "ELITE"
+                    ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/50"
+                    : tier === "PRO"
+                      ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
+                      : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
                 }`}
               >
                 {tier}

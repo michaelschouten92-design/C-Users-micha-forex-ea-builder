@@ -96,7 +96,6 @@ export const PLANS = {
       "Unlimited projects",
       "Unlimited exports",
       "MQL5 source code export",
-      "All trading blocks",
       "Private Discord community",
       "Priority support",
     ],
@@ -115,6 +114,7 @@ export const PLANS = {
       "Early access to new features",
       "Prop firm configuration presets",
       "Direct developer support",
+      "Weekly Elite members call",
     ],
     limits: {
       maxProjects: Infinity,
