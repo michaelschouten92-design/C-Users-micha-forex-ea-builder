@@ -305,7 +305,7 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
       double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * _Point, _Digits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * _Point, _Digits) : 0;
 
-      if(trade.Buy(lots, _Symbol, ask, slPrice, tpPrice, "${sanitizeMQL5String(ctx.comment)}"))
+      if(trade.Buy(lots, _Symbol, ask, slPrice, tpPrice, InpTradeComment))
          return true;
 
       uint resultCode = trade.ResultRetcode();
@@ -333,7 +333,7 @@ bool OpenSell(double lots, double sl = 0, double tp = 0)
       double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * _Point, _Digits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * _Point, _Digits) : 0;
 
-      if(trade.Sell(lots, _Symbol, bid, slPrice, tpPrice, "${sanitizeMQL5String(ctx.comment)}"))
+      if(trade.Sell(lots, _Symbol, bid, slPrice, tpPrice, InpTradeComment))
          return true;
 
       uint resultCode = trade.ResultRetcode();

@@ -27,7 +27,7 @@ import {
   generateHelperFunctions,
 } from "./templates";
 
-import { sanitizeName, isFieldOptimizable } from "./generators/shared";
+import { sanitizeName, sanitizeMQL5String, isFieldOptimizable } from "./generators/shared";
 import { generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
@@ -606,6 +606,14 @@ export function generateMQL5Code(
         type: "string",
         value: descValue,
         comment: "Strategy Description (shown on chart)",
+        isOptimizable: false,
+        group: "General Settings",
+      },
+      {
+        name: "InpTradeComment",
+        type: "string",
+        value: `"${sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName)}"`,
+        comment: "Trade Order Comment",
         isOptimizable: false,
         group: "General Settings",
       },
