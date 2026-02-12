@@ -25,27 +25,7 @@ const STEPS = [
     ),
   },
   {
-    title: "1. Start with a Timing block",
-    description:
-      'Drag a timing block (e.g. "Always" or "Trading Sessions") onto the canvas. This controls when your EA is active.',
-    icon: (
-      <svg
-        className="w-10 h-10 text-[#22D3EE]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-  },
-  {
-    title: "2. Add an Entry Strategy",
+    title: "1. Add an Entry Strategy",
     description:
       "Drag an entry strategy block (EMA Crossover, Range Breakout, RSI Reversal, etc.) onto the canvas. It includes signals, stop loss, take profit and position sizing.",
     icon: (
@@ -65,9 +45,9 @@ const STEPS = [
     ),
   },
   {
-    title: "3. Connect & Export",
+    title: "2. Configure & Export",
     description:
-      "Connect the timing block to the entry strategy. Optionally add trade management blocks (trailing stop, breakeven). Then export your .mq5 file for MetaTrader 5.",
+      "Adjust the settings to your liking. Optionally add a timing block to limit trading hours, or trade management blocks (trailing stop, breakeven). Then export your .mq5 file.",
     icon: (
       <svg
         className="w-10 h-10 text-[#A78BFA]"

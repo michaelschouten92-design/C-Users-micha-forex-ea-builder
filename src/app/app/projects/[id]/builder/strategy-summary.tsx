@@ -12,11 +12,14 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
   const lines: string[] = [];
 
   // Timing
+  let hasTimingNode = false;
   for (const n of nodes) {
     const d = n.data;
     if (n.type === "always") {
       lines.push("Trade at all times (24/5)");
+      hasTimingNode = true;
     } else if (n.type === "trading-session" && "session" in d) {
+      hasTimingNode = true;
       if (d.session === "CUSTOM") {
         const sh = "customStartHour" in d ? String(d.customStartHour).padStart(2, "0") : "08";
         const sm = "customStartMinute" in d ? String(d.customStartMinute).padStart(2, "0") : "00";
@@ -28,9 +31,13 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
       }
     } else if (n.type === "custom-times") {
       lines.push("Trade during custom time windows");
+      hasTimingNode = true;
     } else if (n.type === "max-spread" && "maxSpreadPips" in d) {
       lines.push(`Max spread filter: ${d.maxSpreadPips} pips`);
     }
+  }
+  if (!hasTimingNode && nodes.length > 0) {
+    lines.push("Trade at all times (no timing filter)");
   }
 
   // Entry strategy composite blocks
