@@ -2243,4 +2243,257 @@ describe("generateMQL5Code", () => {
       }
     });
   });
+
+  // ============================================
+  // FIX: Lot Size / Risk Calculation Issues
+  // ============================================
+
+  describe("lot size / risk calculation fixes", () => {
+    it("CalculateLotSize contains warning when slPips is 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain('Print("WARNING: CalculateLotSize called with slPips=0');
+    });
+
+    it("CalculateLotSize contains comment about points not pips", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("slPips parameter is in POINTS (not pips)");
+    });
+
+    it("generates InpUseEquityForRisk input when RISK_PERCENT buy is used", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpUseEquityForRisk");
+      expect(code).toContain("Use Equity instead of Balance for risk sizing");
+      expect(code).toContain("ACCOUNT_EQUITY");
+      expect(code).toContain("ACCOUNT_BALANCE");
+    });
+
+    it("generates InpUseEquityForRisk input when RISK_PERCENT sell is used", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpUseEquityForRisk");
+    });
+
+    it("always generates InpUseEquityForRisk (needed by CalculateLotSize)", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Always present because CalculateLotSize references it
+      expect(code).toContain("InpUseEquityForRisk");
+    });
+
+    it("uses 10 * _pipFactor instead of 100 for RANGE_OPPOSITE SL floor", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "PREVIOUS_CANDLES",
+          lookbackCandles: 20,
+          rangeSession: "ASIAN",
+          sessionStartHour: 0,
+          sessionStartMinute: 0,
+          sessionEndHour: 8,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "ON_CLOSE",
+          bufferPips: 2,
+          minRangePips: 10,
+          maxRangePips: 0,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "RANGE_OPPOSITE",
+          fixedPips: 50,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("10 * _pipFactor)");
+      expect(code).not.toMatch(/MathMax\([^)]+, 100\)/);
+    });
+
+    it("recalculates lot size for BuyStop with PERCENT SL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "PERCENT",
+          fixedPips: 50,
+          slPercent: 1,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 1,
+          minLot: 0.01,
+          maxLot: 10,
+          orderType: "STOP",
+          pendingOffset: 15,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should recalculate slPips based on pending entry price
+      expect(code).toContain("pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_ASK) +");
+      expect(code).toContain("adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point");
+      expect(code).toContain("buyLotSize = CalculateLotSize(InpBuyRiskPercent, adjSlPips)");
+    });
+
+    it("recalculates lot size for SellLimit with PERCENT SL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "PERCENT",
+          fixedPips: 50,
+          slPercent: 1,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "trading",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+          riskRewardRatio: 2,
+          atrMultiplier: 3,
+          atrPeriod: 14,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 1,
+          minLot: 0.01,
+          maxLot: 10,
+          orderType: "LIMIT",
+          pendingOffset: 20,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should recalculate slPips based on pending entry price
+      expect(code).toContain("pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_BID) +");
+      expect(code).toContain("adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point");
+      expect(code).toContain("sellLotSize = CalculateLotSize(InpSellRiskPercent, adjSlPips)");
+    });
+
+    it("does NOT recalculate lot size for MARKET orders with PERCENT SL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "PERCENT",
+          fixedPips: 50,
+          slPercent: 1,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "RISK_PERCENT",
+          fixedLot: 0.1,
+          riskPercent: 1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // MARKET orders should NOT have the pendEntry recalculation
+      expect(code).not.toContain("pendEntry");
+      expect(code).not.toContain("adjSlPips");
+    });
+  });
 });

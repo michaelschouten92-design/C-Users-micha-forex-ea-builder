@@ -61,6 +61,17 @@ export function generatePlaceBuyCode(node: BuilderNode, code: GeneratedCode): vo
         )
       );
       code.onTick.push("double buyLotSize = CalculateLotSize(InpBuyRiskPercent, slPips);");
+      // For pending orders with PERCENT SL, recalculate lot size based on entry price
+      if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
+        const dir = orderType === "STOP" ? "+" : "-";
+        code.onTick.push(`{`);
+        code.onTick.push(
+          `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_ASK) ${dir} InpBuyPendingOffset * _pipFactor * _Point;`
+        );
+        code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
+        code.onTick.push(`   buyLotSize = CalculateLotSize(InpBuyRiskPercent, adjSlPips);`);
+        code.onTick.push(`}`);
+      }
       break;
   }
 
@@ -125,6 +136,17 @@ export function generatePlaceSellCode(node: BuilderNode, code: GeneratedCode): v
         code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slSellPips);");
       } else {
         code.onTick.push("double sellLotSize = CalculateLotSize(InpSellRiskPercent, slPips);");
+      }
+      // For pending orders with PERCENT SL, recalculate lot size based on entry price
+      if (orderType !== "MARKET" && code.slMethod === "PERCENT") {
+        const dir = orderType === "STOP" ? "-" : "+";
+        code.onTick.push(`{`);
+        code.onTick.push(
+          `   double pendEntry = SymbolInfoDouble(_Symbol, SYMBOL_BID) ${dir} InpSellPendingOffset * _pipFactor * _Point;`
+        );
+        code.onTick.push(`   double adjSlPips = (pendEntry * InpSLPercent / 100.0) / _Point;`);
+        code.onTick.push(`   sellLotSize = CalculateLotSize(InpSellRiskPercent, adjSlPips);`);
+        code.onTick.push(`}`);
       }
       break;
   }
@@ -240,10 +262,10 @@ function generateRangeOppositeSL(priceActionNodes: BuilderNode[], code: Generate
 
   code.onTick.push("//--- Range Opposite SL: use range high/low as stop loss");
   code.onTick.push(
-    `double slPips = MathMax((SymbolInfoDouble(_Symbol, SYMBOL_ASK) - ${prefix}Low) / _Point, 100);`
+    `double slPips = MathMax((SymbolInfoDouble(_Symbol, SYMBOL_ASK) - ${prefix}Low) / _Point, 10 * _pipFactor);`
   );
   code.onTick.push(
-    `double slSellPips = MathMax((${prefix}High - SymbolInfoDouble(_Symbol, SYMBOL_BID)) / _Point, 100);`
+    `double slSellPips = MathMax((${prefix}High - SymbolInfoDouble(_Symbol, SYMBOL_BID)) / _Point, 10 * _pipFactor);`
   );
   code.hasDirectionalSL = true;
 }
@@ -311,10 +333,10 @@ function generateIndicatorBasedSL(
         code.onTick.push("double distToUpper = MathAbs(bbUpper - currentPrice) / _Point;");
         code.onTick.push("// Buy SL: distance to lower band, Sell SL: distance to upper band");
         code.onTick.push(
-          "double slPips = MathMax(distToLower + (InpBBSLBuffer * _pipFactor), 100); // Buy direction"
+          "double slPips = MathMax(distToLower + (InpBBSLBuffer * _pipFactor), 10 * _pipFactor); // Buy direction"
         );
         code.onTick.push(
-          "double slSellPips = MathMax(distToUpper + (InpBBSLBuffer * _pipFactor), 100); // Sell direction"
+          "double slSellPips = MathMax(distToUpper + (InpBBSLBuffer * _pipFactor), 10 * _pipFactor); // Sell direction"
         );
         code.hasDirectionalSL = true;
         break;
@@ -334,7 +356,7 @@ function generateIndicatorBasedSL(
         code.onTick.push(`double maValue = ${varPrefix}Buffer[0];`);
         code.onTick.push("double distToMA = MathAbs(currentPrice - maValue) / _Point;");
         code.onTick.push("slPips = distToMA * InpMASLMultiplier;");
-        code.onTick.push("slPips = MathMax(slPips, 100); // Minimum 10 pips SL");
+        code.onTick.push("slPips = MathMax(slPips, 10 * _pipFactor); // Minimum 10 pips SL");
         break;
 
       case "atr":

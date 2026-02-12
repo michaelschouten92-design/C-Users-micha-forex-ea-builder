@@ -881,6 +881,16 @@ export function generateMQL5Code(
   const hasStopLoss = stopLossNodes.length > 0;
   const hasTakeProfit = takeProfitNodes.length > 0;
 
+  // Add equity/balance toggle (always needed because CalculateLotSize references it)
+  code.inputs.push({
+    name: "InpUseEquityForRisk",
+    type: "bool",
+    value: false,
+    comment: "Use Equity instead of Balance for risk sizing",
+    isOptimizable: false,
+    group: "Risk Management",
+  });
+
   // Generate SL/TP code FIRST (so hasDirectionalSL is set before lot sizing)
   if (hasStopLoss) {
     generateStopLossCode(

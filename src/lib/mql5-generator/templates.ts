@@ -410,13 +410,19 @@ void CloseSellPositions()
 
 //+------------------------------------------------------------------+
 //| Calculate Lot Size based on Risk Percentage                        |
+//| Note: slPips parameter is in POINTS (not pips).                    |
+//| All SL methods produce point values.                               |
 //+------------------------------------------------------------------+
 double CalculateLotSize(double riskPercent, double slPips)
 {
    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
-   if(slPips <= 0) return minLot;
+   if(slPips <= 0)
+   {
+      Print("WARNING: CalculateLotSize called with slPips=0, using minimum lot. Check SL configuration.");
+      return minLot;
+   }
 
-   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   double balance = InpUseEquityForRisk ? AccountInfoDouble(ACCOUNT_EQUITY) : AccountInfoDouble(ACCOUNT_BALANCE);
    if(balance <= 0) return minLot;
 
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
