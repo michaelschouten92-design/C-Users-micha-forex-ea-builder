@@ -684,44 +684,22 @@ export default async function Home() {
                   <th className="text-center py-3 px-4 text-[#64748B] font-medium">
                     Complex EA Builders
                   </th>
-                  <th className="text-center py-3 px-4 text-[#64748B] font-medium">
-                    Black-Box Bots
-                  </th>
                 </tr>
               </thead>
               <tbody className="text-[#94A3B8]">
                 {[
-                  ["Time to first EA", "< 5 minutes", "Days to weeks", "Hours to days", "Instant"],
-                  ["Cost", "Free to start", "$200-$1,000+", "$50-$300/mo", "$50-$500"],
-                  ["Coding required", "None", "You explain, they code", "Often required", "None"],
-                  [
-                    "Code transparency",
-                    "Full source code",
-                    "Depends on dev",
-                    "Usually yes",
-                    "No access",
-                  ],
-                  [
-                    "Customizable",
-                    "Visual controls",
-                    "Through developer",
-                    "Complex interface",
-                    "Limited/none",
-                  ],
-                  [
-                    "Iteration speed",
-                    "Instant rebuild",
-                    "Days per change",
-                    "Hours per change",
-                    "Not possible",
-                  ],
-                ].map(([feature, algo, dev, complex, blackbox]) => (
+                  ["Time to first EA", "< 5 minutes", "Days to weeks", "Hours to days"],
+                  ["Cost", "Free to start", "$200-$1,000+", "$50-$300/mo"],
+                  ["Coding required", "None", "You explain, they code", "Often required"],
+                  ["Code transparency", "Full source code", "Depends on dev", "Usually yes"],
+                  ["Customizable", "Visual controls", "Through developer", "Complex interface"],
+                  ["Iteration speed", "Instant rebuild", "Days per change", "Hours per change"],
+                ].map(([feature, algo, dev, complex]) => (
                   <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">
                     <td className="py-3 px-4 text-[#CBD5E1] font-medium">{feature}</td>
                     <td className="py-3 px-4 text-center text-[#22D3EE]">{algo}</td>
                     <td className="py-3 px-4 text-center">{dev}</td>
                     <td className="py-3 px-4 text-center">{complex}</td>
-                    <td className="py-3 px-4 text-center">{blackbox}</td>
                   </tr>
                 ))}
               </tbody>
