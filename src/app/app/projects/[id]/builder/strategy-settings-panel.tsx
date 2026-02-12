@@ -41,16 +41,6 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
 
       {isExpanded && (
         <div className="mt-2 pl-1 space-y-3 px-3 pb-2">
-          {/* Magic Number */}
-          <SettingsNumberField
-            label="Magic Number"
-            value={settings.magicNumber}
-            min={1}
-            max={2147483647}
-            step={1}
-            onChange={(v) => update({ magicNumber: v })}
-          />
-
           {/* Max Open Trades */}
           <SettingsNumberField
             label="Max Open Trades"
