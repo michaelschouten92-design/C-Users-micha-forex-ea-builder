@@ -6,17 +6,29 @@ type Migration = {
 };
 
 const migrations: Migration[] = [
-  // Example for future use:
-  // {
-  //   version: "1.1",
-  //   up: (data) => {
-  //     // Add new field defaults, rename fields, etc.
-  //     return data;
-  //   },
-  // },
+  {
+    version: "1.1",
+    up: (data) => {
+      // Rename "Equity Filter" label to "Daily Drawdown Limit"
+      const nodes = data.nodes as Array<Record<string, unknown>> | undefined;
+      if (nodes) {
+        for (const node of nodes) {
+          const nodeData = node.data as Record<string, unknown> | undefined;
+          if (
+            nodeData &&
+            nodeData.filterType === "equity-filter" &&
+            nodeData.label === "Equity Filter"
+          ) {
+            nodeData.label = "Daily Drawdown Limit";
+          }
+        }
+      }
+      return data;
+    },
+  },
 ];
 
-export const CURRENT_VERSION = "1.0";
+export const CURRENT_VERSION = "1.1";
 
 export function migrateProjectData(data: unknown): BuildJsonSchema {
   let current = data as Record<string, unknown>;

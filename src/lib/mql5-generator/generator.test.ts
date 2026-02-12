@@ -2497,4 +2497,405 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("adjSlPips");
     });
   });
+
+  // ============================================
+  // AUDIT: Missing indicator tests
+  // ============================================
+
+  describe("Stochastic indicator", () => {
+    it("generates Stochastic handle and buffers", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sto1", "stochastic", {
+          category: "indicator",
+          indicatorType: "stochastic",
+          timeframe: "H1",
+          kPeriod: 14,
+          dPeriod: 3,
+          slowing: 3,
+          overboughtLevel: 80,
+          oversoldLevel: 20,
+          maMethod: "SMA",
+          priceField: "LOWHIGH",
+          signalMode: "candle_close",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iStochastic");
+      expect(code).toContain("InpStoch0KPeriod");
+      expect(code).toContain("InpStoch0DPeriod");
+      expect(code).toContain("InpStoch0Slowing");
+      expect(code).toContain("ind0MainBuffer");
+      expect(code).toContain("ind0SignalBuffer");
+    });
+
+    it("generates overbought/oversold conditions for Stochastic", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sto1", "stochastic", {
+          category: "indicator",
+          indicatorType: "stochastic",
+          timeframe: "H1",
+          kPeriod: 14,
+          dPeriod: 3,
+          slowing: 3,
+          overboughtLevel: 80,
+          oversoldLevel: 20,
+          maMethod: "SMA",
+          priceField: "LOWHIGH",
+          signalMode: "every_tick",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpStoch0Overbought");
+      expect(code).toContain("InpStoch0Oversold");
+    });
+  });
+
+  describe("CCI indicator", () => {
+    it("generates CCI handle and overbought/oversold inputs", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("cci1", "cci", {
+          category: "indicator",
+          indicatorType: "cci",
+          timeframe: "H4",
+          period: 20,
+          overboughtLevel: 100,
+          oversoldLevel: -100,
+          appliedPrice: "TYPICAL",
+          signalMode: "every_tick",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iCCI");
+      expect(code).toContain("InpCCI0Period");
+      expect(code).toContain("PRICE_TYPICAL");
+      expect(code).toContain("InpCCI0Overbought");
+      expect(code).toContain("InpCCI0Oversold");
+    });
+  });
+
+  // ============================================
+  // AUDIT: Hedging mode
+  // ============================================
+
+  describe("hedging mode", () => {
+    it("allows simultaneous buy and sell when hedging is enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings = { ...DEFAULT_SETTINGS, allowHedging: true };
+      const code = generateMQL5Code(build, "Test");
+      // Should NOT have "CountPositionsByType(POSITION_TYPE_BUY) == 0" check on sell
+      expect(code).not.toContain("POSITION_TYPE_BUY) == 0");
+      expect(code).not.toContain("POSITION_TYPE_SELL) == 0");
+    });
+
+    it("prevents hedging when disabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings = { ...DEFAULT_SETTINGS, allowHedging: false };
+      const code = generateMQL5Code(build, "Test");
+      // Should have anti-hedge condition
+      expect(code).toContain("POSITION_TYPE_BUY) == 0");
+    });
+  });
+
+  // ============================================
+  // AUDIT: Daily P&L limits
+  // ============================================
+
+  describe("daily P&L limits", () => {
+    it("generates daily profit target check when maxDailyProfitPercent > 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings = { ...DEFAULT_SETTINGS, maxDailyProfitPercent: 3 };
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Daily P&L Protection");
+      expect(code).toContain("dailyPnLPercent >= 3");
+      expect(code).toContain("Daily profit target reached");
+    });
+
+    it("generates daily loss limit check when maxDailyLossPercent > 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings = { ...DEFAULT_SETTINGS, maxDailyLossPercent: 5 };
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Daily P&L Protection");
+      expect(code).toContain("dailyPnLPercent <= -5");
+      expect(code).toContain("Daily loss limit reached");
+    });
+
+    it("does NOT generate daily P&L code when both limits are 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      build.settings = { ...DEFAULT_SETTINGS, maxDailyProfitPercent: 0, maxDailyLossPercent: 0 };
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("Daily P&L Protection");
+    });
+  });
+
+  // ============================================
+  // AUDIT: Volatility and equity filters
+  // ============================================
+
+  describe("volatility filter", () => {
+    it("generates ATR-based volatility check when volatility-filter node is present", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("vf1", "volatility-filter", {
+          category: "timing",
+          filterType: "volatility-filter",
+          atrPeriod: 14,
+          atrTimeframe: "H1",
+          minAtrPips: 10,
+          maxAtrPips: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpATRPeriod");
+      expect(code).toContain("iATR");
+      expect(code).toContain("InpMinATRPips");
+      expect(code).toContain("InpMaxATRPips");
+    });
+  });
+
+  describe("equity filter", () => {
+    it("generates equity drawdown check when equity-filter node is present", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ef1", "equity-filter", {
+          category: "timing",
+          filterType: "equity-filter",
+          maxDrawdownPercent: 5,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpMaxDailyDD");
+      expect(code).toContain("ACCOUNT_EQUITY");
+      expect(code).toContain("daily drawdown");
+    });
+  });
+
+  // ============================================
+  // AUDIT: PERCENT SL directional pricing
+  // ============================================
+
+  describe("PERCENT SL directional pricing", () => {
+    it("generates slSellPips using BID for sell direction", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sl1", "stop-loss", {
+          category: "trading",
+          tradingType: "stop-loss",
+          method: "PERCENT",
+          fixedPips: 50,
+          slPercent: 1,
+          atrMultiplier: 1.5,
+          atrPeriod: 14,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("SYMBOL_ASK) * InpSLPercent");
+      expect(code).toContain("SYMBOL_BID) * InpSLPercent");
+      expect(code).toContain("slSellPips");
+    });
+  });
+
+  // ============================================
+  // AUDIT: Signal mode (candle_close vs every_tick)
+  // ============================================
+
+  describe("signal mode", () => {
+    it("uses shifted buffer indices for candle_close mode", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rsi1", "rsi", {
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: "H1",
+          period: 14,
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+          appliedPrice: "CLOSE",
+          signalMode: "candle_close",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // candle_close mode copies 4 bars and uses [1] and [2] for confirmed closes
+      expect(code).toContain("CopyBuffer");
+      // RSI crossover uses both s+0 and s+1 indices — with candle_close (s=1), that's [1] and [2]
+      expect(code).toContain("Buffer[1]");
+      expect(code).toContain("Buffer[2]");
+    });
+
+    it("uses current bar indices for every_tick mode", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rsi1", "rsi", {
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: "H1",
+          period: 14,
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+          appliedPrice: "CLOSE",
+          signalMode: "every_tick",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // every_tick mode (s=0) uses [0] and [1] for RSI crossover detection
+      expect(code).toContain("Buffer[0]");
+      expect(code).toContain("Buffer[1]");
+    });
+  });
 });

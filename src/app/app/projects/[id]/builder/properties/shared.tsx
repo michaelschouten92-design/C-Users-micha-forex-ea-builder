@@ -71,6 +71,27 @@ export function FieldWarning({ message }: { message: string }) {
   );
 }
 
+export function FieldError({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-1.5 mt-1.5 text-[#EF4444] text-[11px]" role="alert">
+      <svg
+        className="w-3.5 h-3.5 flex-shrink-0 mt-0.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{message}</span>
+    </div>
+  );
+}
+
 export function ToggleField({
   label,
   checked,
@@ -159,6 +180,9 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         step={0.1}
         onChange={(v) => onChange({ riskPercent: v } as Partial<T>)}
       />
+      <p className="text-[10px] text-[#64748B] -mt-0.5">
+        Percentage of account balance risked per trade
+      </p>
       <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
 
       <SelectField
@@ -238,6 +262,9 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         step={0.1}
         onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
       />
+      <p className="text-[10px] text-[#64748B] -mt-0.5">
+        Multiple of stop loss distance (e.g. 2R = TP is 2x the SL)
+      </p>
       <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
     </>
   );

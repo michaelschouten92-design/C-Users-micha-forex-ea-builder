@@ -218,6 +218,10 @@ export function generateStopLossCode(
       code.onTick.push(
         "double slPips = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) * InpSLPercent / 100.0) / _Point;"
       );
+      code.onTick.push(
+        "double slSellPips = (SymbolInfoDouble(_Symbol, SYMBOL_BID) * InpSLPercent / 100.0) / _Point;"
+      );
+      code.hasDirectionalSL = true;
       break;
 
     case "ATR_BASED": {

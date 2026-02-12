@@ -614,7 +614,7 @@ export interface BuildJsonMetadata {
 }
 
 export interface BuildJsonSchema {
-  version: "1.0";
+  version: "1.0" | "1.1";
   nodes: BuilderNode[];
   edges: BuilderEdge[];
   viewport: Viewport;
@@ -637,7 +637,7 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {
-  version: "1.0",
+  version: "1.1",
   nodes: [],
   edges: [],
   viewport: { x: 0, y: 0, zoom: 1 },
@@ -712,11 +712,11 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   {
     type: "equity-filter",
-    label: "Equity Filter",
+    label: "Daily Drawdown Limit",
     category: "timing",
-    description: "Skip trading when daily drawdown exceeds threshold",
+    description: "Pause trading when equity drops more than X% below day's starting balance",
     defaultData: {
-      label: "Equity Filter",
+      label: "Daily Drawdown Limit",
       category: "timing",
       filterType: "equity-filter",
       maxDrawdownPercent: 5,

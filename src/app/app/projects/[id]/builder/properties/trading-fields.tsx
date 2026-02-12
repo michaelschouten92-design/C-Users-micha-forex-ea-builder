@@ -13,7 +13,7 @@ import type {
   OrderType,
 } from "@/types/builder";
 import { TIMEFRAME_OPTIONS } from "./constants";
-import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
+import { OptimizableFieldCheckbox, FieldWarning, FieldError } from "./shared";
 
 export function PlaceBuyFields({
   data,
@@ -107,7 +107,7 @@ export function PlaceBuyFields({
         step={0.01}
         onChange={(v) => onChange({ maxLot: v })}
       />
-      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
+      {data.minLot > data.maxLot && <FieldError message="Min lot must not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
       )}
@@ -207,7 +207,7 @@ export function PlaceSellFields({
         step={0.01}
         onChange={(v) => onChange({ maxLot: v })}
       />
-      {data.minLot > data.maxLot && <FieldWarning message="Min lot should not exceed max lot" />}
+      {data.minLot > data.maxLot && <FieldError message="Min lot must not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
       )}

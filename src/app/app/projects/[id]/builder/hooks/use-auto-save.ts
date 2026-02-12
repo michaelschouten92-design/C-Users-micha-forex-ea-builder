@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 import type { Node, Edge } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
 import type { BuilderNode, BuilderEdge, BuildJsonSchema, BuildJsonSettings } from "@/types/builder";
+import { CURRENT_VERSION } from "@/lib/migrations";
 
 export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -34,6 +36,7 @@ export function useAutoSave({
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedVersionRef = useRef<number>(0);
+  const { getViewport } = useReactFlow();
 
   // Use refs to always have latest state in callbacks (prevents stale closures)
   const nodesRef = useRef(nodes);
@@ -81,10 +84,10 @@ export function useAutoSave({
       const currentSettings = settingsRef.current;
 
       const buildJson: BuildJsonSchema = {
-        version: "1.0",
+        version: CURRENT_VERSION,
         nodes: currentNodes as BuilderNode[],
         edges: currentEdges as BuilderEdge[],
-        viewport: { x: 0, y: 0, zoom: 1 },
+        viewport: getViewport(),
         metadata: {
           createdAt: currentInitialData?.metadata?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),

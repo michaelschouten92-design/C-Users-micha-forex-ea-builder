@@ -616,7 +616,7 @@ const buildMetadataSchema = z.object({
 
 // Complete BuildJson schema
 export const buildJsonSchema = z.object({
-  version: z.literal("1.0"),
+  version: z.enum(["1.0", "1.1"]),
   nodes: z.array(builderNodeSchema),
   edges: z.array(builderEdgeSchema),
   viewport: viewportSchema,

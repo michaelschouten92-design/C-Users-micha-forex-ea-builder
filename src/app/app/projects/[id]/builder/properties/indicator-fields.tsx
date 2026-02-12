@@ -19,7 +19,7 @@ import {
   MA_METHOD_OPTIONS,
   STO_PRICE_FIELD_OPTIONS,
 } from "./constants";
-import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
+import { OptimizableFieldCheckbox, FieldWarning, FieldError } from "./shared";
 
 export function MovingAverageFields({
   data,
@@ -61,6 +61,9 @@ export function MovingAverageFields({
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MovingAverageNodeData["signalMode"] })}
       />
+      <p className="text-[10px] text-[#64748B] -mt-0.5">
+        Candle close waits for bar confirmation — more reliable but slower
+      </p>
       <div>
         <NumberField
           label="Shift"
@@ -69,6 +72,9 @@ export function MovingAverageFields({
           max={100}
           onChange={(v) => onChange({ shift: v })}
         />
+        <p className="text-[10px] text-[#64748B] -mt-0.5">
+          Shifts the MA line backwards on the chart by N bars
+        </p>
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
       <SelectField
@@ -133,7 +139,7 @@ export function RSIFields({
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
       {data.overboughtLevel <= data.oversoldLevel && (
-        <FieldWarning message="Overbought level must be higher than oversold level" />
+        <FieldError message="Overbought level must be higher than oversold level" />
       )}
       <SelectField
         label="Applied Price"
@@ -203,7 +209,7 @@ export function MACDFields({
         onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
       />
       {data.fastPeriod >= data.slowPeriod && (
-        <FieldWarning message="Fast period should be smaller than slow period" />
+        <FieldError message="Fast period must be smaller than slow period" />
       )}
     </>
   );
@@ -448,7 +454,7 @@ export function StochasticFields({
         onChange={(v) => onChange({ signalMode: v as StochasticNodeData["signalMode"] })}
       />
       {data.overboughtLevel <= data.oversoldLevel && (
-        <FieldWarning message="Overbought level must be higher than oversold level" />
+        <FieldError message="Overbought level must be higher than oversold level" />
       )}
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
@@ -519,7 +525,7 @@ export function CCIFields({
         onChange={(v) => onChange({ appliedPrice: v as CCINodeData["appliedPrice"] })}
       />
       {data.overboughtLevel <= data.oversoldLevel && (
-        <FieldWarning message="Overbought level must be higher than oversold level" />
+        <FieldError message="Overbought level must be higher than oversold level" />
       )}
     </>
   );

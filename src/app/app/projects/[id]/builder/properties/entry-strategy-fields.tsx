@@ -19,6 +19,7 @@ import {
 import {
   OptimizableFieldCheckbox,
   FieldWarning,
+  FieldError,
   ToggleField,
   DirectionSelector,
   AdvancedToggleSection,
@@ -69,7 +70,7 @@ export function EMACrossoverEntryFields({
       />
       <OptimizableFieldCheckbox fieldName="slowEma" data={data} onChange={onChange} />
       {data.fastEma >= data.slowEma && (
-        <FieldWarning message="Fast EMA should be smaller than Slow EMA" />
+        <FieldError message="Fast EMA must be smaller than Slow EMA" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
@@ -280,7 +281,7 @@ export function RangeBreakoutEntryFields({
           <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
         </div>
         {(data.maxRangePips ?? 0) > 0 && (data.minRangePips ?? 0) > (data.maxRangePips ?? 0) && (
-          <FieldWarning message="Min range should not exceed max range" />
+          <FieldError message="Min range must not exceed max range" />
         )}
         <ToggleField
           label="Cancel opposite pending after trigger"
@@ -379,7 +380,7 @@ export function RSIReversalEntryFields({
       />
       <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       {data.overboughtLevel <= data.oversoldLevel && (
-        <FieldWarning message="Overbought must be higher than oversold" />
+        <FieldError message="Overbought must be higher than oversold" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
@@ -561,7 +562,7 @@ export function MACDCrossoverEntryFields({
         }
       />
       {data.macdFast >= data.macdSlow && (
-        <FieldWarning message="MACD fast should be smaller than slow" />
+        <FieldError message="MACD fast must be smaller than slow" />
       )}
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
