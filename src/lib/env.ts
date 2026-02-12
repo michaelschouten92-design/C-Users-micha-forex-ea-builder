@@ -51,6 +51,8 @@ const envSchema = z.object({
   // Stripe Price IDs (required when Stripe is enabled)
   STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional(),
   STRIPE_PRO_YEARLY_PRICE_ID: z.string().optional(),
+  STRIPE_ELITE_MONTHLY_PRICE_ID: z.string().optional(),
+  STRIPE_ELITE_YEARLY_PRICE_ID: z.string().optional(),
 
   // Sentry (optional - for error tracking)
   SENTRY_DSN: z.string().url().optional().or(z.literal("")),
@@ -112,7 +114,7 @@ const refinedEnvSchema = envSchema
   )
   .refine(
     (data) => {
-      // If Stripe is enabled (non-empty), price IDs are required
+      // If Stripe is enabled (non-empty), Pro price IDs are required; Elite are optional
       if (data.STRIPE_SECRET_KEY && data.STRIPE_SECRET_KEY !== "") {
         if (!data.STRIPE_PRO_MONTHLY_PRICE_ID) return false;
         if (!data.STRIPE_PRO_YEARLY_PRICE_ID) return false;
@@ -205,6 +207,8 @@ function validateEnv() {
       STRIPE_WEBHOOK_SECRET: undefined,
       STRIPE_PRO_MONTHLY_PRICE_ID: undefined,
       STRIPE_PRO_YEARLY_PRICE_ID: undefined,
+      STRIPE_ELITE_MONTHLY_PRICE_ID: undefined,
+      STRIPE_ELITE_YEARLY_PRICE_ID: undefined,
       SENTRY_DSN: undefined,
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
@@ -250,6 +254,8 @@ function validateEnv() {
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
         STRIPE_PRO_MONTHLY_PRICE_ID: process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
         STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
+        STRIPE_ELITE_MONTHLY_PRICE_ID: process.env.STRIPE_ELITE_MONTHLY_PRICE_ID,
+        STRIPE_ELITE_YEARLY_PRICE_ID: process.env.STRIPE_ELITE_YEARLY_PRICE_ID,
         SENTRY_DSN: process.env.SENTRY_DSN,
         NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
         UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,

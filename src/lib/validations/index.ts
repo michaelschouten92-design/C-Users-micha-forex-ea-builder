@@ -660,7 +660,7 @@ export const forgotPasswordSchema = z.object({
 // ============================================
 
 export const checkoutRequestSchema = z.object({
-  plan: z.enum(["PRO"]),
+  plan: z.enum(["PRO", "ELITE"]),
   interval: z.enum(["monthly", "yearly"]),
 });
 

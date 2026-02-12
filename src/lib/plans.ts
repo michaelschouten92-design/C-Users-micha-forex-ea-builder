@@ -20,6 +20,18 @@ const DISPLAY_PRICES = {
       interval: "year" as const,
     },
   },
+  elite: {
+    monthly: {
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_ELITE_MONTHLY, 7900),
+      currency: "eur",
+      interval: "month" as const,
+    },
+    yearly: {
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_ELITE_YEARLY, 79900),
+      currency: "eur",
+      interval: "year" as const,
+    },
+  },
 };
 
 // Helper to get price config with Stripe price IDs (only on server when Stripe is enabled)
@@ -30,6 +42,10 @@ function getPriceConfigWithIds() {
       pro: {
         monthly: { ...DISPLAY_PRICES.pro.monthly, priceId: "" },
         yearly: { ...DISPLAY_PRICES.pro.yearly, priceId: "" },
+      },
+      elite: {
+        monthly: { ...DISPLAY_PRICES.elite.monthly, priceId: "" },
+        yearly: { ...DISPLAY_PRICES.elite.yearly, priceId: "" },
       },
     };
   }
@@ -44,6 +60,16 @@ function getPriceConfigWithIds() {
       yearly: {
         ...DISPLAY_PRICES.pro.yearly,
         priceId: env.STRIPE_PRO_YEARLY_PRICE_ID!,
+      },
+    },
+    elite: {
+      monthly: {
+        ...DISPLAY_PRICES.elite.monthly,
+        priceId: env.STRIPE_ELITE_MONTHLY_PRICE_ID || "",
+      },
+      yearly: {
+        ...DISPLAY_PRICES.elite.yearly,
+        priceId: env.STRIPE_ELITE_YEARLY_PRICE_ID || "",
       },
     },
   };
@@ -71,6 +97,7 @@ export const PLANS = {
       "Unlimited exports",
       "MQL5 source code export",
       "All trading blocks",
+      "Private Discord community",
       "Priority support",
     ],
     limits: {
@@ -79,6 +106,24 @@ export const PLANS = {
       canExportMQL5: true,
     },
     prices: priceConfig.pro,
+  },
+  ELITE: {
+    name: "Elite",
+    tier: "ELITE" as const,
+    features: [
+      "Everything in Pro",
+      "Early access to new features",
+      "Advanced risk management modules",
+      "Prop firm configuration presets",
+      "Commercial usage license",
+      "Direct developer support",
+    ],
+    limits: {
+      maxProjects: Infinity,
+      maxExportsPerMonth: Infinity,
+      canExportMQL5: true,
+    },
+    prices: priceConfig.elite,
   },
 } as const;
 

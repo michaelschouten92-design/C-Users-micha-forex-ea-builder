@@ -98,13 +98,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent duplicate subscriptions
-    if (
-      user.subscription?.tier === "PRO" &&
-      (user.subscription?.status === "active" || user.subscription?.status === "trialing")
-    ) {
+    // Prevent duplicate or downgrade subscriptions
+    const currentTier = user.subscription?.tier;
+    const isActive =
+      user.subscription?.status === "active" || user.subscription?.status === "trialing";
+    if (isActive && currentTier === plan) {
       return NextResponse.json(
-        { error: "You already have an active Pro subscription" },
+        { error: `You already have an active ${PLANS[plan].name} subscription` },
+        { status: 400 }
+      );
+    }
+    // Prevent downgrade via checkout (PRO cannot buy PRO, ELITE cannot buy PRO)
+    if (isActive && currentTier === "ELITE" && plan === "PRO") {
+      return NextResponse.json(
+        { error: "Please manage your subscription from account settings" },
         { status: 400 }
       );
     }

@@ -3,8 +3,8 @@ import { PLANS, getPlan, formatPrice } from "./plans";
 
 describe("plans", () => {
   describe("PLANS configuration", () => {
-    it("has two tiers: FREE, PRO", () => {
-      expect(Object.keys(PLANS)).toEqual(["FREE", "PRO"]);
+    it("has three tiers: FREE, PRO, ELITE", () => {
+      expect(Object.keys(PLANS)).toEqual(["FREE", "PRO", "ELITE"]);
     });
 
     it("FREE tier has correct limits", () => {
@@ -27,9 +27,20 @@ describe("plans", () => {
       expect(PLANS.PRO.prices).toBeTruthy();
     });
 
+    it("ELITE tier has unlimited projects and exports", () => {
+      expect(PLANS.ELITE.limits.maxProjects).toBe(Infinity);
+      expect(PLANS.ELITE.limits.maxExportsPerMonth).toBe(Infinity);
+      expect(PLANS.ELITE.limits.canExportMQL5).toBe(true);
+    });
+
+    it("ELITE tier has prices", () => {
+      expect(PLANS.ELITE.prices).toBeTruthy();
+    });
+
     it("each tier has features list", () => {
       expect(PLANS.FREE.features.length).toBeGreaterThan(0);
       expect(PLANS.PRO.features.length).toBeGreaterThan(0);
+      expect(PLANS.ELITE.features.length).toBeGreaterThan(0);
     });
   });
 
@@ -37,6 +48,7 @@ describe("plans", () => {
     it("returns correct plan by tier", () => {
       expect(getPlan("FREE").name).toBe("Free");
       expect(getPlan("PRO").name).toBe("Pro");
+      expect(getPlan("ELITE").name).toBe("Elite");
     });
   });
 

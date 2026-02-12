@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const VALID_PAID_TIERS = ["PRO"] as const;
+const VALID_PAID_TIERS = ["PRO", "ELITE"] as const;
 type PaidTier = (typeof VALID_PAID_TIERS)[number];
 
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
@@ -209,10 +209,15 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   // Determine plan from price - validate against known price IDs
   const priceId = subscription.items.data[0]?.price.id;
-  let tier: "PRO";
+  let tier: "PRO" | "ELITE";
 
   if (priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID || priceId === env.STRIPE_PRO_YEARLY_PRICE_ID) {
     tier = "PRO";
+  } else if (
+    priceId === env.STRIPE_ELITE_MONTHLY_PRICE_ID ||
+    priceId === env.STRIPE_ELITE_YEARLY_PRICE_ID
+  ) {
+    tier = "ELITE";
   } else {
     log.error(
       { priceId, subscriptionId: subscription.id },
@@ -270,7 +275,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
     // Audit tier changes and send confirmation email (fire-and-forget, outside transaction)
     if (result.previousTier !== tier) {
-      const tierOrder = { FREE: 0, PRO: 1 };
+      const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2 };
       const isUpgrade = tierOrder[tier] > tierOrder[result.previousTier as keyof typeof tierOrder];
 
       (isUpgrade

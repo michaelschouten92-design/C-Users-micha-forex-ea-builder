@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — Simple Plans for Every Trader",
+  title: "Pricing — MT5 Bot Builder Plans",
   description:
-    "Simple pricing. Start free with all 5 strategy templates. Upgrade to Pro for unlimited projects and exports. No hidden complexity.",
+    "Build MT5 Expert Advisors from free. Compare Free, Pro, and Elite plans. No hidden fees. Cancel anytime. Cheaper than hiring an MQL5 developer.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -11,7 +11,8 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "AlgoStudio Pricing",
-  description: "Simple pricing for AlgoStudio MT5 EA builder",
+  description:
+    "Pricing plans for AlgoStudio no-code MT5 Expert Advisor builder. Free, Pro, and Elite tiers.",
   mainEntity: {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
@@ -31,7 +32,15 @@ const jsonLd = {
         price: "39",
         priceCurrency: "EUR",
         description:
-          "Unlimited projects, unlimited exports, all strategy templates, priority support",
+          "Unlimited projects, unlimited exports, private Discord community, priority support",
+      },
+      {
+        "@type": "Offer",
+        name: "Elite",
+        price: "79",
+        priceCurrency: "EUR",
+        description:
+          "Everything in Pro plus early feature access, advanced risk modules, prop firm presets, commercial license, direct developer support",
       },
     ],
   },

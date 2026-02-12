@@ -17,6 +17,7 @@ datasource db {
 enum PlanTier {
   FREE
   PRO
+  ELITE
 }
 
 enum ExportType {
