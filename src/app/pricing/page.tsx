@@ -18,9 +18,9 @@ const CheckIcon = ({ className = "w-5 h-5 text-[#22D3EE]" }: { className?: strin
   </svg>
 );
 
-const DashIcon = () => (
+const DashIcon = ({ className = "w-5 h-5 text-[#334155]" }: { className?: string }) => (
   <svg
-    className="w-5 h-5 text-[#334155] flex-shrink-0 mt-0.5"
+    className={`${className} flex-shrink-0 mt-0.5`}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -127,8 +127,8 @@ export default function PricingPage() {
             Invest in your trading infrastructure, not in developers
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            A single MQL5 developer costs {formatPrice(20000, "eur")}\u2013
-            {formatPrice(100000, "eur")}+ per EA. AlgoStudio gives you unlimited EAs for less than{" "}
+            A single MQL5 developer costs {formatPrice(20000, "eur")}&ndash;
+            {formatPrice(100000, "eur")}+ per EA. AlgoStudio gives you unlimited EAs from just{" "}
             {formatPrice(proPrice?.amount ?? 3900, "eur")}/month.
           </p>
         </div>
@@ -400,7 +400,7 @@ export default function PricingPage() {
                           val ? (
                             <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
                           ) : (
-                            <DashIcon />
+                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
                           )
                         ) : (
                           <span className="text-[#CBD5E1]">{val}</span>
@@ -422,7 +422,7 @@ export default function PricingPage() {
             AlgoStudio vs hiring an MQL5 developer
           </h2>
           <p className="text-[#94A3B8] text-center mb-8 max-w-2xl mx-auto">
-            Most MQL5 freelancers charge {formatPrice(20000, "eur")}\u2013
+            Most MQL5 freelancers charge {formatPrice(20000, "eur")}&ndash;
             {formatPrice(100000, "eur")}+ per Expert Advisor. Every modification is an additional
             cost. With AlgoStudio, you iterate instantly.
           </p>
@@ -432,7 +432,7 @@ export default function PricingPage() {
               <h3 className="text-base font-semibold text-white mb-4">MQL5 Developer</h3>
               <ul className="space-y-3 text-sm text-[#94A3B8]">
                 {[
-                  `${formatPrice(20000, "eur")}\u2013${formatPrice(100000, "eur")}+ per EA`,
+                  `${formatPrice(20000, "eur")}–${formatPrice(100000, "eur")}+ per EA`,
                   "Days to weeks delivery time",
                   "Extra cost per modification",
                   "Communication overhead",
@@ -459,7 +459,7 @@ export default function PricingPage() {
               </ul>
               <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
                 <p className="text-xs text-[#64748B]">
-                  Typical cost for 3 EAs: {formatPrice(60000, "eur")}\u2013
+                  Typical cost for 3 EAs: {formatPrice(60000, "eur")}&ndash;
                   {formatPrice(300000, "eur")}+
                 </p>
               </div>
