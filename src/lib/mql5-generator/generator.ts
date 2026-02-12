@@ -12,9 +12,11 @@ import type {
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
   EntryStrategyNodeData,
+  VolatilityFilterNodeData,
+  EquityFilterNodeData,
 } from "@/types/builder";
 
-import { type GeneratorContext, type GeneratedCode } from "./types";
+import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
 
 import {
   generateFileHeader,
@@ -750,8 +752,11 @@ export function generateMQL5Code(
   }
 
   // Generate spread filter code from max-spread nodes (optimizable input)
-  if (maxSpreadNodes.length > 0) {
-    const spreadNode = maxSpreadNodes[0];
+  const actualSpreadNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "max-spread"
+  );
+  if (actualSpreadNodes.length > 0) {
+    const spreadNode = actualSpreadNodes[0];
     const spreadPips = (spreadNode.data as { maxSpreadPips: number }).maxSpreadPips ?? 30;
     code.inputs.push({
       name: "InpMaxSpread",
@@ -766,6 +771,97 @@ export function generateMQL5Code(
     code.onTick.push(`   int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);`);
     code.onTick.push(`   if(currentSpread > InpMaxSpread * _pipFactor)`);
     code.onTick.push(`      return;`);
+    code.onTick.push(`}`);
+  }
+
+  // Generate volatility filter code (ATR-based)
+  const volatilityNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "volatility-filter"
+  );
+  if (volatilityNodes.length > 0) {
+    const vNode = volatilityNodes[0];
+    const vData = vNode.data as VolatilityFilterNodeData;
+    const atrPeriod = vData.atrPeriod ?? 14;
+    const atrTf = getTimeframe(vData.atrTimeframe ?? "H1");
+    const minPips = vData.minAtrPips ?? 0;
+    const maxPips = vData.maxAtrPips ?? 50;
+    code.inputs.push(
+      {
+        name: "InpATRPeriod",
+        type: "int",
+        value: atrPeriod,
+        comment: "ATR Period",
+        isOptimizable: isFieldOptimizable(vNode, "atrPeriod"),
+        group: "Volatility Filter",
+      },
+      {
+        name: "InpMinATRPips",
+        type: "int",
+        value: minPips,
+        comment: "Min ATR (pips, 0=off)",
+        isOptimizable: isFieldOptimizable(vNode, "minAtrPips"),
+        group: "Volatility Filter",
+      },
+      {
+        name: "InpMaxATRPips",
+        type: "int",
+        value: maxPips,
+        comment: "Max ATR (pips, 0=off)",
+        isOptimizable: isFieldOptimizable(vNode, "maxAtrPips"),
+        group: "Volatility Filter",
+      }
+    );
+    code.onTick.push(`//--- Volatility filter (ATR)`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   double atrBuf[];`);
+    code.onTick.push(`   ArraySetAsSeries(atrBuf, true);`);
+    code.onTick.push(`   int atrHandle = iATR(_Symbol, ${atrTf}, InpATRPeriod);`);
+    code.onTick.push(
+      `   if(atrHandle != INVALID_HANDLE && CopyBuffer(atrHandle, 0, 0, 1, atrBuf) == 1)`
+    );
+    code.onTick.push(`   {`);
+    code.onTick.push(`      double atrPips = atrBuf[0] / (_Point * _pipFactor);`);
+    code.onTick.push(`      if(InpMinATRPips > 0 && atrPips < InpMinATRPips) return;`);
+    code.onTick.push(`      if(InpMaxATRPips > 0 && atrPips > InpMaxATRPips) return;`);
+    code.onTick.push(`   }`);
+    code.onTick.push(`}`);
+  }
+
+  // Generate equity filter code (daily drawdown)
+  const equityNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "equity-filter"
+  );
+  if (equityNodes.length > 0) {
+    const eNode = equityNodes[0];
+    const eData = eNode.data as EquityFilterNodeData;
+    const maxDD = eData.maxDrawdownPercent ?? 5;
+    code.inputs.push({
+      name: "InpMaxDailyDD",
+      type: "double",
+      value: maxDD,
+      comment: "Max Daily Drawdown (%)",
+      isOptimizable: isFieldOptimizable(eNode, "maxDrawdownPercent"),
+      group: "Equity Filter",
+    });
+    code.globalVariables.push("double g_dayStartBalance = 0;");
+    code.globalVariables.push("int    g_lastDay = 0;");
+    code.onTick.push(`//--- Equity filter (daily drawdown)`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   MqlDateTime dt;`);
+    code.onTick.push(`   TimeCurrent(dt);`);
+    code.onTick.push(`   if(dt.day != g_lastDay)`);
+    code.onTick.push(`   {`);
+    code.onTick.push(`      g_dayStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);`);
+    code.onTick.push(`      g_lastDay = dt.day;`);
+    code.onTick.push(`   }`);
+    code.onTick.push(`   if(g_dayStartBalance > 0)`);
+    code.onTick.push(`   {`);
+    code.onTick.push(
+      `      double ddPercent = (g_dayStartBalance - AccountInfoDouble(ACCOUNT_EQUITY)) / g_dayStartBalance * 100.0;`
+    );
+    code.onTick.push(`      if(ddPercent >= InpMaxDailyDD)`);
+    code.onTick.push(`         return;`);
+    code.onTick.push(`   }`);
     code.onTick.push(`}`);
   }
 

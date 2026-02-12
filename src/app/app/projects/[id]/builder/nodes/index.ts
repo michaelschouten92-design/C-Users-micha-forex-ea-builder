@@ -4,6 +4,8 @@ import type { NodeTypes } from "@xyflow/react";
 import { TradingTimesNode } from "./trading-times-node";
 import { AlwaysNode } from "./always-node";
 import { MaxSpreadNode } from "./max-spread-node";
+import { VolatilityFilterNode } from "./volatility-filter-node";
+import { EquityFilterNode } from "./equity-filter-node";
 import { CustomTimesNode } from "./custom-times-node";
 import { MovingAverageNode } from "./indicators/moving-average-node";
 import { RSINode } from "./indicators/rsi-node";
@@ -38,6 +40,8 @@ export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
   always: AlwaysNode,
   "max-spread": MaxSpreadNode,
+  "volatility-filter": VolatilityFilterNode,
+  "equity-filter": EquityFilterNode,
   "custom-times": CustomTimesNode,
   "moving-average": MovingAverageNode,
   rsi: RSINode,
@@ -72,6 +76,8 @@ export {
   TradingTimesNode,
   AlwaysNode,
   MaxSpreadNode,
+  VolatilityFilterNode,
+  EquityFilterNode,
   CustomTimesNode,
   MovingAverageNode,
   RSINode,

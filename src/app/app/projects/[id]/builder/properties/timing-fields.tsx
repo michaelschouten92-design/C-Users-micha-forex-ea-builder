@@ -6,12 +6,15 @@ import type {
   TradingSession,
   AlwaysNodeData,
   MaxSpreadNodeData,
+  VolatilityFilterNodeData,
+  EquityFilterNodeData,
   CustomTimesNodeData,
   TradingDays,
   TimeSlot,
+  Timeframe,
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
-import { TRADING_SESSION_OPTIONS, DAY_LABELS } from "./constants";
+import { TRADING_SESSION_OPTIONS, DAY_LABELS, TIMEFRAME_OPTIONS } from "./constants";
 
 export function TradingSessionFields({
   data,
@@ -114,6 +117,83 @@ export function MaxSpreadFields({
       step={1}
       onChange={(v) => onChange({ maxSpreadPips: v })}
     />
+  );
+}
+
+export function VolatilityFilterFields({
+  data,
+  onChange,
+}: {
+  data: VolatilityFilterNodeData;
+  onChange: (updates: Partial<VolatilityFilterNodeData>) => void;
+}) {
+  return (
+    <>
+      <NumberField
+        label="ATR Period"
+        value={data.atrPeriod}
+        min={1}
+        max={1000}
+        step={1}
+        onChange={(v) => onChange({ atrPeriod: v })}
+      />
+      <SelectField
+        label="ATR Timeframe"
+        value={data.atrTimeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ atrTimeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Min ATR (pips)"
+          value={data.minAtrPips}
+          min={0}
+          max={10000}
+          step={1}
+          onChange={(v) => onChange({ minAtrPips: v })}
+        />
+        <p className="text-[10px] text-[#64748B] mt-0.5">0 = no minimum</p>
+      </div>
+      <div>
+        <NumberField
+          label="Max ATR (pips)"
+          value={data.maxAtrPips}
+          min={0}
+          max={10000}
+          step={1}
+          onChange={(v) => onChange({ maxAtrPips: v })}
+        />
+        <p className="text-[10px] text-[#64748B] mt-0.5">0 = no maximum</p>
+      </div>
+    </>
+  );
+}
+
+export function EquityFilterFields({
+  data,
+  onChange,
+}: {
+  data: EquityFilterNodeData;
+  onChange: (updates: Partial<EquityFilterNodeData>) => void;
+}) {
+  return (
+    <>
+      <NumberField
+        label="Max Daily Drawdown (%)"
+        value={data.maxDrawdownPercent}
+        min={0.1}
+        max={100}
+        step={0.5}
+        onChange={(v) => onChange({ maxDrawdownPercent: v })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Skips new trades when account equity drops more than {data.maxDrawdownPercent}% from the
+        day&apos;s starting balance
+      </div>
+    </>
   );
 }
 

@@ -81,11 +81,28 @@ export interface MaxSpreadNodeData extends BaseNodeData {
   maxSpreadPips: number;
 }
 
+export interface VolatilityFilterNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "volatility-filter";
+  atrPeriod: number; // 1-1000, default 14
+  atrTimeframe: Timeframe; // default "H1"
+  minAtrPips: number; // 0-10000, default 0 (0 = disabled)
+  maxAtrPips: number; // 0-10000, default 50
+}
+
+export interface EquityFilterNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "equity-filter";
+  maxDrawdownPercent: number; // 0.1-100, default 5
+}
+
 export type TimingNodeData =
   | TradingSessionNodeData
   | AlwaysNodeData
   | CustomTimesNodeData
-  | MaxSpreadNodeData;
+  | MaxSpreadNodeData
+  | VolatilityFilterNodeData
+  | EquityFilterNodeData;
 
 // Session time definitions (GMT)
 export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
@@ -567,7 +584,9 @@ export type BuilderNodeType =
   | "rsi-reversal-entry"
   | "trend-pullback-entry"
   | "macd-crossover-entry"
-  | "max-spread";
+  | "max-spread"
+  | "volatility-filter"
+  | "equity-filter";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -675,6 +694,33 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       filterType: "max-spread",
       maxSpreadPips: 30,
     } as MaxSpreadNodeData,
+  },
+  {
+    type: "volatility-filter",
+    label: "Volatility Filter",
+    category: "timing",
+    description: "Skip trading when volatility (ATR) is too low or too high",
+    defaultData: {
+      label: "Volatility Filter",
+      category: "timing",
+      filterType: "volatility-filter",
+      atrPeriod: 14,
+      atrTimeframe: "H1",
+      minAtrPips: 0,
+      maxAtrPips: 50,
+    } as VolatilityFilterNodeData,
+  },
+  {
+    type: "equity-filter",
+    label: "Equity Filter",
+    category: "timing",
+    description: "Skip trading when daily drawdown exceeds threshold",
+    defaultData: {
+      label: "Equity Filter",
+      category: "timing",
+      filterType: "equity-filter",
+      maxDrawdownPercent: 5,
+    } as EquityFilterNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {

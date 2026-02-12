@@ -7,6 +7,8 @@ import type {
   TradingSessionNodeData,
   AlwaysNodeData,
   MaxSpreadNodeData,
+  VolatilityFilterNodeData,
+  EquityFilterNodeData,
   CustomTimesNodeData,
   MovingAverageNodeData,
   RSINodeData,
@@ -40,6 +42,8 @@ import {
   TradingSessionFields,
   AlwaysFields,
   MaxSpreadFields,
+  VolatilityFilterFields,
+  EquityFilterFields,
   CustomTimesFields,
 } from "./timing-fields";
 import {
@@ -233,6 +237,12 @@ function NodeFields({
     switch (data.filterType) {
       case "max-spread":
         return <MaxSpreadFields data={data as MaxSpreadNodeData} onChange={onChange} />;
+      case "volatility-filter":
+        return (
+          <VolatilityFilterFields data={data as VolatilityFilterNodeData} onChange={onChange} />
+        );
+      case "equity-filter":
+        return <EquityFilterFields data={data as EquityFilterNodeData} onChange={onChange} />;
     }
   }
 
