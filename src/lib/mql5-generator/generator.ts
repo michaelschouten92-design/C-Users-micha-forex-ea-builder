@@ -1418,9 +1418,42 @@ export function generateMQL5Code(
     generateTradeManagementCode(node, indicatorNodes, code);
   });
 
+  // News filter setup instructions (only when news filter is used)
+  const newsSetupGuide =
+    newsFilterNodes.length > 0
+      ? `//+------------------------------------------------------------------+
+//| NEWS FILTER — SETUP GUIDE                                        |
+//+------------------------------------------------------------------+
+//| This EA uses a News Filter that avoids trading around economic    |
+//| news events. Follow these steps to enable backtesting support:    |
+//|                                                                   |
+//| STEP 1: Compile this EA in MetaEditor (F7)                       |
+//|                                                                   |
+//| STEP 2: Attach the EA to any live or demo chart                  |
+//|         → The EA will automatically download all historical news  |
+//|           data and save it to:                                    |
+//|           [Common Files]/ea_builder_news.csv                      |
+//|         → This happens once; future runs only append new events   |
+//|                                                                   |
+//| STEP 3: Open the Strategy Tester and run your backtest            |
+//|         → The EA detects tester mode and reads from the CSV       |
+//|         → News events are filtered by your symbol's currencies    |
+//|                                                                   |
+//| OPTIONAL: Set "Export News History" input to true for a full      |
+//|           re-download of all calendar data since 2010.            |
+//|                                                                   |
+//| NOTE: The CSV is stored in the Common Files folder so it works    |
+//|       across all terminals and accounts. You only need to do      |
+//|       Step 2 once — after that, backtesting works immediately.    |
+//+------------------------------------------------------------------+
+
+`
+      : "";
+
   // Assemble final code (array join avoids repeated string allocation)
   const parts = [
     generateFileHeader(ctx),
+    newsSetupGuide,
     generateTradeIncludes(),
     generateInputsSection(code.inputs),
     generateGlobalVariablesSection(code.globalVariables),

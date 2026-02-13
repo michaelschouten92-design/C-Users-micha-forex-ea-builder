@@ -2924,6 +2924,52 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("InpNewsLow");
     });
 
+    it("includes setup guide only when news filter is present", () => {
+      const withNews = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("nf1", "news-filter", {
+          category: "timing",
+          filterType: "news-filter",
+          minutesBefore: 30,
+          minutesAfter: 30,
+          highImpact: true,
+          mediumImpact: true,
+          lowImpact: false,
+          closePositions: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const codeWith = generateMQL5Code(withNews, "Test");
+      expect(codeWith).toContain("NEWS FILTER — SETUP GUIDE");
+      expect(codeWith).toContain("STEP 1");
+      expect(codeWith).toContain("STEP 2");
+      expect(codeWith).toContain("STEP 3");
+      expect(codeWith).toContain("ea_builder_news.csv");
+
+      const withoutNews = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const codeWithout = generateMQL5Code(withoutNews, "Test");
+      expect(codeWithout).not.toContain("NEWS FILTER — SETUP GUIDE");
+    });
+
     it("does not generate close positions loop when closePositions is false", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
