@@ -2731,7 +2731,7 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
-  // AUDIT: Volatility and equity filters
+  // AUDIT: Volatility filter
   // ============================================
 
   describe("volatility filter", () => {
@@ -2761,32 +2761,6 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("iATR");
       expect(code).toContain("InpMinATRPips");
       expect(code).toContain("InpMaxATRPips");
-    });
-  });
-
-  describe("equity filter", () => {
-    it("generates equity drawdown check when equity-filter node is present", () => {
-      const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("ef1", "equity-filter", {
-          category: "timing",
-          filterType: "equity-filter",
-          maxDrawdownPercent: 5,
-        }),
-        makeNode("b1", "place-buy", {
-          category: "trading",
-          tradingType: "place-buy",
-          method: "FIXED_LOT",
-          fixedLot: 0.1,
-          riskPercent: 2,
-          minLot: 0.01,
-          maxLot: 10,
-        }),
-      ]);
-      const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("InpMaxDailyDD");
-      expect(code).toContain("ACCOUNT_EQUITY");
-      expect(code).toContain("daily drawdown");
     });
   });
 

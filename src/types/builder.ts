@@ -90,12 +90,6 @@ export interface VolatilityFilterNodeData extends BaseNodeData {
   maxAtrPips: number; // 0-10000, default 50
 }
 
-export interface EquityFilterNodeData extends BaseNodeData {
-  category: "timing";
-  filterType: "equity-filter";
-  maxDrawdownPercent: number; // 0.1-100, default 5
-}
-
 export interface FridayCloseFilterNodeData extends BaseNodeData {
   category: "timing";
   filterType: "friday-close";
@@ -122,7 +116,6 @@ export type TimingNodeData =
   | CustomTimesNodeData
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
-  | EquityFilterNodeData
   | FridayCloseFilterNodeData
   | NewsFilterNodeData;
 
@@ -607,7 +600,6 @@ export type BuilderNodeType =
   | "macd-crossover-entry"
   | "max-spread"
   | "volatility-filter"
-  | "equity-filter"
   | "friday-close"
   | "news-filter";
 
@@ -732,18 +724,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       minAtrPips: 0,
       maxAtrPips: 50,
     } as VolatilityFilterNodeData,
-  },
-  {
-    type: "equity-filter",
-    label: "Daily Drawdown Limit",
-    category: "timing",
-    description: "Pause trading when equity drops more than X% below day's starting balance",
-    defaultData: {
-      label: "Daily Drawdown Limit",
-      category: "timing",
-      filterType: "equity-filter",
-      maxDrawdownPercent: 5,
-    } as EquityFilterNodeData,
   },
   {
     type: "friday-close",

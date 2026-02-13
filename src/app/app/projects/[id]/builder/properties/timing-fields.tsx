@@ -7,7 +7,6 @@ import type {
   AlwaysNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
-  EquityFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
   CustomTimesNodeData,
@@ -166,34 +165,6 @@ export function VolatilityFilterFields({
           onChange={(v) => onChange({ maxAtrPips: v })}
         />
         <p className="text-[10px] text-[#64748B] mt-0.5">0 = no maximum</p>
-      </div>
-    </>
-  );
-}
-
-export function EquityFilterFields({
-  data,
-  onChange,
-}: {
-  data: EquityFilterNodeData;
-  onChange: (updates: Partial<EquityFilterNodeData>) => void;
-}) {
-  return (
-    <>
-      <NumberField
-        label="Max Daily Drawdown (%)"
-        value={data.maxDrawdownPercent}
-        min={0.1}
-        max={100}
-        step={0.5}
-        onChange={(v) => onChange({ maxDrawdownPercent: v })}
-      />
-      <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
-        role="note"
-      >
-        Skips new trades when account equity drops more than {data.maxDrawdownPercent}% from the
-        day&apos;s starting balance
       </div>
     </>
   );

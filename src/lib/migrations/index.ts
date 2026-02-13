@@ -9,17 +9,27 @@ const migrations: Migration[] = [
   {
     version: "1.1",
     up: (data) => {
-      // Rename "Equity Filter" label to "Daily Drawdown Limit"
+      // Remove equity-filter nodes (functionality moved to strategy settings)
       const nodes = data.nodes as Array<Record<string, unknown>> | undefined;
       if (nodes) {
+        const removedIds = new Set<string>();
         for (const node of nodes) {
           const nodeData = node.data as Record<string, unknown> | undefined;
-          if (
-            nodeData &&
-            nodeData.filterType === "equity-filter" &&
-            nodeData.label === "Equity Filter"
-          ) {
-            nodeData.label = "Daily Drawdown Limit";
+          if (nodeData && nodeData.filterType === "equity-filter") {
+            removedIds.add(node.id as string);
+          }
+        }
+        if (removedIds.size > 0) {
+          data.nodes = nodes.filter(
+            (n) =>
+              !(n.data as Record<string, unknown> | undefined)?.filterType ||
+              (n.data as Record<string, unknown>).filterType !== "equity-filter"
+          );
+          const edges = data.edges as Array<Record<string, unknown>> | undefined;
+          if (edges) {
+            data.edges = edges.filter(
+              (e) => !removedIds.has(e.source as string) && !removedIds.has(e.target as string)
+            );
           }
         }
       }
