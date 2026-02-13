@@ -354,6 +354,25 @@ export async function sendContactFormEmail(
   log.info({ from: senderEmail.substring(0, 3) + "***" }, "Contact form email sent");
 }
 
+const DISCORD_INVITE_URL = "https://discord.gg/9stYCH7c";
+
+const PLAN_WELCOME_FEATURES: Record<string, string[]> = {
+  PRO: [
+    "Unlimited projects",
+    "Unlimited exports",
+    "MQL5 source code export",
+    "Private Discord community",
+    "Priority support",
+  ],
+  ELITE: [
+    "Everything in Pro",
+    "Early access to new features",
+    "Prop firm configuration presets",
+    "Direct developer support",
+    "Weekly Elite members call",
+  ],
+};
+
 export async function sendPlanChangeEmail(
   email: string,
   previousPlan: string,
@@ -372,10 +391,63 @@ export async function sendPlanChangeEmail(
   const safePreviousPlan = esc(previousPlan);
   const safeNewPlan = esc(newPlan);
 
+  // Use tier-specific welcome email for upgrades to PRO or ELITE
+  const tierKey = newPlan.toUpperCase();
+  const isUpgradeWithWelcome = isUpgrade && (tierKey === "PRO" || tierKey === "ELITE");
+  const features = PLAN_WELCOME_FEATURES[tierKey] ?? [];
+
+  const subject = isUpgradeWithWelcome
+    ? `Welcome to AlgoStudio ${safeNewPlan}!`
+    : `Your AlgoStudio plan has been changed to ${safeNewPlan}`;
+
+  const featuresHtml = features
+    .map(
+      (f) =>
+        `<li style="padding: 4px 0;"><span style="color: #10B981; margin-right: 8px;">&#10003;</span>${esc(f)}</li>`
+    )
+    .join("");
+
+  const upgradeBody = `
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 8px 0;">Welcome to ${safeNewPlan}!</h1>
+            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+              Thank you for upgrading. Your ${safeNewPlan} plan is now active and all features are unlocked.
+            </p>
+            <h2 style="color: #ffffff; font-size: 16px; margin: 0 0 12px 0;">Your ${safeNewPlan} features</h2>
+            <ul style="margin: 0 0 24px 0; padding-left: 0; list-style: none; line-height: 1.8;">
+              ${featuresHtml}
+            </ul>
+            <h2 style="color: #ffffff; font-size: 16px; margin: 0 0 12px 0;">Join the Discord community</h2>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              Connect with other AlgoStudio traders, share strategies, and get help from the community.
+            </p>
+            <a href="${DISCORD_INVITE_URL}" style="display: inline-block; background: linear-gradient(135deg, #5865F2, #7289DA); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 16px 0;">
+              Join Discord
+            </a>
+            <br>
+            <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Open AlgoStudio
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              Questions? Contact us at support@algo-studio.com.
+            </p>`;
+
+  const downgradeBody = `
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Plan changed</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+              Your plan has been changed from <strong style="color: #ffffff;">${safePreviousPlan}</strong> to <strong style="color: #ffffff;">${safeNewPlan}</strong>.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6;">Your new plan takes effect at the end of your current billing period.</p>
+            <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Go to Dashboard
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #64748B;">
+              Questions? Contact us at support@algo-studio.com.
+            </p>`;
+
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: `Your AlgoStudio plan has been ${isUpgrade ? "upgraded" : "changed"} to ${newPlan}`,
+    subject,
     html: `
       <!DOCTYPE html>
       <html>
@@ -385,21 +457,7 @@ export async function sendPlanChangeEmail(
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
-            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Plan ${isUpgrade ? "upgraded" : "changed"}</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
-              Your plan has been ${isUpgrade ? "upgraded" : "changed"} from <strong style="color: #ffffff;">${safePreviousPlan}</strong> to <strong style="color: #ffffff;">${safeNewPlan}</strong>.
-            </p>
-            ${
-              isUpgrade
-                ? `<p style="margin: 0 0 24px 0; line-height: 1.6;">You now have access to all ${safeNewPlan} features. Enjoy!</p>`
-                : `<p style="margin: 0 0 24px 0; line-height: 1.6;">Your new plan takes effect at the end of your current billing period.</p>`
-            }
-            <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
-              Go to Dashboard
-            </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at support@algo-studio.com.
-            </p>
+            ${isUpgradeWithWelcome ? upgradeBody : downgradeBody}
           </div>
         </body>
       </html>
