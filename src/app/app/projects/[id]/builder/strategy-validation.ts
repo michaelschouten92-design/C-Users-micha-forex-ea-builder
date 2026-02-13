@@ -40,24 +40,6 @@ export function validateStrategy(
 
   // Timing is optional — without it, the strategy trades whenever conditions are met
 
-  // Check that entry strategy is connected to a timing block
-  if (hasEntryStrategy && hasTiming && edges.length > 0) {
-    const entryNodes = nodes.filter((n) => "entryType" in n.data);
-    const timingNodes = nodes.filter((n) => "timingType" in n.data);
-    const timingIds = new Set(timingNodes.map((n) => n.id));
-
-    for (const entry of entryNodes) {
-      const isConnected = edges.some((e) => e.target === entry.id && timingIds.has(e.source));
-      if (!isConnected) {
-        issues.push({
-          type: "warning",
-          message: `"${entry.data.label}" is not connected to a timing block`,
-          nodeType: "entrystrategy",
-        });
-      }
-    }
-  }
-
   // Check for risk-based sizing without stop loss
   const placeBuyNodes = nodes.filter(
     (n) => n.type === "place-buy" || ("tradingType" in n.data && n.data.tradingType === "place-buy")
