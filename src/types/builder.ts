@@ -459,7 +459,7 @@ export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFi
   // Basic
   fastEma: number;
   slowEma: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW";
   // Advanced toggles
   htfTrendFilter: boolean;
   htfTimeframe: Timeframe;

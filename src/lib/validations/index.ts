@@ -484,6 +484,7 @@ const emaCrossoverEntryDataSchema = baseNodeDataSchema
     entryType: z.literal("ema-crossover"),
     fastEma: z.number().int().min(1).max(1000),
     slowEma: z.number().int().min(1).max(1000),
+    appliedPrice: z.enum(["CLOSE", "OPEN", "HIGH", "LOW"]).optional(),
     htfTrendFilter: z.boolean(),
     htfTimeframe: timeframeSchema,
     htfEma: z.number().int().min(1).max(1000),

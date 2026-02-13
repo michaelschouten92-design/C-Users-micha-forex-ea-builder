@@ -48,7 +48,9 @@ export function EMACrossoverEntryFields({
       <SelectField
         label="Applied Price"
         value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
+        options={APPLIED_PRICE_OPTIONS.filter(
+          (o) => !["MEDIAN", "TYPICAL", "WEIGHTED"].includes(o.value)
+        )}
         onChange={(v) => onChange({ appliedPrice: v as EMACrossoverEntryData["appliedPrice"] })}
       />
 
