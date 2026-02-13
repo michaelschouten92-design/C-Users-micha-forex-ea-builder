@@ -143,7 +143,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         appliedPrice: emaAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
-        optimizableFields: mapOpt(["fastEma", "period"]),
+        optimizableFields: mapOpt(["fastEma", "period"], ["minEmaSeparation", "_minEmaSeparation"]),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "fast",
@@ -175,6 +175,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           timeframe: ema.htfTimeframe ?? "H4",
           period: ema.htfEma,
           method: "EMA",
+          appliedPrice: emaAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
           optimizableFields: mapOpt(["htfEma", "period"]),
@@ -191,17 +192,16 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           indicatorType: "rsi",
           timeframe: emaTf,
           period: ema.rsiPeriod,
-          overboughtLevel: ema.rsiShortMin,
-          oversoldLevel: ema.rsiLongMax,
+          appliedPrice: emaAppliedPrice,
+          overboughtLevel: ema.rsiLongMax,
+          oversoldLevel: ema.rsiShortMin,
           signalMode: "candle_close",
           optimizableFields: mapOpt(
             ["rsiPeriod", "period"],
-            ["rsiLongMax", "oversoldLevel"],
-            ["rsiShortMin", "overboughtLevel"]
+            ["rsiLongMax", "overboughtLevel"],
+            ["rsiShortMin", "oversoldLevel"]
           ),
           _filterRole: "rsi-confirm",
-          _rsiLongMax: ema.rsiLongMax,
-          _rsiShortMin: ema.rsiShortMin,
         })
       );
     }

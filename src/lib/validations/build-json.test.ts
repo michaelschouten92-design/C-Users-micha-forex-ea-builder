@@ -195,6 +195,89 @@ describe("buildJsonSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("validates ema-crossover entry with minEmaSeparation", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "ema-crossover-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "EMA Crossover",
+            category: "entrystrategy",
+            entryType: "ema-crossover",
+            direction: "BOTH",
+            fastEma: 50,
+            slowEma: 200,
+            appliedPrice: "CLOSE",
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+            htfTrendFilter: false,
+            htfTimeframe: "H4",
+            htfEma: 200,
+            rsiConfirmation: false,
+            rsiPeriod: 14,
+            rsiLongMax: 60,
+            rsiShortMin: 40,
+            minEmaSeparation: 5,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const nodeData = result.data.nodes[0].data as Record<string, unknown>;
+      expect(nodeData.minEmaSeparation).toBe(5);
+    }
+  });
+
+  it("rejects ema-crossover with fastEma >= slowEma", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "ema-crossover-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "EMA Crossover",
+            category: "entrystrategy",
+            entryType: "ema-crossover",
+            direction: "BOTH",
+            fastEma: 200,
+            slowEma: 50,
+            appliedPrice: "CLOSE",
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+            htfTrendFilter: false,
+            htfTimeframe: "H4",
+            htfEma: 200,
+            rsiConfirmation: false,
+            rsiPeriod: 14,
+            rsiLongMax: 60,
+            rsiShortMin: 40,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
   it("rejects news-filter with hoursBefore > 24", () => {
     const build = {
       ...validBuildJson,

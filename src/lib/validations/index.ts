@@ -492,6 +492,7 @@ const emaCrossoverEntryDataSchema = baseNodeDataSchema
     rsiPeriod: z.number().int().min(1).max(1000),
     rsiLongMax: z.number().min(0).max(100),
     rsiShortMin: z.number().min(0).max(100),
+    minEmaSeparation: z.number().min(0).max(10000).optional(),
   })
   .strip();
 
@@ -591,6 +592,17 @@ const builderNodeDataSchema = z
       if (!result.success) {
         for (const issue of result.error.issues) {
           ctx.addIssue(issue);
+        }
+      }
+      // Cross-field validation for EMA crossover
+      if (data.entryType === "ema-crossover") {
+        const d = data as { fastEma?: number; slowEma?: number };
+        if (d.fastEma != null && d.slowEma != null && d.fastEma >= d.slowEma) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Fast EMA period must be less than Slow EMA period",
+            path: ["fastEma"],
+          });
         }
       }
     }

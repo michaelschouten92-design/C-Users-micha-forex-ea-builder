@@ -580,7 +580,19 @@ export function generateEntryLogic(
         let sellCross = `(DoubleGE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleLT(${fp}Buffer[1], ${sp}Buffer[1]))`;
         // Minimum EMA separation filter
         if (group.minEmaSeparation && group.minEmaSeparation > 0) {
-          const sepCondition = `MathAbs(${fp}Buffer[1] - ${sp}Buffer[1]) / (_Point * _pipFactor) >= ${group.minEmaSeparation}`;
+          const fastNode = indicatorNodes[group.fast!];
+          code.inputs.push(
+            createInput(
+              fastNode,
+              "_minEmaSeparation",
+              "InpMinEmaSeparation",
+              "double",
+              group.minEmaSeparation,
+              "Min EMA Separation (pips)",
+              "EMA Crossover"
+            )
+          );
+          const sepCondition = `MathAbs(${fp}Buffer[1] - ${sp}Buffer[1]) / (_Point * _pipFactor) >= InpMinEmaSeparation`;
           buyCross = `(${buyCross} && ${sepCondition})`;
           sellCross = `(${sellCross} && ${sepCondition})`;
         }
@@ -603,11 +615,11 @@ export function generateEntryLogic(
         sellConditions.push(`(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${s}), ${vp}Buffer[0]))`);
         handledIndices.add(indIndex);
       } else if (d._filterRole === "rsi-confirm") {
-        // RSI < longMax for buy, RSI > shortMin for sell
+        // RSI < longMax (overbought) for buy, RSI > shortMin (oversold) for sell
         const vp = `ind${indIndex}`;
         const s = d.signalMode === "candle_close" ? 1 : 0;
-        buyConditions.push(`(DoubleLT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`);
-        sellConditions.push(`(DoubleGT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`);
+        buyConditions.push(`(DoubleLT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`);
+        sellConditions.push(`(DoubleGT(${vp}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`);
         handledIndices.add(indIndex);
       } else if (d._filterRole === "adx-trend-strength") {
         // ADX > threshold = trend is strong enough (both directions)

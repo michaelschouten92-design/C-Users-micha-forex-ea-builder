@@ -1863,6 +1863,193 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // EMA CROSSOVER ENTRY STRATEGY
+  // ============================================
+
+  describe("ema crossover entry strategy", () => {
+    const makeEmaCrossoverEntry = (overrides: Record<string, unknown> = {}) =>
+      makeNode("entry1", "ema-crossover-entry", {
+        category: "entrystrategy",
+        entryType: "ema-crossover",
+        direction: "BOTH",
+        fastEma: 50,
+        slowEma: 200,
+        appliedPrice: "CLOSE",
+        timeframe: "H1",
+        riskPercent: 1,
+        slMethod: "ATR",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        tpRMultiple: 2,
+        htfTrendFilter: false,
+        htfTimeframe: "H4",
+        htfEma: 200,
+        rsiConfirmation: false,
+        rsiPeriod: 14,
+        rsiLongMax: 60,
+        rsiShortMin: 40,
+        minEmaSeparation: 0,
+        ...overrides,
+      });
+
+    it("generates basic EMA crossover buy/sell conditions", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry(),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should create two MA handles (fast + slow)
+      expect(code).toContain("iMA(_Symbol");
+      // Should have crossover conditions: fast crosses above slow = buy
+      expect(code).toContain("DoubleLE");
+      expect(code).toContain("DoubleGT");
+      // Should generate buy and sell logic
+      expect(code).toContain("OpenBuy");
+      expect(code).toContain("OpenSell");
+    });
+
+    it("generates only buy logic when direction is BUY", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ direction: "BUY" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
+    });
+
+    it("generates only sell logic when direction is SELL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ direction: "SELL" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("passes appliedPrice to all MA indicators", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ appliedPrice: "HIGH" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PRICE_HIGH");
+    });
+
+    it("generates HTF trend filter conditions when enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ htfTrendFilter: true, htfTimeframe: "D1", htfEma: 100 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should have a third MA handle for HTF EMA
+      expect(code).toContain("PERIOD_D1");
+      // Should filter: price above HTF EMA for buy
+      expect(code).toContain("iClose(_Symbol, PERIOD_CURRENT");
+    });
+
+    it("passes appliedPrice to HTF EMA when enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({
+          htfTrendFilter: true,
+          htfTimeframe: "D1",
+          htfEma: 100,
+          appliedPrice: "LOW",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // All three MAs should use PRICE_LOW — count occurrences
+      const priceMatches = code.match(/PRICE_LOW/g);
+      expect(priceMatches).not.toBeNull();
+      expect(priceMatches!.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("generates RSI confirmation filter with correct input names", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({
+          rsiConfirmation: true,
+          rsiPeriod: 14,
+          rsiLongMax: 60,
+          rsiShortMin: 40,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should create RSI handle
+      expect(code).toContain("iRSI(_Symbol");
+      // RSI overbought should be 60 (longMax), oversold should be 40 (shortMin)
+      expect(code).toContain("Overbought");
+      expect(code).toContain("Oversold");
+      // Buy condition: RSI < Overbought (longMax)
+      expect(code).toContain("DoubleLT");
+      // Sell condition: RSI > Oversold (shortMin)
+      expect(code).toContain("DoubleGT");
+    });
+
+    it("passes appliedPrice to RSI confirmation when enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({
+          rsiConfirmation: true,
+          rsiPeriod: 14,
+          rsiLongMax: 60,
+          rsiShortMin: 40,
+          appliedPrice: "OPEN",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // RSI should also use PRICE_OPEN
+      const priceMatches = code.match(/PRICE_OPEN/g);
+      expect(priceMatches).not.toBeNull();
+      // 2 MAs + 1 RSI = 3 indicators using PRICE_OPEN
+      expect(priceMatches!.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("generates InpMinEmaSeparation input when minEmaSeparation > 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ minEmaSeparation: 5 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpMinEmaSeparation");
+      expect(code).toContain("MathAbs");
+      expect(code).toContain(">= InpMinEmaSeparation");
+    });
+
+    it("does not generate minEmaSeparation filter when value is 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ minEmaSeparation: 0 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpMinEmaSeparation");
+    });
+
+    it("generates PERCENT SL method with EMA crossover", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ slMethod: "PERCENT", slPercent: 2 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpSLPercent");
+      expect(code).toContain("slPips");
+    });
+
+    it("generates PIPS SL method with EMA crossover", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeEmaCrossoverEntry({ slMethod: "PIPS", slFixedPips: 30 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpStopLoss");
+      expect(code).toContain("slPips");
+    });
+  });
+
+  // ============================================
   // RANGE BREAKOUT ENTRY — new range/SL options
   // ============================================
 
