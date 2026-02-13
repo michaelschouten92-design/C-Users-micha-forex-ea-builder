@@ -534,6 +534,7 @@ const rsiReversalEntryDataSchema = baseNodeDataSchema
     overboughtLevel: z.number().min(0).max(100),
     trendFilter: z.boolean(),
     trendEma: z.number().int().min(1).max(1000),
+    appliedPrice: appliedPriceSchema.optional(),
   })
   .strip();
 
@@ -543,13 +544,14 @@ const trendPullbackEntryDataSchema = baseNodeDataSchema
     category: z.literal("entrystrategy"),
     entryType: z.literal("trend-pullback"),
     trendEma: z.number().int().min(1).max(1000),
-    pullbackRsiPeriod: z.number().int().min(1).max(1000),
-    rsiPullbackLevel: z.number().min(0).max(100),
-    pullbackMaxDistance: z.number().min(0).max(100),
+    pullbackRsiPeriod: z.number().int().min(1).max(500),
+    rsiPullbackLevel: z.number().min(10).max(50),
+    pullbackMaxDistance: z.number().min(0.1).max(100),
     requireEmaBuffer: z.boolean(),
     useAdxFilter: z.boolean(),
     adxPeriod: z.number().int().min(1).max(500),
-    adxThreshold: z.number().min(0).max(100),
+    adxThreshold: z.number().min(1).max(100),
+    appliedPrice: appliedPriceSchema.optional(),
   })
   .strip();
 

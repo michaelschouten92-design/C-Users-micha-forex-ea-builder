@@ -317,7 +317,10 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         appliedPrice: tpAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
-        optimizableFields: mapOpt(["trendEma", "period"]),
+        optimizableFields: mapOpt(
+          ["trendEma", "period"],
+          ["pullbackMaxDistance", "_pullbackMaxDistance"]
+        ),
         _requireEmaBuffer: tp.requireEmaBuffer ?? false,
         _pullbackMaxDistance: tp.pullbackMaxDistance ?? 2.0,
       }),
@@ -350,6 +353,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           period: tp.adxPeriod,
           trendLevel: tp.adxThreshold,
           signalMode: "candle_close",
+          optimizableFields: mapOpt(["adxPeriod", "period"], ["adxThreshold", "trendLevel"]),
           _filterRole: "adx-trend-strength",
         })
       );

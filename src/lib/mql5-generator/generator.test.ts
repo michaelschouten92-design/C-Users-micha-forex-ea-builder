@@ -2050,6 +2050,148 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // TREND PULLBACK ENTRY STRATEGY
+  // ============================================
+
+  describe("trend pullback entry strategy", () => {
+    const makeTrendPullbackEntry = (overrides: Record<string, unknown> = {}) =>
+      makeNode("entry1", "trend-pullback-entry", {
+        category: "entrystrategy",
+        entryType: "trend-pullback",
+        direction: "BOTH",
+        trendEma: 50,
+        pullbackRsiPeriod: 14,
+        rsiPullbackLevel: 30,
+        pullbackMaxDistance: 2.0,
+        requireEmaBuffer: true,
+        useAdxFilter: false,
+        adxPeriod: 14,
+        adxThreshold: 25,
+        appliedPrice: "CLOSE",
+        timeframe: "H1",
+        riskPercent: 1,
+        slMethod: "ATR",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        tpRMultiple: 2,
+        ...overrides,
+      });
+
+    it("generates basic trend pullback with EMA, RSI and proximity check", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry(),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should create MA handle for trend EMA
+      expect(code).toContain("iMA(_Symbol");
+      // Should create RSI handle for pullback detection
+      expect(code).toContain("iRSI(_Symbol");
+      // Should have proximity check with InpPullbackMaxDist
+      expect(code).toContain("InpPullbackMaxDist");
+      // Should generate buy and sell logic
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("does not generate proximity check when requireEmaBuffer is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ requireEmaBuffer: false }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should NOT have proximity distance input
+      expect(code).not.toContain("InpPullbackMaxDist");
+      // Should still have basic MA direction check
+      expect(code).toContain("iMA(_Symbol");
+      expect(code).toContain("DoubleGT");
+    });
+
+    it("generates only buy logic when direction is BUY", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ direction: "BUY" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
+    });
+
+    it("generates only sell logic when direction is SELL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ direction: "SELL" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("passes appliedPrice to MA and RSI indicators", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ appliedPrice: "HIGH" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Both MA and RSI should use PRICE_HIGH
+      const priceMatches = code.match(/PRICE_HIGH/g);
+      expect(priceMatches).not.toBeNull();
+      expect(priceMatches!.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("generates ADX filter when useAdxFilter is true", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ useAdxFilter: true, adxPeriod: 14, adxThreshold: 25 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should have ADX handle
+      expect(code).toContain("iADX(_Symbol");
+      // Should have ADX trend level input
+      expect(code).toContain("TrendLevel");
+    });
+
+    it("does not generate ADX filter when useAdxFilter is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ useAdxFilter: false }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("iADX(_Symbol");
+    });
+
+    it("generates RSI overbought as 100 - rsiPullbackLevel", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ rsiPullbackLevel: 30 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Oversold = 30, overbought = 100 - 30 = 70
+      expect(code).toContain("Oversold");
+      expect(code).toContain("Overbought");
+    });
+
+    it("generates PIPS SL method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ slMethod: "PIPS", slFixedPips: 30 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpStopLoss");
+    });
+
+    it("generates PERCENT SL method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeTrendPullbackEntry({ slMethod: "PERCENT", slPercent: 2 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpSLPercent");
+    });
+  });
+
+  // ============================================
   // RANGE BREAKOUT ENTRY — new range/SL options
   // ============================================
 

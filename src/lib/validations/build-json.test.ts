@@ -239,6 +239,85 @@ describe("buildJsonSchema", () => {
     }
   });
 
+  it("validates trend-pullback entry with appliedPrice preserved", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "trend-pullback-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Trend Pullback",
+            category: "entrystrategy",
+            entryType: "trend-pullback",
+            direction: "BOTH",
+            trendEma: 50,
+            pullbackRsiPeriod: 14,
+            rsiPullbackLevel: 30,
+            pullbackMaxDistance: 2.0,
+            requireEmaBuffer: true,
+            useAdxFilter: false,
+            adxPeriod: 14,
+            adxThreshold: 25,
+            appliedPrice: "HIGH",
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const nodeData = result.data.nodes[0].data as Record<string, unknown>;
+      expect(nodeData.appliedPrice).toBe("HIGH");
+    }
+  });
+
+  it("rejects trend-pullback with rsiPullbackLevel < 10", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "trend-pullback-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Trend Pullback",
+            category: "entrystrategy",
+            entryType: "trend-pullback",
+            direction: "BOTH",
+            trendEma: 50,
+            pullbackRsiPeriod: 14,
+            rsiPullbackLevel: 5,
+            pullbackMaxDistance: 2.0,
+            requireEmaBuffer: true,
+            useAdxFilter: false,
+            adxPeriod: 14,
+            adxThreshold: 25,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
   it("rejects ema-crossover with fastEma >= slowEma", () => {
     const build = {
       ...validBuildJson,

@@ -644,17 +644,27 @@ export function generateEntryLogic(
         switch (indData.indicatorType) {
           case "moving-average": {
             const requireBuffer = "_requireEmaBuffer" in indData && indData._requireEmaBuffer;
-            const hasPullbackDist =
-              "_pullbackMaxDistance" in indData && Number(indData._pullbackMaxDistance) > 0;
-            if (requireBuffer || hasPullbackDist) {
-              const maxDist = hasPullbackDist ? Number(indData._pullbackMaxDistance) / 100.0 : 0.02;
+            if (requireBuffer) {
+              code.inputs.push(
+                createInput(
+                  indNode,
+                  "_pullbackMaxDistance",
+                  "InpPullbackMaxDist",
+                  "double",
+                  Number(
+                    ("_pullbackMaxDistance" in indData && indData._pullbackMaxDistance) || 2.0
+                  ),
+                  "Max Distance from EMA (%)",
+                  "Trend Pullback"
+                )
+              );
               // Buy: price > EMA (uptrend) AND price within maxDistance% of EMA (pulled back near EMA)
               buyConditions.push(
-                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (iClose(_Symbol, PERIOD_CURRENT, ${1 + s}) - ${varPrefix}Buffer[${1 + s}]) / ${varPrefix}Buffer[${1 + s}] < ${maxDist})`
+                `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (iClose(_Symbol, PERIOD_CURRENT, ${1 + s}) - ${varPrefix}Buffer[${1 + s}]) / ${varPrefix}Buffer[${1 + s}] < InpPullbackMaxDist / 100.0)`
               );
               // Sell: price < EMA (downtrend) AND price within maxDistance% of EMA (pulled back near EMA)
               sellConditions.push(
-                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (${varPrefix}Buffer[${1 + s}] - iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) / ${varPrefix}Buffer[${1 + s}] < ${maxDist})`
+                `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${1 + s}]) && (${varPrefix}Buffer[${1 + s}] - iClose(_Symbol, PERIOD_CURRENT, ${1 + s})) / ${varPrefix}Buffer[${1 + s}] < InpPullbackMaxDist / 100.0)`
               );
             } else {
               buyConditions.push(
