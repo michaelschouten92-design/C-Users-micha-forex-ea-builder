@@ -530,8 +530,8 @@ const rsiReversalEntryDataSchema = baseNodeDataSchema
     category: z.literal("entrystrategy"),
     entryType: z.literal("rsi-reversal"),
     rsiPeriod: z.number().int().min(1).max(1000),
-    oversoldLevel: z.number().min(0).max(100),
-    overboughtLevel: z.number().min(0).max(100),
+    oversoldLevel: z.number().min(0).max(50),
+    overboughtLevel: z.number().min(50).max(100),
     trendFilter: z.boolean(),
     trendEma: z.number().int().min(1).max(1000),
     appliedPrice: appliedPriceSchema.optional(),
@@ -604,6 +604,21 @@ const builderNodeDataSchema = z
             code: z.ZodIssueCode.custom,
             message: "Fast EMA period must be less than Slow EMA period",
             path: ["fastEma"],
+          });
+        }
+      }
+      // Cross-field validation for RSI reversal
+      if (data.entryType === "rsi-reversal") {
+        const d = data as { overboughtLevel?: number; oversoldLevel?: number };
+        if (
+          d.overboughtLevel != null &&
+          d.oversoldLevel != null &&
+          d.overboughtLevel <= d.oversoldLevel
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Overbought level must be greater than Oversold level",
+            path: ["overboughtLevel"],
           });
         }
       }

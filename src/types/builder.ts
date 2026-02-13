@@ -867,6 +867,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       rsiPeriod: 14,
       oversoldLevel: 30,
       overboughtLevel: 70,
+      appliedPrice: "CLOSE",
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,

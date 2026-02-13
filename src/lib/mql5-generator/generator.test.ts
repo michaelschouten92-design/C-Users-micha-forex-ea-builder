@@ -2318,6 +2318,131 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // RSI REVERSAL ENTRY STRATEGY
+  // ============================================
+
+  describe("rsi reversal entry strategy", () => {
+    const makeRsiReversalEntry = (overrides: Record<string, unknown> = {}) =>
+      makeNode("entry1", "rsi-reversal-entry", {
+        category: "entrystrategy",
+        entryType: "rsi-reversal",
+        direction: "BOTH",
+        rsiPeriod: 14,
+        oversoldLevel: 30,
+        overboughtLevel: 70,
+        appliedPrice: "CLOSE",
+        timeframe: "H1",
+        riskPercent: 1,
+        slMethod: "ATR",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.2,
+        tpRMultiple: 1.5,
+        trendFilter: false,
+        trendEma: 200,
+        ...overrides,
+      });
+
+    it("generates basic RSI reversal with overbought/oversold crossover", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry(),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iRSI(_Symbol");
+      expect(code).toContain("Overbought");
+      expect(code).toContain("Oversold");
+      // Crossover logic: RSI crosses out of overbought/oversold zone
+      expect(code).toContain("DoubleLE");
+      expect(code).toContain("DoubleGT");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("generates only buy logic when direction is BUY", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ direction: "BUY" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
+    });
+
+    it("generates only sell logic when direction is SELL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ direction: "SELL" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("passes appliedPrice to iRSI call", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ appliedPrice: "HIGH" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PRICE_HIGH");
+    });
+
+    it("generates trend filter EMA when trendFilter is true", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ trendFilter: true, trendEma: 100 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should have both RSI and MA handles
+      expect(code).toContain("iRSI(_Symbol");
+      expect(code).toContain("iMA(_Symbol");
+      // Trend filter: price above/below EMA
+      expect(code).toContain("iClose(_Symbol, PERIOD_CURRENT");
+    });
+
+    it("passes appliedPrice to trend filter EMA", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ trendFilter: true, trendEma: 100, appliedPrice: "OPEN" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Both RSI and EMA should use PRICE_OPEN
+      const priceMatches = code.match(/PRICE_OPEN/g);
+      expect(priceMatches).not.toBeNull();
+      expect(priceMatches!.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("does not generate trend filter when trendFilter is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ trendFilter: false }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iRSI(_Symbol");
+      expect(code).not.toContain("iMA(_Symbol");
+    });
+
+    it("generates PIPS SL method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ slMethod: "PIPS", slFixedPips: 25 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpStopLoss");
+    });
+
+    it("generates PERCENT SL method", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeRsiReversalEntry({ slMethod: "PERCENT", slPercent: 1.5 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpSLPercent");
+    });
+  });
+
+  // ============================================
   // RANGE BREAKOUT ENTRY — new range/SL options
   // ============================================
 

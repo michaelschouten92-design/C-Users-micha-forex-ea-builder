@@ -392,6 +392,40 @@ describe("buildJsonSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects rsi-reversal with overboughtLevel <= oversoldLevel", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "rsi-reversal-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI Reversal",
+            category: "entrystrategy",
+            entryType: "rsi-reversal",
+            direction: "BOTH",
+            rsiPeriod: 14,
+            oversoldLevel: 50,
+            overboughtLevel: 50,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.2,
+            tpRMultiple: 1.5,
+            trendFilter: false,
+            trendEma: 200,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
   it("rejects news-filter with hoursBefore > 24", () => {
     const build = {
       ...validBuildJson,
