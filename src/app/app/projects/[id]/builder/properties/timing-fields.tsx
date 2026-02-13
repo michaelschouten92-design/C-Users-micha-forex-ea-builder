@@ -345,8 +345,8 @@ export function NewsFilterFields({
       >
         Blocks new entries {data.minutesBefore}min before and {data.minutesAfter}min after{" "}
         {impacts.length > 0 ? impacts.join(", ") : "no"} impact news events.
-        {data.closePositions ? " Also closes open positions during news windows." : ""} Uses MT5
-        Calendar API live; CSV file for backtest.
+        {data.closePositions ? " Also closes open positions during news windows." : ""} CSV is
+        auto-updated every time the EA runs on a live chart.
       </div>
     </>
   );

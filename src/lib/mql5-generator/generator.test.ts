@@ -2888,6 +2888,7 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("RefreshNewsCache");
       expect(code).toContain("LoadNewsFromCSV");
       expect(code).toContain("ExportNewsHistory");
+      expect(code).toContain("UpdateNewsCSV");
       expect(code).toContain("g_isTesting");
       expect(code).toContain("SYMBOL_CURRENCY_BASE");
     });
