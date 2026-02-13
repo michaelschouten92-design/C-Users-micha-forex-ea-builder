@@ -14,6 +14,7 @@ import type {
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   EquityFilterNodeData,
+  FridayCloseFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -861,6 +862,74 @@ export function generateMQL5Code(
     );
     code.onTick.push(`      if(ddPercent >= InpMaxDailyDD)`);
     code.onTick.push(`         return;`);
+    code.onTick.push(`   }`);
+    code.onTick.push(`}`);
+  }
+
+  // Generate friday close filter code
+  const fridayCloseNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "friday-close"
+  );
+  if (fridayCloseNodes.length > 0) {
+    const fcNode = fridayCloseNodes[0];
+    const fcData = fcNode.data as FridayCloseFilterNodeData;
+    const closeHour = fcData.closeHour ?? 17;
+    const closeMinute = fcData.closeMinute ?? 0;
+    const useServer = fcData.useServerTime ?? true;
+    const closePending = fcData.closePending ?? true;
+    const timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
+    const timeLabel = useServer ? "Server time" : "GMT";
+
+    code.inputs.push({
+      name: "InpFridayCloseHour",
+      type: "int",
+      value: closeHour,
+      comment: "Friday Close Hour",
+      isOptimizable: isFieldOptimizable(fcNode, "closeHour"),
+      group: "Friday Close",
+    });
+    code.inputs.push({
+      name: "InpFridayCloseMinute",
+      type: "int",
+      value: closeMinute,
+      comment: "Friday Close Minute",
+      isOptimizable: isFieldOptimizable(fcNode, "closeMinute"),
+      group: "Friday Close",
+    });
+    code.onTick.push(
+      `//--- Friday close filter (${String(closeHour).padStart(2, "0")}:${String(closeMinute).padStart(2, "0")} ${timeLabel})`
+    );
+    code.onTick.push(`{`);
+    code.onTick.push(`   MqlDateTime fcDt;`);
+    code.onTick.push(`   TimeToStruct(${timeFunc}, fcDt);`);
+    code.onTick.push(`   if(fcDt.day_of_week == 5)`);
+    code.onTick.push(`   {`);
+    code.onTick.push(`      int fcMinutes = fcDt.hour * 60 + fcDt.min;`);
+    code.onTick.push(`      int fcCloseMinutes = InpFridayCloseHour * 60 + InpFridayCloseMinute;`);
+    code.onTick.push(`      if(fcMinutes >= fcCloseMinutes)`);
+    code.onTick.push(`      {`);
+    code.onTick.push(`         // Close all open positions`);
+    code.onTick.push(`         for(int i = PositionsTotal() - 1; i >= 0; i--)`);
+    code.onTick.push(`         {`);
+    code.onTick.push(`            ulong ticket = PositionGetTicket(i);`);
+    code.onTick.push(
+      `            if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)`
+    );
+    code.onTick.push(`               trade.PositionClose(ticket);`);
+    code.onTick.push(`         }`);
+    if (closePending) {
+      code.onTick.push(`         // Delete pending orders`);
+      code.onTick.push(`         for(int i = OrdersTotal() - 1; i >= 0; i--)`);
+      code.onTick.push(`         {`);
+      code.onTick.push(`            ulong ticket = OrderGetTicket(i);`);
+      code.onTick.push(
+        `            if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)`
+      );
+      code.onTick.push(`               trade.OrderDelete(ticket);`);
+      code.onTick.push(`         }`);
+    }
+    code.onTick.push(`         return;`);
+    code.onTick.push(`      }`);
     code.onTick.push(`   }`);
     code.onTick.push(`}`);
   }

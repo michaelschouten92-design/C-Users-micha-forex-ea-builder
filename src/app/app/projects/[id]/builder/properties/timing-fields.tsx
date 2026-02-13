@@ -8,6 +8,7 @@ import type {
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   EquityFilterNodeData,
+  FridayCloseFilterNodeData,
   CustomTimesNodeData,
   TradingDays,
   TimeSlot,
@@ -192,6 +193,61 @@ export function EquityFilterFields({
       >
         Skips new trades when account equity drops more than {data.maxDrawdownPercent}% from the
         day&apos;s starting balance
+      </div>
+    </>
+  );
+}
+
+export function FridayCloseFields({
+  data,
+  onChange,
+}: {
+  data: FridayCloseFilterNodeData;
+  onChange: (updates: Partial<FridayCloseFilterNodeData>) => void;
+}) {
+  const hour = data.closeHour ?? 17;
+  const minute = data.closeMinute ?? 0;
+  return (
+    <>
+      <TimeField
+        label="Close Time"
+        hour={hour}
+        minute={minute}
+        onHourChange={(h) => onChange({ closeHour: h })}
+        onMinuteChange={(m) => onChange({ closeMinute: m })}
+      />
+      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <input
+          type="checkbox"
+          checked={!(data.useServerTime ?? true)}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange({ useServerTime: !e.target.checked });
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+        />
+        Use GMT instead of server time
+      </label>
+      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <input
+          type="checkbox"
+          checked={data.closePending ?? true}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange({ closePending: e.target.checked });
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+        />
+        Also cancel pending orders
+      </label>
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Closes all positions and blocks new entries on Friday after {String(hour).padStart(2, "0")}:
+        {String(minute).padStart(2, "0")} ({(data.useServerTime ?? true) ? "Server Time" : "GMT"})
       </div>
     </>
   );

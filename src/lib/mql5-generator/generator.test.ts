@@ -2791,6 +2791,69 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // Friday close filter
+  // ============================================
+
+  describe("friday close filter", () => {
+    it("generates friday close code with InpFridayCloseHour and day_of_week == 5", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("fc1", "friday-close", {
+          category: "timing",
+          filterType: "friday-close",
+          closeHour: 17,
+          closeMinute: 0,
+          useServerTime: true,
+          closePending: true,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpFridayCloseHour");
+      expect(code).toContain("InpFridayCloseMinute");
+      expect(code).toContain("day_of_week == 5");
+      expect(code).toContain("PositionClose");
+      expect(code).toContain("OrderDelete");
+    });
+
+    it("generates friday close without OrderDelete when closePending is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("fc1", "friday-close", {
+          category: "timing",
+          filterType: "friday-close",
+          closeHour: 15,
+          closeMinute: 30,
+          useServerTime: false,
+          closePending: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpFridayCloseHour");
+      expect(code).toContain("day_of_week == 5");
+      expect(code).toContain("TimeGMT()");
+      expect(code).not.toContain("OrderDelete");
+    });
+  });
+
+  // ============================================
   // AUDIT: PERCENT SL directional pricing
   // ============================================
 

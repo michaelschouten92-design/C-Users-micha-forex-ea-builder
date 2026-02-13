@@ -9,6 +9,7 @@ import type {
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   EquityFilterNodeData,
+  FridayCloseFilterNodeData,
   CustomTimesNodeData,
   MovingAverageNodeData,
   RSINodeData,
@@ -44,6 +45,7 @@ import {
   MaxSpreadFields,
   VolatilityFilterFields,
   EquityFilterFields,
+  FridayCloseFields,
   CustomTimesFields,
 } from "./timing-fields";
 import {
@@ -243,6 +245,8 @@ function NodeFields({
         );
       case "equity-filter":
         return <EquityFilterFields data={data as EquityFilterNodeData} onChange={onChange} />;
+      case "friday-close":
+        return <FridayCloseFields data={data as FridayCloseFilterNodeData} onChange={onChange} />;
     }
   }
 

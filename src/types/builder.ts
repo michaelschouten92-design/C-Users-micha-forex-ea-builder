@@ -96,13 +96,23 @@ export interface EquityFilterNodeData extends BaseNodeData {
   maxDrawdownPercent: number; // 0.1-100, default 5
 }
 
+export interface FridayCloseFilterNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "friday-close";
+  closeHour: number; // 0-23, default 17
+  closeMinute: number; // 0-59, default 0
+  useServerTime?: boolean; // default true
+  closePending?: boolean; // also delete pending orders, default true
+}
+
 export type TimingNodeData =
   | TradingSessionNodeData
   | AlwaysNodeData
   | CustomTimesNodeData
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
-  | EquityFilterNodeData;
+  | EquityFilterNodeData
+  | FridayCloseFilterNodeData;
 
 // Session time definitions (GMT)
 export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
@@ -586,7 +596,8 @@ export type BuilderNodeType =
   | "macd-crossover-entry"
   | "max-spread"
   | "volatility-filter"
-  | "equity-filter";
+  | "equity-filter"
+  | "friday-close";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -721,6 +732,21 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       filterType: "equity-filter",
       maxDrawdownPercent: 5,
     } as EquityFilterNodeData,
+  },
+  {
+    type: "friday-close",
+    label: "Friday Close",
+    category: "timing",
+    description: "Close all positions on Friday at specified time",
+    defaultData: {
+      label: "Friday Close",
+      category: "timing",
+      filterType: "friday-close",
+      closeHour: 17,
+      closeMinute: 0,
+      useServerTime: true,
+      closePending: true,
+    } as FridayCloseFilterNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {
