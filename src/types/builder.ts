@@ -540,7 +540,7 @@ export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyF
   macdFast: number;
   macdSlow: number;
   macdSignal: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW";
   macdSignalType?: "SIGNAL_CROSS" | "ZERO_CROSS" | "HISTOGRAM_SIGN";
   // Advanced toggles
   htfTrendFilter: boolean;

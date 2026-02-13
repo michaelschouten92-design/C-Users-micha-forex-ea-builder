@@ -560,9 +560,7 @@ const macdCrossoverEntryDataSchema = baseNodeDataSchema
     macdFast: z.number().int().min(1).max(1000),
     macdSlow: z.number().int().min(1).max(1000),
     macdSignal: z.number().int().min(1).max(1000),
-    appliedPrice: z
-      .enum(["CLOSE", "OPEN", "HIGH", "LOW", "MEDIAN", "TYPICAL", "WEIGHTED"])
-      .optional(),
+    appliedPrice: z.enum(["CLOSE", "OPEN", "HIGH", "LOW"]).optional(),
     macdSignalType: z.enum(["SIGNAL_CROSS", "ZERO_CROSS", "HISTOGRAM_SIGN"]).optional(),
     htfTrendFilter: z.boolean(),
     htfTimeframe: timeframeSchema,
