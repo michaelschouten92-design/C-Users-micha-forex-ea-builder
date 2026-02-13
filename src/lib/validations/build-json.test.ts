@@ -69,4 +69,156 @@ describe("buildJsonSchema", () => {
     const result = buildJsonSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
+
+  it("validates volatility-filter node data", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "vf1",
+          type: "volatility-filter",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Volatility",
+            category: "timing",
+            filterType: "volatility-filter",
+            atrPeriod: 14,
+            atrTimeframe: "H1",
+            minAtrPips: 5,
+            maxAtrPips: 50,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects volatility-filter with invalid atrPeriod", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "vf1",
+          type: "volatility-filter",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Volatility",
+            category: "timing",
+            filterType: "volatility-filter",
+            atrPeriod: -1,
+            atrTimeframe: "H1",
+            minAtrPips: 5,
+            maxAtrPips: 50,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
+  it("validates friday-close node data", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "fc1",
+          type: "friday-close",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Friday Close",
+            category: "timing",
+            filterType: "friday-close",
+            closeHour: 17,
+            closeMinute: 0,
+            useServerTime: true,
+            closePending: true,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects friday-close with invalid closeHour", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "fc1",
+          type: "friday-close",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Friday Close",
+            category: "timing",
+            filterType: "friday-close",
+            closeHour: 25,
+            closeMinute: 0,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
+  it("validates news-filter node data", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "nf1",
+          type: "news-filter",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "News Filter",
+            category: "timing",
+            filterType: "news-filter",
+            hoursBefore: 0.5,
+            hoursAfter: 0.5,
+            highImpact: true,
+            mediumImpact: false,
+            lowImpact: false,
+            closePositions: false,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects news-filter with hoursBefore > 24", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "nf1",
+          type: "news-filter",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "News Filter",
+            category: "timing",
+            filterType: "news-filter",
+            hoursBefore: 30,
+            hoursAfter: 0.5,
+            highImpact: true,
+            mediumImpact: false,
+            lowImpact: false,
+            closePositions: false,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
 });

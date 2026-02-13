@@ -150,6 +150,41 @@ const maxSpreadNodeDataSchema = baseNodeDataSchema
   })
   .strip();
 
+const volatilityFilterNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("timing"),
+    filterType: z.literal("volatility-filter"),
+    atrPeriod: z.number().int().min(1).max(1000),
+    atrTimeframe: timeframeSchema,
+    minAtrPips: z.number().min(0).max(10000),
+    maxAtrPips: z.number().min(0).max(10000),
+  })
+  .strip();
+
+const fridayCloseFilterNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("timing"),
+    filterType: z.literal("friday-close"),
+    closeHour: z.number().int().min(0).max(23),
+    closeMinute: z.number().int().min(0).max(59),
+    useServerTime: z.boolean().optional(),
+    closePending: z.boolean().optional(),
+  })
+  .strip();
+
+const newsFilterNodeDataSchema = baseNodeDataSchema
+  .extend({
+    category: z.literal("timing"),
+    filterType: z.literal("news-filter"),
+    hoursBefore: z.number().min(0).max(24),
+    hoursAfter: z.number().min(0).max(24),
+    highImpact: z.boolean(),
+    mediumImpact: z.boolean(),
+    lowImpact: z.boolean(),
+    closePositions: z.boolean(),
+  })
+  .strip();
+
 // ---- Indicator node data schemas ----
 const movingAverageNodeDataSchema = baseNodeDataSchema
   .extend({
@@ -557,6 +592,24 @@ const builderNodeDataSchema = z
       if (!result.success) {
         for (const issue of result.error.issues) {
           ctx.addIssue(issue);
+        }
+      }
+    }
+    // Timing filter nodes get strict validation
+    if (data.category === "timing" && "filterType" in data) {
+      const filterSchemaMap: Record<string, z.ZodType> = {
+        "max-spread": maxSpreadNodeDataSchema,
+        "volatility-filter": volatilityFilterNodeDataSchema,
+        "friday-close": fridayCloseFilterNodeDataSchema,
+        "news-filter": newsFilterNodeDataSchema,
+      };
+      const schema = filterSchemaMap[(data as Record<string, unknown>).filterType as string];
+      if (schema) {
+        const result = schema.safeParse(data);
+        if (!result.success) {
+          for (const issue of (result as { success: false; error: z.ZodError }).error.issues) {
+            ctx.addIssue(issue);
+          }
         }
       }
     }

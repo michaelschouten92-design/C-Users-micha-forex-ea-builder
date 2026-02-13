@@ -187,16 +187,23 @@ export function generateOnTick(
 
       // Reset daily limit flags on new day
       static datetime lastPnLDay = 0;
-      if(todayStart != lastPnLDay) { lastPnLDay = todayStart; }
+      static bool profitLimitHit = false;
+      static bool lossLimitHit = false;
+      if(todayStart != lastPnLDay)
+      {
+         lastPnLDay = todayStart;
+         profitLimitHit = false;
+         lossLimitHit = false;
+      }
+      if(profitLimitHit || lossLimitHit) return;
 `;
     if (ctx.maxDailyProfitPercent > 0) {
       dailyPnlCode += `
       if(dailyPnLPercent >= ${ctx.maxDailyProfitPercent})
       {
          CloseAllPositions();
-         static bool profitLimitHit = false;
-         if(todayStart != lastPnLDay) profitLimitHit = false;
-         if(!profitLimitHit) { Print("Daily profit target reached: ", DoubleToString(dailyPnLPercent, 2), "%"); profitLimitHit = true; }
+         Print("Daily profit target reached: ", DoubleToString(dailyPnLPercent, 2), "%");
+         profitLimitHit = true;
          return;
       }
 `;
@@ -206,9 +213,8 @@ export function generateOnTick(
       if(dailyPnLPercent <= -${ctx.maxDailyLossPercent})
       {
          CloseAllPositions();
-         static bool lossLimitHit = false;
-         if(todayStart != lastPnLDay) lossLimitHit = false;
-         if(!lossLimitHit) { Print("Daily loss limit reached: ", DoubleToString(dailyPnLPercent, 2), "%"); lossLimitHit = true; }
+         Print("Daily loss limit reached: ", DoubleToString(dailyPnLPercent, 2), "%");
+         lossLimitHit = true;
          return;
       }
 `;
@@ -298,6 +304,19 @@ int CountPositionsByType(ENUM_POSITION_TYPE posType)
 //+------------------------------------------------------------------+
 bool OpenBuy(double lots, double sl = 0, double tp = 0)
 {
+   //--- Pre-trade margin check
+   double askCheck = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double marginRequired = 0;
+   if(OrderCalcMargin(ORDER_TYPE_BUY, _Symbol, lots, askCheck, marginRequired))
+   {
+      if(marginRequired > AccountInfoDouble(ACCOUNT_MARGIN_FREE))
+      {
+         Print("OpenBuy: insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+               " Free: ", DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2));
+         return false;
+      }
+   }
+
    int retries = 3;
    for(int attempt = 0; attempt < retries; attempt++)
    {
@@ -309,13 +328,24 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
          return true;
 
       uint resultCode = trade.ResultRetcode();
-      if(resultCode != TRADE_RETCODE_REQUOTE && resultCode != TRADE_RETCODE_PRICE_OFF)
+      //--- Retryable errors
+      if(resultCode == TRADE_RETCODE_REQUOTE || resultCode == TRADE_RETCODE_PRICE_OFF
+         || resultCode == TRADE_RETCODE_CONNECTION)
       {
-         Print("OpenBuy failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
-         return false;
+         Print("OpenBuy retry ", attempt + 1, "/", retries, ": ", trade.ResultRetcodeDescription());
+         Sleep(200 * (attempt + 1));
+         continue;
       }
-      Print("OpenBuy requote/price-off, retry ", attempt + 1, "/", retries);
-      Sleep(100);
+      //--- Non-retryable errors
+      if(resultCode == TRADE_RETCODE_NO_MONEY)
+         Print("OpenBuy: insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(resultCode == TRADE_RETCODE_INVALID_VOLUME)
+         Print("OpenBuy: invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN), 2),
+               " max=", DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX), 2), ")");
+      else
+         Print("OpenBuy failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+      return false;
    }
    Print("OpenBuy failed after ", retries, " retries");
    return false;
@@ -326,6 +356,19 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
 //+------------------------------------------------------------------+
 bool OpenSell(double lots, double sl = 0, double tp = 0)
 {
+   //--- Pre-trade margin check
+   double bidCheck = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double marginRequired = 0;
+   if(OrderCalcMargin(ORDER_TYPE_SELL, _Symbol, lots, bidCheck, marginRequired))
+   {
+      if(marginRequired > AccountInfoDouble(ACCOUNT_MARGIN_FREE))
+      {
+         Print("OpenSell: insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+               " Free: ", DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2));
+         return false;
+      }
+   }
+
    int retries = 3;
    for(int attempt = 0; attempt < retries; attempt++)
    {
@@ -337,13 +380,24 @@ bool OpenSell(double lots, double sl = 0, double tp = 0)
          return true;
 
       uint resultCode = trade.ResultRetcode();
-      if(resultCode != TRADE_RETCODE_REQUOTE && resultCode != TRADE_RETCODE_PRICE_OFF)
+      //--- Retryable errors
+      if(resultCode == TRADE_RETCODE_REQUOTE || resultCode == TRADE_RETCODE_PRICE_OFF
+         || resultCode == TRADE_RETCODE_CONNECTION)
       {
-         Print("OpenSell failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
-         return false;
+         Print("OpenSell retry ", attempt + 1, "/", retries, ": ", trade.ResultRetcodeDescription());
+         Sleep(200 * (attempt + 1));
+         continue;
       }
-      Print("OpenSell requote/price-off, retry ", attempt + 1, "/", retries);
-      Sleep(100);
+      //--- Non-retryable errors
+      if(resultCode == TRADE_RETCODE_NO_MONEY)
+         Print("OpenSell: insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(resultCode == TRADE_RETCODE_INVALID_VOLUME)
+         Print("OpenSell: invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN), 2),
+               " max=", DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX), 2), ")");
+      else
+         Print("OpenSell failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+      return false;
    }
    Print("OpenSell failed after ", retries, " retries");
    return false;
@@ -422,8 +476,18 @@ double CalculateLotSize(double riskPercent, double slPips)
       return minLot;
    }
 
+   if(minLot <= 0)
+   {
+      Print("WARNING: SYMBOL_VOLUME_MIN is 0 for ", _Symbol, ", defaulting to 0.01");
+      minLot = 0.01;
+   }
+
    double balance = InpUseEquityForRisk ? AccountInfoDouble(ACCOUNT_EQUITY) : AccountInfoDouble(ACCOUNT_BALANCE);
-   if(balance <= 0) return minLot;
+   if(balance <= 0)
+   {
+      Print("WARNING: Account balance/equity is 0, using minimum lot.");
+      return minLot;
+   }
 
    double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
    double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
@@ -431,7 +495,12 @@ double CalculateLotSize(double riskPercent, double slPips)
    double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
 
    double pipValue = (tickSize > 0) ? tickValue * (_Point / tickSize) : 0;
-   if(pipValue <= 0) return minLot;
+   if(pipValue <= 0)
+   {
+      Print("WARNING: Pip value is 0 (tickValue=", DoubleToString(tickValue, 8),
+            " tickSize=", DoubleToString(tickSize, 8), "), using minimum lot.");
+      return minLot;
+   }
 
    double riskAmount = balance * riskPercent / 100.0;
    double lots = riskAmount / (slPips * pipValue);
@@ -451,6 +520,26 @@ bool DoubleGT(double a, double b)  { return (a - b) >  1e-10; }
 bool DoubleLT(double a, double b)  { return (b - a) >  1e-10; }
 bool DoubleGE(double a, double b)  { return (a - b) > -1e-10; }
 bool DoubleLE(double a, double b)  { return (b - a) > -1e-10; }
+
+//+------------------------------------------------------------------+
+//| Log message to both Journal and file                              |
+//+------------------------------------------------------------------+
+void LogToFile(string message)
+{
+   Print(message);
+   static int logHandle = INVALID_HANDLE;
+   static string logFileName = "";
+   if(logHandle == INVALID_HANDLE)
+   {
+      logFileName = "EA_" + IntegerToString(InpMagicNumber) + "_" + _Symbol + ".log";
+      logHandle = FileOpen(logFileName, FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
+      if(logHandle == INVALID_HANDLE) return;
+      FileSeek(logHandle, 0, SEEK_END);
+   }
+   string timestamp = TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS);
+   FileWriteString(logHandle, timestamp + " | " + message + "\\n");
+   FileFlush(logHandle);
+}
 
 `;
 }

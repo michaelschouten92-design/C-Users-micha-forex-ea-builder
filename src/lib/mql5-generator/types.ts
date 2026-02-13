@@ -1,5 +1,9 @@
 // Types for MQL5 code generation
 
+import type { Timeframe } from "@/types/builder";
+
+export type { Timeframe };
+
 export interface GeneratorContext {
   projectName: string;
   description: string;
@@ -71,30 +75,8 @@ export type MAMethod = "SMA" | "EMA";
 export type AppliedPrice = "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 export type TradeDirection = "BUY" | "SELL" | "BOTH";
 
-export type Timeframe =
-  | "M1"
-  | "M2"
-  | "M3"
-  | "M4"
-  | "M5"
-  | "M6"
-  | "M10"
-  | "M12"
-  | "M15"
-  | "M20"
-  | "M30"
-  | "H1"
-  | "H2"
-  | "H3"
-  | "H4"
-  | "H6"
-  | "H8"
-  | "H12"
-  | "D1"
-  | "W1"
-  | "MN1";
-
-export const TIMEFRAME_MAP: Record<Timeframe, string> = {
+// Map includes all MQL5 timeframes for completeness (getTimeframe falls back to PERIOD_CURRENT)
+export const TIMEFRAME_MAP: Record<string, string> = {
   M1: "PERIOD_M1",
   M2: "PERIOD_M2",
   M3: "PERIOD_M3",

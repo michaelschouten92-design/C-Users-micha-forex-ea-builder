@@ -67,6 +67,7 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("int CountPositions()");
       expect(code).toContain("bool OpenBuy(");
       expect(code).toContain("bool OpenSell(");
+      expect(code).toContain("void LogToFile(");
     });
 
     it("uses project name in header", () => {
@@ -754,6 +755,37 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("InpTrailStartPips");
     });
 
+    it("generates ATR trailing stop with per-bar caching", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("ts1", "trailing-stop", {
+          category: "trademanagement",
+          managementType: "trailing-stop",
+          method: "ATR_BASED",
+          trailPips: 15,
+          trailAtrMultiplier: 2,
+          trailAtrPeriod: 14,
+          trailPercent: 50,
+          startAfterPips: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Cache ATR per bar");
+      expect(code).toContain("static double cachedTrailATR");
+      expect(code).toContain("static datetime lastTrailATRBar");
+      expect(code).toContain("cachedTrailATR = trailATRBuffer[0]");
+      expect(code).toContain("cachedTrailATR / point");
+    });
+
     it("generates Partial Close code with breakeven option", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
@@ -1113,15 +1145,22 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("SYMBOL_SPREAD");
     });
 
-    it("generates OpenBuy with retry logic", () => {
+    it("generates OpenBuy with retry logic and comprehensive error handling", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("TRADE_RETCODE_REQUOTE");
       expect(code).toContain("TRADE_RETCODE_PRICE_OFF");
+      expect(code).toContain("TRADE_RETCODE_CONNECTION");
+      expect(code).toContain("TRADE_RETCODE_NO_MONEY");
+      expect(code).toContain("TRADE_RETCODE_INVALID_VOLUME");
       expect(code).toContain("OpenBuy failed after");
       expect(code).toContain("OpenSell failed after");
+      // Margin check before opening
+      expect(code).toContain("OrderCalcMargin(ORDER_TYPE_BUY");
+      expect(code).toContain("OrderCalcMargin(ORDER_TYPE_SELL");
+      expect(code).toContain("ACCOUNT_MARGIN_FREE");
     });
 
     it("generates per-direction position limits", () => {
@@ -2275,6 +2314,24 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("slPips parameter is in POINTS (not pips)");
     });
 
+    it("CalculateLotSize warns on zero balance and zero pipValue", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Account balance/equity is 0, using minimum lot");
+      expect(code).toContain("Pip value is 0");
+    });
+
+    it("CalculateLotSize handles SYMBOL_VOLUME_MIN being 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("SYMBOL_VOLUME_MIN is 0");
+      expect(code).toContain("defaulting to 0.01");
+    });
+
     it("generates InpUseEquityForRisk input when RISK_PERCENT buy is used", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
@@ -2689,6 +2746,10 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Daily P&L Protection");
       expect(code).toContain("dailyPnLPercent >= 3");
       expect(code).toContain("Daily profit target reached");
+      // Verify flags are declared before conditionals and reset on new day
+      expect(code).toContain("static bool profitLimitHit = false");
+      expect(code).toContain("profitLimitHit = false;");
+      expect(code).toContain("if(profitLimitHit || lossLimitHit) return;");
     });
 
     it("generates daily loss limit check when maxDailyLossPercent > 0", () => {
