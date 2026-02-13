@@ -392,7 +392,7 @@ export interface BreakevenStopNodeData extends BaseNodeData {
   lockPips: number; // Extra pips above breakeven to lock
 }
 
-export type TrailingStopMethod = "FIXED_PIPS" | "ATR_BASED" | "PERCENTAGE" | "INDICATOR";
+export type TrailingStopMethod = "FIXED_PIPS" | "ATR_BASED" | "PERCENTAGE";
 
 export interface TrailingStopNodeData extends BaseNodeData {
   category: "trademanagement";
@@ -403,7 +403,6 @@ export interface TrailingStopNodeData extends BaseNodeData {
   trailAtrPeriod: number;
   trailPercent: number;
   startAfterPips: number; // Only start trailing after X pips profit
-  indicatorNodeId?: string; // For INDICATOR method
 }
 
 export type PartialCloseTrigger = "PIPS" | "PERCENT";

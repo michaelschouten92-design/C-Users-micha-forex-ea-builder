@@ -395,13 +395,12 @@ const trailingStopNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("trademanagement"),
     managementType: z.literal("trailing-stop"),
-    method: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENTAGE", "INDICATOR"]),
+    method: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENTAGE"]),
     trailPips: z.number().min(0).max(10000),
     trailAtrMultiplier: z.number().min(0.1).max(100),
     trailAtrPeriod: z.number().int().min(1).max(1000),
     trailPercent: z.number().min(0).max(100),
     startAfterPips: z.number().min(0).max(10000),
-    indicatorNodeId: z.string().optional(),
   })
   .strip();
 

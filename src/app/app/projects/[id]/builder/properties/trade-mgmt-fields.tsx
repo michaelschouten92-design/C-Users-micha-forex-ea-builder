@@ -128,7 +128,6 @@ export function TrailingStopFields({
           { value: "FIXED_PIPS", label: "Fixed Pips" },
           { value: "ATR_BASED", label: "ATR-Based" },
           { value: "PERCENTAGE", label: "Percentage" },
-          { value: "INDICATOR", label: "From Indicator (SAR/MA)" },
         ]}
         onChange={(v) => onChange({ method: v as TrailingStopMethod })}
       />
@@ -184,15 +183,6 @@ export function TrailingStopFields({
             onChange={(v) => onChange({ trailPercent: v })}
           />
           <OptimizableFieldCheckbox fieldName="trailPercent" data={data} onChange={onChange} />
-        </div>
-      )}
-      {data.method === "INDICATOR" && (
-        <div
-          className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
-          role="note"
-        >
-          Connect a Parabolic SAR or Moving Average indicator block. The indicator value will be
-          used as the trailing stop level.
         </div>
       )}
       <div>

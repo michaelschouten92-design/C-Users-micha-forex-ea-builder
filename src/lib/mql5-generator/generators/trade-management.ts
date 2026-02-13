@@ -8,11 +8,7 @@ import type {
 import type { GeneratedCode } from "../types";
 import { createInput } from "./shared";
 
-export function generateTradeManagementCode(
-  node: BuilderNode,
-  indicatorNodes: BuilderNode[],
-  code: GeneratedCode
-): void {
+export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data;
   const managementType = ("managementType" in data ? data.managementType : null) || node.type;
 
@@ -24,7 +20,7 @@ export function generateTradeManagementCode(
       generateBreakevenStopCode(node, data as BreakevenStopNodeData, code);
       break;
     case "trailing-stop":
-      generateTrailingStopCode(node, data as TrailingStopNodeData, indicatorNodes, code);
+      generateTrailingStopCode(node, data as TrailingStopNodeData, code);
       break;
     case "partial-close":
       generatePartialCloseCode(node, data as PartialCloseNodeData, code);
@@ -194,14 +190,8 @@ function generateBreakevenStopCode(
 function generateTrailingStopCode(
   node: BuilderNode,
   data: TrailingStopNodeData,
-  indicatorNodes: BuilderNode[],
   code: GeneratedCode
 ): void {
-  if (data.method === "INDICATOR") {
-    generateIndicatorTrailingStop(data, indicatorNodes, code);
-    return;
-  }
-
   const group = "Trailing Stop";
 
   // Method-specific inputs and setup
@@ -350,78 +340,6 @@ function generateTrailingStopCode(
   code.onTick.push("               }");
   code.onTick.push("            }");
   code.onTick.push("         }");
-  code.onTick.push("      }");
-  code.onTick.push("   }");
-  code.onTick.push("}");
-}
-
-function generateIndicatorTrailingStop(
-  data: TrailingStopNodeData,
-  indicatorNodes: BuilderNode[],
-  code: GeneratedCode
-): void {
-  // Find the connected indicator node
-  let connectedIndicator: BuilderNode | undefined;
-  if (data.indicatorNodeId) {
-    connectedIndicator = indicatorNodes.find((n) => n.id === data.indicatorNodeId);
-  }
-
-  if (!connectedIndicator) {
-    // Fallback: no indicator connected, warn user and skip
-    code.onTick.push("// Indicator Trailing Stop: no indicator connected");
-    code.onTick.push("static bool trailWarnShown = false;");
-    code.onTick.push(
-      'if(!trailWarnShown) { Print("Warning: Indicator trailing stop has no indicator connected. Connect an indicator (e.g. Moving Average) to enable trailing."); trailWarnShown = true; }'
-    );
-    return;
-  }
-
-  const indIndex = indicatorNodes.indexOf(connectedIndicator);
-  const varPrefix = `ind${indIndex}`;
-  const indData = connectedIndicator.data;
-  const indType = "indicatorType" in indData ? indData.indicatorType : null;
-
-  code.onTick.push("// Indicator-Based Trailing Stop");
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(PositionSelectByTicket(ticket))");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("      {");
-  code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
-  code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
-
-  if (indType === "moving-average") {
-    // Use MA value as trailing SL
-    code.onTick.push(`         double maValue = ${varPrefix}Buffer[0];`);
-    code.onTick.push("");
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_BUY && maValue < SymbolInfoDouble(_Symbol, SYMBOL_BID))"
-    );
-    code.onTick.push("         {");
-    code.onTick.push("            double newSL = NormalizeDouble(maValue, _Digits);");
-    code.onTick.push("            if(newSL > currentSL)");
-    code.onTick.push(
-      "               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
-    );
-    code.onTick.push("         }");
-    code.onTick.push(
-      "         else if(posType == POSITION_TYPE_SELL && maValue > SymbolInfoDouble(_Symbol, SYMBOL_ASK))"
-    );
-    code.onTick.push("         {");
-    code.onTick.push("            double newSL = NormalizeDouble(maValue, _Digits);");
-    code.onTick.push("            if(newSL < currentSL || currentSL == 0)");
-    code.onTick.push(
-      "               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
-    );
-    code.onTick.push("         }");
-  } else {
-    code.onTick.push(`         // Indicator type '${indType}' not supported for trailing stop`);
-  }
-
   code.onTick.push("      }");
   code.onTick.push("   }");
   code.onTick.push("}");

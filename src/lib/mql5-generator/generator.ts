@@ -1415,7 +1415,7 @@ export function generateMQL5Code(
 
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {
-    generateTradeManagementCode(node, indicatorNodes, code);
+    generateTradeManagementCode(node, code);
   });
 
   // News filter setup instructions (only when news filter is used)
