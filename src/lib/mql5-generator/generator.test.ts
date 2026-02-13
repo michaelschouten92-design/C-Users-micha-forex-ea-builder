@@ -2192,6 +2192,132 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // MACD CROSSOVER ENTRY STRATEGY
+  // ============================================
+
+  describe("macd crossover entry strategy", () => {
+    const makeMacdCrossoverEntry = (overrides: Record<string, unknown> = {}) =>
+      makeNode("entry1", "macd-crossover-entry", {
+        category: "entrystrategy",
+        entryType: "macd-crossover",
+        direction: "BOTH",
+        macdFast: 12,
+        macdSlow: 26,
+        macdSignal: 9,
+        macdSignalType: "SIGNAL_CROSS",
+        appliedPrice: "CLOSE",
+        timeframe: "H1",
+        riskPercent: 1,
+        slMethod: "ATR",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        tpRMultiple: 2,
+        htfTrendFilter: false,
+        htfTimeframe: "H4",
+        htfEma: 200,
+        ...overrides,
+      });
+
+    it("generates SIGNAL_CROSS mode with MainBuffer vs SignalBuffer", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ macdSignalType: "SIGNAL_CROSS" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iMACD(_Symbol");
+      expect(code).toContain("MainBuffer");
+      expect(code).toContain("SignalBuffer");
+      // Crossover: main crosses signal
+      expect(code).toContain("DoubleLE");
+      expect(code).toContain("DoubleGT");
+    });
+
+    it("generates ZERO_CROSS mode with MainBuffer vs 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ macdSignalType: "ZERO_CROSS" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("MainBuffer");
+      // Zero cross: main crosses 0
+      expect(code).toMatch(/DoubleLE.*MainBuffer.*0/);
+      expect(code).toMatch(/DoubleGT.*MainBuffer.*0/);
+    });
+
+    it("generates HISTOGRAM_SIGN mode with HistogramBuffer vs 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ macdSignalType: "HISTOGRAM_SIGN" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("HistogramBuffer");
+      // Histogram sign change
+      expect(code).toMatch(/DoubleLE.*HistogramBuffer.*0/);
+      expect(code).toMatch(/DoubleGT.*HistogramBuffer.*0/);
+    });
+
+    it("generates only buy logic when direction is BUY", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ direction: "BUY" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
+    });
+
+    it("generates only sell logic when direction is SELL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ direction: "SELL" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("passes appliedPrice to iMACD call", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ appliedPrice: "HIGH" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PRICE_HIGH");
+    });
+
+    it("generates HTF trend filter with appliedPrice when enabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({
+          htfTrendFilter: true,
+          htfTimeframe: "D1",
+          htfEma: 100,
+          appliedPrice: "LOW",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // HTF EMA on D1
+      expect(code).toContain("PERIOD_D1");
+      // Both MACD and HTF EMA should use PRICE_LOW
+      const priceMatches = code.match(/PRICE_LOW/g);
+      expect(priceMatches).not.toBeNull();
+      expect(priceMatches!.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("does not generate HTF filter when disabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeMacdCrossoverEntry({ htfTrendFilter: false }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Only one indicator (MACD), no HTF EMA
+      expect(code).not.toContain("PERIOD_D1");
+      expect(code).toContain("iMACD");
+    });
+  });
+
+  // ============================================
   // RANGE BREAKOUT ENTRY — new range/SL options
   // ============================================
 

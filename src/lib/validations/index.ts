@@ -607,6 +607,17 @@ const builderNodeDataSchema = z
           });
         }
       }
+      // Cross-field validation for MACD crossover
+      if (data.entryType === "macd-crossover") {
+        const d = data as { macdFast?: number; macdSlow?: number };
+        if (d.macdFast != null && d.macdSlow != null && d.macdFast >= d.macdSlow) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "MACD Fast period must be less than Slow period",
+            path: ["macdFast"],
+          });
+        }
+      }
     }
     // Timing filter nodes get strict validation
     if (data.category === "timing" && "filterType" in data) {

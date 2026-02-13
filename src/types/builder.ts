@@ -891,6 +891,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       macdFast: 12,
       macdSlow: 26,
       macdSignal: 9,
+      macdSignalType: "SIGNAL_CROSS",
+      appliedPrice: "CLOSE",
       riskPercent: 1,
       slMethod: "ATR",
       slFixedPips: 50,

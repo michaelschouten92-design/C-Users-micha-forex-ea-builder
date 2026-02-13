@@ -390,6 +390,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           timeframe: macd.htfTimeframe ?? "H4",
           period: macd.htfEma,
           method: "EMA",
+          appliedPrice: macdAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
           optimizableFields: mapOpt(["htfEma", "period"]),

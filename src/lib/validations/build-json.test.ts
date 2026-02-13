@@ -357,6 +357,41 @@ describe("buildJsonSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects macd-crossover with macdFast >= macdSlow", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "macd-crossover-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "MACD Crossover",
+            category: "entrystrategy",
+            entryType: "macd-crossover",
+            direction: "BOTH",
+            macdFast: 26,
+            macdSlow: 12,
+            macdSignal: 9,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+            htfTrendFilter: false,
+            htfTimeframe: "H4",
+            htfEma: 200,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
   it("rejects news-filter with hoursBefore > 24", () => {
     const build = {
       ...validBuildJson,
