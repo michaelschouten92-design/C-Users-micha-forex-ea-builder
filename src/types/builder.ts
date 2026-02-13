@@ -102,10 +102,10 @@ export interface FridayCloseFilterNodeData extends BaseNodeData {
 export interface NewsFilterNodeData extends BaseNodeData {
   category: "timing";
   filterType: "news-filter";
-  minutesBefore: number; // 0-240, default 30
-  minutesAfter: number; // 0-240, default 30
+  hoursBefore: number; // 0-24, default 0.5
+  hoursAfter: number; // 0-24, default 0.5
   highImpact: boolean; // default true
-  mediumImpact: boolean; // default true
+  mediumImpact: boolean; // default false
   lowImpact: boolean; // default false
   closePositions: boolean; // close open positions during news, default false
 }
@@ -749,10 +749,10 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       label: "News Filter",
       category: "timing",
       filterType: "news-filter",
-      minutesBefore: 30,
-      minutesAfter: 30,
+      hoursBefore: 0.5,
+      hoursAfter: 0.5,
       highImpact: true,
-      mediumImpact: true,
+      mediumImpact: false,
       lowImpact: false,
       closePositions: false,
     } as NewsFilterNodeData,

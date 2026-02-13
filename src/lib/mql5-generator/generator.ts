@@ -903,29 +903,31 @@ export function generateMQL5Code(
   if (newsFilterNodes.length > 0) {
     const nfNode = newsFilterNodes[0];
     const nfData = nfNode.data as NewsFilterNodeData;
-    const minBefore = nfData.minutesBefore ?? 30;
-    const minAfter = nfData.minutesAfter ?? 30;
+    const hoursBefore = nfData.hoursBefore ?? 0.5;
+    const hoursAfter = nfData.hoursAfter ?? 0.5;
+    const minBefore = Math.round(hoursBefore * 60);
+    const minAfter = Math.round(hoursAfter * 60);
     const highImpact = nfData.highImpact ?? true;
-    const mediumImpact = nfData.mediumImpact ?? true;
+    const mediumImpact = nfData.mediumImpact ?? false;
     const lowImpact = nfData.lowImpact ?? false;
     const closePositions = nfData.closePositions ?? false;
 
-    // Inputs
+    // Inputs (MQL5 uses minutes internally)
     code.inputs.push(
       {
         name: "InpNewsMinBefore",
         type: "int",
         value: minBefore,
-        comment: "Minutes Before News",
-        isOptimizable: isFieldOptimizable(nfNode, "minutesBefore"),
+        comment: `Minutes Before News (${hoursBefore}h)`,
+        isOptimizable: isFieldOptimizable(nfNode, "hoursBefore"),
         group: "News Filter",
       },
       {
         name: "InpNewsMinAfter",
         type: "int",
         value: minAfter,
-        comment: "Minutes After News",
-        isOptimizable: isFieldOptimizable(nfNode, "minutesAfter"),
+        comment: `Minutes After News (${hoursAfter}h)`,
+        isOptimizable: isFieldOptimizable(nfNode, "hoursAfter"),
         group: "News Filter",
       },
       {

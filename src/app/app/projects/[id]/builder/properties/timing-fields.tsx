@@ -240,20 +240,20 @@ export function NewsFilterFields({
   return (
     <>
       <NumberField
-        label="Minutes Before News"
-        value={data.minutesBefore}
+        label="Hours Before News"
+        value={data.hoursBefore}
         min={0}
-        max={240}
-        step={5}
-        onChange={(v) => onChange({ minutesBefore: v })}
+        max={24}
+        step={0.25}
+        onChange={(v) => onChange({ hoursBefore: Math.round(v * 100) / 100 })}
       />
       <NumberField
-        label="Minutes After News"
-        value={data.minutesAfter}
+        label="Hours After News"
+        value={data.hoursAfter}
         min={0}
-        max={240}
-        step={5}
-        onChange={(v) => onChange({ minutesAfter: v })}
+        max={24}
+        step={0.25}
+        onChange={(v) => onChange({ hoursAfter: Math.round(v * 100) / 100 })}
       />
       <div className="mt-2 space-y-1.5">
         <span className="text-xs font-medium text-[#CBD5E1]">Impact Levels</span>
@@ -314,7 +314,7 @@ export function NewsFilterFields({
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
-        Blocks new entries {data.minutesBefore}min before and {data.minutesAfter}min after{" "}
+        Blocks new entries {data.hoursBefore}h before and {data.hoursAfter}h after{" "}
         {impacts.length > 0 ? impacts.join(", ") : "no"} impact news events.
         {data.closePositions ? " Also closes open positions during news windows." : ""} CSV is
         auto-updated every time the EA runs on a live chart.

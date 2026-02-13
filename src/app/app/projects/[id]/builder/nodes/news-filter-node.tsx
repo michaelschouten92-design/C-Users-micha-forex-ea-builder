@@ -21,7 +21,7 @@ export function NewsFilterNode({ id, data, selected }: Props) {
       icon={NodeIcons.timing}
     >
       <div className="text-xs text-zinc-400">
-        ±{data.minutesBefore}/{data.minutesAfter}min | {impacts.join(", ") || "None"}
+        ±{data.hoursBefore}/{data.hoursAfter}h | {impacts.join(", ") || "None"}
       </div>
     </BaseNode>
   );
