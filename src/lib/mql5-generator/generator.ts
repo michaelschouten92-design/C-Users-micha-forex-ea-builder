@@ -15,6 +15,7 @@ import type {
   VolatilityFilterNodeData,
   EquityFilterNodeData,
   FridayCloseFilterNodeData,
+  NewsFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -932,6 +933,262 @@ export function generateMQL5Code(
     code.onTick.push(`      }`);
     code.onTick.push(`   }`);
     code.onTick.push(`}`);
+  }
+
+  // Generate news filter code (calendar API live, CSV backtest)
+  const newsFilterNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "news-filter"
+  );
+  if (newsFilterNodes.length > 0) {
+    const nfNode = newsFilterNodes[0];
+    const nfData = nfNode.data as NewsFilterNodeData;
+    const minBefore = nfData.minutesBefore ?? 30;
+    const minAfter = nfData.minutesAfter ?? 30;
+    const highImpact = nfData.highImpact ?? true;
+    const mediumImpact = nfData.mediumImpact ?? true;
+    const lowImpact = nfData.lowImpact ?? false;
+    const closePositions = nfData.closePositions ?? false;
+
+    // Inputs
+    code.inputs.push(
+      {
+        name: "InpNewsMinBefore",
+        type: "int",
+        value: minBefore,
+        comment: "Minutes Before News",
+        isOptimizable: isFieldOptimizable(nfNode, "minutesBefore"),
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsMinAfter",
+        type: "int",
+        value: minAfter,
+        comment: "Minutes After News",
+        isOptimizable: isFieldOptimizable(nfNode, "minutesAfter"),
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsHigh",
+        type: "bool",
+        value: highImpact,
+        comment: "Filter High Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsMedium",
+        type: "bool",
+        value: mediumImpact,
+        comment: "Filter Medium Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsLow",
+        type: "bool",
+        value: lowImpact,
+        comment: "Filter Low Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsClosePos",
+        type: "bool",
+        value: closePositions,
+        comment: "Close Positions During News",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpExportNewsData",
+        type: "bool",
+        value: false,
+        comment: "Export News History (run once on live)",
+        isOptimizable: false,
+        group: "News Filter",
+      }
+    );
+
+    // Global variables
+    code.globalVariables.push("struct SNewsEvent { datetime time; int importance; };");
+    code.globalVariables.push("SNewsEvent g_newsEvents[];");
+    code.globalVariables.push("int        g_newsCount = 0;");
+    code.globalVariables.push("bool       g_isTesting = false;");
+    code.globalVariables.push("datetime   g_lastNewsRefresh = 0;");
+    code.globalVariables.push("string     g_baseCurrency, g_quoteCurrency;");
+
+    // OnInit
+    code.onInit.push(`   g_isTesting = (bool)MQLInfoInteger(MQL_TESTER);`);
+    code.onInit.push(`   g_baseCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_BASE);`);
+    code.onInit.push(`   g_quoteCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_PROFIT);`);
+    code.onInit.push(``);
+    code.onInit.push(`   if(InpExportNewsData && !g_isTesting)`);
+    code.onInit.push(`   {`);
+    code.onInit.push(`      ExportNewsHistory();`);
+    code.onInit.push(
+      `      Print("News history exported. Set ExportNewsData=false and restart.");`
+    );
+    code.onInit.push(`   }`);
+    code.onInit.push(``);
+    code.onInit.push(`   if(g_isTesting)`);
+    code.onInit.push(`   {`);
+    code.onInit.push(`      if(!LoadNewsFromCSV())`);
+    code.onInit.push(
+      `         Print("WARNING: ea_builder_news.csv not found in Common Files. Run EA on live chart with ExportNewsData=true first.");`
+    );
+    code.onInit.push(`   }`);
+
+    // OnTick — news filter block
+    code.onTick.push(`//--- News filter`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   if(!g_isTesting && TimeCurrent() - g_lastNewsRefresh > 3600)`);
+    code.onTick.push(`      RefreshNewsCache();`);
+    code.onTick.push(``);
+    code.onTick.push(`   if(IsNewsTime())`);
+    code.onTick.push(`   {`);
+    if (closePositions) {
+      code.onTick.push(`      if(InpNewsClosePos)`);
+      code.onTick.push(`      {`);
+      code.onTick.push(`         for(int i = PositionsTotal()-1; i >= 0; i--)`);
+      code.onTick.push(`         {`);
+      code.onTick.push(`            ulong ticket = PositionGetTicket(i);`);
+      code.onTick.push(
+        `            if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber`
+      );
+      code.onTick.push(`               && PositionGetString(POSITION_SYMBOL) == _Symbol)`);
+      code.onTick.push(`               trade.PositionClose(ticket);`);
+      code.onTick.push(`         }`);
+      code.onTick.push(`      }`);
+    }
+    code.onTick.push(`      return;`);
+    code.onTick.push(`   }`);
+    code.onTick.push(`}`);
+
+    // Helper functions
+    code.helperFunctions.push(`void RefreshNewsCache()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
+    code.helperFunctions.push(`   g_newsCount = 0;`);
+    code.helperFunctions.push(`   MqlCalendarValue values[];`);
+    code.helperFunctions.push(`   datetime dayStart = iTime(_Symbol, PERIOD_D1, 0);`);
+    code.helperFunctions.push(`   datetime dayEnd = dayStart + 2*86400;`);
+    code.helperFunctions.push(`   if(CalendarValueHistory(values, dayStart, dayEnd))`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      for(int i = 0; i < ArraySize(values); i++)`);
+    code.helperFunctions.push(`      {`);
+    code.helperFunctions.push(`         MqlCalendarEvent event;`);
+    code.helperFunctions.push(
+      `         if(!CalendarEventById(values[i].event_id, event)) continue;`
+    );
+    code.helperFunctions.push(`         MqlCalendarCountry country;`);
+    code.helperFunctions.push(
+      `         if(!CalendarCountryById(event.country_id, country)) continue;`
+    );
+    code.helperFunctions.push(
+      `         if(country.currency != g_baseCurrency && country.currency != g_quoteCurrency) continue;`
+    );
+    code.helperFunctions.push(`         int imp = (int)event.importance;`);
+    code.helperFunctions.push(
+      `         if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
+    );
+    code.helperFunctions.push(`         int idx = g_newsCount++;`);
+    code.helperFunctions.push(`         ArrayResize(g_newsEvents, g_newsCount);`);
+    code.helperFunctions.push(`         g_newsEvents[idx].time = values[i].time;`);
+    code.helperFunctions.push(`         g_newsEvents[idx].importance = imp;`);
+    code.helperFunctions.push(`      }`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(`   g_lastNewsRefresh = TimeCurrent();`);
+    code.helperFunctions.push(`}`);
+    code.helperFunctions.push(``);
+
+    code.helperFunctions.push(`bool IsNewsTime()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(`   datetime now = TimeCurrent();`);
+    code.helperFunctions.push(`   for(int i = 0; i < g_newsCount; i++)`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      if(now >= g_newsEvents[i].time - InpNewsMinBefore*60`);
+    code.helperFunctions.push(`         && now <= g_newsEvents[i].time + InpNewsMinAfter*60)`);
+    code.helperFunctions.push(`      {`);
+    code.helperFunctions.push(`         int imp = g_newsEvents[i].importance;`);
+    code.helperFunctions.push(
+      `         if((imp==3 && InpNewsHigh) || (imp==2 && InpNewsMedium) || (imp==1 && InpNewsLow))`
+    );
+    code.helperFunctions.push(`            return true;`);
+    code.helperFunctions.push(`      }`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(`   return false;`);
+    code.helperFunctions.push(`}`);
+    code.helperFunctions.push(``);
+
+    code.helperFunctions.push(`bool LoadNewsFromCSV()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(
+      `   int handle = FileOpen("ea_builder_news.csv", FILE_READ|FILE_CSV|FILE_COMMON, ',');`
+    );
+    code.helperFunctions.push(`   if(handle == INVALID_HANDLE) return false;`);
+    code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
+    code.helperFunctions.push(`   g_newsCount = 0;`);
+    code.helperFunctions.push(
+      `   FileReadString(handle); FileReadString(handle); FileReadString(handle);`
+    );
+    code.helperFunctions.push(`   while(!FileIsEnding(handle))`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      string dtStr = FileReadString(handle);`);
+    code.helperFunctions.push(`      string impStr = FileReadString(handle);`);
+    code.helperFunctions.push(`      string cur = FileReadString(handle);`);
+    code.helperFunctions.push(`      if(StringLen(dtStr) == 0) break;`);
+    code.helperFunctions.push(
+      `      if(cur != g_baseCurrency && cur != g_quoteCurrency) continue;`
+    );
+    code.helperFunctions.push(`      int imp = (int)StringToInteger(impStr);`);
+    code.helperFunctions.push(
+      `      if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
+    );
+    code.helperFunctions.push(`      int idx = g_newsCount++;`);
+    code.helperFunctions.push(`      ArrayResize(g_newsEvents, g_newsCount, 1000);`);
+    code.helperFunctions.push(`      g_newsEvents[idx].time = StringToTime(dtStr);`);
+    code.helperFunctions.push(`      g_newsEvents[idx].importance = imp;`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(`   FileClose(handle);`);
+    code.helperFunctions.push(`   Print("Loaded ", g_newsCount, " news events from CSV");`);
+    code.helperFunctions.push(`   return g_newsCount > 0;`);
+    code.helperFunctions.push(`}`);
+    code.helperFunctions.push(``);
+
+    code.helperFunctions.push(`void ExportNewsHistory()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(`   MqlCalendarValue values[];`);
+    code.helperFunctions.push(`   datetime from = D'2010.01.01';`);
+    code.helperFunctions.push(`   datetime to = TimeCurrent();`);
+    code.helperFunctions.push(
+      `   if(!CalendarValueHistory(values, from, to)) { Print("Calendar export failed"); return; }`
+    );
+    code.helperFunctions.push(
+      `   int handle = FileOpen("ea_builder_news.csv", FILE_WRITE|FILE_CSV|FILE_COMMON, ',');`
+    );
+    code.helperFunctions.push(
+      `   if(handle == INVALID_HANDLE) { Print("Cannot create CSV file"); return; }`
+    );
+    code.helperFunctions.push(`   FileWrite(handle, "datetime", "importance", "currency");`);
+    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(values); i++)`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      MqlCalendarEvent event;`);
+    code.helperFunctions.push(`      if(!CalendarEventById(values[i].event_id, event)) continue;`);
+    code.helperFunctions.push(`      MqlCalendarCountry country;`);
+    code.helperFunctions.push(
+      `      if(!CalendarCountryById(event.country_id, country)) continue;`
+    );
+    code.helperFunctions.push(`      if((int)event.importance < 1) continue;`);
+    code.helperFunctions.push(
+      `      FileWrite(handle, TimeToString(values[i].time, TIME_DATE|TIME_MINUTES),`
+    );
+    code.helperFunctions.push(`               (int)event.importance, country.currency);`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(`   FileClose(handle);`);
+    code.helperFunctions.push(
+      `   Print("Exported ", ArraySize(values), " calendar events to ea_builder_news.csv");`
+    );
+    code.helperFunctions.push(`}`);
   }
 
   // Generate indicator code (only connected indicators)

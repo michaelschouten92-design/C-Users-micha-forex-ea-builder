@@ -10,6 +10,7 @@ import type {
   VolatilityFilterNodeData,
   EquityFilterNodeData,
   FridayCloseFilterNodeData,
+  NewsFilterNodeData,
   CustomTimesNodeData,
   MovingAverageNodeData,
   RSINodeData,
@@ -46,6 +47,7 @@ import {
   VolatilityFilterFields,
   EquityFilterFields,
   FridayCloseFields,
+  NewsFilterFields,
   CustomTimesFields,
 } from "./timing-fields";
 import {
@@ -247,6 +249,8 @@ function NodeFields({
         return <EquityFilterFields data={data as EquityFilterNodeData} onChange={onChange} />;
       case "friday-close":
         return <FridayCloseFields data={data as FridayCloseFilterNodeData} onChange={onChange} />;
+      case "news-filter":
+        return <NewsFilterFields data={data as NewsFilterNodeData} onChange={onChange} />;
     }
   }
 

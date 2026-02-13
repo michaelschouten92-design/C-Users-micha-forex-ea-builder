@@ -9,6 +9,7 @@ import type {
   VolatilityFilterNodeData,
   EquityFilterNodeData,
   FridayCloseFilterNodeData,
+  NewsFilterNodeData,
   CustomTimesNodeData,
   TradingDays,
   TimeSlot,
@@ -248,6 +249,104 @@ export function FridayCloseFields({
       >
         Closes all positions and blocks new entries on Friday after {String(hour).padStart(2, "0")}:
         {String(minute).padStart(2, "0")} ({(data.useServerTime ?? true) ? "Server Time" : "GMT"})
+      </div>
+    </>
+  );
+}
+
+export function NewsFilterFields({
+  data,
+  onChange,
+}: {
+  data: NewsFilterNodeData;
+  onChange: (updates: Partial<NewsFilterNodeData>) => void;
+}) {
+  const impacts: string[] = [];
+  if (data.highImpact) impacts.push("High");
+  if (data.mediumImpact) impacts.push("Medium");
+  if (data.lowImpact) impacts.push("Low");
+
+  return (
+    <>
+      <NumberField
+        label="Minutes Before News"
+        value={data.minutesBefore}
+        min={0}
+        max={240}
+        step={5}
+        onChange={(v) => onChange({ minutesBefore: v })}
+      />
+      <NumberField
+        label="Minutes After News"
+        value={data.minutesAfter}
+        min={0}
+        max={240}
+        step={5}
+        onChange={(v) => onChange({ minutesAfter: v })}
+      />
+      <div className="mt-2 space-y-1.5">
+        <span className="text-xs font-medium text-[#CBD5E1]">Impact Levels</span>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.highImpact}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ highImpact: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          High Impact
+        </label>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.mediumImpact}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ mediumImpact: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Medium Impact
+        </label>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.lowImpact}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ lowImpact: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Low Impact
+        </label>
+      </div>
+      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer mt-2">
+        <input
+          type="checkbox"
+          checked={data.closePositions}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange({ closePositions: e.target.checked });
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+        />
+        Close open positions during news
+      </label>
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Blocks new entries {data.minutesBefore}min before and {data.minutesAfter}min after{" "}
+        {impacts.length > 0 ? impacts.join(", ") : "no"} impact news events.
+        {data.closePositions ? " Also closes open positions during news windows." : ""} Uses MT5
+        Calendar API live; CSV file for backtest.
       </div>
     </>
   );

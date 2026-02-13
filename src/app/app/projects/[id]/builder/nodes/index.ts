@@ -7,6 +7,7 @@ import { MaxSpreadNode } from "./max-spread-node";
 import { VolatilityFilterNode } from "./volatility-filter-node";
 import { EquityFilterNode } from "./equity-filter-node";
 import { FridayCloseNode } from "./friday-close-node";
+import { NewsFilterNode } from "./news-filter-node";
 import { CustomTimesNode } from "./custom-times-node";
 import { MovingAverageNode } from "./indicators/moving-average-node";
 import { RSINode } from "./indicators/rsi-node";
@@ -44,6 +45,7 @@ export const nodeTypes: NodeTypes = {
   "volatility-filter": VolatilityFilterNode,
   "equity-filter": EquityFilterNode,
   "friday-close": FridayCloseNode,
+  "news-filter": NewsFilterNode,
   "custom-times": CustomTimesNode,
   "moving-average": MovingAverageNode,
   rsi: RSINode,
@@ -81,6 +83,7 @@ export {
   VolatilityFilterNode,
   EquityFilterNode,
   FridayCloseNode,
+  NewsFilterNode,
   CustomTimesNode,
   MovingAverageNode,
   RSINode,

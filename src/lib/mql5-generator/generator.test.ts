@@ -2854,6 +2854,108 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // News filter
+  // ============================================
+
+  describe("news filter", () => {
+    it("generates news filter inputs and helper functions", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("nf1", "news-filter", {
+          category: "timing",
+          filterType: "news-filter",
+          minutesBefore: 30,
+          minutesAfter: 30,
+          highImpact: true,
+          mediumImpact: true,
+          lowImpact: false,
+          closePositions: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpNewsMinBefore");
+      expect(code).toContain("InpNewsMinAfter");
+      expect(code).toContain("IsNewsTime");
+      expect(code).toContain("RefreshNewsCache");
+      expect(code).toContain("LoadNewsFromCSV");
+      expect(code).toContain("ExportNewsHistory");
+      expect(code).toContain("g_isTesting");
+      expect(code).toContain("SYMBOL_CURRENCY_BASE");
+    });
+
+    it("generates close positions code when closePositions is true", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("nf1", "news-filter", {
+          category: "timing",
+          filterType: "news-filter",
+          minutesBefore: 60,
+          minutesAfter: 60,
+          highImpact: true,
+          mediumImpact: false,
+          lowImpact: false,
+          closePositions: true,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpNewsClosePos");
+      expect(code).toContain("PositionClose");
+      expect(code).toContain("InpNewsHigh");
+      expect(code).toContain("InpNewsMedium");
+      expect(code).toContain("InpNewsLow");
+    });
+
+    it("does not generate close positions loop when closePositions is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("nf1", "news-filter", {
+          category: "timing",
+          filterType: "news-filter",
+          minutesBefore: 30,
+          minutesAfter: 30,
+          highImpact: true,
+          mediumImpact: true,
+          lowImpact: false,
+          closePositions: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("IsNewsTime");
+      // The news filter onTick block should NOT contain the close-positions loop
+      // (PositionClose appears only in the news filter close block, not from friday-close or other)
+      const newsFilterSection = code.split("//--- News filter")[1]?.split("//---")[0] ?? "";
+      expect(newsFilterSection).not.toContain("PositionClose");
+    });
+  });
+
+  // ============================================
   // AUDIT: PERCENT SL directional pricing
   // ============================================
 

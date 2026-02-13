@@ -105,6 +105,17 @@ export interface FridayCloseFilterNodeData extends BaseNodeData {
   closePending?: boolean; // also delete pending orders, default true
 }
 
+export interface NewsFilterNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "news-filter";
+  minutesBefore: number; // 0-240, default 30
+  minutesAfter: number; // 0-240, default 30
+  highImpact: boolean; // default true
+  mediumImpact: boolean; // default true
+  lowImpact: boolean; // default false
+  closePositions: boolean; // close open positions during news, default false
+}
+
 export type TimingNodeData =
   | TradingSessionNodeData
   | AlwaysNodeData
@@ -112,7 +123,8 @@ export type TimingNodeData =
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
   | EquityFilterNodeData
-  | FridayCloseFilterNodeData;
+  | FridayCloseFilterNodeData
+  | NewsFilterNodeData;
 
 // Session time definitions (GMT)
 export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
@@ -597,7 +609,8 @@ export type BuilderNodeType =
   | "max-spread"
   | "volatility-filter"
   | "equity-filter"
-  | "friday-close";
+  | "friday-close"
+  | "news-filter";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -747,6 +760,23 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       useServerTime: true,
       closePending: true,
     } as FridayCloseFilterNodeData,
+  },
+  {
+    type: "news-filter",
+    label: "News Filter",
+    category: "timing",
+    description: "Block trades around economic news events (supports backtest via CSV)",
+    defaultData: {
+      label: "News Filter",
+      category: "timing",
+      filterType: "news-filter",
+      minutesBefore: 30,
+      minutesAfter: 30,
+      highImpact: true,
+      mediumImpact: true,
+      lowImpact: false,
+      closePositions: false,
+    } as NewsFilterNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {
