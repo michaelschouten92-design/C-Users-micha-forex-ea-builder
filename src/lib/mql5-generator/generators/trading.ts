@@ -278,8 +278,19 @@ function generateRangeOppositeSL(priceActionNodes: BuilderNode[], code: Generate
   const rbIndex = priceActionNodes.findIndex(
     (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
   );
-  const prefix = rbIndex >= 0 ? `pa${rbIndex}` : "pa0";
 
+  if (rbIndex < 0) {
+    // Fallback: RANGE_OPPOSITE requires a range-breakout node
+    code.onTick.push(
+      "//--- Range Opposite SL: WARNING - no range-breakout node found, using 50 pip fallback"
+    );
+    code.onTick.push("double slPips = 50 * _pipFactor;");
+    code.onTick.push("double slSellPips = slPips;");
+    code.hasDirectionalSL = true;
+    return;
+  }
+
+  const prefix = `pa${rbIndex}`;
   code.onTick.push("//--- Range Opposite SL: use range high/low as stop loss");
   code.onTick.push(
     `double slPips = MathMax((SymbolInfoDouble(_Symbol, SYMBOL_ASK) - ${prefix}Low) / _Point, 10 * _pipFactor);`
@@ -938,7 +949,7 @@ export function generateEntryLogic(
     code.onTick.push("");
 
     // SL calculation — from pending entry price (not current market price)
-    if (code.hasDirectionalSL) {
+    if (code.slMethod === "RANGE_OPPOSITE") {
       // RANGE_OPPOSITE: SL at opposite range boundary
       code.onTick.push(`   // SL at opposite side of range`);
       code.onTick.push(`   double pendBuySL = NormalizeDouble(${pv}Low - bufferPts, _Digits);`);

@@ -504,7 +504,7 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
     rangeMethod: z.enum(["CANDLES", "CUSTOM_TIME"]).default("CUSTOM_TIME"),
     rangeTimeframe: timeframeSchema,
     breakoutEntry: z.enum(["CANDLE_CLOSE", "CURRENT_PRICE"]).default("CANDLE_CLOSE"),
-    breakoutTimeframe: timeframeSchema.default("H1"),
+    breakoutTimeframe: timeframeSchema,
     customStartHour: z.number().int().min(0).max(23),
     customStartMinute: z.number().int().min(0).max(59),
     customEndHour: z.number().int().min(0).max(23),

@@ -1990,7 +1990,7 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("InpATRMultiplier");
     });
 
-    it("generates close-at-time code when enabled", () => {
+    it("generates close-at-time code with optimizable input parameters", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
         makeNode("entry1", "range-breakout-entry", {
@@ -2023,9 +2023,201 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("Close all positions at 16:30");
-      expect(code).toContain("closeMinutes >= 990");
+      // Should generate close-at-time logic
+      expect(code).toContain("Close range breakout positions at specified time");
+      expect(code).toContain("InpRangeCloseHour");
+      expect(code).toContain("InpRangeCloseMinute");
+      expect(code).toContain("InpRangeCloseHour * 60 + InpRangeCloseMinute");
       expect(code).toContain("PositionClose(ticket)");
+      expect(code).toContain("OrderDelete(ticket)");
+    });
+
+    it("does not generate close-at-time when disabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          direction: "BOTH",
+          slFixedPips: 50,
+          slPercent: 1,
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          breakoutEntry: "CANDLE_CLOSE",
+          breakoutTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpRangeCloseHour");
+    });
+
+    it("generates cancelOpposite OCO logic by default", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          direction: "BOTH",
+          slFixedPips: 50,
+          slPercent: 1,
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          breakoutEntry: "CANDLE_CLOSE",
+          breakoutTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("OCO: Cancel pending orders");
+      expect(code).toContain("OrderDelete(ticket)");
+    });
+
+    it("omits OCO logic when cancelOpposite is false", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          direction: "BOTH",
+          slFixedPips: 50,
+          slPercent: 1,
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          breakoutEntry: "CANDLE_CLOSE",
+          breakoutTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: false,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("OCO: Cancel pending orders");
+    });
+
+    it("generates minRangePips and maxRangePips filtering", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          direction: "BOTH",
+          slFixedPips: 50,
+          slPercent: 1,
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          breakoutEntry: "CANDLE_CLOSE",
+          breakoutTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "ATR",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+          minRangePips: 10,
+          maxRangePips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpRange0MinRange");
+      expect(code).toContain("InpRange0MaxRange");
+      expect(code).toContain("pa0Size >= InpRange0MinRange");
+      expect(code).toContain("pa0Size <= InpRange0MaxRange");
+    });
+
+    it("generates PERCENT SL method with range breakout", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("entry1", "range-breakout-entry", {
+          category: "entrystrategy",
+          entryType: "range-breakout",
+          direction: "BOTH",
+          slFixedPips: 50,
+          slPercent: 1,
+          rangePeriod: 20,
+          rangeMethod: "CANDLES",
+          rangeTimeframe: "H1",
+          breakoutEntry: "CANDLE_CLOSE",
+          breakoutTimeframe: "H1",
+          customStartHour: 0,
+          customStartMinute: 0,
+          customEndHour: 8,
+          customEndMinute: 0,
+          slMethod: "PERCENT",
+          useServerTime: true,
+          riskPercent: 1,
+          slAtrMultiplier: 1.5,
+          tpRMultiple: 2,
+          cancelOpposite: true,
+          closeAtTime: false,
+          closeAtHour: 17,
+          closeAtMinute: 0,
+          htfTrendFilter: false,
+          htfTimeframe: "H4",
+          htfEma: 200,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpSLPercent");
+      expect(code).toContain("pendBuySLPips");
+      expect(code).toContain("pendSellSLPips");
     });
   });
 

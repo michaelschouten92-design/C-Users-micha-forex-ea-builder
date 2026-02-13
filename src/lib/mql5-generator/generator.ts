@@ -231,6 +231,10 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         maxRangePips: rb.maxRangePips ?? 0,
         useServerTime: rb.useServerTime ?? true,
         _cancelOpposite: rb.cancelOpposite ?? true,
+        _closeAtTime: rb.closeAtTime ?? false,
+        _closeAtHour: rb.closeAtHour ?? 17,
+        _closeAtMinute: rb.closeAtMinute ?? 0,
+        _useServerTime: rb.useServerTime ?? true,
         optimizableFields: mapOpt(
           ["rangePeriod", "lookbackCandles"],
           ["bufferPips", "bufferPips"],
@@ -241,13 +245,15 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
     // HTF trend filter
     if (rb.htfTrendFilter) {
+      const htfEma = rb.htfEma ?? 200;
+      const htfTimeframe = rb.htfTimeframe ?? "H4";
       virtualNodes.push(
         vNode("htf-ema", "moving-average", {
-          label: `HTF EMA(${rb.htfEma})`,
+          label: `HTF EMA(${htfEma})`,
           category: "indicator",
           indicatorType: "moving-average",
-          timeframe: rb.htfTimeframe ?? "H4",
-          period: rb.htfEma,
+          timeframe: htfTimeframe,
+          period: htfEma,
           method: "EMA",
           signalMode: "candle_close",
           shift: 0,
@@ -1303,28 +1309,43 @@ export function generateMQL5Code(
   }
 
   // Generate close-at-time code BEFORE entry logic so positions are closed before new orders
-  for (const node of buildJson.nodes) {
-    if (!("entryType" in node.data) || node.data.entryType !== "range-breakout") continue;
-    const rb = node.data as RangeBreakoutEntryData;
-    if (!rb.closeAtTime) continue;
-    const h = rb.closeAtHour ?? 17;
-    const m = rb.closeAtMinute ?? 0;
-    const closeMinutes = h * 60 + m;
-    const useServer = rb.useServerTime ?? true;
+  // Read from virtual range-breakout nodes (decomposed from entry strategy)
+  for (const paNode of priceActionNodes) {
+    const paData = paNode.data as Record<string, unknown>;
+    if (paData.priceActionType !== "range-breakout") continue;
+    if (!paData._closeAtTime) continue;
+    const h = (paData._closeAtHour as number) ?? 17;
+    const m = (paData._closeAtMinute as number) ?? 0;
+    const useServer = (paData._useServerTime as boolean) ?? true;
     const timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
     const timeLabel = useServer ? "Server time" : "GMT";
+    const group = "Range Breakout - Close At Time";
+
+    // Export as input parameters so users can optimize
+    code.inputs.push({
+      name: "InpRangeCloseHour",
+      type: "int",
+      value: h,
+      comment: `Close hour (${timeLabel})`,
+      isOptimizable: true,
+      group,
+    });
+    code.inputs.push({
+      name: "InpRangeCloseMinute",
+      type: "int",
+      value: m,
+      comment: `Close minute (${timeLabel})`,
+      isOptimizable: true,
+      group,
+    });
+
     code.onTick.push("");
-    code.onTick.push(
-      `//--- Close all positions at ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} (${timeLabel})`
-    );
+    code.onTick.push(`//--- Close range breakout positions at specified time (${timeLabel})`);
     code.onTick.push("{");
-    const needsDecl = !code.onTick.some((l) => l.includes("MqlDateTime closeTimeDt;"));
-    if (needsDecl) {
-      code.onTick.push(`   MqlDateTime closeTimeDt;`);
-      code.onTick.push(`   TimeToStruct(${timeFunc}, closeTimeDt);`);
-      code.onTick.push(`   int closeMinutes = closeTimeDt.hour * 60 + closeTimeDt.min;`);
-    }
-    code.onTick.push(`   if(closeMinutes >= ${closeMinutes})`);
+    code.onTick.push(`   MqlDateTime closeTimeDt;`);
+    code.onTick.push(`   TimeToStruct(${timeFunc}, closeTimeDt);`);
+    code.onTick.push(`   int closeMinutes = closeTimeDt.hour * 60 + closeTimeDt.min;`);
+    code.onTick.push(`   if(closeMinutes >= InpRangeCloseHour * 60 + InpRangeCloseMinute)`);
     code.onTick.push("   {");
     code.onTick.push("      for(int i = PositionsTotal() - 1; i >= 0; i--)");
     code.onTick.push("      {");
