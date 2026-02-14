@@ -25,6 +25,13 @@ interface ExportError {
   details?: string[] | string;
 }
 
+interface ExportHistoryItem {
+  id: string;
+  outputName: string;
+  versionNo: number;
+  createdAt: string;
+}
+
 export function ExportButton({
   projectId,
   hasNodes,
@@ -41,6 +48,9 @@ export function ExportButton({
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
   const stepTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyItems, setHistoryItems] = useState<ExportHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!showModal) return;
@@ -132,6 +142,21 @@ export function ExportButton({
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // Silently fail for clipboard errors
+    }
+  }
+
+  async function fetchHistory() {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/export?limit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryItems(Array.isArray(data) ? data : (data.items ?? []));
+      }
+    } catch {
+      // Silently fail for history fetch
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -235,8 +260,9 @@ export function ExportButton({
                       Magic Number
                     </label>
                     <p className="text-xs text-[#64748B] mb-3">
-                      Unique identifier for this EA instance. Use different numbers to run the same
-                      strategy on multiple pairs.
+                      Each EA on a chart needs a unique Magic Number so it only manages its own
+                      trades. If you run the same EA on EURUSD and GBPUSD, give each a different
+                      number.
                     </p>
                     <div className="flex gap-2">
                       <input
@@ -456,6 +482,16 @@ export function ExportButton({
                           <strong className="text-white">backtesting</strong> or trading
                         </span>
                       </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          5
+                        </span>
+                        <span>
+                          To backtest, open <strong className="text-white">Strategy Tester</strong>{" "}
+                          (Ctrl+R), select your EA, set the date range and click{" "}
+                          <strong className="text-white">Start</strong>
+                        </span>
+                      </li>
                     </ol>
                   </div>
 
@@ -505,6 +541,58 @@ export function ExportButton({
                       </Link>
                     </div>
                   )}
+
+                  {/* Export History */}
+                  <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
+                    <button
+                      onClick={() => {
+                        if (!showHistory && historyItems.length === 0) fetchHistory();
+                        setShowHistory(!showHistory);
+                      }}
+                      className="flex items-center gap-2 text-xs text-[#94A3B8] hover:text-white transition-colors duration-200"
+                    >
+                      <svg
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${showHistory ? "rotate-90" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                      Export History
+                    </button>
+                    {showHistory && (
+                      <div className="mt-2 space-y-1">
+                        {historyLoading ? (
+                          <p className="text-xs text-[#64748B] py-2">Loading...</p>
+                        ) : historyItems.length === 0 ? (
+                          <p className="text-xs text-[#64748B] py-2">No previous exports</p>
+                        ) : (
+                          historyItems.slice(0, 5).map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between px-2 py-1.5 rounded text-xs bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
+                            >
+                              <span className="text-[#CBD5E1] truncate mr-2">
+                                {item.outputName}
+                              </span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-[#64748B]">v{item.versionNo}</span>
+                                <span className="text-[#64748B]">
+                                  {new Date(item.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </div>

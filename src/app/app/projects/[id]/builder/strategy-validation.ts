@@ -33,7 +33,7 @@ export function validateStrategy(
   if (!hasEntryStrategy) {
     issues.push({
       type: "error",
-      message: "Add an entry strategy block to define your trading logic",
+      message: "Drag an Entry Strategy block from the left toolbar onto the canvas",
       nodeType: "entrystrategy",
     });
   }

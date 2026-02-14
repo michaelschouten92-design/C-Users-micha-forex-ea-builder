@@ -206,6 +206,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10}
             step={0.1}
             onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
+            tooltip="Multiplier applied to the ATR value"
           />
           <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
           <NumberField
@@ -215,6 +216,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={500}
             step={1}
             onChange={(v) => onChange({ slAtrPeriod: v } as Partial<T>)}
+            tooltip="Average True Range - measures market volatility"
           />
           <OptimizableFieldCheckbox fieldName="slAtrPeriod" data={data} onChange={onChange} />
           <SelectField

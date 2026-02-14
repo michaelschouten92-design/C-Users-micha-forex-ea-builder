@@ -89,6 +89,7 @@ export function EMACrossoverEntryFields({
             value={data.htfTimeframe}
             options={TIMEFRAME_OPTIONS}
             onChange={(v) => onChange({ htfTimeframe: v as EMACrossoverEntryData["htfTimeframe"] })}
+            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
           />
           <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
@@ -97,6 +98,7 @@ export function EMACrossoverEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
+            tooltip="Higher Timeframe EMA period for trend confirmation"
           />
           <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>
@@ -323,6 +325,7 @@ export function RangeBreakoutEntryFields({
             onChange={(v) =>
               onChange({ htfTimeframe: v as RangeBreakoutEntryData["htfTimeframe"] })
             }
+            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
           />
           <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
@@ -331,6 +334,7 @@ export function RangeBreakoutEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
+            tooltip="Higher Timeframe EMA period for trend confirmation"
           />
           <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>
@@ -598,6 +602,7 @@ export function MACDCrossoverEntryFields({
             onChange={(v) =>
               onChange({ htfTimeframe: v as MACDCrossoverEntryData["htfTimeframe"] })
             }
+            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
           />
           <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
@@ -606,6 +611,7 @@ export function MACDCrossoverEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ htfEma: v })}
+            tooltip="Higher Timeframe EMA period for trend confirmation"
           />
           <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
         </ToggleField>

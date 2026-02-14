@@ -256,6 +256,7 @@ export function StopLossFields({
               min={1}
               max={500}
               onChange={(v) => onChange({ atrPeriod: v })}
+              tooltip="Average True Range - measures market volatility"
             />
             <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
           </div>
@@ -267,6 +268,7 @@ export function StopLossFields({
               max={10}
               step={0.1}
               onChange={(v) => onChange({ atrMultiplier: v })}
+              tooltip="Multiplier applied to the ATR value"
             />
             <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
           </div>
@@ -350,6 +352,7 @@ export function TakeProfitFields({
               min={1}
               max={500}
               onChange={(v) => onChange({ atrPeriod: v })}
+              tooltip="Average True Range - measures market volatility"
             />
             <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
           </div>
@@ -361,6 +364,7 @@ export function TakeProfitFields({
               max={20}
               step={0.1}
               onChange={(v) => onChange({ atrMultiplier: v })}
+              tooltip="Multiplier applied to the ATR value"
             />
             <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
           </div>

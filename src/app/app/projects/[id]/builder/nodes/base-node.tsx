@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, useEffect, useCallback, useRef } from "react";
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import type { NodeCategory } from "@/types/builder";
 
@@ -81,14 +81,51 @@ export const BaseNode = memo(function BaseNode({
 }: BaseNodeProps) {
   const styles = categoryStyles[category];
   const { deleteElements } = useReactFlow();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const handleDelete = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     deleteElements({ nodes: [{ id }] });
   };
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleDuplicate = useCallback(() => {
+    setContextMenu(null);
+    window.dispatchEvent(new CustomEvent("node-duplicate", { detail: { nodeId: id } }));
+  }, [id]);
+
+  const handleContextDelete = useCallback(() => {
+    setContextMenu(null);
+    deleteElements({ nodes: [{ id }] });
+  }, [deleteElements, id]);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextMenu(null);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [contextMenu]);
+
   return (
     <div
+      onContextMenu={handleContextMenu}
       className={`
         min-w-[180px] rounded-xl border-2 relative transition-all duration-200 group
         ${styles.bg} ${styles.border}
@@ -96,6 +133,43 @@ export const BaseNode = memo(function BaseNode({
         hover:${styles.glow}
       `}
     >
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-50 min-w-[140px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1 overflow-hidden"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={handleDuplicate}
+            className="w-full px-3 py-1.5 text-left text-xs text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.2)] hover:text-white flex items-center gap-2 transition-colors duration-150"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+            Duplicate
+          </button>
+          <button
+            onClick={handleContextDelete}
+            className="w-full px-3 py-1.5 text-left text-xs text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] flex items-center gap-2 transition-colors duration-150"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Delete
+          </button>
+        </div>
+      )}
       {/* Action buttons - visible on hover or when selected */}
       <div
         className={`absolute -top-2 -right-2 flex gap-1 z-10 transition-all duration-200 ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
