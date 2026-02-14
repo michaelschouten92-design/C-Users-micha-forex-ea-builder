@@ -14,11 +14,13 @@ export async function GET(request: NextRequest) {
 
   // Database check (always performed)
   let dbUp = false;
+  let dbError: string | undefined;
   try {
     await prisma.$queryRaw`SELECT 1`;
     dbUp = true;
-  } catch {
+  } catch (error) {
     dbUp = false;
+    dbError = error instanceof Error ? error.message : String(error);
   }
 
   // Unauthenticated: return minimal status only
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
     {
       status: allUp ? "healthy" : dbUp ? "degraded" : "unhealthy",
       services,
+      ...(dbError && { dbError }),
       timestamp: new Date().toISOString(),
     },
     { status: dbUp ? 200 : 503 }

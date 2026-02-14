@@ -99,119 +99,132 @@ providers.push(
         return null;
       }
 
-      const rawEmail = credentials.email as string;
-      const password = credentials.password as string;
-      const isRegistration = credentials.isRegistration === "true";
+      try {
+        const rawEmail = credentials.email as string;
+        const password = credentials.password as string;
+        const isRegistration = credentials.isRegistration === "true";
 
-      // Normalize email consistently for both registration and login
-      const email = normalizeEmail(rawEmail);
+        // Normalize email consistently for both registration and login
+        const email = normalizeEmail(rawEmail);
 
-      // Validate password strength
-      if (password.length < 8) {
-        throw new PasswordTooShortError();
-      }
-
-      // Find existing user
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (isRegistration) {
-        // Rate limit registration attempts by email
-        const rateLimitResult = await checkRateLimit(registrationRateLimiter, `register:${email}`);
-        if (!rateLimitResult.success) {
-          throw new RateLimitError();
+        // Validate password strength
+        if (password.length < 8) {
+          throw new PasswordTooShortError();
         }
 
-        // Also rate limit by IP to prevent mass account creation
-        const regIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
-        if (regIp) {
-          const ipResult = await checkRateLimit(registrationRateLimiter, `register-ip:${regIp}`);
-          if (!ipResult.success) {
-            throw new RateLimitError();
-          }
-        }
-
-        // Registration flow
-        if (existingUser) {
-          throw new AccountExistsError();
-        }
-
-        // Hash password and create user
-        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-        const user = await prisma.user.create({
-          data: {
-            email,
-            authProviderId: `credentials_${email}`,
-            passwordHash,
-            subscription: {
-              create: {
-                tier: "FREE",
-              },
-            },
-          },
+        // Find existing user
+        const existingUser = await prisma.user.findUnique({
+          where: { email },
         });
 
-        // Send verification email (fire-and-forget, don't block registration)
-        const verifyToken = randomBytes(32).toString("hex");
-        const hashedToken = createHash("sha256").update(verifyToken).digest("hex");
-        prisma.emailVerificationToken
-          .create({
-            data: {
-              email,
-              token: hashedToken,
-              expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            },
-          })
-          .then(() => {
-            const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
-            sendVerificationEmail(email, verifyUrl).catch(() => {});
-          })
-          .catch(() => {});
-
-        // Send welcome email (fire-and-forget, don't block registration)
-        sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
-
-        return {
-          id: user.id,
-          email: user.email,
-        };
-      } else {
-        // Login flow — rate limit by email to prevent brute-force
-        const loginRateResult = await checkRateLimit(
-          loginRateLimiter,
-          `login:${email.toLowerCase()}`
-        );
-        if (!loginRateResult.success) {
-          throw new RateLimitError();
-        }
-
-        // Also rate limit by IP to prevent credential stuffing across emails
-        const clientIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
-        if (clientIp) {
-          const ipRateResult = await checkRateLimit(loginIpRateLimiter, `login-ip:${clientIp}`);
-          if (!ipRateResult.success) {
+        if (isRegistration) {
+          // Rate limit registration attempts by email
+          const rateLimitResult = await checkRateLimit(
+            registrationRateLimiter,
+            `register:${email}`
+          );
+          if (!rateLimitResult.success) {
             throw new RateLimitError();
           }
+
+          // Also rate limit by IP to prevent mass account creation
+          const regIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
+          if (regIp) {
+            const ipResult = await checkRateLimit(registrationRateLimiter, `register-ip:${regIp}`);
+            if (!ipResult.success) {
+              throw new RateLimitError();
+            }
+          }
+
+          // Registration flow
+          if (existingUser) {
+            throw new AccountExistsError();
+          }
+
+          // Hash password and create user
+          const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+          const user = await prisma.user.create({
+            data: {
+              email,
+              authProviderId: `credentials_${email}`,
+              passwordHash,
+              subscription: {
+                create: {
+                  tier: "FREE",
+                },
+              },
+            },
+          });
+
+          // Send verification email (fire-and-forget, don't block registration)
+          const verifyToken = randomBytes(32).toString("hex");
+          const hashedToken = createHash("sha256").update(verifyToken).digest("hex");
+          prisma.emailVerificationToken
+            .create({
+              data: {
+                email,
+                token: hashedToken,
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+              },
+            })
+            .then(() => {
+              const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
+              sendVerificationEmail(email, verifyUrl).catch(() => {});
+            })
+            .catch(() => {});
+
+          // Send welcome email (fire-and-forget, don't block registration)
+          sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
+
+          return {
+            id: user.id,
+            email: user.email,
+          };
+        } else {
+          // Login flow — rate limit by email to prevent brute-force
+          const loginRateResult = await checkRateLimit(
+            loginRateLimiter,
+            `login:${email.toLowerCase()}`
+          );
+          if (!loginRateResult.success) {
+            throw new RateLimitError();
+          }
+
+          // Also rate limit by IP to prevent credential stuffing across emails
+          const clientIp = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
+          if (clientIp) {
+            const ipRateResult = await checkRateLimit(loginIpRateLimiter, `login-ip:${clientIp}`);
+            if (!ipRateResult.success) {
+              throw new RateLimitError();
+            }
+          }
+
+          if (!existingUser || !existingUser.passwordHash) {
+            // Use generic message to prevent email enumeration
+            throw new InvalidCredentialsError();
+          }
+
+          // Verify password
+          const isValidPassword = await bcrypt.compare(password, existingUser.passwordHash);
+
+          if (!isValidPassword) {
+            throw new InvalidCredentialsError();
+          }
+
+          return {
+            id: existingUser.id,
+            email: existingUser.email,
+          };
         }
-
-        if (!existingUser || !existingUser.passwordHash) {
-          // Use generic message to prevent email enumeration
-          throw new InvalidCredentialsError();
+      } catch (error) {
+        // Re-throw known auth errors as-is
+        if (error instanceof CredentialsSignin) {
+          throw error;
         }
-
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, existingUser.passwordHash);
-
-        if (!isValidPassword) {
-          throw new InvalidCredentialsError();
-        }
-
-        return {
-          id: existingUser.id,
-          email: existingUser.email,
-        };
+        // Log unexpected errors (DB, Redis, etc.) for debugging
+        console.error("[auth] Unexpected error in authorize:", error);
+        throw new InvalidCredentialsError();
       }
     },
   })
