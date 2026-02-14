@@ -35,7 +35,7 @@ const faqItems = [
   },
   {
     q: "What's included in a package deal?",
-    a: "The 3-Session Pack (€399) and 5-Session Pack (€599) give you sessions at a discounted per-session rate. After purchasing a pack, email us at support@algo-studio.com with your receipt and we'll set up your sessions. You can book them at your own pace.",
+    a: "The 3-Session Pack (€699) and 5-Session Pack (€1,095) give you sessions at a discounted per-session rate. After purchasing a pack, email us at support@algo-studio.com with your receipt and we'll set up your sessions. You can book them at your own pace.",
   },
   {
     q: "What's the difference between Elite strategy reviews and paid coaching?",
@@ -170,7 +170,7 @@ export default function CoachingPage() {
                 {
                   step: "2",
                   title: "Pay securely",
-                  description: "€150 per session via Stripe — or buy a bundle and save up to 20%.",
+                  description: "€249 per session via Stripe — or buy a bundle and save up to 12%.",
                 },
                 {
                   step: "3",
@@ -201,7 +201,7 @@ export default function CoachingPage() {
                 <h3 className="text-base font-semibold text-white mb-1">Single Session</h3>
                 <p className="text-sm text-[#64748B] mb-4">One 60-minute session</p>
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-white">€150</span>
+                  <span className="text-3xl font-bold text-white">€249</span>
                 </div>
                 <ul className="space-y-2 mb-6 flex-1">
                   <li className="flex items-start gap-2 text-sm text-[#94A3B8]">
@@ -264,12 +264,12 @@ export default function CoachingPage() {
               {/* 3-Pack */}
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.3)] rounded-xl p-6 flex flex-col relative">
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4F46E5] text-white text-xs font-medium px-3 py-1 rounded-full">
-                  Save 11%
+                  Save 6%
                 </span>
                 <h3 className="text-base font-semibold text-white mb-1">3-Session Pack</h3>
-                <p className="text-sm text-[#64748B] mb-4">€133 per session</p>
+                <p className="text-sm text-[#64748B] mb-4">€233 per session</p>
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-white">€399</span>
+                  <span className="text-3xl font-bold text-white">€699</span>
                 </div>
                 <ul className="space-y-2 mb-6 flex-1">
                   <li className="flex items-start gap-2 text-sm text-[#94A3B8]">
@@ -318,7 +318,7 @@ export default function CoachingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Save €51 vs single sessions
+                    Save €48 vs single sessions
                   </li>
                 </ul>
                 <a
@@ -334,12 +334,12 @@ export default function CoachingPage() {
               {/* 5-Pack */}
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.3)] rounded-xl p-6 flex flex-col relative">
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#22D3EE] text-[#0D0117] text-xs font-medium px-3 py-1 rounded-full">
-                  Best Value — Save 20%
+                  Best Value — Save 12%
                 </span>
                 <h3 className="text-base font-semibold text-white mb-1">5-Session Pack</h3>
-                <p className="text-sm text-[#64748B] mb-4">€120 per session</p>
+                <p className="text-sm text-[#64748B] mb-4">€219 per session</p>
                 <div className="mb-6">
-                  <span className="text-3xl font-bold text-white">€599</span>
+                  <span className="text-3xl font-bold text-white">€1,095</span>
                 </div>
                 <ul className="space-y-2 mb-6 flex-1">
                   <li className="flex items-start gap-2 text-sm text-[#94A3B8]">
@@ -388,7 +388,7 @@ export default function CoachingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Save €151 vs single sessions
+                    Save €150 vs single sessions
                   </li>
                 </ul>
                 <a
