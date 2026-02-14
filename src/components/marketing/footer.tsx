@@ -6,8 +6,16 @@ export function Footer() {
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
+            <h3 className="text-sm font-semibold text-white mb-4">Platform</h3>
             <ul className="space-y-2">
+              <li>
+                <Link
+                  href="/product"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Product
+                </Link>
+              </li>
               <li>
                 <Link
                   href="/templates"
@@ -18,10 +26,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/product"
+                  href="/product/how-it-works"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
-                  Product
+                  How It Works
                 </Link>
               </li>
               <li>
@@ -43,14 +51,6 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/product/how-it-works"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  How It Works
                 </Link>
               </li>
               <li>
