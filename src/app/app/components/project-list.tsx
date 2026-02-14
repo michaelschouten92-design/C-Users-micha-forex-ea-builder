@@ -17,6 +17,7 @@ type Project = {
   _count: {
     versions: number;
   };
+  versions?: { buildJson: unknown }[];
 };
 
 type SortOption = "updated" | "created" | "name";

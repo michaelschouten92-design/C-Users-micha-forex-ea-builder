@@ -213,7 +213,7 @@ export async function POST(request: NextRequest, { params }: Props) {
   }
 }
 
-// GET /api/projects/[id]/export - Get export history
+// GET /api/projects/[id]/export - Get export history or re-download a previous export
 export async function GET(request: NextRequest, { params }: Props) {
   const session = await auth();
   const { id } = await params;
@@ -230,6 +230,57 @@ export async function GET(request: NextRequest, { params }: Props) {
       { error: formatRateLimitError(rateLimitResult) },
       { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
     );
+  }
+
+  // Re-download a previous export (no credit cost)
+  const redownloadId = request.nextUrl.searchParams.get("redownload");
+  if (redownloadId) {
+    try {
+      const exportJob = await prisma.exportJob.findFirst({
+        where: {
+          id: redownloadId,
+          projectId: id,
+          userId: session.user.id,
+        },
+        include: {
+          buildVersion: { select: { buildJson: true } },
+          project: { select: { name: true, description: true } },
+        },
+      });
+
+      if (!exportJob) {
+        return NextResponse.json({ error: "Export not found" }, { status: 404 });
+      }
+
+      // Migrate and validate buildJson
+      const migratedBuildJson = migrateProjectData(exportJob.buildVersion.buildJson);
+      const buildJsonValidation = buildJsonSchema.safeParse(migratedBuildJson);
+      if (!buildJsonValidation.success) {
+        return NextResponse.json(
+          { error: "Invalid strategy data in saved version" },
+          { status: 400 }
+        );
+      }
+      const buildJson = buildJsonValidation.data as BuildJsonSchema;
+
+      // Regenerate MQL5 code from the saved buildJson
+      const mql5Code = generateMQL5Code(
+        buildJson,
+        exportJob.project.name,
+        exportJob.project.description ?? undefined
+      );
+
+      return NextResponse.json({
+        fileName: exportJob.outputName,
+        code: mql5Code,
+      });
+    } catch (error) {
+      log.error(
+        { error: extractErrorDetails(error), exportId: redownloadId },
+        "Failed to re-download export"
+      );
+      return NextResponse.json({ error: "Failed to re-download export" }, { status: 500 });
+    }
   }
 
   try {

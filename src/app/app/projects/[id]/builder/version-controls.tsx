@@ -161,13 +161,20 @@ export function VersionControls({
   // Load version from cache (no additional network request needed)
   const handleLoad = useCallback(
     (versionId: string) => {
-      setShowDropdown(false);
       const version = versions.find((v) => v.id === versionId);
-      if (version?.buildJson) {
-        onLoad(versionId, version.buildJson);
+      if (!version?.buildJson) return;
+
+      if (hasUnsavedChanges) {
+        const confirmed = window.confirm(
+          `You have unsaved changes. Loading version ${version.versionNo} will discard them. Continue?`
+        );
+        if (!confirmed) return;
       }
+
+      setShowDropdown(false);
+      onLoad(versionId, version.buildJson);
     },
-    [versions, onLoad]
+    [versions, onLoad, hasUnsavedChanges]
   );
 
   const latestVersion = versions[0]?.versionNo ?? 0;

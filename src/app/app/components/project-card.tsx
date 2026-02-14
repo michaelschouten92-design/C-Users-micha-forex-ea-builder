@@ -15,7 +15,28 @@ type Project = {
   _count: {
     versions: number;
   };
+  versions?: { buildJson: unknown }[];
 };
+
+const ENTRY_TYPE_LABELS: Record<string, string> = {
+  "ema-crossover": "EMA Crossover",
+  "range-breakout": "Range Breakout",
+  "rsi-reversal": "RSI Reversal",
+  "trend-pullback": "Trend Pullback",
+  "macd-crossover": "MACD Crossover",
+};
+
+function getEntryStrategyLabel(buildJson: unknown): string | null {
+  if (!buildJson || typeof buildJson !== "object") return null;
+  const json = buildJson as { nodes?: { data?: { entryType?: string } }[] };
+  if (!Array.isArray(json.nodes)) return null;
+  for (const node of json.nodes) {
+    if (node.data?.entryType && ENTRY_TYPE_LABELS[node.data.entryType]) {
+      return ENTRY_TYPE_LABELS[node.data.entryType];
+    }
+  }
+  return null;
+}
 
 export function ProjectCard({ project }: { project: Project }) {
   const router = useRouter();
@@ -89,11 +110,22 @@ export function ProjectCard({ project }: { project: Project }) {
     year: "numeric",
   });
 
+  const entryStrategyLabel = project.versions?.[0]?.buildJson
+    ? getEntryStrategyLabel(project.versions[0].buildJson)
+    : null;
+
   return (
     <div className="relative bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-all duration-200 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)]">
       <Link href={`/app/projects/${project.id}`} className="block p-6">
         <div className="flex justify-between items-start">
-          <h3 className="font-semibold text-white truncate flex-1">{project.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-white truncate">{project.name}</h3>
+            {entryStrategyLabel && (
+              <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                {entryStrategyLabel}
+              </span>
+            )}
+          </div>
           <button
             onClick={(e) => {
               e.preventDefault();

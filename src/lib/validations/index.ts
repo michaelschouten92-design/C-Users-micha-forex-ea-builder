@@ -55,6 +55,17 @@ export const updateProjectSchema = z.object({
       const sanitized = sanitizeText(val.trim());
       return sanitized || null;
     }),
+  notes: z
+    .string()
+    .max(5000, "Notes must be 5000 characters or less")
+    .optional()
+    .nullable()
+    .transform((val) => {
+      if (val === undefined) return undefined;
+      if (!val) return null;
+      const sanitized = sanitizeText(val.trim());
+      return sanitized || null;
+    }),
 });
 
 // ============================================

@@ -27,6 +27,11 @@ export default async function DashboardPage() {
         _count: {
           select: { versions: true },
         },
+        versions: {
+          orderBy: { versionNo: "desc" },
+          take: 1,
+          select: { buildJson: true },
+        },
       },
     }),
     prisma.subscription.findUnique({

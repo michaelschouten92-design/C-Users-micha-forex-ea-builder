@@ -9,6 +9,7 @@ type Project = {
   id: string;
   name: string;
   description: string | null;
+  notes: string | null;
 };
 
 export function ProjectSettings({ project }: { project: Project }) {
@@ -18,6 +19,7 @@ export function ProjectSettings({ project }: { project: Project }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(project.name);
   const [description, setDescription] = useState(project.description || "");
+  const [notes, setNotes] = useState(project.notes || "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ export function ProjectSettings({ project }: { project: Project }) {
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ name, description, notes }),
       });
 
       if (!res.ok) {
@@ -148,6 +150,23 @@ export function ProjectSettings({ project }: { project: Project }) {
                   className="w-full px-3 py-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#22D3EE] transition-all duration-200"
                 />
               </div>
+              <div>
+                <label
+                  htmlFor="edit-project-notes"
+                  className="block text-xs font-medium text-[#CBD5E1] mb-1"
+                >
+                  Notes
+                </label>
+                <textarea
+                  id="edit-project-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  maxLength={5000}
+                  placeholder="Backtest results, observations..."
+                  className="w-full px-3 py-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-sm text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] transition-all duration-200"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
@@ -161,6 +180,7 @@ export function ProjectSettings({ project }: { project: Project }) {
                     setShowEdit(false);
                     setName(project.name);
                     setDescription(project.description || "");
+                    setNotes(project.notes || "");
                   }}
                   className="text-[#94A3B8] px-3 py-1.5 rounded-lg text-xs hover:text-white transition-colors duration-200"
                 >

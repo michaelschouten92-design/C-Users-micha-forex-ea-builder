@@ -641,6 +641,11 @@ export interface BuildJsonSchema {
 // DEFAULT VALUES
 // ============================================
 
+/** Generate a random magic number between 100000 and 999999 */
+export function generateMagicNumber(): number {
+  return Math.floor(Math.random() * 900000) + 100000;
+}
+
 export const DEFAULT_SETTINGS: BuildJsonSettings = {
   magicNumber: 123456,
   comment: "EA Builder Strategy",

@@ -38,7 +38,7 @@ import type {
   BuildJsonSettings,
   NodeTemplate,
 } from "@/types/builder";
-import { DEFAULT_SETTINGS } from "@/types/builder";
+import { DEFAULT_SETTINGS, generateMagicNumber } from "@/types/builder";
 
 interface StrategyCanvasProps {
   projectId: string;
@@ -60,9 +60,11 @@ export function StrategyCanvas({
   // Panel state (always visible on desktop)
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  // Strategy settings state
-  const [settings, setSettings] = useState<BuildJsonSettings>(
-    initialData?.settings ?? { ...DEFAULT_SETTINGS }
+  // Strategy settings state — new projects get a unique magic number
+  const [settings, setSettings] = useState<BuildJsonSettings>(() =>
+    initialData?.settings
+      ? initialData.settings
+      : { ...DEFAULT_SETTINGS, magicNumber: generateMagicNumber() }
   );
 
   const initialNodes = useMemo(() => {

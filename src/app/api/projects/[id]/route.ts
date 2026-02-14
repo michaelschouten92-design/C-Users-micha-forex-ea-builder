@@ -113,13 +113,14 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), { status: 404 });
     }
 
-    const { name, description } = validation.data;
+    const { name, description, notes } = validation.data;
 
     const project = await prisma.project.update({
       where: { id, userId: session.user.id },
       data: {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
+        ...(notes !== undefined && { notes }),
       },
     });
 
