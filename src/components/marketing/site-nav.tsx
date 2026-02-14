@@ -12,16 +12,16 @@ export function SiteNav() {
         </div>
         <div className="hidden md:flex items-center gap-6">
           <Link
-            href="/templates"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Templates
-          </Link>
-          <Link
             href="/product"
             className="text-sm text-[#94A3B8] hover:text-white transition-colors"
           >
             Product
+          </Link>
+          <Link
+            href="/templates"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Templates
           </Link>
           <Link
             href="/pricing"
