@@ -37,7 +37,7 @@ export function useUndoRedo(
         historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
       }
 
-      // Don't add duplicate states — lightweight check instead of full JSON.stringify
+      // Don't add duplicate states
       const lastState = historyRef.current[historyRef.current.length - 1];
       if (
         lastState &&
@@ -47,7 +47,8 @@ export function useUndoRedo(
           (n, i) =>
             n.id === nodes[i].id &&
             n.position.x === nodes[i].position.x &&
-            n.position.y === nodes[i].position.y
+            n.position.y === nodes[i].position.y &&
+            JSON.stringify(n.data) === JSON.stringify(nodes[i].data)
         )
       ) {
         return;

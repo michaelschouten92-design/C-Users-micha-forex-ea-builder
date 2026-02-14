@@ -1200,6 +1200,9 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
   code.onTick.push("      {");
   code.onTick.push("         datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);");
   code.onTick.push(
+    `         if(Bars(_Symbol, ${getTimeframe(data.exitTimeframe)}) < InpTimeExitBars + 10) continue;`
+  );
+  code.onTick.push(
     `         int barsSinceEntry = iBarShift(_Symbol, ${getTimeframe(data.exitTimeframe)}, openTime);`
   );
   code.onTick.push("         if(barsSinceEntry < 0) continue; // iBarShift failed");
