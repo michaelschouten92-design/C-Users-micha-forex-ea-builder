@@ -222,6 +222,76 @@ export function generateOnTick(
     dailyPnlCode += "   }\n";
   }
 
+  // Build total drawdown check if enabled
+  let totalDrawdownCode = "";
+  if (ctx.maxTotalDrawdownPercent > 0) {
+    totalDrawdownCode = `
+   //--- Total Drawdown Protection
+   {
+      static double gPeakEquity = 0;
+      double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+      if(equity > gPeakEquity) gPeakEquity = equity;
+      if(gPeakEquity > 0)
+      {
+         double dd = (gPeakEquity - equity) / gPeakEquity * 100.0;
+         if(dd >= ${ctx.maxTotalDrawdownPercent})
+         {
+            CloseAllPositions();
+            Print("Total drawdown limit reached: ", DoubleToString(dd, 2), "% (max ${ctx.maxTotalDrawdownPercent}%)");
+            return;
+         }
+      }
+   }
+`;
+  }
+
+  // Build cooldown after loss check if enabled
+  let cooldownCode = "";
+  if (ctx.cooldownAfterLossMinutes > 0) {
+    cooldownCode = `
+   //--- Cooldown After Loss
+   {
+      static datetime gLastLossTime = 0;
+      datetime todayStart = iTime(_Symbol, PERIOD_D1, 0);
+      HistorySelect(todayStart, TimeCurrent());
+      for(int d = HistoryDealsTotal() - 1; d >= 0; d--)
+      {
+         ulong dealTicket = HistoryDealGetTicket(d);
+         if(dealTicket > 0 && HistoryDealGetInteger(dealTicket, DEAL_MAGIC) == InpMagicNumber
+            && HistoryDealGetString(dealTicket, DEAL_SYMBOL) == _Symbol
+            && HistoryDealGetInteger(dealTicket, DEAL_ENTRY) == DEAL_ENTRY_OUT)
+         {
+            double dealProfit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT)
+                              + HistoryDealGetDouble(dealTicket, DEAL_SWAP)
+                              + HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+            if(dealProfit < 0)
+            {
+               datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+               if(dealTime > gLastLossTime) gLastLossTime = dealTime;
+            }
+            break;
+         }
+      }
+      if(gLastLossTime > 0 && TimeCurrent() - gLastLossTime < ${ctx.cooldownAfterLossMinutes} * 60)
+         return;
+   }
+`;
+  }
+
+  // Build min bars between trades check if enabled
+  let minBarsCode = "";
+  if (ctx.minBarsBetweenTrades > 0) {
+    minBarsCode = `
+   //--- Min Bars Between Trades
+   {
+      static int gLastTradeBar = 0;
+      int currentBar = iBars(_Symbol, PERIOD_CURRENT);
+      if(gLastTradeBar > 0 && currentBar - gLastTradeBar < ${ctx.minBarsBetweenTrades})
+         return;
+   }
+`;
+  }
+
   return `//+------------------------------------------------------------------+
 //| Expert tick function                                               |
 //+------------------------------------------------------------------+
@@ -245,7 +315,7 @@ void OnTick()
       return;
    }
 
-${dailyPnlCode}
+${totalDrawdownCode}${dailyPnlCode}${cooldownCode}${minBarsCode}
    //--- Count current positions
    int positionsCount = CountPositions();
 

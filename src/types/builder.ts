@@ -450,6 +450,19 @@ export interface BaseEntryStrategyFields {
   slAtrPeriod?: number;
   slAtrTimeframe?: Timeframe;
   tpRMultiple: number;
+  closeOnOpposite?: boolean;
+  multipleTP?: {
+    enabled: boolean;
+    tp1RMultiple: number;
+    tp1Percent: number;
+    tp2RMultiple: number;
+  };
+  trailingStop?: {
+    enabled: boolean;
+    method: "atr" | "fixed-pips";
+    atrMultiplier?: number;
+    fixedPips?: number;
+  };
 }
 
 // 1) EMA Crossover — trend following
@@ -499,6 +512,8 @@ export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyF
   htfEma: number;
   minRangePips: number;
   maxRangePips: number;
+  volumeConfirmation?: boolean;
+  volumeConfirmationPeriod?: number;
 }
 
 // 3) RSI Reversal — mean reversion
@@ -621,7 +636,24 @@ export interface BuildJsonSettings {
   maxTradesPerDay?: number; // 0 = unlimited
   maxDailyProfitPercent?: number; // 0 = disabled
   maxDailyLossPercent?: number; // 0 = disabled (drawdown protection)
+  cooldownAfterLossMinutes?: number;
+  minBarsBetweenTrades?: number;
+  maxTotalDrawdownPercent?: number;
 }
+
+// Prop Firm Presets
+export interface PropFirmPreset {
+  name: string;
+  dailyLossPercent: number;
+  totalDrawdownPercent: number;
+  maxOpenTrades: number;
+}
+
+export const PROP_FIRM_PRESETS: PropFirmPreset[] = [
+  { name: "FTMO", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
+  { name: "The Funded Trader", dailyLossPercent: 5, totalDrawdownPercent: 8, maxOpenTrades: 3 },
+  { name: "MyFundedFX", dailyLossPercent: 5, totalDrawdownPercent: 12, maxOpenTrades: 5 },
+];
 
 export interface BuildJsonMetadata {
   createdAt: string;

@@ -74,6 +74,7 @@ interface VersionControlsProps {
   canExportMQL5?: boolean;
   userTier?: string;
   magicNumber?: number;
+  strategySummaryLines?: string[];
 }
 
 export function VersionControls({
@@ -87,6 +88,7 @@ export function VersionControls({
   canExportMQL5 = false,
   userTier,
   magicNumber,
+  strategySummaryLines,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
@@ -314,6 +316,7 @@ export function VersionControls({
           canExportMQL5={canExportMQL5}
           userTier={userTier}
           magicNumber={magicNumber}
+          strategySummaryLines={strategySummaryLines}
         />
       </div>
 

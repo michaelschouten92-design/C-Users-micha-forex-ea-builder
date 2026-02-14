@@ -11,6 +11,7 @@ interface ExportButtonProps {
   canExportMQL5?: boolean;
   userTier?: string;
   magicNumber?: number;
+  strategySummaryLines?: string[];
 }
 
 interface ExportResult {
@@ -39,6 +40,7 @@ export function ExportButton({
   canExportMQL5 = false,
   userTier,
   magicNumber,
+  strategySummaryLines,
 }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [exportStep, setExportStep] = useState(0);
@@ -278,6 +280,51 @@ export function ExportButton({
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
               {showConfig ? (
                 <div className="space-y-6 py-4">
+                  {/* Strategy Overview */}
+                  {strategySummaryLines && strategySummaryLines.length > 0 && (
+                    <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4 text-[#A78BFA]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                          />
+                        </svg>
+                        Strategy Overview
+                      </h4>
+                      <ul className="space-y-1">
+                        {strategySummaryLines.map((line, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                          >
+                            <svg
+                              className="w-3 h-3 text-[#22D3EE] flex-shrink-0 mt-0.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            {line}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor="magic-number"
@@ -477,22 +524,14 @@ export function ExportButton({
                           1
                         </span>
                         <span>
-                          Open MetaTrader 5 and go to{" "}
-                          <strong className="text-white">File &gt; Open Data Folder</strong>
+                          Place the <strong className="text-white">.mq5</strong> file in{" "}
+                          <strong className="text-white">MQL5/Experts</strong> folder (File &gt;
+                          Open Data Folder in MT5)
                         </span>
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                           2
-                        </span>
-                        <span>
-                          Place the <strong className="text-white">.mq5</strong> file in{" "}
-                          <strong className="text-white">MQL5/Experts</strong>
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          3
                         </span>
                         <span>
                           Open in MetaEditor and press <strong className="text-white">F7</strong> to
@@ -501,11 +540,23 @@ export function ExportButton({
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          3
+                        </span>
+                        <span>
+                          Open <strong className="text-white">Strategy Tester</strong> (Ctrl+R) and
+                          select your EA
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                           4
                         </span>
                         <span>
-                          Drag the EA onto a chart to start{" "}
-                          <strong className="text-white">backtesting</strong> or trading
+                          Use{" "}
+                          <strong className="text-white">
+                            &quot;Every tick based on real ticks&quot;
+                          </strong>{" "}
+                          modeling for accurate results
                         </span>
                       </li>
                       <li className="flex gap-2">
@@ -513,13 +564,15 @@ export function ExportButton({
                           5
                         </span>
                         <span>
-                          To backtest, open <strong className="text-white">Strategy Tester</strong>{" "}
-                          (Ctrl+R), select your EA, set the date range and click{" "}
-                          <strong className="text-white">Start</strong>
+                          Backtest <strong className="text-white">minimum 2 years</strong> of data
+                          to validate the strategy
                         </span>
                       </li>
                     </ol>
                   </div>
+
+                  {/* Backtest Checklist */}
+                  <BacktestChecklist />
 
                   {/* Upsell for FREE users */}
                   {userTier === "FREE" && (
@@ -678,5 +731,66 @@ export function ExportButton({
         </div>
       )}
     </>
+  );
+}
+
+function BacktestChecklist() {
+  const [expanded, setExpanded] = useState(false);
+
+  const items = [
+    'Use "Every tick based on real ticks" for the most accurate simulation',
+    "Backtest at least 2 years of historical data",
+    "Look for: profit factor > 1.5, max drawdown < 20%, consistent equity curve",
+    "Check that the number of trades is statistically significant (50+)",
+    "Test on multiple currency pairs if the strategy is not pair-specific",
+    "Forward test on a demo account for 1–3 months before going live",
+  ];
+
+  return (
+    <div className="border border-[rgba(79,70,229,0.2)] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
+      >
+        <span className="flex items-center gap-2">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Backtest checklist
+        </span>
+        <svg
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="px-4 pb-3 space-y-2">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs text-[#CBD5E1]">
+              <span className="text-[#64748B] flex-shrink-0 mt-px">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </span>
+              {item}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

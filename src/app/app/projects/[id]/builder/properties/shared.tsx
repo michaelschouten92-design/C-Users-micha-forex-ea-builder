@@ -163,6 +163,19 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
     slAtrPeriod?: number;
     slAtrTimeframe?: Timeframe;
     tpRMultiple: number;
+    closeOnOpposite?: boolean;
+    multipleTP?: {
+      enabled: boolean;
+      tp1RMultiple: number;
+      tp1Percent: number;
+      tp2RMultiple: number;
+    };
+    trailingStop?: {
+      enabled: boolean;
+      method: "atr" | "fixed-pips";
+      atrMultiplier?: number;
+      fixedPips?: number;
+    };
   };
   onChange: (updates: Partial<T>) => void;
   slOptions?: { value: EntrySlMethod; label: string }[];
@@ -256,18 +269,139 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         </>
       )}
 
-      <NumberField
-        label="Take Profit (R)"
-        value={data.tpRMultiple}
-        min={0.1}
-        max={10}
-        step={0.1}
-        onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
+      {/* Take Profit — single or multiple */}
+      <ToggleField
+        label="Multiple take profits"
+        checked={data.multipleTP?.enabled ?? false}
+        onChange={(v) =>
+          onChange({
+            multipleTP: {
+              enabled: v,
+              tp1RMultiple: data.multipleTP?.tp1RMultiple ?? 1,
+              tp1Percent: data.multipleTP?.tp1Percent ?? 50,
+              tp2RMultiple: data.multipleTP?.tp2RMultiple ?? 2,
+            },
+          } as Partial<T>)
+        }
+      >
+        <NumberField
+          label="TP1 R-multiple"
+          value={data.multipleTP?.tp1RMultiple ?? 1}
+          min={0.5}
+          max={20}
+          step={0.1}
+          onChange={(v) =>
+            onChange({
+              multipleTP: { ...data.multipleTP!, tp1RMultiple: v },
+            } as Partial<T>)
+          }
+        />
+        <NumberField
+          label="TP1 Close %"
+          value={data.multipleTP?.tp1Percent ?? 50}
+          min={10}
+          max={90}
+          step={5}
+          onChange={(v) =>
+            onChange({
+              multipleTP: { ...data.multipleTP!, tp1Percent: v },
+            } as Partial<T>)
+          }
+        />
+        <NumberField
+          label="TP2 R-multiple"
+          value={data.multipleTP?.tp2RMultiple ?? 2}
+          min={0.5}
+          max={20}
+          step={0.1}
+          onChange={(v) =>
+            onChange({
+              multipleTP: { ...data.multipleTP!, tp2RMultiple: v },
+            } as Partial<T>)
+          }
+        />
+      </ToggleField>
+      {!data.multipleTP?.enabled && (
+        <>
+          <NumberField
+            label="Take Profit (R)"
+            value={data.tpRMultiple}
+            min={0.1}
+            max={10}
+            step={0.1}
+            onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
+          />
+          <p className="text-[10px] text-[#64748B] -mt-0.5">
+            Multiple of stop loss distance (e.g. 2R = TP is 2x the SL)
+          </p>
+          <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
+        </>
+      )}
+
+      {/* Close on opposite signal */}
+      <ToggleField
+        label="Close on opposite signal"
+        checked={data.closeOnOpposite ?? false}
+        onChange={(v) => onChange({ closeOnOpposite: v } as Partial<T>)}
       />
-      <p className="text-[10px] text-[#64748B] -mt-0.5">
-        Multiple of stop loss distance (e.g. 2R = TP is 2x the SL)
-      </p>
-      <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
+
+      {/* Trailing stop */}
+      <ToggleField
+        label="Trailing stop"
+        checked={data.trailingStop?.enabled ?? false}
+        onChange={(v) =>
+          onChange({
+            trailingStop: {
+              enabled: v,
+              method: data.trailingStop?.method ?? "atr",
+              atrMultiplier: data.trailingStop?.atrMultiplier ?? 2.0,
+              fixedPips: data.trailingStop?.fixedPips ?? 30,
+            },
+          } as Partial<T>)
+        }
+      >
+        <SelectField
+          label="Trailing method"
+          value={data.trailingStop?.method ?? "atr"}
+          options={[
+            { value: "atr", label: "ATR" },
+            { value: "fixed-pips", label: "Fixed pips" },
+          ]}
+          onChange={(v) =>
+            onChange({
+              trailingStop: { ...data.trailingStop!, method: v as "atr" | "fixed-pips" },
+            } as Partial<T>)
+          }
+        />
+        {data.trailingStop?.method === "atr" && (
+          <NumberField
+            label="ATR Multiplier"
+            value={data.trailingStop?.atrMultiplier ?? 2.0}
+            min={0.1}
+            max={20}
+            step={0.1}
+            onChange={(v) =>
+              onChange({
+                trailingStop: { ...data.trailingStop!, atrMultiplier: v },
+              } as Partial<T>)
+            }
+          />
+        )}
+        {data.trailingStop?.method === "fixed-pips" && (
+          <NumberField
+            label="Trail distance (pips)"
+            value={data.trailingStop?.fixedPips ?? 30}
+            min={1}
+            max={1000}
+            step={1}
+            onChange={(v) =>
+              onChange({
+                trailingStop: { ...data.trailingStop!, fixedPips: v },
+              } as Partial<T>)
+            }
+          />
+        )}
+      </ToggleField>
     </>
   );
 }

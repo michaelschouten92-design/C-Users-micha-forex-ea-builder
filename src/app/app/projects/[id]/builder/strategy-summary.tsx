@@ -8,7 +8,7 @@ interface StrategySummaryProps {
   edges: BuilderEdge[];
 }
 
-function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
+export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
   const lines: string[] = [];
 
   // Timing
@@ -105,8 +105,55 @@ function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     } else if (slMethod === "RANGE_OPPOSITE") {
       lines.push("Stop loss at range opposite");
     }
-    if ("tpRMultiple" in d) {
+    // Take profit — single or multiple
+    if (
+      "multipleTP" in d &&
+      d.multipleTP &&
+      typeof d.multipleTP === "object" &&
+      "enabled" in d.multipleTP &&
+      d.multipleTP.enabled
+    ) {
+      const mtp = d.multipleTP as unknown as {
+        tp1Percent: number;
+        tp1RMultiple: number;
+        tp2RMultiple: number;
+      };
+      lines.push(
+        `Takes partial profit: ${mtp.tp1Percent}% at ${mtp.tp1RMultiple}:1 R:R, remainder at ${mtp.tp2RMultiple}:1 R:R`
+      );
+    } else if ("tpRMultiple" in d) {
       lines.push(`Take profit at ${d.tpRMultiple}:1 reward-to-risk`);
+    }
+
+    // Close on opposite signal
+    if ("closeOnOpposite" in d && d.closeOnOpposite) {
+      lines.push("Closes opposite positions when a new signal fires");
+    }
+
+    // Trailing stop from entry strategy
+    if (
+      "trailingStop" in d &&
+      d.trailingStop &&
+      typeof d.trailingStop === "object" &&
+      "enabled" in d.trailingStop &&
+      d.trailingStop.enabled
+    ) {
+      const ts = d.trailingStop as unknown as {
+        method: string;
+        atrMultiplier?: number;
+        fixedPips?: number;
+      };
+      if (ts.method === "atr") {
+        lines.push(`Trailing stop: ATR × ${ts.atrMultiplier ?? 2.0}`);
+      } else {
+        lines.push(`Trailing stop: ${ts.fixedPips ?? 30} pips`);
+      }
+    }
+
+    // Volume confirmation (range breakout)
+    if ("volumeConfirmation" in d && d.volumeConfirmation) {
+      const period = "volumeConfirmationPeriod" in d ? d.volumeConfirmationPeriod : 20;
+      lines.push(`Requires above-average tick volume (${period}-bar) for breakout confirmation`);
     }
   }
 

@@ -855,6 +855,14 @@ export function generateEntryLogic(
       code.onTick.push("   DeletePendingOrders();");
     }
 
+    // Check if close-on-opposite is enabled (from virtual node data)
+    const closeOnOppositeBuy = buyNode
+      ? (buyNode.data as Record<string, unknown>)._closeOnOpposite === true
+      : false;
+    const closeOnOppositeSell = sellNode
+      ? (sellNode.data as Record<string, unknown>)._closeOnOpposite === true
+      : false;
+
     // Only generate buy logic if there's a Place Buy node
     if (hasBuyNode) {
       const buyCheck = noHedge
@@ -862,26 +870,31 @@ export function generateEntryLogic(
         : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
       code.onTick.push(buyCheck);
       code.onTick.push("   {");
+      if (closeOnOppositeBuy) {
+        code.onTick.push("      CloseSellPositions(); // Close opposite on buy signal");
+      }
 
+      const minBarsTrack =
+        ctx.minBarsBetweenTrades > 0 ? " gLastTradeBar = iBars(_Symbol, PERIOD_CURRENT);" : "";
       if (buyOrderType === "MARKET") {
         if (hasDaily) {
           code.onTick.push(
-            "      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++; }"
+            `      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime; tradesToday++;${minBarsTrack} }`
           );
         } else {
           code.onTick.push(
-            "      if(OpenBuy(buyLotSize, slPips, tpPips)) lastEntryBar = currentBarTime;"
+            `      if(OpenBuy(buyLotSize, slPips, tpPips)) { lastEntryBar = currentBarTime;${minBarsTrack} }`
           );
         }
       } else {
         const fn = buyOrderType === "STOP" ? "PlaceBuyStop" : "PlaceBuyLimit";
         if (hasDaily) {
           code.onTick.push(
-            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++;${minBarsTrack} }`
           );
         } else {
           code.onTick.push(
-            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) lastEntryBar = currentBarTime;`
+            `      if(${fn}(buyLotSize, slPips, tpPips, InpBuyPendingOffset)) { lastEntryBar = currentBarTime;${minBarsTrack} }`
           );
         }
       }
@@ -895,31 +908,36 @@ export function generateEntryLogic(
         : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
       code.onTick.push(sellCheck);
       code.onTick.push("   {");
+      if (closeOnOppositeSell) {
+        code.onTick.push("      CloseBuyPositions(); // Close opposite on sell signal");
+      }
       // Use direction-aware SL for sell if available (e.g., BB-based SL)
       const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
       const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
       // Only override TP if it's risk-reward based; otherwise use the same tpPips
       const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
 
+      const minBarsTrackSell =
+        ctx.minBarsBetweenTrades > 0 ? " gLastTradeBar = iBars(_Symbol, PERIOD_CURRENT);" : "";
       if (sellOrderType === "MARKET") {
         if (hasDaily) {
           code.onTick.push(
-            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++; }`
+            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime; tradesToday++;${minBarsTrackSell} }`
           );
         } else {
           code.onTick.push(
-            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) lastEntryBar = currentBarTime;`
+            `      if(OpenSell(sellLotSize, ${sellSL}, ${sellTPVar})) { lastEntryBar = currentBarTime;${minBarsTrackSell} }`
           );
         }
       } else {
         const fn = sellOrderType === "STOP" ? "PlaceSellStop" : "PlaceSellLimit";
         if (hasDaily) {
           code.onTick.push(
-            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++; }`
+            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime; tradesToday++;${minBarsTrackSell} }`
           );
         } else {
           code.onTick.push(
-            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) lastEntryBar = currentBarTime;`
+            `      if(${fn}(sellLotSize, ${sellSL}, ${sellTPVar}, InpSellPendingOffset)) { lastEntryBar = currentBarTime;${minBarsTrackSell} }`
           );
         }
       }
@@ -941,9 +959,38 @@ export function generateEntryLogic(
     const comment = sanitizeMQL5String(ctx.comment);
     const hasRR = code.inputs.some((i) => i.name === "InpRiskReward");
 
+    // Volume confirmation filter for range breakout
+    const rbPAData = priceActionNodes[rangeBreakoutPAIndex].data as Record<string, unknown>;
+    const hasVolumeConfirm = rbPAData._volumeConfirmation === true;
+    const volPeriod = (rbPAData._volumeConfirmationPeriod as number) ?? 20;
+    if (hasVolumeConfirm) {
+      code.inputs.push({
+        name: "InpVolConfirmPeriod",
+        type: "int",
+        value: volPeriod,
+        comment: "Volume Confirmation Period",
+        isOptimizable: true,
+        group: "Range Breakout",
+      });
+    }
+
     code.onTick.push("");
     code.onTick.push("//--- Range Breakout Pending Orders");
-    code.onTick.push(`if(${pv}NewRange)`);
+    if (hasVolumeConfirm) {
+      code.onTick.push(`bool volumeOK = true;`);
+      code.onTick.push(`{`);
+      code.onTick.push(`   long vol = iVolume(_Symbol, PERIOD_CURRENT, 0);`);
+      code.onTick.push(`   double avgVol = 0;`);
+      code.onTick.push(
+        `   for(int v=1; v<=InpVolConfirmPeriod; v++) avgVol += (double)iVolume(_Symbol, PERIOD_CURRENT, v);`
+      );
+      code.onTick.push(`   avgVol /= InpVolConfirmPeriod;`);
+      code.onTick.push(`   volumeOK = vol > avgVol;`);
+      code.onTick.push(`}`);
+      code.onTick.push(`if(${pv}NewRange && volumeOK)`);
+    } else {
+      code.onTick.push(`if(${pv}NewRange)`);
+    }
     code.onTick.push("{");
     // Delete old pending orders
     code.onTick.push("   // Delete old pending orders from this EA");

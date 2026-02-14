@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { BuildJsonSettings } from "@/types/builder";
+import { PROP_FIRM_PRESETS } from "@/types/builder";
 
 interface StrategySettingsPanelProps {
   settings: BuildJsonSettings;
@@ -13,6 +14,17 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
 
   const update = (partial: Partial<BuildJsonSettings>) => {
     onChange({ ...settings, ...partial });
+  };
+
+  const applyPreset = (presetName: string) => {
+    const preset = PROP_FIRM_PRESETS.find((p) => p.name === presetName);
+    if (preset) {
+      update({
+        maxDailyLossPercent: preset.dailyLossPercent,
+        maxTotalDrawdownPercent: preset.totalDrawdownPercent,
+        maxOpenTrades: preset.maxOpenTrades,
+      });
+    }
   };
 
   return (
@@ -41,6 +53,34 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
 
       {isExpanded && (
         <div className="mt-2 pl-1 space-y-3 px-3 pb-2">
+          {/* Prop Firm Preset */}
+          <div>
+            <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
+              Load prop firm preset
+            </label>
+            <select
+              onChange={(e) => {
+                if (e.target.value) applyPreset(e.target.value);
+                e.target.value = "";
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Select preset...
+              </option>
+              {PROP_FIRM_PRESETS.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name} (DD {p.totalDrawdownPercent}%, Daily {p.dailyLossPercent}%)
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-[#64748B] mt-1">
+              Loads risk settings — you can fine-tune after
+            </p>
+          </div>
+
           {/* Max Open Trades */}
           <SettingsNumberField
             label="Max Open Trades"
@@ -115,6 +155,49 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
             <p className="text-[10px] text-[#64748B] mt-1">
               0 = disabled. Closes all trades when hit
             </p>
+          </div>
+
+          {/* Max Total Drawdown */}
+          <div>
+            <SettingsNumberField
+              label="Max Total Drawdown (%)"
+              value={settings.maxTotalDrawdownPercent ?? 0}
+              min={0}
+              max={50}
+              step={0.5}
+              onChange={(v) => update({ maxTotalDrawdownPercent: v || undefined })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">
+              0 = disabled. Stops trading if equity drops this much from peak
+            </p>
+          </div>
+
+          {/* Cooldown After Loss */}
+          <div>
+            <SettingsNumberField
+              label="Cooldown After Loss (min)"
+              value={settings.cooldownAfterLossMinutes ?? 0}
+              min={0}
+              max={1440}
+              step={1}
+              onChange={(v) => update({ cooldownAfterLossMinutes: v || undefined })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">
+              0 = disabled. Pauses trading after a losing trade
+            </p>
+          </div>
+
+          {/* Min Bars Between Trades */}
+          <div>
+            <SettingsNumberField
+              label="Min Bars Between Trades"
+              value={settings.minBarsBetweenTrades ?? 0}
+              min={0}
+              max={500}
+              step={1}
+              onChange={(v) => update({ minBarsBetweenTrades: v || undefined })}
+            />
+            <p className="text-[10px] text-[#64748B] mt-1">0 = disabled. Prevents overtrading</p>
           </div>
         </div>
       )}

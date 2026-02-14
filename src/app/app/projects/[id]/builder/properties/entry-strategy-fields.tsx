@@ -313,6 +313,19 @@ export function RangeBreakoutEntryFields({
           />
         </ToggleField>
         <ToggleField
+          label="Volume confirmation"
+          checked={data.volumeConfirmation ?? false}
+          onChange={(v) => onChange({ volumeConfirmation: v })}
+        >
+          <NumberField
+            label="Volume lookback period"
+            value={data.volumeConfirmationPeriod ?? 20}
+            min={5}
+            max={200}
+            onChange={(v) => onChange({ volumeConfirmationPeriod: v })}
+          />
+        </ToggleField>
+        <ToggleField
           label="HTF trend filter"
           checked={data.htfTrendFilter}
           onChange={(v) => onChange({ htfTrendFilter: v })}

@@ -240,6 +240,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         _closeAtHour: rb.closeAtHour ?? 17,
         _closeAtMinute: rb.closeAtMinute ?? 0,
         _useServerTime: rb.useServerTime ?? true,
+        _volumeConfirmation: rb.volumeConfirmation ?? false,
+        _volumeConfirmationPeriod: rb.volumeConfirmationPeriod ?? 20,
         optimizableFields: mapOpt(
           ["rangePeriod", "lookbackCandles"],
           ["bufferPips", "bufferPips"],
@@ -437,6 +439,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         category: "entry",
         tradingType: "place-buy",
         ...sizingData,
+        _closeOnOpposite: d.closeOnOpposite ?? false,
       })
     );
   }
@@ -447,6 +450,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         category: "entry",
         tradingType: "place-sell",
         ...sizingData,
+        _closeOnOpposite: d.closeOnOpposite ?? false,
       })
     );
   }
@@ -481,20 +485,70 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     })
   );
 
-  // Create TP node (always R-multiple)
-  virtualNodes.push(
-    vNode("tp", "take-profit", {
-      label: "Take Profit",
-      category: "riskmanagement",
-      tradingType: "take-profit",
-      method: "RISK_REWARD",
-      fixedPips: 100,
-      riskRewardRatio: d.tpRMultiple,
-      atrMultiplier: 3,
-      atrPeriod: 14,
-      optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
-    })
-  );
+  // Create TP node(s) — single TP or multiple TP levels
+  const mtp = d.multipleTP;
+  if (mtp?.enabled) {
+    // TP1: partial close at tp1RMultiple × SL distance, closing tp1Percent% of position
+    virtualNodes.push(
+      vNode("partial-tp1", "partial-close", {
+        label: "TP1 Partial Close",
+        category: "trademanagement",
+        managementType: "partial-close",
+        closePercent: mtp.tp1Percent,
+        triggerMethod: "PIPS",
+        triggerPips: 0, // Will be overridden by _rMultipleTrigger
+        triggerPercent: 1,
+        moveSLToBreakeven: true,
+        _rMultipleTrigger: mtp.tp1RMultiple,
+      })
+    );
+    // TP2: standard TP at tp2RMultiple for the remainder
+    virtualNodes.push(
+      vNode("tp", "take-profit", {
+        label: "Take Profit (TP2)",
+        category: "riskmanagement",
+        tradingType: "take-profit",
+        method: "RISK_REWARD",
+        fixedPips: 100,
+        riskRewardRatio: mtp.tp2RMultiple,
+        atrMultiplier: 3,
+        atrPeriod: 14,
+        optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
+      })
+    );
+  } else {
+    virtualNodes.push(
+      vNode("tp", "take-profit", {
+        label: "Take Profit",
+        category: "riskmanagement",
+        tradingType: "take-profit",
+        method: "RISK_REWARD",
+        fixedPips: 100,
+        riskRewardRatio: d.tpRMultiple,
+        atrMultiplier: 3,
+        atrPeriod: 14,
+        optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
+      })
+    );
+  }
+
+  // Create trailing stop node if enabled
+  const ts = d.trailingStop;
+  if (ts?.enabled) {
+    virtualNodes.push(
+      vNode("trailing", "trailing-stop", {
+        label: "Trailing Stop",
+        category: "trademanagement",
+        managementType: "trailing-stop",
+        method: ts.method === "atr" ? "ATR_BASED" : "FIXED_PIPS",
+        trailPips: ts.fixedPips ?? 30,
+        trailAtrMultiplier: ts.atrMultiplier ?? 2.0,
+        trailAtrPeriod: 14,
+        trailPercent: 50,
+        startAfterPips: 0,
+      })
+    );
+  }
 
   // Create edges: indicators → buy/sell → sl/tp
   const indicatorIds = virtualNodes
@@ -523,12 +577,40 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
       { id: `${baseId}__e-buy-sl`, source: `${baseId}__buy`, target: `${baseId}__sl` },
       { id: `${baseId}__e-buy-tp`, source: `${baseId}__buy`, target: `${baseId}__tp` }
     );
+    if (mtp?.enabled) {
+      virtualEdges.push({
+        id: `${baseId}__e-buy-ptp1`,
+        source: `${baseId}__buy`,
+        target: `${baseId}__partial-tp1`,
+      });
+    }
+    if (ts?.enabled) {
+      virtualEdges.push({
+        id: `${baseId}__e-buy-trail`,
+        source: `${baseId}__buy`,
+        target: `${baseId}__trailing`,
+      });
+    }
   }
   if (direction === "SELL" || direction === "BOTH") {
     virtualEdges.push(
       { id: `${baseId}__e-sell-sl`, source: `${baseId}__sell`, target: `${baseId}__sl` },
       { id: `${baseId}__e-sell-tp`, source: `${baseId}__sell`, target: `${baseId}__tp` }
     );
+    if (mtp?.enabled) {
+      virtualEdges.push({
+        id: `${baseId}__e-sell-ptp1`,
+        source: `${baseId}__sell`,
+        target: `${baseId}__partial-tp1`,
+      });
+    }
+    if (ts?.enabled) {
+      virtualEdges.push({
+        id: `${baseId}__e-sell-trail`,
+        source: `${baseId}__sell`,
+        target: `${baseId}__trailing`,
+      });
+    }
   }
 
   return { nodes: virtualNodes, edges: virtualEdges };
@@ -620,6 +702,9 @@ export function generateMQL5Code(
     maxTradesPerDay: buildJson.settings?.maxTradesPerDay ?? 0,
     maxDailyProfitPercent: buildJson.settings?.maxDailyProfitPercent ?? 0,
     maxDailyLossPercent: buildJson.settings?.maxDailyLossPercent ?? 0,
+    cooldownAfterLossMinutes: buildJson.settings?.cooldownAfterLossMinutes ?? 0,
+    minBarsBetweenTrades: buildJson.settings?.minBarsBetweenTrades ?? 0,
+    maxTotalDrawdownPercent: buildJson.settings?.maxTotalDrawdownPercent ?? 0,
   };
 
   const descValue = `"${sanitizeMQL5String(projectName)}"`;

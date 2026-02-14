@@ -373,8 +373,23 @@ function generatePartialCloseCode(
       group
     )
   );
-  const triggerMethod = ((data as Record<string, unknown>).triggerMethod as string) ?? "PIPS";
-  if (triggerMethod === "PERCENT") {
+  const rawData = data as Record<string, unknown>;
+  const rMultipleTrigger = rawData._rMultipleTrigger as number | undefined;
+  const triggerMethod = (rawData.triggerMethod as string) ?? "PIPS";
+  if (rMultipleTrigger && rMultipleTrigger > 0) {
+    // R-multiple trigger: use SL distance × R-multiple as pips trigger
+    code.inputs.push(
+      createInput(
+        node,
+        "_rMultipleTrigger",
+        "InpTP1RMultiple",
+        "double",
+        rMultipleTrigger,
+        "TP1 R-Multiple",
+        group
+      )
+    );
+  } else if (triggerMethod === "PERCENT") {
     code.inputs.push(
       createInput(
         node,
@@ -459,7 +474,20 @@ void CleanPartialClosedTickets()
   code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
   code.onTick.push("         bool profitReached = false;");
-  if (triggerMethod === "PERCENT") {
+  if (rMultipleTrigger && rMultipleTrigger > 0) {
+    // R-multiple trigger: compare profit in points to SL distance × R-multiple
+    code.onTick.push("         double openSL = PositionGetDouble(POSITION_SL);");
+    code.onTick.push("         double slDistPoints = MathAbs(openPrice - openSL) / point;");
+    code.onTick.push("         double triggerPoints = slDistPoints * InpTP1RMultiple;");
+    code.onTick.push(
+      "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point)"
+    );
+    code.onTick.push("            profitReached = true;");
+    code.onTick.push(
+      "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)"
+    );
+    code.onTick.push("            profitReached = true;");
+  } else if (triggerMethod === "PERCENT") {
     // Profit-based: trigger when position profit as % of balance reaches threshold
     code.onTick.push("         double posProfit = PositionGetDouble(POSITION_PROFIT);");
     code.onTick.push("         double balance = AccountInfoDouble(ACCOUNT_BALANCE);");

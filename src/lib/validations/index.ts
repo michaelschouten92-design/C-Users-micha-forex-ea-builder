@@ -490,6 +490,32 @@ const baseEntryStrategyFieldsSchema = z.object({
   slAtrPeriod: z.number().int().min(1).max(500).optional(),
   slAtrTimeframe: timeframeSchema.optional(),
   tpRMultiple: z.number().min(0.1).max(20),
+  closeOnOpposite: z.boolean().optional(),
+  multipleTP: z
+    .object({
+      enabled: z.boolean(),
+      tp1RMultiple: z.number().min(0.5).max(20),
+      tp1Percent: z.number().int().min(10).max(90),
+      tp2RMultiple: z.number().min(0.5).max(20),
+    })
+    .superRefine((data, ctx) => {
+      if (data.enabled && data.tp2RMultiple <= data.tp1RMultiple) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "TP2 R-multiple must be greater than TP1 R-multiple",
+          path: ["tp2RMultiple"],
+        });
+      }
+    })
+    .optional(),
+  trailingStop: z
+    .object({
+      enabled: z.boolean(),
+      method: z.enum(["atr", "fixed-pips"]),
+      atrMultiplier: z.number().min(0.1).max(20).optional(),
+      fixedPips: z.number().min(1).max(10000).optional(),
+    })
+    .optional(),
 });
 
 const emaCrossoverEntryDataSchema = baseNodeDataSchema
@@ -536,6 +562,8 @@ const rangeBreakoutEntryDataSchema = baseNodeDataSchema
     htfEma: z.number().int().min(1).max(1000),
     minRangePips: z.number().min(0).max(10000),
     maxRangePips: z.number().min(0).max(10000),
+    volumeConfirmation: z.boolean().optional(),
+    volumeConfirmationPeriod: z.number().int().min(5).max(200).optional(),
   })
   .strip();
 
@@ -722,6 +750,9 @@ const buildSettingsSchema = z.object({
   maxTradesPerDay: z.number().int().min(0).max(100).optional(),
   maxDailyProfitPercent: z.number().min(0).max(100).optional(),
   maxDailyLossPercent: z.number().min(0).max(100).optional(),
+  cooldownAfterLossMinutes: z.number().int().min(1).max(1440).optional(),
+  minBarsBetweenTrades: z.number().int().min(1).max(500).optional(),
+  maxTotalDrawdownPercent: z.number().min(1).max(50).optional(),
 });
 
 // Build metadata schema

@@ -17,6 +17,9 @@ export interface GeneratorContext {
   maxTradesPerDay: number;
   maxDailyProfitPercent: number;
   maxDailyLossPercent: number;
+  cooldownAfterLossMinutes: number;
+  minBarsBetweenTrades: number;
+  maxTotalDrawdownPercent: number;
 }
 
 export interface IndicatorVariable {

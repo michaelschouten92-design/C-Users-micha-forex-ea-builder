@@ -19,7 +19,7 @@ import { PropertiesPanel } from "./properties";
 import { VersionControls } from "./version-controls";
 import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
-import { StrategySummary } from "./strategy-summary";
+import { StrategySummary, buildNaturalLanguageSummary } from "./strategy-summary";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
 import { WelcomeModal } from "./welcome-modal";
@@ -690,6 +690,7 @@ export function StrategyCanvas({
         canExportMQL5={canExportMQL5}
         userTier={userTier}
         magicNumber={settings.magicNumber}
+        strategySummaryLines={buildNaturalLanguageSummary(nodes as BuilderNode[])}
       />
     </div>
   );
