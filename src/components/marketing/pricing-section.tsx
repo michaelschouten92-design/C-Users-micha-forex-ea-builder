@@ -253,18 +253,18 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Everything in Pro, plus advanced tools
+            Everything in Pro, plus personal support
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            For serious traders who want prop firm presets, early access to new features, and direct
-            developer support.
+            For serious traders who want priority feature requests, personal strategy reviews, and
+            direct developer support.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Everything in Pro",
-              "Early access to new features",
-              "Prop firm configuration presets",
+              "Priority feature requests",
+              "1-on-1 strategy review session",
               "Direct developer support",
               "Weekly Elite members call",
             ].map((feature, i) => (
@@ -277,8 +277,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Who it&apos;s for:</strong> Professional and prop firm traders who need prop
-              firm presets and direct developer access.
+              <strong>Who it&apos;s for:</strong> Serious traders who want personal strategy
+              feedback and direct developer access.
             </p>
           </div>
 

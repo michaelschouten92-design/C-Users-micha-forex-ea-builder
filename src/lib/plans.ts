@@ -111,8 +111,8 @@ export const PLANS = {
     tier: "ELITE" as const,
     features: [
       "Everything in Pro",
-      "Early access to new features",
-      "Prop firm configuration presets",
+      "Priority feature requests",
+      "1-on-1 strategy review session",
       "Direct developer support",
       "Weekly Elite members call",
     ],

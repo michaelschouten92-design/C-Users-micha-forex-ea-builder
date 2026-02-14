@@ -64,7 +64,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds early access to new features, prop firm configuration presets, and direct developer support.",
+      a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
     },
   ];
 
@@ -117,8 +117,8 @@ export default function PricingPage() {
                     ["Clean MQL5 source code", true, true, true],
                     ["Private Discord community", false, true, true],
                     ["Priority support", false, true, true],
-                    ["Early feature access", false, false, true],
-                    ["Prop firm presets", false, false, true],
+                    ["Priority feature requests", false, false, true],
+                    ["1-on-1 strategy review", false, false, true],
                     ["Direct developer support", false, false, true],
                     ["Weekly Elite members call", false, false, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
