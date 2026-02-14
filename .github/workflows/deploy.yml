@@ -113,7 +113,7 @@ jobs:
       - name: Run smoke tests
         run: npx playwright test e2e/public-pages.public.spec.ts
         env:
-          PLAYWRIGHT_BASE_URL: ${{ secrets.PRODUCTION_URL || 'https://your-app.vercel.app' }}
+          PLAYWRIGHT_BASE_URL: ${{ secrets.PRODUCTION_URL || 'https://algo-studio.com' }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

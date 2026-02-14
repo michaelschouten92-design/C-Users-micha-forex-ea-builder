@@ -5,16 +5,14 @@ test.describe("Public Pages", () => {
     await page.goto("/");
 
     // Check main heading
-    await expect(
-      page.getByRole("heading", { name: /Build Trading Bots/i })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /live MT5 bots in minutes/i })).toBeVisible();
 
     // Check CTA buttons (use first() for duplicates)
-    await expect(page.getByRole("link", { name: /Start Building Free/i }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /View Pricing/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Build Your First Bot/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Pricing/i }).first()).toBeVisible();
 
     // Check features section exists
-    await expect(page.getByText(/Visual Strategy Builder/i).first()).toBeVisible();
+    await expect(page.getByText(/No-code visual interface/i).first()).toBeVisible();
   });
 
   test("pricing page loads correctly", async ({ page }) => {
@@ -22,13 +20,13 @@ test.describe("Public Pages", () => {
 
     // Check heading
     await expect(
-      page.getByRole("heading", { name: /Simple, transparent pricing/i })
+      page.getByRole("heading", { name: /Invest in your trading infrastructure/i })
     ).toBeVisible();
 
     // Check all three plan headings are visible
     await expect(page.getByRole("heading", { name: "Free" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Starter" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Elite" })).toBeVisible();
 
     // Check interval toggle
     await expect(page.getByRole("button", { name: /Monthly/i })).toBeVisible();
@@ -51,13 +49,16 @@ test.describe("Public Pages", () => {
   test("navigation from landing to pricing works", async ({ page }) => {
     await page.goto("/");
 
-    // Click pricing link (use first() to avoid multiple matches)
-    await page.getByRole("link", { name: /View Pricing/i }).first().click();
+    // Click pricing link in nav
+    await page
+      .getByRole("navigation")
+      .getByRole("link", { name: /Pricing/i })
+      .click();
 
     // Should be on pricing page
     await expect(page).toHaveURL("/pricing");
     await expect(
-      page.getByRole("heading", { name: /Simple, transparent pricing/i })
+      page.getByRole("heading", { name: /Invest in your trading infrastructure/i })
     ).toBeVisible();
   });
 
@@ -65,7 +66,10 @@ test.describe("Public Pages", () => {
     await page.goto("/");
 
     // Click login/sign in link in nav
-    await page.getByRole("navigation").getByRole("link", { name: /Sign in/i }).click();
+    await page
+      .getByRole("navigation")
+      .getByRole("link", { name: /Sign in/i })
+      .click();
 
     // Should be on login page
     await expect(page).toHaveURL("/login");
