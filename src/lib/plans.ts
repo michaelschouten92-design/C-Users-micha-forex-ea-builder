@@ -96,7 +96,6 @@ export const PLANS = {
       "Unlimited projects",
       "Unlimited exports",
       "MQL5 source code export",
-      "Private Discord community",
       "Priority support",
     ],
     limits: {

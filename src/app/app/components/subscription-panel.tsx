@@ -74,7 +74,7 @@ export function SubscriptionPanel({
           </div>
           <p className="text-sm text-[#94A3B8]">
             {tier === "FREE"
-              ? "Upgrade for unlimited projects, exports, and Private Discord community."
+              ? "Upgrade for unlimited projects, exports, and priority support."
               : "You have access to all features."}
           </p>
         </div>
@@ -219,7 +219,7 @@ export function SubscriptionPanel({
         <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
           <p className="text-xs text-[#A78BFA]">
             <span className="font-medium">Upgrade to unlock:</span> Unlimited projects, unlimited
-            exports, Private Discord community, and priority support
+            exports, and priority support
           </p>
         </div>
       )}

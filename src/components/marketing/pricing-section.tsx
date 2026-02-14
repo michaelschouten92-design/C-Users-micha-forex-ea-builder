@@ -187,8 +187,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </div>
           <p className="mt-3 text-white font-medium text-sm">Unlimited projects and exports</p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Build, iterate, and export as many strategies as you want. Access the private Discord
-            community.
+            Build, iterate, and export as many strategies as you want. Priority support included.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
@@ -196,7 +195,6 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Unlimited projects",
               "Unlimited MQL5 exports",
               "All 5 strategy templates",
-              "Private Discord community",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">

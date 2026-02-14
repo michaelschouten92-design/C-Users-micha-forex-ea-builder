@@ -355,16 +355,8 @@ export async function sendContactFormEmail(
   log.info({ from: senderEmail.substring(0, 3) + "***" }, "Contact form email sent");
 }
 
-const DISCORD_INVITE_URL = "https://discord.gg/9stYCH7c";
-
 const PLAN_WELCOME_FEATURES: Record<string, string[]> = {
-  PRO: [
-    "Unlimited projects",
-    "Unlimited exports",
-    "MQL5 source code export",
-    "Private Discord community",
-    "Priority support",
-  ],
+  PRO: ["Unlimited projects", "Unlimited exports", "MQL5 source code export", "Priority support"],
   ELITE: [
     "Everything in Pro",
     "Early access to new features",
@@ -417,14 +409,6 @@ export async function sendPlanChangeEmail(
             <ul style="margin: 0 0 24px 0; padding-left: 0; list-style: none; line-height: 1.8;">
               ${featuresHtml}
             </ul>
-            <h2 style="color: #ffffff; font-size: 16px; margin: 0 0 12px 0;">Join the Discord community</h2>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
-              Connect with other AlgoStudio traders, share strategies, and get help from the community.
-            </p>
-            <a href="${DISCORD_INVITE_URL}" style="display: inline-block; background: linear-gradient(135deg, #5865F2, #7289DA); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 16px 0;">
-              Join Discord
-            </a>
-            <br>
             <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Open AlgoStudio
             </a>

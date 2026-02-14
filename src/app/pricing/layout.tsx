@@ -31,8 +31,7 @@ const jsonLd = {
         name: "Pro",
         price: "39",
         priceCurrency: "EUR",
-        description:
-          "Unlimited projects, unlimited exports, private Discord community, priority support",
+        description: "Unlimited projects, unlimited exports, priority support",
       },
       {
         "@type": "Offer",

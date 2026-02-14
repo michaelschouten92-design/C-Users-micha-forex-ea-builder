@@ -64,11 +64,11 @@ export default function PricingPage() {
     },
     {
       q: "What is 1-on-1 coaching?",
-      a: "Coaching sessions are 60-minute private calls on Discord where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac120 per session with package deals. Elite members already get 1 complimentary strategy review per month.",
+      a: "Coaching sessions are 60-minute video calls with screen sharing where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac179 per session with package deals. Elite members already get 1 complimentary strategy review per month.",
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
+      a: "Pro gives you unlimited projects, exports, and priority support. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
     },
   ];
 
@@ -119,7 +119,6 @@ export default function PricingPage() {
                     ["Strategy templates", "All 5", "All 5", "All 5"],
                     ["Visual builder", true, true, true],
                     ["Clean MQL5 source code", true, true, true],
-                    ["Private Discord community", false, true, true],
                     ["Priority support", false, true, true],
                     ["Priority feature requests", false, false, true],
                     ["1-on-1 strategy review", false, false, true],
@@ -242,19 +241,6 @@ export default function PricingPage() {
                     strokeLinejoin="round"
                     strokeWidth={1.5}
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
-                ),
-              },
-              {
-                title: "Private Discord community",
-                description:
-                  "Pro and Elite members get access to a private Discord where you can share strategies, get feedback, and connect with other algorithmic traders.",
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 ),
               },

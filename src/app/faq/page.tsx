@@ -56,7 +56,7 @@ const faqItems = [
   },
   {
     q: "What does the Pro plan include?",
-    a: "Unlimited projects, unlimited exports, all strategy templates, Private Discord community, and priority support. Cancel anytime from your account settings.",
+    a: "Unlimited projects, unlimited exports, all strategy templates, and priority support. Cancel anytime from your account settings.",
   },
   {
     q: "Can I cancel anytime?",

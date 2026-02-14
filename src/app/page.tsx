@@ -717,9 +717,18 @@ export default async function Home() {
       </section>
 
       {/* ================================================================ */}
-      {/* FAQ SECTION                                                       */}
+      {/* PRICING                                                           */}
       {/* ================================================================ */}
       <section className="py-20 px-6 bg-[#1A0626]/30 border-y border-[rgba(79,70,229,0.1)]">
+        <div className="max-w-5xl mx-auto">
+          <PricingSection />
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* FAQ SECTION                                                       */}
+      {/* ================================================================ */}
+      <section className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Frequently asked questions</h2>
@@ -753,15 +762,6 @@ export default async function Home() {
               </details>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* PRICING                                                           */}
-      {/* ================================================================ */}
-      <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <PricingSection />
         </div>
       </section>
 
