@@ -10,12 +10,12 @@ import { CoachingCalEmbed } from "./cal-embed";
 export const metadata: Metadata = {
   title: "1-on-1 Coaching — AlgoStudio",
   description:
-    "Book a private 60-minute coaching session on Discord. Get expert strategy review, build guidance, and trading fundamentals for MT5 bot builders.",
+    "Book a private 60-minute coaching session. Get expert strategy review, build guidance, and trading fundamentals for MT5 bot builders.",
   alternates: { canonical: "/coaching" },
   openGraph: {
     title: "1-on-1 Expert Coaching — AlgoStudio",
     description:
-      "Private 60-minute sessions on Discord. Strategy review, build guidance, and trading fundamentals.",
+      "Private 60-minute sessions with screen sharing. Strategy review, build guidance, and trading fundamentals.",
   },
 };
 
@@ -31,7 +31,7 @@ const faqItems = [
   },
   {
     q: "How does the session work?",
-    a: "Sessions take place via Discord voice call with screen sharing. You book a time slot, pay securely through Stripe, and at the scheduled time we start a private 1-on-1 call. Come with questions, a strategy to review, or a bot you want to build — or all three.",
+    a: "Sessions take place via video call with screen sharing. You book a time slot, pay securely through Stripe, and at the scheduled time we start a private 1-on-1 call. Come with questions, a strategy to review, or a bot you want to build — or all three.",
   },
   {
     q: "What's included in a package deal?",
@@ -76,7 +76,7 @@ export default function CoachingPage() {
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
               Get personalized guidance on strategy optimization, hands-on build help, and
-              accelerated learning — all in a private 60-minute Discord session.
+              accelerated learning — all in a private 60-minute video session.
             </p>
             <a
               href="#book"
@@ -174,9 +174,9 @@ export default function CoachingPage() {
                 },
                 {
                   step: "3",
-                  title: "Join on Discord",
+                  title: "Join the call",
                   description:
-                    "At the scheduled time, we start a private 1-on-1 voice call with screen sharing.",
+                    "At the scheduled time, we start a private 1-on-1 video call with screen sharing.",
                 },
               ].map((item) => (
                 <div key={item.step} className="text-center">
@@ -234,7 +234,7 @@ export default function CoachingPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Discord voice + screen sharing
+                    Video call + screen sharing
                   </li>
                   <li className="flex items-start gap-2 text-sm text-[#94A3B8]">
                     <svg
