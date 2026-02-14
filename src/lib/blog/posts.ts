@@ -102,10 +102,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "best-indicators-for-forex-ea",
-    title: "The 5 Best Indicators for Forex Expert Advisors in 2026",
+    title: "The 5 Best Indicators for Forex Expert Advisors in 2025",
     description:
       "Discover which technical indicators work best in automated forex strategies. Compare MA, RSI, Stochastic, Bollinger Bands, and ADX with practical EA examples.",
-    date: "2026-03-10",
+    date: "2025-06-10",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["strategy", "indicators"],
@@ -562,10 +562,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "automated-trading-vs-manual-trading",
-    title: "Automated Trading vs Manual Trading: Which Is Better in 2026?",
+    title: "Automated Trading vs Manual Trading: Which Is Better in 2025?",
     description:
       "Honest comparison of automated and manual forex trading: pros, cons, win rates, time investment, and the hybrid approach most professionals use.",
-    date: "2026-04-01",
+    date: "2025-07-01",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["beginner", "strategy", "automated-trading"],
@@ -674,10 +674,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "metatrader-5-vs-metatrader-4",
-    title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use in 2026?",
+    title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use in 2025?",
     description:
       "Complete MT5 vs MT4 comparison for forex traders and EA developers. Strategy Tester, MQL5 vs MQL4, timeframes, order types, and why MT5 wins for new development.",
-    date: "2026-04-05",
+    date: "2025-07-15",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["metatrader", "beginner", "platform"],
@@ -764,7 +764,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>The Verdict: Use MT5 for New Development</h2>
-      <p>For new EA development in 2026, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
+      <p>For new EA development in 2025, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
       <p>MetaQuotes has officially discontinued new MT4 broker licenses — the future is MT5. Starting new development on MT4 is building on a platform with no future updates.</p>
       <p>If you're building an EA with AlgoStudio, your exported code is MQL5 — optimized for MetaTrader 5's latest features and designed to take advantage of the superior Strategy Tester. Ready to start? Try our <a href="/templates">free EA templates</a> or learn the basics with our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a>.</p>
     `,
@@ -999,10 +999,10 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "best-forex-pairs-for-automated-trading",
-    title: "The Best Forex Pairs for Automated Trading in 2026",
+    title: "The Best Forex Pairs for Automated Trading in 2025",
     description:
       "Which forex pairs work best for Expert Advisors? Compare spreads, volatility, and trend behavior of EURUSD, GBPUSD, USDJPY, AUDUSD, and EURGBP for EAs.",
-    date: "2026-04-20",
+    date: "2025-08-01",
     author: "AlgoStudio Team",
     readTime: "10 min read",
     tags: ["strategy", "beginner", "forex"],
