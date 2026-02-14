@@ -204,6 +204,7 @@ export function RangeBreakoutEntryFields({
             onHourChange={(h) => onChange({ customStartHour: h })}
             onMinuteChange={(m) => onChange({ customStartMinute: m })}
           />
+          <OptimizableFieldCheckbox fieldName="customStartHour" data={data} onChange={onChange} />
           <TimeField
             label="Range end"
             hour={data.customEndHour ?? 8}
@@ -211,6 +212,7 @@ export function RangeBreakoutEntryFields({
             onHourChange={(h) => onChange({ customEndHour: h })}
             onMinuteChange={(m) => onChange({ customEndMinute: m })}
           />
+          <OptimizableFieldCheckbox fieldName="customEndHour" data={data} onChange={onChange} />
         </>
       )}
 

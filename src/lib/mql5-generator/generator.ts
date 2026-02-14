@@ -246,7 +246,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           ["minRangePips", "minRangePips"],
           ["maxRangePips", "maxRangePips"],
           ["rangeTimeframe", "timeframe"],
-          ["breakoutTimeframe", "breakoutTimeframe"]
+          ["breakoutTimeframe", "breakoutTimeframe"],
+          ["customStartHour", "sessionStartHour"],
+          ["customStartHour", "sessionStartMinute"],
+          ["customEndHour", "sessionEndHour"],
+          ["customEndHour", "sessionEndMinute"]
         ),
       })
     );
