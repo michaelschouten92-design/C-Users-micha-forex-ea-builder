@@ -143,7 +143,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         appliedPrice: emaAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
-        optimizableFields: mapOpt(["fastEma", "period"], ["minEmaSeparation", "_minEmaSeparation"]),
+        optimizableFields: mapOpt(
+          ["fastEma", "period"],
+          ["minEmaSeparation", "_minEmaSeparation"],
+          ["timeframe", "timeframe"]
+        ),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "fast",
@@ -159,7 +163,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         appliedPrice: emaAppliedPrice,
         signalMode: "candle_close",
         shift: 0,
-        optimizableFields: mapOpt(["slowEma", "period"]),
+        optimizableFields: mapOpt(["slowEma", "period"], ["timeframe", "timeframe"]),
         _entryStrategyType: "ema-crossover",
         _entryStrategyId: baseId,
         _role: "slow",
@@ -178,7 +182,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           appliedPrice: emaAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"]),
+          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
           _filterRole: "htf-trend",
         })
       );
@@ -199,7 +203,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           optimizableFields: mapOpt(
             ["rsiPeriod", "period"],
             ["rsiLongMax", "overboughtLevel"],
-            ["rsiShortMin", "oversoldLevel"]
+            ["rsiShortMin", "oversoldLevel"],
+            ["timeframe", "timeframe"]
           ),
           _filterRole: "rsi-confirm",
         })
@@ -239,7 +244,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           ["rangePeriod", "lookbackCandles"],
           ["bufferPips", "bufferPips"],
           ["minRangePips", "minRangePips"],
-          ["maxRangePips", "maxRangePips"]
+          ["maxRangePips", "maxRangePips"],
+          ["rangeTimeframe", "timeframe"],
+          ["breakoutTimeframe", "breakoutTimeframe"]
         ),
       })
     );
@@ -257,7 +264,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           method: "EMA",
           signalMode: "candle_close",
           shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"]),
+          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
           _filterRole: "htf-trend",
         })
       );
@@ -279,7 +286,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         optimizableFields: mapOpt(
           ["rsiPeriod", "period"],
           ["overboughtLevel", "overboughtLevel"],
-          ["oversoldLevel", "oversoldLevel"]
+          ["oversoldLevel", "oversoldLevel"],
+          ["timeframe", "timeframe"]
         ),
       })
     );
@@ -296,7 +304,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           appliedPrice: rsiAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
-          optimizableFields: mapOpt(["trendEma", "period"]),
+          optimizableFields: mapOpt(["trendEma", "period"], ["timeframe", "timeframe"]),
           _filterRole: "htf-trend",
         })
       );
@@ -319,7 +327,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         shift: 0,
         optimizableFields: mapOpt(
           ["trendEma", "period"],
-          ["pullbackMaxDistance", "_pullbackMaxDistance"]
+          ["pullbackMaxDistance", "_pullbackMaxDistance"],
+          ["timeframe", "timeframe"]
         ),
         _requireEmaBuffer: tp.requireEmaBuffer ?? false,
         _pullbackMaxDistance: tp.pullbackMaxDistance ?? 2.0,
@@ -338,7 +347,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         optimizableFields: mapOpt(
           ["pullbackRsiPeriod", "period"],
           ["rsiPullbackLevel", "oversoldLevel"],
-          ["rsiPullbackLevel", "overboughtLevel"]
+          ["rsiPullbackLevel", "overboughtLevel"],
+          ["timeframe", "timeframe"]
         ),
       })
     );
@@ -353,7 +363,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           period: tp.adxPeriod,
           trendLevel: tp.adxThreshold,
           signalMode: "candle_close",
-          optimizableFields: mapOpt(["adxPeriod", "period"], ["adxThreshold", "trendLevel"]),
+          optimizableFields: mapOpt(
+            ["adxPeriod", "period"],
+            ["adxThreshold", "trendLevel"],
+            ["timeframe", "timeframe"]
+          ),
           _filterRole: "adx-trend-strength",
         })
       );
@@ -376,7 +390,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         optimizableFields: mapOpt(
           ["macdFast", "fastPeriod"],
           ["macdSlow", "slowPeriod"],
-          ["macdSignal", "signalPeriod"]
+          ["macdSignal", "signalPeriod"],
+          ["timeframe", "timeframe"]
         ),
       })
     );
@@ -393,7 +408,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
           appliedPrice: macdAppliedPrice,
           signalMode: "candle_close",
           shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"]),
+          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
           _filterRole: "htf-trend",
         })
       );

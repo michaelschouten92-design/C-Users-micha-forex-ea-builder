@@ -45,6 +45,7 @@ export function EMACrossoverEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       <SelectField
         label="Applied Price"
         value={data.appliedPrice ?? "CLOSE"}
@@ -89,6 +90,7 @@ export function EMACrossoverEntryFields({
             options={TIMEFRAME_OPTIONS}
             onChange={(v) => onChange({ htfTimeframe: v as EMACrossoverEntryData["htfTimeframe"] })}
           />
+          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
             label="HTF EMA"
             value={data.htfEma}
@@ -188,6 +190,7 @@ export function RangeBreakoutEntryFields({
               onChange({ rangeTimeframe: v as RangeBreakoutEntryData["rangeTimeframe"] })
             }
           />
+          <OptimizableFieldCheckbox fieldName="rangeTimeframe" data={data} onChange={onChange} />
         </>
       ) : (
         <>
@@ -236,14 +239,17 @@ export function RangeBreakoutEntryFields({
         onChange={(v) => onChange({ breakoutEntry: v as "CANDLE_CLOSE" | "CURRENT_PRICE" })}
       />
       {breakoutEntry === "CANDLE_CLOSE" && (
-        <SelectField
-          label="Entry Timeframe"
-          value={data.breakoutTimeframe ?? "H1"}
-          options={TIMEFRAME_OPTIONS}
-          onChange={(v) =>
-            onChange({ breakoutTimeframe: v as RangeBreakoutEntryData["breakoutTimeframe"] })
-          }
-        />
+        <>
+          <SelectField
+            label="Entry Timeframe"
+            value={data.breakoutTimeframe ?? "H1"}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) =>
+              onChange({ breakoutTimeframe: v as RangeBreakoutEntryData["breakoutTimeframe"] })
+            }
+          />
+          <OptimizableFieldCheckbox fieldName="breakoutTimeframe" data={data} onChange={onChange} />
+        </>
       )}
 
       <div>
@@ -316,6 +322,7 @@ export function RangeBreakoutEntryFields({
               onChange({ htfTimeframe: v as RangeBreakoutEntryData["htfTimeframe"] })
             }
           />
+          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
             label="HTF EMA"
             value={data.htfEma}
@@ -349,6 +356,7 @@ export function RSIReversalEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       <SelectField
         label="Applied Price"
         value={data.appliedPrice ?? "CLOSE"}
@@ -426,6 +434,7 @@ export function TrendPullbackEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       <SelectField
         label="Applied Price"
         value={data.appliedPrice ?? "CLOSE"}
@@ -521,6 +530,7 @@ export function MACDCrossoverEntryFields({
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
       />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       <SelectField
         label="Applied Price"
         value={data.appliedPrice ?? "CLOSE"}
@@ -587,6 +597,7 @@ export function MACDCrossoverEntryFields({
               onChange({ htfTimeframe: v as MACDCrossoverEntryData["htfTimeframe"] })
             }
           />
+          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
           <NumberField
             label="HTF EMA"
             value={data.htfEma}

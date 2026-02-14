@@ -49,7 +49,8 @@ export interface OptimizableInput {
     | "bool"
     | "ENUM_MA_METHOD"
     | "ENUM_APPLIED_PRICE"
-    | "ENUM_STO_PRICE";
+    | "ENUM_STO_PRICE"
+    | "ENUM_TIMEFRAMES";
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;

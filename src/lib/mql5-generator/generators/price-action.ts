@@ -74,6 +74,30 @@ export function generatePriceActionCode(
             )
           );
         }
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpRange${index}Timeframe`,
+            "ENUM_TIMEFRAMES",
+            getTimeframe(rb.timeframe),
+            `Range ${index + 1} Timeframe`
+          )
+        );
+        const breakoutTf =
+          ((rb as Record<string, unknown>).breakoutTimeframe as string) ?? rb.timeframe;
+        if (breakoutTf !== rb.timeframe) {
+          code.inputs.push(
+            createInput(
+              node,
+              "breakoutTimeframe",
+              `InpRange${index}BreakoutTF`,
+              "ENUM_TIMEFRAMES",
+              getTimeframe(breakoutTf),
+              `Range ${index + 1} Breakout Timeframe`
+            )
+          );
+        }
 
         // Add global variables
         code.globalVariables.push(`double ${varPrefix}High;`);
@@ -110,18 +134,17 @@ export function generatePriceActionCode(
 
         if (rb.rangeType === "PREVIOUS_CANDLES") {
           // Calculate range from previous X candles
-          const rbTf = getTimeframe(rb.timeframe);
           code.onTick.push(
-            `int ${varPrefix}HighBar = iHighest(_Symbol, ${rbTf}, MODE_HIGH, InpRange${index}Lookback, 1);`
+            `int ${varPrefix}HighBar = iHighest(_Symbol, InpRange${index}Timeframe, MODE_HIGH, InpRange${index}Lookback, 1);`
           );
           code.onTick.push(
-            `int ${varPrefix}LowBar = iLowest(_Symbol, ${rbTf}, MODE_LOW, InpRange${index}Lookback, 1);`
+            `int ${varPrefix}LowBar = iLowest(_Symbol, InpRange${index}Timeframe, MODE_LOW, InpRange${index}Lookback, 1);`
           );
           code.onTick.push(
-            `${varPrefix}High = (${varPrefix}HighBar >= 0) ? iHigh(_Symbol, ${rbTf}, ${varPrefix}HighBar) : 0;`
+            `${varPrefix}High = (${varPrefix}HighBar >= 0) ? iHigh(_Symbol, InpRange${index}Timeframe, ${varPrefix}HighBar) : 0;`
           );
           code.onTick.push(
-            `${varPrefix}Low = (${varPrefix}LowBar >= 0) ? iLow(_Symbol, ${rbTf}, ${varPrefix}LowBar) : 0;`
+            `${varPrefix}Low = (${varPrefix}LowBar >= 0) ? iLow(_Symbol, InpRange${index}Timeframe, ${varPrefix}LowBar) : 0;`
           );
         } else if (rb.rangeType === "SESSION" || rb.rangeType === "TIME_WINDOW") {
           // Session-based range calculation
@@ -269,11 +292,11 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
               )
             );
             code.onTick.push(
-              `GetSessionRange(${getTimeframe(rb.timeframe)}, InpRange${index}StartHour, InpRange${index}StartMin, InpRange${index}EndHour, InpRange${index}EndMin, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
+              `GetSessionRange(InpRange${index}Timeframe, InpRange${index}StartHour, InpRange${index}StartMin, InpRange${index}EndHour, InpRange${index}EndMin, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
             );
           } else {
             code.onTick.push(
-              `GetSessionRange(${getTimeframe(rb.timeframe)}, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
+              `GetSessionRange(InpRange${index}Timeframe, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
             );
           }
 
@@ -311,26 +334,26 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
             `${varPrefix}BreakoutDown = ${varPrefix}Valid && SymbolInfoDouble(_Symbol, SYMBOL_BID) < ${varPrefix}Low - ${bufferPoints};`
           );
         } else if (rb.entryMode === "ON_CLOSE") {
-          const rbTf2 = getTimeframe(
-            ((rb as Record<string, unknown>).breakoutTimeframe as string) ?? rb.timeframe
+          const breakoutTfVar =
+            breakoutTf !== rb.timeframe
+              ? `InpRange${index}BreakoutTF`
+              : `InpRange${index}Timeframe`;
+          code.onTick.push(
+            `${varPrefix}BreakoutUp = ${varPrefix}Valid && iClose(_Symbol, ${breakoutTfVar}, 1) > ${varPrefix}High + ${bufferPoints};`
           );
           code.onTick.push(
-            `${varPrefix}BreakoutUp = ${varPrefix}Valid && iClose(_Symbol, ${rbTf2}, 1) > ${varPrefix}High + ${bufferPoints};`
-          );
-          code.onTick.push(
-            `${varPrefix}BreakoutDown = ${varPrefix}Valid && iClose(_Symbol, ${rbTf2}, 1) < ${varPrefix}Low - ${bufferPoints};`
+            `${varPrefix}BreakoutDown = ${varPrefix}Valid && iClose(_Symbol, ${breakoutTfVar}, 1) < ${varPrefix}Low - ${bufferPoints};`
           );
         } else if (rb.entryMode === "AFTER_RETEST") {
           // Retest logic: price broke out then came back and is now moving away again
-          const rbTf3 = getTimeframe(rb.timeframe);
           code.onTick.push(
             `// Retest breakout: previous candle closed beyond range, current candle retested level`
           );
           code.onTick.push(
-            `${varPrefix}BreakoutUp = ${varPrefix}Valid && iClose(_Symbol, ${rbTf3}, 2) > ${varPrefix}High + ${bufferPoints} && iLow(_Symbol, ${rbTf3}, 1) <= ${varPrefix}High + ${bufferPoints} && iClose(_Symbol, ${rbTf3}, 1) > ${varPrefix}High;`
+            `${varPrefix}BreakoutUp = ${varPrefix}Valid && iClose(_Symbol, InpRange${index}Timeframe, 2) > ${varPrefix}High + ${bufferPoints} && iLow(_Symbol, InpRange${index}Timeframe, 1) <= ${varPrefix}High + ${bufferPoints} && iClose(_Symbol, InpRange${index}Timeframe, 1) > ${varPrefix}High;`
           );
           code.onTick.push(
-            `${varPrefix}BreakoutDown = ${varPrefix}Valid && iClose(_Symbol, ${rbTf3}, 2) < ${varPrefix}Low - ${bufferPoints} && iHigh(_Symbol, ${rbTf3}, 1) >= ${varPrefix}Low - ${bufferPoints} && iClose(_Symbol, ${rbTf3}, 1) < ${varPrefix}Low;`
+            `${varPrefix}BreakoutDown = ${varPrefix}Valid && iClose(_Symbol, InpRange${index}Timeframe, 2) < ${varPrefix}Low - ${bufferPoints} && iHigh(_Symbol, InpRange${index}Timeframe, 1) >= ${varPrefix}Low - ${bufferPoints} && iClose(_Symbol, InpRange${index}Timeframe, 1) < ${varPrefix}Low;`
           );
         }
 
