@@ -4,6 +4,7 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
   title: "RSI EA Template | Free Mean Reversion Strategy for MetaTrader 5",
@@ -324,6 +325,8 @@ export default function RSIEATemplatePage() {
         title="Build the RSI Mean Reversion EA in minutes"
         description="Create this strategy with AlgoStudio's visual builder. Free plan available — no credit card required."
       />
+
+      <Footer />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 import { getAllPosts } from "@/lib/blog/posts";
 import { BlogList } from "./blog-list";
 
@@ -22,26 +24,19 @@ export default function BlogPage() {
   const allTags = Array.from(new Set(posts.flatMap((p) => p.tags))).sort();
 
   return (
-    <div className="min-h-screen py-16 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen flex flex-col">
+      <SiteNav />
+      <div className="max-w-3xl mx-auto pt-32 pb-16 px-4 flex-1">
         <div className="mb-12">
-          <Link href="/" className="text-2xl font-bold text-white mb-4 inline-block">
-            AlgoStudio
-          </Link>
-          <h1 className="text-4xl font-bold text-white mt-4">Blog</h1>
+          <h1 className="text-4xl font-bold text-white">Blog</h1>
           <p className="text-[#94A3B8] mt-2">
             Practical MT5 automation tutorials. Build each strategy in minutes.
           </p>
         </div>
 
         <BlogList posts={posts} allTags={allTags} />
-
-        <div className="mt-12 text-center">
-          <Link href="/" className="text-[#22D3EE] hover:underline text-sm">
-            &larr; Back to home
-          </Link>
-        </div>
       </div>
+      <Footer />
     </div>
   );
 }

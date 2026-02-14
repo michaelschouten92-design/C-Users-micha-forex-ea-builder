@@ -166,7 +166,7 @@ export default function CoachingPage() {
                   step: "1",
                   title: "Pick a time slot",
                   description:
-                    "Select an available moment in the calendar below. Sessions are 60 minutes.",
+                    "Select an available time slot via our booking page. Sessions are 60 minutes.",
                 },
                 {
                   step: "2",

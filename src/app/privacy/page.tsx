@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - AlgoStudio",
@@ -12,12 +14,9 @@ export default function PrivacyPolicyPage() {
   const lastUpdated = "2026-02-14";
 
   return (
-    <div id="main-content" className="min-h-screen text-[#CBD5E1]">
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <Link href="/" className="text-[#4F46E5] hover:text-[#6366F1] text-sm mb-8 inline-block">
-          &larr; Back to home
-        </Link>
-
+    <div id="main-content" className="min-h-screen flex flex-col text-[#CBD5E1]">
+      <SiteNav />
+      <div className="max-w-3xl mx-auto px-6 pt-32 pb-16 flex-1">
         <h1 className="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
         <p className="text-sm text-[#64748B] mb-10">Last updated: {lastUpdated}</p>
 
@@ -170,6 +169,7 @@ export default function PrivacyPolicyPage() {
           </Link>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

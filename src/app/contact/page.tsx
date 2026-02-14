@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
@@ -11,14 +13,9 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div id="main-content" className="min-h-screen py-16 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <Link href="/" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-            &larr; Back to home
-          </Link>
-        </div>
-
+    <div id="main-content" className="min-h-screen flex flex-col">
+      <SiteNav />
+      <div className="max-w-2xl mx-auto pt-32 pb-16 px-4 flex-1">
         <h1 className="text-4xl font-bold text-white mb-4">Contact</h1>
         <p className="text-[#94A3B8] mb-10">
           Have a question, found a bug, or need help? We&apos;re here to help.
@@ -68,6 +65,7 @@ export default function ContactPage() {
           We typically respond within 24 hours on business days.
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

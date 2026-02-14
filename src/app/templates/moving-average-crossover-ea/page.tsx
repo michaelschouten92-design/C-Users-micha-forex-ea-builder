@@ -4,6 +4,7 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
   title: "Moving Average Crossover EA Template | Free MT5 Trend Strategy",
@@ -314,6 +315,8 @@ export default function MovingAverageCrossoverTemplatePage() {
         title="Build the MA Crossover EA in minutes"
         description="Create this strategy with AlgoStudio's visual builder. Free plan available — no credit card required."
       />
+
+      <Footer />
     </div>
   );
 }
