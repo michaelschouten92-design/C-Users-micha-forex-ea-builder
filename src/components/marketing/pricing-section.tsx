@@ -291,6 +291,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </button>
         </div>
       </div>
+
+      <p className="text-center text-xs text-[#64748B] mt-6">
+        All prices are in EUR and exclude applicable taxes (VAT). Tax is calculated at checkout
+        based on your location.
+      </p>
     </div>
   );
 }
