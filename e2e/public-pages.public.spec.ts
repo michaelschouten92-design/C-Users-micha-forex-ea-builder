@@ -24,9 +24,9 @@ test.describe("Public Pages", () => {
     ).toBeVisible();
 
     // Check all three plan headings are visible
-    await expect(page.getByRole("heading", { name: "Free" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Elite" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Free", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pro", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Elite", exact: true })).toBeVisible();
 
     // Check interval toggle
     await expect(page.getByRole("button", { name: /Monthly/i })).toBeVisible();
