@@ -322,7 +322,7 @@ export default function CoachingPage() {
                   </li>
                 </ul>
                 <a
-                  href="https://buy.stripe.com/PLACEHOLDER_3PACK"
+                  href="https://buy.stripe.com/28E00j8pv2cV54X2S8f3a01"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-center bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
@@ -392,7 +392,7 @@ export default function CoachingPage() {
                   </li>
                 </ul>
                 <a
-                  href="https://buy.stripe.com/PLACEHOLDER_5PACK"
+                  href="https://buy.stripe.com/dRm7sL9tz7xf0OH8csf3a02"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-center bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
