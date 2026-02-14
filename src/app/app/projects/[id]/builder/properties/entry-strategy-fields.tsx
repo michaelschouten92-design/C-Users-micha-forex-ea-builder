@@ -487,6 +487,7 @@ export function TrendPullbackEntryFields({
             max={500}
             onChange={(v) => onChange({ adxPeriod: v })}
           />
+          <OptimizableFieldCheckbox fieldName="adxPeriod" data={data} onChange={onChange} />
           <NumberField
             label="ADX Threshold"
             value={data.adxThreshold ?? 25}
@@ -494,6 +495,7 @@ export function TrendPullbackEntryFields({
             max={100}
             onChange={(v) => onChange({ adxThreshold: v })}
           />
+          <OptimizableFieldCheckbox fieldName="adxThreshold" data={data} onChange={onChange} />
         </ToggleField>
       </AdvancedToggleSection>
     </>
