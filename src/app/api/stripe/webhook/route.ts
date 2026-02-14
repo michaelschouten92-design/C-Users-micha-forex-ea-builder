@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionUpdate(subscription);
@@ -159,7 +160,8 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const plan = session.metadata?.plan;
 
   if (!userId || !plan) {
-    throw new Error(`Missing metadata in checkout session ${session.id}`);
+    log.error({ sessionId: session.id }, "Missing metadata in checkout session — cannot process");
+    return;
   }
 
   if (!VALID_PAID_TIERS.includes(plan as PaidTier)) {

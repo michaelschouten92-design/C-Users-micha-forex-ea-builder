@@ -6,6 +6,7 @@ import { logger } from "./logger";
 const resend = features.email ? new Resend(env.RESEND_API_KEY) : null;
 
 const FROM_EMAIL = env.EMAIL_FROM;
+const SUPPORT_EMAIL = env.SUPPORT_EMAIL || "support@algo-studio.com";
 
 const log = logger.child({ service: "email" });
 
@@ -283,7 +284,7 @@ export async function sendAccountDeletedEmail(email: string) {
               If your Stripe subscription was active, it has been cancelled automatically.
             </p>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you did not request this, please contact us immediately at support@algo-studio.com.
+              If you did not request this, please contact us immediately at ${SUPPORT_EMAIL}.
             </p>
           </div>
         </body>
@@ -319,7 +320,7 @@ export async function sendContactFormEmail(
 
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
-    to: "support@algo-studio.com",
+    to: SUPPORT_EMAIL,
     replyTo: senderEmail,
     subject: `[Contact] ${subject || "New message"}`,
     html: `
@@ -428,7 +429,7 @@ export async function sendPlanChangeEmail(
               Open AlgoStudio
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at support@algo-studio.com.
+              Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>`;
 
   const downgradeBody = `
@@ -441,7 +442,7 @@ export async function sendPlanChangeEmail(
               Go to Dashboard
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at support@algo-studio.com.
+              Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>`;
 
   const { error } = await resend.emails.send({
@@ -501,7 +502,7 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
               Complete Payment
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              Questions? Contact us at support@algo-studio.com.
+              Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>
           </div>
         </body>
@@ -549,7 +550,7 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
               Update Payment Method
             </a>
             <p style="margin: 0; font-size: 14px; color: #64748B;">
-              If you believe this is an error, please contact us at support@algo-studio.com.
+              If you believe this is an error, please contact us at ${SUPPORT_EMAIL}.
             </p>
           </div>
         </body>

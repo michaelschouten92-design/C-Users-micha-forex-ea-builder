@@ -91,6 +91,7 @@ model Project {
   exports  ExportJob[]
 
   @@index([userId, deletedAt, updatedAt])
+  @@index([deletedAt])
 }
 
 model BuildVersion {

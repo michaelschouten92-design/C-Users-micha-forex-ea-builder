@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
 
 export default function ProjectError({
   error,
@@ -11,7 +12,7 @@ export default function ProjectError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Project error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -32,12 +33,8 @@ export default function ProjectError({
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-4">
-          Failed to Load Project
-        </h2>
-        <p className="text-[#94A3B8] mb-6">
-          An error occurred while loading this project.
-        </p>
+        <h2 className="text-2xl font-bold text-white mb-4">Failed to Load Project</h2>
+        <p className="text-[#94A3B8] mb-6">An error occurred while loading this project.</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}

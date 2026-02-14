@@ -30,7 +30,7 @@ Sentry.init({
   sendDefaultPii: false,
 
   // Environment
-  environment: process.env.NODE_ENV,
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NODE_ENV,
 
   // Integrations
   integrations: [

@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
 import type { Node, Edge } from "@xyflow/react";
@@ -137,7 +138,7 @@ export function useAutoSave({
           } catch {
             // Response may not be valid JSON (e.g., proxy error page)
           }
-          console.error("Save failed:", res.status, error);
+          Sentry.captureMessage(`Save failed: ${res.status}`, { level: "error", extra: error });
 
           // On version conflict, update version and retry once
           if (res.status === 409 && error.currentVersion) {
@@ -180,7 +181,7 @@ export function useAutoSave({
           return false;
         }
       } catch (error) {
-        console.error("Save error:", error);
+        Sentry.captureException(error);
         if (isAutosave) {
           setAutoSaveStatus("error");
         }

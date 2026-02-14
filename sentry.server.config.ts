@@ -10,7 +10,7 @@ Sentry.init({
   tracesSampleRate: 0.1, // 10% of transactions
 
   // Environment
-  environment: process.env.NODE_ENV,
+  environment: process.env.VERCEL_ENV || process.env.NODE_ENV,
 
   // Don't send PII
   sendDefaultPii: false,

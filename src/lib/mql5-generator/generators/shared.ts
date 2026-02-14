@@ -8,6 +8,7 @@ export function sanitizeName(name: string): string {
 /** Escape a string for safe interpolation inside an MQL5 string literal ("..."). */
 export function sanitizeMQL5String(value: string): string {
   return value
+    .substring(0, 2000)
     .replace(/\\/g, "\\\\")
     .replace(/"/g, '\\"')
     .replace(/\n/g, "\\n")

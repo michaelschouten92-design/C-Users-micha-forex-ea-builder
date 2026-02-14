@@ -359,7 +359,34 @@ export function StrategyCanvas({
         Skip to properties
       </a>
       <WelcomeModal />
-      <div className="flex-1 flex min-h-0">
+
+      {/* Mobile warning — builder requires desktop */}
+      <div className="sm:hidden flex items-center justify-center h-full p-8 text-center">
+        <div>
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[rgba(79,70,229,0.15)] flex items-center justify-center">
+            <svg
+              className="w-7 h-7 text-[#A78BFA]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Desktop Required</h3>
+          <p className="text-sm text-[#94A3B8] max-w-xs mx-auto">
+            The visual strategy builder requires a larger screen. Please switch to a desktop or
+            tablet in landscape mode.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 hidden sm:flex min-h-0">
         {/* Left: Node Toolbar - hidden on mobile, visible on md+ */}
         <div className="hidden md:block">
           <NodeToolbar

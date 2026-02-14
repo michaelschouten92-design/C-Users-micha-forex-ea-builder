@@ -280,14 +280,7 @@ function generateRangeOppositeSL(priceActionNodes: BuilderNode[], code: Generate
   );
 
   if (rbIndex < 0) {
-    // Fallback: RANGE_OPPOSITE requires a range-breakout node
-    code.onTick.push(
-      "//--- Range Opposite SL: WARNING - no range-breakout node found, using 50 pip fallback"
-    );
-    code.onTick.push("double slPips = 50 * _pipFactor;");
-    code.onTick.push("double slSellPips = slPips;");
-    code.hasDirectionalSL = true;
-    return;
+    throw new Error("RANGE_OPPOSITE stop loss requires a Range Breakout entry strategy");
   }
 
   const prefix = `pa${rbIndex}`;

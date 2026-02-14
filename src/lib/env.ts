@@ -64,6 +64,9 @@ const envSchema = z.object({
 
   // Cron secret (optional in dev, required in prod)
   CRON_SECRET: z.string().optional(),
+
+  // Support email (optional - defaults to support@algo-studio.com)
+  SUPPORT_EMAIL: z.string().email().optional(),
 });
 
 // Refinements for conditional requirements
@@ -114,10 +117,12 @@ const refinedEnvSchema = envSchema
   )
   .refine(
     (data) => {
-      // If Stripe is enabled (non-empty), Pro price IDs are required; Elite are optional
+      // If Stripe is enabled (non-empty), all price IDs are required
       if (data.STRIPE_SECRET_KEY && data.STRIPE_SECRET_KEY !== "") {
         if (!data.STRIPE_PRO_MONTHLY_PRICE_ID) return false;
         if (!data.STRIPE_PRO_YEARLY_PRICE_ID) return false;
+        if (!data.STRIPE_ELITE_MONTHLY_PRICE_ID) return false;
+        if (!data.STRIPE_ELITE_YEARLY_PRICE_ID) return false;
       }
       return true;
     },

@@ -230,12 +230,14 @@ export function ProjectList({ projects }: { projects: Project[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects..."
+            aria-label="Search projects by name or description"
             className="w-full pl-10 pr-4 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
           />
         </div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
+          aria-label="Sort projects"
           className="px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
         >
           <option value="updated">Last updated ↓</option>

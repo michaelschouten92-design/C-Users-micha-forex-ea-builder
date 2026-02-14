@@ -108,6 +108,7 @@ export default async function DashboardPage() {
         {/* Subscription Panel */}
         <SubscriptionPanel
           tier={tier}
+          subscriptionStatus={subscription?.status ?? undefined}
           projectCount={projects.length}
           exportCount={exportCount}
           hasStripeSubscription={!!subscription?.stripeSubId}

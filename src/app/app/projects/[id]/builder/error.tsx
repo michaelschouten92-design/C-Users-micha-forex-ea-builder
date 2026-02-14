@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export default function BuilderError({
   error,
@@ -10,7 +11,7 @@ export default function BuilderError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Builder error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -31,12 +32,8 @@ export default function BuilderError({
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-4">
-          Builder Error
-        </h2>
-        <p className="text-[#94A3B8] mb-2">
-          An error occurred in the strategy builder.
-        </p>
+        <h2 className="text-2xl font-bold text-white mb-4">Builder Error</h2>
+        <p className="text-[#94A3B8] mb-2">An error occurred in the strategy builder.</p>
         <p className="text-[#64748B] text-sm mb-6">
           Your work has likely been saved automatically. Try reloading the page.
         </p>
