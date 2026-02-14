@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { PricingSection } from "@/components/marketing/pricing-section";
+import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 const CheckIcon = ({ className = "w-5 h-5 text-[#22D3EE]" }: { className?: string }) => (
   <svg
@@ -73,8 +75,9 @@ export default function PricingPage() {
   ];
 
   return (
-    <div id="main-content" className="min-h-screen py-16 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div id="main-content" className="min-h-screen flex flex-col">
+      <SiteNav />
+      <div className="max-w-6xl mx-auto pt-32 pb-16 px-4 flex-1">
         {/* ================================================================ */}
         {/* PRICING HERO                                                     */}
         {/* ================================================================ */}
@@ -229,7 +232,7 @@ export default function PricingPage() {
         {/* TRUST SECTION                                                    */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-4xl mx-auto">
-          <div className="grid sm:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {[
               {
                 title: "Cancel anytime",
@@ -293,7 +296,7 @@ export default function PricingPage() {
               href="/coaching"
               className="text-sm text-[#22D3EE] hover:underline whitespace-nowrap flex-shrink-0"
             >
-              From €120/session &mdash; Learn More &rarr;
+              From €179/session &mdash; Learn More &rarr;
             </Link>
           </div>
         </div>
@@ -357,6 +360,7 @@ export default function PricingPage() {
           </p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
