@@ -5,7 +5,6 @@ import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
-import { CoachingCalEmbed } from "./cal-embed";
 
 export const metadata: Metadata = {
   title: "1-on-1 Coaching — AlgoStudio",
@@ -79,7 +78,9 @@ export default function CoachingPage() {
               accelerated learning — all in a private 60-minute video session.
             </p>
             <a
-              href="#book"
+              href="https://calendly.com/algo-studio-support/60-minute-meeting"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
             >
               Book a Session
@@ -254,7 +255,9 @@ export default function CoachingPage() {
                   </li>
                 </ul>
                 <a
-                  href="#book"
+                  href="https://calendly.com/algo-studio-support/60-minute-meeting"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block text-center bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
                 >
                   Book Session
@@ -408,20 +411,6 @@ export default function CoachingPage() {
               </Link>
             </p>
           </section>
-
-          {/* ================================================================ */}
-          {/* CAL.COM BOOKING EMBED                                            */}
-          {/* ================================================================ */}
-          <section id="book" className="mb-20">
-            <h2 className="text-2xl font-bold text-white text-center mb-4">Book your session</h2>
-            <p className="text-[#94A3B8] text-center mb-8 max-w-lg mx-auto">
-              Choose a time that works for you. Payment is handled securely through Stripe at
-              checkout.
-            </p>
-            <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-4 min-h-[500px]">
-              <CoachingCalEmbed />
-            </div>
-          </section>
         </div>
       </main>
 
@@ -431,7 +420,7 @@ export default function CoachingPage() {
         title="Ready to level up your trading?"
         description="Get personalized expert guidance in a private 1-on-1 session. Strategy review, build help, and trading fundamentals — all tailored to you."
         ctaText="Book Your First Session"
-        ctaHref="/coaching#book"
+        ctaHref="https://calendly.com/algo-studio-support/60-minute-meeting"
       />
 
       <Footer />
