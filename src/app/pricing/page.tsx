@@ -63,6 +63,10 @@ export default function PricingPage() {
       a: "All sales are final. You can cancel your subscription at any time from your account settings \u2014 your access continues until the end of the current billing period. We recommend starting with the free plan to make sure AlgoStudio is right for you.",
     },
     {
+      q: "What is 1-on-1 coaching?",
+      a: "Coaching sessions are 60-minute private calls on Discord where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac120 per session with package deals. Elite members already get 1 complimentary strategy review per month.",
+    },
+    {
       q: "What is the difference between Pro and Elite?",
       a: "Pro gives you unlimited projects, exports, and access to the private Discord community. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
     },
@@ -283,6 +287,28 @@ export default function PricingPage() {
                 <p className="text-xs text-[#94A3B8] leading-relaxed">{item.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ================================================================ */}
+        {/* COACHING BANNER                                                  */}
+        {/* ================================================================ */}
+        <div className="mt-20 max-w-4xl mx-auto">
+          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-semibold text-white mb-1">
+                Want personalized guidance?
+              </h3>
+              <p className="text-sm text-[#94A3B8]">
+                Book a 1-on-1 coaching session for expert strategy review, build guidance, and more.
+              </p>
+            </div>
+            <Link
+              href="/coaching"
+              className="text-sm text-[#22D3EE] hover:underline whitespace-nowrap flex-shrink-0"
+            >
+              From €120/session &mdash; Learn More &rarr;
+            </Link>
           </div>
         </div>
 

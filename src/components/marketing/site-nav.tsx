@@ -29,6 +29,12 @@ export function SiteNav() {
           >
             Pricing
           </Link>
+          <Link
+            href="/coaching"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Coaching
+          </Link>
           <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Blog
           </Link>

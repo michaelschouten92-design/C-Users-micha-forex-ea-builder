@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@calcom/embed-react": "^1.5.3",
     "@prisma/client": "^6.19.2",
     "@sentry/nextjs": "^10.38.0",
     "@stripe/stripe-js": "^8.7.0",
