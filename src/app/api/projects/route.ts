@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkProjectLimit, getCachedTier } from "@/lib/plan-limits";
+import { getCachedTier } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/plans";
 import {
   createProjectSchema,

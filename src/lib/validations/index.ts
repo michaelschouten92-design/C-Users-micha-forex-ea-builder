@@ -8,6 +8,7 @@ import { sanitizeText } from "../sanitize";
 export const idSchema = z.string().cuid();
 
 // Sanitized string transformer - removes HTML/XSS
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const sanitizedString = (maxLength: number) =>
   z
     .string()
@@ -111,6 +112,7 @@ const baseNodeDataSchema = z.object({
 });
 
 // ---- Timing node data ----
+/* eslint-disable @typescript-eslint/no-unused-vars -- per-node schemas defined for future strict validation */
 const alwaysNodeDataSchema = baseNodeDataSchema
   .extend({
     category: z.literal("timing"),
@@ -461,6 +463,8 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
     checkIntervalPips: z.number().min(0).max(10000),
   })
   .strip();
+
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // ---- Entry Strategy node data schemas ----
 // Consistent risk model: Risk %, ATR-based SL, R-multiple TP

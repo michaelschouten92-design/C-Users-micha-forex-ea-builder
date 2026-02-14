@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
-import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
   title: "About — AlgoStudio",

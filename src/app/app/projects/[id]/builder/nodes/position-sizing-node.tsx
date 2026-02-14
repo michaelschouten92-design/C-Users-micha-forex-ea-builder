@@ -2,7 +2,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 import type { PlaceBuyNodeData, PlaceSellNodeData } from "@/types/builder";
-import { BaseNode, NodeIcons } from "./base-node";
+import { BaseNode } from "./base-node";
 
 const methodLabels = {
   FIXED_LOT: "Fixed Lot",

@@ -18,7 +18,6 @@ interface UseClipboardReturn {
   copySelectedNodes: () => void;
   pasteNodes: () => void;
   duplicateSelectedNodes: () => void;
-  hasClipboardContent: boolean;
 }
 
 export function useClipboard({
@@ -82,10 +81,7 @@ export function useClipboard({
     }));
 
     // Deselect all existing nodes and add new ones
-    setNodes((nds) => [
-      ...nds.map((n) => ({ ...n, selected: false })),
-      ...newNodes,
-    ]);
+    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...newNodes]);
     setEdges((eds) => [...eds, ...newEdges]);
   }, [setNodes, setEdges, getNextNodeId]);
 
@@ -122,10 +118,7 @@ export function useClipboard({
           target: idMapping[edge.target],
         }));
 
-        setNodes((nds) => [
-          ...nds.map((n) => ({ ...n, selected: false })),
-          ...newNodes,
-        ]);
+        setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...newNodes]);
         setEdges((eds) => [...eds, ...newEdges]);
       }
     }, 0);
@@ -135,6 +128,5 @@ export function useClipboard({
     copySelectedNodes,
     pasteNodes,
     duplicateSelectedNodes,
-    hasClipboardContent: clipboardRef.current !== null && clipboardRef.current.nodes.length > 0,
   };
 }

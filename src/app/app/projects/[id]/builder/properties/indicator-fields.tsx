@@ -19,7 +19,7 @@ import {
   MA_METHOD_OPTIONS,
   STO_PRICE_FIELD_OPTIONS,
 } from "./constants";
-import { OptimizableFieldCheckbox, FieldWarning, FieldError } from "./shared";
+import { OptimizableFieldCheckbox, FieldError } from "./shared";
 
 export function MovingAverageFields({
   data,

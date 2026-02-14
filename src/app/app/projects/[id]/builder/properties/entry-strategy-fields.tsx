@@ -18,7 +18,6 @@ import {
 } from "./constants";
 import {
   OptimizableFieldCheckbox,
-  FieldWarning,
   FieldError,
   ToggleField,
   DirectionSelector,

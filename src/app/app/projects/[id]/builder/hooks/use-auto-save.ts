@@ -188,7 +188,7 @@ export function useAutoSave({
         return false;
       }
     },
-    [projectId]
+    [projectId, getViewport]
   );
 
   // Autosave effect

@@ -11,7 +11,7 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   const session = await auth();
   const log = createApiLogger("/api/stripe/portal", "POST", session?.user?.id);
 
@@ -34,10 +34,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!subscription?.stripeCustomerId) {
-      return NextResponse.json(
-        { error: "No active subscription found" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No active subscription found" }, { status: 400 });
     }
 
     const portalSession = await getStripe().billingPortal.sessions.create({
@@ -49,9 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {
     log.error({ error: extractErrorDetails(error) }, "Portal error");
-    return NextResponse.json(
-      { error: "Failed to create portal session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
   }
 }

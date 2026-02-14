@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 const COOKIE_CONSENT_KEY = "cookie_consent";
@@ -12,33 +12,34 @@ export function getCookieConsent(): CookieConsentValue | null {
   return localStorage.getItem(COOKIE_CONSENT_KEY) as CookieConsentValue | null;
 }
 
-export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
+const noop = () => () => {};
 
-  useEffect(() => {
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!consent) {
-      setVisible(true);
-    }
-  }, []);
+export function CookieConsent() {
+  const hasConsent = useSyncExternalStore(
+    noop,
+    () => localStorage.getItem(COOKIE_CONSENT_KEY) !== null,
+    () => true
+  );
+  const [dismissed, setDismissed] = useState(false);
 
   function accept() {
     localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
-    setVisible(false);
+    setDismissed(true);
   }
 
   function reject() {
     localStorage.setItem(COOKIE_CONSENT_KEY, "essential_only");
-    setVisible(false);
+    setDismissed(true);
   }
 
-  if (!visible) return null;
+  if (hasConsent || dismissed) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#1A0626] border-t border-white/10">
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-4">
         <p className="text-sm text-[#94A3B8] flex-1">
-          We use essential cookies for authentication and security. We also use privacy-friendly analytics to improve our service.{" "}
+          We use essential cookies for authentication and security. We also use privacy-friendly
+          analytics to improve our service.{" "}
           <Link href="/privacy" className="text-[#4F46E5] hover:underline">
             Privacy Policy
           </Link>
