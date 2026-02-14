@@ -4,6 +4,7 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
   title: "Strategy Templates | 5 Ready-to-Export MT5 Expert Advisors",
@@ -48,16 +49,6 @@ const faqQuestions = [
 
 const templates = [
   {
-    name: "Range Breakout",
-    type: "Breakout",
-    description:
-      "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter and cancel-opposite-on-fill toggle.",
-    href: "/templates/breakout-ea-template",
-    color: "#F59E0B",
-    basicFields: "Range Period, Risk %, SL (ATR), TP (R-multiple)",
-    advanced: "London session filter, Cancel opposite order",
-  },
-  {
     name: "EMA Crossover",
     type: "Trend Following",
     description:
@@ -68,15 +59,6 @@ const templates = [
     advanced: "HTF trend filter, RSI confirmation",
   },
   {
-    name: "Trend Pullback",
-    type: "Trend Following",
-    description:
-      "Wait for a trend (EMA direction) then enter on an RSI pullback. Set the trend EMA, RSI dip level, risk %, and ATR stop loss.",
-    color: "#10B981",
-    basicFields: "Trend EMA, RSI Period, Dip Level, Risk %, SL (ATR)",
-    advanced: "London session filter, EMA buffer",
-  },
-  {
     name: "RSI Reversal",
     type: "Mean Reversion",
     description:
@@ -85,6 +67,25 @@ const templates = [
     color: "#22D3EE",
     basicFields: "RSI Period, OB Level, OS Level, Risk %, SL (ATR)",
     advanced: "Session filter, Trend filter",
+  },
+  {
+    name: "Range Breakout",
+    type: "Breakout",
+    description:
+      "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter and cancel-opposite-on-fill toggle.",
+    href: "/templates/breakout-ea-template",
+    color: "#F59E0B",
+    basicFields: "Range Period, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "London session filter, Cancel opposite order",
+  },
+  {
+    name: "Trend Pullback",
+    type: "Trend Following",
+    description:
+      "Wait for a trend (EMA direction) then enter on an RSI pullback. Set the trend EMA, RSI dip level, risk %, and ATR stop loss.",
+    color: "#10B981",
+    basicFields: "Trend EMA, RSI Period, Dip Level, Risk %, SL (ATR)",
+    advanced: "London session filter, EMA buffer",
   },
   {
     name: "MACD Crossover",
@@ -265,37 +266,14 @@ export default function TemplatesPage() {
 
         {/* FAQ */}
         <FAQSection questions={faqQuestions} />
-
-        {/* Internal links */}
-        <section className="mb-16 mt-16">
-          <div className="flex flex-wrap gap-3 text-sm">
-            <Link href="/" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Home
-            </Link>
-            <span className="text-[#64748B]">&middot;</span>
-            <Link href="/product" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Product
-            </Link>
-            <span className="text-[#64748B]">&middot;</span>
-            <Link href="/pricing" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Pricing
-            </Link>
-            <span className="text-[#64748B]">&middot;</span>
-            <Link href="/blog" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              Blog
-            </Link>
-            <span className="text-[#64748B]">&middot;</span>
-            <Link href="/faq" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
-              FAQ
-            </Link>
-          </div>
-        </section>
       </article>
 
       <CTASection
         title="Start building. Export your first bot today."
         description="Pick a template, adjust a few settings, and export clean MQL5 code to MetaTrader 5."
       />
+
+      <Footer />
     </div>
   );
 }

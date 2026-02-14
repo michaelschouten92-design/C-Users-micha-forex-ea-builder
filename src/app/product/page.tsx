@@ -242,7 +242,7 @@ export default function ProductPage() {
                 href="/templates"
                 className="text-sm text-[#A78BFA] font-medium hover:underline"
               >
-                View all templates &rarr;
+                View template details &rarr;
               </Link>
             </p>
           </section>
