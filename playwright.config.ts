@@ -69,7 +69,7 @@ export default defineConfig({
     },
   ],
 
-  // Run local dev server before starting the tests
+  // Run local dev server before starting the tests (CI starts its own server)
   webServer: process.env.CI
     ? undefined
     : {

@@ -98,8 +98,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forex_ea_builder_test
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Start server
+        run: npx next start &
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/forex_ea_builder_test
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run public page E2E tests
+        run: npx playwright test --project=chromium-no-auth
         env:
           CI: true
 
