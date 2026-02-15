@@ -21,7 +21,13 @@ export async function POST(request: Request) {
       return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
-    if (session.user.email !== process.env.ADMIN_EMAIL) {
+    // Look up email from DB (session may not include email depending on provider)
+    const adminUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true },
+    });
+
+    if (adminUser?.email !== process.env.ADMIN_EMAIL) {
       return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 });
     }
 
