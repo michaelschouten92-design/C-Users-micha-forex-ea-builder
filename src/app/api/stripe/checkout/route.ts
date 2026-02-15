@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
       ],
       success_url: `${env.AUTH_URL}/app?checkout=success`,
       cancel_url: `${env.AUTH_URL}/pricing?checkout=cancelled`,
+      automatic_tax: { enabled: true },
       allow_promotion_codes: true,
       metadata: {
         userId: user.id,
