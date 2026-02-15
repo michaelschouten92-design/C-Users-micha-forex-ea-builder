@@ -31,6 +31,7 @@ import {
 } from "./templates";
 
 import { sanitizeName, sanitizeMQL5String, isFieldOptimizable } from "./generators/shared";
+import { generateEmbeddedNewsData } from "../news-calendar";
 import { generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
@@ -1078,14 +1079,6 @@ export function generateMQL5Code(
         comment: "Close Positions During News",
         isOptimizable: false,
         group: "News Filter",
-      },
-      {
-        name: "InpExportNewsData",
-        type: "bool",
-        value: false,
-        comment: "Export News History (run once on live)",
-        isOptimizable: false,
-        group: "News Filter",
       }
     );
 
@@ -1097,25 +1090,23 @@ export function generateMQL5Code(
     code.globalVariables.push("datetime   g_lastNewsRefresh = 0;");
     code.globalVariables.push("string     g_baseCurrency, g_quoteCurrency;");
 
+    // Embedded news data for backtesting (generated at export time)
+    const newsData = generateEmbeddedNewsData(2015, 2030);
+    const newsArrayEntries = newsData.map((entry) => `   "${entry}"`).join(",\n");
+    code.globalVariables.push(`const string g_embeddedNews[] = {\n${newsArrayEntries}\n};`);
+
     // OnInit
     code.onInit.push(`   g_isTesting = (bool)MQLInfoInteger(MQL_TESTER);`);
     code.onInit.push(`   g_baseCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_BASE);`);
     code.onInit.push(`   g_quoteCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_PROFIT);`);
     code.onInit.push(``);
-    code.onInit.push(`   if(!g_isTesting)`);
-    code.onInit.push(`   {`);
-    code.onInit.push(`      if(InpExportNewsData)`);
-    code.onInit.push(`         ExportNewsHistory();`);
-    code.onInit.push(`      else`);
-    code.onInit.push(`         UpdateNewsCSV();`);
-    code.onInit.push(`   }`);
-    code.onInit.push(``);
     code.onInit.push(`   if(g_isTesting)`);
     code.onInit.push(`   {`);
-    code.onInit.push(`      if(!LoadNewsFromCSV())`);
-    code.onInit.push(
-      `         Print("WARNING: ea_builder_news.csv not found. Run EA on a live chart first to auto-generate.");`
-    );
+    code.onInit.push(`      LoadEmbeddedNews();`);
+    code.onInit.push(`   }`);
+    code.onInit.push(`   else`);
+    code.onInit.push(`   {`);
+    code.onInit.push(`      RefreshNewsCache();`);
     code.onInit.push(`   }`);
 
     // OnTick — news filter block
@@ -1200,145 +1191,30 @@ export function generateMQL5Code(
     code.helperFunctions.push(`}`);
     code.helperFunctions.push(``);
 
-    code.helperFunctions.push(`bool LoadNewsFromCSV()`);
+    code.helperFunctions.push(`void LoadEmbeddedNews()`);
     code.helperFunctions.push(`{`);
-    code.helperFunctions.push(
-      `   int handle = FileOpen("ea_builder_news.csv", FILE_READ|FILE_CSV|FILE_COMMON, ',');`
-    );
-    code.helperFunctions.push(`   if(handle == INVALID_HANDLE) return false;`);
     code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
     code.helperFunctions.push(`   g_newsCount = 0;`);
-    code.helperFunctions.push(
-      `   FileReadString(handle); FileReadString(handle); FileReadString(handle);`
-    );
-    code.helperFunctions.push(`   while(!FileIsEnding(handle))`);
+    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(g_embeddedNews); i++)`);
     code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      string dtStr = FileReadString(handle);`);
-    code.helperFunctions.push(`      string impStr = FileReadString(handle);`);
-    code.helperFunctions.push(`      string cur = FileReadString(handle);`);
-    code.helperFunctions.push(`      if(StringLen(dtStr) == 0) break;`);
+    code.helperFunctions.push(`      string parts[];`);
+    code.helperFunctions.push(`      StringSplit(g_embeddedNews[i], ',', parts);`);
+    code.helperFunctions.push(`      if(ArraySize(parts) < 3) continue;`);
+    code.helperFunctions.push(`      string cur = parts[2];`);
     code.helperFunctions.push(
       `      if(cur != g_baseCurrency && cur != g_quoteCurrency) continue;`
     );
-    code.helperFunctions.push(`      int imp = (int)StringToInteger(impStr);`);
+    code.helperFunctions.push(`      int imp = (int)StringToInteger(parts[1]);`);
     code.helperFunctions.push(
       `      if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
     );
     code.helperFunctions.push(`      int idx = g_newsCount++;`);
     code.helperFunctions.push(`      ArrayResize(g_newsEvents, g_newsCount, 1000);`);
-    code.helperFunctions.push(`      g_newsEvents[idx].time = StringToTime(dtStr);`);
+    code.helperFunctions.push(`      g_newsEvents[idx].time = StringToTime(parts[0]);`);
     code.helperFunctions.push(`      g_newsEvents[idx].importance = imp;`);
     code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(`   FileClose(handle);`);
-    code.helperFunctions.push(`   Print("Loaded ", g_newsCount, " news events from CSV");`);
-    code.helperFunctions.push(`   return g_newsCount > 0;`);
-    code.helperFunctions.push(`}`);
-    code.helperFunctions.push(``);
-
-    code.helperFunctions.push(`void ExportNewsHistory()`);
-    code.helperFunctions.push(`{`);
-    code.helperFunctions.push(`   MqlCalendarValue values[];`);
-    code.helperFunctions.push(`   datetime from = D'2010.01.01';`);
-    code.helperFunctions.push(`   datetime to = TimeCurrent();`);
     code.helperFunctions.push(
-      `   if(!CalendarValueHistory(values, from, to)) { Print("Calendar export failed"); return; }`
-    );
-    code.helperFunctions.push(
-      `   int handle = FileOpen("ea_builder_news.csv", FILE_WRITE|FILE_CSV|FILE_COMMON, ',');`
-    );
-    code.helperFunctions.push(
-      `   if(handle == INVALID_HANDLE) { Print("Cannot create CSV file"); return; }`
-    );
-    code.helperFunctions.push(`   FileWrite(handle, "datetime", "importance", "currency");`);
-    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(values); i++)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      MqlCalendarEvent event;`);
-    code.helperFunctions.push(`      if(!CalendarEventById(values[i].event_id, event)) continue;`);
-    code.helperFunctions.push(`      MqlCalendarCountry country;`);
-    code.helperFunctions.push(
-      `      if(!CalendarCountryById(event.country_id, country)) continue;`
-    );
-    code.helperFunctions.push(`      if((int)event.importance < 1) continue;`);
-    code.helperFunctions.push(
-      `      FileWrite(handle, TimeToString(values[i].time, TIME_DATE|TIME_MINUTES),`
-    );
-    code.helperFunctions.push(`               (int)event.importance, country.currency);`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(`   FileClose(handle);`);
-    code.helperFunctions.push(
-      `   Print("Exported ", ArraySize(values), " calendar events to ea_builder_news.csv");`
-    );
-    code.helperFunctions.push(`}`);
-    code.helperFunctions.push(``);
-
-    code.helperFunctions.push(`void UpdateNewsCSV()`);
-    code.helperFunctions.push(`{`);
-    code.helperFunctions.push(`   datetime lastTime = 0;`);
-    code.helperFunctions.push(
-      `   int readHandle = FileOpen("ea_builder_news.csv", FILE_READ|FILE_CSV|FILE_COMMON, ',');`
-    );
-    code.helperFunctions.push(`   if(readHandle != INVALID_HANDLE)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(
-      `      FileReadString(readHandle); FileReadString(readHandle); FileReadString(readHandle);`
-    );
-    code.helperFunctions.push(`      while(!FileIsEnding(readHandle))`);
-    code.helperFunctions.push(`      {`);
-    code.helperFunctions.push(`         string dtStr = FileReadString(readHandle);`);
-    code.helperFunctions.push(`         string impStr = FileReadString(readHandle);`);
-    code.helperFunctions.push(`         string cur = FileReadString(readHandle);`);
-    code.helperFunctions.push(`         if(StringLen(dtStr) == 0) break;`);
-    code.helperFunctions.push(`         datetime t = StringToTime(dtStr);`);
-    code.helperFunctions.push(`         if(t > lastTime) lastTime = t;`);
-    code.helperFunctions.push(`      }`);
-    code.helperFunctions.push(`      FileClose(readHandle);`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(``);
-    code.helperFunctions.push(`   if(lastTime == 0)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      ExportNewsHistory();`);
-    code.helperFunctions.push(`      return;`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(``);
-    code.helperFunctions.push(`   MqlCalendarValue values[];`);
-    code.helperFunctions.push(`   datetime from = lastTime + 1;`);
-    code.helperFunctions.push(`   datetime to = TimeCurrent();`);
-    code.helperFunctions.push(
-      `   if(from >= to) { Print("News CSV already up to date"); return; }`
-    );
-    code.helperFunctions.push(``);
-    code.helperFunctions.push(
-      `   if(!CalendarValueHistory(values, from, to) || ArraySize(values) == 0)`
-    );
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      Print("News CSV already up to date");`);
-    code.helperFunctions.push(`      return;`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(``);
-    code.helperFunctions.push(
-      `   int handle = FileOpen("ea_builder_news.csv", FILE_READ|FILE_WRITE|FILE_CSV|FILE_COMMON, ',');`
-    );
-    code.helperFunctions.push(`   if(handle == INVALID_HANDLE) return;`);
-    code.helperFunctions.push(`   FileSeek(handle, 0, SEEK_END);`);
-    code.helperFunctions.push(`   int count = 0;`);
-    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(values); i++)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      MqlCalendarEvent event;`);
-    code.helperFunctions.push(`      if(!CalendarEventById(values[i].event_id, event)) continue;`);
-    code.helperFunctions.push(`      MqlCalendarCountry country;`);
-    code.helperFunctions.push(
-      `      if(!CalendarCountryById(event.country_id, country)) continue;`
-    );
-    code.helperFunctions.push(`      if((int)event.importance < 1) continue;`);
-    code.helperFunctions.push(
-      `      FileWrite(handle, TimeToString(values[i].time, TIME_DATE|TIME_MINUTES),`
-    );
-    code.helperFunctions.push(`               (int)event.importance, country.currency);`);
-    code.helperFunctions.push(`      count++;`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(`   FileClose(handle);`);
-    code.helperFunctions.push(
-      `   Print("Appended ", count, " new news events to CSV (up to ", TimeToString(to), ")");`
+      `   Print("Loaded ", g_newsCount, " news events from embedded data");`
     );
     code.helperFunctions.push(`}`);
   }
