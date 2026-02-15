@@ -134,8 +134,8 @@ export default function TemplatesPage() {
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
             Pick a template, adjust a few settings, and export a working MetaTrader 5 Expert
-            Advisor. Each template includes built-in risk management with ATR-based stop loss,
-            risk-reward take profit, and proper position sizing. No coding required.
+            Advisor. Each template includes built-in risk management with ATR-based stop loss, take
+            profit based on risk-reward ratio, and proper position sizing. No coding required.
           </p>
         </header>
 

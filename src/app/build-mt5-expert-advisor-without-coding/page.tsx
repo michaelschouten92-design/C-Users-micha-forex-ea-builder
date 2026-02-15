@@ -194,7 +194,7 @@ export default function BuildWithoutCodingPage() {
                 },
                 {
                   title: "Built-in risk management",
-                  desc: "ATR-based stop loss, risk-reward take profit, and percentage-based position sizing.",
+                  desc: "ATR-based stop loss, take profit based on risk-reward ratio, and percentage-based position sizing.",
                 },
                 {
                   title: "Clean, readable code",

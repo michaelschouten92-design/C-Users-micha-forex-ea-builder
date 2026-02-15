@@ -184,7 +184,8 @@ export default function ProductPage() {
             </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
               Each template produces a fully functional Expert Advisor with ATR-based stop loss,
-              risk-reward take profit, and proper position sizing — all pre-configured.
+              take profit based on risk-reward ratio, and proper position sizing — all
+              pre-configured.
             </p>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
@@ -315,7 +316,7 @@ export default function ProductPage() {
                 },
                 {
                   title: "Built-in risk management",
-                  desc: "ATR-based stop loss, risk-reward take profit, and percentage-based position sizing.",
+                  desc: "ATR-based stop loss, take profit based on risk-reward ratio, and percentage-based position sizing.",
                 },
               ].map((item) => (
                 <div

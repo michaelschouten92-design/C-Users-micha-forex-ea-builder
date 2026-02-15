@@ -506,7 +506,7 @@ export default async function Home() {
               {
                 title: "Strategy templates that work instantly",
                 description:
-                  "Every template exports a valid Expert Advisor immediately. ATR-based stop loss, risk-reward take profit, and proper position sizing — all pre-configured.",
+                  "Every template exports a valid Expert Advisor immediately. ATR-based stop loss, take profit based on risk-reward ratio, and proper position sizing — all pre-configured.",
                 icon: (
                   <path
                     strokeLinecap="round"

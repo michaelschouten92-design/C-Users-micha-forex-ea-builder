@@ -93,8 +93,8 @@ export default function MT5ExportPage() {
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-3">Built-in risk management</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Percentage-based position sizing, ATR-based stop loss, and configurable
-                  risk-reward take profit. No manual calculation needed.
+                  Percentage-based position sizing, ATR-based stop loss, and configurable take
+                  profit based on risk-reward ratio. No manual calculation needed.
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
