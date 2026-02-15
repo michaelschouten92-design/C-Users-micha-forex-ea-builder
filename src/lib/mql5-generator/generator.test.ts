@@ -3590,7 +3590,7 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("InpATRPeriod");
+      expect(code).toContain("InpVolATRPeriod");
       expect(code).toContain("iATR");
       expect(code).toContain("InpMinATRPips");
       expect(code).toContain("InpMaxATRPips");

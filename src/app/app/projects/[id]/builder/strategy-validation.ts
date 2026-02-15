@@ -40,6 +40,36 @@ export function validateStrategy(
 
   // Timing is optional — without it, the strategy trades whenever conditions are met
 
+  // Cross-field validation warnings for entry strategy nodes
+  for (const n of nodes) {
+    const d = n.data as Record<string, unknown>;
+    if (!("entryType" in d)) continue;
+
+    // RSI levels: oversold should be less than overbought
+    if (
+      "oversoldLevel" in d &&
+      "overboughtLevel" in d &&
+      typeof d.oversoldLevel === "number" &&
+      typeof d.overboughtLevel === "number" &&
+      d.oversoldLevel >= d.overboughtLevel
+    ) {
+      issues.push({
+        type: "warning",
+        message: "RSI oversold level should be lower than overbought level",
+        nodeType: n.type,
+      });
+    }
+
+    // TP R-multiple below 1 means you win less than you risk
+    if ("tpRMultiple" in d && typeof d.tpRMultiple === "number" && d.tpRMultiple < 1) {
+      issues.push({
+        type: "warning",
+        message: `Take profit (${d.tpRMultiple}R) is less than 1:1 — you risk more than you win per trade`,
+        nodeType: n.type,
+      });
+    }
+  }
+
   // Calculate if strategy can be exported (no errors)
   const hasErrors = issues.some((i) => i.type === "error");
   const canExport = !hasErrors && nodes.length > 0;

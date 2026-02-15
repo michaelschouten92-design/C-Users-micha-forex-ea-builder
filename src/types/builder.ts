@@ -639,6 +639,7 @@ export interface BuildJsonSettings {
   cooldownAfterLossMinutes?: number;
   minBarsBetweenTrades?: number;
   maxTotalDrawdownPercent?: number;
+  equityTargetPercent?: number; // Stop trading when equity grows by this % from starting balance
 }
 
 // Prop Firm Presets

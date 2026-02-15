@@ -245,6 +245,26 @@ export function generateOnTick(
 `;
   }
 
+  // Build equity target check if enabled
+  let equityTargetCode = "";
+  if (ctx.equityTargetPercent > 0) {
+    equityTargetCode = `
+   //--- Equity Target
+   {
+      static double gStartBalance = 0;
+      if(gStartBalance == 0) gStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+      double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+      double growth = (equity - gStartBalance) / gStartBalance * 100.0;
+      if(growth >= ${ctx.equityTargetPercent})
+      {
+         CloseAllPositions();
+         Print("Equity target reached: +", DoubleToString(growth, 2), "% (target ${ctx.equityTargetPercent}%)");
+         return;
+      }
+   }
+`;
+  }
+
   // Build cooldown after loss check if enabled
   let cooldownCode = "";
   if (ctx.cooldownAfterLossMinutes > 0) {
@@ -315,7 +335,7 @@ void OnTick()
       return;
    }
 
-${totalDrawdownCode}${dailyPnlCode}${cooldownCode}${minBarsCode}
+${totalDrawdownCode}${equityTargetCode}${dailyPnlCode}${cooldownCode}${minBarsCode}
    //--- Count current positions
    int positionsCount = CountPositions();
 

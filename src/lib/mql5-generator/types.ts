@@ -20,6 +20,7 @@ export interface GeneratorContext {
   cooldownAfterLossMinutes: number;
   minBarsBetweenTrades: number;
   maxTotalDrawdownPercent: number;
+  equityTargetPercent: number;
 }
 
 export interface IndicatorVariable {

@@ -705,6 +705,7 @@ export function generateMQL5Code(
     cooldownAfterLossMinutes: buildJson.settings?.cooldownAfterLossMinutes ?? 0,
     minBarsBetweenTrades: buildJson.settings?.minBarsBetweenTrades ?? 0,
     maxTotalDrawdownPercent: buildJson.settings?.maxTotalDrawdownPercent ?? 0,
+    equityTargetPercent: buildJson.settings?.equityTargetPercent ?? 0,
   };
 
   const descValue = `"${sanitizeMQL5String(projectName)}"`;
@@ -903,10 +904,10 @@ export function generateMQL5Code(
     const maxPips = vData.maxAtrPips ?? 50;
     code.inputs.push(
       {
-        name: "InpATRPeriod",
+        name: "InpVolATRPeriod",
         type: "int",
         value: atrPeriod,
-        comment: "ATR Period",
+        comment: "ATR Period (Volatility Filter)",
         isOptimizable: isFieldOptimizable(vNode, "atrPeriod"),
         group: "Volatility Filter",
       },
@@ -927,19 +928,20 @@ export function generateMQL5Code(
         group: "Volatility Filter",
       }
     );
-    code.onTick.push(`//--- Volatility filter (ATR)`);
-    code.onTick.push(`{`);
-    code.onTick.push(`   double atrBuf[];`);
-    code.onTick.push(`   ArraySetAsSeries(atrBuf, true);`);
-    code.onTick.push(`   int atrHandle = iATR(_Symbol, ${atrTf}, InpATRPeriod);`);
-    code.onTick.push(
-      `   if(atrHandle != INVALID_HANDLE && CopyBuffer(atrHandle, 0, 0, 1, atrBuf) == 1)`
+    code.globalVariables.push("int volATRHandle = INVALID_HANDLE;");
+    code.globalVariables.push("double volATRBuf[];");
+    code.onInit.push(`volATRHandle = iATR(_Symbol, ${atrTf}, InpVolATRPeriod);`);
+    code.onInit.push(
+      'if(volATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for volatility filter"); return(INIT_FAILED); }'
     );
-    code.onTick.push(`   {`);
-    code.onTick.push(`      double atrPips = atrBuf[0] / (_Point * _pipFactor);`);
-    code.onTick.push(`      if(InpMinATRPips > 0 && atrPips < InpMinATRPips) return;`);
-    code.onTick.push(`      if(InpMaxATRPips > 0 && atrPips > InpMaxATRPips) return;`);
-    code.onTick.push(`   }`);
+    code.onInit.push("ArraySetAsSeries(volATRBuf, true);");
+    code.onDeinit.push("if(volATRHandle != INVALID_HANDLE) IndicatorRelease(volATRHandle);");
+    code.onTick.push(`//--- Volatility filter (ATR)`);
+    code.onTick.push(`if(CopyBuffer(volATRHandle, 0, 0, 1, volATRBuf) == 1)`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   double atrPips = volATRBuf[0] / (_Point * _pipFactor);`);
+    code.onTick.push(`   if(InpMinATRPips > 0 && atrPips < InpMinATRPips) return;`);
+    code.onTick.push(`   if(InpMaxATRPips > 0 && atrPips > InpMaxATRPips) return;`);
     code.onTick.push(`}`);
   }
 

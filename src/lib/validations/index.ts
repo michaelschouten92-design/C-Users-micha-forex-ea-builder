@@ -753,6 +753,7 @@ const buildSettingsSchema = z.object({
   cooldownAfterLossMinutes: z.number().int().min(1).max(1440).optional(),
   minBarsBetweenTrades: z.number().int().min(1).max(500).optional(),
   maxTotalDrawdownPercent: z.number().min(1).max(50).optional(),
+  equityTargetPercent: z.number().min(1).max(1000).optional(),
 });
 
 // Build metadata schema

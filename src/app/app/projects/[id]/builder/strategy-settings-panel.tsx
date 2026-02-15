@@ -148,6 +148,26 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
             onChange={(v) => update({ maxDailyLossPercent: v })}
             hint="Stops trading for the day after this loss (required by most prop firms)"
           />
+          {(settings.maxDailyLossPercent ?? 0) > 0 &&
+            (settings.maxTotalDrawdownPercent ?? 0) > 0 &&
+            settings.maxDailyLossPercent! >= settings.maxTotalDrawdownPercent! && (
+              <p className="text-[10px] text-[#FBBF24] mt-1 flex items-center gap-1">
+                <svg
+                  className="w-3 h-3 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.832c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                Daily loss limit should be lower than total drawdown limit
+              </p>
+            )}
 
           {/* Advanced section */}
           <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
@@ -204,6 +224,17 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                   step={1}
                   onChange={(v) => update({ minBarsBetweenTrades: v || undefined })}
                   hint="Waits X candles before taking another trade to prevent overtrading"
+                />
+
+                {/* Equity Target */}
+                <SettingsToggleNumberField
+                  label="Equity Target (%)"
+                  value={settings.equityTargetPercent ?? 0}
+                  min={1}
+                  max={1000}
+                  step={1}
+                  onChange={(v) => update({ equityTargetPercent: v || undefined })}
+                  hint="Stops trading when account equity grows by this % from starting balance"
                 />
               </div>
             )}

@@ -26,6 +26,7 @@ export function NodeToolbar({
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
     new Set(["entrystrategy"])
   );
+  const [search, setSearch] = useState("");
   const categories: NodeCategory[] = ["entrystrategy", "timing", "trademanagement"];
 
   const toggleCategory = (category: NodeCategory) => {
@@ -118,34 +119,67 @@ export function NodeToolbar({
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="p-3 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-white">Blocks</h3>
-          <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
+      <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">Blocks</h3>
+            <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors"
+              title="Close"
+              aria-label="Close blocks panel"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors"
-            title="Close"
-            aria-label="Close blocks panel"
+        <div className="relative mt-2">
+          <svg
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#64748B]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onPointerDown={(e) => e.stopPropagation()}
+            placeholder="Search blocks..."
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#0F172A] border border-[rgba(79,70,229,0.2)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors"
+          />
+        </div>
       </div>
 
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {categories.map((category) => {
-          const templates = NODE_TEMPLATES.filter((t) => t.category === category);
-          const isExpanded = expandedCategories.has(category);
+          const searchLower = search.toLowerCase().trim();
+          const templates = NODE_TEMPLATES.filter(
+            (t) =>
+              t.category === category &&
+              (!searchLower ||
+                t.label.toLowerCase().includes(searchLower) ||
+                (t.description ?? "").toLowerCase().includes(searchLower))
+          );
+          if (searchLower && templates.length === 0) return null;
+          const isExpanded = searchLower ? true : expandedCategories.has(category);
           const styles = categoryStyles[category];
 
           return (
