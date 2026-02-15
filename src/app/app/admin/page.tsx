@@ -290,7 +290,7 @@ export default function AdminPage() {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-col items-start gap-1">
                         {/* Change Tier */}
                         <button
                           onClick={() => {
