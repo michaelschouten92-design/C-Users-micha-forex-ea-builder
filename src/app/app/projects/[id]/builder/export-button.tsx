@@ -53,6 +53,7 @@ export function ExportButton({
   const [showHistory, setShowHistory] = useState(false);
   const [historyItems, setHistoryItems] = useState<ExportHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   useEffect(() => {
     if (!showModal) return;
@@ -68,7 +69,7 @@ export function ExportButton({
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKey);
     };
-  }, [showModal]);
+  }, [showModal, setShowUpgradePrompt]);
 
   // Clean up step timers on unmount
   useEffect(() => {
@@ -195,7 +196,6 @@ export function ExportButton({
     }
   }
 
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const isDisabled = exporting || !hasNodes || !canExport;
 
   return (

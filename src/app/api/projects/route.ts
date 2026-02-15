@@ -111,11 +111,23 @@ export async function POST(request: Request) {
 
     // Use transaction to atomically check limit and create project
     const result = await prisma.$transaction(async (tx) => {
-      // Count inside transaction to prevent race conditions
-      const [tier, projectCount] = await Promise.all([
-        getCachedTier(session.user.id),
+      // Read tier directly from DB inside transaction to prevent race conditions
+      const [subscription, projectCount] = await Promise.all([
+        tx.subscription.findUnique({
+          where: { userId: session.user.id },
+          select: { tier: true, status: true, currentPeriodEnd: true },
+        }),
         tx.project.count({ where: { userId: session.user.id, deletedAt: null } }),
       ]);
+
+      let tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+      if (tier !== "FREE") {
+        const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+        const isExpired =
+          subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
+        if (!isActive || isExpired) tier = "FREE";
+      }
+
       const max = PLANS[tier].limits.maxProjects;
 
       if (projectCount >= max) {

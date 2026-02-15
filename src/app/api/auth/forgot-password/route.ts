@@ -66,25 +66,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Delete any existing tokens for this email + clean up all expired tokens
-    await Promise.all([
-      prisma.passwordResetToken.deleteMany({ where: { email } }),
-      prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
-    ]);
-
     // Generate secure token and hash it for storage
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Save hashed token (plaintext token is only sent via email)
-    await prisma.passwordResetToken.create({
-      data: {
-        email,
-        token: tokenHash,
-        expiresAt,
-      },
-    });
+    // Atomically delete old tokens and create new one
+    await prisma.$transaction([
+      prisma.passwordResetToken.deleteMany({ where: { email } }),
+      prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
+      prisma.passwordResetToken.create({
+        data: {
+          email,
+          token: tokenHash,
+          expiresAt,
+        },
+      }),
+    ]);
 
     // Build reset URL with plaintext token
     const resetUrl = `${env.AUTH_URL}/reset-password?token=${token}`;

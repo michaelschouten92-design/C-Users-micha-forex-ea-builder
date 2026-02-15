@@ -765,8 +765,8 @@ const buildMetadataSchema = z.object({
 // Complete BuildJson schema
 export const buildJsonSchema = z.object({
   version: z.enum(["1.0", "1.1"]),
-  nodes: z.array(builderNodeSchema),
-  edges: z.array(builderEdgeSchema),
+  nodes: z.array(builderNodeSchema).max(500, "Maximum 500 nodes allowed"),
+  edges: z.array(builderEdgeSchema).max(1000, "Maximum 1000 edges allowed"),
   viewport: viewportSchema,
   metadata: buildMetadataSchema,
   settings: buildSettingsSchema,
