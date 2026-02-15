@@ -1129,7 +1129,25 @@ export function generateEntryLogic(
 function addPendingOrderHelpers(code: GeneratedCode, ctx: GeneratorContext): void {
   const comment = sanitizeMQL5String(ctx.comment);
 
+  code.inputs.push({
+    name: "InpPendingExpiryHours",
+    type: "int",
+    value: 24,
+    comment: "Pending Order Expiry (hours, 0=no expiry)",
+    isOptimizable: false,
+    group: "Pending Orders",
+  });
+
   code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Get pending order expiry time                                      |
+//+------------------------------------------------------------------+
+datetime GetPendingExpiry()
+{
+   if(InpPendingExpiryHours <= 0) return 0;
+   return TimeCurrent() + InpPendingExpiryHours * 3600;
+}
+
+//+------------------------------------------------------------------+
 //| Delete Pending Orders for this EA                                  |
 //+------------------------------------------------------------------+
 void DeletePendingOrders()
@@ -1158,8 +1176,10 @@ bool PlaceBuyStop(double lots, double sl, double tp, double offsetPips)
    double entryPrice = NormalizeDouble(ask + offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
+   datetime expiry = GetPendingExpiry();
+   ENUM_ORDER_TYPE_TIME timeType = (expiry > 0) ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
 
-   if(trade.BuyStop(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+   if(trade.BuyStop(lots, entryPrice, _Symbol, slPrice, tpPrice, timeType, expiry, "${comment}"))
       return true;
 
    Print("BuyStop failed: ", trade.ResultRetcodeDescription());
@@ -1176,8 +1196,10 @@ bool PlaceBuyLimit(double lots, double sl, double tp, double offsetPips)
    double entryPrice = NormalizeDouble(ask - offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
+   datetime expiry = GetPendingExpiry();
+   ENUM_ORDER_TYPE_TIME timeType = (expiry > 0) ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
 
-   if(trade.BuyLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+   if(trade.BuyLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, timeType, expiry, "${comment}"))
       return true;
 
    Print("BuyLimit failed: ", trade.ResultRetcodeDescription());
@@ -1194,8 +1216,10 @@ bool PlaceSellStop(double lots, double sl, double tp, double offsetPips)
    double entryPrice = NormalizeDouble(bid - offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
+   datetime expiry = GetPendingExpiry();
+   ENUM_ORDER_TYPE_TIME timeType = (expiry > 0) ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
 
-   if(trade.SellStop(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+   if(trade.SellStop(lots, entryPrice, _Symbol, slPrice, tpPrice, timeType, expiry, "${comment}"))
       return true;
 
    Print("SellStop failed: ", trade.ResultRetcodeDescription());
@@ -1212,8 +1236,10 @@ bool PlaceSellLimit(double lots, double sl, double tp, double offsetPips)
    double entryPrice = NormalizeDouble(bid + offset, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
+   datetime expiry = GetPendingExpiry();
+   ENUM_ORDER_TYPE_TIME timeType = (expiry > 0) ? ORDER_TIME_SPECIFIED : ORDER_TIME_GTC;
 
-   if(trade.SellLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, ORDER_TIME_GTC, 0, "${comment}"))
+   if(trade.SellLimit(lots, entryPrice, _Symbol, slPrice, tpPrice, timeType, expiry, "${comment}"))
       return true;
 
    Print("SellLimit failed: ", trade.ResultRetcodeDescription());

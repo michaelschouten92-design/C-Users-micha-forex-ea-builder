@@ -755,7 +755,7 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("InpTrailStartPips");
     });
 
-    it("generates ATR trailing stop with per-bar caching", () => {
+    it("generates ATR trailing stop with per-tick updates", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
         makeNode("b1", "place-buy", {
@@ -779,11 +779,8 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      expect(code).toContain("Cache ATR per bar");
-      expect(code).toContain("static double cachedTrailATR");
-      expect(code).toContain("static datetime lastTrailATRBar");
-      expect(code).toContain("cachedTrailATR = trailATRBuffer[0]");
-      expect(code).toContain("cachedTrailATR / point");
+      expect(code).toContain("CopyBuffer(trailATRHandle");
+      expect(code).toContain("trailATRBuffer[0] / point");
     });
 
     it("generates Partial Close code with breakeven option", () => {

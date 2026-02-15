@@ -269,18 +269,7 @@ function generateTrailingStopCode(
   code.onTick.push("// Trailing Stop Management");
 
   if (data.method === "ATR_BASED") {
-    code.onTick.push("// Cache ATR per bar to avoid recalculating every tick");
-    code.onTick.push("static double cachedTrailATR = 0;");
-    code.onTick.push("static datetime lastTrailATRBar = 0;");
-    code.onTick.push("{");
-    code.onTick.push("   datetime curBar = iTime(_Symbol, PERIOD_CURRENT, 0);");
-    code.onTick.push("   if(curBar != lastTrailATRBar)");
-    code.onTick.push("   {");
-    code.onTick.push("      if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;");
-    code.onTick.push("      cachedTrailATR = trailATRBuffer[0];");
-    code.onTick.push("      lastTrailATRBar = curBar;");
-    code.onTick.push("   }");
-    code.onTick.push("}");
+    code.onTick.push("if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;");
   }
 
   code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
@@ -301,7 +290,7 @@ function generateTrailingStopCode(
   // Calculate trailPoints based on method
   if (data.method === "ATR_BASED") {
     code.onTick.push(
-      "         double trailPoints = (cachedTrailATR / point) * InpTrailATRMultiplier;"
+      "         double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;"
     );
   } else if (data.method === "PERCENTAGE") {
     // Trail by percentage of current profit in points
@@ -513,9 +502,12 @@ void CleanPartialClosedTickets()
   code.onTick.push("         {");
   code.onTick.push(
     "            double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
-    "            double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;"
+    "            double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
+    "            double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;",
+    "            // Ensure remaining position meets minimum lot requirement",
+    "            if(volume - closeVolume < pcMinLot) closeVolume = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
   );
-  code.onTick.push("            if(closeVolume >= SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))");
+  code.onTick.push("            if(closeVolume >= pcMinLot)");
   code.onTick.push("            {");
   code.onTick.push("               double cachedTP = PositionGetDouble(POSITION_TP);");
   code.onTick.push("               trade.PositionClosePartial(ticket, closeVolume);");
