@@ -605,75 +605,12 @@ export function ExportButton({
                       data-export-code
                       className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#CBD5E1] font-mono"
                     >
-                      {result.code}
+                      {highlightMQL5(result.code)}
                     </pre>
                   </div>
 
                   {/* Next Steps Guide */}
-                  <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 space-y-3">
-                    <h4 className="text-sm font-semibold text-white">Next steps</h4>
-                    <ol className="space-y-2 text-xs text-[#94A3B8]">
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          1
-                        </span>
-                        <span>
-                          If you haven&apos;t already,{" "}
-                          <strong className="text-white">download MetaTrader 5</strong> from your
-                          broker&apos;s website and install it
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          2
-                        </span>
-                        <span>
-                          Place the <strong className="text-white">.mq5</strong> file in{" "}
-                          <strong className="text-white">MQL5/Experts</strong> folder (File &gt;
-                          Open Data Folder in MT5)
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          3
-                        </span>
-                        <span>
-                          Open in MetaEditor and press <strong className="text-white">F7</strong> to
-                          compile
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          4
-                        </span>
-                        <span>
-                          Open <strong className="text-white">Strategy Tester</strong> (Ctrl+R) and
-                          select your EA
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          5
-                        </span>
-                        <span>
-                          Use{" "}
-                          <strong className="text-white">
-                            &quot;Every tick based on real ticks&quot;
-                          </strong>{" "}
-                          modeling for the most accurate backtest results
-                        </span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          6
-                        </span>
-                        <span>
-                          Backtest <strong className="text-white">minimum 2 years</strong> of data
-                          to validate the strategy
-                        </span>
-                      </li>
-                    </ol>
-                  </div>
+                  <NextStepsGuide />
 
                   {/* Backtest Checklist */}
                   <BacktestChecklist />
@@ -835,6 +772,207 @@ export function ExportButton({
         </div>
       )}
     </>
+  );
+}
+
+function highlightMQL5(code: string): React.ReactNode[] {
+  const lines = code.split("\n");
+  return lines.map((line, lineIdx) => {
+    const parts: React.ReactNode[] = [];
+    let remaining = line;
+    let key = 0;
+
+    // Process line for syntax highlighting
+    while (remaining.length > 0) {
+      // Line comments
+      const commentIdx = remaining.indexOf("//");
+      if (commentIdx === 0) {
+        parts.push(
+          <span key={key++} className="text-[#6A9955]">
+            {remaining}
+          </span>
+        );
+        remaining = "";
+        break;
+      }
+
+      // Find the earliest match
+      let earliest = remaining.length;
+      let matchType = "";
+
+      if (commentIdx > 0 && commentIdx < earliest) {
+        earliest = commentIdx;
+        matchType = "comment";
+      }
+
+      // String literals
+      const strIdx = remaining.indexOf('"');
+      if (strIdx >= 0 && strIdx < earliest) {
+        earliest = strIdx;
+        matchType = "string";
+      }
+
+      // Push text before match
+      if (earliest > 0) {
+        const text = remaining.slice(0, earliest);
+        parts.push(<span key={key++}>{highlightKeywords(text)}</span>);
+        remaining = remaining.slice(earliest);
+        continue;
+      }
+
+      if (matchType === "comment") {
+        parts.push(
+          <span key={key++} className="text-[#6A9955]">
+            {remaining}
+          </span>
+        );
+        remaining = "";
+      } else if (matchType === "string") {
+        const endQuote = remaining.indexOf('"', 1);
+        if (endQuote >= 0) {
+          parts.push(
+            <span key={key++} className="text-[#CE9178]">
+              {remaining.slice(0, endQuote + 1)}
+            </span>
+          );
+          remaining = remaining.slice(endQuote + 1);
+        } else {
+          parts.push(
+            <span key={key++} className="text-[#CE9178]">
+              {remaining}
+            </span>
+          );
+          remaining = "";
+        }
+      } else {
+        parts.push(<span key={key++}>{highlightKeywords(remaining)}</span>);
+        remaining = "";
+      }
+    }
+
+    return (
+      <span key={lineIdx}>
+        {parts}
+        {lineIdx < lines.length - 1 ? "\n" : ""}
+      </span>
+    );
+  });
+}
+
+function highlightKeywords(text: string): React.ReactNode {
+  // MQL5 keywords and types
+  const pattern =
+    /\b(int|double|string|bool|void|input|datetime|long|ulong|float|color|enum|struct|class|return|if|else|for|while|switch|case|break|continue|true|false|NULL|ENUM_\w+|ORDER_\w+|POSITION_\w+|SYMBOL_\w+|PERIOD_\w+|MODE_\w+|TRADE_\w+|DEAL_\w+|ACCOUNT_\w+|PRICE_\w+|#property|#include|#define)\b/g;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const word = match[0];
+    const isDirective = word.startsWith("#");
+    const isType =
+      /^(int|double|string|bool|void|input|datetime|long|ulong|float|color|enum|struct|class)$/.test(
+        word
+      );
+    const isConst =
+      /^(true|false|NULL)$/.test(word) ||
+      /^(ENUM_|ORDER_|POSITION_|SYMBOL_|PERIOD_|MODE_|TRADE_|DEAL_|ACCOUNT_|PRICE_)/.test(word);
+    const className = isDirective
+      ? "text-[#C586C0]"
+      : isType
+        ? "text-[#4EC9B0]"
+        : isConst
+          ? "text-[#4FC1FF]"
+          : "text-[#C586C0]";
+    parts.push(
+      <span key={`${match.index}`} className={className}>
+        {word}
+      </span>
+    );
+    lastIndex = match.index + word.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length === 1 && typeof parts[0] === "string" ? parts[0] : <>{parts}</>;
+}
+
+function NextStepsGuide() {
+  const [expanded, setExpanded] = useState(false);
+
+  const steps = [
+    <>
+      If you haven&apos;t already, <strong className="text-white">download MetaTrader 5</strong>{" "}
+      from your broker&apos;s website and install it
+    </>,
+    <>
+      Place the <strong className="text-white">.mq5</strong> file in{" "}
+      <strong className="text-white">MQL5/Experts</strong> folder (File &gt; Open Data Folder in
+      MT5)
+    </>,
+    <>
+      Open in MetaEditor and press <strong className="text-white">F7</strong> to compile
+    </>,
+    <>
+      Open <strong className="text-white">Strategy Tester</strong> (Ctrl+R) and select your EA
+    </>,
+    <>
+      Use <strong className="text-white">&quot;Every tick based on real ticks&quot;</strong>{" "}
+      modeling for the most accurate backtest results
+    </>,
+    <>
+      Backtest <strong className="text-white">minimum 2 years</strong> of data to validate the
+      strategy
+    </>,
+  ];
+
+  return (
+    <div className="border border-[rgba(79,70,229,0.2)] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
+      >
+        <span className="flex items-center gap-2">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          How to install in MetaTrader 5
+        </span>
+        <svg
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="px-4 pb-3">
+          <ol className="space-y-2 text-xs text-[#94A3B8]">
+            {steps.map((step, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                  {i + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -21,6 +21,7 @@ interface SelectFieldProps<T extends string> {
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
   tooltip?: string;
+  helpText?: string;
 }
 
 export function SelectField<T extends string>({
@@ -29,6 +30,7 @@ export function SelectField<T extends string>({
   options,
   onChange,
   tooltip,
+  helpText,
 }: SelectFieldProps<T>) {
   const id = useId();
 
@@ -54,6 +56,7 @@ export function SelectField<T extends string>({
           </option>
         ))}
       </select>
+      {helpText && <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>}
     </div>
   );
 }
@@ -66,6 +69,7 @@ interface NumberFieldProps {
   step?: number;
   onChange: (value: number) => void;
   tooltip?: string;
+  helpText?: string;
 }
 
 export function NumberField({
@@ -76,6 +80,7 @@ export function NumberField({
   step = 1,
   onChange,
   tooltip,
+  helpText,
 }: NumberFieldProps) {
   const id = useId();
   const [localValue, setLocalValue] = useState(String(value));
@@ -121,6 +126,7 @@ export function NumberField({
         onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
       />
+      {helpText && <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>}
     </div>
   );
 }

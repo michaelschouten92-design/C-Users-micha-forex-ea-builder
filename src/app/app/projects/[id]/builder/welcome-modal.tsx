@@ -7,7 +7,8 @@ const STORAGE_KEY = "algostudio-builder-onboarded";
 const STEPS = [
   {
     title: "Welcome to the Strategy Builder",
-    description: "Build trading strategies visually by connecting blocks. No coding required.",
+    description:
+      "Build a complete trading bot in 3 steps. Drag blocks onto the canvas, adjust settings, and export clean MQL5 code. No coding required.",
     icon: (
       <svg
         className="w-10 h-10 text-[#4F46E5]"
@@ -25,9 +26,9 @@ const STEPS = [
     ),
   },
   {
-    title: "1. Add an Entry Strategy",
+    title: "1. Drag an Entry Strategy",
     description:
-      "Add an entry strategy block (EMA Crossover, Range Breakout, RSI Reversal, etc.) to the canvas. It includes signals, stop loss, take profit and position sizing.",
+      "From the left panel, drag an entry strategy block (e.g. EMA Crossover) onto the canvas. Each block includes entry signals, stop loss, take profit and position sizing — everything you need for a working EA.",
     icon: (
       <svg
         className="w-10 h-10 text-[#10B981]"
@@ -45,9 +46,29 @@ const STEPS = [
     ),
   },
   {
-    title: "2. Configure & Export",
+    title: "2. Add Filters & Management",
     description:
-      "Adjust the settings to your liking. Optionally add a timing block to limit trading hours, or trade management blocks (trailing stop, breakeven). Then export your .mq5 file.",
+      "Optionally add timing filters (Trading Sessions, Max Spread) to control when the EA trades, and trade management blocks (Trailing Stop, Breakeven) to manage open positions.",
+    icon: (
+      <svg
+        className="w-10 h-10 text-[#F59E0B]"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "3. Configure & Export",
+    description:
+      "Click any block to adjust its settings in the right panel. When ready, hit Export MQL5 in the bottom bar. Load the .mq5 file into MetaTrader 5 and backtest it.",
     icon: (
       <svg
         className="w-10 h-10 text-[#A78BFA]"

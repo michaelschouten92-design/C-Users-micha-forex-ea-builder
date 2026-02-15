@@ -721,7 +721,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "trading-session",
     label: "Trading Sessions",
     category: "timing",
-    description: "Predefined market sessions",
+    description: "Only trade during selected market sessions (filter)",
     defaultData: {
       label: "Trading Sessions",
       category: "timing",
@@ -742,7 +742,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "max-spread",
     label: "Max Spread",
     category: "timing",
-    description: "Skip trading when spread is too wide",
+    description: "Block new trades when spread exceeds your limit (filter)",
     defaultData: {
       label: "Max Spread",
       category: "timing",
@@ -754,7 +754,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "volatility-filter",
     label: "Volatility Filter",
     category: "timing",
-    description: "Skip trading when volatility (ATR) is too low or too high",
+    description: "Block trades when volatility (ATR) is outside your range (filter)",
     defaultData: {
       label: "Volatility Filter",
       category: "timing",
@@ -769,7 +769,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "friday-close",
     label: "Friday Close",
     category: "timing",
-    description: "Close all positions on Friday at specified time",
+    description: "Automatically close all positions on Friday at a set time",
     defaultData: {
       label: "Friday Close",
       category: "timing",
@@ -784,7 +784,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "news-filter",
     label: "News Filter",
     category: "timing",
-    description: "Block trades around economic news events (supports backtest via CSV)",
+    description: "Block trades before and after economic news events (filter)",
     defaultData: {
       label: "News Filter",
       category: "timing",
