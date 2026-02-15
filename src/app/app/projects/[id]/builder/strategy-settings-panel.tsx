@@ -73,7 +73,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               </option>
               {PROP_FIRM_PRESETS.map((p) => (
                 <option key={p.name} value={p.name}>
-                  {p.name} (DD {p.totalDrawdownPercent}%, Daily {p.dailyLossPercent}%)
+                  {p.name} (Max DD {p.totalDrawdownPercent}%, Daily Loss {p.dailyLossPercent}%)
                 </option>
               ))}
             </select>

@@ -428,7 +428,7 @@ export function ExportButton({
                         }
                         className="px-3 py-2 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200 whitespace-nowrap"
                       >
-                        Generate unique
+                        Randomize
                       </button>
                     </div>
                   </div>

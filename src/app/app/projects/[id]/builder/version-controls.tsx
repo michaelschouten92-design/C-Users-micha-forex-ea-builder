@@ -308,7 +308,7 @@ export function VersionControls({
                       className="px-2 py-1 mr-2 text-[10px] text-[#A78BFA] hover:bg-[rgba(167,139,250,0.15)] rounded transition-colors flex-shrink-0"
                       title={`Compare v${versions[idx + 1].versionNo} → v${version.versionNo}`}
                     >
-                      Diff
+                      Compare
                     </button>
                   )}
                 </div>

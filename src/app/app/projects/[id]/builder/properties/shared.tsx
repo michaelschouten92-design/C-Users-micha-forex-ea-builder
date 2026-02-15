@@ -33,7 +33,10 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
         onPointerDown={(e) => e.stopPropagation()}
         className="w-3 h-3 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
       />
-      <span className="flex items-center gap-1">
+      <span
+        className="flex items-center gap-1"
+        title="Mark as optimizable input in MQL5 — MT5 Strategy Tester can auto-optimize this parameter"
+      >
         <svg
           className="w-3 h-3"
           viewBox="0 0 24 24"
