@@ -504,6 +504,66 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
   }
 }
 
+export async function sendNewUserNotificationEmail(
+  userEmail: string,
+  provider: "credentials" | "google" | "github"
+) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    log.warn("ADMIN_EMAIL not configured - skipping new user notification");
+    return;
+  }
+  if (!resend) {
+    log.warn("Email not configured - skipping new user notification");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeEmail = esc(userEmail);
+
+  const providerLabel =
+    provider === "credentials"
+      ? "Email &amp; password"
+      : provider === "google"
+        ? "Google OAuth"
+        : "GitHub OAuth";
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: adminEmail,
+    subject: `[AlgoStudio] New user signup: ${userEmail}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">New user registered</h1>
+            <table style="width: 100%; margin: 0 0 24px 0; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Method:</td><td style="padding: 6px 0; color: #ffffff;">${providerLabel}</td></tr>
+              <tr><td style="padding: 6px 0; color: #94A3B8;">Time:</td><td style="padding: 6px 0; color: #ffffff;">${new Date().toUTCString()}</td></tr>
+            </table>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error }, "Failed to send new user notification email");
+  } else {
+    log.info(
+      { userEmail: userEmail.substring(0, 3) + "***" },
+      "New user notification email sent to admin"
+    );
+  }
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");

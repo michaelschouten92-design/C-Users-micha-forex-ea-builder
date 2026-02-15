@@ -11,7 +11,7 @@ import {
   loginIpRateLimiter,
   checkRateLimit,
 } from "./rate-limit";
-import { sendWelcomeEmail, sendVerificationEmail } from "./email";
+import { sendWelcomeEmail, sendVerificationEmail, sendNewUserNotificationEmail } from "./email";
 import { randomBytes, createHash } from "crypto";
 import type { Provider } from "next-auth/providers";
 
@@ -177,6 +177,9 @@ providers.push(
           // Send welcome email (fire-and-forget, don't block registration)
           sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
 
+          // Notify admin of new signup (fire-and-forget)
+          sendNewUserNotificationEmail(email, "credentials").catch(() => {});
+
           return {
             id: user.id,
             email: user.email,
@@ -277,6 +280,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             // Send welcome email (fire-and-forget)
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
+
+            // Notify admin of new signup (fire-and-forget)
+            sendNewUserNotificationEmail(user.email, account.provider as "google" | "github").catch(
+              () => {}
+            );
           }
         }
 
