@@ -1079,6 +1079,14 @@ export function generateMQL5Code(
         comment: "Close Positions During News",
         isOptimizable: false,
         group: "News Filter",
+      },
+      {
+        name: "InpBrokerUTCOffset",
+        type: "int",
+        value: 0,
+        comment: "Broker UTC Offset (hours, e.g. 2 for UTC+2)",
+        isOptimizable: false,
+        group: "News Filter",
       }
     );
 
@@ -1210,7 +1218,9 @@ export function generateMQL5Code(
     );
     code.helperFunctions.push(`      int idx = g_newsCount++;`);
     code.helperFunctions.push(`      ArrayResize(g_newsEvents, g_newsCount, 1000);`);
-    code.helperFunctions.push(`      g_newsEvents[idx].time = StringToTime(parts[0]);`);
+    code.helperFunctions.push(
+      `      g_newsEvents[idx].time = StringToTime(parts[0]) + InpBrokerUTCOffset*3600;`
+    );
     code.helperFunctions.push(`      g_newsEvents[idx].importance = imp;`);
     code.helperFunctions.push(`   }`);
     code.helperFunctions.push(
