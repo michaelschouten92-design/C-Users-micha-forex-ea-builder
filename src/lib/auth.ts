@@ -2,6 +2,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
+import Discord from "next-auth/providers/discord";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
@@ -12,6 +13,7 @@ import {
   checkRateLimit,
 } from "./rate-limit";
 import { sendWelcomeEmail, sendVerificationEmail, sendNewUserNotificationEmail } from "./email";
+import { onboardDiscordUser } from "./discord";
 import { randomBytes, createHash } from "crypto";
 import type { Provider } from "next-auth/providers";
 
@@ -81,6 +83,21 @@ if (features.githubAuth) {
     GitHub({
       clientId: env.AUTH_GITHUB_ID!,
       clientSecret: env.AUTH_GITHUB_SECRET!,
+    })
+  );
+}
+
+// Only add Discord if credentials are configured
+if (features.discordAuth) {
+  providers.push(
+    Discord({
+      clientId: env.DISCORD_CLIENT_ID!,
+      clientSecret: env.DISCORD_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "identify email guilds.join",
+        },
+      },
     })
   );
 }
@@ -238,7 +255,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       // Handle OAuth sign-in: create or link user
-      if (account?.provider === "google" || account?.provider === "github") {
+      if (
+        account?.provider === "google" ||
+        account?.provider === "github" ||
+        account?.provider === "discord"
+      ) {
         if (!user.email) {
           return false;
         }
@@ -250,6 +271,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         let existingUser = await prisma.user.findUnique({
           where: { authProviderId },
         });
+
+        let isNewUser = false;
 
         if (!existingUser) {
           // Check if user exists by email (might have registered with credentials)
@@ -278,13 +301,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
 
+            isNewUser = true;
+
             // Send welcome email (fire-and-forget)
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
 
             // Notify admin of new signup (fire-and-forget)
-            sendNewUserNotificationEmail(user.email, account.provider as "google" | "github").catch(
-              () => {}
-            );
+            sendNewUserNotificationEmail(
+              user.email,
+              account.provider as "google" | "github" | "discord"
+            ).catch(() => {});
+          }
+        }
+
+        // For Discord logins: save discordId and access token, trigger onboarding
+        if (account.provider === "discord") {
+          const discordId = account.providerAccountId;
+          const accessToken = account.access_token;
+
+          // Update discordId + accessToken (even for existing users, refresh the token)
+          await prisma.user
+            .update({
+              where: { id: existingUser.id },
+              data: {
+                discordId: discordId,
+                ...(accessToken ? { discordAccessToken: accessToken } : {}),
+              },
+            })
+            .catch((err) => {
+              // Unique constraint violation — discordId already linked to another user
+              if (err?.code === "P2002") {
+                console.error("[auth] Discord ID already linked to another account");
+              }
+            });
+
+          // Fire-and-forget: guild join + role sync
+          if (accessToken) {
+            onboardDiscordUser(existingUser.id, discordId, accessToken).catch(() => {});
           }
         }
 

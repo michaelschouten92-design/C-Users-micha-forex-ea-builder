@@ -1,10 +1,11 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+import { DiscordSection } from "./discord-section";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -80,6 +81,20 @@ export default function SettingsPage() {
               {session?.user?.email && <CopyButton text={session.user.email} />}
             </div>
           </div>
+
+          {/* Discord */}
+          <Suspense
+            fallback={
+              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-5 bg-[#1E293B] rounded w-1/3" />
+                  <div className="h-4 bg-[#1E293B] rounded w-2/3" />
+                </div>
+              </div>
+            }
+          >
+            <DiscordSection />
+          </Suspense>
 
           {/* Change Password */}
           <ChangePasswordSection />

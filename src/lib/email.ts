@@ -506,7 +506,7 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
 
 export async function sendNewUserNotificationEmail(
   userEmail: string,
-  provider: "credentials" | "google" | "github"
+  provider: "credentials" | "google" | "github" | "discord"
 ) {
   const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) {

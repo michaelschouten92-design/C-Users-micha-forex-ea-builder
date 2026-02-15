@@ -11,6 +11,7 @@ import {
   sendPaymentActionRequiredEmail,
   sendPlanChangeEmail,
 } from "@/lib/email";
+import { syncDiscordRoleForUser } from "@/lib/discord";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -296,6 +297,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
           (err) => log.error({ err }, "Plan change email send failed")
         );
       }
+
+      // Sync Discord role (fire-and-forget)
+      syncDiscordRoleForUser(result.userId, tier).catch((err) =>
+        log.warn({ err }, "Discord role sync failed after tier change")
+      );
     }
   }
 }
@@ -334,6 +340,11 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
     audit
       .subscriptionCancel(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but subscription cancelled"));
+
+    // Sync Discord role to FREE (fire-and-forget)
+    syncDiscordRoleForUser(userId, "FREE").catch((err) =>
+      log.warn({ err }, "Discord role sync failed after subscription cancel")
+    );
   }
 }
 
@@ -472,5 +483,10 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   if (userId) {
     invalidateSubscriptionCache(userId);
     log.info({ userId, chargeId: charge.id }, "Subscription downgraded to FREE after full refund");
+
+    // Sync Discord role to FREE (fire-and-forget)
+    syncDiscordRoleForUser(userId, "FREE").catch((err) =>
+      log.warn({ err }, "Discord role sync failed after refund")
+    );
   }
 }

@@ -43,8 +43,10 @@ model User {
   email           String    @unique
   passwordHash    String?   // Hashed password (null for OAuth users)
   emailVerified   Boolean   @default(false)
-  emailVerifiedAt DateTime?
-  referralCode    String?   @unique
+  emailVerifiedAt    DateTime?
+  discordId          String?   @unique
+  discordAccessToken String?
+  referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -65,6 +65,14 @@ const envSchema = z.object({
   // Cron secret (optional in dev, required in prod)
   CRON_SECRET: z.string().optional(),
 
+  // Discord OAuth (optional - for Discord login + guild management)
+  DISCORD_CLIENT_ID: z.string().optional(),
+  DISCORD_CLIENT_SECRET: z.string().optional(),
+  DISCORD_BOT_TOKEN: z.string().optional(),
+  DISCORD_GUILD_ID: z.string().optional(),
+  DISCORD_PRO_ROLE_ID: z.string().optional(),
+  DISCORD_ELITE_ROLE_ID: z.string().optional(),
+
   // Support email (optional - defaults to support@algo-studio.com)
   SUPPORT_EMAIL: z.string().email().optional(),
 });
@@ -93,6 +101,18 @@ const refinedEnvSchema = envSchema
     {
       message: "AUTH_GITHUB_ID and AUTH_GITHUB_SECRET must both be set or both be empty",
       path: ["AUTH_GITHUB_ID"],
+    }
+  )
+  .refine(
+    (data) => {
+      // If Discord ID is set, Secret must also be set
+      if (data.DISCORD_CLIENT_ID && !data.DISCORD_CLIENT_SECRET) return false;
+      if (data.DISCORD_CLIENT_SECRET && !data.DISCORD_CLIENT_ID) return false;
+      return true;
+    },
+    {
+      message: "DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET must both be set or both be empty",
+      path: ["DISCORD_CLIENT_ID"],
     }
   )
   .refine(
@@ -218,6 +238,12 @@ function validateEnv() {
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
       CRON_SECRET: undefined,
+      DISCORD_CLIENT_ID: undefined,
+      DISCORD_CLIENT_SECRET: undefined,
+      DISCORD_BOT_TOKEN: undefined,
+      DISCORD_GUILD_ID: undefined,
+      DISCORD_PRO_ROLE_ID: undefined,
+      DISCORD_ELITE_ROLE_ID: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -266,6 +292,12 @@ function validateEnv() {
         UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
         UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
         CRON_SECRET: process.env.CRON_SECRET,
+        DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+        DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+        DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
+        DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
+        DISCORD_PRO_ROLE_ID: process.env.DISCORD_PRO_ROLE_ID,
+        DISCORD_ELITE_ROLE_ID: process.env.DISCORD_ELITE_ROLE_ID,
       } as z.infer<typeof refinedEnvSchema>;
     }
 
@@ -315,6 +347,14 @@ export const features = {
       env.AUTH_GITHUB_ID !== "" &&
       env.AUTH_GITHUB_SECRET &&
       env.AUTH_GITHUB_SECRET !== ""
+    ),
+  discordAuth:
+    isServer &&
+    Boolean(
+      env.DISCORD_CLIENT_ID &&
+      env.DISCORD_CLIENT_ID !== "" &&
+      env.DISCORD_CLIENT_SECRET &&
+      env.DISCORD_CLIENT_SECRET !== ""
     ),
   stripe: isServer && Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY !== ""),
   email: isServer && Boolean(env.RESEND_API_KEY && env.RESEND_API_KEY !== ""),
