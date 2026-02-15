@@ -60,6 +60,7 @@ export function StrategyCanvas({
   // Panel state (always visible on desktop)
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   // Strategy settings state — new projects get a unique magic number
   const [settings, setSettings] = useState<BuildJsonSettings>(() =>
     initialData?.settings
@@ -259,8 +260,10 @@ export function StrategyCanvas({
       if (template.defaultData && "entryType" in template.defaultData) {
         const hasExisting = nodes.some((n) => n.data && "entryType" in n.data);
         if (hasExisting) {
-          setEntryStrategyError("Only one entry strategy allowed. Remove the current one first.");
-          setTimeout(() => setEntryStrategyError(null), 4000);
+          setEntryStrategyError(
+            "Only one entry strategy allowed. Delete the current one first, then add a new one."
+          );
+          setTimeout(() => setEntryStrategyError(null), 6000);
           return;
         }
       }
@@ -368,7 +371,7 @@ export function StrategyCanvas({
       >
         Skip to properties
       </a>
-      <WelcomeModal />
+      <WelcomeModal forceOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Mobile warning — builder requires desktop */}
       <div className="sm:hidden flex items-center justify-center h-full p-8 text-center">
@@ -444,6 +447,20 @@ export function StrategyCanvas({
           >
             <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
             <Controls />
+            {nodes.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
+                <div className="text-center px-6 py-5 rounded-xl bg-[#1A0626]/60 border border-[rgba(79,70,229,0.15)]">
+                  <p className="text-sm text-[#94A3B8] mb-1">
+                    Drag an <span className="text-white font-medium">Entry Strategy</span> block
+                    from the left toolbar onto the canvas to start
+                  </p>
+                  <p className="text-xs text-[#64748B]">
+                    Not sure? Start with <span className="text-[#A78BFA]">EMA Crossover</span>{" "}
+                    &mdash; it&apos;s the simplest
+                  </p>
+                </div>
+              </div>
+            )}
           </ReactFlow>
 
           {/* Mobile: Floating button to open blocks toolbar */}
@@ -463,12 +480,22 @@ export function StrategyCanvas({
             </svg>
           </button>
 
+          {/* Help button — re-trigger onboarding */}
+          <button
+            onClick={() => setShowHelp(true)}
+            className="absolute bottom-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[#1E293B] text-[#94A3B8] border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200 text-sm font-bold"
+            title="Show getting started guide"
+            aria-label="Show getting started guide"
+          >
+            ?
+          </button>
+
           {/* Autosave error banner */}
           {autoSaveStatus === "error" && (
             <div
               role="alert"
               aria-live="assertive"
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]"
             >
               <svg
                 className="w-5 h-5 flex-shrink-0 text-[#FCA5A5]"
@@ -500,7 +527,7 @@ export function StrategyCanvas({
             <div
               role="status"
               aria-live="polite"
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw]"
+              className={`absolute ${autoSaveStatus === "error" ? "top-16" : "top-4"} left-1/2 -translate-x-1/2 z-20 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw] transition-all duration-200`}
             >
               <svg
                 className="w-5 h-5 flex-shrink-0 text-[#FCD34D]"

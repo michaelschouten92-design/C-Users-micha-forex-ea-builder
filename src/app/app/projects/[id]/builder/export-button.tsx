@@ -151,7 +151,15 @@ export function ExportButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Silently fail for clipboard errors
+      // Fallback: select the code in the pre element so user can copy manually
+      const pre = document.querySelector("[data-export-code]");
+      if (pre) {
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
     }
   }
 
@@ -214,7 +222,11 @@ export function ExportButton({
           setShowModal(true);
         }}
         disabled={isDisabled}
-        className="flex items-center gap-2 px-4 py-1.5 bg-[#10B981] text-white text-sm font-medium rounded-lg hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ${
+          !canExportMQL5 && !isDisabled
+            ? "bg-[#4F46E5] text-white hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(79,70,229,0.3)]"
+            : "bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)]"
+        }`}
         title={
           !hasNodes
             ? "Add nodes to export"
@@ -239,6 +251,15 @@ export function ExportButton({
               className="opacity-75"
               fill="currentColor"
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+        ) : !canExportMQL5 ? (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
         ) : (
@@ -400,10 +421,10 @@ export function ExportButton({
                       htmlFor="magic-number"
                       className="block text-sm font-medium text-[#CBD5E1] mb-2"
                     >
-                      Magic Number
+                      EA Identifier (Magic Number)
                     </label>
                     <p className="text-xs text-[#64748B] mb-3">
-                      Each EA on a chart needs a unique Magic Number so it only manages its own
+                      Each EA on a chart needs a unique identifier so it only manages its own
                       trades. If you run the same EA on EURUSD and GBPUSD, give each a different
                       number.
                     </p>
@@ -580,7 +601,10 @@ export function ExportButton({
 
                   {/* Code Preview */}
                   <div className="flex-1 overflow-hidden rounded-lg border border-[rgba(79,70,229,0.2)]">
-                    <pre className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#CBD5E1] font-mono">
+                    <pre
+                      data-export-code
+                      className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#CBD5E1] font-mono"
+                    >
                       {result.code}
                     </pre>
                   </div>
@@ -594,6 +618,16 @@ export function ExportButton({
                           1
                         </span>
                         <span>
+                          If you haven&apos;t already,{" "}
+                          <strong className="text-white">download MetaTrader 5</strong> from your
+                          broker&apos;s website and install it
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          2
+                        </span>
+                        <span>
                           Place the <strong className="text-white">.mq5</strong> file in{" "}
                           <strong className="text-white">MQL5/Experts</strong> folder (File &gt;
                           Open Data Folder in MT5)
@@ -601,7 +635,7 @@ export function ExportButton({
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          2
+                          3
                         </span>
                         <span>
                           Open in MetaEditor and press <strong className="text-white">F7</strong> to
@@ -610,7 +644,7 @@ export function ExportButton({
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          3
+                          4
                         </span>
                         <span>
                           Open <strong className="text-white">Strategy Tester</strong> (Ctrl+R) and
@@ -619,19 +653,19 @@ export function ExportButton({
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          4
+                          5
                         </span>
                         <span>
                           Use{" "}
                           <strong className="text-white">
                             &quot;Every tick based on real ticks&quot;
                           </strong>{" "}
-                          modeling for accurate results
+                          modeling for the most accurate backtest results
                         </span>
                       </li>
                       <li className="flex gap-2">
                         <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                          5
+                          6
                         </span>
                         <span>
                           Backtest <strong className="text-white">minimum 2 years</strong> of data
@@ -810,10 +844,10 @@ function BacktestChecklist() {
   const items = [
     'Use "Every tick based on real ticks" for the most accurate simulation',
     "Backtest at least 2 years of historical data",
-    "Look for: profit factor > 1.5, max drawdown < 20%, consistent equity curve",
-    "Check that the number of trades is statistically significant (50+)",
+    "Look for: profit factor > 1.5 (total wins / total losses), max drawdown < 20%, and a steadily rising equity curve",
+    "Make sure you have at least 50 trades in the backtest — fewer trades means unreliable results",
     "Test on multiple currency pairs if the strategy is not pair-specific",
-    "Forward test on a demo account for 1–3 months before going live",
+    "Forward test on a demo account for 1\u20133 months before going live",
   ];
 
   return (

@@ -123,7 +123,8 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
             </label>
             <p className="text-[10px] text-[#64748B] mt-1 ml-6">
-              Allow buy and sell positions open at the same time
+              Allow buy and sell positions open at the same time. Note: some brokers (especially US
+              brokers) enforce FIFO rules and do not support hedging.
             </p>
           </div>
 

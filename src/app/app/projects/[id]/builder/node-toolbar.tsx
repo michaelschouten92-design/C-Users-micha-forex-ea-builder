@@ -226,7 +226,10 @@ export function NodeToolbar({
                   {templates.map((template, index) => {
                     const isBeginner =
                       template.type === "ema-crossover-entry" ||
-                      template.type === "rsi-reversal-entry";
+                      template.type === "rsi-reversal-entry" ||
+                      template.type === "range-breakout-entry" ||
+                      template.type === "macd-crossover-entry";
+                    const isIntermediate = template.type === "trend-pullback-entry";
                     return (
                       <div
                         key={`${template.type}-${index}`}
@@ -243,6 +246,11 @@ export function NodeToolbar({
                           {isBeginner && (
                             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-[#10B981]">
                               Beginner
+                            </span>
+                          )}
+                          {isIntermediate && (
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(245,158,11,0.15)] text-[#F59E0B]">
+                              Intermediate
                             </span>
                           )}
                         </div>

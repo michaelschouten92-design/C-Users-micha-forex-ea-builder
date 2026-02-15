@@ -72,15 +72,20 @@ function getOnboarded() {
 
 const subscribe = () => () => {};
 
-export function WelcomeModal() {
+export function WelcomeModal({
+  forceOpen,
+  onClose,
+}: { forceOpen?: boolean; onClose?: () => void } = {}) {
   const onboarded = useSyncExternalStore(subscribe, getOnboarded, () => true);
   const [dismissed, setDismissed] = useState(false);
   const [step, setStep] = useState(0);
-  const open = !onboarded && !dismissed;
+  const open = forceOpen || (!onboarded && !dismissed);
 
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, "1");
     setDismissed(true);
+    setStep(0);
+    onClose?.();
   }
 
   // Close on Escape key
@@ -88,8 +93,7 @@ export function WelcomeModal() {
     if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        localStorage.setItem(STORAGE_KEY, "1");
-        setDismissed(true);
+        dismiss();
       }
     }
     document.addEventListener("keydown", handleKeyDown);

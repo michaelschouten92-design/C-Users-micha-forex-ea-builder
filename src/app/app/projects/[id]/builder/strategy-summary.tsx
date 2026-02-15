@@ -97,7 +97,9 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     const slMethod = "slMethod" in d ? d.slMethod : "ATR";
     if (slMethod === "ATR" && "slAtrMultiplier" in d) {
       const atrPeriod = "slAtrPeriod" in d && d.slAtrPeriod ? d.slAtrPeriod : 14;
-      lines.push(`Stop loss at ${d.slAtrMultiplier}× ATR(${atrPeriod})`);
+      lines.push(
+        `Stop loss at ${d.slAtrMultiplier}× ATR (${atrPeriod}-bar average price movement)`
+      );
     } else if (slMethod === "PIPS" && "slFixedPips" in d) {
       lines.push(`Stop loss at ${d.slFixedPips} pips`);
     } else if (slMethod === "PERCENT" && "slPercent" in d) {

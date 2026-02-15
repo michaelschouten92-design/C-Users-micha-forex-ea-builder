@@ -46,7 +46,12 @@ function computeDiff(older: BuildJsonSchema, newer: BuildJsonSchema): DiffResult
       const oldVal = JSON.stringify(oldData[key]);
       const newVal = JSON.stringify(newData[key]);
       if (oldVal !== newVal) {
-        changes.push(`${key} changed`);
+        const fmtVal = (v: unknown) => {
+          if (v === undefined) return "—";
+          if (typeof v === "object") return JSON.stringify(v).slice(0, 40);
+          return String(v);
+        };
+        changes.push(`${key}: ${fmtVal(oldData[key])} → ${fmtVal(newData[key])}`);
       }
     }
 
