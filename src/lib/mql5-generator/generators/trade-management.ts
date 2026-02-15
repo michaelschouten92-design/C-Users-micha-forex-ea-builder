@@ -583,7 +583,7 @@ function generateLockProfitCode(
       "InpLockCheckInterval",
       "double",
       data.checkIntervalPips,
-      "Check Interval (pips)",
+      "Min Profit Threshold (pips)",
       group
     )
   );

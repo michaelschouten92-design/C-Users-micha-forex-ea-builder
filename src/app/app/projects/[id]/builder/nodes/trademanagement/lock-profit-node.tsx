@@ -7,9 +7,8 @@ import { BaseNode, NodeIcons } from "../base-node";
 type Props = NodeProps & { data: LockProfitNodeData };
 
 export function LockProfitNode({ id, data, selected }: Props) {
-  const lockDisplay = data.method === "PERCENTAGE"
-    ? `${data.lockPercent}% of profit`
-    : `${data.lockPips} pips`;
+  const lockDisplay =
+    data.method === "PERCENTAGE" ? `${data.lockPercent}% of profit` : `${data.lockPips} pips`;
 
   return (
     <BaseNode
@@ -25,7 +24,7 @@ export function LockProfitNode({ id, data, selected }: Props) {
           <span className="font-medium text-purple-400">{lockDisplay}</span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-zinc-500">Check every:</span>
+          <span className="text-zinc-500">Threshold:</span>
           <span className="font-medium">{data.checkIntervalPips} pips</span>
         </div>
       </div>

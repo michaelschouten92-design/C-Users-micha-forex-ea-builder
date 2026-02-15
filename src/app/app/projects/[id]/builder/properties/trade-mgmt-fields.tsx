@@ -329,7 +329,7 @@ export function LockProfitFields({
       )}
       <div>
         <NumberField
-          label="Check Interval (pips)"
+          label="Min Profit Threshold (pips)"
           value={data.checkIntervalPips}
           min={1}
           max={100}

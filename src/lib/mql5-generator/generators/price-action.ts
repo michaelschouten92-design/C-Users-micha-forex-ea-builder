@@ -650,6 +650,16 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 {
    support = 0;
    resistance = 0;
+
+   // Verify sufficient historical data is available
+   int availableBars = Bars(_Symbol, tf);
+   if(availableBars < lookback + 1)
+   {
+      static bool warnedOnce = false;
+      if(!warnedOnce) { Print("S/R: insufficient history (", availableBars, " bars, need ", lookback + 1, ")"); warnedOnce = true; }
+      return;
+   }
+
    double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double zonePoints = zonePips * _pipFactor * _Point;
 

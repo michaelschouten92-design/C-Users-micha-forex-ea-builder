@@ -418,7 +418,7 @@ export interface LockProfitNodeData extends BaseNodeData {
   method: LockProfitMethod;
   lockPercent: number; // Lock X% of current profit
   lockPips: number; // Or lock at X pips profit
-  checkIntervalPips: number; // Re-check every X pips of new profit
+  checkIntervalPips: number; // Minimum profit in pips before lock activates
 }
 
 export type TradeManagementNodeData =

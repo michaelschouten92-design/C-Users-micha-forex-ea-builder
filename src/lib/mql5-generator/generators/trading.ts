@@ -1174,6 +1174,9 @@ bool PlaceBuyStop(double lots, double sl, double tp, double offsetPips)
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
    double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(ask + offset, _Digits);
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(stopsLevel > 0 && offset < stopsLevel)
+      entryPrice = NormalizeDouble(ask + stopsLevel, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
    datetime expiry = GetPendingExpiry();
@@ -1194,6 +1197,9 @@ bool PlaceBuyLimit(double lots, double sl, double tp, double offsetPips)
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
    double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(ask - offset, _Digits);
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(stopsLevel > 0 && offset < stopsLevel)
+      entryPrice = NormalizeDouble(ask - stopsLevel, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice - sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice + tp * _Point, _Digits) : 0;
    datetime expiry = GetPendingExpiry();
@@ -1214,6 +1220,9 @@ bool PlaceSellStop(double lots, double sl, double tp, double offsetPips)
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(bid - offset, _Digits);
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(stopsLevel > 0 && offset < stopsLevel)
+      entryPrice = NormalizeDouble(bid - stopsLevel, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
    datetime expiry = GetPendingExpiry();
@@ -1234,6 +1243,9 @@ bool PlaceSellLimit(double lots, double sl, double tp, double offsetPips)
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double offset = offsetPips * _pipFactor * _Point;
    double entryPrice = NormalizeDouble(bid + offset, _Digits);
+   double stopsLevel = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+   if(stopsLevel > 0 && offset < stopsLevel)
+      entryPrice = NormalizeDouble(bid + stopsLevel, _Digits);
    double slPrice = (sl > 0) ? NormalizeDouble(entryPrice + sl * _Point, _Digits) : 0;
    double tpPrice = (tp > 0) ? NormalizeDouble(entryPrice - tp * _Point, _Digits) : 0;
    datetime expiry = GetPendingExpiry();

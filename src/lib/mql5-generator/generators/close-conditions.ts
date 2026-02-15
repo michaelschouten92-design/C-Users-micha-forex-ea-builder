@@ -103,6 +103,16 @@ export function generateCloseConditionCode(
           );
           break;
 
+        case "atr":
+          // Close when volatility decreases (ATR falling)
+          closeBuyConditions.push(
+            `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+          );
+          closeSellConditions.push(
+            `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+          );
+          break;
+
         case "stochastic":
           // Close buy when %K enters overbought zone
           closeBuyConditions.push(
