@@ -191,6 +191,24 @@ export function useAutoSave({
     [projectId, getViewport]
   );
 
+  // Autosave with retry on failure
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptAutoSaveRef = useRef<(() => Promise<void>) | null>(null);
+  const MAX_RETRIES = 3;
+
+  const attemptAutoSave = useCallback(async () => {
+    const success = await saveToServer(true);
+    if (!success && retryCountRef.current < MAX_RETRIES) {
+      retryCountRef.current += 1;
+      const backoff = Math.pow(2, retryCountRef.current) * 1000; // 2s, 4s, 8s
+      retryTimerRef.current = setTimeout(() => attemptAutoSaveRef.current?.(), backoff);
+    } else if (success) {
+      retryCountRef.current = 0;
+    }
+  }, [saveToServer]);
+  attemptAutoSaveRef.current = attemptAutoSave;
+
   // Autosave effect
   useEffect(() => {
     if (autoSaveTimeoutRef.current) {
@@ -198,8 +216,9 @@ export function useAutoSave({
     }
 
     if (hasUnsavedChanges && nodes.length > 0) {
+      retryCountRef.current = 0;
       autoSaveTimeoutRef.current = setTimeout(() => {
-        saveToServer(true);
+        attemptAutoSave();
       }, debounceMs);
     }
 
@@ -207,8 +226,11 @@ export function useAutoSave({
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
     };
-  }, [hasUnsavedChanges, nodes.length, saveToServer, debounceMs]);
+  }, [hasUnsavedChanges, nodes.length, attemptAutoSave, debounceMs]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {

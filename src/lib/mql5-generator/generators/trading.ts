@@ -5,7 +5,6 @@ import type {
   PlaceSellNodeData,
   StopLossNodeData,
   TakeProfitNodeData,
-  RangeBreakoutNodeData,
   TimeExitNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
@@ -979,10 +978,10 @@ export function generateEntryLogic(
     if (hasVolumeConfirm) {
       code.onTick.push(`bool volumeOK = true;`);
       code.onTick.push(`{`);
-      code.onTick.push(`   long vol = iVolume(_Symbol, PERIOD_CURRENT, 0);`);
+      code.onTick.push(`   long vol = iVolume(_Symbol, PERIOD_CURRENT, 1);`);
       code.onTick.push(`   double avgVol = 0;`);
       code.onTick.push(
-        `   for(int v=1; v<=InpVolConfirmPeriod; v++) avgVol += (double)iVolume(_Symbol, PERIOD_CURRENT, v);`
+        `   for(int v=2; v<=InpVolConfirmPeriod+1; v++) avgVol += (double)iVolume(_Symbol, PERIOD_CURRENT, v);`
       );
       code.onTick.push(`   avgVol /= InpVolConfirmPeriod;`);
       code.onTick.push(`   volumeOK = vol > avgVol;`);

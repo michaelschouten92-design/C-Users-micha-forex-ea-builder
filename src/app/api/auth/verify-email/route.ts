@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Mark email as verified
     await prisma.$transaction([
-      prisma.user.updateMany({
+      prisma.user.update({
         where: { email: verification.email },
         data: { emailVerified: true, emailVerifiedAt: new Date() },
       }),

@@ -75,6 +75,10 @@ interface VersionControlsProps {
   userTier?: string;
   magicNumber?: number;
   strategySummaryLines?: string[];
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export function VersionControls({
@@ -89,6 +93,10 @@ export function VersionControls({
   userTier,
   magicNumber,
   strategySummaryLines,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
 }: VersionControlsProps) {
   const [versions, setVersions] = useState<Version[]>([]);
   const [saving, setSaving] = useState(false);
@@ -140,14 +148,18 @@ export function VersionControls({
     };
   }, [showDropdown]);
 
-  // Close diff modal on Escape key
+  // Close diff modal on Escape key + scroll lock
   useEffect(() => {
     if (!diffVersions) return;
+    document.body.style.overflow = "hidden";
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setDiffVersions(null);
     }
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [diffVersions]);
 
   const handleSave = async () => {
@@ -303,6 +315,45 @@ export function VersionControls({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Separator */}
+        <div className="w-px h-6 bg-[rgba(79,70,229,0.3)] hidden sm:block" />
+
+        {/* Undo/Redo */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            title="Redo (Ctrl+Y)"
+            aria-label="Redo"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"
+              />
+            </svg>
+          </button>
         </div>
 
         {/* Separator */}

@@ -56,11 +56,18 @@ export function ExportButton({
 
   useEffect(() => {
     if (!showModal) return;
+    document.body.style.overflow = "hidden";
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowModal(false);
+      if (e.key === "Escape") {
+        setShowModal(false);
+        setShowUpgradePrompt(false);
+      }
     };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKey);
+    };
   }, [showModal]);
 
   // Clean up step timers on unmount
@@ -188,12 +195,18 @@ export function ExportButton({
     }
   }
 
-  const isDisabled = exporting || !hasNodes || !canExport || !canExportMQL5;
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const isDisabled = exporting || !hasNodes || !canExport;
 
   return (
     <>
       <button
         onClick={() => {
+          if (!canExportMQL5) {
+            setShowUpgradePrompt(true);
+            setShowModal(true);
+            return;
+          }
           setConfigMagicNumber(magicNumber ?? 123456);
           setShowConfig(true);
           setResult(null);
@@ -208,7 +221,7 @@ export function ExportButton({
             : !canExport
               ? "Fix errors before exporting"
               : !canExportMQL5
-                ? "Export limit reached — upgrade for unlimited exports"
+                ? "Upgrade for unlimited exports"
                 : "Export to MQL5"
         }
       >
@@ -252,13 +265,15 @@ export function ExportButton({
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">
-                {showConfig
-                  ? "Export Configuration"
-                  : exporting
-                    ? "Exporting..."
-                    : error
-                      ? "Export Failed"
-                      : "Export Successful"}
+                {showUpgradePrompt
+                  ? "Upgrade Required"
+                  : showConfig
+                    ? "Export Configuration"
+                    : exporting
+                      ? "Exporting..."
+                      : error
+                        ? "Export Failed"
+                        : "Export Successful"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -278,7 +293,62 @@ export function ExportButton({
 
             {/* Content */}
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
-              {showConfig ? (
+              {showUpgradePrompt ? (
+                <div className="py-8 space-y-6 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[#4F46E5]/30 to-[#22D3EE]/30 flex items-center justify-center">
+                    <svg
+                      className="w-8 h-8 text-[#A78BFA]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-white mb-2">Export limit reached</h4>
+                    <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
+                      You&apos;ve used all free exports. Upgrade to Pro for unlimited exports,
+                      unlimited projects, and priority support.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center gap-3">
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                    >
+                      View Plans
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setShowUpgradePrompt(false);
+                        setShowModal(false);
+                      }}
+                      className="text-sm text-[#64748B] hover:text-white transition-colors"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
+                </div>
+              ) : showConfig ? (
                 <div className="space-y-6 py-4">
                   {/* Strategy Overview */}
                   {strategySummaryLines && strategySummaryLines.length > 0 && (

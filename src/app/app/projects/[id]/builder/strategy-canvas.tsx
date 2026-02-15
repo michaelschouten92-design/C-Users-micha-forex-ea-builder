@@ -180,7 +180,7 @@ export function StrategyCanvas({
   // Online/offline detection
   const isOnline = useOnlineStatus();
 
-  // Keyboard shortcut: Shift+? to open shortcuts modal
+  // Keyboard shortcut: Shift+? to open shortcuts modal + scroll lock
   useEffect(() => {
     const handleShortcutHelp = (e: KeyboardEvent) => {
       if (e.key === "?" && e.shiftKey) {
@@ -191,6 +191,14 @@ export function StrategyCanvas({
     window.addEventListener("keydown", handleShortcutHelp);
     return () => window.removeEventListener("keydown", handleShortcutHelp);
   }, []);
+
+  useEffect(() => {
+    if (!showShortcuts) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showShortcuts]);
 
   // Handle node duplication from base-node button (use ref to avoid re-registering on every node change)
   const nodesRef = useRef(nodes);
@@ -691,6 +699,10 @@ export function StrategyCanvas({
         userTier={userTier}
         magicNumber={settings.magicNumber}
         strategySummaryLines={buildNaturalLanguageSummary(nodes as BuilderNode[])}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
       />
     </div>
   );
