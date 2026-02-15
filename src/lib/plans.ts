@@ -55,21 +55,21 @@ function getPriceConfigWithIds() {
     pro: {
       monthly: {
         ...DISPLAY_PRICES.pro.monthly,
-        priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID!,
+        priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID!.trim(),
       },
       yearly: {
         ...DISPLAY_PRICES.pro.yearly,
-        priceId: env.STRIPE_PRO_YEARLY_PRICE_ID!,
+        priceId: env.STRIPE_PRO_YEARLY_PRICE_ID!.trim(),
       },
     },
     elite: {
       monthly: {
         ...DISPLAY_PRICES.elite.monthly,
-        priceId: env.STRIPE_ELITE_MONTHLY_PRICE_ID || "",
+        priceId: (env.STRIPE_ELITE_MONTHLY_PRICE_ID || "").trim(),
       },
       yearly: {
         ...DISPLAY_PRICES.elite.yearly,
-        priceId: env.STRIPE_ELITE_YEARLY_PRICE_ID || "",
+        priceId: (env.STRIPE_ELITE_YEARLY_PRICE_ID || "").trim(),
       },
     },
   };
