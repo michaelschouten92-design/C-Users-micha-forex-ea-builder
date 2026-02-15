@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
 import { Toaster } from "sonner";
 import { defaultSwrConfig } from "@/lib/swr";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import type { Session } from "next-auth";
 
 export function Providers({
@@ -15,9 +16,8 @@ export function Providers({
 }) {
   return (
     <SessionProvider session={session} refetchOnWindowFocus={false}>
-      <SWRConfig value={defaultSwrConfig}>
-        {children}
-      </SWRConfig>
+      <ImpersonationBanner />
+      <SWRConfig value={defaultSwrConfig}>{children}</SWRConfig>
       <Toaster
         position="top-right"
         toastOptions={{

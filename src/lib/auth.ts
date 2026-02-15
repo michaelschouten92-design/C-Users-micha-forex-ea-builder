@@ -294,15 +294,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updateData }) {
       if (user) {
         token.id = user.id;
       }
+
+      // Handle session update (used for impersonation)
+      if (trigger === "update" && updateData) {
+        if (updateData.impersonate) {
+          // Start impersonation: store admin's real ID and switch to target
+          token.impersonatorId = token.id;
+          token.impersonatingEmail = updateData.impersonate.email;
+          token.id = updateData.impersonate.userId;
+        } else if (updateData.stopImpersonation) {
+          // Stop impersonation: restore admin's real ID
+          token.id = token.impersonatorId;
+          delete token.impersonatorId;
+          delete token.impersonatingEmail;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
+      }
+      if (token.impersonatorId) {
+        session.user.impersonatorId = token.impersonatorId as string;
+        session.user.impersonatingEmail = token.impersonatingEmail as string;
       }
       return session;
     },

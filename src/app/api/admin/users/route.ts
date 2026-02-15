@@ -64,7 +64,7 @@ export async function GET() {
       exportCount: user._count.exports,
     }));
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, adminEmail: adminUser!.email });
   } catch (error) {
     logger.error({ error }, "Failed to list users (admin)");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

@@ -25,7 +25,10 @@ export type AuditEventType =
   | "subscription.downgrade"
   | "subscription.cancel"
   | "subscription.payment_success"
-  | "subscription.payment_failed";
+  | "subscription.payment_failed"
+  // Admin impersonation
+  | "admin.impersonation_start"
+  | "admin.impersonation_stop";
 
 interface AuditLogEntry {
   userId: string | null;
@@ -252,5 +255,24 @@ export const audit = {
       userId,
       eventType: "subscription.payment_failed",
       resourceType: "payment",
+    }),
+
+  // Impersonation events
+  impersonationStart: (adminId: string, targetUserId: string, targetEmail: string) =>
+    logAuditEvent({
+      userId: adminId,
+      eventType: "admin.impersonation_start",
+      resourceType: "user",
+      resourceId: targetUserId,
+      metadata: { targetEmail },
+    }),
+
+  impersonationStop: (adminId: string, targetUserId: string, targetEmail: string) =>
+    logAuditEvent({
+      userId: adminId,
+      eventType: "admin.impersonation_stop",
+      resourceType: "user",
+      resourceId: targetUserId,
+      metadata: { targetEmail },
     }),
 };
