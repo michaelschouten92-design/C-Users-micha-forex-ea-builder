@@ -83,13 +83,12 @@ function generateCustomTimesCode(
     );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   } else {
-    // Re-initialize dt if a different timing node needs a different time source
-    const usesGMT = code.onTick.some((l) => l.includes("TimeToStruct(TimeGMT()"));
-    const usesServer = code.onTick.some((l) => l.includes("TimeToStruct(TimeCurrent()"));
-    const needsReinit =
-      ((data.useServerTime ?? true) && usesGMT && !usesServer) ||
-      (!(data.useServerTime ?? true) && usesServer && !usesGMT);
-    if (needsReinit) {
+    // Re-initialize dt if current time source differs from the last TimeToStruct call
+    const timeStructCalls = code.onTick.filter((l) => l.includes("TimeToStruct("));
+    const lastCall = timeStructCalls[timeStructCalls.length - 1] ?? "";
+    const lastUsedGMT = lastCall.includes("TimeGMT()");
+    const currentWantsGMT = !(data.useServerTime ?? true);
+    if (lastUsedGMT !== currentWantsGMT) {
       code.onTick.push(
         `TimeToStruct(${timeSource}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
       );
@@ -233,13 +232,12 @@ function generateTradingSessionCode(
     );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   } else {
-    // Re-initialize dt if a different timing node needs a different time source
-    const usesGMT2 = code.onTick.some((l) => l.includes("TimeToStruct(TimeGMT()"));
-    const usesServer2 = code.onTick.some((l) => l.includes("TimeToStruct(TimeCurrent()"));
-    const needsReinit2 =
-      ((data.useServerTime ?? true) && usesGMT2 && !usesServer2) ||
-      (!(data.useServerTime ?? true) && usesServer2 && !usesGMT2);
-    if (needsReinit2) {
+    // Re-initialize dt if current time source differs from the last TimeToStruct call
+    const timeStructCalls2 = code.onTick.filter((l) => l.includes("TimeToStruct("));
+    const lastCall2 = timeStructCalls2[timeStructCalls2.length - 1] ?? "";
+    const lastUsedGMT2 = lastCall2.includes("TimeGMT()");
+    const currentWantsGMT2 = !(data.useServerTime ?? true);
+    if (lastUsedGMT2 !== currentWantsGMT2) {
       code.onTick.push(
         `TimeToStruct(${timeSource2}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
       );

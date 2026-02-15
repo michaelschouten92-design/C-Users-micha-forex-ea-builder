@@ -142,10 +142,11 @@ export function generateCloseConditionCode(
 
         case "range-breakout": {
           const rb = paData as RangeBreakoutNodeData;
-          if (rb.breakoutDirection === "SELL_ON_LOW" || rb.breakoutDirection === "BOTH") {
+          const dir = rb.breakoutDirection ?? "BOTH";
+          if (dir === "SELL_ON_LOW" || dir === "BOTH") {
             closeBuyConditions.push(`(${varPrefix}BreakoutDown)`);
           }
-          if (rb.breakoutDirection === "BUY_ON_HIGH" || rb.breakoutDirection === "BOTH") {
+          if (dir === "BUY_ON_HIGH" || dir === "BOTH") {
             closeSellConditions.push(`(${varPrefix}BreakoutUp)`);
           }
           break;
