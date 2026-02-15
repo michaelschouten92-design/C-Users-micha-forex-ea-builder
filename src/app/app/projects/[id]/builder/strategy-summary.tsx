@@ -119,7 +119,7 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
         tp2RMultiple: number;
       };
       lines.push(
-        `Takes partial profit: ${mtp.tp1Percent}% at ${mtp.tp1RMultiple}:1 R:R, remainder at ${mtp.tp2RMultiple}:1 R:R`
+        `Takes partial profit: ${mtp.tp1Percent}% at ${mtp.tp1RMultiple}:1 reward-to-risk, remainder at ${mtp.tp2RMultiple}:1 reward-to-risk`
       );
     } else if ("tpRMultiple" in d) {
       lines.push(`Take profit at ${d.tpRMultiple}:1 reward-to-risk`);

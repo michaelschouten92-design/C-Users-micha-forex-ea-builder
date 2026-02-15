@@ -617,16 +617,23 @@ export function StrategyCanvas({
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {[
-                    ["Ctrl + Z", "Undo"],
-                    ["Ctrl + Y", "Redo"],
-                    ["Ctrl + C", "Copy selected nodes"],
-                    ["Ctrl + V", "Paste nodes"],
-                    ["Ctrl + D", "Duplicate selected"],
-                    ["Ctrl + S", "Save"],
-                    ["Delete", "Delete selected nodes"],
-                    ["Shift + ?", "Show this dialog"],
-                  ].map(([key, desc]) => (
+                  {(() => {
+                    const mod =
+                      typeof navigator !== "undefined" &&
+                      /Mac|iPhone|iPad/.test(navigator.userAgent)
+                        ? "Cmd"
+                        : "Ctrl";
+                    return [
+                      [`${mod} + Z`, "Undo"],
+                      [`${mod} + Y`, "Redo"],
+                      [`${mod} + C`, "Copy selected nodes"],
+                      [`${mod} + V`, "Paste nodes"],
+                      [`${mod} + D`, "Duplicate selected"],
+                      [`${mod} + S`, "Save"],
+                      ["Delete", "Delete selected nodes"],
+                      ["Shift + ?", "Show this dialog"],
+                    ];
+                  })().map(([key, desc]) => (
                     <div key={key} className="flex items-center justify-between">
                       <span className="text-sm text-[#94A3B8]">{desc}</span>
                       <kbd className="px-2.5 py-1 text-xs font-mono bg-[#1E293B] text-[#CBD5E1] rounded border border-[rgba(79,70,229,0.3)]">

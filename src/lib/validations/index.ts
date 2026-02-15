@@ -513,6 +513,8 @@ const baseEntryStrategyFieldsSchema = z.object({
       enabled: z.boolean(),
       method: z.enum(["atr", "fixed-pips"]),
       atrMultiplier: z.number().min(0.1).max(20).optional(),
+      atrPeriod: z.number().int().min(1).max(500).optional(),
+      atrTimeframe: z.string().optional(),
       fixedPips: z.number().min(1).max(10000).optional(),
     })
     .optional(),

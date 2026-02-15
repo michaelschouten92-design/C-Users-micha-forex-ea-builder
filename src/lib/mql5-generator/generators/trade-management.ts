@@ -517,19 +517,33 @@ void CleanPartialClosedTickets()
   );
   code.onTick.push("            if(closeVolume >= SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))");
   code.onTick.push("            {");
+  code.onTick.push("               double cachedTP = PositionGetDouble(POSITION_TP);");
   code.onTick.push("               trade.PositionClosePartial(ticket, closeVolume);");
+  code.onTick.push(
+    "               // Re-select position after partial close (ticket may change on hedging brokers)"
+  );
+  code.onTick.push("               if(!PositionSelectByTicket(ticket))");
+  code.onTick.push("               {");
+  code.onTick.push(
+    "                  // Ticket changed — find the remaining position by magic + symbol"
+  );
+  code.onTick.push("                  for(int pc=PositionsTotal()-1; pc>=0; pc--)");
+  code.onTick.push("                  {");
+  code.onTick.push("                     ulong pcTk = PositionGetTicket(pc);");
+  code.onTick.push(
+    "                     if(pcTk > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+  );
+  code.onTick.push("                     { ticket = pcTk; break; }");
+  code.onTick.push("                  }");
+  code.onTick.push("               }");
   code.onTick.push("               MarkPartialClosed(ticket);");
 
   if (data.moveSLToBreakeven) {
     code.onTick.push("               // Move SL to breakeven after partial close");
     code.onTick.push("               if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push(
-      "                  trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
-    );
+    code.onTick.push("                  trade.PositionModify(ticket, openPrice, cachedTP);");
     code.onTick.push("               else");
-    code.onTick.push(
-      "                  trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
-    );
+    code.onTick.push("                  trade.PositionModify(ticket, openPrice, cachedTP);");
   }
 
   code.onTick.push("            }");

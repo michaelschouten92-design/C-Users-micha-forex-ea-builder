@@ -864,9 +864,11 @@ export function generateEntryLogic(
 
     // Only generate buy logic if there's a Place Buy node
     if (hasBuyNode) {
-      const buyCheck = noHedge
-        ? `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions} && CountPositionsByType(POSITION_TYPE_SELL) == 0)`
-        : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
+      // When closeOnOpposite is enabled, skip the opposite-position check since we'll close them
+      const buyCheck =
+        noHedge && !closeOnOppositeBuy
+          ? `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions} && CountPositionsByType(POSITION_TYPE_SELL) == 0)`
+          : `   if(buyCondition && CountPositionsByType(POSITION_TYPE_BUY) < ${ctx.maxBuyPositions})`;
       code.onTick.push(buyCheck);
       code.onTick.push("   {");
       if (closeOnOppositeBuy) {
@@ -902,9 +904,11 @@ export function generateEntryLogic(
 
     // Only generate sell logic if there's a Place Sell node
     if (hasSellNode) {
-      const sellCheck = noHedge
-        ? `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions} && CountPositionsByType(POSITION_TYPE_BUY) == 0)`
-        : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
+      // When closeOnOpposite is enabled, skip the opposite-position check since we'll close them
+      const sellCheck =
+        noHedge && !closeOnOppositeSell
+          ? `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions} && CountPositionsByType(POSITION_TYPE_BUY) == 0)`
+          : `   if(sellCondition && CountPositionsByType(POSITION_TYPE_SELL) < ${ctx.maxSellPositions})`;
       code.onTick.push(sellCheck);
       code.onTick.push("   {");
       if (closeOnOppositeSell) {

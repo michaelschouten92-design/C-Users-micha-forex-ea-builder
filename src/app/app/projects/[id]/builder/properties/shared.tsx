@@ -180,6 +180,8 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       enabled: boolean;
       method: "atr" | "fixed-pips";
       atrMultiplier?: number;
+      atrPeriod?: number;
+      atrTimeframe?: string;
       fixedPips?: number;
     };
   };
@@ -393,18 +395,34 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
           }
         />
         {data.trailingStop?.method === "atr" && (
-          <NumberField
-            label="ATR Multiplier"
-            value={data.trailingStop?.atrMultiplier ?? 2.0}
-            min={0.1}
-            max={20}
-            step={0.1}
-            onChange={(v) =>
-              onChange({
-                trailingStop: { ...data.trailingStop!, atrMultiplier: v },
-              } as Partial<T>)
-            }
-          />
+          <>
+            <NumberField
+              label="ATR Multiplier"
+              value={data.trailingStop?.atrMultiplier ?? 2.0}
+              min={0.1}
+              max={20}
+              step={0.1}
+              onChange={(v) =>
+                onChange({
+                  trailingStop: { ...data.trailingStop!, atrMultiplier: v },
+                } as Partial<T>)
+              }
+              tooltip="Distance from price to trailing stop, measured in ATR units"
+            />
+            <NumberField
+              label="ATR Period"
+              value={data.trailingStop?.atrPeriod ?? 14}
+              min={1}
+              max={500}
+              step={1}
+              onChange={(v) =>
+                onChange({
+                  trailingStop: { ...data.trailingStop!, atrPeriod: v },
+                } as Partial<T>)
+              }
+              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
+            />
+          </>
         )}
         {data.trailingStop?.method === "fixed-pips" && (
           <NumberField

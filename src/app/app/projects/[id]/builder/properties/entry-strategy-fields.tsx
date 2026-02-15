@@ -82,7 +82,8 @@ export function EMACrossoverEntryFields({
       {/* Advanced */}
       <AdvancedToggleSection>
         <ToggleField
-          label="HTF trend filter"
+          label="Higher-timeframe trend filter"
+          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
           checked={data.htfTrendFilter}
           onChange={(v) => onChange({ htfTrendFilter: v })}
         >
@@ -340,7 +341,8 @@ export function RangeBreakoutEntryFields({
           />
         </ToggleField>
         <ToggleField
-          label="HTF trend filter"
+          label="Higher-timeframe trend filter"
+          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
           checked={data.htfTrendFilter}
           onChange={(v) => onChange({ htfTrendFilter: v })}
         >
@@ -637,7 +639,8 @@ export function MACDCrossoverEntryFields({
       {/* Advanced */}
       <AdvancedToggleSection>
         <ToggleField
-          label="HTF trend filter"
+          label="Higher-timeframe trend filter"
+          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
           checked={data.htfTrendFilter}
           onChange={(v) => onChange({ htfTrendFilter: v })}
         >

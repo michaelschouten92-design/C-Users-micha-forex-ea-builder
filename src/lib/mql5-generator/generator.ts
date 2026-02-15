@@ -543,7 +543,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         method: ts.method === "atr" ? "ATR_BASED" : "FIXED_PIPS",
         trailPips: ts.fixedPips ?? 30,
         trailAtrMultiplier: ts.atrMultiplier ?? 2.0,
-        trailAtrPeriod: 14,
+        trailAtrPeriod: ts.atrPeriod ?? 14,
         trailPercent: 50,
         startAfterPips: 0,
       })

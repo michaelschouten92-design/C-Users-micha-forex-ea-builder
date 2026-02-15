@@ -165,7 +165,8 @@ export function generateOnTick(
       {
          ulong dealTicket = HistoryDealGetTicket(i);
          if(dealTicket > 0 && HistoryDealGetInteger(dealTicket, DEAL_MAGIC) == InpMagicNumber
-            && HistoryDealGetString(dealTicket, DEAL_SYMBOL) == _Symbol)
+            && HistoryDealGetString(dealTicket, DEAL_SYMBOL) == _Symbol
+            && HistoryDealGetInteger(dealTicket, DEAL_ENTRY) == DEAL_ENTRY_OUT)
          {
             dailyPnL += HistoryDealGetDouble(dealTicket, DEAL_PROFIT)
                       + HistoryDealGetDouble(dealTicket, DEAL_SWAP)
@@ -303,8 +304,8 @@ export function generateOnTick(
   if (ctx.minBarsBetweenTrades > 0) {
     minBarsCode = `
    //--- Min Bars Between Trades
+   static int gLastTradeBar = 0;
    {
-      static int gLastTradeBar = 0;
       int currentBar = iBars(_Symbol, PERIOD_CURRENT);
       if(gLastTradeBar > 0 && currentBar - gLastTradeBar < ${ctx.minBarsBetweenTrades})
          return;

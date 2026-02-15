@@ -461,6 +461,8 @@ export interface BaseEntryStrategyFields {
     enabled: boolean;
     method: "atr" | "fixed-pips";
     atrMultiplier?: number;
+    atrPeriod?: number;
+    atrTimeframe?: string;
     fixedPips?: number;
   };
 }

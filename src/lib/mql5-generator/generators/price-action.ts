@@ -693,9 +693,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
    // Find clusters: count touches within zone for each level
    double bestSupport = 0;
-   int bestSupportTouches = 0;
    double bestResistance = 0;
-   int bestResistanceTouches = 0;
 
    for(int i = 0; i < levelCount; i++)
    {
@@ -717,16 +715,10 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
       // Nearest support below current price
       if(avgLevel < currentPrice && (bestSupport == 0 || avgLevel > bestSupport))
-      {
          bestSupport = avgLevel;
-         bestSupportTouches = touches;
-      }
       // Nearest resistance above current price
       if(avgLevel > currentPrice && (bestResistance == 0 || avgLevel < bestResistance))
-      {
          bestResistance = avgLevel;
-         bestResistanceTouches = touches;
-      }
    }
 
    support = bestSupport;
