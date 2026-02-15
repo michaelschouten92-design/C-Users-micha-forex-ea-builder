@@ -189,25 +189,35 @@ export function NodeToolbar({
               {/* Block List */}
               {isExpanded && (
                 <div className="mt-2 space-y-1 pl-1">
-                  {templates.map((template, index) => (
-                    <div
-                      key={`${template.type}-${index}`}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, template)}
-                      aria-label={`${template.label} block`}
-                      className="px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
-                      title={template.description}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className={`text-sm font-medium ${blockColors[template.category]}`}>
-                          {template.label}
+                  {templates.map((template, index) => {
+                    const isBeginner =
+                      template.type === "ema-crossover-entry" ||
+                      template.type === "rsi-reversal-entry";
+                    return (
+                      <div
+                        key={`${template.type}-${index}`}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, template)}
+                        aria-label={`${template.label} block`}
+                        className="px-3 py-2.5 rounded-lg bg-[#2A1438]/80 border border-[rgba(79,70,229,0.15)] transition-all duration-200 cursor-grab hover:border-[rgba(79,70,229,0.3)] hover:bg-[#2A1438] hover:shadow-[0_0_12px_rgba(79,70,229,0.1)] active:cursor-grabbing"
+                        title={template.description}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={`text-sm font-medium ${blockColors[template.category]}`}>
+                            {template.label}
+                          </div>
+                          {isBeginner && (
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-[#10B981]">
+                              Beginner
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#94A3B8] truncate mt-0.5">
+                          {template.description}
                         </div>
                       </div>
-                      <div className="text-xs text-[#94A3B8] truncate mt-0.5">
-                        {template.description}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

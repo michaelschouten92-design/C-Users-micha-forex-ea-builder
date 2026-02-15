@@ -96,11 +96,13 @@ export function ToggleField({
   label,
   checked,
   onChange,
+  hint,
   children,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
+  hint?: string;
   children?: React.ReactNode;
 }) {
   return (
@@ -118,6 +120,7 @@ export function ToggleField({
         />
         {label}
       </label>
+      {hint && <p className="text-[10px] text-[#64748B] mt-0.5 ml-5">{hint}</p>}
       {checked && children && <div className="mt-2 ml-5 space-y-2">{children}</div>}
     </div>
   );
@@ -192,9 +195,10 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         max={10}
         step={0.1}
         onChange={(v) => onChange({ riskPercent: v } as Partial<T>)}
+        tooltip="How much of your account you risk on each trade"
       />
       <p className="text-[10px] text-[#64748B] -mt-0.5">
-        Percentage of account balance risked per trade
+        The EA calculates your position size so you only lose this % if your stop loss is hit
       </p>
       <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
 
@@ -203,6 +207,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         value={slMethod}
         options={options}
         onChange={(v) => onChange({ slMethod: v } as Partial<T>)}
+        tooltip="How the stop loss distance is calculated"
       />
       {slMethod === "RANGE_OPPOSITE" && (
         <p className="text-[11px] text-[#94A3B8] -mt-1">
@@ -219,7 +224,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10}
             step={0.1}
             onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<T>)}
-            tooltip="Multiplier applied to the ATR value"
+            tooltip="ATR measures how much the price moves on average. A 1.5x multiplier means your SL is 1.5 times that movement."
           />
           <OptimizableFieldCheckbox fieldName="slAtrMultiplier" data={data} onChange={onChange} />
           <NumberField
@@ -229,7 +234,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={500}
             step={1}
             onChange={(v) => onChange({ slAtrPeriod: v } as Partial<T>)}
-            tooltip="Average True Range - measures market volatility"
+            tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
           />
           <OptimizableFieldCheckbox fieldName="slAtrPeriod" data={data} onChange={onChange} />
           <SelectField
@@ -272,6 +277,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       {/* Take Profit — single or multiple */}
       <ToggleField
         label="Multiple take profits"
+        hint="Close part of your position early and let the rest run"
         checked={data.multipleTP?.enabled ?? false}
         onChange={(v) =>
           onChange({
@@ -295,6 +301,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
               multipleTP: { ...data.multipleTP!, tp1RMultiple: v },
             } as Partial<T>)
           }
+          tooltip="First take profit as multiple of your stop loss distance"
         />
         <NumberField
           label="TP1 Close %"
@@ -307,7 +314,11 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
               multipleTP: { ...data.multipleTP!, tp1Percent: v },
             } as Partial<T>)
           }
+          tooltip="Percentage of your position to close at TP1"
         />
+        <p className="text-[10px] text-[#64748B] -mt-0.5">
+          Remaining {100 - (data.multipleTP?.tp1Percent ?? 50)}% closes at TP2
+        </p>
         <NumberField
           label="TP2 R-multiple"
           value={data.multipleTP?.tp2RMultiple ?? 2}
@@ -319,6 +330,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
               multipleTP: { ...data.multipleTP!, tp2RMultiple: v },
             } as Partial<T>)
           }
+          tooltip="Second take profit for the remaining position"
         />
       </ToggleField>
       {!data.multipleTP?.enabled && (
@@ -330,9 +342,11 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             max={10}
             step={0.1}
             onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
+            tooltip="R = your stop loss distance. 2R means your take profit is 2x your stop loss."
           />
           <p className="text-[10px] text-[#64748B] -mt-0.5">
-            Multiple of stop loss distance (e.g. 2R = TP is 2x the SL)
+            Example: if your SL is 50 pips, then {data.tpRMultiple}R ={" "}
+            {Math.round(50 * data.tpRMultiple)} pips TP
           </p>
           <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         </>
@@ -341,6 +355,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       {/* Close on opposite signal */}
       <ToggleField
         label="Close on opposite signal"
+        hint="When a buy signal fires, close any open sell positions (and vice versa)"
         checked={data.closeOnOpposite ?? false}
         onChange={(v) => onChange({ closeOnOpposite: v } as Partial<T>)}
       />
@@ -348,6 +363,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       {/* Trailing stop */}
       <ToggleField
         label="Trailing stop"
+        hint="Automatically moves your stop loss to lock in profit as the price moves in your favor"
         checked={data.trailingStop?.enabled ?? false}
         onChange={(v) =>
           onChange({

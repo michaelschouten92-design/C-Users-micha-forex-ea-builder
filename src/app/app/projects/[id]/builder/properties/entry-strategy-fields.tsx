@@ -52,6 +52,7 @@ export function EMACrossoverEntryFields({
           (o) => !["MEDIAN", "TYPICAL", "WEIGHTED"].includes(o.value)
         )}
         onChange={(v) => onChange({ appliedPrice: v as EMACrossoverEntryData["appliedPrice"] })}
+        tooltip="Which price to use for calculations. Close (default) is the most common."
       />
 
       {/* Basic fields */}
@@ -61,6 +62,7 @@ export function EMACrossoverEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ fastEma: v })}
+        tooltip="The shorter moving average that reacts quickly to price changes"
       />
       <OptimizableFieldCheckbox fieldName="fastEma" data={data} onChange={onChange} />
       <NumberField
@@ -69,6 +71,7 @@ export function EMACrossoverEntryFields({
         min={1}
         max={1000}
         onChange={(v) => onChange({ slowEma: v })}
+        tooltip="The longer moving average that shows the overall trend direction"
       />
       <OptimizableFieldCheckbox fieldName="slowEma" data={data} onChange={onChange} />
       {data.fastEma >= data.slowEma && (
@@ -103,6 +106,7 @@ export function EMACrossoverEntryFields({
         </ToggleField>
         <ToggleField
           label="RSI confirmation"
+          hint="Only take trades when RSI confirms the direction (filters out weak signals)"
           checked={data.rsiConfirmation}
           onChange={(v) => onChange({ rsiConfirmation: v })}
         >
@@ -112,6 +116,7 @@ export function EMACrossoverEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ rsiPeriod: v })}
+            tooltip="Number of candles used to calculate RSI. 14 is standard."
           />
           <OptimizableFieldCheckbox fieldName="rsiPeriod" data={data} onChange={onChange} />
           <NumberField
@@ -120,6 +125,7 @@ export function EMACrossoverEntryFields({
             min={0}
             max={100}
             onChange={(v) => onChange({ rsiLongMax: v })}
+            tooltip="Only buy when RSI is below this level (avoids buying when already overbought)"
           />
           <OptimizableFieldCheckbox fieldName="rsiLongMax" data={data} onChange={onChange} />
           <NumberField
@@ -128,6 +134,7 @@ export function EMACrossoverEntryFields({
             min={0}
             max={100}
             onChange={(v) => onChange({ rsiShortMin: v })}
+            tooltip="Only sell when RSI is above this level (avoids selling when already oversold)"
           />
           <OptimizableFieldCheckbox fieldName="rsiShortMin" data={data} onChange={onChange} />
         </ToggleField>
@@ -138,6 +145,7 @@ export function EMACrossoverEntryFields({
             min={0}
             max={500}
             onChange={(v) => onChange({ minEmaSeparation: v })}
+            tooltip="Requires the fast and slow EMA to be at least this far apart before trading (filters choppy markets)"
           />
           <OptimizableFieldCheckbox fieldName="minEmaSeparation" data={data} onChange={onChange} />
         </div>
@@ -262,6 +270,7 @@ export function RangeBreakoutEntryFields({
           min={0}
           max={50}
           onChange={(v) => onChange({ bufferPips: v })}
+          tooltip="Extra pips above/below the range to avoid false breakouts"
         />
         <OptimizableFieldCheckbox fieldName="bufferPips" data={data} onChange={onChange} />
       </div>
@@ -278,6 +287,7 @@ export function RangeBreakoutEntryFields({
             min={0}
             max={500}
             onChange={(v) => onChange({ minRangePips: v })}
+            tooltip="Skip breakouts from ranges smaller than this (too narrow = unreliable)"
           />
           <OptimizableFieldCheckbox fieldName="minRangePips" data={data} onChange={onChange} />
         </div>
@@ -288,6 +298,7 @@ export function RangeBreakoutEntryFields({
             min={0}
             max={1000}
             onChange={(v) => onChange({ maxRangePips: v })}
+            tooltip="Skip breakouts from ranges wider than this (too wide = too much risk)"
           />
           <OptimizableFieldCheckbox fieldName="maxRangePips" data={data} onChange={onChange} />
         </div>
@@ -296,6 +307,7 @@ export function RangeBreakoutEntryFields({
         )}
         <ToggleField
           label="Cancel opposite pending after trigger"
+          hint="When a buy breakout triggers, cancel the pending sell order (and vice versa)"
           checked={data.cancelOpposite}
           onChange={(v) => onChange({ cancelOpposite: v })}
         />
@@ -314,6 +326,7 @@ export function RangeBreakoutEntryFields({
         </ToggleField>
         <ToggleField
           label="Volume confirmation"
+          hint="Only trade breakouts with above-average volume (stronger moves)"
           checked={data.volumeConfirmation ?? false}
           onChange={(v) => onChange({ volumeConfirmation: v })}
         >
@@ -323,6 +336,7 @@ export function RangeBreakoutEntryFields({
             min={5}
             max={200}
             onChange={(v) => onChange({ volumeConfirmationPeriod: v })}
+            tooltip="Number of candles to calculate average volume"
           />
         </ToggleField>
         <ToggleField
@@ -380,6 +394,7 @@ export function RSIReversalEntryFields({
         value={data.appliedPrice ?? "CLOSE"}
         options={APPLIED_PRICE_OPTIONS}
         onChange={(v) => onChange({ appliedPrice: v as RSIReversalEntryData["appliedPrice"] })}
+        tooltip="Which price to use for RSI calculation. Close (default) is the most common."
       />
 
       {/* Basic fields */}
@@ -389,6 +404,7 @@ export function RSIReversalEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ rsiPeriod: v })}
+        tooltip="Number of candles used to calculate RSI. 14 is the standard setting."
       />
       <OptimizableFieldCheckbox fieldName="rsiPeriod" data={data} onChange={onChange} />
       <NumberField
@@ -397,6 +413,7 @@ export function RSIReversalEntryFields({
         min={0}
         max={50}
         onChange={(v) => onChange({ oversoldLevel: v })}
+        tooltip="Below this level the market is considered oversold (cheap) — triggers a buy signal"
       />
       <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       <NumberField
@@ -405,6 +422,7 @@ export function RSIReversalEntryFields({
         min={50}
         max={100}
         onChange={(v) => onChange({ overboughtLevel: v })}
+        tooltip="Above this level the market is considered overbought (expensive) — triggers a sell signal"
       />
       <OptimizableFieldCheckbox fieldName="overboughtLevel" data={data} onChange={onChange} />
       {data.overboughtLevel <= data.oversoldLevel && (
@@ -416,6 +434,7 @@ export function RSIReversalEntryFields({
       <AdvancedToggleSection>
         <ToggleField
           label="Trend filter (EMA)"
+          hint="Only take reversals in the direction of the overall trend"
           checked={data.trendFilter}
           onChange={(v) => onChange({ trendFilter: v })}
         >
@@ -425,6 +444,7 @@ export function RSIReversalEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ trendEma: v })}
+            tooltip="EMA period to determine the trend direction"
           />
           <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
         </ToggleField>
@@ -458,6 +478,7 @@ export function TrendPullbackEntryFields({
         value={data.appliedPrice ?? "CLOSE"}
         options={APPLIED_PRICE_OPTIONS}
         onChange={(v) => onChange({ appliedPrice: v as TrendPullbackEntryData["appliedPrice"] })}
+        tooltip="Which price to use for calculations. Close (default) is the most common."
       />
 
       {/* Basic fields */}
@@ -467,6 +488,7 @@ export function TrendPullbackEntryFields({
         min={1}
         max={1000}
         onChange={(v) => onChange({ trendEma: v })}
+        tooltip="EMA period that defines the trend direction. 200 is the most common."
       />
       <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
       <NumberField
@@ -475,6 +497,7 @@ export function TrendPullbackEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ pullbackRsiPeriod: v })}
+        tooltip="RSI period used to detect when a pullback is deep enough to enter"
       />
       <OptimizableFieldCheckbox fieldName="pullbackRsiPeriod" data={data} onChange={onChange} />
       <NumberField
@@ -483,6 +506,7 @@ export function TrendPullbackEntryFields({
         min={10}
         max={50}
         onChange={(v) => onChange({ rsiPullbackLevel: v })}
+        tooltip="RSI must drop below this level to confirm a pullback. Lower = deeper pullback required."
       />
       <OptimizableFieldCheckbox fieldName="rsiPullbackLevel" data={data} onChange={onChange} />
       <NumberField
@@ -491,6 +515,7 @@ export function TrendPullbackEntryFields({
         min={0.1}
         max={20}
         onChange={(v) => onChange({ pullbackMaxDistance: v })}
+        tooltip="Maximum distance from the trend EMA (as % of price) to still count as a pullback"
       />
       <OptimizableFieldCheckbox fieldName="pullbackMaxDistance" data={data} onChange={onChange} />
       <EntryStrategyRiskSection data={data} onChange={onChange} />
@@ -499,11 +524,13 @@ export function TrendPullbackEntryFields({
       <AdvancedToggleSection>
         <ToggleField
           label="Require price buffer from EMA"
+          hint="Only enter when price has pulled back far enough from the EMA"
           checked={data.requireEmaBuffer}
           onChange={(v) => onChange({ requireEmaBuffer: v })}
         />
         <ToggleField
           label="ADX trend strength filter"
+          hint="ADX measures how strong the trend is. Only trades when the trend is strong enough."
           checked={data.useAdxFilter ?? false}
           onChange={(v) => onChange({ useAdxFilter: v })}
         >
@@ -513,6 +540,7 @@ export function TrendPullbackEntryFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ adxPeriod: v })}
+            tooltip="Number of candles to calculate ADX. 14 is standard."
           />
           <OptimizableFieldCheckbox fieldName="adxPeriod" data={data} onChange={onChange} />
           <NumberField
@@ -521,6 +549,7 @@ export function TrendPullbackEntryFields({
             min={1}
             max={100}
             onChange={(v) => onChange({ adxThreshold: v })}
+            tooltip="Minimum ADX value to confirm a strong trend. 25 is the standard threshold."
           />
           <OptimizableFieldCheckbox fieldName="adxThreshold" data={data} onChange={onChange} />
         </ToggleField>
@@ -556,6 +585,7 @@ export function MACDCrossoverEntryFields({
           (o) => !["MEDIAN", "TYPICAL", "WEIGHTED"].includes(o.value)
         )}
         onChange={(v) => onChange({ appliedPrice: v as MACDCrossoverEntryData["appliedPrice"] })}
+        tooltip="Which price to use for MACD calculation. Close (default) is the most common."
       />
 
       {/* Basic fields */}
@@ -565,6 +595,7 @@ export function MACDCrossoverEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ macdFast: v })}
+        tooltip="Short-term EMA period for MACD calculation. 12 is standard."
       />
       <OptimizableFieldCheckbox fieldName="macdFast" data={data} onChange={onChange} />
       <NumberField
@@ -573,6 +604,7 @@ export function MACDCrossoverEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ macdSlow: v })}
+        tooltip="Long-term EMA period for MACD calculation. 26 is standard."
       />
       <OptimizableFieldCheckbox fieldName="macdSlow" data={data} onChange={onChange} />
       <NumberField
@@ -581,6 +613,7 @@ export function MACDCrossoverEntryFields({
         min={1}
         max={500}
         onChange={(v) => onChange({ macdSignal: v })}
+        tooltip="Smoothing period for the signal line. 9 is standard."
       />
       <OptimizableFieldCheckbox fieldName="macdSignal" data={data} onChange={onChange} />
       <SelectField
@@ -594,6 +627,7 @@ export function MACDCrossoverEntryFields({
         onChange={(v) =>
           onChange({ macdSignalType: v as MACDCrossoverEntryData["macdSignalType"] })
         }
+        tooltip="Signal Line Cross is the most common. Zero Line Cross is more conservative. Histogram catches momentum shifts early."
       />
       {data.macdFast >= data.macdSlow && (
         <FieldError message="MACD fast must be smaller than slow" />

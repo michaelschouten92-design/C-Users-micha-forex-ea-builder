@@ -11,6 +11,7 @@ interface StrategySettingsPanelProps {
 
 export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const update = (partial: Partial<BuildJsonSettings>) => {
     onChange({ ...settings, ...partial });
@@ -77,7 +78,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               ))}
             </select>
             <p className="text-[10px] text-[#64748B] mt-1">
-              Loads risk settings — you can fine-tune after
+              Auto-fills risk limits for your prop firm challenge
             </p>
           </div>
 
@@ -89,20 +90,19 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
             max={100}
             step={1}
             onChange={(v) => update({ maxOpenTrades: v })}
+            hint="Maximum positions open at the same time"
           />
 
           {/* Max Trades Per Day */}
-          <div>
-            <SettingsNumberField
-              label="Max Trades Per Day"
-              value={settings.maxTradesPerDay ?? 0}
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) => update({ maxTradesPerDay: v })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">0 = unlimited</p>
-          </div>
+          <SettingsToggleNumberField
+            label="Max Trades Per Day"
+            value={settings.maxTradesPerDay ?? 0}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) => update({ maxTradesPerDay: v })}
+            hint="Limits how many trades the EA opens per day"
+          />
 
           {/* Allow Hedging */}
           <div>
@@ -123,83 +123,155 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
             </label>
             <p className="text-[10px] text-[#64748B] mt-1 ml-6">
-              Allow both buy and sell positions at the same time
+              Allow buy and sell positions open at the same time
             </p>
           </div>
 
           {/* Daily Profit Target */}
-          <div>
-            <SettingsNumberField
-              label="Daily Profit Target (%)"
-              value={settings.maxDailyProfitPercent ?? 0}
-              min={0}
-              max={100}
-              step={0.5}
-              onChange={(v) => update({ maxDailyProfitPercent: v })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">
-              0 = disabled. Closes all trades when hit
-            </p>
-          </div>
+          <SettingsToggleNumberField
+            label="Daily Profit Target (%)"
+            value={settings.maxDailyProfitPercent ?? 0}
+            min={0.5}
+            max={100}
+            step={0.5}
+            onChange={(v) => update({ maxDailyProfitPercent: v })}
+            hint="Stops trading for the day after reaching this profit"
+          />
 
           {/* Daily Loss Limit */}
-          <div>
-            <SettingsNumberField
-              label="Daily Loss Limit (%)"
-              value={settings.maxDailyLossPercent ?? 0}
-              min={0}
-              max={100}
-              step={0.5}
-              onChange={(v) => update({ maxDailyLossPercent: v })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">
-              0 = disabled. Closes all trades when hit
-            </p>
-          </div>
+          <SettingsToggleNumberField
+            label="Daily Loss Limit (%)"
+            value={settings.maxDailyLossPercent ?? 0}
+            min={0.5}
+            max={100}
+            step={0.5}
+            onChange={(v) => update({ maxDailyLossPercent: v })}
+            hint="Stops trading for the day after this loss (required by most prop firms)"
+          />
 
-          {/* Max Total Drawdown */}
-          <div>
-            <SettingsNumberField
-              label="Max Total Drawdown (%)"
-              value={settings.maxTotalDrawdownPercent ?? 0}
-              min={0}
-              max={50}
-              step={0.5}
-              onChange={(v) => update({ maxTotalDrawdownPercent: v || undefined })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">
-              0 = disabled. Stops trading if equity drops this much from peak
-            </p>
-          </div>
+          {/* Advanced section */}
+          <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAdvanced(!showAdvanced);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#94A3B8] uppercase tracking-wide hover:text-[#CBD5E1] transition-colors"
+            >
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${showAdvanced ? "rotate-90" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              Advanced
+            </button>
 
-          {/* Cooldown After Loss */}
-          <div>
-            <SettingsNumberField
-              label="Cooldown After Loss (min)"
-              value={settings.cooldownAfterLossMinutes ?? 0}
-              min={0}
-              max={1440}
-              step={1}
-              onChange={(v) => update({ cooldownAfterLossMinutes: v || undefined })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">
-              0 = disabled. Pauses trading after a losing trade
-            </p>
-          </div>
+            {showAdvanced && (
+              <div className="mt-3 space-y-3">
+                {/* Max Total Drawdown */}
+                <SettingsToggleNumberField
+                  label="Max Total Drawdown (%)"
+                  value={settings.maxTotalDrawdownPercent ?? 0}
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  onChange={(v) => update({ maxTotalDrawdownPercent: v || undefined })}
+                  hint="Stops all trading when your account drops this much from its highest point"
+                />
 
-          {/* Min Bars Between Trades */}
-          <div>
-            <SettingsNumberField
-              label="Min Bars Between Trades"
-              value={settings.minBarsBetweenTrades ?? 0}
-              min={0}
-              max={500}
-              step={1}
-              onChange={(v) => update({ minBarsBetweenTrades: v || undefined })}
-            />
-            <p className="text-[10px] text-[#64748B] mt-1">0 = disabled. Prevents overtrading</p>
+                {/* Cooldown After Loss */}
+                <SettingsToggleNumberField
+                  label="Cooldown After Loss (min)"
+                  value={settings.cooldownAfterLossMinutes ?? 0}
+                  min={1}
+                  max={1440}
+                  step={1}
+                  onChange={(v) => update({ cooldownAfterLossMinutes: v || undefined })}
+                  hint="Pauses the EA for X minutes after a losing trade to avoid revenge trading"
+                />
+
+                {/* Min Bars Between Trades */}
+                <SettingsToggleNumberField
+                  label="Min Bars Between Trades"
+                  value={settings.minBarsBetweenTrades ?? 0}
+                  min={1}
+                  max={500}
+                  step={1}
+                  onChange={(v) => update({ minBarsBetweenTrades: v || undefined })}
+                  hint="Waits X candles before taking another trade to prevent overtrading"
+                />
+              </div>
+            )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Number field with an enable/disable toggle — replaces the confusing "0 = disabled" pattern */
+function SettingsToggleNumberField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+  hint?: string;
+}) {
+  const isEnabled = value > 0;
+
+  return (
+    <div>
+      <label
+        className="flex items-center gap-2 cursor-pointer"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={isEnabled}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(e.target.checked ? min : 0);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+        />
+        <span className={`text-xs font-medium ${isEnabled ? "text-[#CBD5E1]" : "text-[#64748B]"}`}>
+          {label}
+        </span>
+      </label>
+      {isEnabled && (
+        <div className="mt-1.5 ml-6">
+          <SettingsNumberField
+            label=""
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            onChange={onChange}
+          />
+        </div>
+      )}
+      {hint && (
+        <p
+          className={`text-[10px] mt-1 ${isEnabled ? "text-[#64748B]" : "text-[#475569]"} ${isEnabled ? "" : "ml-6"}`}
+        >
+          {hint}
+        </p>
       )}
     </div>
   );
@@ -212,6 +284,7 @@ function SettingsNumberField({
   max,
   step,
   onChange,
+  hint,
 }: {
   label: string;
   value: number;
@@ -219,6 +292,7 @@ function SettingsNumberField({
   max: number;
   step: number;
   onChange: (value: number) => void;
+  hint?: string;
 }) {
   const [localValue, setLocalValue] = useState(String(value));
 
@@ -240,7 +314,7 @@ function SettingsNumberField({
 
   return (
     <div>
-      <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>
+      {label && <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>}
       <input
         type="number"
         value={localValue}
@@ -258,6 +332,7 @@ function SettingsNumberField({
         onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
       />
+      {hint && <p className="text-[10px] text-[#64748B] mt-1">{hint}</p>}
     </div>
   );
 }
