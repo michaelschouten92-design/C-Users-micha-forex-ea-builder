@@ -651,8 +651,8 @@ export interface PropFirmPreset {
 
 export const PROP_FIRM_PRESETS: PropFirmPreset[] = [
   { name: "FTMO", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
-  { name: "The Funded Trader", dailyLossPercent: 5, totalDrawdownPercent: 8, maxOpenTrades: 3 },
-  { name: "MyFundedFX", dailyLossPercent: 5, totalDrawdownPercent: 12, maxOpenTrades: 5 },
+  { name: "The 5%ers", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
+  { name: "Funding Pips", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
 ];
 
 export interface BuildJsonMetadata {
