@@ -676,6 +676,101 @@ function decomposeEntryStrategies(
   return { nodes: resultNodes, edges: resultEdges };
 }
 
+// Build a const string array with strategy summary lines for the chart overlay.
+// Uses the original (pre-decomposition) nodes so entry strategy blocks are still intact.
+function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext): string {
+  const lines: string[] = [];
+
+  const entryTypeNames: Record<string, string> = {
+    "ema-crossover": "EMA Crossover",
+    "range-breakout": "Range Breakout",
+    "rsi-reversal": "RSI Reversal",
+    "trend-pullback": "Trend Pullback",
+    "macd-crossover": "MACD Crossover",
+  };
+
+  for (const node of nodes) {
+    const d = node.data;
+    if (!("entryType" in d)) continue;
+    const entry = d as EntryStrategyNodeData;
+
+    // Entry + timeframe
+    const name = entryTypeNames[entry.entryType] ?? entry.entryType;
+    lines.push(`Entry: ${name} (${entry.timeframe ?? "H1"})`);
+
+    // Direction (only show if not BOTH, since BOTH is default)
+    const dir = entry.direction ?? "BOTH";
+    if (dir !== "BOTH") lines.push(`Direction: ${dir} only`);
+
+    // Risk
+    lines.push(`Risk: ${entry.riskPercent}% per trade`);
+
+    // SL
+    const slm = entry.slMethod ?? "ATR";
+    if (slm === "ATR") lines.push(`SL: ${entry.slAtrMultiplier}x ATR(${entry.slAtrPeriod ?? 14})`);
+    else if (slm === "PIPS") lines.push(`SL: ${entry.slFixedPips} pips`);
+    else if (slm === "PERCENT") lines.push(`SL: ${entry.slPercent}%`);
+    else if (slm === "RANGE_OPPOSITE") lines.push("SL: Range opposite side");
+
+    // TP
+    const mtp = entry.multipleTP;
+    if (mtp?.enabled) {
+      lines.push(`TP: ${mtp.tp1RMultiple}R (${mtp.tp1Percent}%) / ${mtp.tp2RMultiple}R`);
+    } else {
+      lines.push(`TP: ${entry.tpRMultiple}R`);
+    }
+
+    // Trailing stop
+    if (entry.trailingStop?.enabled) {
+      const ts = entry.trailingStop;
+      if (ts.method === "atr") lines.push(`Trail: ${ts.atrMultiplier ?? 2}x ATR`);
+      else lines.push(`Trail: ${ts.fixedPips ?? 30} pips`);
+    }
+  }
+
+  // Timing info
+  for (const node of nodes) {
+    const d = node.data;
+    if (node.type === "trading-session" && "session" in d) {
+      const session = d.session as string;
+      if (session === "CUSTOM") {
+        const sh = String(("customStartHour" in d ? d.customStartHour : 8) ?? 8).padStart(2, "0");
+        const sm = String(("customStartMinute" in d ? d.customStartMinute : 0) ?? 0).padStart(
+          2,
+          "0"
+        );
+        const eh = String(("customEndHour" in d ? d.customEndHour : 17) ?? 17).padStart(2, "0");
+        const em = String(("customEndMinute" in d ? d.customEndMinute : 0) ?? 0).padStart(2, "0");
+        lines.push(`Session: ${sh}:${sm} - ${eh}:${em}`);
+      } else {
+        lines.push(`Session: ${session}`);
+      }
+    } else if (node.type === "always") {
+      lines.push("Session: 24/5");
+    }
+  }
+
+  // Max spread filter
+  for (const node of nodes) {
+    const d = node.data as Record<string, unknown>;
+    if (d.filterType === "max-spread" && "maxSpreadPips" in d) {
+      lines.push(`Max spread: ${d.maxSpreadPips} pips`);
+    }
+  }
+
+  // Max open trades (only if not default 1)
+  if (ctx.maxOpenTrades > 1) {
+    lines.push(`Max trades: ${ctx.maxOpenTrades}`);
+  }
+
+  // Format as MQL5 const string array
+  if (lines.length === 0) {
+    return 'const string g_strategyInfo[] = {"No strategy details available"};';
+  }
+  const escaped = lines.map((l) => `"${sanitizeMQL5String(l)}"`);
+  return `const string g_strategyInfo[] = {${escaped.join(", ")}};`;
+}
+
 export function generateMQL5Code(
   buildJson: BuildJsonSchema,
   projectName: string,
@@ -750,7 +845,10 @@ export function generateMQL5Code(
         group: "Risk Management",
       },
     ],
-    globalVariables: ["int _pipFactor = 10; // 10 for 5/3-digit brokers, 1 for 4/2-digit"],
+    globalVariables: [
+      "int _pipFactor = 10; // 10 for 5/3-digit brokers, 1 for 4/2-digit",
+      buildStrategyOverlayArray(buildJson.nodes, ctx),
+    ],
     onInit: ["_pipFactor = (_Digits == 3 || _Digits == 5) ? 10 : 1;"],
     onDeinit: [],
     onTick: [],

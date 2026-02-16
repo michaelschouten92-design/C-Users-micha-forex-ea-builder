@@ -108,8 +108,7 @@ int OnInit()
 ${initCode.map((line) => "   " + line).join("\n")}
 
    //--- Display strategy info on chart
-   Comment(InpStrategyDescription, "\\n",
-           "Magic: ", InpMagicNumber, "  |  ", _Symbol, " ", EnumToString(Period()));
+   ShowStrategyOverlay();
 
    Print("${ctx.projectName} initialized successfully on ", _Symbol, " ", EnumToString(Period()));
    return(INIT_SUCCEEDED);
@@ -127,7 +126,8 @@ void OnDeinit(const int reason)
    //--- Release indicator handles
 ${deinitCode.length > 0 ? deinitCode.map((line) => "   " + line).join("\n") : "   //--- No handles to release"}
 
-   //--- Clear chart comment
+   //--- Remove strategy overlay from chart
+   ObjectsDeleteAll(0, "AS_Info_");
    Comment("");
 
    //--- Log deinitialization reason
@@ -635,6 +635,51 @@ void LogToFile(string message)
    string timestamp = TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS);
    FileWriteString(logHandle, timestamp + " | " + message + "\\n");
    FileFlush(logHandle);
+}
+
+//+------------------------------------------------------------------+
+//| Display strategy overlay on chart (subtle info labels)            |
+//+------------------------------------------------------------------+
+void ShowStrategyOverlay()
+{
+   string prefix = "AS_Info_";
+   int fontSize = 8;
+   color headerClr = C'140,140,160';  // muted slate for header
+   color lineClr   = C'100,100,120';  // dimmer for detail lines
+   int x = 12;
+   int y = 24;
+   int lineH = 14;
+   int row = 0;
+
+   //--- Header: strategy name
+   CreateOverlayLabel(prefix + "0", x, y, InpStrategyDescription, "Consolas", fontSize + 1, headerClr);
+   row++;
+
+   //--- Strategy detail lines
+   for(int i = 0; i < ArraySize(g_strategyInfo); i++)
+   {
+      CreateOverlayLabel(prefix + IntegerToString(row), x, y + row * lineH, g_strategyInfo[i], "Consolas", fontSize, lineClr);
+      row++;
+   }
+
+   //--- Footer: magic | symbol | timeframe
+   string footer = "Magic: " + IntegerToString(InpMagicNumber) + "  |  " + _Symbol + " " + EnumToString(Period());
+   CreateOverlayLabel(prefix + IntegerToString(row), x, y + row * lineH, footer, "Consolas", fontSize, lineClr);
+}
+
+void CreateOverlayLabel(string name, int xDist, int yDist, string text, string font, int size, color clr)
+{
+   if(ObjectFind(0, name) < 0)
+      ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, xDist);
+   ObjectSetInteger(0, name, OBJPROP_YDISTANCE, yDist);
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetString(0, name, OBJPROP_FONT, font);
+   ObjectSetInteger(0, name, OBJPROP_FONTSIZE, size);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+   ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
 }
 
 `;
