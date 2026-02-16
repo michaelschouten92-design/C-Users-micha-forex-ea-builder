@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
+import { getCachedTier, resolveTier } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/plans";
 import {
   createProjectSchema,
@@ -120,13 +120,7 @@ export async function POST(request: Request) {
         tx.project.count({ where: { userId: session.user.id, deletedAt: null } }),
       ]);
 
-      let tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
-      if (tier !== "FREE") {
-        const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-        const isExpired =
-          subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-        if (!isActive || isExpired) tier = "FREE";
-      }
+      const tier = resolveTier(subscription);
 
       const max = PLANS[tier].limits.maxProjects;
 

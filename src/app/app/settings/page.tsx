@@ -134,7 +134,7 @@ function ChangePasswordSection() {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         showError(data.error || "Failed to change password");
@@ -230,7 +230,7 @@ function DeleteAccountSection() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         showError(data.error || "Failed to delete account");
       } else {
         window.location.href = "/login";

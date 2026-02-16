@@ -31,7 +31,7 @@ export function ExportsTab() {
   // Stats
   const [todayCount, setTodayCount] = useState(0);
   const [successRate, setSuccessRate] = useState(0);
-  const [failedToday, setFailedToday] = useState(0);
+  const [failedWeek, setFailedWeek] = useState(0);
 
   const limit = 50;
 
@@ -55,7 +55,7 @@ export function ExportsTab() {
       const totalWeek = Object.values(statsRes.exportStats).reduce((a, b) => a + b, 0);
       const doneWeek = statsRes.exportStats.DONE || 0;
       setSuccessRate(totalWeek > 0 ? (doneWeek / totalWeek) * 100 : 100);
-      setFailedToday(statsRes.exportStats.FAILED || 0);
+      setFailedWeek(statsRes.exportStats.FAILED || 0);
     } catch {
       setExports([]);
     } finally {
@@ -85,7 +85,7 @@ export function ExportsTab() {
         </div>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">Failed (week)</div>
-          <div className="text-2xl font-bold text-red-400 mt-1">{failedToday}</div>
+          <div className="text-2xl font-bold text-red-400 mt-1">{failedWeek}</div>
         </div>
       </div>
 

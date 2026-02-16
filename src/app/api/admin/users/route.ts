@@ -23,6 +23,7 @@ export async function GET() {
         emailVerified: true,
         createdAt: true,
         role: true,
+        referredBy: true,
         subscription: {
           select: {
             tier: true,
@@ -51,6 +52,7 @@ export async function GET() {
         : { tier: "FREE", status: "active" },
       projectCount: user._count.projects,
       exportCount: user._count.exports,
+      referredBy: user.referredBy ?? null,
     }));
 
     return NextResponse.json({ data, adminEmail: adminCheck.adminEmail });

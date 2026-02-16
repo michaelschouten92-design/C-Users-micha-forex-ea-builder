@@ -37,7 +37,7 @@ export function CreateProjectButton() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         const msg = data.error || "Something went wrong";
         if (res.status === 403 || msg.toLowerCase().includes("limit")) {
           setIsLimitError(true);

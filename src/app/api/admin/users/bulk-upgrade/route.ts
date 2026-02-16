@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { checkAdmin } from "@/lib/admin";
+import { audit } from "@/lib/audit";
 
 const bulkUpgradeSchema = z.object({
   emails: z.array(z.string().email()).min(1).max(500),
@@ -44,13 +45,15 @@ export async function POST(request: Request) {
       try {
         const user = await prisma.user.findUnique({
           where: { email },
-          select: { id: true },
+          select: { id: true, subscription: { select: { tier: true } } },
         });
 
         if (!user) {
           failed.push(email);
           continue;
         }
+
+        const previousTier = user.subscription?.tier ?? "FREE";
 
         await prisma.subscription.upsert({
           where: { userId: user.id },
@@ -59,6 +62,15 @@ export async function POST(request: Request) {
         });
 
         invalidateSubscriptionCache(user.id);
+
+        // Audit the tier change
+        const tierOrder = ["FREE", "PRO", "ELITE"];
+        const auditFn =
+          tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier)
+            ? audit.subscriptionUpgrade
+            : audit.subscriptionDowngrade;
+        auditFn(user.id, previousTier, tier).catch(() => {});
+
         updated++;
       } catch {
         failed.push(email);

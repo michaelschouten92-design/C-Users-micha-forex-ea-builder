@@ -289,7 +289,12 @@ export function StrategyCanvas({
       const data = event.dataTransfer.getData("application/reactflow");
       if (!data) return;
 
-      const template: NodeTemplate = JSON.parse(data);
+      let template: NodeTemplate;
+      try {
+        template = JSON.parse(data);
+      } catch {
+        return;
+      }
 
       // Enforce: max 50 nodes
       if (nodes.length >= 50) {

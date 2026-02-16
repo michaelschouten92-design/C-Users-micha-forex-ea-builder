@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { checkExportLimit } from "@/lib/plan-limits";
+import { checkExportLimit, getCachedTier } from "@/lib/plan-limits";
+import { PLANS } from "@/lib/plans";
 import {
   exportRequestSchema,
   buildJsonSchema,
@@ -90,7 +91,9 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit the export request
     await audit.exportRequest(session.user.id, id, exportType);
 
-    // Check export limits (plan-based monthly limits)
+    // Check export limits (plan-based monthly limits) — pre-check outside transaction
+    // for fast rejection. The authoritative check happens atomically inside the
+    // transaction below, preventing race conditions.
     const exportLimit = await checkExportLimit(session.user.id);
     if (!exportLimit.allowed) {
       return NextResponse.json(
@@ -166,17 +169,42 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Generate MQL5 code
     const mql5Code = generateMQL5Code(buildJson, project.name, project.description ?? undefined);
 
-    // Create export job record
-    const exportJob = await prisma.exportJob.create({
-      data: {
-        userId: session.user.id,
-        projectId: project.id,
-        buildVersionId: version.id,
-        exportType: exportType || "MQ5",
-        status: "DONE",
-        outputName: `${sanitizeFileName(project.name)}.mq5`,
-      },
+    // Atomically check limit + create export job inside a transaction
+    const tier = await getCachedTier(session.user.id);
+    const maxExports = PLANS[tier].limits.maxExportsPerMonth;
+    const startOfMonth = new Date();
+    startOfMonth.setUTCDate(1);
+    startOfMonth.setUTCHours(0, 0, 0, 0);
+
+    const exportJob = await prisma.$transaction(async (tx) => {
+      const currentCount = await tx.exportJob.count({
+        where: { userId: session.user.id, createdAt: { gte: startOfMonth } },
+      });
+      if (currentCount >= maxExports) {
+        return null;
+      }
+      return tx.exportJob.create({
+        data: {
+          userId: session.user.id,
+          projectId: project.id,
+          buildVersionId: version.id,
+          exportType: exportType || "MQ5",
+          status: "DONE",
+          outputName: `${sanitizeFileName(project.name)}.mq5`,
+        },
+      });
     });
+
+    if (!exportJob) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.EXPORT_LIMIT,
+          "Export limit reached",
+          `You've reached your monthly export limit. Upgrade to Pro for unlimited exports.`
+        ),
+        { status: 403 }
+      );
+    }
 
     log.info(
       { projectId: project.id, exportId: exportJob.id, versionNo: version.versionNo },

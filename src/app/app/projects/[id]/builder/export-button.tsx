@@ -107,7 +107,7 @@ export function ExportButton({
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ error: "Export failed" }));
 
       if (!res.ok) {
         setError(data);

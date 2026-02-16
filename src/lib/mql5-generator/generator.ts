@@ -786,9 +786,9 @@ export function generateMQL5Code(
 
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
-    description: description ?? "",
+    description: sanitizeMQL5String(description ?? ""),
     magicNumber: buildJson.settings?.magicNumber ?? 123456,
-    comment: buildJson.settings?.comment ?? "AlgoStudio EA",
+    comment: sanitizeMQL5String(buildJson.settings?.comment ?? "AlgoStudio EA"),
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
     maxBuyPositions: buildJson.settings?.maxBuyPositions ?? buildJson.settings?.maxOpenTrades ?? 1,

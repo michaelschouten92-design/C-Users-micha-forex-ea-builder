@@ -13,6 +13,25 @@ interface CacheEntry {
 const tierCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — tier changes are rare
 
+/** Resolve the effective tier from raw subscription data (pure logic, no DB call). */
+export function resolveTier(
+  subscription: {
+    tier: string;
+    status: string;
+    currentPeriodEnd: Date | null;
+  } | null
+): PlanTier {
+  let tier = (subscription?.tier ?? "FREE") as PlanTier;
+  if (tier !== "FREE") {
+    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
+    if (!isActive || isExpired) {
+      tier = "FREE";
+    }
+  }
+  return tier;
+}
+
 export async function getCachedTier(userId: string): Promise<PlanTier> {
   const cached = tierCache.get(userId);
   if (cached && cached.expiresAt > Date.now()) {
@@ -24,17 +43,7 @@ export async function getCachedTier(userId: string): Promise<PlanTier> {
     select: { tier: true, status: true, currentPeriodEnd: true },
   });
 
-  let tier = (subscription?.tier ?? "FREE") as PlanTier;
-
-  // Revert to FREE if subscription is not active or has expired
-  if (tier !== "FREE") {
-    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-    if (!isActive || isExpired) {
-      tier = "FREE";
-    }
-  }
-
+  const tier = resolveTier(subscription);
   tierCache.set(userId, { tier, expiresAt: Date.now() + CACHE_TTL_MS });
   return tier;
 }

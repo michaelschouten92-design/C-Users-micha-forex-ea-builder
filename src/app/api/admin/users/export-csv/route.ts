@@ -28,20 +28,29 @@ export async function GET() {
       },
     });
 
+    // Escape CSV fields to prevent formula injection (=, +, -, @, tab, CR)
+    function escapeCsv(value: unknown): string {
+      const str = String(value ?? "");
+      if (/^[=+\-@\t\r]/.test(str) || str.includes(",") || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
+
     const header = "Email,Tier,Status,Projects,Exports,Verified,Joined,ReferralCode,ReferredBy";
     const rows = users.map((u) => {
       const tier = u.subscription?.tier || "FREE";
       const status = u.subscription?.status || "active";
       return [
-        u.email,
-        tier,
-        status,
+        escapeCsv(u.email),
+        escapeCsv(tier),
+        escapeCsv(status),
         u._count.projects,
         u._count.exports,
         u.emailVerified,
         u.createdAt.toISOString().split("T")[0],
-        u.referralCode || "",
-        u.referredBy || "",
+        escapeCsv(u.referralCode || ""),
+        escapeCsv(u.referredBy || ""),
       ].join(",");
     });
 
