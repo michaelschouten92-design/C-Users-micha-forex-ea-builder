@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "RSI EA Template | Free Mean Reversion Strategy for MetaTrader 5",
+  title: "RSI EA Template | Free Mean Reversion Strategy for MetaTrader 5 & 4",
   description:
-    "Free RSI mean reversion Expert Advisor template for MT5. Buy oversold, sell overbought with EMA trend filter, London session timing, and ATR-based risk management.",
+    "Free RSI mean reversion Expert Advisor template for MT5 & MT4. Buy oversold, sell overbought with EMA trend filter, London session timing, and ATR-based risk management.",
   alternates: { canonical: "/templates/rsi-ea-template" },
   openGraph: {
-    title: "RSI EA Template | Free Mean Reversion Strategy for MetaTrader 5",
+    title: "RSI EA Template | Free Mean Reversion Strategy for MetaTrader 5 & 4",
     description:
-      "Free RSI mean reversion Expert Advisor template for MT5. Buy oversold, sell overbought with EMA trend filter, London session timing, and ATR-based risk management.",
+      "Free RSI mean reversion Expert Advisor template for MT5 & MT4. Buy oversold, sell overbought with EMA trend filter, London session timing, and ATR-based risk management.",
     url: "/templates/rsi-ea-template",
   },
 };
@@ -86,7 +86,7 @@ export default function RSIEATemplatePage() {
             conditions, combined with an EMA trend filter to avoid false signals. Designed for the
             London session where liquidity is highest, the strategy buys when the market is oversold
             in an uptrend and sells when overbought in a downtrend. Build it in AlgoStudio without
-            coding and export a production-ready MQL5 Expert Advisor.
+            coding and export a production-ready MQL5 (or MQL4) Expert Advisor.
           </p>
         </header>
 

@@ -8,7 +8,7 @@ const STEPS = [
   {
     title: "Welcome to the Strategy Builder",
     description:
-      "Build a complete trading bot without writing a single line of code. Drag blocks, tweak settings, and export clean MQL5. If you ever get stuck, click the Help button in the bottom-right corner of the canvas.",
+      "Build a complete trading bot without writing a single line of code. Drag blocks, tweak settings, and export clean MQL5 (or MQL4). If you ever get stuck, click the Help button in the bottom-right corner of the canvas.",
     icon: (
       <svg
         className="w-10 h-10 text-[#4F46E5]"
@@ -134,7 +134,7 @@ const STEPS = [
   {
     title: "Step 5: Export Your EA",
     description:
-      'When all blocks show a green "Strategy Complete" badge in the top-right, your strategy is ready. Click the Export MQL5 button in the bottom bar to download a .mq5 file — this is your complete Expert Advisor source code.',
+      'When all blocks show a green "Strategy Complete" badge in the top-right, your strategy is ready. Click the Export button in the bottom bar to download a .mq5 file — this is your complete Expert Advisor source code.',
     icon: (
       <svg
         className="w-10 h-10 text-[#A78BFA]"

@@ -7,9 +7,9 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Product — The Simplest Way to Build an MT5 Expert Advisor | AlgoStudio",
+  title: "Product — The Simplest Way to Build an MT5 & MT4 Expert Advisor | AlgoStudio",
   description:
-    "AlgoStudio is the simplest way to build an MT5 Expert Advisor. Pick a strategy template, adjust a few settings, and export clean MQL5 code. No coding required.",
+    "AlgoStudio is the simplest way to build an MT5 or MT4 Expert Advisor. Pick a strategy template, adjust a few settings, and export clean MQL5 & MQL4 code. No coding required.",
   alternates: { canonical: "/product" },
 };
 
@@ -21,7 +21,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Do I need coding experience to use AlgoStudio?",
-    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, MQL4, Python, or any other programming knowledge required.",
   },
   {
     q: "What strategy templates are included?",
@@ -29,11 +29,11 @@ const faqItems = [
   },
   {
     q: "Can I use the exported EA in live trading?",
-    a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 broker.",
+    a: "Yes. The exported .mq5 (or .mq4) file is a standard MetaTrader Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 or MT4 broker.",
   },
   {
     q: "Is the generated code editable?",
-    a: "Yes. You get clean, well-commented MQL5 source code that you can open and modify in MetaEditor or any text editor.",
+    a: "Yes. You get clean, well-commented MQL5 (or MQL4) source code that you can open and modify in MetaEditor or any text editor.",
   },
   {
     q: "What makes AlgoStudio different from other EA builders?",
@@ -41,7 +41,7 @@ const faqItems = [
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. The free plan gives you full access to all templates and the builder. 1 project and 1 MQL5 export per month. No credit card required.",
+    a: "Yes. The free plan gives you full access to all templates and the builder. 1 project and 1 MQL5 export per month. MQL4 export available on Pro and Elite plans. No credit card required.",
   },
   {
     q: "How long does it take to build an EA?",
@@ -74,12 +74,12 @@ export default function ProductPage() {
           {/* Hero */}
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              The Simplest Way to Build an MT5 Expert Advisor
+              The Simplest Way to Build an MT5 & MT4 Expert Advisor
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              AlgoStudio lets you turn a trading idea into a working MetaTrader 5 bot — without
+              AlgoStudio lets you turn a trading idea into a working MetaTrader bot — without
               writing a single line of code. Pick a template, adjust a few settings, export clean
-              MQL5.
+              MQL5 or MQL4.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -170,8 +170,8 @@ export default function ProductPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Clean output</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Readable, well-commented MQL5 source code. Load it in MetaTrader 5, backtest it,
-                  edit it. The code is yours.
+                  Readable, well-commented MQL5 & MQL4 source code. Load it in MetaTrader, backtest
+                  it, edit it. The code is yours.
                 </p>
               </div>
             </div>
@@ -298,17 +298,17 @@ export default function ProductPage() {
           {/* Export */}
           <section className="mb-20">
             <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              Export clean MQL5 code
+              Export clean MQL5 & MQL4 code
             </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
-              One click, one file. You get a standard .mq5 Expert Advisor that compiles in
-              MetaEditor and runs on any MT5 broker.
+              One click, one file. You get a standard .mq5 (or .mq4) Expert Advisor that compiles in
+              MetaEditor and runs on any MetaTrader broker.
             </p>
             <div className="grid md:grid-cols-3 gap-6">
               {[
                 {
-                  title: "Standard .mq5 format",
-                  desc: "Compatible with every MT5 broker. No proprietary formats or plugins required.",
+                  title: "Standard .mq5 & .mq4 format",
+                  desc: "Compatible with every MT5 and MT4 broker. No proprietary formats or plugins required.",
                 },
                 {
                   title: "Well-commented code",
@@ -355,7 +355,7 @@ export default function ProductPage() {
                 },
                 {
                   title: "Algo-curious beginners",
-                  desc: "You've heard about algorithmic trading but don't know MQL5. AlgoStudio removes the coding barrier entirely.",
+                  desc: "You've heard about algorithmic trading but don't know MQL5 or MQL4. AlgoStudio removes the coding barrier entirely.",
                 },
                 {
                   title: "Strategy testers",
@@ -403,7 +403,7 @@ export default function ProductPage() {
                     ["Coding required", "None", "Often required"],
                     ["Starting point", "Working templates", "Blank canvas"],
                     ["Settings per strategy", "Key settings with defaults", "50+ fields"],
-                    ["Output format", "Clean MQL5", "Varies"],
+                    ["Output format", "Clean MQL5/MQL4", "Varies"],
                     ["Risk management", "Built-in", "Manual setup"],
                     ["Free tier", "Yes", "Rarely"],
                   ].map(([feature, algo, others]) => (
@@ -432,7 +432,7 @@ export default function ProductPage() {
 
       <CTASection
         title="Start building your Expert Advisor today"
-        description="Pick a template, adjust a few settings, and export clean MQL5 code. No credit card required."
+        description="Pick a template, adjust a few settings, and export clean MQL5 or MQL4 code. No credit card required."
       />
 
       <Footer />

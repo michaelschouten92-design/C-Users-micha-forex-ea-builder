@@ -22,11 +22,11 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Is AlgoStudio too simple for experienced traders?",
-    a: "No. Experienced traders often want the fastest path to a working EA — not more complexity. AlgoStudio gives you clean MQL5 code that you can customize further in MetaEditor.",
+    a: "No. Experienced traders often want the fastest path to a working EA — not more complexity. AlgoStudio gives you clean MQL5 (or MQL4) code that you can customize further in MetaEditor.",
   },
   {
     q: "Can I build complex strategies with AlgoStudio?",
-    a: "AlgoStudio focuses on proven, template-based strategies with optional advanced settings like trend filters and session timing. For highly custom logic, you can edit the exported MQL5 code directly.",
+    a: "AlgoStudio focuses on proven, template-based strategies with optional advanced settings like trend filters and session timing. For highly custom logic, you can edit the exported MQL5 or MQL4 code directly.",
   },
   {
     q: "Why templates instead of a blank canvas?",
@@ -34,7 +34,7 @@ const faqItems = [
   },
   {
     q: "What if I need a strategy not covered by the templates?",
-    a: "Export the closest template and modify the MQL5 code in MetaEditor. The clean, well-commented code makes customization straightforward.",
+    a: "Export the closest template and modify the MQL5/MQL4 code in MetaEditor. The clean, well-commented code makes customization straightforward.",
   },
 ];
 
@@ -115,8 +115,8 @@ export default function SimplicityPage() {
                   Clean output, not a black box
                 </h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  You get readable, well-commented MQL5 source code. Understand exactly what your EA
-                  does. Edit it if you want. It&apos;s not locked behind a platform.
+                  You get readable, well-commented MQL5 & MQL4 source code. Understand exactly what
+                  your EA does. Edit it if you want. It&apos;s not locked behind a platform.
                 </p>
               </div>
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
@@ -170,9 +170,9 @@ export default function SimplicityPage() {
                 trend filters, session timing, and trailing stops.
               </p>
               <p>
-                And because you get the MQL5 source code, you&apos;re never locked in. Export from
-                AlgoStudio, then customize further in MetaEditor if you need to. The simplicity is
-                the starting point, not the ceiling.
+                And because you get the MQL5 (or MQL4) source code, you&apos;re never locked in.
+                Export from AlgoStudio, then customize further in MetaEditor if you need to. The
+                simplicity is the starting point, not the ceiling.
               </p>
             </div>
           </section>
@@ -183,7 +183,7 @@ export default function SimplicityPage() {
 
       <CTASection
         title="Experience the simplest EA builder"
-        description="Pick a template, adjust a few settings, export clean MQL5 code. Free to start."
+        description="Pick a template, adjust a few settings, export clean MQL5 or MQL4 code. Free to start."
       />
 
       <Footer />

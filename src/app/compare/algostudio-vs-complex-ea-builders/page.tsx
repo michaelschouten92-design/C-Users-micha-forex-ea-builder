@@ -22,7 +22,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Is AlgoStudio better than other EA builders?",
-    a: "It depends on your goal. If you want the fastest way to build a working MT5 EA without coding, AlgoStudio is the better choice. If you need a fully custom strategy with unique logic not covered by templates, a more flexible builder may be needed.",
+    a: "It depends on your goal. If you want the fastest way to build a working MT5 or MT4 EA without coding, AlgoStudio is the better choice. If you need a fully custom strategy with unique logic not covered by templates, a more flexible builder may be needed.",
   },
   {
     q: "Can I switch from another EA builder to AlgoStudio?",
@@ -30,7 +30,7 @@ const faqItems = [
   },
   {
     q: "Does AlgoStudio support custom indicators?",
-    a: "AlgoStudio focuses on built-in indicators (EMA, RSI, MACD, ATR). For custom indicators, export your EA and add them in MetaEditor using the clean MQL5 code.",
+    a: "AlgoStudio focuses on built-in indicators (EMA, RSI, MACD, ATR). For custom indicators, export your EA and add them in MetaEditor using the clean MQL5 (or MQL4) code.",
   },
   {
     q: "How is AlgoStudio's visual builder different from other node editors?",
@@ -91,14 +91,14 @@ export default function ComparePage() {
                     ["Learning curve", "Minimal", "Steep"],
                     ["Settings per strategy", "Key settings with defaults", "50+ fields"],
                     ["Starting point", "Working strategy", "Empty project"],
-                    ["Output format", "Clean .mq5 source code", "Varies (some proprietary)"],
+                    ["Output format", "Clean .mq5/.mq4 source code", "Varies (some proprietary)"],
                     [
                       "Code readability",
                       "Well-commented, clean",
                       "Often auto-generated, hard to read",
                     ],
                     ["Risk management", "Built-in (ATR SL, position sizing)", "Manual setup"],
-                    ["Custom indicators", "Via MQL5 code editing", "Built-in editor"],
+                    ["Custom indicators", "Via MQL5/MQL4 code editing", "Built-in editor"],
                     ["Backtesting", "Via MT5 Strategy Tester", "Some have built-in"],
                     ["Free tier", "Yes — all templates, 1 export/month", "Rarely"],
                     ["Target user", "Traders who want to automate", "Developers and quant traders"],
@@ -121,7 +121,7 @@ export default function ComparePage() {
               {[
                 "You want to automate a standard strategy (trend following, mean reversion, breakout) without coding",
                 "You value speed — export a working EA in minutes, not days",
-                "You want clean MQL5 code that you own and can edit",
+                "You want clean MQL5/MQL4 code that you own and can edit",
                 "You're new to algorithmic trading and want the simplest starting point",
                 "You want to quickly test strategy variations in the MT5 Strategy Tester",
               ].map((item, i) => (

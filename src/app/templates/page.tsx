@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Strategy Templates | 5 Ready-to-Export MT5 Expert Advisors",
+  title: "Strategy Templates | 5 Ready-to-Export MT5 & MT4 Expert Advisors",
   description:
-    "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor. 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
+    "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor. 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Strategy Templates | 5 Ready-to-Export MT5 Expert Advisors",
+    title: "Strategy Templates | 5 Ready-to-Export MT5 & MT4 Expert Advisors",
     description:
-      "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor in minutes. No coding required.",
+      "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor in minutes. No coding required.",
     url: "/templates",
   },
 };
@@ -35,7 +35,7 @@ const faqQuestions = [
   },
   {
     q: "Do I need coding experience?",
-    a: "No. You pick a template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. You pick a template, adjust the settings you want, and export. No MQL5, MQL4, Python, or any other programming knowledge required.",
   },
   {
     q: "Which template should I start with?",
@@ -102,9 +102,9 @@ export default function TemplatesPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "MT5 Strategy Templates",
+    name: "MT5 & MT4 Strategy Templates",
     description:
-      "5 ready-to-export MetaTrader 5 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
+      "5 ready-to-export MetaTrader 5 & 4 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -133,7 +133,7 @@ export default function TemplatesPage() {
             5 strategy templates, ready to export
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
-            Pick a template, adjust a few settings, and export a working MetaTrader 5 Expert
+            Pick a template, adjust a few settings, and export a working MetaTrader 5 or 4 Expert
             Advisor. Each template includes built-in risk management with ATR-based stop loss, take
             profit based on risk-reward ratio, and proper position sizing. No coding required.
           </p>
@@ -213,9 +213,9 @@ export default function TemplatesPage() {
                 3. Export, backtest, optimize
               </h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Export clean MQL5 code, load it into MetaTrader 5, and backtest in Strategy Tester.
-                Use MT5&apos;s built-in optimization to find the best parameters. Start with a demo
-                account and at least 6 months of historical data.
+                Export clean MQL5 (or MQL4) code, load it into MetaTrader, and backtest in Strategy
+                Tester. Use MT5&apos;s built-in optimization to find the best parameters. Start with
+                a demo account and at least 6 months of historical data.
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function TemplatesPage() {
 
       <CTASection
         title="Start building. Export your first bot today."
-        description="Pick a template, adjust a few settings, and export clean MQL5 code to MetaTrader 5."
+        description="Pick a template, adjust a few settings, and export clean MQL5 or MQL4 code to MetaTrader."
       />
 
       <Footer />

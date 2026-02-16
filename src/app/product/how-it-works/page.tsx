@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "How It Works — Build an MT5 EA in 3 Steps | AlgoStudio",
+  title: "How It Works — Build an MT5 & MT4 EA in 3 Steps | AlgoStudio",
   description:
-    "Learn how AlgoStudio works: choose a strategy template, adjust a few settings, and export clean MQL5 code. Build your first MT5 Expert Advisor in under 5 minutes.",
+    "Learn how AlgoStudio works: choose a strategy template, adjust a few settings, and export clean MQL5 & MQL4 code. Build your first MT5 Expert Advisor in under 5 minutes.",
   alternates: { canonical: "/product/how-it-works" },
 };
 
@@ -22,9 +22,9 @@ export default function HowItWorksPage() {
   const howToJsonLd = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "How to Build an MT5 Expert Advisor with AlgoStudio",
+    name: "How to Build an MT5 & MT4 Expert Advisor with AlgoStudio",
     description:
-      "Build your first MT5 Expert Advisor in 3 simple steps using AlgoStudio. No coding required.",
+      "Build your first Expert Advisor for MT5 or MT4 in 3 simple steps using AlgoStudio. No coding required.",
     totalTime: "PT5M",
     step: [
       {
@@ -42,7 +42,7 @@ export default function HowItWorksPage() {
       {
         "@type": "HowToStep",
         position: 3,
-        name: "Export and test in MetaTrader 5",
+        name: "Export and test in MetaTrader",
         text: "Click Export to download a clean .mq5 file. Open it in MetaTrader 5, compile in MetaEditor, and run it in the Strategy Tester to backtest your strategy.",
       },
     ],
@@ -71,7 +71,7 @@ export default function HowItWorksPage() {
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
               No coding. No complex configuration. AlgoStudio turns your strategy into a real
-              MetaTrader 5 Expert Advisor in under 5 minutes.
+              MetaTrader 5 or 4 Expert Advisor in under 5 minutes.
             </p>
           </section>
 
@@ -165,19 +165,18 @@ export default function HowItWorksPage() {
                 3
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-4">
-                  Export & test in MetaTrader 5
-                </h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Export & test in MetaTrader</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  Click Export to download your .mq5 file. It&apos;s a standard MetaTrader 5 Expert
-                  Advisor — open it in MetaEditor, compile, and run it in the Strategy Tester.
+                  Click Export to download your .mq5 (or .mq4) file. It&apos;s a standard MetaTrader
+                  5 Expert Advisor — open it in MetaEditor, compile, and run it in the Strategy
+                  Tester.
                 </p>
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-white">What you get</h3>
                   <ul className="space-y-2 text-sm text-[#94A3B8]">
                     {[
-                      "A single .mq5 file — no dependencies, no external libraries",
-                      "Clean, well-commented MQL5 source code",
+                      "A single .mq5 or .mq4 file — no dependencies, no external libraries",
+                      "Clean, well-commented MQL5/MQL4 source code",
                       "Built-in risk management (position sizing, stop loss, take profit)",
                       "Compatible with any MT5 broker",
                       "Ready for backtesting in the MT5 Strategy Tester",
@@ -237,7 +236,7 @@ export default function HowItWorksPage() {
 
       <CTASection
         title="Ready to build your first EA?"
-        description="Pick a template and export clean MQL5 code in under 5 minutes. No credit card required."
+        description="Pick a template and export clean MQL5 or MQL4 code in under 5 minutes. No credit card required."
       />
 
       <Footer />

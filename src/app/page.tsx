@@ -8,14 +8,14 @@ import { Footer } from "@/components/marketing/footer";
 import { PricingSection } from "@/components/marketing/pricing-section";
 
 export const metadata: Metadata = {
-  title: "MT5 Bot Builder — No-Code Expert Advisor | AlgoStudio",
+  title: "MT5 & MT4 Bot Builder — No-Code Expert Advisor | AlgoStudio",
   description:
-    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 code. Free to start. Works with any broker.",
+    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 & MQL4 code. Free to start. Works with any broker.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "MT5 Bot Builder — No-Code Expert Advisor | AlgoStudio",
+    title: "MT5 & MT4 Bot Builder — No-Code Expert Advisor | AlgoStudio",
     description:
-      "Turn trading ideas into live MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 export.",
+      "Turn trading ideas into live MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 & MQL4 export.",
   },
 };
 
@@ -31,7 +31,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "No-code MT5 Expert Advisor builder. Pick a strategy template, customize parameters, and export clean MQL5 code for MetaTrader 5.",
+      "No-code MT5 & MT4 Expert Advisor builder. Pick a strategy template, customize parameters, and export clean MQL5 code for MetaTrader 5.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -43,11 +43,11 @@ export default async function Home() {
       offerCount: 3,
     },
     featureList: [
-      "No-code MT5 bot builder",
+      "No-code MT5 & MT4 bot builder",
       "Strategy templates (EMA crossover, RSI, MACD, breakout, pullback)",
-      "Clean MQL5 code export",
+      "Clean MQL5 & MQL4 code export",
       "Built-in risk management",
-      "Works with any MT5 broker",
+      "Works with any MT5 or MT4 broker",
       "Backtesting ready",
     ],
   };
@@ -55,11 +55,11 @@ export default async function Home() {
   const faqItems = [
     {
       q: "What is an MT5 Expert Advisor?",
-      a: "An Expert Advisor (EA) is an automated trading program that runs inside MetaTrader 5. It monitors the market, analyzes price data, and executes trades according to predefined rules — without manual intervention. AlgoStudio lets you build fully functional EAs without writing a single line of MQL5 code.",
+      a: "An Expert Advisor (EA) is an automated trading program that runs inside MetaTrader 5. It monitors the market, analyzes price data, and executes trades according to predefined rules — without manual intervention. AlgoStudio lets you build fully functional EAs without writing a single line of MQL5 code. AlgoStudio also supports MQL4 export for MetaTrader 4 on Pro and Elite plans.",
     },
     {
       q: "Do I need to know MQL5 or any programming language?",
-      a: "No. AlgoStudio is a no-code MT5 bot builder. You pick a strategy template, adjust settings like risk percentage, stop loss, and take profit, and export a ready-to-use .mq5 file. No MQL5, Python, or any other programming knowledge required.",
+      a: "No. AlgoStudio is a no-code bot builder for MT5 and MT4. You pick a strategy template, adjust settings like risk percentage, stop loss, and take profit, and export a ready-to-use .mq5 or .mq4 file. No MQL5, Python, or any other programming knowledge required.",
     },
     {
       q: "Is AlgoStudio suitable for beginners?",
@@ -67,19 +67,19 @@ export default async function Home() {
     },
     {
       q: "Can I use AlgoStudio with any MT5 broker?",
-      a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. It works with any MT5-compatible broker — ICMarkets, Pepperstone, FTMO, or any other. Just load the file into your MetaTrader 5 platform.",
+      a: "Yes. The exported EA is a standard MetaTrader file. MQL5 works with any MT5 broker, MQL4 with any MT4 broker — ICMarkets, Pepperstone, FTMO, or any other. Just load the file into your MetaTrader platform.",
     },
     {
       q: "Does AlgoStudio guarantee trading profits?",
-      a: "No. AlgoStudio is a tool for building and testing automated trading strategies. No trading tool, bot, or strategy can guarantee profits. All trading involves risk. Always backtest thoroughly in MT5 Strategy Tester before using any EA with real funds.",
+      a: "No. AlgoStudio is a tool for building and testing automated trading strategies. No trading tool, bot, or strategy can guarantee profits. All trading involves risk. Always backtest thoroughly in MT5 or MT4 Strategy Tester before using any EA with real funds.",
     },
     {
       q: "How is AlgoStudio different from other bot builders?",
-      a: "Most EA builders give you a blank canvas with hundreds of blocks and nodes. You spend hours building logic from scratch. AlgoStudio starts you with proven strategy templates — you only adjust what matters. Plus, you get clean, readable MQL5 source code that you own and can modify freely.",
+      a: "Most EA builders give you a blank canvas with hundreds of blocks and nodes. You spend hours building logic from scratch. AlgoStudio starts you with proven strategy templates — you only adjust what matters. Plus, you get clean, readable MQL5 (or MQL4) source code that you own and can modify freely.",
     },
     {
       q: "Can I edit the generated MQL5 code?",
-      a: "Yes. You get clean, well-commented MQL5 source code. Open it in MetaEditor or any text editor to customize further. The code is yours — no lock-in, no black box.",
+      a: "Yes. You get clean, well-commented MQL5 or MQL4 source code. Open it in MetaEditor or any text editor to customize further. The code is yours — no lock-in, no black box.",
     },
     {
       q: "What strategy templates are available?",
@@ -120,7 +120,7 @@ export default async function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)] rounded-full px-4 py-1.5 mb-6">
             <span className="text-xs text-[#A78BFA] font-medium">
-              No-code MT5 Expert Advisor builder
+              No-code MT5 & MT4 Expert Advisor builder
             </span>
           </div>
 
@@ -168,7 +168,7 @@ export default async function Home() {
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Clean MQL5 code you own
+              Clean MQL5 & MQL4 code you own
             </div>
             <div className="flex items-center gap-2">
               <svg
@@ -184,7 +184,7 @@ export default async function Home() {
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Works with any MT5 broker
+              Works with any MT5 or MT4 broker
             </div>
           </div>
 
@@ -256,9 +256,9 @@ export default async function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "MQL5 is complex",
+                title: "MQL5 & MQL4 are complex",
                 description:
-                  "Learning MQL5 takes months. Syntax errors, compilation issues, and runtime bugs turn a simple strategy into weeks of frustration.",
+                  "Learning MQL5 or MQL4 takes months. Syntax errors, compilation issues, and runtime bugs turn a simple strategy into weeks of frustration.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -271,7 +271,7 @@ export default async function Home() {
               {
                 title: "Developers are expensive",
                 description:
-                  "Hiring an MQL5 freelancer costs $200-$1,000+ per EA. Every change request means more time and money.",
+                  "Hiring an MQL5/MQL4 freelancer costs $200-$1,000+ per EA. Every change request means more time and money.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -366,8 +366,8 @@ export default async function Home() {
               From idea to running MT5 bot in 3 steps
             </h2>
             <p className="text-[#94A3B8] max-w-2xl mx-auto">
-              AlgoStudio replaces weeks of MQL5 coding with a simple 3-step process. Choose a proven
-              template, customize your parameters, and export clean code.
+              AlgoStudio replaces weeks of MQL5/MQL4 coding with a simple 3-step process. Choose a
+              proven template, customize your parameters, and export clean code.
             </p>
           </div>
 
@@ -402,9 +402,9 @@ export default async function Home() {
                 Export clean MQL5 &amp; test
               </h3>
               <p className="text-sm text-[#94A3B8] leading-relaxed">
-                Download your .mq5 file with clean, commented source code. Load it into MetaTrader 5
-                Strategy Tester, backtest across any timeframe, optimize parameters, and go live
-                when ready.
+                Download your .mq5 (or .mq4) file with clean, commented source code. Load it into
+                MetaTrader 5 Strategy Tester, backtest across any timeframe, optimize parameters,
+                and go live when ready.
               </p>
             </div>
           </div>
@@ -497,7 +497,7 @@ export default async function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
-              Everything you need to build, test, and deploy MT5 trading bots
+              Everything you need to build, test, and deploy MT5 & MT4 trading bots
             </h2>
           </div>
 
@@ -569,9 +569,9 @@ export default async function Home() {
                 ),
               },
               {
-                title: "Works with any MT5 broker",
+                title: "Works with any MT5 or MT4 broker",
                 description:
-                  "The generated code is standard MQL5 that runs on any MetaTrader 5 platform. Compatible with forex brokers, prop firms, and CFD providers worldwide.",
+                  "The generated code is standard MQL5/MQL4 that runs on any MetaTrader platform. Compatible with forex brokers, prop firms, and CFD providers worldwide.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -635,7 +635,7 @@ export default async function Home() {
               {
                 title: "Non-programmer traders",
                 description:
-                  "You know what works in the market but can&apos;t write MQL5. AlgoStudio bridges that gap — your strategy knowledge, our code generation. Full control without the coding barrier.",
+                  "You know what works in the market but can&apos;t write MQL5 or MQL4. AlgoStudio bridges that gap — your strategy knowledge, our code generation. Full control without the coding barrier.",
                 color: "#22C55E",
               },
             ].map((useCase) => (
@@ -733,7 +733,7 @@ export default async function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Frequently asked questions</h2>
             <p className="text-[#94A3B8]">
-              Everything you need to know about building MT5 Expert Advisors with AlgoStudio.
+              Everything you need to know about building MT5 & MT4 Expert Advisors with AlgoStudio.
             </p>
           </div>
           <div className="space-y-4">
@@ -774,8 +774,8 @@ export default async function Home() {
             Your strategy deserves to run on autopilot
           </h2>
           <p className="text-[#94A3B8] mb-8 max-w-lg mx-auto">
-            Stop trading manually or waiting on developers. Build your MT5 Expert Advisor in
-            minutes, backtest it with real data, and deploy with confidence.
+            Stop trading manually or waiting on developers. Build your Expert Advisor in minutes,
+            backtest it with real data, and deploy with confidence.
           </p>
           <Link
             href="/login?mode=register"

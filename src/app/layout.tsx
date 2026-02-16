@@ -26,23 +26,23 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
-    default: "AlgoStudio — No-Code MT5 Bot Builder | Expert Advisor Generator",
+    default: "AlgoStudio — No-Code MT5 & MT4 Bot Builder | Expert Advisor Generator",
     template: "%s | AlgoStudio",
   },
   description:
-    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 code. Free no-code MT5 bot builder for forex and prop firm traders.",
+    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 & MQL4 code. Free no-code MT5 bot builder for forex and prop firm traders.",
   openGraph: {
-    title: "AlgoStudio — No-Code MT5 Bot Builder",
+    title: "AlgoStudio — No-Code MT5 & MT4 Bot Builder",
     description:
-      "Turn trading ideas into MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 export. Works with any broker.",
+      "Turn trading ideas into MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 & MQL4 export. Works with any broker.",
     type: "website",
     siteName: "AlgoStudio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AlgoStudio — No-Code MT5 Bot Builder",
+    title: "AlgoStudio — No-Code MT5 & MT4 Bot Builder",
     description:
-      "Build MT5 Expert Advisors without coding. Strategy templates, clean MQL5 export, works with any MT5 broker. Free to start.",
+      "Build MT5 Expert Advisors without coding. Strategy templates, clean MQL5 & MQL4 export, works with any MT5 broker. Free to start.",
   },
 };
 
@@ -53,7 +53,7 @@ const organizationJsonLd = {
   url: process.env.AUTH_URL || "https://algo-studio.com",
   logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
   description:
-    "No-code platform for building, testing, and exporting MetaTrader 5 Expert Advisors with a visual strategy builder.",
+    "No-code platform for building, testing, and exporting MetaTrader 5 & MetaTrader 4 Expert Advisors with a visual strategy builder.",
   foundingDate: "2025",
   sameAs: [],
 };

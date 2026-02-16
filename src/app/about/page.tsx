@@ -6,12 +6,12 @@ import { Footer } from "@/components/marketing/footer";
 export const metadata: Metadata = {
   title: "About — AlgoStudio",
   description:
-    "AlgoStudio was built to make MetaTrader 5 automation simple. One founder, one mission: help traders build MT5 bots without coding or overwhelm.",
+    "AlgoStudio was built to make MetaTrader 5 & 4 automation simple. One founder, one mission: help traders build MT5 & MT4 bots without coding or overwhelm.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About AlgoStudio",
     description:
-      "One founder, one mission: help traders build MT5 bots without coding or overwhelm.",
+      "One founder, one mission: help traders build MT5 & MT4 bots without coding or overwhelm.",
   },
 };
 
@@ -28,28 +28,28 @@ export default function AboutPage() {
             <p className="text-lg">I built AlgoStudio because I got overwhelmed.</p>
 
             <p>
-              As a trader, I wanted to automate my strategies in MetaTrader 5. So I tried the
-              existing tools — complex visual builders with hundreds of options, MQL5 coding
-              courses, drag-and-drop platforms that still required programming logic to get anything
-              useful out the door.
+              As a trader, I wanted to automate my strategies in MetaTrader. So I tried the existing
+              tools — complex visual builders with hundreds of options, MQL5/MQL4 coding courses,
+              drag-and-drop platforms that still required programming logic to get anything useful
+              out the door.
             </p>
 
             <p>
               Every tool assumed I wanted maximum power and flexibility. What I actually wanted was
               to take a simple idea — like &quot;buy when the fast EMA crosses above the slow EMA,
-              with a 1.5x ATR stop loss&quot; — and turn it into a working MT5 bot I could backtest.
-              In five minutes, not five weeks.
+              with a 1.5x ATR stop loss&quot; — and turn it into a working MT5 or MT4 bot I could
+              backtest. In five minutes, not five weeks.
             </p>
 
             <p>That tool didn&apos;t exist. So I built it.</p>
 
             <p>
               <strong className="text-white">
-                AlgoStudio is the simplest way to turn a trading idea into an MT5 bot.
+                AlgoStudio is the simplest way to turn a trading idea into an MT5 or MT4 bot.
               </strong>{" "}
-              You pick a proven strategy template, adjust a few settings, and export clean MQL5
-              code. No blank canvas. No 50-field configuration forms. No AND/OR logic builders. Just
-              the settings that matter, with sensible defaults that work out of the box.
+              You pick a proven strategy template, adjust a few settings, and export clean MQL5 or
+              MQL4 code. No blank canvas. No 50-field configuration forms. No AND/OR logic builders.
+              Just the settings that matter, with sensible defaults that work out of the box.
             </p>
 
             <p>

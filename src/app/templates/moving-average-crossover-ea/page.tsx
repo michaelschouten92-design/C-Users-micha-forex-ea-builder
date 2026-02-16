@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Moving Average Crossover EA Template | Free MT5 Trend Strategy",
+  title: "Moving Average Crossover EA Template | Free MT5 & MT4 Trend Strategy",
   description:
-    "Free Moving Average crossover Expert Advisor template for MetaTrader 5. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
+    "Free Moving Average crossover Expert Advisor template for MetaTrader 5 & 4. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
   alternates: { canonical: "/templates/moving-average-crossover-ea" },
   openGraph: {
-    title: "Moving Average Crossover EA Template | Free MT5 Trend Strategy",
+    title: "Moving Average Crossover EA Template | Free MT5 & MT4 Trend Strategy",
     description:
-      "Free Moving Average crossover Expert Advisor template for MetaTrader 5. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
+      "Free Moving Average crossover Expert Advisor template for MetaTrader 5 & 4. EMA 10/50 crossover with ATR stops, London session timing, and optimizable parameters. Build without coding.",
     url: "/templates/moving-average-crossover-ea",
   },
 };
@@ -83,8 +83,8 @@ export default function MovingAverageCrossoverTemplatePage() {
             The Moving Average crossover is the most popular trend-following strategy in forex
             trading. This free EA template uses a fast 10 EMA and slow 50 EMA crossover with
             ATR-based risk management, optimized for the London session. Build it in AlgoStudio
-            without coding, customize the parameters, and export a production-ready MQL5 Expert
-            Advisor in minutes.
+            without coding, customize the parameters, and export a production-ready MQL5 (or MQL4)
+            Expert Advisor in minutes.
           </p>
         </header>
 

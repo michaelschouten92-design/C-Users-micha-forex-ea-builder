@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Visual Trading Bot Builder for MT5 | AlgoStudio",
   description:
-    "Build MT5 trading bots visually with AlgoStudio. No coding required. Pick a strategy template, customize with a visual interface, and export clean MQL5 code.",
+    "Build MT5 trading bots visually with AlgoStudio. No coding required. Pick a strategy template, customize with a visual interface, and export clean MQL5 & MQL4 code.",
   alternates: { canonical: "/visual-trading-bot-builder" },
 };
 
@@ -29,7 +29,7 @@ const faqItems = [
   },
   {
     q: "Can I build any strategy visually?",
-    a: "AlgoStudio supports 5 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. For unique logic, you can customize the exported MQL5 code.",
+    a: "AlgoStudio supports 5 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. For unique logic, you can customize the exported MQL5/MQL4 code.",
   },
   {
     q: "What does the visual builder show me?",
@@ -37,7 +37,7 @@ const faqItems = [
   },
   {
     q: "Do I need MetaTrader 5 installed?",
-    a: "You need MT5 to compile and run the exported EA. AlgoStudio itself runs in your browser — no installation required for building.",
+    a: "You need MT5 (or MT4) to compile and run the exported EA. AlgoStudio itself runs in your browser — no installation required for building.",
   },
 ];
 
@@ -61,11 +61,11 @@ export default function VisualBotBuilderPage() {
 
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Build MT5 trading bots visually
+              Build MT5 & MT4 trading bots visually
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
               See your strategy as a clear visual flow. Adjust settings with simple controls. Export
-              clean MQL5 code to MetaTrader 5. No coding required.
+              clean MQL5 or MQL4 code to MetaTrader. No coding required.
             </p>
             <Link
               href="/login?mode=register"
@@ -115,8 +115,8 @@ export default function VisualBotBuilderPage() {
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-3">One-click export</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  When you&apos;re satisfied, click Export to download your .mq5 file. Load it into
-                  MetaTrader 5, compile, and backtest.
+                  When you&apos;re satisfied, click Export to download your .mq5 or .mq4 file. Load
+                  it into MetaTrader 5, compile, and backtest.
                 </p>
               </div>
             </div>
@@ -145,7 +145,7 @@ export default function VisualBotBuilderPage() {
                     ["Starting point", "Working strategy", "Empty canvas"],
                     ["Configuration", "Key settings with defaults", "Dozens of connections"],
                     ["Debugging", "Not needed", "Frequent"],
-                    ["Output", "Clean MQL5 code", "Varies"],
+                    ["Output", "Clean MQL5/MQL4 code", "Varies"],
                   ].map(([aspect, algo, others]) => (
                     <tr key={aspect} className="border-b border-[rgba(79,70,229,0.1)]">
                       <td className="py-3 px-4 text-[#CBD5E1]">{aspect}</td>
@@ -220,7 +220,7 @@ export default function VisualBotBuilderPage() {
 
       <CTASection
         title="Build your trading bot visually"
-        description="Pick a template and export clean MQL5 code in minutes. No coding required. Free to start."
+        description="Pick a template and export clean MQL5/MQL4 code in minutes. No coding required. Free to start."
       />
 
       <Footer />

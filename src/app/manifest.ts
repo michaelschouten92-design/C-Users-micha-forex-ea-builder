@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AlgoStudio",
     short_name: "AlgoStudio",
-    description: "No-Code MT5 Expert Advisor Builder",
+    description: "No-Code MT5 & MT4 Expert Advisor Builder",
     start_url: "/app",
     display: "standalone",
     background_color: "#0D0117",

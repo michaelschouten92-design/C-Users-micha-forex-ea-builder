@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Trading Strategy Templates for MT5 | AlgoStudio",
   description:
-    "5 ready-to-use trading strategy templates for MetaTrader 5. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Export clean MQL5 code.",
+    "5 ready-to-use trading strategy templates for MetaTrader 5. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Export clean MQL5 & MQL4 code.",
   alternates: { canonical: "/trading-strategy-templates-mt5" },
 };
 
@@ -142,11 +142,12 @@ export default function StrategyTemplatesPage() {
 
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Trading Strategy Templates for MetaTrader 5
+              Trading Strategy Templates for MetaTrader 5 & 4
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
               5 ready-to-use strategy templates. Each one produces a fully functional Expert Advisor
-              with built-in risk management. Pick a template, adjust settings, export MQL5 code.
+              with built-in risk management. Pick a template, adjust settings, export MQL5 or MQL4
+              code.
             </p>
             <Link
               href="/login?mode=register"
@@ -225,8 +226,8 @@ export default function StrategyTemplatesPage() {
                   desc: "Every parameter has a default value that works. Export immediately or customize first.",
                 },
                 {
-                  title: "Clean MQL5 output",
-                  desc: "Well-commented source code that compiles in MetaEditor and runs on any MT5 broker.",
+                  title: "Clean MQL5 & MQL4 output",
+                  desc: "Well-commented source code that compiles in MetaEditor and runs on any MetaTrader broker.",
                 },
               ].map((item) => (
                 <div
@@ -272,8 +273,8 @@ export default function StrategyTemplatesPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Export & backtest</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Download your .mq5 file. Open it in MetaTrader 5 and backtest in the Strategy
-                  Tester.
+                  Download your .mq5 (or .mq4) file. Open it in MetaTrader and backtest in the
+                  Strategy Tester.
                 </p>
               </div>
             </div>
@@ -285,7 +286,7 @@ export default function StrategyTemplatesPage() {
 
       <CTASection
         title="Start with a template today"
-        description="Pick a strategy, adjust settings, export MQL5 code. Free — no credit card required."
+        description="Pick a strategy, adjust settings, export MQL5 or MQL4 code. Free — no credit card required."
       />
 
       <Footer />

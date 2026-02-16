@@ -7,9 +7,9 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "MT5 Export — Clean MQL5 Code from AlgoStudio | AlgoStudio",
+  title: "Code Export — Clean MQL5 & MQL4 Code from AlgoStudio | AlgoStudio",
   description:
-    "AlgoStudio exports clean, well-commented MQL5 source code. One .mq5 file, no dependencies. Compatible with any MT5 broker. Learn what you get and how it works.",
+    "AlgoStudio exports clean, well-commented MQL5 & MQL4 source code. No dependencies. Compatible with any MT5 or MT4 broker. Learn what you get and how it works.",
   alternates: { canonical: "/product/mt5-export" },
 };
 
@@ -22,7 +22,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "What file format does AlgoStudio export?",
-    a: "AlgoStudio exports a single .mq5 file — the standard source code format for MetaTrader 5 Expert Advisors. You compile it in MetaEditor to get a working .ex5 EA.",
+    a: "AlgoStudio exports a single .mq5 (or .mq4) file — the standard source code format for MetaTrader Expert Advisors. You compile it in MetaEditor to get a working .ex5 (or .ex4) EA.",
   },
   {
     q: "Does the exported EA require any external libraries?",
@@ -30,7 +30,7 @@ const faqItems = [
   },
   {
     q: "Can I edit the exported code?",
-    a: "Yes. The code is clean, well-commented MQL5. Open it in MetaEditor or any text editor and modify it however you like.",
+    a: "Yes. The code is clean, well-commented MQL5 (or MQL4). Open it in MetaEditor or any text editor and modify it however you like.",
   },
   {
     q: "Does the EA include risk management?",
@@ -38,7 +38,7 @@ const faqItems = [
   },
   {
     q: "Which brokers are supported?",
-    a: "Any broker that supports MetaTrader 5. The exported EA uses standard MQL5 functions — no proprietary broker-specific code.",
+    a: "Any broker that supports MetaTrader 5 or MetaTrader 4. The exported EA uses standard MQL5/MQL4 functions — no proprietary broker-specific code.",
   },
 ];
 
@@ -62,11 +62,11 @@ export default function MT5ExportPage() {
 
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Clean MQL5 code, ready for MetaTrader 5
+              Clean MQL5 & MQL4 code, ready for MetaTrader
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
-              AlgoStudio exports a single .mq5 file — clean, well-commented, and ready to compile.
-              No dependencies, no proprietary formats. The code is yours.
+              AlgoStudio exports a single .mq5 (or .mq4) file — clean, well-commented, and ready to
+              compile. No dependencies, no proprietary formats. The code is yours.
             </p>
           </section>
 
@@ -77,7 +77,7 @@ export default function MT5ExportPage() {
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">One .mq5 file</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">One .mq5 or .mq4 file</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
                   A single source code file with everything your EA needs. No external dependencies,
                   no library files, no include files. Open it in MetaEditor, press Compile, done.
@@ -100,8 +100,8 @@ export default function MT5ExportPage() {
               <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-3">Configurable inputs</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  All strategy parameters are exposed as MT5 input parameters. Adjust them directly
-                  in MetaTrader without touching the code — perfect for optimization.
+                  All strategy parameters are exposed as MetaTrader input parameters. Adjust them
+                  directly in MetaTrader without touching the code — perfect for optimization.
                 </p>
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function MT5ExportPage() {
                 {
                   step: "2",
                   title: "Click Export",
-                  desc: "AlgoStudio generates MQL5 source code based on your template and settings. The code is assembled from tested, pre-written modules.",
+                  desc: "AlgoStudio generates MQL5 or MQL4 source code based on your template and settings. The code is assembled from tested, pre-written modules.",
                 },
                 {
                   step: "3",
@@ -157,12 +157,12 @@ export default function MT5ExportPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 {[
                   {
-                    title: "100% valid MQL5",
+                    title: "100% valid MQL5 & MQL4",
                     desc: "Every exported file compiles without errors in MetaEditor.",
                   },
                   {
                     title: "No deprecated functions",
-                    desc: "Uses modern MQL5 APIs and best practices. No legacy MT4 code.",
+                    desc: "Uses modern MQL5 APIs (or classic MQL4 API) and best practices.",
                   },
                   {
                     title: "Readable structure",
@@ -188,7 +188,7 @@ export default function MT5ExportPage() {
 
       <CTASection
         title="Export your first EA today"
-        description="Pick a template, adjust settings, export clean MQL5 code. Free to start — no credit card required."
+        description="Pick a template, adjust settings, export clean MQL5 or MQL4 code. Free to start — no credit card required."
       />
 
       <Footer />
