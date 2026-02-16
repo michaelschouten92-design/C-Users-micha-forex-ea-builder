@@ -19,13 +19,16 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
 
   const applyPreset = (presetName: string) => {
     const preset = PROP_FIRM_PRESETS.find((p) => p.name === presetName);
-    if (preset) {
-      update({
-        maxDailyLossPercent: preset.dailyLossPercent,
-        maxTotalDrawdownPercent: preset.totalDrawdownPercent,
-        maxOpenTrades: preset.maxOpenTrades,
-      });
-    }
+    if (!preset) return;
+    const confirmed = window.confirm(
+      `Apply "${presetName}" preset? This will overwrite your current risk settings (max drawdown, daily loss limit, max open trades).`
+    );
+    if (!confirmed) return;
+    update({
+      maxDailyLossPercent: preset.dailyLossPercent,
+      maxTotalDrawdownPercent: preset.totalDrawdownPercent,
+      maxOpenTrades: preset.maxOpenTrades,
+    });
   };
 
   return (

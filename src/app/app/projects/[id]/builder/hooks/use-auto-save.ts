@@ -75,13 +75,18 @@ export function useAutoSave({
     savedCounterRef.current = changeCounterRef.current;
   }, []);
 
-  // Guard against concurrent saves
+  // Guard against concurrent saves — with pending retry when skipped
   const savingRef = useRef(false);
+  const pendingAutoSaveRef = useRef(false);
 
   // Save to server - stable reference, reads latest state from refs
   const saveToServer = useCallback(
     async (isAutosave: boolean = false): Promise<boolean> => {
-      if (savingRef.current) return false;
+      if (savingRef.current) {
+        // Mark that an autosave was requested while busy, so we retry after
+        if (isAutosave) pendingAutoSaveRef.current = true;
+        return false;
+      }
       savingRef.current = true;
       try {
         const currentNodes = nodesRef.current;
@@ -194,6 +199,11 @@ export function useAutoSave({
         }
       } finally {
         savingRef.current = false;
+        // If an autosave was requested while we were busy, retry now
+        if (pendingAutoSaveRef.current) {
+          pendingAutoSaveRef.current = false;
+          setTimeout(() => saveToServer(true), 500);
+        }
       }
     },
     [projectId, getViewport]
@@ -240,7 +250,7 @@ export function useAutoSave({
     };
   }, [hasUnsavedChanges, nodes.length, attemptAutoSave, debounceMs]);
 
-  // Warn user before leaving with unsaved changes
+  // Warn user before leaving with unsaved changes (tab close / refresh)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -251,6 +261,28 @@ export function useAutoSave({
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Warn user on browser back/forward button with unsaved changes
+  const unsavedRef = useRef(hasUnsavedChanges);
+  unsavedRef.current = hasUnsavedChanges;
+  useEffect(() => {
+    // Push a sentinel state so popstate fires when the user presses back
+    history.pushState({ builder: true }, "");
+    const handlePopState = () => {
+      if (unsavedRef.current) {
+        const leave = window.confirm("You have unsaved changes. Are you sure you want to leave?");
+        if (!leave) {
+          // Re-push so the guard stays active
+          history.pushState({ builder: true }, "");
+          return;
+        }
+      }
+      // Actually go back
+      history.back();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   return {
     autoSaveStatus,

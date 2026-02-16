@@ -5,6 +5,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MiniMap,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -346,10 +347,11 @@ export function StrategyCanvas({
   );
 
   // Handle node data changes from properties panel
+  const dataSnapshotTimeout = useRef<NodeJS.Timeout | null>(null);
   const onNodeChange = useCallback(
     (nodeId: string, updates: Partial<BuilderNodeData>) => {
-      setNodes((nds) =>
-        nds.map((node) => {
+      setNodes((nds) => {
+        const newNodes = nds.map((node) => {
           if (node.id === nodeId) {
             return {
               ...node,
@@ -357,10 +359,16 @@ export function StrategyCanvas({
             };
           }
           return node;
-        })
-      );
+        });
+        // Debounce snapshot for parameter changes (avoids flooding history while typing)
+        if (dataSnapshotTimeout.current) clearTimeout(dataSnapshotTimeout.current);
+        dataSnapshotTimeout.current = setTimeout(() => {
+          takeSnapshot(newNodes, edges);
+        }, 800);
+        return newNodes;
+      });
     },
-    [setNodes]
+    [setNodes, takeSnapshot, edges]
   );
 
   // Handle node deletion
@@ -602,6 +610,19 @@ export function StrategyCanvas({
             >
               <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
               <Controls />
+              <MiniMap
+                nodeColor={(n) => {
+                  const cat = (n.data as BuilderNodeData)?.category;
+                  if (cat === "entrystrategy") return "#10B981";
+                  if (cat === "timing") return "#F59E0B";
+                  if (cat === "trademanagement") return "#A78BFA";
+                  return "#64748B";
+                }}
+                maskColor="rgba(26, 6, 38, 0.7)"
+                style={{ backgroundColor: "#0F172A", borderColor: "rgba(79,70,229,0.3)" }}
+                pannable
+                zoomable
+              />
               {nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
                   <div className="text-center px-6 py-5 rounded-xl bg-[#1A0626]/60 border border-[rgba(79,70,229,0.15)]">
@@ -843,6 +864,8 @@ export function StrategyCanvas({
                   nodes={nodes as BuilderNode[]}
                   onNodeChange={onNodeChange}
                   onNodeDelete={onNodeDelete}
+                  settings={settings}
+                  onSettingsChange={setSettings}
                 />
               </PanelErrorBoundary>
             </div>

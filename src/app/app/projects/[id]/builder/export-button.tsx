@@ -243,8 +243,8 @@ export function ExportButton({
               : !canExportMQL5
                 ? "Upgrade for unlimited exports"
                 : canExportMQL4
-                  ? "Export to MQL5 or MQL4"
-                  : "Export to MQL5"
+                  ? "Export Code — MQL5 or MQL4"
+                  : "Export Code — MQL5"
         }
       >
         {exporting ? (
@@ -282,7 +282,8 @@ export function ExportButton({
             />
           </svg>
         )}
-        Export
+        <span className="hidden sm:inline">Export Code</span>
+        <span className="sm:hidden">Export</span>
       </button>
 
       {/* Export Modal */}

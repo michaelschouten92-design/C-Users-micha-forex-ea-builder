@@ -2,7 +2,8 @@
 
 import { memo, useId, useMemo } from "react";
 import type { Node } from "@xyflow/react";
-import type { BuilderNode } from "@/types/builder";
+import type { BuilderNode, BuilderNodeType } from "@/types/builder";
+import { getNodeTemplate } from "@/types/builder";
 import { buildNaturalLanguageSummary } from "../strategy-summary";
 import type {
   BuilderNodeData,
@@ -86,12 +87,16 @@ import {
   TrendPullbackEntryFields,
   MACDCrossoverEntryFields,
 } from "./entry-strategy-fields";
+import { StrategySettingsPanel } from "../strategy-settings-panel";
+import type { BuildJsonSettings } from "@/types/builder";
 
 interface PropertiesPanelProps {
   selectedNode: Node<BuilderNodeData> | null;
   nodes?: BuilderNode[];
   onNodeChange: (nodeId: string, data: Partial<BuilderNodeData>) => void;
   onNodeDelete: (nodeId: string) => void;
+  settings?: BuildJsonSettings;
+  onSettingsChange?: (settings: BuildJsonSettings) => void;
 }
 
 export const PropertiesPanel = memo(function PropertiesPanel({
@@ -99,6 +104,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   nodes = [],
   onNodeChange,
   onNodeDelete,
+  settings,
+  onSettingsChange,
 }: PropertiesPanelProps) {
   const panelId = useId();
   const labelInputId = useId();
@@ -164,6 +171,11 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 Connect your blocks to see the strategy description.
               </p>
             )}
+            {settings && onSettingsChange && (
+              <div className="mt-4 pt-3 border-t border-[rgba(79,70,229,0.2)]">
+                <StrategySettingsPanel settings={settings} onChange={onSettingsChange} />
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center text-[#64748B] py-8">
@@ -209,26 +221,57 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           <h3 id={panelId} className="text-sm font-semibold text-white">
             {data.label}
           </h3>
-          <button
-            onClick={() => onNodeDelete(selectedNode.id)}
-            className="text-[#EF4444] hover:text-[#F87171] p-1.5 rounded-lg hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200"
-            aria-label={`Delete ${data.label} block`}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const template = getNodeTemplate(selectedNode.type as BuilderNodeType);
+                if (!template?.defaultData) return;
+                const confirmed = window.confirm("Reset all parameters to defaults?");
+                if (!confirmed) return;
+                onNodeChange(selectedNode.id, {
+                  ...template.defaultData,
+                } as Partial<BuilderNodeData>);
+              }}
+              className="text-[#94A3B8] hover:text-[#CBD5E1] p-1.5 rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+              aria-label={`Reset ${data.label} to defaults`}
+              title="Reset to defaults"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => onNodeDelete(selectedNode.id)}
+              className="text-[#EF4444] hover:text-[#F87171] p-1.5 rounded-lg hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200"
+              aria-label={`Delete ${data.label} block`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         <p className="text-xs text-[#64748B] mt-1">ID: {selectedNode.id}</p>
       </div>

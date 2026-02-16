@@ -433,8 +433,10 @@ export function VersionControls({
             onClick={handleExportJson}
             disabled={!hasNodes}
             className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
-            title={exportCopied ? "Copied to clipboard!" : "Export strategy JSON to clipboard"}
-            aria-label="Export JSON"
+            title={
+              exportCopied ? "Copied to clipboard!" : "Share Strategy — copy JSON to clipboard"
+            }
+            aria-label="Share Strategy"
           >
             {exportCopied ? (
               <svg
@@ -468,8 +470,8 @@ export function VersionControls({
               setShowImportModal(true);
             }}
             className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] rounded-md transition-all duration-200"
-            title="Import strategy from JSON"
-            aria-label="Import JSON"
+            title="Load Shared Strategy — paste JSON"
+            aria-label="Load Shared Strategy"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -595,7 +597,7 @@ export function VersionControls({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Import Strategy JSON</h3>
+              <h3 className="text-sm font-semibold text-white">Load Shared Strategy</h3>
               <button
                 onClick={() => setShowImportModal(false)}
                 className="text-[#64748B] hover:text-white p-1 transition-colors"
@@ -612,8 +614,7 @@ export function VersionControls({
             </div>
             <div className="p-4 space-y-3">
               <p className="text-xs text-[#94A3B8]">
-                Paste a previously exported strategy JSON below. This will replace your current
-                strategy.
+                Paste a shared strategy JSON below. This will replace your current strategy.
               </p>
               <textarea
                 value={importJson}
