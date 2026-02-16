@@ -40,6 +40,35 @@ import type {
 } from "@/types/builder";
 import { DEFAULT_SETTINGS, generateMagicNumber } from "@/types/builder";
 
+function HelpButton({ onClick }: { onClick: () => void }) {
+  const [glowing, setGlowing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setGlowing(false), 30000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-all duration-200 text-sm font-medium ${glowing ? "help-btn-glow" : ""}`}
+      style={!glowing ? { boxShadow: "0 4px 16px rgba(79,70,229,0.4)" } : undefined}
+      title="Show getting started guide"
+      aria-label="Show getting started guide"
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01"
+        />
+      </svg>
+      Help
+    </button>
+  );
+}
+
 interface StrategyCanvasProps {
   projectId: string;
   initialData: BuildJsonSchema | null;
@@ -522,14 +551,16 @@ export function StrategyCanvas({
           </button>
 
           {/* Help button — re-trigger onboarding */}
-          <button
-            onClick={() => setShowHelp(true)}
-            className="absolute bottom-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[#1E293B] text-[#94A3B8] border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200 text-sm font-bold"
-            title="Show getting started guide"
-            aria-label="Show getting started guide"
-          >
-            ?
-          </button>
+          <style>{`
+            @keyframes help-glow {
+              0%, 100% { box-shadow: 0 4px 16px rgba(79,70,229,0.4); }
+              50% { box-shadow: 0 4px 24px rgba(79,70,229,0.7); }
+            }
+            .help-btn-glow {
+              animation: help-glow 3s ease-in-out infinite;
+            }
+          `}</style>
+          <HelpButton onClick={() => setShowHelp(true)} />
 
           {/* Autosave error banner */}
           {autoSaveStatus === "error" && (
