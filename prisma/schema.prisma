@@ -212,3 +212,17 @@ model AdminOtp {
   @@index([email])
   @@index([expiresAt])
 }
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  message   String    @db.Text
+  type      String    @default("info") // info, warning, maintenance
+  active    Boolean   @default(true)
+  expiresAt DateTime?
+  createdBy String // admin userId
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active, expiresAt])
+}
