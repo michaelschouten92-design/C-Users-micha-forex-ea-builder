@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ExportButton } from "./export-button";
 import type { ValidationResult } from "./strategy-validation";
 import type { BuildJsonSchema, BuilderNode } from "@/types/builder";
+import { buildJsonSchema } from "@/lib/validations";
 
 interface Version {
   id: string;
@@ -74,7 +75,9 @@ interface VersionControlsProps {
   hasNodes: boolean;
   validation: ValidationResult;
   onSave: () => Promise<void>;
-  onLoad: (versionId: string, buildJson: BuildJsonSchema) => void; // Changed to sync with cached data
+  onLoad: (versionId: string, buildJson: BuildJsonSchema) => void;
+  onImportStrategy?: (buildJson: BuildJsonSchema) => void;
+  onExportJson?: () => string;
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   canExportMQL5?: boolean;
   userTier?: string;
@@ -93,6 +96,8 @@ export function VersionControls({
   validation,
   onSave,
   onLoad,
+  onImportStrategy,
+  onExportJson,
   autoSaveStatus,
   canExportMQL5 = false,
   userTier,
@@ -107,6 +112,10 @@ export function VersionControls({
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [diffVersions, setDiffVersions] = useState<[number, number] | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJson, setImportJson] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [exportCopied, setExportCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch versions list
@@ -195,6 +204,58 @@ export function VersionControls({
     },
     [versions, onLoad, hasUnsavedChanges]
   );
+
+  // Close import modal on Escape key
+  useEffect(() => {
+    if (!showImportModal) return;
+    document.body.style.overflow = "hidden";
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowImportModal(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showImportModal]);
+
+  const handleExportJson = useCallback(async () => {
+    if (!onExportJson) return;
+    try {
+      const json = onExportJson();
+      await navigator.clipboard.writeText(json);
+      setExportCopied(true);
+      setTimeout(() => setExportCopied(false), 2000);
+    } catch {
+      // Fallback: ignore clipboard errors
+    }
+  }, [onExportJson]);
+
+  const handleImportJson = useCallback(() => {
+    setImportError(null);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(importJson);
+    } catch {
+      setImportError("Invalid JSON: could not parse the input.");
+      return;
+    }
+    const result = buildJsonSchema.safeParse(parsed);
+    if (!result.success) {
+      const errors = result.error.errors.slice(0, 5).map((e) => {
+        const path = e.path.join(".");
+        return path ? `${path}: ${e.message}` : e.message;
+      });
+      setImportError(`Validation failed:\n${errors.join("\n")}`);
+      return;
+    }
+    if (onImportStrategy) {
+      onImportStrategy(result.data as unknown as BuildJsonSchema);
+    }
+    setShowImportModal(false);
+    setImportJson("");
+    setImportError(null);
+  }, [importJson, onImportStrategy]);
 
   const latestVersion = versions[0]?.versionNo ?? 0;
   const nextVersion = latestVersion + 1;
@@ -364,6 +425,64 @@ export function VersionControls({
         {/* Separator */}
         <div className="w-px h-6 bg-[rgba(79,70,229,0.3)] hidden sm:block" />
 
+        {/* JSON Export/Import */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={handleExportJson}
+            disabled={!hasNodes}
+            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            title={exportCopied ? "Copied to clipboard!" : "Export strategy JSON to clipboard"}
+            aria-label="Export JSON"
+          >
+            {exportCopied ? (
+              <svg
+                className="w-4 h-4 text-[#22D3EE]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setImportJson("");
+              setImportError(null);
+              setShowImportModal(true);
+            }}
+            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] rounded-md transition-all duration-200"
+            title="Import strategy from JSON"
+            aria-label="Import JSON"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Separator */}
+        <div className="w-px h-6 bg-[rgba(79,70,229,0.3)] hidden sm:block" />
+
         {/* Export Button */}
         <ExportButton
           projectId={projectId}
@@ -459,6 +578,70 @@ export function VersionControls({
           <span className="text-[#64748B] hidden md:inline">No versions saved yet</span>
         )}
       </div>
+
+      {/* Import JSON Modal */}
+      {showImportModal && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setShowImportModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Import Strategy JSON</h3>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="text-[#64748B] hover:text-white p-1 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-[#94A3B8]">
+                Paste a previously exported strategy JSON below. This will replace your current
+                strategy.
+              </p>
+              <textarea
+                value={importJson}
+                onChange={(e) => setImportJson(e.target.value)}
+                placeholder='{"version": "1.1", "nodes": [...], ...}'
+                className="w-full h-48 px-3 py-2 text-xs font-mono bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] placeholder-[#475569] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none resize-none"
+              />
+              {importError && (
+                <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-xs whitespace-pre-wrap">
+                  {importError}
+                </div>
+              )}
+            </div>
+            <div className="p-3 border-t border-[rgba(79,70,229,0.2)] flex justify-end gap-2">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-1.5 text-sm text-[#CBD5E1] hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImportJson}
+                disabled={!importJson.trim()}
+                className="px-4 py-1.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Version Diff Modal */}
       {diff && diffVersions && (

@@ -23,6 +23,7 @@ import {
   DirectionSelector,
   AdvancedToggleSection,
   EntryStrategyRiskSection,
+  MTFConfirmationSection,
 } from "./shared";
 
 export function EMACrossoverEntryFields({
@@ -81,30 +82,7 @@ export function EMACrossoverEntryFields({
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <ToggleField
-          label="Higher-timeframe trend filter"
-          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
-          checked={data.htfTrendFilter}
-          onChange={(v) => onChange({ htfTrendFilter: v })}
-        >
-          <SelectField
-            label="HTF Timeframe"
-            value={data.htfTimeframe}
-            options={TIMEFRAME_OPTIONS}
-            onChange={(v) => onChange({ htfTimeframe: v as EMACrossoverEntryData["htfTimeframe"] })}
-            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
-          />
-          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
-          <NumberField
-            label="HTF EMA"
-            value={data.htfEma}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ htfEma: v })}
-            tooltip="Higher Timeframe EMA period for trend confirmation"
-          />
-          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
-        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
         <ToggleField
           label="RSI confirmation"
           hint="Only take trades when RSI confirms the direction (filters out weak signals)"
@@ -340,32 +318,7 @@ export function RangeBreakoutEntryFields({
             tooltip="Number of candles to calculate average volume"
           />
         </ToggleField>
-        <ToggleField
-          label="Higher-timeframe trend filter"
-          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
-          checked={data.htfTrendFilter}
-          onChange={(v) => onChange({ htfTrendFilter: v })}
-        >
-          <SelectField
-            label="HTF Timeframe"
-            value={data.htfTimeframe}
-            options={TIMEFRAME_OPTIONS}
-            onChange={(v) =>
-              onChange({ htfTimeframe: v as RangeBreakoutEntryData["htfTimeframe"] })
-            }
-            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
-          />
-          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
-          <NumberField
-            label="HTF EMA"
-            value={data.htfEma}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ htfEma: v })}
-            tooltip="Higher Timeframe EMA period for trend confirmation"
-          />
-          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
-        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>
     </>
   );
@@ -434,22 +387,7 @@ export function RSIReversalEntryFields({
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <ToggleField
-          label="Trend filter (EMA)"
-          hint="Only take reversals in the direction of the overall trend"
-          checked={data.trendFilter}
-          onChange={(v) => onChange({ trendFilter: v })}
-        >
-          <NumberField
-            label="Trend EMA"
-            value={data.trendEma}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ trendEma: v })}
-            tooltip="EMA period to determine the trend direction"
-          />
-          <OptimizableFieldCheckbox fieldName="trendEma" data={data} onChange={onChange} />
-        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>
     </>
   );
@@ -530,31 +468,7 @@ export function TrendPullbackEntryFields({
           checked={data.requireEmaBuffer}
           onChange={(v) => onChange({ requireEmaBuffer: v })}
         />
-        <ToggleField
-          label="ADX trend strength filter"
-          hint="ADX measures how strong the trend is. Only trades when the trend is strong enough."
-          checked={data.useAdxFilter ?? false}
-          onChange={(v) => onChange({ useAdxFilter: v })}
-        >
-          <NumberField
-            label="ADX Period"
-            value={data.adxPeriod ?? 14}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ adxPeriod: v })}
-            tooltip="Number of candles to calculate ADX. 14 is standard."
-          />
-          <OptimizableFieldCheckbox fieldName="adxPeriod" data={data} onChange={onChange} />
-          <NumberField
-            label="ADX Threshold"
-            value={data.adxThreshold ?? 25}
-            min={1}
-            max={100}
-            onChange={(v) => onChange({ adxThreshold: v })}
-            tooltip="Minimum ADX value to confirm a strong trend. 25 is the standard threshold."
-          />
-          <OptimizableFieldCheckbox fieldName="adxThreshold" data={data} onChange={onChange} />
-        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>
     </>
   );
@@ -638,32 +552,7 @@ export function MACDCrossoverEntryFields({
 
       {/* Advanced */}
       <AdvancedToggleSection>
-        <ToggleField
-          label="Higher-timeframe trend filter"
-          hint="Only trades in the direction of the trend on a higher timeframe (e.g. H4 trend for M15 entries)"
-          checked={data.htfTrendFilter}
-          onChange={(v) => onChange({ htfTrendFilter: v })}
-        >
-          <SelectField
-            label="HTF Timeframe"
-            value={data.htfTimeframe}
-            options={TIMEFRAME_OPTIONS}
-            onChange={(v) =>
-              onChange({ htfTimeframe: v as MACDCrossoverEntryData["htfTimeframe"] })
-            }
-            tooltip="Higher Timeframe - uses a larger timeframe to confirm the trend direction"
-          />
-          <OptimizableFieldCheckbox fieldName="htfTimeframe" data={data} onChange={onChange} />
-          <NumberField
-            label="HTF EMA"
-            value={data.htfEma}
-            min={1}
-            max={500}
-            onChange={(v) => onChange({ htfEma: v })}
-            tooltip="Higher Timeframe EMA period for trend confirmation"
-          />
-          <OptimizableFieldCheckbox fieldName="htfEma" data={data} onChange={onChange} />
-        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>
     </>
   );

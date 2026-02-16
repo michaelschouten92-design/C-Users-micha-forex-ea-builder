@@ -23,6 +23,7 @@ enum PlanTier {
 
 enum ExportType {
   MQ5
+  MQ4
   EX5
 }
 
@@ -95,9 +96,21 @@ model Project {
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   versions BuildVersion[]
   exports  ExportJob[]
+  tags     ProjectTag[]
 
   @@index([userId, deletedAt, updatedAt])
   @@index([deletedAt])
+}
+
+model ProjectTag {
+  id        String @id @default(cuid())
+  projectId String
+  tag       String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, tag])
+  @@index([tag])
 }
 
 model BuildVersion {

@@ -30,9 +30,11 @@ import {
   useKeyboardShortcuts,
   useConnectionValidation,
   useOnlineStatus,
+  addEdgeLabels,
 } from "./hooks";
 import type {
   BuilderNode,
+  BuilderEdge,
   BuilderNodeData,
   BuilderNodeType,
   BuildJsonSchema,
@@ -113,7 +115,12 @@ export function StrategyCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState((initialData?.edges as Edge[]) ?? []);
+  const initialEdges = useMemo(() => {
+    const rawEdges = (initialData?.edges as Edge[]) ?? [];
+    return addEdgeLabels(rawEdges, initialNodes as Node<BuilderNodeData>[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Undo/Redo history
   const { takeSnapshot, undo, redo, resetHistory, canUndo, canRedo } = useUndoRedo(
@@ -381,18 +388,64 @@ export function StrategyCanvas({
   // Load a specific version (now receives cached buildJson, no extra fetch needed)
   const onLoad = useCallback(
     (versionId: string, buildJson: BuildJsonSchema) => {
-      setNodes(buildJson.nodes as Node[]);
-      setEdges(buildJson.edges as Edge[]);
+      const loadedNodes = buildJson.nodes as Node<BuilderNodeData>[];
+      const loadedEdges = addEdgeLabels(buildJson.edges as Edge[], loadedNodes);
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
 
       if (buildJson.viewport) {
         setViewport(buildJson.viewport);
       }
 
       // Reset history when loading a new version
-      resetHistory(buildJson.nodes as Node[], buildJson.edges as Edge[]);
+      resetHistory(loadedNodes, loadedEdges);
     },
     [setNodes, setEdges, setViewport, resetHistory]
   );
+
+  // Import strategy from JSON
+  const onImportStrategy = useCallback(
+    (buildJson: BuildJsonSchema) => {
+      const importedNodes = buildJson.nodes as Node<BuilderNodeData>[];
+      const importedEdges = addEdgeLabels(buildJson.edges as Edge[], importedNodes);
+      setNodes(importedNodes);
+      setEdges(importedEdges);
+      if (buildJson.settings) {
+        setSettings(buildJson.settings);
+      }
+      if (buildJson.viewport) {
+        setViewport(buildJson.viewport);
+      }
+      // Update node ID counter
+      let max = 0;
+      for (const n of importedNodes) {
+        const match = n.id.match(/-(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > max) max = num;
+        }
+      }
+      nodeIdCounterRef.current = max;
+      resetHistory(importedNodes, importedEdges);
+    },
+    [setNodes, setEdges, setSettings, setViewport, resetHistory]
+  );
+
+  // Export current strategy as JSON string
+  const onExportJson = useCallback(() => {
+    const buildJson: BuildJsonSchema = {
+      version: "1.1",
+      nodes: nodes as BuilderNode[],
+      edges: edges as BuilderEdge[],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      settings,
+    };
+    return JSON.stringify(buildJson, null, 2);
+  }, [nodes, edges, settings]);
 
   // Undo handler for button
   const handleUndo = useCallback(() => {
@@ -785,6 +838,7 @@ export function StrategyCanvas({
               <PanelErrorBoundary>
                 <PropertiesPanel
                   selectedNode={selectedNode as Node<BuilderNodeData> | null}
+                  nodes={nodes as BuilderNode[]}
                   onNodeChange={onNodeChange}
                   onNodeDelete={onNodeDelete}
                 />
@@ -831,6 +885,8 @@ export function StrategyCanvas({
         validation={validation}
         onSave={onSave}
         onLoad={onLoad}
+        onImportStrategy={onImportStrategy}
+        onExportJson={onExportJson}
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
         userTier={userTier}

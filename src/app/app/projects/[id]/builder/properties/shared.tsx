@@ -1,7 +1,13 @@
 "use client";
 
 import { SelectField } from "../components/form-fields";
-import type { BuilderNodeData, EntryDirection, EntrySlMethod, Timeframe } from "@/types/builder";
+import type {
+  BuilderNodeData,
+  EntryDirection,
+  EntrySlMethod,
+  Timeframe,
+  MTFConfirmation,
+} from "@/types/builder";
 import { NumberField } from "../components/form-fields";
 import { DIRECTION_OPTIONS, BASE_SL_OPTIONS, TIMEFRAME_OPTIONS } from "./constants";
 
@@ -440,5 +446,130 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         )}
       </ToggleField>
     </>
+  );
+}
+
+const MTF_METHOD_OPTIONS = [
+  { value: "ema", label: "EMA Trend" },
+  { value: "adx", label: "ADX Strength" },
+];
+
+export function MTFConfirmationSection<T extends BuilderNodeData>({
+  data,
+  onChange,
+}: {
+  data: T & { mtfConfirmation?: MTFConfirmation };
+  onChange: (updates: Partial<T>) => void;
+}) {
+  const mtf = data.mtfConfirmation;
+
+  return (
+    <ToggleField
+      label="Multi-timeframe confirmation"
+      hint="Confirm entries using a higher timeframe indicator (e.g. H4 EMA for M15 entries)"
+      checked={mtf?.enabled ?? false}
+      onChange={(v) =>
+        onChange({
+          mtfConfirmation: {
+            enabled: v,
+            timeframe: mtf?.timeframe ?? "H4",
+            method: mtf?.method ?? "ema",
+            emaPeriod: mtf?.emaPeriod ?? 200,
+            adxPeriod: mtf?.adxPeriod ?? 14,
+            adxThreshold: mtf?.adxThreshold ?? 25,
+          },
+        } as Partial<T>)
+      }
+    >
+      <SelectField
+        label="HTF Timeframe"
+        value={mtf?.timeframe ?? "H4"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) =>
+          onChange({
+            mtfConfirmation: { ...mtf!, timeframe: v as Timeframe },
+          } as Partial<T>)
+        }
+        tooltip="Higher timeframe used for trend confirmation"
+      />
+      <OptimizableFieldCheckbox
+        fieldName="mtfConfirmation.timeframe"
+        data={data}
+        onChange={onChange}
+      />
+      <SelectField
+        label="Method"
+        value={mtf?.method ?? "ema"}
+        options={MTF_METHOD_OPTIONS}
+        onChange={(v) =>
+          onChange({
+            mtfConfirmation: { ...mtf!, method: v as "ema" | "adx" },
+          } as Partial<T>)
+        }
+        tooltip="EMA: trade in EMA trend direction. ADX: trade only when trend is strong enough."
+      />
+      {(mtf?.method ?? "ema") === "ema" && (
+        <>
+          <NumberField
+            label="EMA Period"
+            value={mtf?.emaPeriod ?? 200}
+            min={1}
+            max={1000}
+            step={1}
+            onChange={(v) =>
+              onChange({
+                mtfConfirmation: { ...mtf!, emaPeriod: v },
+              } as Partial<T>)
+            }
+            tooltip="EMA period on the higher timeframe. 200 is the most common trend filter."
+          />
+          <OptimizableFieldCheckbox
+            fieldName="mtfConfirmation.emaPeriod"
+            data={data}
+            onChange={onChange}
+          />
+        </>
+      )}
+      {mtf?.method === "adx" && (
+        <>
+          <NumberField
+            label="ADX Period"
+            value={mtf?.adxPeriod ?? 14}
+            min={1}
+            max={500}
+            step={1}
+            onChange={(v) =>
+              onChange({
+                mtfConfirmation: { ...mtf!, adxPeriod: v },
+              } as Partial<T>)
+            }
+            tooltip="Number of candles to calculate ADX. 14 is standard."
+          />
+          <OptimizableFieldCheckbox
+            fieldName="mtfConfirmation.adxPeriod"
+            data={data}
+            onChange={onChange}
+          />
+          <NumberField
+            label="ADX Threshold"
+            value={mtf?.adxThreshold ?? 25}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) =>
+              onChange({
+                mtfConfirmation: { ...mtf!, adxThreshold: v },
+              } as Partial<T>)
+            }
+            tooltip="Minimum ADX value to confirm a strong trend. 25 is the standard threshold."
+          />
+          <OptimizableFieldCheckbox
+            fieldName="mtfConfirmation.adxThreshold"
+            data={data}
+            onChange={onChange}
+          />
+        </>
+      )}
+    </ToggleField>
   );
 }

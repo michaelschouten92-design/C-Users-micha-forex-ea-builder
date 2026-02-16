@@ -1,4 +1,4 @@
-// Main MQL5 Code Generator — orchestrates modular generators
+// Main MQL4 Code Generator — orchestrates modular generators
 
 import type {
   BuildJsonSchema,
@@ -14,7 +14,6 @@ import type {
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
-  NewsFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -30,8 +29,7 @@ import {
   generateHelperFunctions,
 } from "./templates";
 
-import { sanitizeName, sanitizeMQL5String, isFieldOptimizable } from "./generators/shared";
-import { generateEmbeddedNewsData } from "../news-calendar";
+import { sanitizeName, sanitizeMQL4String, isFieldOptimizable } from "./generators/shared";
 import { generateMultipleTimingCode } from "./generators/timing";
 import { generateIndicatorCode } from "./generators/indicators";
 import { generatePriceActionCode } from "./generators/price-action";
@@ -114,7 +112,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   });
 
   // Map parent entry strategy optimizableFields to virtual node fields.
-  // When the parent has no optimizableFields (undefined), returns undefined → all optimizable.
+  // When the parent has no optimizableFields (undefined), returns undefined -> all optimizable.
   // When the parent has an explicit array, maps parent field names to virtual field names.
   const parentOpt = d.optimizableFields;
   const mapOpt = (...mappings: [string, string][]): string[] | undefined => {
@@ -522,7 +520,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   // Create TP node(s) — single TP or multiple TP levels
   const mtp = d.multipleTP;
   if (mtp?.enabled) {
-    // TP1: partial close at tp1RMultiple × SL distance, closing tp1Percent% of position
+    // TP1: partial close at tp1RMultiple x SL distance, closing tp1Percent% of position
     virtualNodes.push(
       vNode("partial-tp1", "partial-close", {
         label: "TP1 Partial Close",
@@ -584,7 +582,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   }
 
-  // Create edges: indicators → buy/sell → sl/tp
+  // Create edges: indicators -> buy/sell -> sl/tp
   const indicatorIds = virtualNodes
     .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
     .map((n) => n.id);
@@ -689,7 +687,7 @@ function decomposeEntryStrategies(
     }
 
     // Re-wire: any edge going FROM the entry strategy node to downstream nodes
-    // (e.g., entry-strategy → breakeven-stop) should come from virtual indicator nodes
+    // (e.g., entry-strategy -> breakeven-stop) should come from virtual indicator nodes
     for (let i = 0; i < resultEdges.length; i++) {
       const edge = resultEdges[i];
       if (edge.source === node.id && indicatorIds.length > 0) {
@@ -796,15 +794,15 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
     lines.push(`Max trades: ${ctx.maxOpenTrades}`);
   }
 
-  // Format as MQL5 const string array
+  // Format as MQL4 const string array
   if (lines.length === 0) {
     return 'const string g_strategyInfo[] = {"No strategy details available"};';
   }
-  const escaped = lines.map((l) => `"${sanitizeMQL5String(l)}"`);
+  const escaped = lines.map((l) => `"${sanitizeMQL4String(l)}"`);
   return `const string g_strategyInfo[] = {${escaped.join(", ")}};`;
 }
 
-export function generateMQL5Code(
+export function generateMQL4Code(
   buildJson: BuildJsonSchema,
   projectName: string,
   description?: string
@@ -819,9 +817,9 @@ export function generateMQL5Code(
 
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
-    description: sanitizeMQL5String(description ?? ""),
+    description: sanitizeMQL4String(description ?? ""),
     magicNumber: buildJson.settings?.magicNumber ?? 123456,
-    comment: sanitizeMQL5String(buildJson.settings?.comment ?? "AlgoStudio EA"),
+    comment: sanitizeMQL4String(buildJson.settings?.comment ?? "AlgoStudio EA"),
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
     maxBuyPositions: buildJson.settings?.maxBuyPositions ?? buildJson.settings?.maxOpenTrades ?? 1,
@@ -837,7 +835,7 @@ export function generateMQL5Code(
     equityTargetPercent: buildJson.settings?.equityTargetPercent ?? 0,
   };
 
-  const descValue = `"${sanitizeMQL5String(projectName)}"`;
+  const descValue = `"${sanitizeMQL4String(projectName)}"`;
 
   const code: GeneratedCode = {
     inputs: [
@@ -862,7 +860,7 @@ export function generateMQL5Code(
       {
         name: "InpTradeComment",
         type: "string",
-        value: `"${sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName)}"`,
+        value: `"${sanitizeMQL4String(ctx.comment || ctx.description || ctx.projectName)}"`,
         comment: "Trade Order Comment",
         isOptimizable: false,
         alwaysVisible: true,
@@ -882,7 +880,7 @@ export function generateMQL5Code(
       "int _pipFactor = 10; // 10 for 5/3-digit brokers, 1 for 4/2-digit",
       buildStrategyOverlayArray(buildJson.nodes, ctx),
     ],
-    onInit: ["_pipFactor = (_Digits == 3 || _Digits == 5) ? 10 : 1;"],
+    onInit: ["_pipFactor = (Digits == 3 || Digits == 5) ? 10 : 1;"],
     onDeinit: [],
     onTick: [],
     helperFunctions: [],
@@ -1021,13 +1019,13 @@ export function generateMQL5Code(
     });
     code.onTick.push(`//--- Spread filter`);
     code.onTick.push(`{`);
-    code.onTick.push(`   int currentSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);`);
+    code.onTick.push(`   int currentSpread = (int)MarketInfo(Symbol(), MODE_SPREAD);`);
     code.onTick.push(`   if(currentSpread > InpMaxSpread * _pipFactor)`);
     code.onTick.push(`      return;`);
     code.onTick.push(`}`);
   }
 
-  // Generate volatility filter code (ATR-based)
+  // Generate volatility filter code (ATR-based, direct iATR call for MQL4)
   const volatilityNodes = maxSpreadNodes.filter(
     (n) => (n.data as { filterType?: string }).filterType === "volatility-filter"
   );
@@ -1064,18 +1062,12 @@ export function generateMQL5Code(
         group: "Volatility Filter",
       }
     );
-    code.globalVariables.push("int volATRHandle = INVALID_HANDLE;");
-    code.globalVariables.push("double volATRBuf[];");
-    code.onInit.push(`volATRHandle = iATR(_Symbol, ${atrTf}, InpVolATRPeriod);`);
-    code.onInit.push(
-      'if(volATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for volatility filter"); return(INIT_FAILED); }'
-    );
-    code.onInit.push("ArraySetAsSeries(volATRBuf, true);");
-    code.onDeinit.push("if(volATRHandle != INVALID_HANDLE) IndicatorRelease(volATRHandle);");
+    // MQL4: No handles needed — use direct iATR() call
     code.onTick.push(`//--- Volatility filter (ATR)`);
-    code.onTick.push(`if(CopyBuffer(volATRHandle, 0, 0, 1, volATRBuf) == 1)`);
     code.onTick.push(`{`);
-    code.onTick.push(`   double atrPips = volATRBuf[0] / (_Point * _pipFactor);`);
+    code.onTick.push(
+      `   double atrPips = iATR(Symbol(), ${atrTf}, InpVolATRPeriod, 0) / (Point * _pipFactor);`
+    );
     code.onTick.push(`   if(InpMinATRPips > 0 && atrPips < InpMinATRPips) return;`);
     code.onTick.push(`   if(InpMaxATRPips > 0 && atrPips > InpMaxATRPips) return;`);
     code.onTick.push(`}`);
@@ -1124,245 +1116,32 @@ export function generateMQL5Code(
     code.onTick.push(`      if(fcMinutes >= fcCloseMinutes)`);
     code.onTick.push(`      {`);
     code.onTick.push(`         // Close all open positions`);
-    code.onTick.push(`         for(int i = PositionsTotal() - 1; i >= 0; i--)`);
+    code.onTick.push(`         for(int i = OrdersTotal() - 1; i >= 0; i--)`);
     code.onTick.push(`         {`);
-    code.onTick.push(`            ulong ticket = PositionGetTicket(i);`);
+    code.onTick.push(`            if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;`);
     code.onTick.push(
-      `            if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)`
+      `            if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != Symbol()) continue;`
     );
-    code.onTick.push(`               trade.PositionClose(ticket);`);
-    code.onTick.push(`         }`);
+    code.onTick.push(`            if(OrderType() == OP_BUY)`);
+    code.onTick.push(
+      `               OrderClose(OrderTicket(), OrderLots(), Bid, InpMaxSlippage, clrGreen);`
+    );
+    code.onTick.push(`            else if(OrderType() == OP_SELL)`);
+    code.onTick.push(
+      `               OrderClose(OrderTicket(), OrderLots(), Ask, InpMaxSlippage, clrRed);`
+    );
     if (closePending) {
-      code.onTick.push(`         // Delete pending orders`);
-      code.onTick.push(`         for(int i = OrdersTotal() - 1; i >= 0; i--)`);
-      code.onTick.push(`         {`);
-      code.onTick.push(`            ulong ticket = OrderGetTicket(i);`);
-      code.onTick.push(
-        `            if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)`
-      );
-      code.onTick.push(`               trade.OrderDelete(ticket);`);
-      code.onTick.push(`         }`);
+      code.onTick.push(`            else if(OrderType() > OP_SELL)`);
+      code.onTick.push(`               OrderDelete(OrderTicket());`);
     }
+    code.onTick.push(`         }`);
     code.onTick.push(`         return;`);
     code.onTick.push(`      }`);
     code.onTick.push(`   }`);
     code.onTick.push(`}`);
   }
 
-  // Generate news filter code (calendar API live, CSV backtest)
-  const newsFilterNodes = maxSpreadNodes.filter(
-    (n) => (n.data as { filterType?: string }).filterType === "news-filter"
-  );
-  if (newsFilterNodes.length > 0) {
-    const nfNode = newsFilterNodes[0];
-    const nfData = nfNode.data as NewsFilterNodeData;
-    const hoursBefore = nfData.hoursBefore ?? 0.5;
-    const hoursAfter = nfData.hoursAfter ?? 0.5;
-    const minBefore = Math.round(hoursBefore * 60);
-    const minAfter = Math.round(hoursAfter * 60);
-    const highImpact = nfData.highImpact ?? true;
-    const mediumImpact = nfData.mediumImpact ?? false;
-    const lowImpact = nfData.lowImpact ?? false;
-    const closePositions = nfData.closePositions ?? false;
-
-    // Inputs (MQL5 uses minutes internally)
-    code.inputs.push(
-      {
-        name: "InpNewsMinBefore",
-        type: "int",
-        value: minBefore,
-        comment: `Minutes Before News (${hoursBefore}h)`,
-        isOptimizable: isFieldOptimizable(nfNode, "hoursBefore"),
-        group: "News Filter",
-      },
-      {
-        name: "InpNewsMinAfter",
-        type: "int",
-        value: minAfter,
-        comment: `Minutes After News (${hoursAfter}h)`,
-        isOptimizable: isFieldOptimizable(nfNode, "hoursAfter"),
-        group: "News Filter",
-      },
-      {
-        name: "InpNewsHigh",
-        type: "bool",
-        value: highImpact,
-        comment: "Filter High Impact",
-        isOptimizable: false,
-        group: "News Filter",
-      },
-      {
-        name: "InpNewsMedium",
-        type: "bool",
-        value: mediumImpact,
-        comment: "Filter Medium Impact",
-        isOptimizable: false,
-        group: "News Filter",
-      },
-      {
-        name: "InpNewsLow",
-        type: "bool",
-        value: lowImpact,
-        comment: "Filter Low Impact",
-        isOptimizable: false,
-        group: "News Filter",
-      },
-      {
-        name: "InpNewsClosePos",
-        type: "bool",
-        value: closePositions,
-        comment: "Close Positions During News",
-        isOptimizable: false,
-        group: "News Filter",
-      },
-      {
-        name: "InpBrokerUTCOffset",
-        type: "int",
-        value: 0,
-        comment: "Broker UTC Offset (hours, e.g. 2 for UTC+2)",
-        isOptimizable: false,
-        group: "News Filter",
-      }
-    );
-
-    // Global variables
-    code.globalVariables.push("struct SNewsEvent { datetime time; int importance; };");
-    code.globalVariables.push("SNewsEvent g_newsEvents[];");
-    code.globalVariables.push("int        g_newsCount = 0;");
-    code.globalVariables.push("bool       g_isTesting = false;");
-    code.globalVariables.push("datetime   g_lastNewsRefresh = 0;");
-    code.globalVariables.push("string     g_baseCurrency, g_quoteCurrency;");
-
-    // Embedded news data for backtesting (generated at export time)
-    const newsData = generateEmbeddedNewsData(2015, 2030);
-    const newsArrayEntries = newsData.map((entry) => `   "${entry}"`).join(",\n");
-    code.globalVariables.push(`const string g_embeddedNews[] = {\n${newsArrayEntries}\n};`);
-
-    // OnInit
-    code.onInit.push(`   g_isTesting = (bool)MQLInfoInteger(MQL_TESTER);`);
-    code.onInit.push(`   g_baseCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_BASE);`);
-    code.onInit.push(`   g_quoteCurrency = SymbolInfoString(_Symbol, SYMBOL_CURRENCY_PROFIT);`);
-    code.onInit.push(``);
-    code.onInit.push(`   if(g_isTesting)`);
-    code.onInit.push(`   {`);
-    code.onInit.push(`      LoadEmbeddedNews();`);
-    code.onInit.push(`   }`);
-    code.onInit.push(`   else`);
-    code.onInit.push(`   {`);
-    code.onInit.push(`      RefreshNewsCache();`);
-    code.onInit.push(`   }`);
-
-    // OnTick — news filter block
-    code.onTick.push(`//--- News filter`);
-    code.onTick.push(`{`);
-    code.onTick.push(`   if(!g_isTesting && TimeCurrent() - g_lastNewsRefresh > 3600)`);
-    code.onTick.push(`      RefreshNewsCache();`);
-    code.onTick.push(``);
-    code.onTick.push(`   if(IsNewsTime())`);
-    code.onTick.push(`   {`);
-    if (closePositions) {
-      code.onTick.push(`      if(InpNewsClosePos)`);
-      code.onTick.push(`      {`);
-      code.onTick.push(`         for(int i = PositionsTotal()-1; i >= 0; i--)`);
-      code.onTick.push(`         {`);
-      code.onTick.push(`            ulong ticket = PositionGetTicket(i);`);
-      code.onTick.push(
-        `            if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber`
-      );
-      code.onTick.push(`               && PositionGetString(POSITION_SYMBOL) == _Symbol)`);
-      code.onTick.push(`               trade.PositionClose(ticket);`);
-      code.onTick.push(`         }`);
-      code.onTick.push(`      }`);
-    }
-    code.onTick.push(`      return;`);
-    code.onTick.push(`   }`);
-    code.onTick.push(`}`);
-
-    // Helper functions
-    code.helperFunctions.push(`void RefreshNewsCache()`);
-    code.helperFunctions.push(`{`);
-    code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
-    code.helperFunctions.push(`   g_newsCount = 0;`);
-    code.helperFunctions.push(`   MqlCalendarValue values[];`);
-    code.helperFunctions.push(`   datetime dayStart = iTime(_Symbol, PERIOD_D1, 0);`);
-    code.helperFunctions.push(`   datetime dayEnd = dayStart + 2*86400;`);
-    code.helperFunctions.push(`   if(CalendarValueHistory(values, dayStart, dayEnd))`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      for(int i = 0; i < ArraySize(values); i++)`);
-    code.helperFunctions.push(`      {`);
-    code.helperFunctions.push(`         MqlCalendarEvent event;`);
-    code.helperFunctions.push(
-      `         if(!CalendarEventById(values[i].event_id, event)) continue;`
-    );
-    code.helperFunctions.push(`         MqlCalendarCountry country;`);
-    code.helperFunctions.push(
-      `         if(!CalendarCountryById(event.country_id, country)) continue;`
-    );
-    code.helperFunctions.push(
-      `         if(country.currency != g_baseCurrency && country.currency != g_quoteCurrency) continue;`
-    );
-    code.helperFunctions.push(`         int imp = (int)event.importance;`);
-    code.helperFunctions.push(
-      `         if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
-    );
-    code.helperFunctions.push(`         int idx = g_newsCount++;`);
-    code.helperFunctions.push(`         ArrayResize(g_newsEvents, g_newsCount);`);
-    code.helperFunctions.push(`         g_newsEvents[idx].time = values[i].time;`);
-    code.helperFunctions.push(`         g_newsEvents[idx].importance = imp;`);
-    code.helperFunctions.push(`      }`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(`   g_lastNewsRefresh = TimeCurrent();`);
-    code.helperFunctions.push(`}`);
-    code.helperFunctions.push(``);
-
-    code.helperFunctions.push(`bool IsNewsTime()`);
-    code.helperFunctions.push(`{`);
-    code.helperFunctions.push(`   datetime now = TimeCurrent();`);
-    code.helperFunctions.push(`   for(int i = 0; i < g_newsCount; i++)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      if(now >= g_newsEvents[i].time - InpNewsMinBefore*60`);
-    code.helperFunctions.push(`         && now <= g_newsEvents[i].time + InpNewsMinAfter*60)`);
-    code.helperFunctions.push(`      {`);
-    code.helperFunctions.push(`         int imp = g_newsEvents[i].importance;`);
-    code.helperFunctions.push(
-      `         if((imp==3 && InpNewsHigh) || (imp==2 && InpNewsMedium) || (imp==1 && InpNewsLow))`
-    );
-    code.helperFunctions.push(`            return true;`);
-    code.helperFunctions.push(`      }`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(`   return false;`);
-    code.helperFunctions.push(`}`);
-    code.helperFunctions.push(``);
-
-    code.helperFunctions.push(`void LoadEmbeddedNews()`);
-    code.helperFunctions.push(`{`);
-    code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
-    code.helperFunctions.push(`   g_newsCount = 0;`);
-    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(g_embeddedNews); i++)`);
-    code.helperFunctions.push(`   {`);
-    code.helperFunctions.push(`      string parts[];`);
-    code.helperFunctions.push(`      StringSplit(g_embeddedNews[i], ',', parts);`);
-    code.helperFunctions.push(`      if(ArraySize(parts) < 3) continue;`);
-    code.helperFunctions.push(`      string cur = parts[2];`);
-    code.helperFunctions.push(
-      `      if(cur != g_baseCurrency && cur != g_quoteCurrency) continue;`
-    );
-    code.helperFunctions.push(`      int imp = (int)StringToInteger(parts[1]);`);
-    code.helperFunctions.push(
-      `      if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
-    );
-    code.helperFunctions.push(`      int idx = g_newsCount++;`);
-    code.helperFunctions.push(`      ArrayResize(g_newsEvents, g_newsCount, 1000);`);
-    code.helperFunctions.push(
-      `      g_newsEvents[idx].time = StringToTime(parts[0]) + InpBrokerUTCOffset*3600;`
-    );
-    code.helperFunctions.push(`      g_newsEvents[idx].importance = imp;`);
-    code.helperFunctions.push(`   }`);
-    code.helperFunctions.push(
-      `   Print("Loaded ", g_newsCount, " news events from embedded data");`
-    );
-    code.helperFunctions.push(`}`);
-  }
+  // News filter: SKIPPED for MQL4 — CalendarValueHistory is not available in MQL4
 
   // Generate indicator code (only connected indicators)
   indicatorNodes.forEach((node, index) => {
@@ -1482,22 +1261,22 @@ export function generateMQL5Code(
     code.onTick.push(`   int closeMinutes = closeTimeDt.hour * 60 + closeTimeDt.min;`);
     code.onTick.push(`   if(closeMinutes >= InpRangeCloseHour * 60 + InpRangeCloseMinute)`);
     code.onTick.push("   {");
-    code.onTick.push("      for(int i = PositionsTotal() - 1; i >= 0; i--)");
-    code.onTick.push("      {");
-    code.onTick.push("         ulong ticket = PositionGetTicket(i);");
-    code.onTick.push(
-      "         if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-    );
-    code.onTick.push("            trade.PositionClose(ticket);");
-    code.onTick.push("      }");
-    code.onTick.push("      // Also delete pending orders");
     code.onTick.push("      for(int i = OrdersTotal() - 1; i >= 0; i--)");
     code.onTick.push("      {");
-    code.onTick.push("         ulong ticket = OrderGetTicket(i);");
+    code.onTick.push("         if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
     code.onTick.push(
-      "         if(ticket > 0 && OrderGetInteger(ORDER_MAGIC) == InpMagicNumber && OrderGetString(ORDER_SYMBOL) == _Symbol)"
+      "         if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != Symbol()) continue;"
     );
-    code.onTick.push("            trade.OrderDelete(ticket);");
+    code.onTick.push("         if(OrderType() == OP_BUY)");
+    code.onTick.push(
+      "            OrderClose(OrderTicket(), OrderLots(), Bid, InpMaxSlippage, clrGreen);"
+    );
+    code.onTick.push("         else if(OrderType() == OP_SELL)");
+    code.onTick.push(
+      "            OrderClose(OrderTicket(), OrderLots(), Ask, InpMaxSlippage, clrRed);"
+    );
+    code.onTick.push("         else if(OrderType() > OP_SELL)");
+    code.onTick.push("            OrderDelete(OrderTicket());");
     code.onTick.push("      }");
     code.onTick.push("      return;");
     code.onTick.push("   }");
@@ -1537,42 +1316,9 @@ export function generateMQL5Code(
     generateTradeManagementCode(node, code);
   });
 
-  // News filter setup instructions (only when news filter is used)
-  const newsSetupGuide =
-    newsFilterNodes.length > 0
-      ? `//+------------------------------------------------------------------+
-//| NEWS FILTER — SETUP GUIDE                                        |
-//+------------------------------------------------------------------+
-//| This EA uses a News Filter that avoids trading around economic    |
-//| news events. Follow these steps to enable backtesting support:    |
-//|                                                                   |
-//| STEP 1: Compile this EA in MetaEditor (F7)                       |
-//|                                                                   |
-//| STEP 2: Attach the EA to any live or demo chart                  |
-//|         → The EA will automatically download all historical news  |
-//|           data and save it to:                                    |
-//|           [Common Files]/ea_builder_news.csv                      |
-//|         → This happens once; future runs only append new events   |
-//|                                                                   |
-//| STEP 3: Open the Strategy Tester and run your backtest            |
-//|         → The EA detects tester mode and reads from the CSV       |
-//|         → News events are filtered by your symbol's currencies    |
-//|                                                                   |
-//| OPTIONAL: Set "Export News History" input to true for a full      |
-//|           re-download of all calendar data since 2010.            |
-//|                                                                   |
-//| NOTE: The CSV is stored in the Common Files folder so it works    |
-//|       across all terminals and accounts. You only need to do      |
-//|       Step 2 once — after that, backtesting works immediately.    |
-//+------------------------------------------------------------------+
-
-`
-      : "";
-
   // Assemble final code (array join avoids repeated string allocation)
   const parts = [
     generateFileHeader(ctx),
-    newsSetupGuide,
     generateTradeIncludes(),
     generateInputsSection(code.inputs),
     generateGlobalVariablesSection(code.globalVariables),

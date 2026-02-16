@@ -114,6 +114,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const { name, description, notes } = validation.data;
+    const rawTags = body.tags;
 
     const project = await prisma.project.update({
       where: { id, userId: session.user.id },
@@ -123,6 +124,23 @@ export async function PATCH(request: Request, { params }: Params) {
         ...(notes !== undefined && { notes }),
       },
     });
+
+    // Sync tags if provided
+    if (Array.isArray(rawTags)) {
+      const tags = rawTags
+        .filter((t: unknown): t is string => typeof t === "string")
+        .map((t) => t.trim().toLowerCase().slice(0, 20))
+        .filter((t) => t.length > 0)
+        .slice(0, 5);
+
+      await prisma.projectTag.deleteMany({ where: { projectId: id } });
+      if (tags.length > 0) {
+        await prisma.projectTag.createMany({
+          data: tags.map((tag) => ({ projectId: id, tag })),
+          skipDuplicates: true,
+        });
+      }
+    }
 
     return NextResponse.json(project);
   } catch (error) {

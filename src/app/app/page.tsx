@@ -33,6 +33,9 @@ export default async function DashboardPage() {
           take: 1,
           select: { buildJson: true },
         },
+        tags: {
+          select: { tag: true },
+        },
       },
     }),
     prisma.subscription.findUnique({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
+import { generateMQL4Code } from "@/lib/mql4-generator";
 import { checkExportLimit, getCachedTier } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/plans";
 import {
@@ -166,8 +167,12 @@ export async function POST(request: NextRequest, { params }: Props) {
       buildJson.settings = { ...buildJson.settings, magicNumber };
     }
 
-    // Generate MQL5 code
-    const mql5Code = generateMQL5Code(buildJson, project.name, project.description ?? undefined);
+    // Generate code based on export type
+    const isMQL4 = exportType === "MQ4";
+    const generatedCode = isMQL4
+      ? generateMQL4Code(buildJson, project.name, project.description ?? undefined)
+      : generateMQL5Code(buildJson, project.name, project.description ?? undefined);
+    const fileExtension = isMQL4 ? ".mq4" : ".mq5";
 
     // Atomically check limit + create export job inside a transaction
     const tier = await getCachedTier(session.user.id);
@@ -190,7 +195,7 @@ export async function POST(request: NextRequest, { params }: Props) {
           buildVersionId: version.id,
           exportType: exportType || "MQ5",
           status: "DONE",
-          outputName: `${sanitizeFileName(project.name)}.mq5`,
+          outputName: `${sanitizeFileName(project.name)}${fileExtension}`,
         },
       });
     });
@@ -219,9 +224,9 @@ export async function POST(request: NextRequest, { params }: Props) {
         success: true,
         exportId: exportJob.id,
         fileName: exportJob.outputName,
-        code: mql5Code,
+        code: generatedCode,
         versionNo: version.versionNo,
-        exportType: "MQ5",
+        exportType: isMQL4 ? "MQ4" : "MQ5",
       },
       { headers: rateLimitHeaders }
     );
@@ -235,7 +240,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     return NextResponse.json(
-      { error: "Failed to generate MQL5 code" },
+      { error: "Failed to generate code" },
       { status: 500, headers: rateLimitHeaders }
     );
   }
@@ -270,7 +275,10 @@ export async function GET(request: NextRequest, { params }: Props) {
           projectId: id,
           userId: session.user.id,
         },
-        include: {
+        select: {
+          id: true,
+          outputName: true,
+          exportType: true,
           buildVersion: { select: { buildJson: true } },
           project: { select: { name: true, description: true } },
         },
@@ -291,16 +299,23 @@ export async function GET(request: NextRequest, { params }: Props) {
       }
       const buildJson = buildJsonValidation.data as BuildJsonSchema;
 
-      // Regenerate MQL5 code from the saved buildJson
-      const mql5Code = generateMQL5Code(
-        buildJson,
-        exportJob.project.name,
-        exportJob.project.description ?? undefined
-      );
+      // Regenerate code from the saved buildJson using the original export type
+      const redownloadCode =
+        exportJob.exportType === "MQ4"
+          ? generateMQL4Code(
+              buildJson,
+              exportJob.project.name,
+              exportJob.project.description ?? undefined
+            )
+          : generateMQL5Code(
+              buildJson,
+              exportJob.project.name,
+              exportJob.project.description ?? undefined
+            );
 
       return NextResponse.json({
         fileName: exportJob.outputName,
-        code: mql5Code,
+        code: redownloadCode,
       });
     } catch (error) {
       log.error(

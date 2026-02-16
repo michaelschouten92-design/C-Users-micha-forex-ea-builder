@@ -491,6 +491,16 @@ const baseEntryStrategyFieldsSchema = z.object({
   slAtrTimeframe: timeframeSchema.optional(),
   tpRMultiple: z.number().min(0.1).max(20),
   closeOnOpposite: z.boolean().optional(),
+  mtfConfirmation: z
+    .object({
+      enabled: z.boolean(),
+      timeframe: timeframeSchema,
+      method: z.enum(["ema", "adx"]),
+      emaPeriod: z.number().int().min(1).max(1000).optional(),
+      adxPeriod: z.number().int().min(1).max(500).optional(),
+      adxThreshold: z.number().min(1).max(100).optional(),
+    })
+    .optional(),
   multipleTP: z
     .object({
       enabled: z.boolean(),
@@ -766,7 +776,7 @@ const buildMetadataSchema = z.object({
 
 // Complete BuildJson schema
 export const buildJsonSchema = z.object({
-  version: z.enum(["1.0", "1.1"]),
+  version: z.enum(["1.0", "1.1", "1.2"]),
   nodes: z.array(builderNodeSchema).max(500, "Maximum 500 nodes allowed"),
   edges: z.array(builderEdgeSchema).max(1000, "Maximum 1000 edges allowed"),
   viewport: viewportSchema,
@@ -786,7 +796,7 @@ export const createVersionSchema = z.object({
 
 export const exportRequestSchema = z.object({
   versionId: z.string().cuid().optional(),
-  exportType: z.enum(["MQ5"]).default("MQ5"),
+  exportType: z.enum(["MQ5", "MQ4"]).default("MQ5"),
   magicNumber: z.number().int().min(1).max(2147483647).optional(),
 });
 

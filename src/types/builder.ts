@@ -439,6 +439,15 @@ export type EntryDirection = "BUY" | "SELL" | "BOTH";
 
 export type EntrySlMethod = "ATR" | "PIPS" | "PERCENT" | "RANGE_OPPOSITE";
 
+export interface MTFConfirmation {
+  enabled: boolean;
+  timeframe: Timeframe;
+  method: "ema" | "adx";
+  emaPeriod?: number;
+  adxPeriod?: number;
+  adxThreshold?: number;
+}
+
 export interface BaseEntryStrategyFields {
   direction: EntryDirection;
   timeframe: Timeframe;
@@ -451,6 +460,7 @@ export interface BaseEntryStrategyFields {
   slAtrTimeframe?: Timeframe;
   tpRMultiple: number;
   closeOnOpposite?: boolean;
+  mtfConfirmation?: MTFConfirmation;
   multipleTP?: {
     enabled: boolean;
     tp1RMultiple: number;
@@ -664,7 +674,7 @@ export interface BuildJsonMetadata {
 }
 
 export interface BuildJsonSchema {
-  version: "1.0" | "1.1";
+  version: "1.0" | "1.1" | "1.2";
   nodes: BuilderNode[];
   edges: BuilderEdge[];
   viewport: Viewport;
@@ -692,7 +702,7 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {
-  version: "1.1",
+  version: "1.2",
   nodes: [],
   edges: [],
   viewport: { x: 0, y: 0, zoom: 1 },

@@ -1,7 +1,9 @@
 "use client";
 
-import { memo, useId } from "react";
+import { memo, useId, useMemo } from "react";
 import type { Node } from "@xyflow/react";
+import type { BuilderNode } from "@/types/builder";
+import { buildNaturalLanguageSummary } from "../strategy-summary";
 import type {
   BuilderNodeData,
   TradingSessionNodeData,
@@ -87,17 +89,23 @@ import {
 
 interface PropertiesPanelProps {
   selectedNode: Node<BuilderNodeData> | null;
+  nodes?: BuilderNode[];
   onNodeChange: (nodeId: string, data: Partial<BuilderNodeData>) => void;
   onNodeDelete: (nodeId: string) => void;
 }
 
 export const PropertiesPanel = memo(function PropertiesPanel({
   selectedNode,
+  nodes = [],
   onNodeChange,
   onNodeDelete,
 }: PropertiesPanelProps) {
   const panelId = useId();
   const labelInputId = useId();
+  const summaryLines = useMemo(
+    () => (!selectedNode && nodes.length > 0 ? buildNaturalLanguageSummary(nodes) : []),
+    [selectedNode, nodes]
+  );
 
   if (!selectedNode) {
     return (
@@ -105,23 +113,81 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         aria-label="Properties Panel"
         className="w-full h-full bg-[#1A0626] border-l border-[rgba(79,70,229,0.2)] p-4"
       >
-        <div className="text-center text-[#64748B] py-8">
-          <svg
-            className="mx-auto h-8 w-8 mb-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p className="text-sm">Select a block to edit its properties</p>
-        </div>
+        {nodes.length > 0 ? (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <svg
+                className="w-4 h-4 text-[#A78BFA]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+                />
+              </svg>
+              <span className="text-xs text-[#A78BFA] font-medium">Click a block to edit</span>
+              <span className="text-[10px] font-medium text-[#64748B] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
+                {nodes.length} {nodes.length === 1 ? "block" : "blocks"}
+              </span>
+            </div>
+            <p className="text-xs font-medium text-[#94A3B8] mb-2">Strategy overview:</p>
+            {summaryLines.length > 0 ? (
+              <ul className="space-y-1.5">
+                {summaryLines.map((line, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-[#64748B]">
+                Connect your blocks to see the strategy description.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="text-center text-[#64748B] py-8">
+            <svg
+              className="mx-auto h-8 w-8 mb-3 text-[#A78BFA]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            <p className="text-sm font-medium text-[#94A3B8] mb-1">Get started</p>
+            <p className="text-xs text-[#64748B] leading-relaxed">
+              Drag an <span className="text-white font-medium">Entry Strategy</span> block from the
+              left toolbar onto the canvas
+            </p>
+          </div>
+        )}
       </aside>
     );
   }

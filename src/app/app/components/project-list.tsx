@@ -18,6 +18,7 @@ type Project = {
     versions: number;
   };
   versions?: { buildJson: unknown }[];
+  tags?: { tag: string }[];
 };
 
 type SortOption = "updated" | "created" | "name";
@@ -152,6 +153,30 @@ export function ProjectList({ projects }: { projects: Project[] }) {
   const [sort, setSort] = useState<SortOption>("updated");
   const [showTemplates, setShowTemplates] = useState(false);
   const [loadingPreset, setLoadingPreset] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  // Collect all unique tags across projects
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const p of projects) {
+      for (const t of p.tags ?? []) {
+        tagSet.add(t.tag);
+      }
+    }
+    return Array.from(tagSet).sort();
+  }, [projects]);
+
+  function toggleTag(tag: string) {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
+  }
 
   async function createFromPresetInline(presetId: string) {
     const preset = STRATEGY_PRESETS.find((p) => p.id === presetId);
@@ -186,9 +211,20 @@ export function ProjectList({ projects }: { projects: Project[] }) {
 
     let result = projects;
     if (query) {
-      result = projects.filter(
+      result = result.filter(
         (p) => p.name.toLowerCase().includes(query) || p.description?.toLowerCase().includes(query)
       );
+    }
+
+    // Tag filter (AND logic - must have all selected tags)
+    if (selectedTags.size > 0) {
+      result = result.filter((p) => {
+        const projectTags = new Set((p.tags ?? []).map((t) => t.tag));
+        for (const tag of selectedTags) {
+          if (!projectTags.has(tag)) return false;
+        }
+        return true;
+      });
     }
 
     return [...result].sort((a, b) => {
@@ -202,7 +238,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
           return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       }
     });
-  }, [projects, search, sort]);
+  }, [projects, search, sort, selectedTags]);
 
   if (projects.length === 0) {
     return <OnboardingEmpty />;
@@ -246,6 +282,36 @@ export function ProjectList({ projects }: { projects: Project[] }) {
           <option value="name">Name (A→Z)</option>
         </select>
       </div>
+
+      {/* Tag Filter Chips */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {allTags.map((tag) => {
+            const isActive = selectedTags.has(tag);
+            return (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-all duration-200 ${
+                  isActive
+                    ? "bg-[#4F46E5] text-white border-[#4F46E5]"
+                    : "bg-transparent text-[#A78BFA] border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] hover:bg-[rgba(79,70,229,0.1)]"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+          {selectedTags.size > 0 && (
+            <button
+              onClick={() => setSelectedTags(new Set())}
+              className="text-xs text-[#64748B] hover:text-white px-2 py-1 transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Templates Toggle */}
       <div className="mb-4">

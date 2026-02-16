@@ -47,6 +47,7 @@ export function ExportButton({
   const [showModal, setShowModal] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [configMagicNumber, setConfigMagicNumber] = useState(magicNumber ?? 123456);
+  const [selectedFormat, setSelectedFormat] = useState<"MQ5" | "MQ4">("MQ5");
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<ExportError | null>(null);
   const stepTimersRef = useRef<NodeJS.Timeout[]>([]);
@@ -78,7 +79,12 @@ export function ExportButton({
     };
   }, []);
 
-  const exportSteps = ["Validating strategy...", "Generating MQL5 code...", "Finalizing export..."];
+  const formatLabel = selectedFormat === "MQ4" ? "MQL4" : "MQL5";
+  const exportSteps = [
+    "Validating strategy...",
+    `Generating ${formatLabel} code...`,
+    "Finalizing export...",
+  ];
 
   async function handleExport() {
     setExporting(true);
@@ -99,7 +105,7 @@ export function ExportButton({
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ exportType: "MQ5", magicNumber: configMagicNumber }),
+        body: JSON.stringify({ exportType: selectedFormat, magicNumber: configMagicNumber }),
         signal: controller.signal,
       });
 
@@ -234,7 +240,7 @@ export function ExportButton({
               ? "Fix errors before exporting"
               : !canExportMQL5
                 ? "Upgrade for unlimited exports"
-                : "Export to MQL5"
+                : "Export to MQL4/MQL5"
         }
       >
         {exporting ? (
@@ -272,7 +278,7 @@ export function ExportButton({
             />
           </svg>
         )}
-        Export MQL5
+        Export
       </button>
 
       {/* Export Modal */}
@@ -416,6 +422,37 @@ export function ExportButton({
                     </div>
                   )}
 
+                  {/* Format Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#CBD5E1] mb-2">
+                      Export Format
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedFormat("MQ5")}
+                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                          selectedFormat === "MQ5"
+                            ? "bg-[#4F46E5] text-white border-[#4F46E5] shadow-[0_0_12px_rgba(79,70,229,0.3)]"
+                            : "bg-[#0F172A] text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:text-white hover:border-[rgba(79,70,229,0.5)]"
+                        }`}
+                      >
+                        <div className="font-semibold">MQL5</div>
+                        <div className="text-xs mt-0.5 opacity-75">MetaTrader 5</div>
+                      </button>
+                      <button
+                        onClick={() => setSelectedFormat("MQ4")}
+                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                          selectedFormat === "MQ4"
+                            ? "bg-[#4F46E5] text-white border-[#4F46E5] shadow-[0_0_12px_rgba(79,70,229,0.3)]"
+                            : "bg-[#0F172A] text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:text-white hover:border-[rgba(79,70,229,0.5)]"
+                        }`}
+                      >
+                        <div className="font-semibold">MQL4</div>
+                        <div className="text-xs mt-0.5 opacity-75">MetaTrader 4</div>
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label
                       htmlFor="magic-number"
@@ -468,7 +505,7 @@ export function ExportButton({
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       />
                     </svg>
-                    Export MQL5
+                    Export {formatLabel}
                   </button>
                 </div>
               ) : exporting ? (
@@ -605,7 +642,7 @@ export function ExportButton({
                       data-export-code
                       className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#CBD5E1] font-mono"
                     >
-                      {highlightMQL5(result.code)}
+                      {highlightMQL(result.code)}
                     </pre>
                   </div>
 
@@ -775,7 +812,7 @@ export function ExportButton({
   );
 }
 
-function highlightMQL5(code: string): React.ReactNode[] {
+function highlightMQL(code: string): React.ReactNode[] {
   const lines = code.split("\n");
   return lines.map((line, lineIdx) => {
     const parts: React.ReactNode[] = [];
@@ -860,9 +897,9 @@ function highlightMQL5(code: string): React.ReactNode[] {
 }
 
 function highlightKeywords(text: string): React.ReactNode {
-  // MQL5 keywords and types
+  // MQL4/MQL5 keywords and types
   const pattern =
-    /\b(int|double|string|bool|void|input|datetime|long|ulong|float|color|enum|struct|class|return|if|else|for|while|switch|case|break|continue|true|false|NULL|ENUM_\w+|ORDER_\w+|POSITION_\w+|SYMBOL_\w+|PERIOD_\w+|MODE_\w+|TRADE_\w+|DEAL_\w+|ACCOUNT_\w+|PRICE_\w+|#property|#include|#define)\b/g;
+    /\b(int|double|string|bool|void|input|extern|datetime|long|ulong|float|color|enum|struct|class|return|if|else|for|while|switch|case|break|continue|true|false|NULL|ENUM_\w+|ORDER_\w+|POSITION_\w+|SYMBOL_\w+|PERIOD_\w+|MODE_\w+|TRADE_\w+|DEAL_\w+|ACCOUNT_\w+|PRICE_\w+|OP_\w+|SELECT_\w+|#property|#include|#define)\b/g;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -875,12 +912,14 @@ function highlightKeywords(text: string): React.ReactNode {
     const word = match[0];
     const isDirective = word.startsWith("#");
     const isType =
-      /^(int|double|string|bool|void|input|datetime|long|ulong|float|color|enum|struct|class)$/.test(
+      /^(int|double|string|bool|void|input|extern|datetime|long|ulong|float|color|enum|struct|class)$/.test(
         word
       );
     const isConst =
       /^(true|false|NULL)$/.test(word) ||
-      /^(ENUM_|ORDER_|POSITION_|SYMBOL_|PERIOD_|MODE_|TRADE_|DEAL_|ACCOUNT_|PRICE_)/.test(word);
+      /^(ENUM_|ORDER_|POSITION_|SYMBOL_|PERIOD_|MODE_|TRADE_|DEAL_|ACCOUNT_|PRICE_|OP_|SELECT_)/.test(
+        word
+      );
     const className = isDirective
       ? "text-[#C586C0]"
       : isType
