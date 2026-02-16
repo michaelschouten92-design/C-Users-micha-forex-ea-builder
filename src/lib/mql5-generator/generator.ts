@@ -719,6 +719,7 @@ export function generateMQL5Code(
         value: ctx.magicNumber,
         comment: "Magic Number",
         isOptimizable: true,
+        alwaysVisible: true,
         group: "General Settings",
       },
       {
@@ -727,6 +728,7 @@ export function generateMQL5Code(
         value: descValue,
         comment: "Strategy Description (shown on chart)",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "General Settings",
       },
       {
@@ -735,6 +737,7 @@ export function generateMQL5Code(
         value: `"${sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName)}"`,
         comment: "Trade Order Comment",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "General Settings",
       },
       {
@@ -743,6 +746,7 @@ export function generateMQL5Code(
         value: 10,
         comment: "Max Slippage (points)",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "Risk Management",
       },
     ],
@@ -882,6 +886,7 @@ export function generateMQL5Code(
       value: spreadPips,
       comment: "Max Spread (pips)",
       isOptimizable: isFieldOptimizable(spreadNode, "maxSpreadPips"),
+      alwaysVisible: true,
       group: "Risk Management",
     });
     code.onTick.push(`//--- Spread filter`);
@@ -910,6 +915,7 @@ export function generateMQL5Code(
         value: atrPeriod,
         comment: "ATR Period (Volatility Filter)",
         isOptimizable: isFieldOptimizable(vNode, "atrPeriod"),
+        alwaysVisible: true,
         group: "Volatility Filter",
       },
       {
@@ -918,6 +924,7 @@ export function generateMQL5Code(
         value: minPips,
         comment: "Min ATR (pips, 0=off)",
         isOptimizable: isFieldOptimizable(vNode, "minAtrPips"),
+        alwaysVisible: true,
         group: "Volatility Filter",
       },
       {
@@ -926,6 +933,7 @@ export function generateMQL5Code(
         value: maxPips,
         comment: "Max ATR (pips, 0=off)",
         isOptimizable: isFieldOptimizable(vNode, "maxAtrPips"),
+        alwaysVisible: true,
         group: "Volatility Filter",
       }
     );
@@ -966,6 +974,7 @@ export function generateMQL5Code(
       value: closeHour,
       comment: "Friday Close Hour",
       isOptimizable: isFieldOptimizable(fcNode, "closeHour"),
+      alwaysVisible: true,
       group: "Friday Close",
     });
     code.inputs.push({
@@ -974,6 +983,7 @@ export function generateMQL5Code(
       value: closeMinute,
       comment: "Friday Close Minute",
       isOptimizable: isFieldOptimizable(fcNode, "closeMinute"),
+      alwaysVisible: true,
       group: "Friday Close",
     });
     code.onTick.push(
@@ -1038,6 +1048,7 @@ export function generateMQL5Code(
         value: minBefore,
         comment: `Minutes Before News (${hoursBefore}h)`,
         isOptimizable: isFieldOptimizable(nfNode, "hoursBefore"),
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1046,6 +1057,7 @@ export function generateMQL5Code(
         value: minAfter,
         comment: `Minutes After News (${hoursAfter}h)`,
         isOptimizable: isFieldOptimizable(nfNode, "hoursAfter"),
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1054,6 +1066,7 @@ export function generateMQL5Code(
         value: highImpact,
         comment: "Filter High Impact",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1062,6 +1075,7 @@ export function generateMQL5Code(
         value: mediumImpact,
         comment: "Filter Medium Impact",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1070,6 +1084,7 @@ export function generateMQL5Code(
         value: lowImpact,
         comment: "Filter Low Impact",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1078,6 +1093,7 @@ export function generateMQL5Code(
         value: closePositions,
         comment: "Close Positions During News",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "News Filter",
       },
       {
@@ -1086,6 +1102,7 @@ export function generateMQL5Code(
         value: 0,
         comment: "Broker UTC Offset (hours, e.g. 2 for UTC+2)",
         isOptimizable: false,
+        alwaysVisible: true,
         group: "News Filter",
       }
     );
@@ -1252,6 +1269,7 @@ export function generateMQL5Code(
     value: false,
     comment: "Use Equity instead of Balance for risk sizing",
     isOptimizable: false,
+    alwaysVisible: true,
     group: "Risk Management",
   });
 
@@ -1325,6 +1343,7 @@ export function generateMQL5Code(
       value: h,
       comment: `Close hour (${timeLabel})`,
       isOptimizable: true,
+      alwaysVisible: true,
       group,
     });
     code.inputs.push({
@@ -1333,6 +1352,7 @@ export function generateMQL5Code(
       value: m,
       comment: `Close minute (${timeLabel})`,
       isOptimizable: true,
+      alwaysVisible: true,
       group,
     });
 

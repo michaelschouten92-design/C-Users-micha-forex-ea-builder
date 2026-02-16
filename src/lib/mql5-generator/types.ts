@@ -58,6 +58,8 @@ export interface OptimizableInput {
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;
+  /** When true, always show as sinput even if not optimizable (for core settings like magic number) */
+  alwaysVisible?: boolean;
   group?: string;
 }
 
