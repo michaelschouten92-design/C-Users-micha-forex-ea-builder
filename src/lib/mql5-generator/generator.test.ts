@@ -181,7 +181,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -212,7 +212,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -240,7 +240,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -268,7 +268,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -294,7 +294,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -318,7 +318,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -361,7 +361,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -400,7 +400,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -425,7 +425,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -456,7 +456,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -483,7 +483,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -514,7 +514,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -540,7 +540,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -573,7 +573,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -592,7 +592,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -619,7 +619,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -654,7 +654,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -680,7 +680,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -706,7 +706,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("be1", "breakeven-stop", {
           category: "trademanagement",
@@ -736,7 +736,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("ts1", "trailing-stop", {
           category: "trademanagement",
@@ -765,7 +765,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("ts1", "trailing-stop", {
           category: "trademanagement",
@@ -793,7 +793,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("pc1", "partial-close", {
           category: "trademanagement",
@@ -823,7 +823,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("lp1", "lock-profit", {
           category: "trademanagement",
@@ -850,7 +850,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("be1", "breakeven-stop", {
           category: "trademanagement",
@@ -880,7 +880,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("be1", "breakeven-stop", {
           category: "trademanagement",
@@ -909,7 +909,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("lp1", "lock-profit", {
           category: "trademanagement",
@@ -936,7 +936,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("pc1", "partial-close", {
           category: "trademanagement",
@@ -979,7 +979,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1004,7 +1004,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -1013,7 +1013,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       // Connect timing -> candlestick -> buy, timing -> candlestick -> sell
@@ -1046,7 +1046,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -1055,7 +1055,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const edges = [
@@ -1079,7 +1079,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1103,7 +1103,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1170,7 +1170,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -1179,7 +1179,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const edges = [
@@ -1202,7 +1202,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings.maxBuyPositions = 3;
@@ -1270,7 +1270,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
           }),
           // This RSI is NOT connected to anything
           makeNode("rsi_disconnected", "rsi", {
@@ -1324,7 +1324,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1361,7 +1361,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1395,7 +1395,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1439,7 +1439,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
           }),
         ],
         [
@@ -1471,7 +1471,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("pc1", "partial-close", {
           category: "trademanagement",
@@ -1534,7 +1534,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
           }),
         ],
         [
@@ -1560,7 +1560,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1602,7 +1602,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings.conditionMode = "OR";
@@ -1642,7 +1642,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1677,7 +1677,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
           }),
           makeNode("cc1", "close-condition", {
             category: "trading",
@@ -1719,7 +1719,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
           }),
           makeNode("cc1", "close-condition", {
             category: "trading",
@@ -1781,7 +1781,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings.maxTradesPerDay = maxTradesPerDay;
@@ -1847,7 +1847,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       // Don't set maxTradesPerDay at all (remove from defaults)
@@ -2829,7 +2829,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -2857,7 +2857,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -2899,7 +2899,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
           orderType: "STOP",
           pendingOffset: 15,
         }),
@@ -2940,7 +2940,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
           orderType: "LIMIT",
           pendingOffset: 20,
         }),
@@ -2964,7 +2964,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
           orderType: "MARKET",
         }),
         makeNode("s1", "place-sell", {
@@ -2974,7 +2974,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const edges = [
@@ -3001,7 +3001,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
             orderType: "STOP",
             pendingOffset: 10,
           }),
@@ -3012,7 +3012,7 @@ describe("generateMQL5Code", () => {
             fixedLot: 0.1,
             riskPercent: 2,
             minLot: 0.01,
-            maxLot: 10,
+            maxLot: 100,
             orderType: "STOP",
             pendingOffset: 10,
           }),
@@ -3068,7 +3068,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3119,7 +3119,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3147,7 +3147,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3164,7 +3164,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3207,7 +3207,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3243,7 +3243,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 1,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
           orderType: "STOP",
           pendingOffset: 15,
         }),
@@ -3283,7 +3283,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 1,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
           orderType: "LIMIT",
           pendingOffset: 20,
         }),
@@ -3314,7 +3314,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 1,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3352,7 +3352,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3387,7 +3387,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3417,7 +3417,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3444,7 +3444,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -3453,7 +3453,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings = { ...DEFAULT_SETTINGS, allowHedging: true };
@@ -3473,7 +3473,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -3482,7 +3482,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings = { ...DEFAULT_SETTINGS, allowHedging: false };
@@ -3507,7 +3507,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings = { ...DEFAULT_SETTINGS, maxDailyProfitPercent: 3 };
@@ -3531,7 +3531,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings = { ...DEFAULT_SETTINGS, maxDailyLossPercent: 5 };
@@ -3551,7 +3551,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       build.settings = { ...DEFAULT_SETTINGS, maxDailyProfitPercent: 0, maxDailyLossPercent: 0 };
@@ -3583,7 +3583,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3617,7 +3617,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3646,7 +3646,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3682,7 +3682,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3716,7 +3716,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3747,7 +3747,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const codeWith = generateMQL5Code(withNews, "Test");
@@ -3766,7 +3766,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const codeWithout = generateMQL5Code(withoutNews, "Test");
@@ -3793,7 +3793,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3829,7 +3829,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -3838,7 +3838,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3873,7 +3873,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3904,7 +3904,7 @@ describe("generateMQL5Code", () => {
           fixedLot: 0.1,
           riskPercent: 2,
           minLot: 0.01,
-          maxLot: 10,
+          maxLot: 100,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");

@@ -429,7 +429,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     fixedLot: 0.1,
     riskPercent: d.riskPercent,
     minLot: 0.01,
-    maxLot: 10,
+    maxLot: 100,
     optimizableFields: mapOpt(["riskPercent", "riskPercent"]),
   };
 
