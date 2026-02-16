@@ -75,6 +75,16 @@ const envSchema = z.object({
 
   // Support email (optional - defaults to support@algo-studio.com)
   SUPPORT_EMAIL: z.string().email().optional(),
+
+  // Admin email (bootstrap admin access)
+  ADMIN_EMAIL: z.string().email().optional(),
+
+  // Cloudflare Turnstile CAPTCHA (optional)
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
+
+  // Stripe trial period (optional, days)
+  STRIPE_TRIAL_DAYS: z.coerce.number().int().min(0).max(90).optional(),
 });
 
 // Refinements for conditional requirements
@@ -195,6 +205,7 @@ const clientEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 });
 
 // Parse and validate environment variables
@@ -244,6 +255,10 @@ function validateEnv() {
       DISCORD_GUILD_ID: undefined,
       DISCORD_PRO_ROLE_ID: undefined,
       DISCORD_ELITE_ROLE_ID: undefined,
+      ADMIN_EMAIL: undefined,
+      TURNSTILE_SECRET_KEY: undefined,
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: undefined,
+      STRIPE_TRIAL_DAYS: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -298,6 +313,12 @@ function validateEnv() {
         DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
         DISCORD_PRO_ROLE_ID: process.env.DISCORD_PRO_ROLE_ID,
         DISCORD_ELITE_ROLE_ID: process.env.DISCORD_ELITE_ROLE_ID,
+        ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+        TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+        STRIPE_TRIAL_DAYS: process.env.STRIPE_TRIAL_DAYS
+          ? Number(process.env.STRIPE_TRIAL_DAYS)
+          : undefined,
       } as z.infer<typeof refinedEnvSchema>;
     }
 
@@ -358,4 +379,5 @@ export const features = {
     ),
   stripe: isServer && Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY !== ""),
   email: isServer && Boolean(env.RESEND_API_KEY && env.RESEND_API_KEY !== ""),
+  captcha: isServer && Boolean(env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SECRET_KEY !== ""),
 } as const;

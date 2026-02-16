@@ -42,10 +42,12 @@ model User {
   authProviderId  String    @unique
   email           String    @unique
   passwordHash    String?   // Hashed password (null for OAuth users)
+  passwordChangedAt DateTime? // Set on password change/reset for session invalidation
   emailVerified   Boolean   @default(false)
   emailVerifiedAt    DateTime?
+  role               String    @default("USER") // USER or ADMIN
   discordId          String?   @unique
-  discordAccessToken String?
+  discordAccessToken String?   // Encrypted with AES-256-GCM
   referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
   createdAt       DateTime  @default(now())
@@ -198,4 +200,15 @@ model UserTemplate {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+model AdminOtp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
 }

@@ -1,18 +1,21 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
 import Link from "next/link";
 
 function LoginFormInner({
   hasGoogle,
   hasGithub,
   hasDiscord,
+  captchaSiteKey,
 }: {
   hasGoogle: boolean;
   hasGithub: boolean;
   hasDiscord: boolean;
+  captchaSiteKey: string | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,6 +26,38 @@ function LoginFormInner({
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaWidgetId = useRef<string | null>(null);
+  const captchaContainerRef = useRef<HTMLDivElement>(null);
+
+  const renderCaptcha = useCallback(() => {
+    if (!captchaSiteKey || !isRegistration || !captchaContainerRef.current) return;
+    if (typeof window === "undefined" || !(window as unknown as Record<string, unknown>).turnstile)
+      return;
+
+    // Reset existing widget
+    if (captchaWidgetId.current !== null) {
+      (window as unknown as { turnstile: { remove: (id: string) => void } }).turnstile.remove(
+        captchaWidgetId.current
+      );
+      captchaWidgetId.current = null;
+    }
+
+    captchaWidgetId.current = (
+      window as unknown as {
+        turnstile: { render: (el: HTMLElement, opts: Record<string, unknown>) => string };
+      }
+    ).turnstile.render(captchaContainerRef.current, {
+      sitekey: captchaSiteKey,
+      callback: (token: string) => setCaptchaToken(token),
+      "expired-callback": () => setCaptchaToken(null),
+      theme: "dark",
+    });
+  }, [captchaSiteKey, isRegistration]);
+
+  useEffect(() => {
+    renderCaptcha();
+  }, [renderCaptcha]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +80,7 @@ function LoginFormInner({
       email,
       password,
       isRegistration: isRegistration.toString(),
+      captchaToken: captchaToken || "",
       redirect: false,
     });
 
@@ -264,6 +300,17 @@ function LoginFormInner({
               />
             </div>
           )}
+
+          {/* Turnstile CAPTCHA for registration */}
+          {isRegistration && captchaSiteKey && (
+            <>
+              <Script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+                onLoad={renderCaptcha}
+              />
+              <div ref={captchaContainerRef} className="flex justify-center" />
+            </>
+          )}
         </div>
 
         <button
@@ -304,10 +351,12 @@ export function LoginForm({
   hasGoogle,
   hasGithub,
   hasDiscord,
+  captchaSiteKey,
 }: {
   hasGoogle: boolean;
   hasGithub: boolean;
   hasDiscord: boolean;
+  captchaSiteKey: string | null;
 }) {
   return (
     <div id="main-content" className="min-h-screen flex items-center justify-center">
@@ -321,7 +370,12 @@ export function LoginForm({
           </div>
         }
       >
-        <LoginFormInner hasGoogle={hasGoogle} hasGithub={hasGithub} hasDiscord={hasDiscord} />
+        <LoginFormInner
+          hasGoogle={hasGoogle}
+          hasGithub={hasGithub}
+          hasDiscord={hasDiscord}
+          captchaSiteKey={captchaSiteKey}
+        />
       </Suspense>
     </div>
   );

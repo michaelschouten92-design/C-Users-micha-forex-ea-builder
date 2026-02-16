@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resetPasswordSchema, formatZodErrors, checkBodySize, checkContentType } from "@/lib/validations";
+import {
+  resetPasswordSchema,
+  formatZodErrors,
+  checkBodySize,
+  checkContentType,
+} from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import {
   passwordResetRateLimiter,
@@ -63,10 +68,7 @@ export async function POST(request: Request) {
         });
       }
 
-      return NextResponse.json(
-        { error: "Invalid or expired reset link" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 400 });
     }
 
     // Hash new password before entering transaction
@@ -84,7 +86,7 @@ export async function POST(request: Request) {
 
       await tx.user.update({
         where: { id: user.id },
-        data: { passwordHash },
+        data: { passwordHash, passwordChangedAt: new Date() },
       });
 
       await tx.passwordResetToken.delete({
@@ -99,9 +101,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     log.error({ error: extractErrorDetails(error) }, "Reset password error");
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }

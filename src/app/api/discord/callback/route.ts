@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { env, features } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken, getDiscordUser, onboardDiscordUser } from "@/lib/discord";
+import { encrypt } from "@/lib/crypto";
 import { createHash } from "crypto";
 
 export async function GET(request: NextRequest) {
@@ -61,12 +62,12 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // Save Discord info on user
+    // Save Discord info on user (encrypt access token at rest)
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
         discordId: discordUser.id,
-        discordAccessToken: tokenData.access_token,
+        discordAccessToken: encrypt(tokenData.access_token),
       },
     });
 

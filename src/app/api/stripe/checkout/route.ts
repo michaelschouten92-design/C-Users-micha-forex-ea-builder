@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
-    const checkoutSession = await getStripe().checkout.sessions.create({
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       customer: stripeCustomerId,
       mode: "subscription",
       line_items: [
@@ -155,7 +156,17 @@ export async function POST(request: NextRequest) {
         plan,
         interval,
       },
-    });
+    };
+
+    // Add trial period for new subscribers (no previous paid subscription)
+    const trialDays = env.STRIPE_TRIAL_DAYS;
+    if (trialDays && trialDays > 0 && !currentTier) {
+      checkoutParams.subscription_data = {
+        trial_period_days: trialDays,
+      };
+    }
+
+    const checkoutSession = await getStripe().checkout.sessions.create(checkoutParams);
 
     log.info({ plan, interval, checkoutSessionId: checkoutSession.id }, "Checkout session created");
     return NextResponse.json({ url: checkoutSession.url });

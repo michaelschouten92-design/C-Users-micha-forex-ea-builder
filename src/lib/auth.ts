@@ -14,7 +14,9 @@ import {
 } from "./rate-limit";
 import { sendWelcomeEmail, sendVerificationEmail, sendNewUserNotificationEmail } from "./email";
 import { onboardDiscordUser } from "./discord";
+import { verifyCaptcha } from "./turnstile";
 import { randomBytes, createHash } from "crypto";
+import { encrypt } from "./crypto";
 import type { Provider } from "next-auth/providers";
 
 class AccountExistsError extends CredentialsSignin {
@@ -110,6 +112,7 @@ providers.push(
       email: { label: "Email", type: "email", placeholder: "you@email.com" },
       password: { label: "Password", type: "password" },
       isRegistration: { label: "Is Registration", type: "text" },
+      captchaToken: { label: "Captcha Token", type: "text" },
     },
     async authorize(credentials, request) {
       if (!credentials?.email || !credentials?.password) {
@@ -119,7 +122,8 @@ providers.push(
       try {
         const rawEmail = credentials.email as string;
         const password = credentials.password as string;
-        const isRegistration = credentials.isRegistration === "true";
+        const clientIsRegistration = credentials.isRegistration === "true";
+        const captchaToken = credentials.captchaToken as string | undefined;
 
         // Normalize email consistently for both registration and login
         const email = normalizeEmail(rawEmail);
@@ -134,7 +138,22 @@ providers.push(
           where: { email },
         });
 
+        // Server-side validation: ensure client flag matches reality
+        const isRegistration = clientIsRegistration && !existingUser;
+
+        // If client says register but user exists → account_exists error
+        if (clientIsRegistration && existingUser) {
+          throw new AccountExistsError();
+        }
+
         if (isRegistration) {
+          // Verify CAPTCHA for registration (skips if not configured)
+          const regIpForCaptcha = request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim();
+          const captchaValid = await verifyCaptcha(captchaToken, regIpForCaptcha);
+          if (!captchaValid) {
+            throw new InvalidCredentialsError();
+          }
+
           // Rate limit registration attempts by email
           const rateLimitResult = await checkRateLimit(
             registrationRateLimiter,
@@ -153,11 +172,6 @@ providers.push(
             }
           }
 
-          // Registration flow
-          if (existingUser) {
-            throw new AccountExistsError();
-          }
-
           // Hash password and create user
           const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -166,6 +180,7 @@ providers.push(
               email,
               authProviderId: `credentials_${email}`,
               passwordHash,
+              passwordChangedAt: new Date(),
               subscription: {
                 create: {
                   tier: "FREE",
@@ -280,9 +295,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (existingUser) {
-            // SECURITY: Do NOT auto-link OAuth to existing credential-based accounts.
-            // An attacker could register the same email via OAuth and take over the account.
-            // The user must log in with their original method.
+            // SECURITY: Do NOT auto-link OAuth to existing accounts (verified or unverified).
+            // This prevents both account takeover and the race condition where a credential
+            // user hasn't verified their email yet. The findUnique on normalizedEmail above
+            // catches all existing users regardless of verification status.
             return false;
           } else {
             // Create new user (OAuth users are pre-verified)
@@ -324,7 +340,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               where: { id: existingUser.id },
               data: {
                 discordId: discordId,
-                ...(accessToken ? { discordAccessToken: accessToken } : {}),
+                ...(accessToken ? { discordAccessToken: encrypt(accessToken) } : {}),
               },
             })
             .catch((err) => {
@@ -349,6 +365,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session: updateData }) {
       if (user) {
         token.id = user.id;
+        token.iat = Math.floor(Date.now() / 1000);
+      }
+
+      // Periodically check if password was changed (invalidates old sessions)
+      if (token.id && typeof token.id === "string") {
+        // Check every 5 minutes to avoid DB queries on every request
+        const lastChecked = (token.passwordCheckedAt as number) || 0;
+        const now = Math.floor(Date.now() / 1000);
+        if (now - lastChecked > 300) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { passwordChangedAt: true, role: true },
+          });
+          if (dbUser?.passwordChangedAt) {
+            const changedAtSec = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
+            const tokenIssuedAt = (token.iat as number) || 0;
+            if (changedAtSec > tokenIssuedAt) {
+              // Password was changed after this token was issued — invalidate
+              return { ...token, id: undefined };
+            }
+          }
+          // Store role in token for admin checks
+          if (dbUser) {
+            token.role = dbUser.role;
+          }
+          token.passwordCheckedAt = now;
+        }
       }
 
       // Handle session update (used for impersonation)

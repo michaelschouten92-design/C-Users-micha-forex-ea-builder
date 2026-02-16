@@ -151,11 +151,14 @@ const useRedis = Boolean(
 );
 
 if (!useRedis && process.env.NODE_ENV === "production") {
-  console.warn(
-    "[rate-limit] WARNING: UPSTASH_REDIS_REST_URL/TOKEN not configured. " +
-      "Using in-memory rate limiting which does NOT work across multiple instances. " +
-      "Configure Upstash Redis for production."
-  );
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  if (!isBuildPhase) {
+    throw new Error(
+      "[rate-limit] FATAL: UPSTASH_REDIS_REST_URL/TOKEN not configured. " +
+        "In-memory rate limiting does NOT work across multiple Vercel instances. " +
+        "Configure Upstash Redis for production."
+    );
+  }
 }
 
 let redis: Redis | null = null;
@@ -299,6 +302,15 @@ export const resendVerificationRateLimiter = createRateLimiter({
 export const contactFormRateLimiter = createRateLimiter({
   limit: 3,
   windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for admin endpoints
+ * Limits: 30 requests per minute per admin user
+ */
+export const adminRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
 });
 
 // ============================================

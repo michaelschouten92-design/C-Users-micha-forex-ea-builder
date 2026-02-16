@@ -9,6 +9,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+import { verifyCaptcha } from "@/lib/turnstile";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,7 +34,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, subject, message } = body;
+    const { name, email, subject, message, captchaToken } = body;
+
+    // Verify CAPTCHA (skips if not configured)
+    const captchaValid = await verifyCaptcha(captchaToken, ip);
+    if (!captchaValid) {
+      return NextResponse.json({ error: "CAPTCHA verification failed" }, { status: 400 });
+    }
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });

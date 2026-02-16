@@ -74,6 +74,9 @@ async function handleCleanup(request: NextRequest) {
     const deletedVerificationTokens = await batchDelete(prisma.emailVerificationToken, {
       expiresAt: { lt: new Date() },
     });
+    const deletedAdminOtps = await batchDelete(prisma.adminOtp, {
+      expiresAt: { lt: new Date() },
+    });
 
     // Clean up old webhook events (>90 days)
     const deletedWebhookEvents = await batchDelete(prisma.webhookEvent, {
@@ -85,6 +88,34 @@ async function handleCleanup(request: NextRequest) {
       createdAt: { lt: oneYearAgo },
     });
 
+    // Auto-downgrade past_due subscriptions after 14-day grace period
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const pastDueSubs = await prisma.subscription.findMany({
+      where: {
+        status: "past_due",
+        currentPeriodEnd: { lt: fourteenDaysAgo },
+      },
+      select: { id: true, userId: true, tier: true },
+    });
+
+    let downgraded = 0;
+    for (const sub of pastDueSubs) {
+      if (sub.tier === "FREE") continue;
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: {
+          tier: "FREE",
+          status: "canceled",
+          stripeSubId: null,
+        },
+      });
+      downgraded++;
+      log.info(
+        { userId: sub.userId, previousTier: sub.tier },
+        "Auto-downgraded past_due subscription"
+      );
+    }
+
     log.info(
       {
         deletedProjects,
@@ -92,6 +123,8 @@ async function handleCleanup(request: NextRequest) {
         deletedWebhookEvents,
         deletedVerificationTokens,
         deletedAuditLogs,
+        deletedAdminOtps,
+        downgraded,
       },
       "Cleanup completed"
     );
@@ -105,6 +138,7 @@ async function handleCleanup(request: NextRequest) {
         verificationTokens: deletedVerificationTokens,
         auditLogs: deletedAuditLogs,
       },
+      downgraded,
     });
   } catch (error) {
     log.error({ error }, "Cleanup failed");

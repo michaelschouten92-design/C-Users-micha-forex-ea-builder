@@ -1,27 +1,14 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { checkAdmin } from "@/lib/admin";
 
 // GET /api/admin/users - List all users with subscription info (admin only)
 export async function GET() {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-    }
-
-    // Look up email from DB (session may not include email depending on provider)
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true },
-    });
-
-    if (adminUser?.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 });
-    }
+    const adminCheck = await checkAdmin();
+    if (!adminCheck.authorized) return adminCheck.response;
 
     // Start of current month (UTC) for export count
     const startOfMonth = new Date();
@@ -35,6 +22,7 @@ export async function GET() {
         email: true,
         emailVerified: true,
         createdAt: true,
+        role: true,
         subscription: {
           select: {
             tier: true,
@@ -57,6 +45,7 @@ export async function GET() {
       email: user.email,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
+      role: user.role,
       subscription: user.subscription
         ? { tier: user.subscription.tier, status: user.subscription.status }
         : { tier: "FREE", status: "active" },
@@ -64,7 +53,7 @@ export async function GET() {
       exportCount: user._count.exports,
     }));
 
-    return NextResponse.json({ data, adminEmail: adminUser!.email });
+    return NextResponse.json({ data, adminEmail: adminCheck.adminEmail });
   } catch (error) {
     logger.error({ error }, "Failed to list users (admin)");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

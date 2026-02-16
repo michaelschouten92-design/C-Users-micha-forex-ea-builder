@@ -1,6 +1,7 @@
 import { env } from "./env";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
+import { decrypt, isEncrypted } from "./crypto";
 
 const log = logger.child({ module: "discord" });
 
@@ -66,11 +67,29 @@ export async function getDiscordUser(accessToken: string): Promise<DiscordUser> 
 }
 
 /**
+ * Decrypt an access token if it's encrypted, otherwise return as-is.
+ * Supports both encrypted (new) and plaintext (legacy) tokens.
+ */
+function decryptToken(token: string): string {
+  if (isEncrypted(token)) {
+    const decrypted = decrypt(token);
+    if (!decrypted) {
+      log.error("Failed to decrypt Discord access token");
+      return token;
+    }
+    return decrypted;
+  }
+  return token;
+}
+
+/**
  * Add a user to the Discord guild using their OAuth access token.
  * Requires the `guilds.join` scope and bot with MANAGE_GUILD permissions.
  */
 export async function addToGuild(discordUserId: string, accessToken: string): Promise<void> {
   if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return;
+
+  const plainToken = decryptToken(accessToken);
 
   const res = await fetch(
     `${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,
@@ -80,7 +99,7 @@ export async function addToGuild(discordUserId: string, accessToken: string): Pr
         Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ access_token: accessToken }),
+      body: JSON.stringify({ access_token: plainToken }),
     }
   );
 

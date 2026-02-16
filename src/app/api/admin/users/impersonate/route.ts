@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { audit } from "@/lib/audit";
+import { checkAdmin } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
 
 const impersonateSchema = z.object({
   email: z.string().email(),
@@ -13,20 +13,8 @@ const impersonateSchema = z.object({
 // POST /api/admin/users/impersonate - Start impersonating a user (admin only)
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-    }
-
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true },
-    });
-
-    if (adminUser?.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 });
-    }
+    const adminCheck = await checkAdmin();
+    if (!adminCheck.authorized) return adminCheck.response;
 
     const body = await request.json().catch(() => null);
     if (!body) {
@@ -50,7 +38,7 @@ export async function POST(request: Request) {
     const { email } = validation.data;
 
     // Cannot impersonate yourself
-    if (email === adminUser!.email) {
+    if (email === adminCheck.adminEmail) {
       return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Cannot impersonate yourself"), {
         status: 403,
       });
@@ -66,10 +54,10 @@ export async function POST(request: Request) {
     }
 
     // Audit log
-    await audit.impersonationStart(session.user.id, targetUser.id, targetUser.email!);
+    await audit.impersonationStart(adminCheck.session.user.id, targetUser.id, targetUser.email!);
 
     logger.info(
-      { adminId: session.user.id, targetUserId: targetUser.id, targetEmail: email },
+      { adminId: adminCheck.session.user.id, targetUserId: targetUser.id, targetEmail: email },
       "Admin started impersonation"
     );
 

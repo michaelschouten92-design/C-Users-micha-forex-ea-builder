@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -6,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { audit } from "@/lib/audit";
+import { checkAdmin } from "@/lib/admin";
 
 const upgradeSchema = z.object({
   email: z.string().email(),
@@ -15,21 +15,8 @@ const upgradeSchema = z.object({
 // POST /api/admin/users/upgrade - Upgrade/downgrade a user's tier (admin only)
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-    }
-
-    // Look up email from DB (session may not include email depending on provider)
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true },
-    });
-
-    if (adminUser?.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 });
-    }
+    const adminCheck = await checkAdmin();
+    if (!adminCheck.authorized) return adminCheck.response;
 
     const body = await request.json().catch(() => null);
     if (!body) {

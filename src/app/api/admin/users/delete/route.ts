@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { sendAccountDeletedEmail } from "@/lib/email";
+import { checkAdmin } from "@/lib/admin";
 
 const deleteSchema = z.object({
   email: z.string().email(),
@@ -13,21 +13,8 @@ const deleteSchema = z.object({
 // POST /api/admin/users/delete - Delete a user account (admin only)
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-    }
-
-    // Look up email from DB (session may not include email depending on provider)
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true },
-    });
-
-    if (adminUser?.email !== process.env.ADMIN_EMAIL) {
-      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 });
-    }
+    const adminCheck = await checkAdmin();
+    if (!adminCheck.authorized) return adminCheck.response;
 
     const body = await request.json().catch(() => null);
     if (!body) {
@@ -51,7 +38,7 @@ export async function POST(request: Request) {
     const { email } = validation.data;
 
     // Prevent admin from deleting themselves
-    if (email === adminUser?.email) {
+    if (email === adminCheck.adminEmail) {
       return NextResponse.json(
         apiError(ErrorCode.FORBIDDEN, "Cannot delete your own admin account"),
         { status: 403 }
@@ -105,7 +92,7 @@ export async function POST(request: Request) {
     });
 
     logger.info(
-      { userId: user.id, email, deletedBy: session.user.id },
+      { userId: user.id, email, deletedBy: adminCheck.session.user.id },
       "Admin account deletion completed"
     );
 
