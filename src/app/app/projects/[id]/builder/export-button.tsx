@@ -9,6 +9,7 @@ interface ExportButtonProps {
   hasNodes: boolean;
   canExport: boolean;
   canExportMQL5?: boolean;
+  canExportMQL4?: boolean;
   userTier?: string;
   magicNumber?: number;
   strategySummaryLines?: string[];
@@ -38,6 +39,7 @@ export function ExportButton({
   hasNodes,
   canExport,
   canExportMQL5 = false,
+  canExportMQL4 = false,
   userTier,
   magicNumber,
   strategySummaryLines,
@@ -240,7 +242,9 @@ export function ExportButton({
               ? "Fix errors before exporting"
               : !canExportMQL5
                 ? "Upgrade for unlimited exports"
-                : "Export to MQL4/MQL5"
+                : canExportMQL4
+                  ? "Export to MQL5 or MQL4"
+                  : "Export to MQL5"
         }
       >
         {exporting ? (
@@ -340,8 +344,8 @@ export function ExportButton({
                   <div>
                     <h4 className="text-xl font-bold text-white mb-2">Export limit reached</h4>
                     <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
-                      You&apos;ve used all free exports. Upgrade to Pro for unlimited exports,
-                      unlimited projects, and priority support.
+                      You&apos;ve used all free exports. Upgrade to Pro for unlimited MQL5 + MQL4
+                      exports, unlimited projects, and priority support.
                     </p>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -440,15 +444,44 @@ export function ExportButton({
                         <div className="text-xs mt-0.5 opacity-75">MetaTrader 5</div>
                       </button>
                       <button
-                        onClick={() => setSelectedFormat("MQ4")}
-                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                          selectedFormat === "MQ4"
-                            ? "bg-[#4F46E5] text-white border-[#4F46E5] shadow-[0_0_12px_rgba(79,70,229,0.3)]"
-                            : "bg-[#0F172A] text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:text-white hover:border-[rgba(79,70,229,0.5)]"
+                        onClick={() => {
+                          if (!canExportMQL4) return;
+                          setSelectedFormat("MQ4");
+                        }}
+                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 relative ${
+                          !canExportMQL4
+                            ? "bg-[#0F172A] text-[#475569] border-[rgba(79,70,229,0.15)] cursor-not-allowed"
+                            : selectedFormat === "MQ4"
+                              ? "bg-[#4F46E5] text-white border-[#4F46E5] shadow-[0_0_12px_rgba(79,70,229,0.3)]"
+                              : "bg-[#0F172A] text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:text-white hover:border-[rgba(79,70,229,0.5)]"
                         }`}
+                        title={
+                          !canExportMQL4
+                            ? "Upgrade to Pro or Elite to unlock MQL4 export"
+                            : undefined
+                        }
                       >
-                        <div className="font-semibold">MQL4</div>
-                        <div className="text-xs mt-0.5 opacity-75">MetaTrader 4</div>
+                        <div className="font-semibold flex items-center justify-center gap-1.5">
+                          MQL4
+                          {!canExportMQL4 && (
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="text-xs mt-0.5 opacity-75">
+                          {!canExportMQL4 ? "Pro / Elite" : "MetaTrader 4"}
+                        </div>
                       </button>
                     </div>
                   </div>
@@ -674,8 +707,8 @@ export function ExportButton({
                         </span>
                       </div>
                       <p className="text-sm text-[#CBD5E1]">
-                        Ready to build and test multiple systems? Unlock unlimited exports and
-                        projects.
+                        Ready to build and test multiple systems? Unlock unlimited exports, MQL4
+                        support, and unlimited projects.
                       </p>
                       <Link
                         href="/pricing"

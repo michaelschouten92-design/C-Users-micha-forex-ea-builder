@@ -42,7 +42,7 @@ export default function PricingPage() {
     },
     {
       q: "Does this work with any MT5 broker?",
-      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, The Funded Trader, and others.",
+      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, The Funded Trader, and others. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
     },
     {
       q: "What happens if I reach my export limit on Free?",
@@ -69,8 +69,12 @@ export default function PricingPage() {
       a: "Coaching sessions are 60-minute video calls with screen sharing where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac179 per session with package deals. Elite members already get 1 complimentary strategy review per month.",
     },
     {
+      q: "Do you support MetaTrader 4 (MQL4)?",
+      a: "Yes! Pro and Elite subscribers can export strategies as MQL4 code for MetaTrader 4. The Free plan focuses on MQL5 (MetaTrader 5) export. Our primary focus is on MQL5, which is the latest and most powerful platform, but we fully support MQL4 for traders who need it.",
+    },
+    {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you unlimited projects, exports, and priority support. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
+      a: "Pro gives you unlimited projects, unlimited MQL5 + MQL4 exports, and priority support. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
     },
   ];
 
@@ -119,6 +123,7 @@ export default function PricingPage() {
                   [
                     ["Projects", "1", "Unlimited", "Unlimited"],
                     ["MQL5 exports per month", "1", "Unlimited", "Unlimited"],
+                    ["MQL4 export (MetaTrader 4)", false, true, true],
                     ["Strategy templates", "All 5", "All 5", "All 5"],
                     ["Visual builder", true, true, true],
                     ["Clean MQL5 source code", true, true, true],

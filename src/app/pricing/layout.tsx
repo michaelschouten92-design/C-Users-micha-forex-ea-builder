@@ -31,7 +31,7 @@ const jsonLd = {
         name: "Pro",
         price: "39",
         priceCurrency: "EUR",
-        description: "Unlimited projects, unlimited exports, priority support",
+        description: "Unlimited projects, unlimited MQL5 + MQL4 exports, priority support",
       },
       {
         "@type": "Offer",

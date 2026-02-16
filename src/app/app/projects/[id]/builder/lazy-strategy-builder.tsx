@@ -26,6 +26,7 @@ interface LazyStrategyBuilderProps {
     buildJson: BuildJsonSchema;
   } | null;
   canExportMQL5?: boolean;
+  canExportMQL4?: boolean;
   tier?: string;
 }
 

@@ -530,9 +530,9 @@ export default async function Home() {
                 ),
               },
               {
-                title: "Clean, readable MQL5 export",
+                title: "Clean, readable MQL5 & MQL4 export",
                 description:
-                  "Get well-structured, commented MQL5 source code. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. The code is yours — no black box.",
+                  "Get well-structured, commented source code for MetaTrader 5 or 4. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. The code is yours — no black box.",
                 icon: (
                   <path
                     strokeLinecap="round"

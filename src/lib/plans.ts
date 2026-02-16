@@ -81,11 +81,12 @@ export const PLANS = {
   FREE: {
     name: "Free",
     tier: "FREE" as const,
-    features: ["1 project", "Visual strategy builder", "1 export per month"],
+    features: ["1 project", "Visual strategy builder", "1 MQL5 export per month"],
     limits: {
       maxProjects: 1,
       maxExportsPerMonth: 1,
       canExportMQL5: true,
+      canExportMQL4: false,
     },
     prices: null,
   },
@@ -94,14 +95,15 @@ export const PLANS = {
     tier: "PRO" as const,
     features: [
       "Unlimited projects",
-      "Unlimited exports",
-      "MQL5 source code export",
+      "Unlimited MQL5 + MQL4 exports",
+      "MQL5 & MQL4 source code export",
       "Priority support",
     ],
     limits: {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
+      canExportMQL4: true,
     },
     prices: priceConfig.pro,
   },
@@ -110,6 +112,7 @@ export const PLANS = {
     tier: "ELITE" as const,
     features: [
       "Everything in Pro",
+      "MQL5 & MQL4 exports",
       "Priority feature requests",
       "1-on-1 strategy review session",
       "Direct developer support",
@@ -119,6 +122,7 @@ export const PLANS = {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
+      canExportMQL4: true,
     },
     prices: priceConfig.elite,
   },

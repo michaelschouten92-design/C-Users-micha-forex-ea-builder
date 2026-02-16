@@ -49,7 +49,7 @@ const faqItems = [
   },
   {
     q: "Which brokers are supported?",
-    a: "The exported EA runs on any broker that supports MetaTrader 5. The output is a standard .mq5 file — no proprietary formats.",
+    a: "The exported EA runs on any broker that supports MetaTrader 5. Pro and Elite subscribers can also export MQL4 for MetaTrader 4 brokers. The output uses standard .mq5/.mq4 files — no proprietary formats.",
   },
 ];
 

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
 import { generateMQL4Code } from "@/lib/mql4-generator";
-import { checkExportLimit, getCachedTier } from "@/lib/plan-limits";
+import { checkExportLimit, getCachedTier, canExportMQL4 } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/plans";
 import {
   exportRequestSchema,
@@ -88,6 +88,21 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     const { versionId, exportType, magicNumber } = validation.data;
+
+    // Check MQL4 tier restriction — only PRO and ELITE users can export MQL4
+    if (exportType === "MQ4") {
+      const mql4Allowed = await canExportMQL4(session.user.id);
+      if (!mql4Allowed) {
+        return NextResponse.json(
+          apiError(
+            ErrorCode.EXPORT_LIMIT,
+            "MQL4 export requires Pro or Elite",
+            "MQL4 export is available for Pro and Elite subscribers. Upgrade your plan to unlock MetaTrader 4 exports."
+          ),
+          { status: 403, headers: rateLimitHeaders }
+        );
+      }
+    }
 
     // Audit the export request
     await audit.exportRequest(session.user.id, id, exportType);

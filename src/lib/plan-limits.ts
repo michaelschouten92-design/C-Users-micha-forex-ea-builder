@@ -106,6 +106,11 @@ export async function canExportMQL5(userId: string): Promise<boolean> {
   return PLANS[tier].limits.canExportMQL5;
 }
 
+export async function canExportMQL4(userId: string): Promise<boolean> {
+  const tier = await getCachedTier(userId);
+  return PLANS[tier].limits.canExportMQL4;
+}
+
 /** Fetch all export-related permissions in a single cached tier lookup */
 export async function getExportPermissions(userId: string) {
   const tier = await getCachedTier(userId);
@@ -113,6 +118,7 @@ export async function getExportPermissions(userId: string) {
   return {
     tier,
     canExportMQL5: plan.limits.canExportMQL5,
+    canExportMQL4: plan.limits.canExportMQL4,
   };
 }
 

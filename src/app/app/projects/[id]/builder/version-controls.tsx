@@ -80,6 +80,7 @@ interface VersionControlsProps {
   onExportJson?: () => string;
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   canExportMQL5?: boolean;
+  canExportMQL4?: boolean;
   userTier?: string;
   magicNumber?: number;
   strategySummaryLines?: string[];
@@ -100,6 +101,7 @@ export function VersionControls({
   onExportJson,
   autoSaveStatus,
   canExportMQL5 = false,
+  canExportMQL4 = false,
   userTier,
   magicNumber,
   strategySummaryLines,
@@ -489,6 +491,7 @@ export function VersionControls({
           hasNodes={hasNodes}
           canExport={validation.canExport}
           canExportMQL5={canExportMQL5}
+          canExportMQL4={canExportMQL4}
           userTier={userTier}
           magicNumber={magicNumber}
           strategySummaryLines={strategySummaryLines}

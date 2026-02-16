@@ -113,7 +113,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
-          <p className="mt-3 text-white font-medium text-sm">Build and export your first MT5 bot</p>
+          <p className="mt-3 text-white font-medium text-sm">
+            Build and export your first MQL5 Expert Advisor
+          </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
             Access all templates, customize your strategy, and export a working Expert Advisor.
           </p>
@@ -124,7 +126,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Full visual builder",
               "1 active project",
               "1 MQL5 export per month",
-              "Clean, commented source code",
+              "Clean, commented MQL5 source code",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -187,13 +189,13 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </div>
           <p className="mt-3 text-white font-medium text-sm">Unlimited projects and exports</p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Build, iterate, and export as many strategies as you want. Priority support included.
+            Build, iterate, and export as many strategies as you want. MQL5 + MQL4 support included.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Unlimited projects",
-              "Unlimited MQL5 exports",
+              "Unlimited MQL5 + MQL4 exports",
               "All 5 strategy templates",
               "Priority support",
             ].map((feature, i) => (
@@ -261,6 +263,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Everything in Pro",
+              "MQL5 & MQL4 exports",
               "Priority feature requests",
               "1-on-1 strategy review session",
               "Direct developer support",

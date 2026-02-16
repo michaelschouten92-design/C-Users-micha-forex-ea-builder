@@ -76,6 +76,7 @@ interface StrategyCanvasProps {
   projectId: string;
   initialData: BuildJsonSchema | null;
   canExportMQL5?: boolean;
+  canExportMQL4?: boolean;
   userTier?: string;
 }
 
@@ -83,6 +84,7 @@ export function StrategyCanvas({
   projectId,
   initialData,
   canExportMQL5 = false,
+  canExportMQL4 = false,
   userTier,
 }: StrategyCanvasProps) {
   const nodeIdCounterRef = useRef(0);
@@ -889,6 +891,7 @@ export function StrategyCanvas({
         onExportJson={onExportJson}
         autoSaveStatus={autoSaveStatus}
         canExportMQL5={canExportMQL5}
+        canExportMQL4={canExportMQL4}
         userTier={userTier}
         magicNumber={settings.magicNumber}
         strategySummaryLines={buildNaturalLanguageSummary(nodes as BuilderNode[])}

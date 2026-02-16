@@ -61,7 +61,7 @@ const faqItems = [
   },
   {
     q: "Which brokers are supported?",
-    a: "The exported EA runs on any broker that supports MetaTrader 5. The output uses standard MQL5 functions — no broker-specific code.",
+    a: "The exported EA runs on any broker that supports MetaTrader 5. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers. The output uses standard MQL functions — no broker-specific code.",
     category: "Technical" as const,
   },
   {
@@ -71,7 +71,7 @@ const faqItems = [
   },
   {
     q: "What does the Pro plan include?",
-    a: "Unlimited projects, unlimited exports, all strategy templates, and priority support. Cancel anytime from your account settings.",
+    a: "Unlimited projects, unlimited MQL5 + MQL4 exports, all strategy templates, and priority support. Cancel anytime from your account settings.",
     category: "Pricing" as const,
   },
   {
