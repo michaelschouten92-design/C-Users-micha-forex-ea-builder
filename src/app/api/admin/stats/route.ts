@@ -44,9 +44,13 @@ export async function GET() {
         by: ["tier"],
         _count: true,
       }),
-      // 2. Active paid subscriptions for MRR
+      // 2. Active paid subscriptions for MRR (exclude manual grants without Stripe)
       prisma.subscription.findMany({
-        where: { status: { in: ["active", "trialing"] }, tier: { not: "FREE" } },
+        where: {
+          status: { in: ["active", "trialing"] },
+          tier: { not: "FREE" },
+          stripeSubId: { not: null },
+        },
         select: { tier: true },
       }),
       // 3. Export stats this week
@@ -108,6 +112,7 @@ export async function GET() {
     return NextResponse.json({
       mrr,
       arr: mrr * 12,
+      paidSubscribers: paidSubscriptions.length,
       usersByTier,
       exportStats,
       exportsToday,

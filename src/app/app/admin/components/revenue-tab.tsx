@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api-client";
 interface StatsData {
   mrr: number;
   arr: number;
+  paidSubscribers: number;
   usersByTier: Record<string, number>;
   churn: number;
   cancelledCount: number;
@@ -98,10 +99,8 @@ export function RevenueTab() {
           </div>
         </div>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Active Subscribers</div>
-          <div className="text-2xl font-bold text-white mt-1">
-            {(stats.usersByTier.PRO || 0) + (stats.usersByTier.ELITE || 0)}
-          </div>
+          <div className="text-sm text-[#94A3B8]">Paying Subscribers</div>
+          <div className="text-2xl font-bold text-white mt-1">{stats.paidSubscribers}</div>
         </div>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">Churn Rate</div>
