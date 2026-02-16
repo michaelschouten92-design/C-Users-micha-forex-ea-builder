@@ -45,9 +45,7 @@ export function validateConnection(
   }
 
   // Rule 2: Prevent duplicate connections
-  const duplicateEdge = edges.find(
-    (e) => e.source === source && e.target === target
-  );
+  const duplicateEdge = edges.find((e) => e.source === source && e.target === target);
   if (duplicateEdge) {
     return {
       isValid: false,
@@ -55,7 +53,18 @@ export function validateConnection(
     };
   }
 
-  // Rule 3: Prevent circular connections
+  // Rule 3: Max 1 connection per target handle (input)
+  const existingToTarget = edges.filter(
+    (e) => e.target === target && e.targetHandle === (connection.targetHandle ?? null)
+  );
+  if (existingToTarget.length > 0) {
+    return {
+      isValid: false,
+      reason: "This input already has a connection. Remove it first.",
+    };
+  }
+
+  // Rule 4: Prevent circular connections
   if (wouldCreateCycle(source!, target!, edges)) {
     return {
       isValid: false,

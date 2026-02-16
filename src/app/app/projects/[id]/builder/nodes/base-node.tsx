@@ -3,6 +3,7 @@
 import { memo, useState, useEffect, useCallback, useRef } from "react";
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import type { NodeCategory } from "@/types/builder";
+import { useNodeValidation } from "../validation-context";
 
 interface BaseNodeProps {
   id: string;
@@ -84,6 +85,14 @@ export const BaseNode = memo(function BaseNode({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
+  // Validation badge
+  const issues = useNodeValidation(id);
+  const errorCount = issues.filter((i) => i.type === "error").length;
+  const warningCount = issues.filter((i) => i.type === "warning").length;
+  const hasErrors = errorCount > 0;
+  const hasWarnings = warningCount > 0;
+  const badgeCount = hasErrors ? errorCount : warningCount;
+
   const handleDelete = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     deleteElements({ nodes: [{ id }] });
@@ -128,11 +137,20 @@ export const BaseNode = memo(function BaseNode({
       onContextMenu={handleContextMenu}
       className={`
         min-w-[180px] rounded-xl border-2 relative transition-all duration-200 group
-        ${styles.bg} ${styles.border}
+        ${styles.bg} ${hasErrors ? "border-[#EF4444]/50" : styles.border}
         ${selected ? `ring-2 ring-[#22D3EE] ring-offset-2 ring-offset-[#0F172A] ${styles.glow}` : "shadow-[0_4px_12px_rgba(0,0,0,0.3)]"}
         hover:${styles.glow}
       `}
     >
+      {/* Validation badge */}
+      {(hasErrors || hasWarnings) && (
+        <div
+          className={`absolute -top-2 -left-2 z-10 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg ${hasErrors ? "bg-[#EF4444]" : "bg-[#F59E0B]"}`}
+          title={issues[0]?.message}
+        >
+          {badgeCount}
+        </div>
+      )}
       {/* Context Menu */}
       {contextMenu && (
         <div

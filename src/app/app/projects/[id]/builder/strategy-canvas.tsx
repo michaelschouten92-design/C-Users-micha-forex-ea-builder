@@ -19,6 +19,7 @@ import { PropertiesPanel } from "./properties";
 import { VersionControls } from "./version-controls";
 import { ValidationStatus } from "./validation-status";
 import { validateStrategy } from "./strategy-validation";
+import { ValidationProvider } from "./validation-context";
 import { StrategySummary, buildNaturalLanguageSummary } from "./strategy-summary";
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
@@ -187,6 +188,7 @@ export function StrategyCanvas({
       nodes: nodes as Node<BuilderNodeData>[],
       edges,
       setEdges,
+      onConnected: takeSnapshot as (nodes: Node<BuilderNodeData>[], edges: Edge[]) => void,
     });
 
   // Keyboard shortcuts hook
@@ -246,19 +248,23 @@ export function StrategyCanvas({
         data: { ...sourceNode.data },
         selected: false,
       };
-      setNodes((nds) => [...nds, newNode]);
+      setNodes((nds) => {
+        const newNds = [...nds, newNode];
+        queueMicrotask(() => takeSnapshot(newNds, edges));
+        return newNds;
+      });
     };
     window.addEventListener("node-duplicate", handleDuplicate);
     return () => window.removeEventListener("node-duplicate", handleDuplicate);
-  }, [setNodes, getNextNodeId]);
+  }, [setNodes, getNextNodeId, takeSnapshot, edges]);
 
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
   // Validate strategy (memoized to avoid recalculating on every render)
   const validation = useMemo(
-    () => validateStrategy(nodes as Node<BuilderNodeData>[], edges),
-    [nodes, edges]
+    () => validateStrategy(nodes as Node<BuilderNodeData>[], edges, settings),
+    [nodes, edges, settings]
   );
 
   // Handle drag start from toolbar
@@ -273,8 +279,8 @@ export function StrategyCanvas({
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  // Entry strategy drop error
-  const [entryStrategyError, setEntryStrategyError] = useState<string | null>(null);
+  // Drop error (entry strategy duplicate or node limit)
+  const [dropError, setDropError] = useState<string | null>(null);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -285,14 +291,21 @@ export function StrategyCanvas({
 
       const template: NodeTemplate = JSON.parse(data);
 
+      // Enforce: max 50 nodes
+      if (nodes.length >= 50) {
+        setDropError("Maximum of 50 blocks reached. Remove some blocks first.");
+        setTimeout(() => setDropError(null), 6000);
+        return;
+      }
+
       // Enforce: only one entry strategy block on canvas
       if (template.defaultData && "entryType" in template.defaultData) {
         const hasExisting = nodes.some((n) => n.data && "entryType" in n.data);
         if (hasExisting) {
-          setEntryStrategyError(
+          setDropError(
             "Only one entry strategy allowed. Delete the current one first, then add a new one."
           );
-          setTimeout(() => setEntryStrategyError(null), 6000);
+          setTimeout(() => setDropError(null), 6000);
           return;
         }
       }
@@ -309,9 +322,13 @@ export function StrategyCanvas({
         data: { ...template.defaultData } as BuilderNodeData,
       };
 
-      setNodes((nds) => [...nds, newNode as Node]);
+      setNodes((nds) => {
+        const newNds = [...nds, newNode as Node];
+        queueMicrotask(() => takeSnapshot(newNds, edges));
+        return newNds;
+      });
     },
-    [screenToFlowPosition, setNodes, getNextNodeId, nodes]
+    [screenToFlowPosition, setNodes, getNextNodeId, nodes, edges, takeSnapshot]
   );
 
   // Handle node data changes from properties panel
@@ -335,10 +352,17 @@ export function StrategyCanvas({
   // Handle node deletion
   const onNodeDelete = useCallback(
     (nodeId: string) => {
-      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-      setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+      setNodes((nds) => {
+        const filteredNodes = nds.filter((n) => n.id !== nodeId);
+        setEdges((eds) => {
+          const filteredEdges = eds.filter((e) => e.source !== nodeId && e.target !== nodeId);
+          queueMicrotask(() => takeSnapshot(filteredNodes, filteredEdges));
+          return filteredEdges;
+        });
+        return filteredNodes;
+      });
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, takeSnapshot]
   );
 
   // Manual save handler
@@ -496,42 +520,44 @@ export function StrategyCanvas({
 
         {/* Center: React Flow Canvas */}
         <div id="builder-canvas" ref={reactFlowWrapper} className="flex-1 relative">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            nodeTypes={nodeTypes}
-            isValidConnection={isValidConnection}
-            fitView
-            snapToGrid
-            snapGrid={[15, 15]}
-            defaultEdgeOptions={{
-              animated: true,
-              style: { stroke: "#4F46E5", strokeWidth: 2 },
-            }}
-            selectNodesOnDrag={false}
-          >
-            <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
-            <Controls />
-            {nodes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
-                <div className="text-center px-6 py-5 rounded-xl bg-[#1A0626]/60 border border-[rgba(79,70,229,0.15)]">
-                  <p className="text-sm text-[#94A3B8] mb-1">
-                    Drag an <span className="text-white font-medium">Entry Strategy</span> block
-                    from the left toolbar onto the canvas to start
-                  </p>
-                  <p className="text-xs text-[#64748B]">
-                    Not sure? Start with <span className="text-[#A78BFA]">EMA Crossover</span>{" "}
-                    &mdash; it&apos;s the simplest
-                  </p>
+          <ValidationProvider value={validation.issuesByNodeId}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              nodeTypes={nodeTypes}
+              isValidConnection={isValidConnection}
+              fitView
+              snapToGrid
+              snapGrid={[15, 15]}
+              defaultEdgeOptions={{
+                animated: true,
+                style: { stroke: "#4F46E5", strokeWidth: 2 },
+              }}
+              selectNodesOnDrag={false}
+            >
+              <Background gap={15} size={1} color="rgba(79, 70, 229, 0.15)" />
+              <Controls />
+              {nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
+                  <div className="text-center px-6 py-5 rounded-xl bg-[#1A0626]/60 border border-[rgba(79,70,229,0.15)]">
+                    <p className="text-sm text-[#94A3B8] mb-1">
+                      Drag an <span className="text-white font-medium">Entry Strategy</span> block
+                      from the left toolbar onto the canvas to start
+                    </p>
+                    <p className="text-xs text-[#64748B]">
+                      Not sure? Start with <span className="text-[#A78BFA]">EMA Crossover</span>{" "}
+                      &mdash; it&apos;s the simplest
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </ReactFlow>
+              )}
+            </ReactFlow>
+          </ValidationProvider>
 
           {/* Mobile: Floating button to open blocks toolbar */}
           <button
@@ -657,11 +683,11 @@ export function StrategyCanvas({
             </div>
           )}
 
-          {/* Entry strategy duplicate error toast */}
-          {entryStrategyError && (
+          {/* Drop error toast (entry strategy duplicate / node limit) */}
+          {dropError && (
             <div
               role="alert"
-              onClick={() => setEntryStrategyError(null)}
+              onClick={() => setDropError(null)}
               className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
             >
               <svg
@@ -677,7 +703,7 @@ export function StrategyCanvas({
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-sm font-medium">{entryStrategyError}</span>
+              <span className="text-sm font-medium">{dropError}</span>
             </div>
           )}
 

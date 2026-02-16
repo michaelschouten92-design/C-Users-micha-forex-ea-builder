@@ -7,6 +7,7 @@ interface UseConnectionValidationOptions {
   nodes: Node<BuilderNodeData>[];
   edges: Edge[];
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
+  onConnected?: (nodes: Node<BuilderNodeData>[], edges: Edge[]) => void;
 }
 
 interface UseConnectionValidationReturn {
@@ -20,6 +21,7 @@ export function useConnectionValidation({
   nodes,
   edges,
   setEdges,
+  onConnected,
 }: UseConnectionValidationOptions): UseConnectionValidationReturn {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const connectionErrorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -65,9 +67,15 @@ export function useConnectionValidation({
         return;
       }
 
-      setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+      setEdges((eds) => {
+        const newEdges = addEdge({ ...params, animated: true }, eds);
+        if (onConnected) {
+          queueMicrotask(() => onConnected(nodes, newEdges));
+        }
+        return newEdges;
+      });
     },
-    [nodes, edges, setEdges, showConnectionError]
+    [nodes, edges, setEdges, showConnectionError, onConnected]
   );
 
   const dismissConnectionError = useCallback(() => {
