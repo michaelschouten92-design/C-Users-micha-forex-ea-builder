@@ -188,11 +188,10 @@ providers.push(
             .then(() => {
               const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
               sendVerificationEmail(email, verifyUrl).catch(() => {});
+              // Send welcome email with verify link included
+              sendWelcomeEmail(email, `${env.AUTH_URL}/app`, verifyUrl).catch(() => {});
             })
             .catch(() => {});
-
-          // Send welcome email (fire-and-forget, don't block registration)
-          sendWelcomeEmail(email, `${env.AUTH_URL}/app`).catch(() => {});
 
           // Notify admin of new signup (fire-and-forget)
           sendNewUserNotificationEmail(email, "credentials").catch(() => {});

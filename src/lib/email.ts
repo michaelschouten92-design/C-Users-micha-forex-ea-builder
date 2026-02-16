@@ -32,19 +32,19 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Reset your password</h1>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               We received a request to reset your AlgoStudio password. Click the button below to choose a new password.
             </p>
             <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Reset Password
             </a>
-            <p style="margin: 0 0 16px 0; font-size: 14px; color: #94A3B8;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #E2E8F0;">
               This link will expire in 1 hour.
             </p>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               If you didn't request this, you can safely ignore this email.
             </p>
           </div>
@@ -82,19 +82,19 @@ export async function sendVerificationEmail(email: string, verifyUrl: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Verify your email</h1>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please confirm your email address to complete your AlgoStudio registration.
             </p>
             <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Verify Email
             </a>
-            <p style="margin: 0 0 16px 0; font-size: 14px; color: #94A3B8;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #E2E8F0;">
               This link will expire in 24 hours.
             </p>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               If you didn't create an account, you can safely ignore this email.
             </p>
           </div>
@@ -110,7 +110,7 @@ export async function sendVerificationEmail(email: string, verifyUrl: string) {
   }
 }
 
-export async function sendWelcomeEmail(email: string, loginUrl: string) {
+export async function sendWelcomeEmail(email: string, loginUrl: string, verifyUrl?: string) {
   if (!resend) {
     if (env.NODE_ENV === "production") {
       log.error("RESEND_API_KEY is not configured in production - cannot send emails");
@@ -118,6 +118,21 @@ export async function sendWelcomeEmail(email: string, loginUrl: string) {
     log.warn("Email not configured - skipping welcome email");
     return;
   }
+
+  const verifySection = verifyUrl
+    ? `
+            <div style="margin: 0 0 24px 0; padding: 20px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2);">
+              <p style="margin: 0 0 12px 0; line-height: 1.6; color: #ffffff; font-weight: 600;">
+                First, verify your email address
+              </p>
+              <p style="margin: 0 0 16px 0; line-height: 1.6; color: #CBD5E1; font-size: 14px;">
+                Please confirm your email to unlock all features.
+              </p>
+              <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                Verify Email
+              </a>
+            </div>`
+    : "";
 
   const { error } = await resend.emails.send({
     from: FROM_EMAIL,
@@ -130,15 +145,15 @@ export async function sendWelcomeEmail(email: string, loginUrl: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Welcome to AlgoStudio</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Your account has been created. You can now start building Expert Advisors with our visual strategy builder.
             </p>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Get started by creating your first project or choosing from one of our strategy templates.
-            </p>
+            </p>${verifySection}
             <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Open AlgoStudio
             </a>
@@ -173,13 +188,13 @@ export async function sendOnboardingDay1Email(email: string, appUrl: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Ready to build your first EA?</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Here are 3 quick steps to get started:
             </p>
-            <ol style="margin: 0 0 24px 0; padding-left: 20px; line-height: 2;">
+            <ol style="margin: 0 0 24px 0; padding-left: 20px; line-height: 2; color: #ffffff;">
               <li><strong style="color: #ffffff;">Create a project</strong> — choose from a template or start blank</li>
               <li><strong style="color: #ffffff;">Add blocks</strong> — drag indicators and actions onto the canvas</li>
               <li><strong style="color: #ffffff;">Export</strong> — download your .mq5 file for MetaTrader 5</li>
@@ -187,7 +202,7 @@ export async function sendOnboardingDay1Email(email: string, appUrl: string) {
             <a href="${appUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Start Building
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Tip: Try the &ldquo;MA Crossover&rdquo; template to see how strategies are built.
             </p>
           </div>
@@ -223,19 +238,19 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Take your strategy live</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               You have 1 free export per month on your current plan. That&apos;s enough to test your strategy in MetaTrader 5.
             </p>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Need more exports or access to all strategy templates? Check out our paid plans.
             </p>
             <a href="${pricingUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               View Plans
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Questions? Reply to this email.
             </p>
           </div>
@@ -271,19 +286,19 @@ export async function sendAccountDeletedEmail(email: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Account deleted</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Your AlgoStudio account and all associated data have been permanently deleted as requested.
             </p>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               This includes all projects, strategy versions, export history, and personal information.
             </p>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               If your Stripe subscription was active, it has been cancelled automatically.
             </p>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               If you did not request this, please contact us immediately at ${SUPPORT_EMAIL}.
             </p>
           </div>
@@ -330,15 +345,15 @@ export async function sendContactFormEmail(
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">New contact message</h1>
             <table style="width: 100%; margin: 0 0 24px 0; font-size: 14px;">
-              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">From:</td><td style="padding: 6px 0; color: #ffffff;">${safeName}</td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Subject:</td><td style="padding: 6px 0; color: #ffffff;">${safeSubject || "—"}</td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0; width: 80px;">From:</td><td style="padding: 6px 0; color: #ffffff;">${safeName}</td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0;">Subject:</td><td style="padding: 6px 0; color: #ffffff;">${safeSubject || "—"}</td></tr>
             </table>
-            <div style="padding: 20px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); white-space: pre-wrap; line-height: 1.6;">
+            <div style="padding: 20px; background-color: rgba(79, 70, 229, 0.1); border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); white-space: pre-wrap; line-height: 1.6; color: #ffffff;">
               ${safeMessage}
             </div>
           </div>
@@ -396,36 +411,36 @@ export async function sendPlanChangeEmail(
   const featuresHtml = features
     .map(
       (f) =>
-        `<li style="padding: 4px 0;"><span style="color: #10B981; margin-right: 8px;">&#10003;</span>${esc(f)}</li>`
+        `<li style="padding: 4px 0; color: #ffffff;"><span style="color: #10B981; margin-right: 8px;">&#10003;</span>${esc(f)}</li>`
     )
     .join("");
 
   const upgradeBody = `
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 8px 0;">Welcome to ${safeNewPlan}!</h1>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Thank you for upgrading. Your ${safeNewPlan} plan is now active and all features are unlocked.
             </p>
             <h2 style="color: #ffffff; font-size: 16px; margin: 0 0 12px 0;">Your ${safeNewPlan} features</h2>
-            <ul style="margin: 0 0 24px 0; padding-left: 0; list-style: none; line-height: 1.8;">
+            <ul style="margin: 0 0 24px 0; padding-left: 0; list-style: none; line-height: 1.8; color: #ffffff;">
               ${featuresHtml}
             </ul>
             <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Open AlgoStudio
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>`;
 
   const downgradeBody = `
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Plan changed</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Your plan has been changed from <strong style="color: #ffffff;">${safePreviousPlan}</strong> to <strong style="color: #ffffff;">${safeNewPlan}</strong>.
             </p>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">Your new plan takes effect at the end of your current billing period.</p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">Your new plan takes effect at the end of your current billing period.</p>
             <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Go to Dashboard
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>`;
 
@@ -440,7 +455,7 @@ export async function sendPlanChangeEmail(
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             ${isUpgradeWithWelcome ? upgradeBody : downgradeBody}
           </div>
@@ -473,19 +488,19 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Payment requires action</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Your bank requires additional verification (e.g. 3D Secure) to complete your AlgoStudio payment.
             </p>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please complete the verification to activate your subscription.
             </p>
             <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Complete Payment
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>
           </div>
@@ -540,13 +555,13 @@ export async function sendNewUserNotificationEmail(
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">New user registered</h1>
             <table style="width: 100%; margin: 0 0 24px 0; font-size: 14px;">
-              <tr><td style="padding: 6px 0; color: #94A3B8; width: 80px;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Method:</td><td style="padding: 6px 0; color: #ffffff;">${providerLabel}</td></tr>
-              <tr><td style="padding: 6px 0; color: #94A3B8;">Time:</td><td style="padding: 6px 0; color: #ffffff;">${new Date().toUTCString()}</td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0; width: 80px;">Email:</td><td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #A78BFA;">${safeEmail}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0;">Method:</td><td style="padding: 6px 0; color: #ffffff;">${providerLabel}</td></tr>
+              <tr><td style="padding: 6px 0; color: #E2E8F0;">Time:</td><td style="padding: 6px 0; color: #ffffff;">${new Date().toUTCString()}</td></tr>
             </table>
           </div>
         </body>
@@ -581,19 +596,19 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #CBD5E1; padding: 40px 20px;">
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Payment failed</h1>
-            <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               We were unable to process your latest payment for your AlgoStudio subscription.
             </p>
-            <p style="margin: 0 0 24px 0; line-height: 1.6;">
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please update your payment method to keep your subscription active. If payment is not resolved, your account will be downgraded to the Free plan.
             </p>
             <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Update Payment Method
             </a>
-            <p style="margin: 0; font-size: 14px; color: #64748B;">
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               If you believe this is an error, please contact us at ${SUPPORT_EMAIL}.
             </p>
           </div>
