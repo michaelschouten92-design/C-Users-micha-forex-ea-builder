@@ -2087,9 +2087,10 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("iRSI(_Symbol");
       // Should have proximity check with InpPullbackMaxDist
       expect(code).toContain("InpPullbackMaxDist");
-      // Should generate buy and sell logic
-      expect(code).toContain("InpBuyRiskPercent");
-      expect(code).toContain("InpSellRiskPercent");
+      // Should generate shared risk input for both buy and sell
+      expect(code).toContain("InpRiskPercent");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
     });
 
     it("does not generate proximity check when requireEmaBuffer is false", () => {
@@ -2352,8 +2353,10 @@ describe("generateMQL5Code", () => {
       // Crossover logic: RSI crosses out of overbought/oversold zone
       expect(code).toContain("DoubleLE");
       expect(code).toContain("DoubleGT");
-      expect(code).toContain("InpBuyRiskPercent");
-      expect(code).toContain("InpSellRiskPercent");
+      // Should generate shared risk input for both buy and sell
+      expect(code).toContain("InpRiskPercent");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
     });
 
     it("generates only buy logic when direction is BUY", () => {

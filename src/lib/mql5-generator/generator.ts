@@ -1394,17 +1394,20 @@ export function generateMQL5Code(
   // Generate position sizing code for buy/sell (after SL/TP so hasDirectionalSL is available)
   // Skip onTick lot sizing when range breakout is the only entry and method is RISK_PERCENT,
   // because the pending order section calculates lots from the actual SL distance independently.
+  // When both buy and sell use RISK_PERCENT, consolidate into a single InpRiskPercent input.
+  const buyUsesRiskPercent =
+    hasBuy && (placeBuyNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
+  const sellUsesRiskPercent =
+    hasSell && (placeSellNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
+  const useSharedRisk = buyUsesRiskPercent && sellUsesRiskPercent;
+
   if (hasBuy) {
-    const skipBuyLot =
-      isRangeBreakoutOnly &&
-      (placeBuyNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
-    generatePlaceBuyCode(placeBuyNodes[0], code, skipBuyLot);
+    const skipBuyLot = isRangeBreakoutOnly && buyUsesRiskPercent;
+    generatePlaceBuyCode(placeBuyNodes[0], code, skipBuyLot, useSharedRisk);
   }
   if (hasSell) {
-    const skipSellLot =
-      isRangeBreakoutOnly &&
-      (placeSellNodes[0].data as Record<string, unknown>).method === "RISK_PERCENT";
-    generatePlaceSellCode(placeSellNodes[0], code, skipSellLot);
+    const skipSellLot = isRangeBreakoutOnly && sellUsesRiskPercent;
+    generatePlaceSellCode(placeSellNodes[0], code, skipSellLot, useSharedRisk);
   }
 
   // Generate close-at-time code BEFORE entry logic so positions are closed before new orders
