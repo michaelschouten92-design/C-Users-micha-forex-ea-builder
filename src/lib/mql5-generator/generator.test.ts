@@ -1816,8 +1816,8 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("lastTradeDay");
       expect(code).not.toContain("tradesToday");
 
-      // Should NOT contain daily limit check
-      expect(code).not.toContain("PERIOD_D1");
+      // Should NOT contain daily limit check (iTime with PERIOD_D1)
+      expect(code).not.toContain("iTime(_Symbol, PERIOD_D1");
     });
 
     it("uses the exact maxTradesPerDay value in the condition", () => {
@@ -2294,8 +2294,8 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      // HTF EMA on D1
-      expect(code).toContain("PERIOD_D1");
+      // HTF EMA on D1 (uses custom enum value TF_D1 which maps to PERIOD_D1)
+      expect(code).toContain("= TF_D1;");
       // Both MACD and HTF EMA should use PRICE_LOW
       const priceMatches = code.match(/PRICE_LOW/g);
       expect(priceMatches).not.toBeNull();
@@ -2308,8 +2308,8 @@ describe("generateMQL5Code", () => {
         makeMacdCrossoverEntry({ htfTrendFilter: false }),
       ]);
       const code = generateMQL5Code(build, "Test");
-      // Only one indicator (MACD), no HTF EMA
-      expect(code).not.toContain("PERIOD_D1");
+      // Only one indicator (MACD), no HTF EMA — no iMA() call should be present
+      expect(code).not.toContain("iMA(");
       expect(code).toContain("iMACD");
     });
   });

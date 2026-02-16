@@ -10,7 +10,7 @@ import type {
   CCINodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
-import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframe } from "../types";
+import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
 import { createInput } from "./shared";
 
 // Helper to add handle validation after creation.
@@ -101,8 +101,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpMA${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(ma.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ma.timeframe),
             `MA ${index + 1} Timeframe`,
             group
           )
@@ -110,7 +110,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iMA(_Symbol, InpMA${index}Timeframe, InpMA${index}Period, InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price);`
+          `${varPrefix}Handle = iMA(_Symbol, (ENUM_TIMEFRAMES)InpMA${index}Timeframe, InpMA${index}Period, InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price);`
         );
         addHandleValidation(varPrefix, `MA ${index + 1}`, code);
         code.onDeinit.push(
@@ -156,8 +156,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpRSI${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(rsi.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(rsi.timeframe),
             `RSI ${index + 1} Timeframe`,
             group
           )
@@ -187,7 +187,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iRSI(_Symbol, InpRSI${index}Timeframe, InpRSI${index}Period, InpRSI${index}Price);`
+          `${varPrefix}Handle = iRSI(_Symbol, (ENUM_TIMEFRAMES)InpRSI${index}Timeframe, InpRSI${index}Period, InpRSI${index}Price);`
         );
         addHandleValidation(varPrefix, `RSI ${index + 1}`, code);
         code.onDeinit.push(
@@ -255,8 +255,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpMACD${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(macd.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(macd.timeframe),
             `MACD ${index + 1} Timeframe`,
             group
           )
@@ -266,7 +266,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}HistogramBuffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iMACD(_Symbol, InpMACD${index}Timeframe, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price);`
+          `${varPrefix}Handle = iMACD(_Symbol, (ENUM_TIMEFRAMES)InpMACD${index}Timeframe, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price);`
         );
         addHandleValidation(varPrefix, `MACD ${index + 1}`, code);
         code.onDeinit.push(
@@ -345,8 +345,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpBB${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(bb.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(bb.timeframe),
             `BB ${index + 1} Timeframe`,
             group
           )
@@ -356,7 +356,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}MiddleBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}LowerBuffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iBands(_Symbol, InpBB${index}Timeframe, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, InpBB${index}Price);`
+          `${varPrefix}Handle = iBands(_Symbol, (ENUM_TIMEFRAMES)InpBB${index}Timeframe, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, InpBB${index}Price);`
         );
         addHandleValidation(varPrefix, `BB ${index + 1}`, code);
         code.onDeinit.push(
@@ -393,8 +393,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpATR${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(atr.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(atr.timeframe),
             `ATR ${index + 1} Timeframe`,
             group
           )
@@ -402,7 +402,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iATR(_Symbol, InpATR${index}Timeframe, InpATR${index}Period);`
+          `${varPrefix}Handle = iATR(_Symbol, (ENUM_TIMEFRAMES)InpATR${index}Timeframe, InpATR${index}Period);`
         );
         addHandleValidation(varPrefix, `ATR ${index + 1}`, code);
         code.onDeinit.push(
@@ -446,8 +446,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpADX${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(adx.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(adx.timeframe),
             `ADX ${index + 1} Timeframe`,
             group
           )
@@ -457,7 +457,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}PlusDIBuffer[];`); // +DI line
         code.globalVariables.push(`double ${varPrefix}MinusDIBuffer[];`); // -DI line
         code.onInit.push(
-          `${varPrefix}Handle = iADX(_Symbol, InpADX${index}Timeframe, InpADX${index}Period);`
+          `${varPrefix}Handle = iADX(_Symbol, (ENUM_TIMEFRAMES)InpADX${index}Timeframe, InpADX${index}Period);`
         );
         addHandleValidation(varPrefix, `ADX ${index + 1}`, code);
         code.onDeinit.push(
@@ -562,8 +562,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpStoch${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(stoch.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(stoch.timeframe),
             `Stochastic ${index + 1} Timeframe`,
             group
           )
@@ -572,7 +572,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`); // %K line
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`); // %D line
         code.onInit.push(
-          `${varPrefix}Handle = iStochastic(_Symbol, InpStoch${index}Timeframe, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, InpStoch${index}MAMethod, InpStoch${index}PriceField);`
+          `${varPrefix}Handle = iStochastic(_Symbol, (ENUM_TIMEFRAMES)InpStoch${index}Timeframe, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, InpStoch${index}MAMethod, InpStoch${index}PriceField);`
         );
         addHandleValidation(varPrefix, `Stochastic ${index + 1}`, code);
         code.onDeinit.push(
@@ -645,8 +645,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             node,
             "timeframe",
             `InpCCI${index}Timeframe`,
-            "ENUM_TIMEFRAMES",
-            getTimeframe(cci.timeframe),
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(cci.timeframe),
             `CCI ${index + 1} Timeframe`,
             group
           )
@@ -654,7 +654,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(
-          `${varPrefix}Handle = iCCI(_Symbol, InpCCI${index}Timeframe, InpCCI${index}Period, InpCCI${index}Price);`
+          `${varPrefix}Handle = iCCI(_Symbol, (ENUM_TIMEFRAMES)InpCCI${index}Timeframe, InpCCI${index}Period, InpCCI${index}Price);`
         );
         addHandleValidation(varPrefix, `CCI ${index + 1}`, code);
         code.onDeinit.push(

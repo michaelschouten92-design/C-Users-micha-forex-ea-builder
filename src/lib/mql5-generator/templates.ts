@@ -43,6 +43,25 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
   const lines: string[] = [];
   let currentGroup = "";
 
+  // Emit custom timeframe enum if any timeframe inputs exist
+  const hasTimeframeInputs = inputs.some((i) => i.type === "ENUM_AS_TIMEFRAMES");
+  if (hasTimeframeInputs) {
+    lines.push("//--- Timeframes (only AlgoStudio-supported timeframes for optimization)");
+    lines.push("enum ENUM_AS_TIMEFRAMES");
+    lines.push("{");
+    lines.push("   TF_M1  = PERIOD_M1,   // M1");
+    lines.push("   TF_M5  = PERIOD_M5,   // M5");
+    lines.push("   TF_M15 = PERIOD_M15,  // M15");
+    lines.push("   TF_M30 = PERIOD_M30,  // M30");
+    lines.push("   TF_H1  = PERIOD_H1,   // H1");
+    lines.push("   TF_H4  = PERIOD_H4,   // H4");
+    lines.push("   TF_D1  = PERIOD_D1,   // D1");
+    lines.push("   TF_W1  = PERIOD_W1,   // W1");
+    lines.push("   TF_MN1 = PERIOD_MN1   // MN1");
+    lines.push("};");
+    lines.push("");
+  }
+
   for (const input of inputs) {
     // Add group header when group changes
     if (input.group && input.group !== currentGroup) {

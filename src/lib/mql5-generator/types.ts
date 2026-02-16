@@ -54,7 +54,8 @@ export interface OptimizableInput {
     | "ENUM_MA_METHOD"
     | "ENUM_APPLIED_PRICE"
     | "ENUM_STO_PRICE"
-    | "ENUM_TIMEFRAMES";
+    | "ENUM_TIMEFRAMES"
+    | "ENUM_AS_TIMEFRAMES";
   value: number | string | boolean;
   comment: string;
   isOptimizable: boolean;
@@ -110,6 +111,24 @@ export const TIMEFRAME_MAP: Record<string, string> = {
 export function getTimeframe(tf: string | undefined): string {
   if (!tf) return "PERIOD_CURRENT";
   return TIMEFRAME_MAP[tf as Timeframe] ?? "PERIOD_CURRENT";
+}
+
+// Map AlgoStudio timeframes → custom enum values (restricted set for optimizer)
+export const AS_TIMEFRAME_ENUM_MAP: Record<string, string> = {
+  M1: "TF_M1",
+  M5: "TF_M5",
+  M15: "TF_M15",
+  M30: "TF_M30",
+  H1: "TF_H1",
+  H4: "TF_H4",
+  D1: "TF_D1",
+  W1: "TF_W1",
+  MN1: "TF_MN1",
+};
+
+export function getTimeframeEnum(tf: string | undefined): string {
+  if (!tf) return "TF_H1";
+  return AS_TIMEFRAME_ENUM_MAP[tf] ?? "TF_H1";
 }
 
 export const MA_METHOD_MAP: Record<MAMethod, string> = {
