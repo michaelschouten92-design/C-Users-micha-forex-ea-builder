@@ -1,40 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import { addEdge, type Connection, type Edge, type Node } from "@xyflow/react";
 import { validateConnection } from "../connection-validation";
-import type { BuilderNodeData, NodeCategory } from "@/types/builder";
+import type { BuilderNodeData } from "@/types/builder";
 
-const EDGE_LABEL_MAP: Partial<Record<NodeCategory, string>> = {
-  entrystrategy: "signal",
-  timing: "when",
-  trademanagement: "manage",
-  indicator: "filter",
-  priceaction: "filter",
-};
-
-const EDGE_LABEL_STYLE = { fill: "#1A0626", color: "#94A3B8", fontSize: 11, fontWeight: 500 };
-const EDGE_LABEL_BG_STYLE = { fill: "#1A0626", stroke: "rgba(79,70,229,0.3)" };
-const EDGE_LABEL_BG_PADDING: [number, number] = [4, 8];
-
-export function getEdgeLabel(sourceNode: Node<BuilderNodeData> | undefined): string | undefined {
-  if (!sourceNode) return undefined;
-  return EDGE_LABEL_MAP[sourceNode.data.category];
-}
-
-export function addEdgeLabels(edges: Edge[], nodes: Node<BuilderNodeData>[]): Edge[] {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  return edges.map((edge) => {
-    if (edge.label) return edge;
-    const sourceNode = nodeMap.get(edge.source) as Node<BuilderNodeData> | undefined;
-    const label = getEdgeLabel(sourceNode);
-    if (!label) return edge;
-    return {
-      ...edge,
-      label,
-      labelStyle: EDGE_LABEL_STYLE,
-      labelBgStyle: EDGE_LABEL_BG_STYLE,
-      labelBgPadding: EDGE_LABEL_BG_PADDING,
-    };
-  });
+/** Strip any persisted edge labels so edges render as plain lines. */
+export function addEdgeLabels(edges: Edge[], _nodes: Node<BuilderNodeData>[]): Edge[] {
+  return edges.map(({ label, labelStyle, labelBgStyle, labelBgPadding, ...rest }) => rest);
 }
 
 interface UseConnectionValidationOptions {
@@ -102,19 +73,7 @@ export function useConnectionValidation({
       }
 
       setEdges((eds) => {
-        const sourceNode = nodes.find((n) => n.id === params.source);
-        const label = getEdgeLabel(sourceNode);
-        const edgeParams = {
-          ...params,
-          animated: true,
-          ...(label && {
-            label,
-            labelStyle: EDGE_LABEL_STYLE,
-            labelBgStyle: EDGE_LABEL_BG_STYLE,
-            labelBgPadding: EDGE_LABEL_BG_PADDING,
-          }),
-        };
-        const newEdges = addEdge(edgeParams, eds);
+        const newEdges = addEdge({ ...params, animated: true }, eds);
         if (onConnected) {
           queueMicrotask(() => onConnected(nodes, newEdges));
         }
