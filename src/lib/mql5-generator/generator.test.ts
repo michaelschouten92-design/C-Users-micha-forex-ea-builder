@@ -2802,6 +2802,121 @@ describe("generateMQL5Code", () => {
   });
 
   // ============================================
+  // RSI/MACD DIVERGENCE ENTRY STRATEGY
+  // ============================================
+
+  describe("divergence entry strategy", () => {
+    const makeDivergenceEntry = (overrides: Record<string, unknown> = {}) =>
+      makeNode("entry1", "divergence-entry", {
+        category: "entrystrategy",
+        entryType: "divergence",
+        direction: "BOTH",
+        indicator: "RSI",
+        rsiPeriod: 14,
+        appliedPrice: "CLOSE",
+        macdFast: 12,
+        macdSlow: 26,
+        macdSignal: 9,
+        lookbackBars: 20,
+        minSwingBars: 5,
+        timeframe: "H1",
+        riskPercent: 1,
+        slMethod: "ATR",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        tpRMultiple: 2,
+        ...overrides,
+      });
+
+    it("generates RSI divergence with helper functions and swing detection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ indicator: "RSI" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iRSI(_Symbol");
+      // Helper functions for swing detection
+      expect(code).toContain("DivFindSwingLow");
+      expect(code).toContain("DivFindSwingHigh");
+      expect(code).toContain("CheckBullishDivergence");
+      expect(code).toContain("CheckBearishDivergence");
+      // Price arrays for divergence
+      expect(code).toContain("CopyLow");
+      expect(code).toContain("CopyHigh");
+    });
+
+    it("generates MACD divergence with iMACD handle", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ indicator: "MACD" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iMACD(_Symbol");
+      expect(code).toContain("CheckBullishDivergence");
+      expect(code).toContain("CheckBearishDivergence");
+    });
+
+    it("generates only buy logic when direction is BUY", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ direction: "BUY" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpBuyRiskPercent");
+      expect(code).not.toContain("InpSellRiskPercent");
+    });
+
+    it("generates only sell logic when direction is SELL", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ direction: "SELL" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).not.toContain("InpBuyRiskPercent");
+      expect(code).toContain("InpSellRiskPercent");
+    });
+
+    it("passes appliedPrice to iRSI call for RSI divergence", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ indicator: "RSI", appliedPrice: "HIGH" }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("PRICE_HIGH");
+    });
+
+    it("generates lookback and minSwing input parameters", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ lookbackBars: 30, minSwingBars: 8 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should have input parameters for lookback and min swing
+      expect(code).toContain("Lookback");
+      expect(code).toContain("MinSwing");
+    });
+
+    it("generates PIPS SL method for divergence", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ slMethod: "PIPS", slFixedPips: 30 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpStopLoss");
+    });
+
+    it("generates PERCENT SL method for divergence", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeDivergenceEntry({ slMethod: "PERCENT", slPercent: 2 }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("InpSLPercent");
+    });
+  });
+
+  // ============================================
   // Sell lot sizing with directional SL
   // ============================================
 
@@ -3041,7 +3156,7 @@ describe("generateMQL5Code", () => {
   describe("strategy presets", () => {
     it("preset buildJson objects are valid for generation", async () => {
       const { STRATEGY_PRESETS } = await import("@/lib/strategy-presets");
-      expect(STRATEGY_PRESETS.length).toBe(5);
+      expect(STRATEGY_PRESETS.length).toBe(6);
       for (const preset of STRATEGY_PRESETS) {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();

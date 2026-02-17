@@ -426,6 +426,162 @@ describe("buildJsonSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("validates divergence entry with RSI indicator", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "divergence-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI/MACD Divergence",
+            category: "entrystrategy",
+            entryType: "divergence",
+            direction: "BOTH",
+            indicator: "RSI",
+            rsiPeriod: 14,
+            appliedPrice: "CLOSE",
+            macdFast: 12,
+            macdSlow: 26,
+            macdSignal: 9,
+            lookbackBars: 20,
+            minSwingBars: 5,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const nodeData = result.data.nodes[0].data as Record<string, unknown>;
+      expect(nodeData.indicator).toBe("RSI");
+      expect(nodeData.lookbackBars).toBe(20);
+      expect(nodeData.minSwingBars).toBe(5);
+    }
+  });
+
+  it("validates divergence entry with MACD indicator", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "divergence-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI/MACD Divergence",
+            category: "entrystrategy",
+            entryType: "divergence",
+            direction: "BOTH",
+            indicator: "MACD",
+            rsiPeriod: 14,
+            macdFast: 12,
+            macdSlow: 26,
+            macdSignal: 9,
+            lookbackBars: 30,
+            minSwingBars: 8,
+            timeframe: "H4",
+            riskPercent: 2,
+            slMethod: "PIPS",
+            slFixedPips: 40,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 3,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const nodeData = result.data.nodes[0].data as Record<string, unknown>;
+      expect(nodeData.indicator).toBe("MACD");
+      expect(nodeData.lookbackBars).toBe(30);
+    }
+  });
+
+  it("rejects divergence with lookbackBars < 5", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "divergence-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI/MACD Divergence",
+            category: "entrystrategy",
+            entryType: "divergence",
+            direction: "BOTH",
+            indicator: "RSI",
+            rsiPeriod: 14,
+            macdFast: 12,
+            macdSlow: 26,
+            macdSignal: 9,
+            lookbackBars: 2,
+            minSwingBars: 5,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects divergence with MACD macdFast >= macdSlow", () => {
+    const build = {
+      ...validBuildJson,
+      version: "1.1",
+      nodes: [
+        {
+          id: "e1",
+          type: "divergence-entry",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI/MACD Divergence",
+            category: "entrystrategy",
+            entryType: "divergence",
+            direction: "BOTH",
+            indicator: "MACD",
+            rsiPeriod: 14,
+            macdFast: 26,
+            macdSlow: 12,
+            macdSignal: 9,
+            lookbackBars: 20,
+            minSwingBars: 5,
+            timeframe: "H1",
+            riskPercent: 1,
+            slMethod: "ATR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            tpRMultiple: 2,
+          },
+        },
+      ],
+    };
+    const result = buildJsonSchema.safeParse(build);
+    expect(result.success).toBe(false);
+  });
+
   it("rejects news-filter with hoursBefore > 24", () => {
     const build = {
       ...validBuildJson,
