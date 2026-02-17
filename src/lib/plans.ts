@@ -1,6 +1,5 @@
 // Subscription plans configuration
 import { env, features } from "./env";
-import { prisma } from "./prisma";
 
 // Display prices — override via env vars (amounts in cents), fallback to defaults
 const parsePrice = (envVal: string | undefined, fallback: number) => {
@@ -171,8 +170,9 @@ export async function getEffectiveLimits(tier: PlanTier): Promise<PlanLimits> {
     if (cached) return cached;
   }
 
-  // Refresh cache from DB
+  // Refresh cache from DB (dynamic import to avoid bundling Prisma in client)
   try {
+    const { prisma } = await import("./prisma");
     const configs = await prisma.planLimitConfig.findMany();
     const map = new Map<string, PlanLimits>();
     for (const c of configs) {
