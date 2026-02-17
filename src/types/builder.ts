@@ -139,7 +139,7 @@ export interface MovingAverageNodeData extends BaseNodeData {
   indicatorType: "moving-average";
   timeframe: Timeframe;
   period: number;
-  method: "SMA" | "EMA";
+  method: "SMA" | "EMA" | "SMMA" | "LWMA";
   appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
   signalMode?: "every_tick" | "candle_close";
   shift: number;
@@ -652,6 +652,7 @@ export interface BuildJsonSettings {
   minBarsBetweenTrades?: number;
   maxTotalDrawdownPercent?: number;
   equityTargetPercent?: number; // Stop trading when equity grows by this % from starting balance
+  maxSlippage?: number; // Max slippage in points (default 10)
 }
 
 // Prop Firm Presets
@@ -664,8 +665,8 @@ export interface PropFirmPreset {
 
 export const PROP_FIRM_PRESETS: PropFirmPreset[] = [
   { name: "FTMO", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
-  { name: "The 5%ers", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
-  { name: "Funding Pips", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
+  { name: "The 5%ers", dailyLossPercent: 4, totalDrawdownPercent: 6, maxOpenTrades: 3 },
+  { name: "Funding Pips", dailyLossPercent: 5, totalDrawdownPercent: 8, maxOpenTrades: 5 },
 ];
 
 export interface BuildJsonMetadata {

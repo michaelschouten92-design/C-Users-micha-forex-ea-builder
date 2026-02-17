@@ -835,6 +835,7 @@ export function generateMQL5Code(
     minBarsBetweenTrades: buildJson.settings?.minBarsBetweenTrades ?? 0,
     maxTotalDrawdownPercent: buildJson.settings?.maxTotalDrawdownPercent ?? 0,
     equityTargetPercent: buildJson.settings?.equityTargetPercent ?? 0,
+    maxSlippage: buildJson.settings?.maxSlippage ?? 10,
   };
 
   const descValue = `"${sanitizeMQL5String(projectName)}"`;
@@ -871,7 +872,7 @@ export function generateMQL5Code(
       {
         name: "InpMaxSlippage",
         type: "int",
-        value: 10,
+        value: ctx.maxSlippage,
         comment: "Max Slippage (points)",
         isOptimizable: false,
         alwaysVisible: true,

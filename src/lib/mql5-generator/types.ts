@@ -21,6 +21,7 @@ export interface GeneratorContext {
   minBarsBetweenTrades: number;
   maxTotalDrawdownPercent: number;
   equityTargetPercent: number;
+  maxSlippage: number;
 }
 
 export interface IndicatorVariable {
@@ -79,7 +80,7 @@ export interface GeneratedCode {
   maxIndicatorPeriod: number;
 }
 
-export type MAMethod = "SMA" | "EMA";
+export type MAMethod = "SMA" | "EMA" | "SMMA" | "LWMA";
 export type AppliedPrice = "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
 export type TradeDirection = "BUY" | "SELL" | "BOTH";
 
@@ -134,6 +135,8 @@ export function getTimeframeEnum(tf: string | undefined): string {
 export const MA_METHOD_MAP: Record<MAMethod, string> = {
   SMA: "MODE_SMA",
   EMA: "MODE_EMA",
+  SMMA: "MODE_SMMA",
+  LWMA: "MODE_LWMA",
 };
 
 export const APPLIED_PRICE_MAP: Record<AppliedPrice, string> = {

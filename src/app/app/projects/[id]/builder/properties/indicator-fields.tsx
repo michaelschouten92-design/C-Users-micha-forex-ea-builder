@@ -42,6 +42,8 @@ export function MovingAverageFields({
         options={[
           { value: "SMA", label: "Simple (SMA)" },
           { value: "EMA", label: "Exponential (EMA)" },
+          { value: "SMMA", label: "Smoothed (SMMA)" },
+          { value: "LWMA", label: "Linear Weighted (LWMA)" },
         ]}
         onChange={(v) => onChange({ method: v as MovingAverageNodeData["method"] })}
       />

@@ -107,6 +107,28 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
             hint="Limits how many trades the EA opens per day"
           />
 
+          {/* Max Buy Positions */}
+          <SettingsToggleNumberField
+            label="Max Buy Positions"
+            value={settings.maxBuyPositions ?? 0}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) => update({ maxBuyPositions: v || undefined })}
+            hint="Limit concurrent buy positions (leave off to use Max Open Trades)"
+          />
+
+          {/* Max Sell Positions */}
+          <SettingsToggleNumberField
+            label="Max Sell Positions"
+            value={settings.maxSellPositions ?? 0}
+            min={1}
+            max={100}
+            step={1}
+            onChange={(v) => update({ maxSellPositions: v || undefined })}
+            hint="Limit concurrent sell positions (leave off to use Max Open Trades)"
+          />
+
           {/* Allow Hedging */}
           <div>
             <label
@@ -197,6 +219,39 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
 
             {showAdvanced && (
               <div className="mt-3 space-y-3">
+                {/* Trade Comment */}
+                <div>
+                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
+                    Trade Comment
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.comment ?? ""}
+                    maxLength={31}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      update({ comment: e.target.value });
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    placeholder="EA Builder Strategy"
+                    className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+                  />
+                  <p className="text-[10px] text-[#64748B] mt-1">
+                    Shown in the MT5/MT4 trade journal for each order (max 31 chars)
+                  </p>
+                </div>
+
+                {/* Max Slippage */}
+                <SettingsNumberField
+                  label="Max Slippage (points)"
+                  value={settings.maxSlippage ?? 10}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) => update({ maxSlippage: v })}
+                  hint="Maximum allowed slippage in points when opening/closing trades. 10 points = 1 pip on 5-digit brokers."
+                />
+
                 {/* Max Total Drawdown */}
                 <SettingsToggleNumberField
                   label="Max Total Drawdown (%)"
