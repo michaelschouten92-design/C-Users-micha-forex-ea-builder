@@ -10,6 +10,8 @@ import {
   sendPaymentFailedEmail,
   sendPaymentActionRequiredEmail,
   sendPlanChangeEmail,
+  sendTrialEndingEmail,
+  sendRenewalReminderEmail,
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
 import type Stripe from "stripe";
@@ -527,8 +529,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   if (!sub?.user?.email) return;
 
   const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-  // Reuse payment action required email — it prompts user to update payment method
-  sendPaymentActionRequiredEmail(sub.user.email, portalUrl).catch((err) =>
+  sendTrialEndingEmail(sub.user.email, sub.tier, portalUrl).catch((err) =>
     log.error({ err }, "Trial ending email send failed")
   );
 
@@ -549,9 +550,14 @@ async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
 
   if (!sub?.user?.email) return;
 
+  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+  sendRenewalReminderEmail(sub.user.email, sub.tier, invoice.amount_due ?? 0, portalUrl).catch(
+    (err) => log.error({ err }, "Renewal reminder email send failed")
+  );
+
   log.info(
     { customerId, tier: sub.tier, amountDue: invoice.amount_due },
-    "Upcoming invoice — renewal approaching"
+    "Upcoming invoice — renewal reminder sent"
   );
 }
 

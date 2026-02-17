@@ -584,6 +584,113 @@ export async function sendNewUserNotificationEmail(
   }
 }
 
+export async function sendTrialEndingEmail(email: string, tier: string, portalUrl: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping trial ending email");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeTier = esc(tier);
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Your AlgoStudio trial ends in 3 days",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Your trial ends soon</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              Your AlgoStudio ${safeTier} trial will end in 3 days. After that, your subscription will automatically begin and your payment method will be charged.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
+              If you&apos;d like to continue, no action is needed — your ${safeTier} plan will activate automatically. If you&apos;d like to cancel, you can do so from your account settings before the trial ends.
+            </p>
+            <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Manage Subscription
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
+              Questions? Contact us at ${SUPPORT_EMAIL}.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send trial ending email");
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Trial ending email sent");
+  }
+}
+
+export async function sendRenewalReminderEmail(
+  email: string,
+  tier: string,
+  amountDue: number,
+  portalUrl: string
+) {
+  if (!resend) {
+    log.warn("Email not configured - skipping renewal reminder email");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeTier = esc(tier);
+  const formattedAmount = (amountDue / 100).toFixed(2);
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Your AlgoStudio ${safeTier} subscription renews soon`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Subscription renewal</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              Your AlgoStudio ${safeTier} subscription will renew soon. Your payment method will be charged <strong style="color: #ffffff;">$${formattedAmount}</strong>.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
+              No action is needed if you&apos;d like to continue. To update your payment method or cancel, visit your account settings.
+            </p>
+            <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Manage Subscription
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
+              Questions? Contact us at ${SUPPORT_EMAIL}.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error(
+      { error, to: email.substring(0, 3) + "***" },
+      "Failed to send renewal reminder email"
+    );
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Renewal reminder email sent");
+  }
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");
