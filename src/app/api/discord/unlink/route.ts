@@ -3,11 +3,17 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { removeRole } from "@/lib/discord";
+import { apiRateLimiter, checkRateLimit, formatRateLimitError } from "@/lib/rate-limit";
 
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: formatRateLimitError(rateLimitResult) }, { status: 429 });
   }
 
   const user = await prisma.user.findUnique({

@@ -4,7 +4,11 @@ import { env, features } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken, getDiscordUser, onboardDiscordUser } from "@/lib/discord";
 import { encrypt } from "@/lib/crypto";
+import { logger } from "@/lib/logger";
+import { apiRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { createHash } from "crypto";
+
+const log = logger.child({ route: "/api/discord/callback" });
 
 export async function GET(request: NextRequest) {
   const settingsUrl = new URL("/app/settings", env.AUTH_URL);
@@ -17,6 +21,12 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL("/login", env.AUTH_URL));
+  }
+
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    settingsUrl.searchParams.set("discord", "error");
+    return NextResponse.redirect(settingsUrl);
   }
 
   const { searchParams } = request.nextUrl;
@@ -79,7 +89,7 @@ export async function GET(request: NextRequest) {
     response.cookies.delete("discord_oauth_state");
     return response;
   } catch (error) {
-    console.error("[discord/callback] Error:", error);
+    log.error({ error }, "Discord callback failed");
     settingsUrl.searchParams.set("discord", "error");
     const response = NextResponse.redirect(settingsUrl);
     response.cookies.delete("discord_oauth_state");

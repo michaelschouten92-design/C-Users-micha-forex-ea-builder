@@ -107,10 +107,7 @@ async function handleOnboardingEmails(request: NextRequest) {
   }
 }
 
+// Vercel Cron sends GET requests
 export async function GET(request: NextRequest) {
-  return handleOnboardingEmails(request);
-}
-
-export async function POST(request: NextRequest) {
   return handleOnboardingEmails(request);
 }

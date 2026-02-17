@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { env, features } from "@/lib/env";
+import { apiRateLimiter, checkRateLimit, formatRateLimitError } from "@/lib/rate-limit";
 import { randomBytes, createHash } from "crypto";
 
 export async function GET() {
@@ -11,6 +12,11 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL("/login", env.AUTH_URL));
+  }
+
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: formatRateLimitError(rateLimitResult) }, { status: 429 });
   }
 
   // Generate state parameter for CSRF protection

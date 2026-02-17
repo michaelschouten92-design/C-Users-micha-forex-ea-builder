@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { features } from "@/lib/env";
+import { apiRateLimiter, checkRateLimit, formatRateLimitError } from "@/lib/rate-limit";
 
 export async function GET() {
   if (!features.discordAuth) {
@@ -11,6 +12,11 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: formatRateLimitError(rateLimitResult) }, { status: 429 });
   }
 
   const user = await prisma.user.findUnique({
