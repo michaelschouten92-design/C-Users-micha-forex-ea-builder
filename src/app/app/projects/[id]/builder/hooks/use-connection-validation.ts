@@ -3,39 +3,9 @@ import { addEdge, type Connection, type Edge, type Node } from "@xyflow/react";
 import { validateConnection } from "../connection-validation";
 import type { BuilderNodeData } from "@/types/builder";
 
-const EDGE_LABEL_STYLE = { fill: "#1A0626", color: "#94A3B8", fontSize: 11, fontWeight: 500 };
-const EDGE_LABEL_BG_STYLE = { fill: "#1A0626", stroke: "rgba(79,70,229,0.3)" };
-const EDGE_LABEL_BG_PADDING: [number, number] = [4, 8];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  entrystrategy: "signal",
-  timing: "when",
-  trademanagement: "manage",
-  riskmanagement: "risk",
-  indicator: "filter",
-  priceaction: "filter",
-  entry: "entry",
-  trading: "trade",
-};
-
-function getLabelForCategory(category: string | undefined): string {
-  return category ? (CATEGORY_LABELS[category] ?? "flow") : "flow";
-}
-
-/** Add descriptive labels to edges based on the source node's category. */
-export function addEdgeLabels(edges: Edge[], nodes: Node<BuilderNodeData>[]): Edge[] {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  return edges.map((edge) => {
-    const sourceNode = nodeMap.get(edge.source);
-    const label = getLabelForCategory(sourceNode?.data?.category);
-    return {
-      ...edge,
-      label,
-      labelStyle: EDGE_LABEL_STYLE,
-      labelBgStyle: EDGE_LABEL_BG_STYLE,
-      labelBgPadding: EDGE_LABEL_BG_PADDING,
-    };
-  });
+/** Pass-through: returns edges unchanged (labels removed for cleaner canvas). */
+export function addEdgeLabels(edges: Edge[], _nodes: Node<BuilderNodeData>[]): Edge[] {
+  return edges;
 }
 
 interface UseConnectionValidationOptions {
@@ -103,16 +73,10 @@ export function useConnectionValidation({
       }
 
       setEdges((eds) => {
-        const sourceNode = nodes.find((n) => n.id === params.source);
-        const label = getLabelForCategory(sourceNode?.data?.category);
         const newEdges = addEdge(
           {
             ...params,
             animated: true,
-            label,
-            labelStyle: EDGE_LABEL_STYLE,
-            labelBgStyle: EDGE_LABEL_BG_STYLE,
-            labelBgPadding: EDGE_LABEL_BG_PADDING,
           },
           eds
         );
