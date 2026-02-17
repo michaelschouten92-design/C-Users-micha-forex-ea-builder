@@ -34,6 +34,7 @@ import type {
   PartialCloseNodeData,
   LockProfitNodeData,
   CCINodeData,
+  IchimokuNodeData,
   TimeExitNodeData,
   EMACrossoverEntryData,
   RangeBreakoutEntryData,
@@ -60,6 +61,7 @@ import {
   ADXFields,
   StochasticFields,
   CCIFields,
+  IchimokuFields,
 } from "./indicator-fields";
 import {
   CandlestickPatternFields,
@@ -455,6 +457,8 @@ function NodeFields({
         return <StochasticFields data={data as StochasticNodeData} onChange={onChange} />;
       case "cci":
         return <CCIFields data={data as CCINodeData} onChange={onChange} />;
+      case "ichimoku":
+        return <IchimokuFields data={data as IchimokuNodeData} onChange={onChange} />;
     }
   }
 

@@ -16,6 +16,7 @@ import { ATRNode } from "./indicators/atr-node";
 import { ADXNode } from "./indicators/adx-node";
 import { StochasticNode } from "./indicators/stochastic-node";
 import { CCINode } from "./indicators/cci-node";
+import { IchimokuNode } from "./indicators/ichimoku-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
@@ -53,6 +54,7 @@ export const nodeTypes: NodeTypes = {
   adx: ADXNode,
   stochastic: StochasticNode,
   cci: CCINode,
+  ichimoku: IchimokuNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
   "range-breakout": RangeBreakoutNode,
@@ -90,6 +92,7 @@ export {
   ADXNode,
   StochasticNode,
   CCINode,
+  IchimokuNode,
   CandlestickPatternNode,
   SupportResistanceNode,
   RangeBreakoutNode,

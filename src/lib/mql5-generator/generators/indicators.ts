@@ -8,6 +8,7 @@ import type {
   ADXNodeData,
   StochasticNodeData,
   CCINodeData,
+  IchimokuNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
@@ -663,6 +664,82 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}Buffer`, code);
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(cci.period) || 14);
+        break;
+      }
+
+      case "ichimoku": {
+        const ichi = data as IchimokuNodeData;
+        const copyBars = ichi.signalMode === "candle_close" ? 4 : 3;
+        const group = `Ichimoku ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "tenkanPeriod",
+            `InpIchi${index}Tenkan`,
+            "int",
+            ichi.tenkanPeriod,
+            `Ichimoku ${index + 1} Tenkan Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "kijunPeriod",
+            `InpIchi${index}Kijun`,
+            "int",
+            ichi.kijunPeriod,
+            `Ichimoku ${index + 1} Kijun Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "senkouBPeriod",
+            `InpIchi${index}SenkouB`,
+            "int",
+            ichi.senkouBPeriod,
+            `Ichimoku ${index + 1} Senkou B Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpIchi${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ichi.timeframe),
+            `Ichimoku ${index + 1} Timeframe`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}TenkanBuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}KijunBuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}SpanABuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}SpanBBuffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iIchimoku(_Symbol, (ENUM_TIMEFRAMES)InpIchi${index}Timeframe, InpIchi${index}Tenkan, InpIchi${index}Kijun, InpIchi${index}SenkouB);`
+        );
+        addHandleValidation(varPrefix, `Ichimoku ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}TenkanBuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}KijunBuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}SpanABuffer, true);`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}SpanBBuffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}TenkanBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}KijunBuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 2, copyBars, `${varPrefix}SpanABuffer`, code);
+        addCopyBuffer(`${varPrefix}Handle`, 3, copyBars, `${varPrefix}SpanBBuffer`, code);
+        code.maxIndicatorPeriod = Math.max(
+          code.maxIndicatorPeriod,
+          (Number(ichi.senkouBPeriod) || 52) * 2
+        );
         break;
       }
     }

@@ -220,6 +220,16 @@ export interface CCINodeData extends BaseNodeData {
   oversoldLevel: number;
 }
 
+export interface IchimokuNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "ichimoku";
+  timeframe: Timeframe;
+  tenkanPeriod: number; // default 9
+  kijunPeriod: number; // default 26
+  senkouBPeriod: number; // default 52
+  signalMode?: "every_tick" | "candle_close";
+}
+
 export type IndicatorNodeData =
   | MovingAverageNodeData
   | RSINodeData
@@ -228,7 +238,8 @@ export type IndicatorNodeData =
   | ATRNodeData
   | ADXNodeData
   | StochasticNodeData
-  | CCINodeData;
+  | CCINodeData
+  | IchimokuNodeData;
 
 // Price Action Nodes
 export type CandlestickPattern =
@@ -607,6 +618,7 @@ export type BuilderNodeType =
   | "adx"
   | "stochastic"
   | "cci"
+  | "ichimoku"
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
@@ -807,6 +819,22 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       lowImpact: false,
       closePositions: false,
     } as NewsFilterNodeData,
+  },
+  // Indicators
+  {
+    type: "ichimoku",
+    label: "Ichimoku Cloud",
+    category: "indicator",
+    description: "All-in-one trend, momentum, and support/resistance indicator",
+    defaultData: {
+      label: "Ichimoku Cloud",
+      category: "indicator",
+      indicatorType: "ichimoku",
+      timeframe: "H1",
+      tenkanPeriod: 9,
+      kijunPeriod: 26,
+      senkouBPeriod: 52,
+    } as IchimokuNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {

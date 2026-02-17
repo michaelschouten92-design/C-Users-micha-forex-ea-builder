@@ -207,6 +207,14 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
         indicatorDescriptions.push(`CCI(${period}) level crossover${tf}`);
         break;
       }
+      case "ichimoku": {
+        const tenkan = "tenkanPeriod" in d ? d.tenkanPeriod : 9;
+        const kijun = "kijunPeriod" in d ? d.kijunPeriod : 26;
+        indicatorDescriptions.push(
+          `Ichimoku(${tenkan}/${kijun}) Tenkan/Kijun crossover + cloud${tf}`
+        );
+        break;
+      }
     }
   }
 

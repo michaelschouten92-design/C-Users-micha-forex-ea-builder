@@ -125,6 +125,17 @@ export function generateCloseConditionCode(
             `(DoubleLE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Oversold))`
           );
           break;
+
+        case "ichimoku":
+          // Close buy on bearish crossover (Tenkan crosses below Kijun)
+          closeBuyConditions.push(
+            `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`
+          );
+          // Close sell on bullish crossover (Tenkan crosses above Kijun)
+          closeSellConditions.push(
+            `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`
+          );
+          break;
       }
     }
   }

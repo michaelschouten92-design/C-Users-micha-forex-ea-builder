@@ -10,6 +10,7 @@ import type {
   ADXNodeData,
   StochasticNodeData,
   CCINodeData,
+  IchimokuNodeData,
   Timeframe,
 } from "@/types/builder";
 import {
@@ -529,6 +530,68 @@ export function CCIFields({
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldError message="Overbought level must be higher than oversold level" />
       )}
+    </>
+  );
+}
+
+export function IchimokuFields({
+  data,
+  onChange,
+}: {
+  data: IchimokuNodeData;
+  onChange: (updates: Partial<IchimokuNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Tenkan Period"
+          value={data.tenkanPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ tenkanPeriod: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="tenkanPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Kijun Period"
+          value={data.kijunPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ kijunPeriod: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="kijunPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Senkou Span B Period"
+          value={data.senkouBPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ senkouBPeriod: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="senkouBPeriod" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as IchimokuNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Ichimoku combines trend, momentum, and support/resistance. Buy when Tenkan crosses above
+        Kijun with price above the cloud.
+      </div>
     </>
   );
 }

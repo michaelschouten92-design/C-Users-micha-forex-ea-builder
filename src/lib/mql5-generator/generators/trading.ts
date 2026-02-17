@@ -773,6 +773,17 @@ export function generateEntryLogic(
               `(DoubleGE(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Overbought) && DoubleLT(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Overbought))`
             );
             break;
+
+          case "ichimoku":
+            // Buy: Tenkan crosses above Kijun AND price above cloud (Span A > Span B)
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]) && DoubleGT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+            );
+            // Sell: Tenkan crosses below Kijun AND price below cloud (Span A < Span B)
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]) && DoubleLT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+            );
+            break;
         }
       }
     });
