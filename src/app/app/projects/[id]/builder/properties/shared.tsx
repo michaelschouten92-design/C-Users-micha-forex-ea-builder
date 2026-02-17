@@ -1,5 +1,6 @@
 "use client";
 
+import { createContext, useContext } from "react";
 import { SelectField } from "../components/form-fields";
 import type {
   BuilderNodeData,
@@ -11,6 +12,8 @@ import type {
 import { NumberField } from "../components/form-fields";
 import { DIRECTION_OPTIONS, BASE_SL_OPTIONS, TIMEFRAME_OPTIONS } from "./constants";
 
+const OptimizationVisibleContext = createContext(false);
+
 export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   fieldName,
   data,
@@ -20,6 +23,9 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   data: T;
   onChange: (updates: Partial<T>) => void;
 }) {
+  const visible = useContext(OptimizationVisibleContext);
+  if (!visible) return null;
+
   const optimizableFields = data.optimizableFields ?? [];
   const isOptimizable = optimizableFields.includes(fieldName);
 
@@ -58,6 +64,8 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
     </label>
   );
 }
+
+export { OptimizationVisibleContext };
 
 export function FieldWarning({ message }: { message: string }) {
   return (
@@ -347,13 +355,13 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       {!data.multipleTP?.enabled && (
         <>
           <NumberField
-            label="Take Profit (R)"
+            label="Take Profit (Reward:Risk)"
             value={data.tpRMultiple}
             min={0.1}
             max={10}
             step={0.1}
             onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
-            tooltip="R = your stop loss distance. 2R means your take profit is 2x your stop loss."
+            tooltip="How many times your stop loss distance you want as profit. 2 means your target profit is 2x your stop loss."
           />
           <p className="text-[10px] text-[#64748B] -mt-0.5">
             Example: if your SL is 50 pips, then {data.tpRMultiple}R ={" "}

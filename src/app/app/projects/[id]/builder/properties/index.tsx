@@ -1,9 +1,9 @@
 "use client";
 
-import { memo, useId, useMemo, useState } from "react";
+import { memo, useCallback, useId, useMemo, useState } from "react";
 import type { Node } from "@xyflow/react";
-import type { BuilderNode, BuilderNodeType } from "@/types/builder";
-import { getNodeTemplate } from "@/types/builder";
+import type { BuilderNode, BuilderNodeType, NodeCategory } from "@/types/builder";
+import { getNodeTemplate, getCategoryLabel } from "@/types/builder";
 import { buildNaturalLanguageSummary } from "../strategy-summary";
 import type {
   BuilderNodeData,
@@ -88,6 +88,7 @@ import {
   MACDCrossoverEntryFields,
 } from "./entry-strategy-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
+import { OptimizationVisibleContext } from "./shared";
 import type { BuildJsonSettings } from "@/types/builder";
 
 interface PropertiesPanelProps {
@@ -110,6 +111,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   const panelId = useId();
   const labelInputId = useId();
   const [confirmAction, setConfirmAction] = useState<"delete" | "reset" | null>(null);
+  const [showOptimization, setShowOptimization] = useState(false);
+  const toggleOptimization = useCallback(() => setShowOptimization((v) => !v), []);
   const summaryLines = useMemo(
     () => (!selectedNode && nodes.length > 0 ? buildNaturalLanguageSummary(nodes) : []),
     [selectedNode, nodes]
@@ -206,6 +209,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   }
 
   const data = selectedNode.data;
+  const nodeTemplate = getNodeTemplate(selectedNode.type as BuilderNodeType);
+  const categoryLabel = data.category ? getCategoryLabel(data.category as NodeCategory) : null;
 
   const handleChange = (updates: Partial<BuilderNodeData>) => {
     onNodeChange(selectedNode.id, updates);
@@ -266,7 +271,14 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             </button>
           </div>
         </div>
-        <p className="text-xs text-[#64748B] mt-1">ID: {selectedNode.id}</p>
+        {nodeTemplate?.description && (
+          <p className="text-xs text-[#94A3B8] mt-1">
+            {categoryLabel && (
+              <span className="text-[#64748B] font-medium">{categoryLabel} · </span>
+            )}
+            {nodeTemplate.description}
+          </p>
+        )}
         {/* Inline confirmation banner */}
         {confirmAction && (
           <div
@@ -326,7 +338,42 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         </div>
 
         {/* Node-specific fields */}
-        <NodeFields data={data} onChange={handleChange} />
+        <OptimizationVisibleContext.Provider value={showOptimization}>
+          <NodeFields data={data} onChange={handleChange} />
+        </OptimizationVisibleContext.Provider>
+
+        {/* Optimization toggle */}
+        <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
+          <button
+            onClick={toggleOptimization}
+            className="flex items-center gap-1.5 text-[10px] text-[#64748B] hover:text-[#94A3B8] transition-colors"
+          >
+            <svg
+              className="w-3 h-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M3 3v18h18" />
+              <path d="M18 9l-5 5-4-4-3 3" />
+            </svg>
+            {showOptimization ? "Hide" : "Show"} optimization settings
+            <svg
+              className={`w-3 h-3 transition-transform ${showOptimization ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </aside>
   );

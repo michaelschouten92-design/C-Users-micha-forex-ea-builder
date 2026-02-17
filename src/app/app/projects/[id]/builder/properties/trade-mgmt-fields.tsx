@@ -30,6 +30,7 @@ export function BreakevenStopFields({
           { value: "ATR", label: "ATR-Based" },
         ]}
         onChange={(v) => onChange({ trigger: v as BreakevenTrigger })}
+        tooltip="When to move your stop loss to breakeven. Fixed Pips is the simplest option."
       />
       {data.trigger === "PIPS" && (
         <div>
@@ -39,6 +40,7 @@ export function BreakevenStopFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ triggerPips: v })}
+            tooltip="Move SL to breakeven after the trade is this many pips in profit"
           />
           <OptimizableFieldCheckbox fieldName="triggerPips" data={data} onChange={onChange} />
         </div>
@@ -52,6 +54,7 @@ export function BreakevenStopFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ triggerPercent: v })}
+            tooltip="Move SL to breakeven after profit reaches this percentage of your account"
           />
           <OptimizableFieldCheckbox fieldName="triggerPercent" data={data} onChange={onChange} />
         </div>
@@ -65,6 +68,7 @@ export function BreakevenStopFields({
               min={1}
               max={500}
               onChange={(v) => onChange({ triggerAtrPeriod: v })}
+              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
             />
             <OptimizableFieldCheckbox
               fieldName="triggerAtrPeriod"
@@ -80,6 +84,7 @@ export function BreakevenStopFields({
               max={10}
               step={0.1}
               onChange={(v) => onChange({ triggerAtrMultiplier: v })}
+              tooltip="Trigger breakeven after profit equals this multiple of the average price movement (ATR)"
             />
             <OptimizableFieldCheckbox
               fieldName="triggerAtrMultiplier"
@@ -96,6 +101,7 @@ export function BreakevenStopFields({
           min={0}
           max={100}
           onChange={(v) => onChange({ lockPips: v })}
+          tooltip="After breakeven triggers, place the SL this many pips above your entry price. Use 0 for exact breakeven."
         />
         <OptimizableFieldCheckbox fieldName="lockPips" data={data} onChange={onChange} />
       </div>
@@ -130,6 +136,7 @@ export function TrailingStopFields({
           { value: "PERCENTAGE", label: "Percentage" },
         ]}
         onChange={(v) => onChange({ method: v as TrailingStopMethod })}
+        tooltip="How the trailing distance is calculated. Fixed Pips is the simplest option."
       />
       {data.method === "FIXED_PIPS" && (
         <div>
@@ -139,6 +146,7 @@ export function TrailingStopFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ trailPips: v })}
+            tooltip="The stop loss stays this many pips behind the highest profit point"
           />
           <OptimizableFieldCheckbox fieldName="trailPips" data={data} onChange={onChange} />
         </div>
@@ -152,6 +160,7 @@ export function TrailingStopFields({
               min={1}
               max={500}
               onChange={(v) => onChange({ trailAtrPeriod: v })}
+              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
             />
             <OptimizableFieldCheckbox fieldName="trailAtrPeriod" data={data} onChange={onChange} />
           </div>
@@ -163,6 +172,7 @@ export function TrailingStopFields({
               max={10}
               step={0.1}
               onChange={(v) => onChange({ trailAtrMultiplier: v })}
+              tooltip="Trail distance as a multiple of the average price movement (ATR)"
             />
             <OptimizableFieldCheckbox
               fieldName="trailAtrMultiplier"
@@ -181,6 +191,7 @@ export function TrailingStopFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ trailPercent: v })}
+            tooltip="Trail distance as a percentage of the current price"
           />
           <OptimizableFieldCheckbox fieldName="trailPercent" data={data} onChange={onChange} />
         </div>
@@ -192,6 +203,7 @@ export function TrailingStopFields({
           min={0}
           max={500}
           onChange={(v) => onChange({ startAfterPips: v })}
+          tooltip="Only start trailing after the trade reaches this many pips in profit. Use 0 to start immediately."
         />
         <OptimizableFieldCheckbox fieldName="startAfterPips" data={data} onChange={onChange} />
       </div>
@@ -221,6 +233,7 @@ export function PartialCloseFields({
           min={1}
           max={99}
           onChange={(v) => onChange({ closePercent: v })}
+          tooltip="How much of your position to close when the profit target is reached (e.g. 50% = close half)"
         />
         <OptimizableFieldCheckbox fieldName="closePercent" data={data} onChange={onChange} />
       </div>
@@ -241,6 +254,7 @@ export function PartialCloseFields({
             min={1}
             max={1000}
             onChange={(v) => onChange({ triggerPips: v })}
+            tooltip="Close the partial position after the trade reaches this many pips in profit"
           />
           <OptimizableFieldCheckbox fieldName="triggerPips" data={data} onChange={onChange} />
         </div>
@@ -253,6 +267,7 @@ export function PartialCloseFields({
             max={100}
             step={0.1}
             onChange={(v) => onChange({ triggerPercent: v })}
+            tooltip="Close the partial position after profit reaches this percentage of your account"
           />
           <OptimizableFieldCheckbox fieldName="triggerPercent" data={data} onChange={onChange} />
         </div>
@@ -302,6 +317,7 @@ export function LockProfitFields({
           { value: "FIXED_PIPS", label: "Fixed Pips" },
         ]}
         onChange={(v) => onChange({ method: v as LockProfitMethod })}
+        tooltip="How to calculate the locked profit level. Percentage locks a % of your current profit, Fixed Pips locks a fixed distance."
       />
       {data.method === "PERCENTAGE" && (
         <div>
@@ -311,6 +327,7 @@ export function LockProfitFields({
             min={1}
             max={99}
             onChange={(v) => onChange({ lockPercent: v })}
+            tooltip="Move the SL to lock in this percentage of your current unrealized profit"
           />
           <OptimizableFieldCheckbox fieldName="lockPercent" data={data} onChange={onChange} />
         </div>
@@ -323,6 +340,7 @@ export function LockProfitFields({
             min={1}
             max={500}
             onChange={(v) => onChange({ lockPips: v })}
+            tooltip="Move the SL to lock in this many pips of profit"
           />
           <OptimizableFieldCheckbox fieldName="lockPips" data={data} onChange={onChange} />
         </div>
@@ -334,6 +352,7 @@ export function LockProfitFields({
           min={1}
           max={100}
           onChange={(v) => onChange({ checkIntervalPips: v })}
+          tooltip="Only start locking profit after the trade reaches at least this many pips in profit"
         />
         <OptimizableFieldCheckbox fieldName="checkIntervalPips" data={data} onChange={onChange} />
       </div>
