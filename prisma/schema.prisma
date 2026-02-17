@@ -34,6 +34,12 @@ enum ExportStatus {
   FAILED
 }
 
+enum EAStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -59,6 +65,7 @@ model User {
   projects     Project[]
   exports      ExportJob[]
   templates    UserTemplate[]
+  liveEAs      LiveEAInstance[]
 
   @@index([createdAt])
 }
@@ -149,6 +156,7 @@ model ExportJob {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   buildVersion BuildVersion @relation(fields: [buildVersionId], references: [id], onDelete: Cascade)
+  liveEA       LiveEAInstance?
 
   // Indexes for efficient queries
   @@index([userId, createdAt])
@@ -238,4 +246,90 @@ model Announcement {
   updatedAt DateTime  @updatedAt
 
   @@index([active, expiresAt])
+}
+
+// ============================================
+// LIVE EA TRACKING
+// ============================================
+
+model LiveEAInstance {
+  id            String    @id @default(cuid())
+  exportJobId   String    @unique
+  userId        String
+  apiKeyHash    String    @unique
+  eaName        String
+  symbol        String?
+  timeframe     String?
+  broker        String?
+  accountNumber String?
+  status        EAStatus  @default(OFFLINE)
+  lastHeartbeat DateTime?
+  lastError     String?
+  balance       Float?
+  equity        Float?
+  openTrades    Int       @default(0)
+  totalTrades   Int       @default(0)
+  totalProfit   Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  exportJob     ExportJob @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  heartbeats    EAHeartbeat[]
+  trades        EATrade[]
+  errors        EAError[]
+
+  @@index([userId, status])
+  @@index([status, lastHeartbeat])
+  @@index([exportJobId])
+}
+
+model EAHeartbeat {
+  id          String   @id @default(cuid())
+  instanceId  String
+  balance     Float
+  equity      Float
+  openTrades  Int
+  totalTrades Int
+  totalProfit Float
+  drawdown    Float    @default(0)
+  spread      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, createdAt])
+}
+
+model EATrade {
+  id          String   @id @default(cuid())
+  instanceId  String
+  ticket      String
+  symbol      String
+  type        String
+  openPrice   Float
+  closePrice  Float?
+  lots        Float
+  profit      Float    @default(0)
+  openTime    DateTime
+  closeTime   DateTime?
+  createdAt   DateTime @default(now())
+
+  instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, ticket])
+  @@index([instanceId, createdAt])
+}
+
+model EAError {
+  id          String   @id @default(cuid())
+  instanceId  String
+  errorCode   Int
+  message     String   @db.Text
+  context     String?
+  createdAt   DateTime @default(now())
+
+  instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, createdAt])
 }

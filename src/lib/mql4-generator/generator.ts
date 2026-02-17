@@ -43,6 +43,7 @@ import {
 } from "./generators/trading";
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
+import { generateTelemetryCode, type TelemetryConfig } from "./generators/telemetry";
 
 // Helper function to get all connected node IDs starting from source nodes
 function getConnectedNodeIds(
@@ -805,7 +806,8 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
 export function generateMQL4Code(
   buildJson: BuildJsonSchema,
   projectName: string,
-  description?: string
+  description?: string,
+  telemetry?: TelemetryConfig
 ): string {
   // Preprocess: decompose entry strategy composite blocks into virtual primitive nodes
   const decomposed = decomposeEntryStrategies(buildJson.nodes, buildJson.edges);
@@ -1316,6 +1318,11 @@ export function generateMQL4Code(
   tradeManagementNodes.forEach((node) => {
     generateTradeManagementCode(node, code);
   });
+
+  // Generate telemetry code (live EA tracking)
+  if (telemetry) {
+    generateTelemetryCode(code, telemetry);
+  }
 
   // Assemble final code (array join avoids repeated string allocation)
   const parts = [

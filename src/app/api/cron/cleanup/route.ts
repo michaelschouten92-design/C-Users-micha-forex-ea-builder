@@ -88,6 +88,26 @@ async function handleCleanup(request: NextRequest) {
       createdAt: { lt: oneYearAgo },
     });
 
+    // Clean up old EA heartbeats (>30 days)
+    const deletedHeartbeats = await batchDelete(prisma.eAHeartbeat, {
+      createdAt: { lt: thirtyDaysAgo },
+    });
+
+    // Clean up old EA errors (>30 days)
+    const deletedEAErrors = await batchDelete(prisma.eAError, {
+      createdAt: { lt: thirtyDaysAgo },
+    });
+
+    // Mark EA instances as OFFLINE if no heartbeat for >15 minutes
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const staleInstances = await prisma.liveEAInstance.updateMany({
+      where: {
+        status: { in: ["ONLINE", "ERROR"] },
+        lastHeartbeat: { lt: fifteenMinutesAgo },
+      },
+      data: { status: "OFFLINE" },
+    });
+
     // Auto-downgrade past_due subscriptions after 14-day grace period
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const pastDueSubs = await prisma.subscription.findMany({
@@ -124,6 +144,9 @@ async function handleCleanup(request: NextRequest) {
         deletedVerificationTokens,
         deletedAuditLogs,
         deletedAdminOtps,
+        deletedHeartbeats,
+        deletedEAErrors,
+        staleEAsOfflined: staleInstances.count,
         downgraded,
       },
       "Cleanup completed"
@@ -137,7 +160,10 @@ async function handleCleanup(request: NextRequest) {
         webhookEvents: deletedWebhookEvents,
         verificationTokens: deletedVerificationTokens,
         auditLogs: deletedAuditLogs,
+        eaHeartbeats: deletedHeartbeats,
+        eaErrors: deletedEAErrors,
       },
+      staleEAsOfflined: staleInstances.count,
       downgraded,
     });
   } catch (error) {

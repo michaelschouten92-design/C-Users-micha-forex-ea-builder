@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes, createHash } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
@@ -182,14 +183,25 @@ export async function POST(request: NextRequest, { params }: Props) {
       buildJson.settings = { ...buildJson.settings, magicNumber };
     }
 
-    // Generate code based on export type
+    // Generate telemetry API key for live tracking
+    const telemetryApiKey = randomBytes(32).toString("hex");
+    const telemetryApiKeyHash = createHash("sha256").update(telemetryApiKey).digest("hex");
+
+    // Generate code based on export type (pass telemetry API key)
     const isMQL4 = exportType === "MQ4";
+    const telemetryBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
     const generatedCode = isMQL4
-      ? generateMQL4Code(buildJson, project.name, project.description ?? undefined)
-      : generateMQL5Code(buildJson, project.name, project.description ?? undefined);
+      ? generateMQL4Code(buildJson, project.name, project.description ?? undefined, {
+          apiKey: telemetryApiKey,
+          baseUrl: `${telemetryBaseUrl}/api/telemetry`,
+        })
+      : generateMQL5Code(buildJson, project.name, project.description ?? undefined, {
+          apiKey: telemetryApiKey,
+          baseUrl: `${telemetryBaseUrl}/api/telemetry`,
+        });
     const fileExtension = isMQL4 ? ".mq4" : ".mq5";
 
-    // Atomically check limit + create export job inside a transaction (reuses tier from above)
+    // Atomically check limit + create export job + LiveEAInstance inside a transaction
     const maxExports = PLANS[tier].limits.maxExportsPerMonth;
     const startOfMonth = new Date();
     startOfMonth.setUTCDate(1);
@@ -202,7 +214,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       if (currentCount >= maxExports) {
         return null;
       }
-      return tx.exportJob.create({
+      const job = await tx.exportJob.create({
         data: {
           userId: session.user.id,
           projectId: project.id,
@@ -212,6 +224,18 @@ export async function POST(request: NextRequest, { params }: Props) {
           outputName: `${sanitizeFileName(project.name)}${fileExtension}`,
         },
       });
+
+      // Create LiveEAInstance for telemetry tracking
+      await tx.liveEAInstance.create({
+        data: {
+          exportJobId: job.id,
+          userId: session.user.id,
+          apiKeyHash: telemetryApiKeyHash,
+          eaName: project.name,
+        },
+      });
+
+      return job;
     });
 
     if (!exportJob) {
@@ -241,6 +265,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         code: generatedCode,
         versionNo: version.versionNo,
         exportType: isMQL4 ? "MQ4" : "MQ5",
+        telemetryApiKey,
       },
       { headers: rateLimitHeaders }
     );

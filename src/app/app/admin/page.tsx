@@ -10,6 +10,7 @@ import { RevenueTab } from "./components/revenue-tab";
 import { ExportsTab } from "./components/exports-tab";
 import { AnalyticsTab } from "./components/analytics-tab";
 import { AnnouncementsTab } from "./components/announcements-tab";
+import { LiveEAsTab } from "./components/live-eas-tab";
 import { UserDetailModal } from "./components/user-detail-modal";
 
 interface UserData {
@@ -167,6 +168,7 @@ export default function AdminPage() {
         {activeTab === "exports" && <ExportsTab />}
         {activeTab === "analytics" && <AnalyticsTab />}
         {activeTab === "announcements" && <AnnouncementsTab />}
+        {activeTab === "live-eas" && <LiveEAsTab />}
       </main>
 
       {/* User detail modal */}
