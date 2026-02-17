@@ -115,7 +115,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   const panelId = useId();
   const labelInputId = useId();
   const [confirmAction, setConfirmAction] = useState<"delete" | "reset" | null>(null);
-  const [showOptimization, setShowOptimization] = useState(false);
+  const [showOptimization, setShowOptimization] = useState(true);
   const toggleOptimization = useCallback(() => setShowOptimization((v) => !v), []);
   const summaryLines = useMemo(
     () => (!selectedNode && nodes.length > 0 ? buildNaturalLanguageSummary(nodes) : []),
