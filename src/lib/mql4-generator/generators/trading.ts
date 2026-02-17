@@ -8,7 +8,7 @@ import type {
   TimeExitNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
-import { getTimeframe } from "../types";
+import { getTimeframe, getTimeframeEnum } from "../types";
 import { createInput, sanitizeMQL4String } from "./shared";
 import { generateDivergenceHelpers } from "./divergence";
 
@@ -232,8 +232,19 @@ export function generateStopLossCode(
       break;
 
     case "ATR_BASED": {
-      const atrTf = getTimeframe(
+      const atrTfDefault = getTimeframeEnum(
         (node.data as Record<string, unknown>).atrTimeframe as string | undefined
+      );
+      code.inputs.push(
+        createInput(
+          node,
+          "atrTimeframe",
+          "InpATRSLTimeframe",
+          "ENUM_AS_TIMEFRAMES",
+          atrTfDefault,
+          "ATR Timeframe for SL",
+          slGroup
+        )
       );
       code.inputs.push(
         createInput(
@@ -258,7 +269,7 @@ export function generateStopLossCode(
         )
       );
       // MQL4: iATR returns value directly, no handles/buffers needed
-      code.onTick.push(`double _atrValue = iATR(Symbol(), ${atrTf}, InpATRPeriod, 0);`);
+      code.onTick.push(`double _atrValue = iATR(Symbol(), InpATRSLTimeframe, InpATRPeriod, 0);`);
       code.onTick.push('if(_atrValue == 0) { Print("ATR value is zero for SL"); return; }');
       code.onTick.push("double slPips = (_atrValue / _Point) * InpATRMultiplier;");
       break;

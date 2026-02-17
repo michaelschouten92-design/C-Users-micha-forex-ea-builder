@@ -8,7 +8,7 @@ import type {
   TimeExitNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
-import { getTimeframe } from "../types";
+import { getTimeframe, getTimeframeEnum } from "../types";
 import { createInput, sanitizeMQL5String } from "./shared";
 import { generateDivergenceHelpers } from "./divergence";
 
@@ -236,8 +236,19 @@ export function generateStopLossCode(
       break;
 
     case "ATR_BASED": {
-      const atrTf = getTimeframe(
+      const atrTfDefault = getTimeframeEnum(
         (node.data as Record<string, unknown>).atrTimeframe as string | undefined
+      );
+      code.inputs.push(
+        createInput(
+          node,
+          "atrTimeframe",
+          "InpATRSLTimeframe",
+          "ENUM_AS_TIMEFRAMES",
+          atrTfDefault,
+          "ATR Timeframe for SL",
+          slGroup
+        )
       );
       code.inputs.push(
         createInput(
@@ -263,7 +274,7 @@ export function generateStopLossCode(
       );
       code.globalVariables.push("int atrHandle = INVALID_HANDLE;");
       code.globalVariables.push("double atrBuffer[];");
-      code.onInit.push(`atrHandle = iATR(_Symbol, ${atrTf}, InpATRPeriod);`);
+      code.onInit.push(`atrHandle = iATR(_Symbol, InpATRSLTimeframe, InpATRPeriod);`);
       code.onInit.push(
         'if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }'
       );
