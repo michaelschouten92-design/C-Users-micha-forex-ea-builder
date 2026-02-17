@@ -30,7 +30,7 @@ describe("buildJsonSchema", () => {
   });
 
   it("rejects missing version field", () => {
-    const { version, ...rest } = validBuildJson;
+    const { version: _version, ...rest } = validBuildJson;
     const result = buildJsonSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
@@ -41,7 +41,7 @@ describe("buildJsonSchema", () => {
   });
 
   it("rejects missing nodes array", () => {
-    const { nodes, ...rest } = validBuildJson;
+    const { nodes: _nodes, ...rest } = validBuildJson;
     const result = buildJsonSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
@@ -65,7 +65,7 @@ describe("buildJsonSchema", () => {
   });
 
   it("rejects missing metadata", () => {
-    const { metadata, ...rest } = validBuildJson;
+    const { metadata: _metadata, ...rest } = validBuildJson;
     const result = buildJsonSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });

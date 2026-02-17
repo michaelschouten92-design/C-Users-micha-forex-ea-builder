@@ -76,7 +76,7 @@ export const BaseNode = memo(function BaseNode({
   category,
   label,
   icon,
-  children,
+  children: _children,
   inputHandles = 1,
   outputHandles = 1,
 }: BaseNodeProps) {

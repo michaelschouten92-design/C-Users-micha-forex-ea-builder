@@ -4,7 +4,7 @@ import { validateConnection } from "../connection-validation";
 import type { BuilderNodeData } from "@/types/builder";
 
 /** Pass-through: returns edges unchanged (labels removed for cleaner canvas). */
-export function addEdgeLabels(edges: Edge[], _nodes: Node<BuilderNodeData>[]): Edge[] {
+export function addEdgeLabels(edges: Edge[], _nodes?: Node<BuilderNodeData>[]): Edge[] {
   return edges;
 }
 

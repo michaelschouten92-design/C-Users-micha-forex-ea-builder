@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ProjectSettings } from "./project-settings";
 import { LazyStrategyBuilder } from "./builder/lazy-strategy-builder";
 import { getUserPlanLimits } from "@/lib/plan-limits";
-import type { BuildJsonSchema } from "@/types/builder";
 import { migrateProjectData } from "@/lib/migrations";
 
 type Props = {

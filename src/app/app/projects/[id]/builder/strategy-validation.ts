@@ -21,7 +21,7 @@ export interface ValidationResult {
 
 export function validateStrategy(
   nodes: Node<BuilderNodeData>[],
-  edges: Edge[] = [],
+  _edges: Edge[] = [],
   settings?: BuildJsonSettings
 ): ValidationResult {
   const issues: ValidationIssue[] = [];

@@ -287,7 +287,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { authProviderId },
         });
 
-        let isNewUser = false;
+        let _isNewUser = false;
 
         if (!existingUser) {
           // Check if user exists by email (might have registered with credentials)
@@ -320,7 +320,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
 
-            isNewUser = true;
+            _isNewUser = true;
 
             // Send welcome email (fire-and-forget)
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});

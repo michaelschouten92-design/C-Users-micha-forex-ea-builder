@@ -86,8 +86,8 @@ export function TradingSessionFields({
 }
 
 export function AlwaysFields({
-  data,
-  onChange,
+  data: _data,
+  onChange: _onChange,
 }: {
   data: AlwaysNodeData;
   onChange: (updates: Partial<AlwaysNodeData>) => void;

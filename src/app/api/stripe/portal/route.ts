@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +11,7 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   const session = await auth();
   const log = createApiLogger("/api/stripe/portal", "POST", session?.user?.id);
 

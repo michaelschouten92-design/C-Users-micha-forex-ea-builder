@@ -179,7 +179,7 @@ export function generatePriceActionCode(
 
           // Add helper function for session range calculation
           const useServerTime = rb.useServerTime ?? true;
-          const timeFunc = useServerTime ? "TimeCurrent()" : "TimeGMT()";
+          const _timeFunc = useServerTime ? "TimeCurrent()" : "TimeGMT()";
           if (!code.helperFunctions.some((f) => f.includes("GetSessionRange"))) {
             code.helperFunctions.push(`
 //+------------------------------------------------------------------+

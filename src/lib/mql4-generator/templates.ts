@@ -348,7 +348,7 @@ ${tickCode.map((line) => "   " + line).join("\n")}
 `;
 }
 
-export function generateHelperFunctions(ctx: GeneratorContext): string {
+export function generateHelperFunctions(_ctx: GeneratorContext): string {
   return `//+------------------------------------------------------------------+
 //| Count positions for this EA                                        |
 //+------------------------------------------------------------------+
