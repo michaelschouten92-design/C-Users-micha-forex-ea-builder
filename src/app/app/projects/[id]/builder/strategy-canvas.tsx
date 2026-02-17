@@ -314,10 +314,12 @@ export function StrategyCanvas({
 
       // Enforce: only one entry strategy block on canvas
       if (template.defaultData && "entryType" in template.defaultData) {
-        const hasExisting = nodes.some((n) => n.data && "entryType" in n.data);
-        if (hasExisting) {
+        const existingEntry = nodes.find((n) => n.data && "entryType" in n.data);
+        if (existingEntry) {
+          // Select the existing entry strategy so the user can find it
+          setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === existingEntry.id })));
           setDropError(
-            "Only one entry strategy allowed. Delete the current one first, then add a new one."
+            `Only one entry strategy allowed. "${(existingEntry.data as BuilderNodeData).label}" is selected — delete it first.`
           );
           setTimeout(() => setDropError(null), 6000);
           return;

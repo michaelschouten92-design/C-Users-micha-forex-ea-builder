@@ -151,10 +151,14 @@ export function VersionControls({
     function handleMouseDown(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
+        setPendingLoadId(null);
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setShowDropdown(false);
+      if (e.key === "Escape") {
+        setShowDropdown(false);
+        setPendingLoadId(null);
+      }
     }
     document.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("keydown", handleKeyDown);
@@ -188,6 +192,9 @@ export function VersionControls({
     }
   };
 
+  // Pending version load (awaiting confirmation if unsaved changes)
+  const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
+
   // Load version from cache (no additional network request needed)
   const handleLoad = useCallback(
     (versionId: string) => {
@@ -195,10 +202,8 @@ export function VersionControls({
       if (!version?.buildJson) return;
 
       if (hasUnsavedChanges) {
-        const confirmed = window.confirm(
-          `You have unsaved changes. Loading version ${version.versionNo} will discard them. Continue?`
-        );
-        if (!confirmed) return;
+        setPendingLoadId(versionId);
+        return;
       }
 
       setShowDropdown(false);
@@ -206,6 +211,15 @@ export function VersionControls({
     },
     [versions, onLoad, hasUnsavedChanges]
   );
+
+  const confirmLoad = useCallback(() => {
+    if (!pendingLoadId) return;
+    const version = versions.find((v) => v.id === pendingLoadId);
+    if (!version?.buildJson) return;
+    setPendingLoadId(null);
+    setShowDropdown(false);
+    onLoad(pendingLoadId, version.buildJson);
+  }, [pendingLoadId, versions, onLoad]);
 
   // Close import modal on Escape key
   useEffect(() => {
@@ -348,6 +362,27 @@ export function VersionControls({
 
           {showDropdown && versions.length > 0 && (
             <div className="absolute bottom-full left-0 mb-1 w-72 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] max-h-48 overflow-y-auto">
+              {pendingLoadId && (
+                <div className="px-3 py-2.5 bg-[rgba(251,191,36,0.1)] border-b border-[rgba(251,191,36,0.3)]">
+                  <p className="text-xs text-[#FBBF24] mb-2">
+                    You have unsaved changes. Load this version anyway?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPendingLoadId(null)}
+                      className="flex-1 px-2 py-1 text-xs text-[#CBD5E1] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmLoad}
+                      className="flex-1 px-2 py-1 text-xs font-medium text-white bg-[#FBBF24] hover:bg-[#F59E0B] rounded transition-colors"
+                    >
+                      Load
+                    </button>
+                  </div>
+                </div>
+              )}
               {versions.map((version, idx) => (
                 <div
                   key={version.id}

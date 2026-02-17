@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useId, useMemo } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import type { Node } from "@xyflow/react";
 import type { BuilderNode, BuilderNodeType } from "@/types/builder";
 import { getNodeTemplate } from "@/types/builder";
@@ -109,6 +109,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
 }: PropertiesPanelProps) {
   const panelId = useId();
   const labelInputId = useId();
+  const [confirmAction, setConfirmAction] = useState<"delete" | "reset" | null>(null);
   const summaryLines = useMemo(
     () => (!selectedNode && nodes.length > 0 ? buildNaturalLanguageSummary(nodes) : []),
     [selectedNode, nodes]
@@ -223,15 +224,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           </h3>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => {
-                const template = getNodeTemplate(selectedNode.type as BuilderNodeType);
-                if (!template?.defaultData) return;
-                const confirmed = window.confirm("Reset all parameters to defaults?");
-                if (!confirmed) return;
-                onNodeChange(selectedNode.id, {
-                  ...template.defaultData,
-                } as Partial<BuilderNodeData>);
-              }}
+              onClick={() => setConfirmAction("reset")}
               className="text-[#94A3B8] hover:text-[#CBD5E1] p-1.5 rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
               aria-label={`Reset ${data.label} to defaults`}
               title="Reset to defaults"
@@ -252,7 +245,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               </svg>
             </button>
             <button
-              onClick={() => onNodeDelete(selectedNode.id)}
+              onClick={() => setConfirmAction("delete")}
               className="text-[#EF4444] hover:text-[#F87171] p-1.5 rounded-lg hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200"
               aria-label={`Delete ${data.label} block`}
             >
@@ -274,6 +267,42 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           </div>
         </div>
         <p className="text-xs text-[#64748B] mt-1">ID: {selectedNode.id}</p>
+        {/* Inline confirmation banner */}
+        {confirmAction && (
+          <div
+            className={`mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs ${confirmAction === "delete" ? "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)]" : "bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)]"}`}
+          >
+            <span className="text-[#CBD5E1]">
+              {confirmAction === "delete" ? "Delete this block?" : "Reset to defaults?"}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-2 py-1 text-[#94A3B8] hover:text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmAction === "delete") {
+                    onNodeDelete(selectedNode.id);
+                  } else {
+                    const template = getNodeTemplate(selectedNode.type as BuilderNodeType);
+                    if (template?.defaultData) {
+                      onNodeChange(selectedNode.id, {
+                        ...template.defaultData,
+                      } as Partial<BuilderNodeData>);
+                    }
+                  }
+                  setConfirmAction(null);
+                }}
+                className={`px-2 py-1 rounded font-medium transition-colors ${confirmAction === "delete" ? "bg-[#EF4444] text-white hover:bg-[#DC2626]" : "bg-[#4F46E5] text-white hover:bg-[#6366F1]"}`}
+              >
+                {confirmAction === "delete" ? "Delete" : "Reset"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-4">
@@ -285,6 +314,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           <input
             id={labelInputId}
             type="text"
+            maxLength={50}
             value={data.label}
             onChange={(e) => {
               e.stopPropagation();

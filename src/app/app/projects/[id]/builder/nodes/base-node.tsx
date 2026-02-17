@@ -146,7 +146,7 @@ export const BaseNode = memo(function BaseNode({
       {(hasErrors || hasWarnings) && (
         <div
           className={`absolute -top-2 -left-2 z-10 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg ${hasErrors ? "bg-[#EF4444]" : "bg-[#F59E0B]"}`}
-          title={issues[0]?.message}
+          title={issues.map((i) => `• ${i.message}`).join("\n")}
         >
           {badgeCount}
         </div>
