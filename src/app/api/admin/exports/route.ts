@@ -11,8 +11,11 @@ export async function GET(request: Request) {
     if (!adminCheck.authorized) return adminCheck.response;
 
     const url = new URL(request.url);
-    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "50")));
+    const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(url.searchParams.get("limit") ?? "50", 10) || 50)
+    );
     const status = url.searchParams.get("status") || undefined;
     const userId = url.searchParams.get("userId") || undefined;
 

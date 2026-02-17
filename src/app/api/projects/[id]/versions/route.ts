@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createVersionSchema, formatZodErrors, checkContentType } from "@/lib/validations";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import type { Prisma } from "@prisma/client";
 import {
   apiRateLimiter,
@@ -57,6 +58,7 @@ export async function GET(request: Request, { params }: Params) {
           id: true,
           versionNo: true,
           createdAt: true,
+          buildJson: true,
         },
         skip,
         take: limit,
@@ -306,6 +308,9 @@ export async function POST(request: Request, { params }: Params) {
         { status: 409 }
       );
     }
-    throw error;
+    logger.error({ error }, "Failed to create version");
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+      status: 500,
+    });
   }
 }

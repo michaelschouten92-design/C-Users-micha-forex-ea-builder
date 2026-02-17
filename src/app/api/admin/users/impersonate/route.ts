@@ -46,11 +46,18 @@ export async function POST(request: Request) {
 
     const targetUser = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true },
+      select: { id: true, email: true, role: true },
     });
 
     if (!targetUser) {
       return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "User not found"), { status: 404 });
+    }
+
+    // Block impersonating other admins
+    if (targetUser.role === "ADMIN") {
+      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Cannot impersonate another admin"), {
+        status: 403,
+      });
     }
 
     // Audit log
