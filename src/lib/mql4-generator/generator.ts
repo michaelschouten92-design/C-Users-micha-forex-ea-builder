@@ -571,7 +571,8 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         ["slFixedPips", "fixedPips"],
         ["slPercent", "slPercent"],
         ["slAtrMultiplier", "atrMultiplier"],
-        ["slAtrPeriod", "atrPeriod"]
+        ["slAtrPeriod", "atrPeriod"],
+        ["slAtrTimeframe", "atrTimeframe"]
       ),
     })
   );

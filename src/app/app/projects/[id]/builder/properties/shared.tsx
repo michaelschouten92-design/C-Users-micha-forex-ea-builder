@@ -264,6 +264,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
               onChange({ slAtrTimeframe: (v || undefined) as Timeframe | undefined } as Partial<T>)
             }
           />
+          <OptimizableFieldCheckbox fieldName="slAtrTimeframe" data={data} onChange={onChange} />
         </>
       )}
       {slMethod === "PIPS" && (
