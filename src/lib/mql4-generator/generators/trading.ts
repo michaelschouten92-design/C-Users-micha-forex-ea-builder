@@ -267,7 +267,9 @@ export function generateStopLossCode(
         )
       );
       // MQL4: iATR returns value directly, no handles/buffers needed
-      code.onTick.push(`double _atrValue = iATR(Symbol(), InpATRSLTimeframe, InpATRPeriod, 0);`);
+      code.onTick.push(
+        `double _atrValue = iATR(Symbol(), (int)InpATRSLTimeframe, InpATRPeriod, 0);`
+      );
       code.onTick.push('if(_atrValue == 0) { Print("ATR value is zero for SL"); return; }');
       code.onTick.push("double slPips = (_atrValue / _Point) * InpATRMultiplier;");
       break;

@@ -272,7 +272,9 @@ export function generateStopLossCode(
       );
       code.globalVariables.push("int atrHandle = INVALID_HANDLE;");
       code.globalVariables.push("double atrBuffer[];");
-      code.onInit.push(`atrHandle = iATR(_Symbol, InpATRSLTimeframe, InpATRPeriod);`);
+      code.onInit.push(
+        `atrHandle = iATR(_Symbol, (ENUM_TIMEFRAMES)InpATRSLTimeframe, InpATRPeriod);`
+      );
       code.onInit.push(
         'if(atrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for SL"); return(INIT_FAILED); }'
       );
