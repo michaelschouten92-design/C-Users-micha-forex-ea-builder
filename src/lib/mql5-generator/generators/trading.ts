@@ -236,9 +236,7 @@ export function generateStopLossCode(
       break;
 
     case "ATR_BASED": {
-      const atrTfDefault = getTimeframeEnum(
-        (node.data as Record<string, unknown>).atrTimeframe as string | undefined
-      );
+      const atrTfDefault = getTimeframeEnum(data.atrTimeframe);
       code.inputs.push(
         createInput(
           node,

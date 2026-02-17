@@ -344,6 +344,7 @@ export interface StopLossNodeData extends BaseNodeData {
   slPercent: number;
   atrMultiplier: number;
   atrPeriod: number;
+  atrTimeframe?: Timeframe;
   indicatorNodeId?: string;
 }
 

@@ -250,6 +250,15 @@ export function StopLossFields({
       {data.method === "ATR_BASED" && (
         <>
           <div>
+            <SelectField
+              label="ATR Timeframe"
+              value={data.atrTimeframe ?? "H1"}
+              options={TIMEFRAME_OPTIONS}
+              onChange={(v) => onChange({ atrTimeframe: v as Timeframe })}
+            />
+            <OptimizableFieldCheckbox fieldName="atrTimeframe" data={data} onChange={onChange} />
+          </div>
+          <div>
             <NumberField
               label="ATR Period"
               value={data.atrPeriod}
