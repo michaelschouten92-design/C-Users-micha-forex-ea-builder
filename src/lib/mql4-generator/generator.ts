@@ -1067,7 +1067,7 @@ export function generateMQL4Code(
     code.onTick.push(`//--- Volatility filter (ATR)`);
     code.onTick.push(`{`);
     code.onTick.push(
-      `   double atrPips = iATR(Symbol(), ${atrTf}, InpVolATRPeriod, 0) / (Point * _pipFactor);`
+      `   double atrPips = iATR(Symbol(), ${atrTf}, InpVolATRPeriod, 0) / (_Point * _pipFactor);`
     );
     code.onTick.push(`   if(InpMinATRPips > 0 && atrPips < InpMinATRPips) return;`);
     code.onTick.push(`   if(InpMaxATRPips > 0 && atrPips > InpMaxATRPips) return;`);

@@ -398,8 +398,8 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
    {
       RefreshRates();
       double askPrice = Ask;
-      double slPrice = (sl > 0) ? NormalizeDouble(askPrice - sl * Point, Digits) : 0;
-      double tpPrice = (tp > 0) ? NormalizeDouble(askPrice + tp * Point, Digits) : 0;
+      double slPrice = (sl > 0) ? NormalizeDouble(askPrice - sl * _Point, Digits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(askPrice + tp * _Point, Digits) : 0;
 
       int ticket = OrderSend(Symbol(), OP_BUY, lots, askPrice, InpMaxSlippage, slPrice, tpPrice, InpTradeComment, InpMagicNumber, 0, clrGreen);
       if(ticket > 0) return true;
@@ -446,8 +446,8 @@ bool OpenSell(double lots, double sl = 0, double tp = 0)
    {
       RefreshRates();
       double bidPrice = Bid;
-      double slPrice = (sl > 0) ? NormalizeDouble(bidPrice + sl * Point, Digits) : 0;
-      double tpPrice = (tp > 0) ? NormalizeDouble(bidPrice - tp * Point, Digits) : 0;
+      double slPrice = (sl > 0) ? NormalizeDouble(bidPrice + sl * _Point, Digits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(bidPrice - tp * _Point, Digits) : 0;
 
       int ticket = OrderSend(Symbol(), OP_SELL, lots, bidPrice, InpMaxSlippage, slPrice, tpPrice, InpTradeComment, InpMagicNumber, 0, clrRed);
       if(ticket > 0) return true;
@@ -552,7 +552,7 @@ double CalculateLotSize(double riskPercent, double slPips)
    double lotStep = MarketInfo(Symbol(), MODE_LOTSTEP);
    double maxLot = MarketInfo(Symbol(), MODE_MAXLOT);
 
-   double pipValue = (tickSize > 0) ? tickValue * (Point / tickSize) : 0;
+   double pipValue = (tickSize > 0) ? tickValue * (_Point / tickSize) : 0;
    if(pipValue <= 0)
    {
       Print("WARNING: Pip value is 0, using minimum lot.");
