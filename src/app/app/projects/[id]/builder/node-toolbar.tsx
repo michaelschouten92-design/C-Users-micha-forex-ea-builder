@@ -10,6 +10,74 @@ import {
 } from "@/types/builder";
 import { StrategySettingsPanel } from "./strategy-settings-panel";
 
+// Static style maps — defined once outside component to avoid re-creation on every render
+const CATEGORY_STYLES: Record<
+  NodeCategory,
+  { gradient: string; shadow: string; hoverShadow: string; border: string }
+> = {
+  timing: {
+    gradient: "bg-gradient-to-r from-[#FF6B00] to-[#FF8533]",
+    shadow: "shadow-[0_2px_8px_rgba(255,107,0,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(255,107,0,0.4)]",
+    border: "border-[#FF8533]/30",
+  },
+  indicator: {
+    gradient: "bg-gradient-to-r from-[#00B8D9] to-[#00D4FF]",
+    shadow: "shadow-[0_2px_8px_rgba(0,184,217,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,184,217,0.4)]",
+    border: "border-[#00D4FF]/30",
+  },
+  priceaction: {
+    gradient: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]",
+    shadow: "shadow-[0_2px_8px_rgba(245,158,11,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)]",
+    border: "border-[#FBBF24]/30",
+  },
+  entry: {
+    gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
+    shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
+    border: "border-[#69F0AE]/30",
+  },
+  trading: {
+    gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
+    shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
+    border: "border-[#69F0AE]/30",
+  },
+  riskmanagement: {
+    gradient: "bg-gradient-to-r from-[#E11D48] to-[#FB7185]",
+    shadow: "shadow-[0_2px_8px_rgba(225,29,72,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(225,29,72,0.4)]",
+    border: "border-[#FB7185]/30",
+  },
+  trademanagement: {
+    gradient: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
+    shadow: "shadow-[0_2px_8px_rgba(168,85,247,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
+    border: "border-[#A855F7]/30",
+  },
+  entrystrategy: {
+    gradient: "bg-gradient-to-r from-[#059669] to-[#10B981]",
+    shadow: "shadow-[0_2px_8px_rgba(16,185,129,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)]",
+    border: "border-[#10B981]/30",
+  },
+};
+
+const BLOCK_COLORS: Record<NodeCategory, string> = {
+  timing: "text-[#FF6B00]",
+  indicator: "text-[#00B8D9]",
+  priceaction: "text-[#F59E0B]",
+  entry: "text-[#00C853]",
+  trading: "text-[#00C853]",
+  riskmanagement: "text-[#FB7185]",
+  trademanagement: "text-[#A855F7]",
+  entrystrategy: "text-[#10B981]",
+};
+
+const CATEGORIES: NodeCategory[] = ["entrystrategy", "timing", "trademanagement"];
+
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
   onClose?: () => void;
@@ -27,7 +95,6 @@ export function NodeToolbar({
     new Set(["entrystrategy"])
   );
   const [search, setSearch] = useState("");
-  const categories: NodeCategory[] = ["entrystrategy", "timing", "trademanagement"];
 
   const toggleCategory = (category: NodeCategory) => {
     setExpandedCategories((prev) => {
@@ -39,77 +106,6 @@ export function NodeToolbar({
       }
       return next;
     });
-  };
-
-  // Professional gradient and styling for each category
-  const categoryStyles: Record<
-    NodeCategory,
-    {
-      gradient: string;
-      shadow: string;
-      hoverShadow: string;
-      border: string;
-    }
-  > = {
-    timing: {
-      gradient: "bg-gradient-to-r from-[#FF6B00] to-[#FF8533]",
-      shadow: "shadow-[0_2px_8px_rgba(255,107,0,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(255,107,0,0.4)]",
-      border: "border-[#FF8533]/30",
-    },
-    indicator: {
-      gradient: "bg-gradient-to-r from-[#00B8D9] to-[#00D4FF]",
-      shadow: "shadow-[0_2px_8px_rgba(0,184,217,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,184,217,0.4)]",
-      border: "border-[#00D4FF]/30",
-    },
-    priceaction: {
-      gradient: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]",
-      shadow: "shadow-[0_2px_8px_rgba(245,158,11,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(245,158,11,0.4)]",
-      border: "border-[#FBBF24]/30",
-    },
-    entry: {
-      gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
-      shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
-      border: "border-[#69F0AE]/30",
-    },
-    trading: {
-      gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
-      shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
-      border: "border-[#69F0AE]/30",
-    },
-    riskmanagement: {
-      gradient: "bg-gradient-to-r from-[#E11D48] to-[#FB7185]",
-      shadow: "shadow-[0_2px_8px_rgba(225,29,72,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(225,29,72,0.4)]",
-      border: "border-[#FB7185]/30",
-    },
-    trademanagement: {
-      gradient: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
-      shadow: "shadow-[0_2px_8px_rgba(168,85,247,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
-      border: "border-[#A855F7]/30",
-    },
-    entrystrategy: {
-      gradient: "bg-gradient-to-r from-[#059669] to-[#10B981]",
-      shadow: "shadow-[0_2px_8px_rgba(16,185,129,0.3)]",
-      hoverShadow: "hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)]",
-      border: "border-[#10B981]/30",
-    },
-  };
-
-  const blockColors: Record<NodeCategory, string> = {
-    timing: "text-[#FF6B00]",
-    indicator: "text-[#00B8D9]",
-    priceaction: "text-[#F59E0B]",
-    entry: "text-[#00C853]",
-    trading: "text-[#00C853]",
-    riskmanagement: "text-[#FB7185]",
-    trademanagement: "text-[#A855F7]",
-    entrystrategy: "text-[#10B981]",
   };
 
   return (
@@ -169,7 +165,7 @@ export function NodeToolbar({
       </div>
 
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
-        {categories.map((category) => {
+        {CATEGORIES.map((category) => {
           const searchLower = search.toLowerCase().trim();
           const templates = NODE_TEMPLATES.filter(
             (t) =>
@@ -180,7 +176,7 @@ export function NodeToolbar({
           );
           if (searchLower && templates.length === 0) return null;
           const isExpanded = searchLower ? true : expandedCategories.has(category);
-          const styles = categoryStyles[category];
+          const styles = CATEGORY_STYLES[category];
 
           return (
             <div key={category}>
@@ -240,7 +236,7 @@ export function NodeToolbar({
                         title={template.description}
                       >
                         <div className="flex items-center justify-between">
-                          <div className={`text-sm font-medium ${blockColors[template.category]}`}>
+                          <div className={`text-sm font-medium ${BLOCK_COLORS[template.category]}`}>
                             {template.label}
                           </div>
                           {isBeginner && (

@@ -41,39 +41,49 @@ export async function POST(request: Request) {
     let updated = 0;
     const failed: string[] = [];
 
-    for (const email of emails) {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: { id: true, subscription: { select: { tier: true } } },
-        });
+    // Fetch all users in parallel (chunked to avoid overwhelming DB)
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
+      const chunk = emails.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map(async (email) => {
+          const user = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true, subscription: { select: { tier: true } } },
+          });
 
-        if (!user) {
-          failed.push(email);
-          continue;
+          if (!user) {
+            failed.push(email);
+            return;
+          }
+
+          const previousTier = user.subscription?.tier ?? "FREE";
+
+          await prisma.subscription.upsert({
+            where: { userId: user.id },
+            create: { userId: user.id, tier, status: "active" },
+            update: { tier, status: "active" },
+          });
+
+          invalidateSubscriptionCache(user.id);
+
+          // Audit the tier change (fire-and-forget)
+          const tierOrder = ["FREE", "PRO", "ELITE"];
+          const auditFn =
+            tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier)
+              ? audit.subscriptionUpgrade
+              : audit.subscriptionDowngrade;
+          auditFn(user.id, previousTier, tier).catch(() => {});
+
+          updated++;
+        })
+      );
+
+      // Collect failures from rejected promises
+      for (let j = 0; j < results.length; j++) {
+        if (results[j].status === "rejected") {
+          failed.push(chunk[j]);
         }
-
-        const previousTier = user.subscription?.tier ?? "FREE";
-
-        await prisma.subscription.upsert({
-          where: { userId: user.id },
-          create: { userId: user.id, tier, status: "active" },
-          update: { tier, status: "active" },
-        });
-
-        invalidateSubscriptionCache(user.id);
-
-        // Audit the tier change
-        const tierOrder = ["FREE", "PRO", "ELITE"];
-        const auditFn =
-          tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier)
-            ? audit.subscriptionUpgrade
-            : audit.subscriptionDowngrade;
-        auditFn(user.id, previousTier, tier).catch(() => {});
-
-        updated++;
-      } catch {
-        failed.push(email);
       }
     }
 

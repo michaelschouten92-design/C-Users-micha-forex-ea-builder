@@ -39,7 +39,7 @@ export async function GET(request: Request, { params }: Params) {
       include: {
         versions: {
           orderBy: { versionNo: "desc" },
-          take: 10,
+          take: 1,
           select: {
             id: true,
             versionNo: true,

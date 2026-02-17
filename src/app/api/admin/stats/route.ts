@@ -15,19 +15,13 @@ export async function GET() {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
-    const now = new Date();
+    const now = Date.now();
     const startOfDay = new Date(now);
     startOfDay.setUTCHours(0, 0, 0, 0);
-
-    const startOfWeek = new Date(now);
+    const startOfWeek = new Date(startOfDay);
     startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay());
-    startOfWeek.setUTCHours(0, 0, 0, 0);
-
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
-
-    const oneDayAgo = new Date(now);
-    oneDayAgo.setUTCHours(oneDayAgo.getUTCHours() - 24);
+    const thirtyDaysAgo = new Date(now - 30 * 86_400_000);
+    const oneDayAgo = new Date(now - 86_400_000);
 
     const [
       tierCounts,

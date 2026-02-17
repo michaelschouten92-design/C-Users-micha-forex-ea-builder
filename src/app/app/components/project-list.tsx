@@ -218,12 +218,10 @@ export function ProjectList({ projects }: { projects: Project[] }) {
 
     // Tag filter (AND logic - must have all selected tags)
     if (selectedTags.size > 0) {
+      const selectedArr = Array.from(selectedTags);
       result = result.filter((p) => {
-        const projectTags = new Set((p.tags ?? []).map((t) => t.tag));
-        for (const tag of selectedTags) {
-          if (!projectTags.has(tag)) return false;
-        }
-        return true;
+        const tags = (p.tags ?? []).map((t) => t.tag);
+        return selectedArr.every((tag) => tags.includes(tag));
       });
     }
 

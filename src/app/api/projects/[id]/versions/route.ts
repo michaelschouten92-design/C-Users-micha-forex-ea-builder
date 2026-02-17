@@ -176,24 +176,27 @@ export async function POST(request: Request, { params }: Params) {
         },
       });
 
-      // Cleanup: keep only the last 5 autosaves per project
-      if (isAutosave) {
-        const autosaves = await tx.buildVersion.findMany({
+      return newVersion;
+    });
+
+    // Cleanup old autosaves outside the transaction (fire-and-forget, non-blocking)
+    if (isAutosave) {
+      prisma.buildVersion
+        .findMany({
           where: { projectId: id, isAutosave: true },
           orderBy: { versionNo: "desc" },
           select: { id: true },
           skip: 5,
-        });
-
-        if (autosaves.length > 0) {
-          await tx.buildVersion.deleteMany({
-            where: { id: { in: autosaves.map((v) => v.id) } },
-          });
-        }
-      }
-
-      return newVersion;
-    });
+        })
+        .then((autosaves) => {
+          if (autosaves.length > 0) {
+            return prisma.buildVersion.deleteMany({
+              where: { id: { in: autosaves.map((v) => v.id) } },
+            });
+          }
+        })
+        .catch(() => {});
+    }
 
     // Quick validation warnings (non-blocking, helps users catch issues before export)
     const warnings: string[] = [];

@@ -35,6 +35,10 @@ export async function GET() {
   try {
     const userId = session.user.id;
 
+    // Limit audit logs to last 12 months to prevent OOM on large accounts
+    const auditLogCutoff = new Date();
+    auditLogCutoff.setMonth(auditLogCutoff.getMonth() - 12);
+
     const [user, subscription, projects, exports, templates, auditLogs] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -89,8 +93,8 @@ export async function GET() {
         },
       }),
       prisma.auditLog.findMany({
-        where: { userId },
-        take: 10000, // Cap audit logs to prevent OOM
+        where: { userId, createdAt: { gte: auditLogCutoff } },
+        take: 5000,
         select: {
           eventType: true,
           resourceType: true,
