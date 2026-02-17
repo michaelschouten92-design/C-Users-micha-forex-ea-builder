@@ -25,7 +25,7 @@ const faqItems = [
   },
   {
     q: "What strategy templates are included?",
-    a: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor.",
+    a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each produces a fully functional Expert Advisor.",
   },
   {
     q: "Can I use the exported EA in live trading?",
@@ -218,6 +218,12 @@ export default function ProductPage() {
                   type: "Momentum",
                   color: "#F472B6",
                   desc: "Enter on MACD signal line crossover. Configurable fast/slow EMA and signal periods.",
+                },
+                {
+                  name: "RSI/MACD Divergence",
+                  type: "Divergence",
+                  color: "#EF4444",
+                  desc: "Detect RSI or MACD divergence with price. Trade when momentum diverges from price action.",
                 },
               ].map((t) => (
                 <div

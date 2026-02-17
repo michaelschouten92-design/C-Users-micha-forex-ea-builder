@@ -44,7 +44,7 @@ export default async function Home() {
     },
     featureList: [
       "No-code MT5 & MT4 bot builder",
-      "Strategy templates (EMA crossover, RSI, MACD, breakout, pullback)",
+      "Strategy templates (EMA crossover, RSI, MACD, breakout, pullback, divergence)",
       "Clean MQL5 code export (MQL4 on Pro+)",
       "Built-in risk management",
       "Works with any MT5 or MT4 broker",
@@ -83,7 +83,7 @@ export default async function Home() {
     },
     {
       q: "What strategy templates are available?",
-      a: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor with built-in risk management, stop loss, and take profit logic.",
+      a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each produces a fully functional Expert Advisor with built-in risk management, stop loss, and take profit logic.",
     },
   ];
 
@@ -378,9 +378,9 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-semibold text-white mb-3">Choose a strategy template</h3>
               <p className="text-sm text-[#94A3B8] leading-relaxed">
-                Pick from 5 proven strategies: EMA Crossover, RSI Reversal, Range Breakout, Trend
-                Pullback, or MACD Crossover. Each comes with sensible defaults that work out of the
-                box.
+                Pick from 6 proven strategies: EMA Crossover, RSI Reversal, Range Breakout, Trend
+                Pullback, MACD Crossover, or RSI/MACD Divergence. Each comes with sensible defaults
+                that work out of the box.
               </p>
             </div>
             <div className="text-center">
@@ -471,6 +471,13 @@ export default async function Home() {
                 description:
                   "Trade MACD signal line crossovers. Set fast/slow EMA, signal period, and risk %. Optional higher-timeframe trend filter.",
                 color: "#EC4899",
+              },
+              {
+                name: "RSI/MACD Divergence",
+                type: "Divergence",
+                description:
+                  "Detect RSI or MACD divergence with price action. Trade when momentum diverges from price — a classic reversal signal.",
+                color: "#EF4444",
               },
             ].map((t) => (
               <div

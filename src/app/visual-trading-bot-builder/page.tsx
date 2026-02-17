@@ -188,6 +188,11 @@ export default function VisualBotBuilderPage() {
                   desc: "Momentum-based MACD signal entries",
                   color: "#F472B6",
                 },
+                {
+                  name: "RSI/MACD Divergence",
+                  desc: "Reversal entries based on indicator divergence",
+                  color: "#EF4444",
+                },
               ].map((t) => (
                 <div
                   key={t.name}

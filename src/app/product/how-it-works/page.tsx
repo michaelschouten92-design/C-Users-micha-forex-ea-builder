@@ -31,7 +31,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 1,
         name: "Choose a strategy template",
-        text: "Pick from 5 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, or MACD Crossover. Each comes with sensible defaults that work out of the box.",
+        text: "Pick from 6 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, or RSI/MACD Divergence. Each comes with sensible defaults that work out of the box.",
       },
       {
         "@type": "HowToStep",
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Choose a strategy template</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  AlgoStudio starts you with a working strategy — not a blank canvas. Pick from 5
+                  AlgoStudio starts you with a working strategy — not a blank canvas. Pick from 6
                   proven templates, each designed around a different trading approach.
                 </p>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -100,6 +100,10 @@ export default function HowItWorksPage() {
                     { name: "Range Breakout", desc: "Breakout trading of price ranges" },
                     { name: "Trend Pullback", desc: "Enter on pullbacks in trending markets" },
                     { name: "MACD Crossover", desc: "Momentum-based entries on MACD signals" },
+                    {
+                      name: "RSI/MACD Divergence",
+                      desc: "Reversal entries based on indicator divergence",
+                    },
                   ].map((t) => (
                     <div
                       key={t.name}

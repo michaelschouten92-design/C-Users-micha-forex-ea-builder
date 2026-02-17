@@ -33,7 +33,7 @@ const faqItems = [
   },
   {
     q: "What strategies can I build without coding?",
-    a: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each covers a different trading approach.",
+    a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each covers a different trading approach.",
   },
   {
     q: "How long does it take?",
@@ -154,6 +154,7 @@ export default function BuildWithoutCodingPage() {
                 { name: "Range Breakout", type: "Breakout", color: "#F59E0B" },
                 { name: "Trend Pullback", type: "Trend Following", color: "#34D399" },
                 { name: "MACD Crossover", type: "Momentum", color: "#F472B6" },
+                { name: "RSI/MACD Divergence", type: "Divergence", color: "#EF4444" },
               ].map((t) => (
                 <div
                   key={t.name}

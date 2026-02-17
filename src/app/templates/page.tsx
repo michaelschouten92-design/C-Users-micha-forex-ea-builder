@@ -96,6 +96,15 @@ const templates = [
     basicFields: "Fast/Slow/Signal, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "HTF trend filter",
   },
+  {
+    name: "RSI/MACD Divergence",
+    type: "Divergence",
+    description:
+      "Detect RSI or MACD divergence with price action. Enter when momentum diverges from price — a classic reversal signal. Set lookback, threshold, risk %, and ATR stop loss.",
+    color: "#EF4444",
+    basicFields: "Indicator, Lookback, Threshold, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Trend filter, Min divergence bars",
+  },
 ];
 
 export default function TemplatesPage() {
@@ -104,7 +113,7 @@ export default function TemplatesPage() {
     "@type": "CollectionPage",
     name: "MT5 & MT4 Strategy Templates",
     description:
-      "5 ready-to-export MetaTrader 5 & 4 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
+      "6 ready-to-export MetaTrader 5 & 4 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -241,6 +250,7 @@ export default function TemplatesPage() {
                   ["Trend Pullback", "Trending", "Moderate", "Better entries in trends"],
                   ["RSI Reversal", "Range-bound", "Simple", "Higher win rate"],
                   ["MACD Crossover", "Momentum", "Simple", "Momentum confirmation"],
+                  ["RSI/MACD Divergence", "Reversals", "Moderate", "Early reversal signals"],
                 ].map(([name, market, complexity, strength]) => (
                   <tr key={name} className="border-b border-[rgba(79,70,229,0.1)]">
                     <td className="py-3 pr-4 text-white font-medium">{name}</td>

@@ -36,7 +36,7 @@ const faqItems = [
   },
   {
     q: "What strategy templates are available?",
-    a: "AlgoStudio includes 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover. Each produces a fully functional Expert Advisor with built-in risk management.",
+    a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each produces a fully functional Expert Advisor with built-in risk management.",
     category: "Templates & Builder" as const,
   },
   {

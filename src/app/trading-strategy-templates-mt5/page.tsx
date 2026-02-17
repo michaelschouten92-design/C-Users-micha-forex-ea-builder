@@ -121,6 +121,21 @@ export default function StrategyTemplatesPage() {
       ],
       advanced: ["Zero-line filter", "Trend filter"],
     },
+    {
+      name: "RSI/MACD Divergence",
+      type: "Divergence",
+      color: "#EF4444",
+      description:
+        "Detect RSI or MACD divergence with price action. Enter when momentum diverges from price — a classic reversal signal with strong predictive value.",
+      settings: [
+        "Indicator (RSI or MACD)",
+        "Lookback period",
+        "Divergence threshold",
+        "Risk per trade (%)",
+        "ATR stop loss multiplier",
+      ],
+      advanced: ["Trend filter", "Min divergence bars"],
+    },
   ];
 
   return (
