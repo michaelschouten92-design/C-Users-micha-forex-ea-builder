@@ -22,7 +22,6 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
       comment: "Telemetry API Key",
       isOptimizable: false,
       group: "Telemetry",
-      alwaysVisible: true,
     },
     {
       name: "InpTelemetryURL",
@@ -31,7 +30,6 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
       comment: "Telemetry Server",
       isOptimizable: false,
       group: "Telemetry",
-      alwaysVisible: true,
     },
     {
       name: "InpHeartbeatInterval",
@@ -40,7 +38,6 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
       comment: "Heartbeat Interval (seconds)",
       isOptimizable: false,
       group: "Telemetry",
-      alwaysVisible: true,
     }
   );
 
