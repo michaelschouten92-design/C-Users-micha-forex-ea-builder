@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    // Prevent downgrade via checkout (PRO cannot buy PRO, ELITE cannot buy PRO)
+    // Prevent downgrade via checkout (ELITE cannot buy PRO — use customer portal instead)
     if (isActive && currentTier === "ELITE" && plan === "PRO") {
       return NextResponse.json(
         { error: "Please manage your subscription from account settings" },
@@ -159,9 +159,10 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Add trial period for new subscribers (no previous paid subscription)
+    // Add trial period for users who have never had a paid subscription
     const trialDays = env.STRIPE_TRIAL_DAYS;
-    if (trialDays && trialDays > 0 && !currentTier) {
+    const hasHadPaidPlan = currentTier === "PRO" || currentTier === "ELITE";
+    if (trialDays && trialDays > 0 && !hasHadPaidPlan) {
       checkoutParams.subscription_data = {
         trial_period_days: trialDays,
       };

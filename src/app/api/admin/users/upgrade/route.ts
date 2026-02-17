@@ -6,6 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { audit } from "@/lib/audit";
 import { checkAdmin } from "@/lib/admin";
+import { syncDiscordRoleForUser } from "@/lib/discord";
 
 const upgradeSchema = z.object({
   email: z.string().email(),
@@ -71,6 +72,11 @@ export async function POST(request: Request) {
 
     // Invalidate subscription cache so new limits take effect immediately
     invalidateSubscriptionCache(user.id);
+
+    // Sync Discord role (fire-and-forget)
+    syncDiscordRoleForUser(user.id, tier).catch((err) =>
+      logger.warn({ err }, "Discord role sync failed after manual tier change")
+    );
 
     // Log audit event
     const isUpgrade =

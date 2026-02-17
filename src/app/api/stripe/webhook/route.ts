@@ -129,6 +129,18 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.subscription.trial_will_end": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleTrialWillEnd(subscription);
+        break;
+      }
+
+      case "invoice.upcoming": {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoiceUpcoming(invoice);
+        break;
+      }
+
       case "charge.dispute.created": {
         const dispute = event.data.object as Stripe.Dispute;
         log.error(
@@ -187,19 +199,74 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const customerId = getStringId(session.customer);
   const period = getSubscriptionPeriod(stripeSubscription);
 
-  await prisma.subscription.update({
-    where: { userId },
-    data: {
-      tier: validatedPlan,
-      status: "active",
-      stripeSubId: subscriptionId,
-      stripeCustomerId: customerId,
-      currentPeriodStart: period.start,
-      currentPeriodEnd: period.end,
-    },
+  // Map Stripe status to our status (same mapping as handleSubscriptionUpdate)
+  const statusMap: Record<string, string> = {
+    active: "active",
+    canceled: "cancelled",
+    incomplete: "incomplete",
+    incomplete_expired: "expired",
+    past_due: "past_due",
+    paused: "paused",
+    trialing: "trialing",
+    unpaid: "unpaid",
+  };
+  const mappedStatus = statusMap[stripeSubscription.status] || stripeSubscription.status;
+
+  // Use transaction with row-level locking to prevent race conditions with concurrent webhooks
+  const previousTier = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; tier: string }>>`
+      SELECT id, tier FROM "Subscription"
+      WHERE "userId" = ${userId}
+      FOR UPDATE
+    `;
+
+    if (!rows.length) {
+      log.error({ userId }, "Subscription not found for user in checkout completion");
+      return null;
+    }
+
+    const prev = rows[0].tier;
+
+    await tx.subscription.update({
+      where: { id: rows[0].id },
+      data: {
+        tier: validatedPlan,
+        status: mappedStatus,
+        stripeSubId: subscriptionId,
+        stripeCustomerId: customerId,
+        currentPeriodStart: period.start,
+        currentPeriodEnd: period.end,
+      },
+    });
+
+    return prev;
   });
 
   invalidateSubscriptionCache(userId);
+
+  // Send welcome/confirmation email (fire-and-forget)
+  if (previousTier !== null) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (user?.email) {
+      const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+      sendPlanChangeEmail(user.email, previousTier, validatedPlan, true, settingsUrl).catch((err) =>
+        log.error({ err }, "Welcome email send failed after checkout")
+      );
+    }
+
+    // Audit log
+    audit
+      .subscriptionUpgrade(userId, previousTier, validatedPlan)
+      .catch((err) => log.warn({ err }, "Audit log failed but subscription created"));
+
+    // Sync Discord role (fire-and-forget)
+    syncDiscordRoleForUser(userId, validatedPlan).catch((err) =>
+      log.warn({ err }, "Discord role sync failed after checkout")
+    );
+  }
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -445,6 +512,46 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
   const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
   sendPaymentActionRequiredEmail(subscription.user.email, portalUrl).catch((err) =>
     log.error({ err }, "Payment action required email send failed")
+  );
+}
+
+async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+  const customerId = getStringId(subscription.customer);
+  if (!customerId) return;
+
+  const sub = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: { user: { select: { email: true } } },
+  });
+
+  if (!sub?.user?.email) return;
+
+  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+  // Reuse payment action required email — it prompts user to update payment method
+  sendPaymentActionRequiredEmail(sub.user.email, portalUrl).catch((err) =>
+    log.error({ err }, "Trial ending email send failed")
+  );
+
+  log.info(
+    { customerId, tier: sub.tier, trialEnd: subscription.trial_end },
+    "Trial ending soon — reminder sent"
+  );
+}
+
+async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
+  const customerId = getStringId(invoice.customer);
+  if (!customerId) return;
+
+  const sub = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: { user: { select: { email: true } } },
+  });
+
+  if (!sub?.user?.email) return;
+
+  log.info(
+    { customerId, tier: sub.tier, amountDue: invoice.amount_due },
+    "Upcoming invoice — renewal approaching"
   );
 }
 
