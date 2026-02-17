@@ -934,7 +934,6 @@ export function generateMQL4Code(
         value: ctx.maxSlippage,
         comment: "Max Slippage (points)",
         isOptimizable: false,
-        alwaysVisible: true,
         group: "Risk Management",
       },
     ],

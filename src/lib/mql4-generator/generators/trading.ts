@@ -65,7 +65,8 @@ export function generatePlaceBuyCode(
           "double",
           data.riskPercent,
           riskComment,
-          riskGroup
+          riskGroup,
+          true
         )
       );
       if (!skipOnTickLotSizing) {
@@ -149,7 +150,8 @@ export function generatePlaceSellCode(
             "double",
             data.riskPercent,
             "Sell Risk %",
-            group
+            group,
+            true
           )
         );
       }
@@ -322,7 +324,6 @@ function generateIndicatorBasedSL(
       value: 50,
       comment: "Stop Loss (pips) - No indicator connected",
       isOptimizable: false,
-      alwaysVisible: true,
     });
     code.onTick.push(
       "double slPips = InpStopLoss * _pipFactor; // Fallback: no indicator connected"
@@ -344,7 +345,6 @@ function generateIndicatorBasedSL(
           value: 5,
           comment: "Additional buffer pips for BB SL",
           isOptimizable: false,
-          alwaysVisible: true,
         });
         code.onTick.push("// Indicator-based SL using Bollinger Bands (direction-aware)");
         code.onTick.push("double currentPrice = Bid;");
@@ -370,7 +370,6 @@ function generateIndicatorBasedSL(
           value: 1.5,
           comment: "MA SL distance multiplier",
           isOptimizable: false,
-          alwaysVisible: true,
         });
         code.onTick.push("// Indicator-based SL using Moving Average");
         code.onTick.push("double slPips;");
@@ -389,7 +388,6 @@ function generateIndicatorBasedSL(
           value: 1.5,
           comment: "ATR SL multiplier",
           isOptimizable: false,
-          alwaysVisible: true,
         });
         code.onTick.push("// Indicator-based SL using ATR");
         code.onTick.push(`double slPips = (${varPrefix}Buffer[0] / _Point) * InpATRSLMultiplier;`);
@@ -403,7 +401,6 @@ function generateIndicatorBasedSL(
           value: 50,
           comment: "Base SL pips when ADX is at trend level",
           isOptimizable: false,
-          alwaysVisible: true,
         });
         code.onTick.push("// Indicator-based SL using ADX (scaled by trend strength)");
         code.onTick.push(`double adxValue = ${varPrefix}MainBuffer[0];`);
@@ -420,7 +417,6 @@ function generateIndicatorBasedSL(
           value: 50,
           comment: "Stop Loss (pips)",
           isOptimizable: false,
-          alwaysVisible: true,
         });
         code.onTick.push(
           `double slPips = InpStopLoss * _pipFactor; // ${indData.indicatorType} not suitable for SL calculation`
@@ -435,7 +431,6 @@ function generateIndicatorBasedSL(
       value: 50,
       comment: "Stop Loss (pips)",
       isOptimizable: false,
-      alwaysVisible: true,
     });
     code.onTick.push("double slPips = InpStopLoss * _pipFactor; // Unknown indicator type");
   }
@@ -1230,7 +1225,6 @@ function addPendingOrderHelpers(code: GeneratedCode, ctx: GeneratorContext): voi
     value: 24,
     comment: "Pending Order Expiry (hours, 0=no expiry)",
     isOptimizable: false,
-    alwaysVisible: true,
     group: "Pending Orders",
   });
 

@@ -20,7 +20,7 @@ export function sanitizeMQL5String(value: string): string {
 export function isFieldOptimizable(node: BuilderNode, fieldName: string): boolean {
   const optimizableFields = node.data.optimizableFields;
   if (!optimizableFields || !Array.isArray(optimizableFields)) {
-    return true; // Default to optimizable if not specified
+    return false; // Default: NOT optimizable — only explicitly marked fields become input
   }
   return optimizableFields.includes(fieldName);
 }
@@ -33,7 +33,8 @@ export function createInput(
   type: OptimizableInput["type"],
   value: number | string | boolean,
   comment: string,
-  group?: string
+  group?: string,
+  alwaysVisible?: boolean
 ): OptimizableInput {
   return {
     name,
@@ -42,6 +43,7 @@ export function createInput(
     comment,
     isOptimizable: isFieldOptimizable(node, fieldName),
     group,
+    alwaysVisible,
   };
 }
 
