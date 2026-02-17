@@ -452,39 +452,16 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   const customerId = getStringId(charge.customer);
   if (!customerId) return;
 
-  // Only downgrade on full refunds
-  if (!charge.refunded) return;
-
-  const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
-      WHERE "stripeCustomerId" = ${customerId}
-      FOR UPDATE
-    `;
-
-    if (!rows.length) return null;
-
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: {
-        tier: "FREE",
-        status: "cancelled",
-        stripeSubId: null,
-        currentPeriodStart: null,
-        currentPeriodEnd: null,
-      },
-    });
-
-    return rows[0].userId;
-  });
-
-  if (userId) {
-    invalidateSubscriptionCache(userId);
-    log.info({ userId, chargeId: charge.id }, "Subscription downgraded to FREE after full refund");
-
-    // Sync Discord role to FREE (fire-and-forget)
-    syncDiscordRoleForUser(userId, "FREE").catch((err) =>
-      log.warn({ err }, "Discord role sync failed after refund")
-    );
-  }
+  // Log the refund but do NOT auto-downgrade the subscription.
+  // Stripe sends customer.subscription.deleted when a subscription is actually cancelled.
+  // A refund on a single charge (e.g. customer service goodwill) should not kill the subscription.
+  log.info(
+    {
+      chargeId: charge.id,
+      customerId,
+      amount: charge.amount_refunded,
+      fullRefund: charge.refunded,
+    },
+    "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"
+  );
 }
