@@ -10,17 +10,30 @@ const STEPS = [
     description:
       "Build a complete trading bot without writing a single line of code. Drag blocks, tweak settings, and export clean MQL5 (or MQL4). If you ever get stuck, click the Help button in the bottom-right corner of the canvas.",
     icon: (
-      <svg
-        className="w-10 h-10 text-[#4F46E5]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg1)" />
         <path
+          d="M40 18 L44 30 H56 L46 38 L50 50 L40 42 L30 50 L34 38 L24 30 H36 Z"
+          fill="#4F46E5"
+          opacity="0.15"
+        />
+        <path d="M40 24V25" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M52.5 27.5L51.8 28.2" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M56 40H55" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M25 40H24" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M28.2 28.2L27.5 27.5" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path
+          d="M34.5 52H45.5M40 28V29a7 7 0 01-3 5.745l-.774.774A4.5 4.5 0 0035 38.691V40a3 3 0 006 0v-1.309a4.5 4.5 0 00-1.226-3.172L39 34.745A7 7 0 0140 29z"
+          stroke="#A78BFA"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
         />
       </svg>
     ),
@@ -30,18 +43,25 @@ const STEPS = [
     description:
       "On the left you'll find all available blocks organised into three categories: Entry Strategies (your trade signals), Timing (session & spread filters), and Trade Management (trailing stop, breakeven). Use the search bar at the top to quickly find what you need.",
     icon: (
-      <svg
-        className="w-10 h-10 text-[#10B981]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M4 6h16M4 12h16M4 18h7"
-        />
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg2" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg2)" />
+        {/* Three colored blocks representing categories */}
+        <rect x="22" y="22" width="16" height="10" rx="3" fill="#10B981" opacity="0.8" />
+        <rect x="22" y="35" width="16" height="10" rx="3" fill="#F59E0B" opacity="0.8" />
+        <rect x="22" y="48" width="16" height="10" rx="3" fill="#A78BFA" opacity="0.8" />
+        {/* Lines representing labels */}
+        <rect x="42" y="25" width="16" height="2" rx="1" fill="#10B981" opacity="0.4" />
+        <rect x="42" y="29" width="10" height="2" rx="1" fill="#10B981" opacity="0.2" />
+        <rect x="42" y="38" width="14" height="2" rx="1" fill="#F59E0B" opacity="0.4" />
+        <rect x="42" y="42" width="10" height="2" rx="1" fill="#F59E0B" opacity="0.2" />
+        <rect x="42" y="51" width="12" height="2" rx="1" fill="#A78BFA" opacity="0.4" />
+        <rect x="42" y="55" width="8" height="2" rx="1" fill="#A78BFA" opacity="0.2" />
       </svg>
     ),
   },
@@ -50,17 +70,47 @@ const STEPS = [
     description:
       "Drag an entry strategy block from the left panel onto the canvas. Try EMA Crossover — it's the simplest to start with. Each entry block already includes entry signals, stop loss, take profit, and position sizing — everything needed for a working EA.",
     icon: (
-      <svg
-        className="w-10 h-10 text-[#22C55E]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg3" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#22C55E" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#22C55E" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg3)" />
+        {/* Block being dragged */}
+        <rect
+          x="38"
+          y="30"
+          width="22"
+          height="14"
+          rx="3"
+          fill="#22C55E"
+          opacity="0.2"
+          stroke="#22C55E"
+          strokeWidth="1.5"
+          strokeDasharray="3 2"
+        />
+        <rect x="41" y="34" width="12" height="2" rx="1" fill="#22C55E" opacity="0.5" />
+        <rect x="41" y="38" width="8" height="2" rx="1" fill="#22C55E" opacity="0.3" />
+        {/* Cursor */}
         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+          d="M28 26 L28 42 L33 37 L39 38 L36 32 L41 28 Z"
+          fill="white"
+          opacity="0.9"
+          stroke="#22C55E"
+          strokeWidth="1"
+        />
+        {/* Dotted drag trail */}
+        <line
+          x1="20"
+          y1="50"
+          x2="32"
+          y2="38"
+          stroke="#22C55E"
+          strokeWidth="1.5"
+          strokeDasharray="2 3"
+          opacity="0.4"
         />
       </svg>
     ),
@@ -70,18 +120,44 @@ const STEPS = [
     description:
       "Optionally drag timing filters (Trading Sessions, Max Spread) to control when your EA trades, and trade management blocks (Trailing Stop, Breakeven) to manage open positions. These are not required — your strategy works with just an entry block.",
     icon: (
-      <svg
-        className="w-10 h-10 text-[#F59E0B]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg4" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg4)" />
+        {/* Two blocks with connection line */}
+        <rect
+          x="16"
+          y="30"
+          width="20"
+          height="14"
+          rx="3"
+          fill="#F59E0B"
+          opacity="0.2"
+          stroke="#F59E0B"
+          strokeWidth="1.5"
         />
+        <rect x="19" y="34" width="10" height="2" rx="1" fill="#F59E0B" opacity="0.5" />
+        <rect x="19" y="38" width="7" height="2" rx="1" fill="#F59E0B" opacity="0.3" />
+        <rect
+          x="44"
+          y="30"
+          width="20"
+          height="14"
+          rx="3"
+          fill="#A78BFA"
+          opacity="0.2"
+          stroke="#A78BFA"
+          strokeWidth="1.5"
+        />
+        <rect x="47" y="34" width="10" height="2" rx="1" fill="#A78BFA" opacity="0.5" />
+        <rect x="47" y="38" width="7" height="2" rx="1" fill="#A78BFA" opacity="0.3" />
+        {/* Connection line with animated dot */}
+        <line x1="36" y1="37" x2="44" y2="37" stroke="#4F46E5" strokeWidth="2" />
+        <circle cx="40" cy="37" r="2.5" fill="#4F46E5" />
       </svg>
     ),
   },
@@ -90,23 +166,42 @@ const STEPS = [
     description:
       'Click any block on the canvas to open its settings in the right panel. Adjust parameters like period lengths, SL/TP values, and lot sizes. Tip: check "Optimize in MT5" on any numeric parameter to include it in the MetaTrader 5 Strategy Tester optimisation.',
     icon: (
-      <svg
-        className="w-10 h-10 text-[#06B6D4]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg5" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg5)" />
+        {/* Block */}
+        <rect
+          x="18"
+          y="26"
+          width="22"
+          height="14"
+          rx="3"
+          fill="#06B6D4"
+          opacity="0.2"
+          stroke="#06B6D4"
+          strokeWidth="1.5"
         />
+        <rect x="21" y="30" width="12" height="2" rx="1" fill="#06B6D4" opacity="0.5" />
+        <rect x="21" y="34" width="8" height="2" rx="1" fill="#06B6D4" opacity="0.3" />
+        {/* Slider / toggle controls */}
+        <rect x="46" y="26" width="18" height="3" rx="1.5" fill="#334155" />
+        <circle cx="58" cy="27.5" r="2.5" fill="#06B6D4" />
+        <rect x="46" y="33" width="18" height="3" rx="1.5" fill="#334155" />
+        <circle cx="52" cy="34.5" r="2.5" fill="#06B6D4" />
+        <rect x="46" y="40" width="18" height="3" rx="1.5" fill="#334155" />
+        <circle cx="55" cy="41.5" r="2.5" fill="#06B6D4" />
+        {/* Arrow from block to controls */}
         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          d="M42 33 L44 33"
+          stroke="#06B6D4"
+          strokeWidth="1"
+          strokeDasharray="2 2"
+          opacity="0.5"
         />
       </svg>
     ),
@@ -116,18 +211,78 @@ const STEPS = [
     description:
       "Scroll down in the left panel to find Strategy Settings. Here you can set max concurrent trades, daily loss limits, trading direction (long/short/both), and apply prop firm preset rules. These apply globally to your entire EA.",
     icon: (
-      <svg
-        className="w-10 h-10 text-[#4F46E5]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg6" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg6)" />
+        {/* Checklist */}
+        <rect
+          x="24"
+          y="20"
+          width="32"
+          height="40"
+          rx="4"
+          fill="#1E293B"
+          stroke="#4F46E5"
+          strokeWidth="1.5"
+          opacity="0.6"
+        />
+        {/* Checkmark items */}
+        <circle
+          cx="31"
+          cy="29"
+          r="3"
+          fill="#4F46E5"
+          opacity="0.3"
+          stroke="#4F46E5"
+          strokeWidth="1"
+        />
         <path
+          d="M29.5 29 L30.5 30 L33 27.5"
+          stroke="white"
+          strokeWidth="1.2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         />
+        <rect x="37" y="27.5" width="14" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
+        <circle
+          cx="31"
+          cy="38"
+          r="3"
+          fill="#4F46E5"
+          opacity="0.3"
+          stroke="#4F46E5"
+          strokeWidth="1"
+        />
+        <path
+          d="M29.5 38 L30.5 39 L33 36.5"
+          stroke="white"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <rect x="37" y="36.5" width="12" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
+        <circle
+          cx="31"
+          cy="47"
+          r="3"
+          fill="#4F46E5"
+          opacity="0.3"
+          stroke="#4F46E5"
+          strokeWidth="1"
+        />
+        <path
+          d="M29.5 47 L30.5 48 L33 45.5"
+          stroke="white"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <rect x="37" y="45.5" width="10" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
       </svg>
     ),
   },
@@ -136,17 +291,34 @@ const STEPS = [
     description:
       'When all blocks show a green "Strategy Complete" badge in the top-right, your strategy is ready. Click the Export button in the bottom bar to download a .mq5 file — this is your complete Expert Advisor source code.',
     icon: (
-      <svg
-        className="w-10 h-10 text-[#A78BFA]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg7" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg7)" />
+        {/* File icon */}
         <path
+          d="M28 22 H44 L52 30 V56 A3 3 0 0 1 49 59 H28 A3 3 0 0 1 25 56 V25 A3 3 0 0 1 28 22Z"
+          fill="#1E293B"
+          stroke="#A78BFA"
+          strokeWidth="1.5"
+        />
+        <path d="M44 22 V30 H52" stroke="#A78BFA" strokeWidth="1.5" fill="none" />
+        {/* .mq5 label */}
+        <text x="32" y="45" fill="#A78BFA" fontSize="8" fontFamily="monospace" fontWeight="bold">
+          .mq5
+        </text>
+        {/* Download arrow */}
+        <path d="M40 50 L40 58" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" />
+        <path
+          d="M36 55 L40 59 L44 55"
+          stroke="#A78BFA"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
         />
       </svg>
     ),
@@ -156,17 +328,33 @@ const STEPS = [
     description:
       'Open MetaTrader 5 and compile the .mq5 file. Launch the Strategy Tester (Ctrl+R), select your EA and symbol, set the model to "Every tick based on real ticks", and run at least 50 trades to get statistically meaningful results. Good luck!',
     icon: (
-      <svg
-        className="w-10 h-10 text-[#F43F5E]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+        <defs>
+          <radialGradient id="wg8" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#F43F5E" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#F43F5E" stopOpacity="0.05" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="url(#wg8)" />
+        {/* Candlesticks */}
+        <line x1="22" y1="32" x2="22" y2="52" stroke="#EF4444" strokeWidth="1" />
+        <rect x="20" y="36" width="4" height="10" fill="#EF4444" opacity="0.8" />
+        <line x1="30" y1="28" x2="30" y2="48" stroke="#22C55E" strokeWidth="1" />
+        <rect x="28" y="32" width="4" height="8" fill="#22C55E" opacity="0.8" />
+        <line x1="38" y1="24" x2="38" y2="46" stroke="#22C55E" strokeWidth="1" />
+        <rect x="36" y="28" width="4" height="10" fill="#22C55E" opacity="0.8" />
+        <line x1="46" y1="30" x2="46" y2="50" stroke="#EF4444" strokeWidth="1" />
+        <rect x="44" y="34" width="4" height="8" fill="#EF4444" opacity="0.8" />
+        <line x1="54" y1="22" x2="54" y2="44" stroke="#22C55E" strokeWidth="1" />
+        <rect x="52" y="26" width="4" height="10" fill="#22C55E" opacity="0.8" />
+        {/* Uptrend line */}
         <path
+          d="M18 50 L30 42 L38 34 L46 38 L58 24"
+          stroke="#F43F5E"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          opacity="0.7"
         />
       </svg>
     ),
@@ -200,12 +388,15 @@ export function WelcomeModal({
     if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        dismiss();
+        localStorage.setItem(STORAGE_KEY, "1");
+        setDismissed(true);
+        setStep(0);
+        onClose?.();
       }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 

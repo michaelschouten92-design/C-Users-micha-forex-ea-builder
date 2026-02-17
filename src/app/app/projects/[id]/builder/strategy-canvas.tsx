@@ -72,6 +72,113 @@ function HelpButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+function BuilderProgressStepper({
+  nodes,
+  selectedNode,
+}: {
+  nodes: Node[];
+  selectedNode: Node | null;
+}) {
+  const [hasExported, setHasExported] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("algostudio-has-exported") === "1"
+  );
+  const [isOnboarded] = useState(
+    () =>
+      typeof window !== "undefined" && localStorage.getItem("algostudio-builder-onboarded") === "1"
+  );
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setHasExported(localStorage.getItem("algostudio-has-exported") === "1");
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Re-check export status periodically (in case export happened in same tab)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const val = localStorage.getItem("algostudio-has-exported") === "1";
+      if (val !== hasExported) setHasExported(val);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [hasExported]);
+
+  // Don't show if welcome modal hasn't been dismissed yet
+  if (!isOnboarded) return null;
+
+  const step1 = nodes.some((n) => n.data && "entryType" in (n.data as Record<string, unknown>));
+  const step2 = selectedNode !== null;
+  const step3 = hasExported;
+
+  // Hide when all steps are complete
+  if (step1 && step2 && step3) return null;
+  // Also hide when canvas is getting busy
+  if (nodes.length >= 3 && hasExported) return null;
+
+  const steps = [
+    { label: "Add Entry Strategy", done: step1 },
+    { label: "Configure Settings", done: step1 && step2 },
+    { label: "Export EA", done: step3 },
+  ];
+
+  return (
+    <div
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center bg-[#1A0626]/90 border border-[rgba(79,70,229,0.25)] rounded-full px-4 py-1.5 backdrop-blur-sm"
+      style={{ maxWidth: 400, height: 36 }}
+    >
+      {steps.map((s, i) => {
+        const isActive = !s.done && (i === 0 || steps[i - 1].done);
+        return (
+          <div key={i} className="flex items-center">
+            {i > 0 && (
+              <div
+                className={`w-6 h-px mx-1.5 ${steps[i - 1].done ? "bg-[#4F46E5]" : "bg-[#334155]"}`}
+              />
+            )}
+            <div className="flex items-center gap-1.5">
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold ${
+                  s.done
+                    ? "bg-[#4F46E5] text-white"
+                    : isActive
+                      ? "bg-[#4F46E5]/30 text-[#A78BFA] ring-1 ring-[#4F46E5]"
+                      : "bg-[#334155] text-[#64748B]"
+                }`}
+              >
+                {s.done ? (
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  i + 1
+                )}
+              </div>
+              <span
+                className={`text-[11px] whitespace-nowrap ${
+                  s.done
+                    ? "text-[#64748B] line-through"
+                    : isActive
+                      ? "text-white font-medium"
+                      : "text-[#64748B]"
+                }`}
+              >
+                {s.label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface StrategyCanvasProps {
   projectId: string;
   initialData: BuildJsonSchema | null;
@@ -286,7 +393,17 @@ export function StrategyCanvas({
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
+    setIsDraggingOver(true);
   }, []);
+
+  const onDragLeave = useCallback((event: React.DragEvent) => {
+    // Only trigger when leaving the canvas itself, not child elements
+    if (event.currentTarget.contains(event.relatedTarget as globalThis.Node)) return;
+    setIsDraggingOver(false);
+  }, []);
+
+  // Drag-over state for enhanced empty canvas glow
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   // Drop error (entry strategy duplicate or node limit)
   const [dropError, setDropError] = useState<string | null>(null);
@@ -294,6 +411,7 @@ export function StrategyCanvas({
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+      setIsDraggingOver(false);
 
       const data = event.dataTransfer.getData("application/reactflow");
       if (!data) return;
@@ -597,6 +715,7 @@ export function StrategyCanvas({
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
               onDrop={onDrop}
               nodeTypes={nodeTypes}
               isValidConnection={isValidConnection}
@@ -613,20 +732,93 @@ export function StrategyCanvas({
               <Controls />
               {nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1]">
-                  <div className="text-center px-6 py-5 rounded-xl bg-[#1A0626]/60 border border-[rgba(79,70,229,0.15)]">
-                    <p className="text-sm text-[#94A3B8] mb-1">
-                      Drag an <span className="text-white font-medium">Entry Strategy</span> block
-                      from the left toolbar onto the canvas to start
+                  <div
+                    className={`flex flex-col items-center text-center px-10 py-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${
+                      isDraggingOver
+                        ? "border-[#4F46E5] bg-[rgba(79,70,229,0.12)] shadow-[0_0_40px_rgba(79,70,229,0.25)]"
+                        : "border-[rgba(79,70,229,0.25)] bg-[#1A0626]/60 empty-canvas-pulse"
+                    }`}
+                    style={{ maxWidth: 380 }}
+                  >
+                    {/* Animated drag hand icon */}
+                    <div className="mb-4 relative">
+                      <svg
+                        className="w-12 h-12 text-[#4F46E5] drag-hand-anim"
+                        viewBox="0 0 48 48"
+                        fill="none"
+                      >
+                        <rect
+                          x="8"
+                          y="8"
+                          width="20"
+                          height="14"
+                          rx="3"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="rgba(79,70,229,0.15)"
+                        />
+                        <rect
+                          x="11"
+                          y="11"
+                          width="14"
+                          height="2"
+                          rx="1"
+                          fill="currentColor"
+                          opacity="0.5"
+                        />
+                        <rect
+                          x="11"
+                          y="15"
+                          width="8"
+                          height="2"
+                          rx="1"
+                          fill="currentColor"
+                          opacity="0.3"
+                        />
+                        <path
+                          d="M34 28 C34 25 36 24 38 24 C40 24 41 25.5 41 27 L41 30 C41.8 29.5 43 29.5 43.5 30.5 L43.5 33 C43.5 37 41 40 37 40 L35 40 C32 40 30 38 30 35 L30 31 C30 29.5 31 28.5 32 28.5 C33 28.5 34 29 34 30"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          fill="rgba(79,70,229,0.1)"
+                        />
+                      </svg>
+                    </div>
+
+                    {/* Arrow pointing left toward toolbar */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg
+                        className="w-5 h-5 text-[#A78BFA] arrow-left-anim"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <p className="text-base font-semibold text-white">
+                        Drag a block from the toolbar
+                      </p>
+                    </div>
+
+                    <p className="text-sm text-[#94A3B8] mb-2">
+                      Start with an <span className="text-white font-medium">Entry Strategy</span>{" "}
+                      block to build your trading bot
                     </p>
                     <p className="text-xs text-[#64748B]">
-                      Not sure? Start with <span className="text-[#A78BFA]">EMA Crossover</span>{" "}
-                      &mdash; it&apos;s the simplest
+                      Try <span className="text-[#A78BFA]">EMA Crossover</span> &mdash; it&apos;s
+                      the simplest
                     </p>
                   </div>
                 </div>
               )}
             </ReactFlow>
           </ValidationProvider>
+
+          {/* Builder Progress Stepper */}
+          <BuilderProgressStepper nodes={nodes} selectedNode={selectedNode} />
 
           {/* Mobile: Floating button to open blocks toolbar */}
           <button
@@ -653,6 +845,27 @@ export function StrategyCanvas({
             }
             .help-btn-glow {
               animation: help-glow 3s ease-in-out infinite;
+            }
+            @keyframes empty-canvas-pulse {
+              0%, 100% { border-color: rgba(79,70,229,0.15); }
+              50% { border-color: rgba(79,70,229,0.35); }
+            }
+            .empty-canvas-pulse {
+              animation: empty-canvas-pulse 3s ease-in-out infinite;
+            }
+            @keyframes drag-hand {
+              0%, 100% { transform: translateX(-8px); opacity: 0.7; }
+              50% { transform: translateX(8px); opacity: 1; }
+            }
+            .drag-hand-anim {
+              animation: drag-hand 2.5s ease-in-out infinite;
+            }
+            @keyframes arrow-left {
+              0%, 100% { transform: translateX(0); opacity: 0.6; }
+              50% { transform: translateX(-4px); opacity: 1; }
+            }
+            .arrow-left-anim {
+              animation: arrow-left 2s ease-in-out infinite;
             }
           `}</style>
           <HelpButton onClick={() => setShowHelp(true)} />

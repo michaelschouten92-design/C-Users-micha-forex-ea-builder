@@ -123,6 +123,10 @@ export function ExportButton({
       }
 
       setResult(data);
+      // Track export for builder progress stepper
+      try {
+        localStorage.setItem("algostudio-has-exported", "1");
+      } catch {}
     } catch (err) {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
