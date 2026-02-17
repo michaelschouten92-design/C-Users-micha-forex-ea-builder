@@ -35,7 +35,7 @@ export function AnnouncementBanner() {
     fetch("/api/announcements")
       .then((res) => res.json())
       .then((data) => {
-        if (data.data) setAnnouncements(data.data);
+        if (Array.isArray(data.data)) setAnnouncements(data.data);
       })
       .catch(() => {});
   }, []);

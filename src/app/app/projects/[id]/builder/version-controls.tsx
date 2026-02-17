@@ -138,11 +138,13 @@ export function VersionControls({
     fetchVersions();
   }, [projectId, fetchVersions]);
 
-  // Refresh versions when autosave completes
+  // Refresh versions when autosave transitions to "saved"
+  const prevAutoSaveStatusRef = useRef(autoSaveStatus);
   useEffect(() => {
-    if (autoSaveStatus === "saved") {
+    if (autoSaveStatus === "saved" && prevAutoSaveStatusRef.current !== "saved") {
       fetchVersions();
     }
+    prevAutoSaveStatusRef.current = autoSaveStatus;
   }, [autoSaveStatus, fetchVersions]);
 
   // Close dropdown on outside click and Escape key

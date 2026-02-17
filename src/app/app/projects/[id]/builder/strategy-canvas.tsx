@@ -79,17 +79,33 @@ function BuilderProgressStepper({
   nodes: Node[];
   selectedNode: Node | null;
 }) {
-  const [hasExported, setHasExported] = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("algostudio-has-exported") === "1"
-  );
-  const [isOnboarded] = useState(
-    () =>
-      typeof window !== "undefined" && localStorage.getItem("algostudio-builder-onboarded") === "1"
-  );
+  const [hasExported, setHasExported] = useState(() => {
+    try {
+      return (
+        typeof window !== "undefined" && localStorage.getItem("algostudio-has-exported") === "1"
+      );
+    } catch {
+      return false;
+    }
+  });
+  const [isOnboarded] = useState(() => {
+    try {
+      return (
+        typeof window !== "undefined" &&
+        localStorage.getItem("algostudio-builder-onboarded") === "1"
+      );
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const handleStorage = () => {
-      setHasExported(localStorage.getItem("algostudio-has-exported") === "1");
+      try {
+        setHasExported(localStorage.getItem("algostudio-has-exported") === "1");
+      } catch {
+        /* private browsing */
+      }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
@@ -98,8 +114,12 @@ function BuilderProgressStepper({
   // Re-check export status periodically (in case export happened in same tab)
   useEffect(() => {
     const interval = setInterval(() => {
-      const val = localStorage.getItem("algostudio-has-exported") === "1";
-      if (val !== hasExported) setHasExported(val);
+      try {
+        const val = localStorage.getItem("algostudio-has-exported") === "1";
+        if (val !== hasExported) setHasExported(val);
+      } catch {
+        /* private browsing */
+      }
     }, 2000);
     return () => clearInterval(interval);
   }, [hasExported]);
@@ -398,7 +418,8 @@ export function StrategyCanvas({
 
   const onDragLeave = useCallback((event: React.DragEvent) => {
     // Only trigger when leaving the canvas itself, not child elements
-    if (event.currentTarget.contains(event.relatedTarget as globalThis.Node)) return;
+    if (event.relatedTarget && event.currentTarget.contains(event.relatedTarget as globalThis.Node))
+      return;
     setIsDraggingOver(false);
   }, []);
 

@@ -266,9 +266,11 @@ export function useAutoSave({
   const unsavedRef = useRef(hasUnsavedChanges);
   unsavedRef.current = hasUnsavedChanges;
   useEffect(() => {
+    let navigatingAway = false;
     // Push a sentinel state so popstate fires when the user presses back
     history.pushState({ builder: true }, "");
     const handlePopState = () => {
+      if (navigatingAway) return;
       if (unsavedRef.current) {
         const leave = window.confirm("You have unsaved changes. Are you sure you want to leave?");
         if (!leave) {
@@ -277,7 +279,8 @@ export function useAutoSave({
           return;
         }
       }
-      // Actually go back
+      // Actually go back — set flag to prevent recursive popstate
+      navigatingAway = true;
       history.back();
     };
     window.addEventListener("popstate", handlePopState);

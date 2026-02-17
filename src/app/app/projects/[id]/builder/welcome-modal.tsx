@@ -362,7 +362,11 @@ const STEPS = [
 ];
 
 function getOnboarded() {
-  return typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1";
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 const subscribe = () => () => {};
@@ -377,7 +381,11 @@ export function WelcomeModal({
   const open = forceOpen || (!onboarded && !dismissed);
 
   function dismiss() {
-    localStorage.setItem(STORAGE_KEY, "1");
+    try {
+      localStorage.setItem(STORAGE_KEY, "1");
+    } catch {
+      /* private browsing */
+    }
     setDismissed(true);
     setStep(0);
     onClose?.();
@@ -388,7 +396,11 @@ export function WelcomeModal({
     if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        localStorage.setItem(STORAGE_KEY, "1");
+        try {
+          localStorage.setItem(STORAGE_KEY, "1");
+        } catch {
+          /* private browsing */
+        }
         setDismissed(true);
         setStep(0);
         onClose?.();
