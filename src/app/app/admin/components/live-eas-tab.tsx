@@ -32,6 +32,28 @@ interface LiveEAStats {
   errorCount: number;
   totalTradesAllTime: number;
   topSymbols: { symbol: string; count: number }[];
+  topBrokers: { broker: string; count: number }[];
+}
+
+interface PerformanceData {
+  totalClosedTrades: number;
+  totalProfit: number;
+  avgProfit: number;
+  winRate: number;
+  top5: EAPerf[];
+  bottom5: EAPerf[];
+}
+
+interface EAPerf {
+  id: string;
+  eaName: string;
+  symbol: string | null;
+  userEmail: string;
+  totalTrades: number;
+  totalProfit: number;
+  winRate: number;
+  avgProfit: number;
+  maxDrawdown: number;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -63,6 +85,7 @@ export function LiveEAsTab() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [performance, setPerformance] = useState<PerformanceData | null>(null);
 
   const pageSize = 20;
 
@@ -96,6 +119,13 @@ export function LiveEAsTab() {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  useEffect(() => {
+    apiClient
+      .get<PerformanceData>("/api/admin/live-eas/performance")
+      .then(setPerformance)
+      .catch(() => {});
+  }, []);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -132,6 +162,130 @@ export function LiveEAsTab() {
           </div>
         </div>
       </div>
+
+      {/* Top Symbols & Top Brokers */}
+      {stats && (stats.topSymbols.length > 0 || stats.topBrokers.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {stats.topSymbols.length > 0 && (
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+                Top Symbols
+              </h3>
+              <div className="space-y-2">
+                {stats.topSymbols.map((s) => (
+                  <div key={s.symbol} className="flex justify-between text-sm">
+                    <span className="text-white font-mono">{s.symbol}</span>
+                    <span className="text-[#94A3B8]">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.topBrokers.length > 0 && (
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+                Top Brokers
+              </h3>
+              <div className="space-y-2">
+                {stats.topBrokers.map((b) => (
+                  <div key={b.broker} className="flex justify-between text-sm">
+                    <span className="text-white">{b.broker}</span>
+                    <span className="text-[#94A3B8]">{b.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Performance Analytics */}
+      {performance && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-white mb-3">Performance Analytics</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <div className="text-sm text-[#94A3B8]">Win Rate</div>
+              <div className="text-2xl font-bold text-emerald-400 mt-1">{performance.winRate}%</div>
+            </div>
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <div className="text-sm text-[#94A3B8]">Avg Profit</div>
+              <div
+                className={`text-2xl font-bold mt-1 ${performance.avgProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
+              >
+                ${performance.avgProfit.toFixed(2)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <div className="text-sm text-[#94A3B8]">Total Profit</div>
+              <div
+                className={`text-2xl font-bold mt-1 ${performance.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
+              >
+                ${performance.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <div className="text-sm text-[#94A3B8]">Closed Trades</div>
+              <div className="text-2xl font-bold text-white mt-1">
+                {performance.totalClosedTrades.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Top 5 EAs */}
+            <div className="rounded-lg border border-emerald-500/20 bg-[#1A0626]/60 p-4">
+              <h4 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider mb-3">
+                Top 5 EAs
+              </h4>
+              {performance.top5.length === 0 ? (
+                <p className="text-[#64748B] text-sm">No data</p>
+              ) : (
+                <div className="space-y-2">
+                  {performance.top5.map((ea) => (
+                    <div key={ea.id} className="flex justify-between items-center text-sm">
+                      <div>
+                        <span className="text-white font-medium">{ea.eaName}</span>
+                        <span className="text-[#64748B] ml-2 text-xs">{ea.userEmail}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-emerald-400 font-mono">
+                          ${ea.totalProfit.toFixed(2)}
+                        </span>
+                        <span className="text-[#64748B] ml-2 text-xs">{ea.winRate}% WR</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Bottom 5 EAs */}
+            <div className="rounded-lg border border-red-500/20 bg-[#1A0626]/60 p-4">
+              <h4 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-3">
+                Bottom 5 EAs
+              </h4>
+              {performance.bottom5.length === 0 ? (
+                <p className="text-[#64748B] text-sm">No data</p>
+              ) : (
+                <div className="space-y-2">
+                  {performance.bottom5.map((ea) => (
+                    <div key={ea.id} className="flex justify-between items-center text-sm">
+                      <div>
+                        <span className="text-white font-medium">{ea.eaName}</span>
+                        <span className="text-[#64748B] ml-2 text-xs">{ea.userEmail}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-red-400 font-mono">${ea.totalProfit.toFixed(2)}</span>
+                        <span className="text-[#64748B] ml-2 text-xs">{ea.winRate}% WR</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3 mb-4">

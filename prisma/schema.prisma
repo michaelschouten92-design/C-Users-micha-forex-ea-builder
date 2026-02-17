@@ -57,6 +57,8 @@ model User {
   discordAccessToken String?   // Encrypted with AES-256-GCM
   referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
+  lastLoginAt     DateTime?
+  adminNotes      String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -332,4 +334,28 @@ model EAError {
   instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([instanceId, createdAt])
+}
+
+// ============================================
+// ADMIN CONFIGURATION
+// ============================================
+
+model PlanLimitConfig {
+  id                 String   @id @default(cuid())
+  tier               PlanTier @unique
+  maxProjects        Int
+  maxExportsPerMonth Int
+  canExportMQL5      Boolean  @default(true)
+  canExportMQL4      Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+  updatedBy          String
+}
+
+model UserSegment {
+  id        String   @id @default(cuid())
+  name      String
+  filters   String   @db.Text // JSON string of filter criteria
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

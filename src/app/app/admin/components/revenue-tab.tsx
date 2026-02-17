@@ -11,6 +11,7 @@ interface StatsData {
   churn: number;
   cancelledCount: number;
   totalSubCount: number;
+  churnRiskCount: number;
 }
 
 interface SubscriptionRow {
@@ -18,6 +19,8 @@ interface SubscriptionRow {
   tier: string;
   status: string;
   currentPeriodEnd: string | null;
+  lastLoginAt?: string | null;
+  churnRisk?: boolean;
 }
 
 export function RevenueTab() {
@@ -33,7 +36,9 @@ export function RevenueTab() {
           apiClient.get<{
             data: {
               email: string;
+              lastLoginAt?: string | null;
               subscription: { tier: string; status: string; currentPeriodEnd?: string };
+              churnRisk?: boolean;
             }[];
           }>("/api/admin/users"),
         ]);
@@ -46,6 +51,8 @@ export function RevenueTab() {
               tier: u.subscription.tier,
               status: u.subscription.status,
               currentPeriodEnd: u.subscription.currentPeriodEnd || null,
+              lastLoginAt: u.lastLoginAt,
+              churnRisk: u.churnRisk,
             }))
         );
       } catch {
@@ -85,7 +92,7 @@ export function RevenueTab() {
       <h2 className="text-2xl font-bold text-white mb-6">Revenue Dashboard</h2>
 
       {/* Top cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">MRR</div>
           <div className="text-2xl font-bold text-emerald-400 mt-1">
@@ -107,6 +114,10 @@ export function RevenueTab() {
           <div className="text-2xl font-bold text-red-400 mt-1">
             {(stats.churn * 100).toFixed(1)}%
           </div>
+        </div>
+        <div className="rounded-lg border border-amber-500/20 bg-[#1A0626]/60 p-4">
+          <div className="text-sm text-[#94A3B8]">Churn Risk</div>
+          <div className="text-2xl font-bold text-amber-400 mt-1">{stats.churnRiskCount}</div>
         </div>
       </div>
 
@@ -152,6 +163,43 @@ export function RevenueTab() {
           })}
         </div>
       </div>
+
+      {/* Churn Risk Section */}
+      {subscriptions.some((s) => s.churnRisk) && (
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-white mb-3">Churn Risk Users</h3>
+          <div className="overflow-x-auto rounded-lg border border-amber-500/20">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#1A0626]/60 border-b border-amber-500/20">
+                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Email</th>
+                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Tier</th>
+                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Last Login</th>
+                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Period End</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptions
+                  .filter((s) => s.churnRisk)
+                  .map((sub, i) => (
+                    <tr key={i} className="border-b border-amber-500/10">
+                      <td className="px-4 py-3 text-white">{sub.email}</td>
+                      <td className="px-4 py-3 text-[#A78BFA]">{sub.tier}</td>
+                      <td className="px-4 py-3 text-[#94A3B8]">
+                        {sub.lastLoginAt ? new Date(sub.lastLoginAt).toLocaleDateString() : "Never"}
+                      </td>
+                      <td className="px-4 py-3 text-[#94A3B8]">
+                        {sub.currentPeriodEnd
+                          ? new Date(sub.currentPeriodEnd).toLocaleDateString()
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Subscription lifecycle table */}
       <h3 className="text-lg font-semibold text-white mb-3">Subscription Lifecycle</h3>

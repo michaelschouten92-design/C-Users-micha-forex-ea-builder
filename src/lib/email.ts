@@ -691,6 +691,125 @@ export async function sendRenewalReminderEmail(
   }
 }
 
+export async function sendAdminDailyReportEmail(
+  adminEmail: string,
+  stats: {
+    totalUsers: number;
+    newUsersToday: number;
+    newUsersWeek: number;
+    proUsers: number;
+    eliteUsers: number;
+    mrr: number;
+    exportsToday: number;
+    exportsDone: number;
+    exportsFailed: number;
+    churnRiskCount: number;
+    onlineEAs: number;
+  }
+) {
+  if (!resend) {
+    log.warn("Email not configured - skipping admin daily report");
+    return;
+  }
+
+  const date = new Date().toISOString().split("T")[0];
+  const successRate =
+    stats.exportsToday > 0 ? ((stats.exportsDone / stats.exportsToday) * 100).toFixed(1) : "100.0";
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: adminEmail,
+    subject: `[AlgoStudio] Daily Report - ${date}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 520px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 8px 0;">Daily Admin Report</h1>
+            <p style="color: #94A3B8; font-size: 14px; margin: 0 0 24px 0;">${date}</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px 0;">
+              <tr>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">Total Users</div>
+                  <div style="color: #ffffff; font-size: 24px; font-weight: 700;">${stats.totalUsers.toLocaleString()}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">New Today</div>
+                  <div style="color: #22D3EE; font-size: 24px; font-weight: 700;">${stats.newUsersToday}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">New This Week</div>
+                  <div style="color: #22D3EE; font-size: 24px; font-weight: 700;">${stats.newUsersWeek}</div>
+                </td>
+              </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px 0;">
+              <tr>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">MRR</div>
+                  <div style="color: #10B981; font-size: 24px; font-weight: 700;">&euro;${stats.mrr.toLocaleString()}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">PRO</div>
+                  <div style="color: #4F46E5; font-size: 24px; font-weight: 700;">${stats.proUsers}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">ELITE</div>
+                  <div style="color: #A78BFA; font-size: 24px; font-weight: 700;">${stats.eliteUsers}</div>
+                </td>
+              </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px 0;">
+              <tr>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">Exports Today</div>
+                  <div style="color: #ffffff; font-size: 24px; font-weight: 700;">${stats.exportsToday}</div>
+                  <div style="color: #94A3B8; font-size: 11px;">${successRate}% success</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">Failed</div>
+                  <div style="color: ${stats.exportsFailed > 0 ? "#EF4444" : "#10B981"}; font-size: 24px; font-weight: 700;">${stats.exportsFailed}</div>
+                </td>
+              </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px 0;">
+              <tr>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">Churn Risk</div>
+                  <div style="color: ${stats.churnRiskCount > 0 ? "#F59E0B" : "#10B981"}; font-size: 24px; font-weight: 700;">${stats.churnRiskCount}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid rgba(79,70,229,0.2); border-radius: 8px;">
+                  <div style="color: #94A3B8; font-size: 12px;">Online EAs</div>
+                  <div style="color: #10B981; font-size: 24px; font-weight: 700;">${stats.onlineEAs}</div>
+                </td>
+              </tr>
+            </table>
+
+            <p style="color: #64748B; font-size: 12px; margin: 0; text-align: center;">
+              Sent automatically by AlgoStudio at 08:00 UTC
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error }, "Failed to send admin daily report email");
+    throw new Error("Failed to send admin report email");
+  }
+
+  log.info("Admin daily report email sent");
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");

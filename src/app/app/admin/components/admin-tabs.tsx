@@ -7,7 +7,8 @@ export type AdminTab =
   | "exports"
   | "analytics"
   | "announcements"
-  | "live-eas";
+  | "live-eas"
+  | "plan-limits";
 
 const TABS: { id: AdminTab; label: string; icon: string }[] = [
   { id: "users", label: "Users", icon: "\uD83D\uDC65" },
@@ -17,6 +18,7 @@ const TABS: { id: AdminTab; label: string; icon: string }[] = [
   { id: "analytics", label: "Analytics", icon: "\uD83D\uDCCA" },
   { id: "announcements", label: "Announcements", icon: "\uD83D\uDCE2" },
   { id: "live-eas", label: "Live EAs", icon: "\uD83D\uDCE1" },
+  { id: "plan-limits", label: "Plan Limits", icon: "\u2699\uFE0F" },
 ];
 
 interface AdminTabsProps {

@@ -13,6 +13,8 @@ interface UserDetail {
   email: string;
   emailVerified: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
+  adminNotes: string | null;
   role: string;
   referralCode: string | null;
   referredBy: string | null;
@@ -66,6 +68,8 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   const [loading, setLoading] = useState(true);
   const [selectedTier, setSelectedTier] = useState<Tier>("FREE");
   const [upgrading, setUpgrading] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -73,6 +77,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
         const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
         setUser(res);
         setSelectedTier((res.subscription?.tier || "FREE") as Tier);
+        setNotes(res.adminNotes || "");
       } catch {
         // ignore
       } finally {
@@ -177,6 +182,12 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                     {new Date(user.createdAt).toLocaleDateString()}
                   </span>
                 </div>
+                <div>
+                  <span className="text-[#64748B]">Last Login:</span>{" "}
+                  <span className="text-white">
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
+                  </span>
+                </div>
                 {user.referralCode && (
                   <div>
                     <span className="text-[#64748B]">Referral Code:</span>{" "}
@@ -277,6 +288,38 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   Impersonate
                 </button>
               </div>
+            </section>
+
+            {/* Admin Notes */}
+            <section>
+              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+                Admin Notes
+              </h3>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add private notes about this user..."
+                rows={3}
+                className="w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors resize-y"
+              />
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setSavingNotes(true);
+                  try {
+                    await apiClient.patch(`/api/admin/users/${user.id}`, { adminNotes: notes });
+                    showSuccess("Saved", "Notes updated");
+                  } catch (err) {
+                    showError("Failed", err instanceof Error ? err.message : "Unknown error");
+                  } finally {
+                    setSavingNotes(false);
+                  }
+                }}
+                disabled={savingNotes}
+                className="mt-2 bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+              >
+                {savingNotes ? "Saving..." : "Save Notes"}
+              </button>
             </section>
 
             {/* Projects */}

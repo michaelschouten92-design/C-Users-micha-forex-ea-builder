@@ -23,7 +23,10 @@ export async function GET(request: Request) {
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
 
-    const [users, total] = await Promise.all([
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+    const sevenDaysFromNow = new Date(Date.now() + 7 * 86_400_000);
+
+    const [users, total, activityCounts] = await Promise.all([
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         skip,
@@ -33,12 +36,14 @@ export async function GET(request: Request) {
           email: true,
           emailVerified: true,
           createdAt: true,
+          lastLoginAt: true,
           role: true,
           referredBy: true,
           subscription: {
             select: {
               tier: true,
               status: true,
+              currentPeriodEnd: true,
             },
           },
           _count: {
@@ -52,21 +57,54 @@ export async function GET(request: Request) {
         },
       }),
       prisma.user.count(),
+      // Batch audit log activity query for last 30 days
+      prisma.auditLog.groupBy({
+        by: ["userId"],
+        where: { createdAt: { gte: thirtyDaysAgo }, userId: { not: null } },
+        _count: true,
+      }),
     ]);
 
-    const data = users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-      role: user.role,
-      subscription: user.subscription
-        ? { tier: user.subscription.tier, status: user.subscription.status }
-        : { tier: "FREE", status: "active" },
-      projectCount: user._count.projects,
-      exportCount: user._count.exports,
-      referredBy: user.referredBy ?? null,
-    }));
+    // Build activity map: userId -> event count in last 30d
+    const activityMap = new Map<string, number>();
+    for (const entry of activityCounts) {
+      if (entry.userId) {
+        activityMap.set(entry.userId, entry._count);
+      }
+    }
+
+    const data = users.map((user) => {
+      const tier = user.subscription?.tier || "FREE";
+      const status = user.subscription?.status || "active";
+      const periodEnd = user.subscription?.currentPeriodEnd;
+
+      // Activity score: >=3 events in 30d = active
+      const eventCount = activityMap.get(user.id) || 0;
+      const activityStatus = eventCount >= 3 ? "active" : "inactive";
+
+      // Churn risk: PRO/ELITE users with subscription expiry <=7d OR lastLoginAt >30d
+      let churnRisk = false;
+      if (tier !== "FREE" && status === "active") {
+        const expiresWithin7d = periodEnd && new Date(periodEnd) <= sevenDaysFromNow;
+        const noRecentLogin = !user.lastLoginAt || new Date(user.lastLoginAt) < thirtyDaysAgo;
+        churnRisk = !!(expiresWithin7d || noRecentLogin);
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        role: user.role,
+        subscription: { tier, status },
+        projectCount: user._count.projects,
+        exportCount: user._count.exports,
+        referredBy: user.referredBy ?? null,
+        activityStatus,
+        churnRisk,
+      };
+    });
 
     return NextResponse.json({
       data,

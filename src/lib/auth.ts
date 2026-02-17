@@ -370,6 +370,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.iat = Math.floor(Date.now() / 1000);
+        // Track last login time (fire-and-forget)
+        if (typeof user.id === "string") {
+          prisma.user
+            .update({
+              where: { id: user.id },
+              data: { lastLoginAt: new Date() },
+            })
+            .catch(() => {});
+        }
       }
 
       // Periodically check if password was changed (invalidates old sessions)

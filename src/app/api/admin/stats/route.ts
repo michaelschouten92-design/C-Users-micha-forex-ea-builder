@@ -103,6 +103,23 @@ export async function GET() {
       count: Number(row.count),
     }));
 
+    // Count churn risk users: paid users with period ending within 7d or no login in 30d
+    const sevenDaysFromNow = new Date(now + 7 * 86_400_000);
+    const churnRiskExpiring = await prisma.subscription.count({
+      where: {
+        tier: { not: "FREE" },
+        status: "active",
+        currentPeriodEnd: { lte: sevenDaysFromNow, not: null },
+      },
+    });
+    const churnRiskInactive = await prisma.user.count({
+      where: {
+        subscription: { tier: { not: "FREE" }, status: "active" },
+        OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: thirtyDaysAgo } }],
+      },
+    });
+    const churnRiskCount = Math.max(churnRiskExpiring, churnRiskInactive);
+
     return NextResponse.json({
       mrr,
       arr: mrr * 12,
@@ -115,6 +132,7 @@ export async function GET() {
       churn: totalSubCount > 0 ? cancelledCount / totalSubCount : 0,
       cancelledCount,
       totalSubCount,
+      churnRiskCount,
     });
   } catch (error) {
     logger.error({ error }, "Failed to fetch admin stats");

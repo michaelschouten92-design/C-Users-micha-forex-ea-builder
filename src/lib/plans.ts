@@ -1,5 +1,6 @@
 // Subscription plans configuration
 import { env, features } from "./env";
+import { prisma } from "./prisma";
 
 // Display prices — override via env vars (amounts in cents), fallback to defaults
 const parsePrice = (envVal: string | undefined, fallback: number) => {
@@ -141,4 +142,55 @@ export function formatPrice(amount: number, currency: string): string {
     currency: currency.toUpperCase(),
     minimumFractionDigits: 0,
   }).format(amount / 100);
+}
+
+// ============================================
+// DYNAMIC PLAN LIMITS (DB overrides hardcoded)
+// ============================================
+
+interface PlanLimits {
+  maxProjects: number;
+  maxExportsPerMonth: number;
+  canExportMQL5: boolean;
+  canExportMQL4: boolean;
+}
+
+// In-memory cache for plan limits (60s TTL)
+let limitsCache: { data: Map<string, PlanLimits>; expiresAt: number } | null = null;
+
+/**
+ * Get effective plan limits for a tier.
+ * Checks DB PlanLimitConfig first (with 60s cache), falls back to hardcoded PLANS.
+ */
+export async function getEffectiveLimits(tier: PlanTier): Promise<PlanLimits> {
+  const now = Date.now();
+
+  // Return from cache if still valid
+  if (limitsCache && limitsCache.expiresAt > now) {
+    const cached = limitsCache.data.get(tier);
+    if (cached) return cached;
+  }
+
+  // Refresh cache from DB
+  try {
+    const configs = await prisma.planLimitConfig.findMany();
+    const map = new Map<string, PlanLimits>();
+    for (const c of configs) {
+      map.set(c.tier, {
+        maxProjects: c.maxProjects,
+        maxExportsPerMonth: c.maxExportsPerMonth,
+        canExportMQL5: c.canExportMQL5,
+        canExportMQL4: c.canExportMQL4,
+      });
+    }
+    limitsCache = { data: map, expiresAt: now + 60_000 };
+
+    const cached = map.get(tier);
+    if (cached) return cached;
+  } catch {
+    // DB unavailable — fall through to hardcoded
+  }
+
+  // Fallback to hardcoded limits
+  return PLANS[tier].limits;
 }

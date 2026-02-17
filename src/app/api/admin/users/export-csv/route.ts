@@ -16,6 +16,7 @@ export async function GET() {
         email: true,
         emailVerified: true,
         createdAt: true,
+        lastLoginAt: true,
         referralCode: true,
         referredBy: true,
         subscription: { select: { tier: true, status: true } },
@@ -37,7 +38,8 @@ export async function GET() {
       return str;
     }
 
-    const header = "Email,Tier,Status,Projects,Exports,Verified,Joined,ReferralCode,ReferredBy";
+    const header =
+      "Email,Tier,Status,Projects,Exports,Verified,Joined,LastLogin,ReferralCode,ReferredBy";
     const rows = users.map((u) => {
       const tier = u.subscription?.tier || "FREE";
       const status = u.subscription?.status || "active";
@@ -49,6 +51,7 @@ export async function GET() {
         u._count.exports,
         u.emailVerified,
         u.createdAt.toISOString().split("T")[0],
+        u.lastLoginAt ? u.lastLoginAt.toISOString().split("T")[0] : "Never",
         escapeCsv(u.referralCode || ""),
         escapeCsv(u.referredBy || ""),
       ].join(",");

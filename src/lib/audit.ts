@@ -28,7 +28,12 @@ export type AuditEventType =
   | "subscription.payment_failed"
   // Admin impersonation
   | "admin.impersonation_start"
-  | "admin.impersonation_stop";
+  | "admin.impersonation_stop"
+  // Admin actions
+  | "admin.user_notes_update"
+  | "admin.plan_limits_update"
+  | "admin.segment_create"
+  | "admin.segment_delete";
 
 interface AuditLogEntry {
   userId: string | null;

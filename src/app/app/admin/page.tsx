@@ -11,6 +11,7 @@ import { ExportsTab } from "./components/exports-tab";
 import { AnalyticsTab } from "./components/analytics-tab";
 import { AnnouncementsTab } from "./components/announcements-tab";
 import { LiveEAsTab } from "./components/live-eas-tab";
+import { PlanLimitsTab } from "./components/plan-limits-tab";
 import { UserDetailModal } from "./components/user-detail-modal";
 
 interface UserData {
@@ -18,10 +19,13 @@ interface UserData {
   email: string;
   emailVerified: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
   referredBy?: string;
   subscription: { tier: string; status: string };
   projectCount: number;
   exportCount: number;
+  activityStatus?: "active" | "inactive";
+  churnRisk?: boolean;
 }
 
 interface AdminStats {
@@ -169,6 +173,7 @@ export default function AdminPage() {
         {activeTab === "analytics" && <AnalyticsTab />}
         {activeTab === "announcements" && <AnnouncementsTab />}
         {activeTab === "live-eas" && <LiveEAsTab />}
+        {activeTab === "plan-limits" && <PlanLimitsTab />}
       </main>
 
       {/* User detail modal */}

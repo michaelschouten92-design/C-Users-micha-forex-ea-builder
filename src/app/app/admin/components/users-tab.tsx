@@ -1,20 +1,35 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+
+interface Segment {
+  id: string;
+  name: string;
+  filters: {
+    tierFilter?: string;
+    loginFilter?: string;
+    activityFilter?: string;
+    churnFilter?: boolean;
+    searchQuery?: string;
+  };
+}
 
 interface UserData {
   id: string;
   email: string;
   emailVerified: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
   referredBy?: string;
   subscription: { tier: string; status: string };
   projectCount: number;
   exportCount: number;
+  activityStatus?: "active" | "inactive";
+  churnRisk?: boolean;
 }
 
 type Tier = "FREE" | "PRO" | "ELITE";
@@ -45,20 +60,85 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
   const [impersonating, setImpersonating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<"ALL" | Tier>("ALL");
+  const [loginFilter, setLoginFilter] = useState<"ALL" | "7d" | "30d" | "NEVER">("ALL");
+  const [activityFilter, setActivityFilter] = useState<"ALL" | "active" | "inactive">("ALL");
+  const [churnFilter, setChurnFilter] = useState(false);
+
+  // Segments
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [segmentName, setSegmentName] = useState("");
+  const [savingSegment, setSavingSegment] = useState(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTier, setBulkTier] = useState<Tier>("PRO");
   const [bulkUpgrading, setBulkUpgrading] = useState(false);
 
+  useEffect(() => {
+    apiClient
+      .get<{ data: Segment[] }>("/api/admin/segments")
+      .then((res) => setSegments(res.data))
+      .catch(() => {});
+  }, []);
+
+  async function handleSaveSegment() {
+    if (!segmentName.trim() || savingSegment) return;
+    setSavingSegment(true);
+    try {
+      const res = await apiClient.post<Segment>("/api/admin/segments", {
+        name: segmentName.trim(),
+        filters: { tierFilter, loginFilter, activityFilter, churnFilter, searchQuery },
+      });
+      setSegments((prev) => [res, ...prev]);
+      setSegmentName("");
+      showSuccess("Segment saved", `"${res.name}" created`);
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSavingSegment(false);
+    }
+  }
+
+  function applySegment(segment: Segment) {
+    const f = segment.filters;
+    if (f.tierFilter) setTierFilter(f.tierFilter as "ALL" | Tier);
+    if (f.loginFilter) setLoginFilter(f.loginFilter as "ALL" | "7d" | "30d" | "NEVER");
+    if (f.activityFilter) setActivityFilter(f.activityFilter as "ALL" | "active" | "inactive");
+    if (f.churnFilter !== undefined) setChurnFilter(f.churnFilter);
+    if (f.searchQuery !== undefined) setSearchQuery(f.searchQuery);
+  }
+
+  async function handleDeleteSegment(id: string) {
+    try {
+      await apiClient.delete(`/api/admin/segments?id=${id}`);
+      setSegments((prev) => prev.filter((s) => s.id !== id));
+      showSuccess("Deleted", "Segment removed");
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    }
+  }
+
   const filteredUsers = useMemo(() => {
+    const now = Date.now();
     return users.filter((user) => {
       const matchesSearch =
         searchQuery === "" || user.email.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTier = tierFilter === "ALL" || user.subscription.tier === tierFilter;
-      return matchesSearch && matchesTier;
+      let matchesLogin = true;
+      if (loginFilter === "NEVER") {
+        matchesLogin = !user.lastLoginAt;
+      } else if (loginFilter === "7d") {
+        matchesLogin =
+          !!user.lastLoginAt && now - new Date(user.lastLoginAt).getTime() <= 7 * 86_400_000;
+      } else if (loginFilter === "30d") {
+        matchesLogin =
+          !!user.lastLoginAt && now - new Date(user.lastLoginAt).getTime() <= 30 * 86_400_000;
+      }
+      const matchesActivity = activityFilter === "ALL" || user.activityStatus === activityFilter;
+      const matchesChurn = !churnFilter || user.churnRisk;
+      return matchesSearch && matchesTier && matchesLogin && matchesActivity && matchesChurn;
     });
-  }, [users, searchQuery, tierFilter]);
+  }, [users, searchQuery, tierFilter, loginFilter, activityFilter, churnFilter]);
 
   const allSelected = filteredUsers.length > 0 && filteredUsers.every((u) => selectedIds.has(u.id));
 
@@ -186,6 +266,48 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
         </span>
       </div>
 
+      {/* Segments */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {segments.length > 0 && (
+          <>
+            <span className="text-xs text-[#94A3B8]">Segments:</span>
+            {segments.map((seg) => (
+              <span key={seg.id} className="inline-flex items-center gap-1">
+                <button
+                  onClick={() => applySegment(seg)}
+                  className="text-xs px-2.5 py-1 rounded-full bg-[#1A0626] border border-[rgba(79,70,229,0.3)] text-[#A78BFA] hover:border-[#4F46E5] transition-colors"
+                >
+                  {seg.name}
+                </button>
+                <button
+                  onClick={() => handleDeleteSegment(seg.id)}
+                  className="text-xs text-[#64748B] hover:text-red-400 transition-colors"
+                  title="Delete segment"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </>
+        )}
+        <div className="inline-flex items-center gap-1">
+          <input
+            type="text"
+            value={segmentName}
+            onChange={(e) => setSegmentName(e.target.value)}
+            placeholder="Save as..."
+            className="w-28 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5]"
+          />
+          <button
+            onClick={handleSaveSegment}
+            disabled={!segmentName.trim() || savingSegment}
+            className="text-xs px-2 py-1 rounded bg-[#4F46E5] text-white disabled:opacity-50 hover:bg-[#4338CA] transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <input
           type="text"
@@ -204,6 +326,34 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
           <option value="PRO">PRO</option>
           <option value="ELITE">ELITE</option>
         </select>
+        <select
+          value={loginFilter}
+          onChange={(e) => setLoginFilter(e.target.value as "ALL" | "7d" | "30d" | "NEVER")}
+          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+        >
+          <option value="ALL">All Logins</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="NEVER">Never logged in</option>
+        </select>
+        <select
+          value={activityFilter}
+          onChange={(e) => setActivityFilter(e.target.value as "ALL" | "active" | "inactive")}
+          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+        >
+          <option value="ALL">All Activity</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={churnFilter}
+            onChange={(e) => setChurnFilter(e.target.checked)}
+            className="accent-[#4F46E5]"
+          />
+          Churn Risk
+        </label>
       </div>
 
       {/* Bulk action bar */}
@@ -256,9 +406,11 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Email</th>
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Tier</th>
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Activity</th>
               <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">Projects</th>
               <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">Exports</th>
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Referred By</th>
+              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Last Login</th>
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Joined</th>
               <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Actions</th>
             </tr>
@@ -299,9 +451,28 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[#94A3B8]">{user.subscription.status}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        user.activityStatus === "active"
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {user.activityStatus || "inactive"}
+                    </span>
+                    {user.churnRisk && (
+                      <span className="ml-1 text-xs px-2 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-400">
+                        churn risk
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right text-[#CBD5E1]">{user.projectCount}</td>
                   <td className="px-4 py-3 text-right text-[#CBD5E1]">{user.exportCount}</td>
                   <td className="px-4 py-3 text-[#94A3B8] text-xs">{user.referredBy || "-"}</td>
+                  <td className="px-4 py-3 text-[#94A3B8] text-xs">
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
+                  </td>
                   <td className="px-4 py-3 text-[#94A3B8]">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>

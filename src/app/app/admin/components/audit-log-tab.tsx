@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { apiClient } from "@/lib/api-client";
+import { showError } from "@/lib/toast";
 
 interface AuditLogEntry {
   id: string;
@@ -34,6 +35,12 @@ interface AuditLogTabProps {
   onUserClick: (userId: string) => void;
 }
 
+interface AdminSummary {
+  summary: { eventType: string; count: number }[];
+  recentEvents: AuditLogEntry[];
+  totalActions: number;
+}
+
 export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [total, setTotal] = useState(0);
@@ -43,6 +50,8 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [adminSummary, setAdminSummary] = useState<AdminSummary | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const limit = 50;
 
@@ -71,11 +80,116 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
     fetchLogs();
   }, [fetchLogs]);
 
+  useEffect(() => {
+    apiClient
+      .get<AdminSummary>("/api/admin/audit-logs/admin-summary")
+      .then(setAdminSummary)
+      .catch(() => {});
+  }, []);
+
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Audit Log</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-white">Audit Log</h2>
+        <button
+          onClick={async () => {
+            try {
+              const params = new URLSearchParams();
+              if (eventTypeFilter) params.set("eventType", eventTypeFilter);
+              if (userIdFilter) params.set("userId", userIdFilter);
+              if (dateFrom) params.set("from", dateFrom);
+              if (dateTo) params.set("to", dateTo);
+              const res = await fetch(`/api/admin/audit-logs/export-csv?${params}`);
+              if (!res.ok) throw new Error("Export failed");
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch (err) {
+              showError("CSV export failed", err instanceof Error ? err.message : "Unknown error");
+            }
+          }}
+          className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] hover:border-[#4F46E5] text-white text-sm px-4 py-2 rounded transition-colors"
+        >
+          Export CSV
+        </button>
+      </div>
+
+      {/* Admin Actions Summary (collapsible) */}
+      {adminSummary && adminSummary.totalActions > 0 && (
+        <div className="mb-4">
+          <button
+            onClick={() => setSummaryOpen(!summaryOpen)}
+            className="flex items-center gap-2 text-sm font-medium text-[#A78BFA] hover:text-white transition-colors mb-2"
+          >
+            <span className="text-xs">{summaryOpen ? "\u25BC" : "\u25B6"}</span>
+            Admin Actions (30d) &mdash; {adminSummary.totalActions} total
+          </button>
+          {summaryOpen && (
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4 space-y-4">
+              {/* Stat cards */}
+              <div className="flex flex-wrap gap-3">
+                {adminSummary.summary.map((s) => (
+                  <div
+                    key={s.eventType}
+                    className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#0F0318] px-3 py-2"
+                  >
+                    <div className="text-xs text-[#94A3B8]">{s.eventType}</div>
+                    <div className="text-lg font-bold text-white">{s.count}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Recent actions table */}
+              <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.1)]">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
+                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Time</th>
+                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Event</th>
+                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">User</th>
+                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Resource</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminSummary.recentEvents.map((ev) => (
+                      <tr key={ev.id} className="border-b border-[rgba(79,70,229,0.05)]">
+                        <td className="px-3 py-1.5 text-[#94A3B8] whitespace-nowrap">
+                          {new Date(ev.createdAt).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-medium border ${getEventColor(ev.eventType)}`}
+                          >
+                            {ev.eventType}
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5">
+                          {ev.userId ? (
+                            <button
+                              onClick={() => onUserClick(ev.userId!)}
+                              className="text-[#22D3EE] hover:text-[#22D3EE]/80 font-mono transition-colors"
+                            >
+                              {ev.userId.substring(0, 12)}...
+                            </button>
+                          ) : (
+                            <span className="text-[#64748B]">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1.5 text-[#94A3B8]">{ev.resourceType || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -104,6 +218,10 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
           <option value="subscription.cancel">subscription.cancel</option>
           <option value="admin.impersonation_start">admin.impersonation_start</option>
           <option value="admin.impersonation_stop">admin.impersonation_stop</option>
+          <option value="admin.user_notes_update">admin.user_notes_update</option>
+          <option value="admin.plan_limits_update">admin.plan_limits_update</option>
+          <option value="admin.segment_create">admin.segment_create</option>
+          <option value="admin.segment_delete">admin.segment_delete</option>
         </select>
         <input
           type="text"
