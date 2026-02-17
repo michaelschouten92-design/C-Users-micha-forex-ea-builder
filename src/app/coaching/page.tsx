@@ -270,7 +270,7 @@ export default function CoachingPage() {
                   Save 11%
                 </span>
                 <h3 className="text-base font-semibold text-white mb-1">3-Session Pack</h3>
-                <p className="text-sm text-[#64748B] mb-4">€160 per session</p>
+                <p className="text-sm text-[#64748B] mb-4">~€160 per session</p>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-white">€479</span>
                 </div>
@@ -340,7 +340,7 @@ export default function CoachingPage() {
                   Best Value — Save 16%
                 </span>
                 <h3 className="text-base font-semibold text-white mb-1">5-Session Pack</h3>
-                <p className="text-sm text-[#64748B] mb-4">€150 per session</p>
+                <p className="text-sm text-[#64748B] mb-4">~€150 per session</p>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-white">€749</span>
                 </div>

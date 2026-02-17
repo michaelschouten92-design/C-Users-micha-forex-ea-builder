@@ -10,12 +10,12 @@ import { PricingSection } from "@/components/marketing/pricing-section";
 export const metadata: Metadata = {
   title: "MT5 & MT4 Bot Builder — No-Code Expert Advisor | AlgoStudio",
   description:
-    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 & MQL4 code. Free to start. Works with any broker.",
+    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 code. MQL4 on Pro+. Free to start. Works with any broker.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "MT5 & MT4 Bot Builder — No-Code Expert Advisor | AlgoStudio",
     description:
-      "Turn trading ideas into live MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 & MQL4 export.",
+      "Turn trading ideas into live MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 export. MQL4 on Pro+.",
   },
 };
 
@@ -45,7 +45,7 @@ export default async function Home() {
     featureList: [
       "No-code MT5 & MT4 bot builder",
       "Strategy templates (EMA crossover, RSI, MACD, breakout, pullback)",
-      "Clean MQL5 & MQL4 code export",
+      "Clean MQL5 code export (MQL4 on Pro+)",
       "Built-in risk management",
       "Works with any MT5 or MT4 broker",
       "Backtesting ready",
@@ -168,7 +168,7 @@ export default async function Home() {
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Clean MQL5 & MQL4 code you own
+              Clean MQL5 code you own (MQL4 on Pro+)
             </div>
             <div className="flex items-center gap-2">
               <svg
@@ -458,6 +458,20 @@ export default async function Home() {
                   "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter.",
                 color: "#F59E0B",
               },
+              {
+                name: "Trend Pullback",
+                type: "Trend Following",
+                description:
+                  "Enter on pullbacks within a trend using EMA and RSI. Set trend EMA, pullback RSI level, and risk %. Optional ADX filter for trend strength.",
+                color: "#10B981",
+              },
+              {
+                name: "MACD Crossover",
+                type: "Momentum",
+                description:
+                  "Trade MACD signal line crossovers. Set fast/slow EMA, signal period, and risk %. Optional higher-timeframe trend filter.",
+                color: "#EC4899",
+              },
             ].map((t) => (
               <div
                 key={t.name}
@@ -482,9 +496,8 @@ export default async function Home() {
           </div>
 
           <p className="text-center mt-8 text-sm text-[#94A3B8]">
-            Plus 2 more:{" "}
             <Link href="/templates" className="text-[#22D3EE] hover:underline">
-              Trend Pullback and MACD Crossover
+              View all template details &rarr;
             </Link>
           </p>
         </div>
@@ -530,9 +543,9 @@ export default async function Home() {
                 ),
               },
               {
-                title: "Clean, readable MQL5 & MQL4 export",
+                title: "Clean, readable MQL5 export",
                 description:
-                  "Get well-structured, commented source code for MetaTrader 5 or 4. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. The code is yours — no black box.",
+                  "Get well-structured, commented source code for MetaTrader 5. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. MQL4 export available on Pro and Elite plans.",
                 icon: (
                   <path
                     strokeLinecap="round"

@@ -48,8 +48,9 @@ export default function AboutPage() {
                 AlgoStudio is the simplest way to turn a trading idea into an MT5 or MT4 bot.
               </strong>{" "}
               You pick a proven strategy template, adjust a few settings, and export clean MQL5 or
-              MQL4 code. No blank canvas. No 50-field configuration forms. No AND/OR logic builders.
-              Just the settings that matter, with sensible defaults that work out of the box.
+              MQL4 code (MQL4 on Pro and Elite). No blank canvas. No 50-field configuration forms.
+              No AND/OR logic builders. Just the settings that matter, with sensible defaults that
+              work out of the box.
             </p>
 
             <p>
