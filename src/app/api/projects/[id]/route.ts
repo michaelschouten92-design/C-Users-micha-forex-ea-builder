@@ -127,10 +127,11 @@ export async function PATCH(request: Request, { params }: Params) {
 
     // Sync tags if provided
     if (Array.isArray(rawTags)) {
+      const tagRegex = /^[a-z0-9\-_ ]+$/;
       const tags = rawTags
         .filter((t: unknown): t is string => typeof t === "string")
         .map((t) => t.trim().toLowerCase().slice(0, 20))
-        .filter((t) => t.length > 0)
+        .filter((t) => t.length > 0 && tagRegex.test(t))
         .slice(0, 5);
 
       await prisma.projectTag.deleteMany({ where: { projectId: id } });

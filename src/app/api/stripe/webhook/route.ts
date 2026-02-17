@@ -222,11 +222,9 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   ) {
     tier = "ELITE";
   } else {
-    log.error(
-      { priceId, subscriptionId: subscription.id },
-      "Unknown price ID in subscription update"
+    throw new Error(
+      `Unknown price ID "${priceId}" in subscription ${subscription.id} — will retry`
     );
-    return;
   }
 
   // Map Stripe status to our status

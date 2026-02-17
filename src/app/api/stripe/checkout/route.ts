@@ -175,12 +175,6 @@ export async function POST(request: NextRequest) {
     const details = extractErrorDetails(error);
     log.error({ error: details }, "Checkout error");
 
-    // Surface Stripe error details so the user/admin can diagnose the issue
-    const stripeMessage = error instanceof Error ? error.message : "Unknown error";
-
-    return NextResponse.json(
-      { error: "Failed to create checkout session", details: stripeMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

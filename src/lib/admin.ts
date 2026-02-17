@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 import { ErrorCode, apiError } from "./error-codes";
 import {
   adminRateLimiter,
@@ -59,8 +60,11 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
     select: { email: true, role: true },
   });
 
-  // Check role-based access OR bootstrap via ADMIN_EMAIL
-  const isAdmin = adminUser?.role === "ADMIN" || adminUser?.email === process.env.ADMIN_EMAIL;
+  // Check role-based access OR bootstrap via ADMIN_EMAIL (case-insensitive)
+  const isAdmin =
+    adminUser?.role === "ADMIN" ||
+    (adminUser?.email != null &&
+      adminUser.email.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase());
 
   if (!isAdmin) {
     return {
@@ -70,13 +74,19 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
   }
 
   // Auto-promote: if user matches ADMIN_EMAIL but doesn't have ADMIN role yet, set it
-  if (adminUser && adminUser.email === process.env.ADMIN_EMAIL && adminUser.role !== "ADMIN") {
+  if (
+    adminUser &&
+    adminUser.email?.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase() &&
+    adminUser.role !== "ADMIN"
+  ) {
     await prisma.user
       .update({
         where: { id: session.user.id },
         data: { role: "ADMIN" },
       })
-      .catch(() => {}); // Fire-and-forget
+      .catch((err) => {
+        logger.error({ err, userId: session.user.id }, "Failed to auto-promote admin user");
+      });
   }
 
   return {
