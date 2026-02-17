@@ -16,6 +16,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+import { checkBodySize } from "@/lib/validations";
 
 const log = logger.child({ route: "/api/admin/otp" });
 
@@ -49,6 +50,10 @@ export async function POST(request: NextRequest) {
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Reject oversized requests
+  const bodySizeError = checkBodySize(request, 1024); // 1KB max for OTP requests
+  if (bodySizeError) return bodySizeError;
 
   try {
     const body = await request.json();
@@ -91,6 +96,18 @@ export async function POST(request: NextRequest) {
       const valid = await verifyAdminOtp(session.user.email, code);
       if (!valid) {
         return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+      }
+
+      // Re-verify admin role before granting OTP cookie (prevents privilege escalation)
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true, email: true },
+      });
+      const stillAdmin =
+        currentUser?.role === "ADMIN" ||
+        (env.ADMIN_EMAIL && currentUser?.email === env.ADMIN_EMAIL);
+      if (!stillAdmin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
       // Set verified cookie (httpOnly, 1 hour)

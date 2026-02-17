@@ -57,10 +57,10 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
 
   const adminUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true, role: true },
+    select: { email: true, role: true, emailVerified: true },
   });
 
-  // Check role-based access OR bootstrap via ADMIN_EMAIL (case-insensitive)
+  // Check role-based access OR bootstrap via ADMIN_EMAIL (only if user has no ADMIN role yet)
   const isAdmin =
     adminUser?.role === "ADMIN" ||
     (adminUser?.email != null &&
@@ -70,6 +70,16 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
     return {
       authorized: false,
       response: NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 }),
+    };
+  }
+
+  // Require verified email for admin access
+  if (!adminUser?.emailVerified) {
+    return {
+      authorized: false,
+      response: NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Admin email must be verified"), {
+        status: 403,
+      }),
     };
   }
 

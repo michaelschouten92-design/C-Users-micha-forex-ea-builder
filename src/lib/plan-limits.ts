@@ -11,7 +11,7 @@ interface CacheEntry {
 }
 
 const tierCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — tier changes are rare
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds — short TTL for quick tier change propagation
 
 /** Resolve the effective tier from raw subscription data (pure logic, no DB call). */
 export function resolveTier(

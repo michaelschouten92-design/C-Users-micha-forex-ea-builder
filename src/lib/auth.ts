@@ -275,6 +275,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         account?.provider === "discord"
       ) {
         if (!user.email) {
+          console.error(`[auth] OAuth sign-in rejected: no email from ${account.provider}`);
           return false;
         }
 
@@ -299,6 +300,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // This prevents both account takeover and the race condition where a credential
             // user hasn't verified their email yet. The findUnique on normalizedEmail above
             // catches all existing users regardless of verification status.
+            console.error(
+              `[auth] OAuth sign-in rejected: email ${normalizedEmail.substring(0, 3)}*** already linked to another account (provider: ${account.provider})`
+            );
             return false;
           } else {
             // Create new user (OAuth users are pre-verified)
@@ -391,6 +395,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.role = dbUser.role;
           }
           token.passwordCheckedAt = now;
+
+          // If impersonating, verify the impersonator still has ADMIN role
+          if (token.impersonatorId) {
+            const impersonator = await prisma.user.findUnique({
+              where: { id: token.impersonatorId as string },
+              select: { role: true },
+            });
+            if (!impersonator || impersonator.role !== "ADMIN") {
+              // Impersonator lost admin privileges — end impersonation
+              token.id = token.impersonatorId;
+              delete token.impersonatorId;
+              delete token.impersonatingEmail;
+            }
+          }
         }
       }
 

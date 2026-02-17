@@ -305,6 +305,15 @@ export const contactFormRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for email verification
+ * Limits: 10 attempts per 15 minutes per IP (prevents token brute-force)
+ */
+export const verifyEmailRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
+
+/**
  * Rate limiter for admin endpoints
  * Limits: 30 requests per minute per admin user
  */

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createHash } from "crypto";
+import { verifyEmailRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const log = logger.child({ route: "/api/auth/verify-email" });
 
@@ -10,6 +11,13 @@ export async function GET(request: NextRequest) {
 
   if (!token) {
     return NextResponse.redirect(new URL("/login?error=invalid_token", request.url));
+  }
+
+  // Rate limit by IP to prevent token brute-force
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rateLimitResult = await checkRateLimit(verifyEmailRateLimiter, `verify-email:${ip}`);
+  if (!rateLimitResult.success) {
+    return NextResponse.redirect(new URL("/login?error=rate_limited", request.url));
   }
 
   try {

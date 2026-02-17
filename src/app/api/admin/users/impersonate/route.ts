@@ -5,6 +5,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { audit } from "@/lib/audit";
 import { checkAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { checkBodySize } from "@/lib/validations";
 
 const impersonateSchema = z.object({
   email: z.string().email(),
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const bodySizeError = checkBodySize(request, 1024);
+    if (bodySizeError) return bodySizeError;
 
     const body = await request.json().catch(() => null);
     if (!body) {
