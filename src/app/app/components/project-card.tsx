@@ -25,6 +25,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   "rsi-reversal": "RSI Reversal",
   "trend-pullback": "Trend Pullback",
   "macd-crossover": "MACD Crossover",
+  divergence: "RSI/MACD Divergence",
 };
 
 function getEntryStrategyLabel(buildJson: unknown): string | null {

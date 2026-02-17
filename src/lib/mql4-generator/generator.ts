@@ -11,6 +11,7 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
+  DivergenceEntryData,
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
@@ -419,6 +420,63 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         })
       );
     }
+  } else if (d.entryType === "divergence") {
+    const div = d as DivergenceEntryData;
+    const divTf = div.timeframe ?? "H1";
+
+    if ((div.indicator ?? "RSI") === "RSI") {
+      const rsiAppliedPrice = div.appliedPrice ?? "CLOSE";
+      virtualNodes.push(
+        vNode("rsi", "rsi", {
+          label: `RSI(${div.rsiPeriod})`,
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: divTf,
+          period: div.rsiPeriod,
+          appliedPrice: rsiAppliedPrice,
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+          signalMode: "candle_close",
+          _divergenceMode: true,
+          _divergenceLookback: div.lookbackBars ?? 20,
+          _divergenceMinSwing: div.minSwingBars ?? 5,
+          _copyBarsOverride: (div.lookbackBars ?? 20) + 2,
+          optimizableFields: mapOpt(
+            ["rsiPeriod", "period"],
+            ["lookbackBars", "_divergenceLookback"],
+            ["minSwingBars", "_divergenceMinSwing"],
+            ["timeframe", "timeframe"]
+          ),
+        })
+      );
+    } else {
+      // MACD
+      virtualNodes.push(
+        vNode("macd", "macd", {
+          label: `MACD(${div.macdFast},${div.macdSlow},${div.macdSignal})`,
+          category: "indicator",
+          indicatorType: "macd",
+          timeframe: divTf,
+          fastPeriod: div.macdFast,
+          slowPeriod: div.macdSlow,
+          signalPeriod: div.macdSignal,
+          appliedPrice: div.appliedPrice ?? "CLOSE",
+          signalMode: "candle_close",
+          _divergenceMode: true,
+          _divergenceLookback: div.lookbackBars ?? 20,
+          _divergenceMinSwing: div.minSwingBars ?? 5,
+          _copyBarsOverride: (div.lookbackBars ?? 20) + 2,
+          optimizableFields: mapOpt(
+            ["macdFast", "fastPeriod"],
+            ["macdSlow", "slowPeriod"],
+            ["macdSignal", "signalPeriod"],
+            ["lookbackBars", "_divergenceLookback"],
+            ["minSwingBars", "_divergenceMinSwing"],
+            ["timeframe", "timeframe"]
+          ),
+        })
+      );
+    }
   }
 
   // Unified MTF confirmation (takes precedence over legacy per-strategy HTF fields)
@@ -719,6 +777,7 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
     "rsi-reversal": "RSI Reversal",
     "trend-pullback": "Trend Pullback",
     "macd-crossover": "MACD Crossover",
+    divergence: "RSI/MACD Divergence",
   };
 
   for (const node of nodes) {

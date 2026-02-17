@@ -586,12 +586,33 @@ export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyF
   htfEma: number;
 }
 
+// 6) RSI/MACD Divergence — reversal on indicator/price divergence
+export type DivergenceIndicator = "RSI" | "MACD";
+
+export interface DivergenceEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "divergence";
+  // Indicator selection
+  indicator: DivergenceIndicator;
+  // RSI settings (when indicator = "RSI")
+  rsiPeriod: number;
+  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
+  // MACD settings (when indicator = "MACD")
+  macdFast: number;
+  macdSlow: number;
+  macdSignal: number;
+  // Divergence detection
+  lookbackBars: number; // Bars to scan for swing points (default 20)
+  minSwingBars: number; // Min bars between two swings (default 5)
+}
+
 export type EntryStrategyNodeData =
   | EMACrossoverEntryData
   | RangeBreakoutEntryData
   | RSIReversalEntryData
   | TrendPullbackEntryData
-  | MACDCrossoverEntryData;
+  | MACDCrossoverEntryData
+  | DivergenceEntryData;
 
 // Union of all node data types
 export type BuilderNodeData =
@@ -637,6 +658,7 @@ export type BuilderNodeType =
   | "rsi-reversal-entry"
   | "trend-pullback-entry"
   | "macd-crossover-entry"
+  | "divergence-entry"
   | "max-spread"
   | "volatility-filter"
   | "friday-close"
@@ -983,6 +1005,33 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       htfTimeframe: "H4",
       htfEma: 200,
     } as MACDCrossoverEntryData,
+  },
+  {
+    type: "divergence-entry",
+    label: "RSI/MACD Divergence",
+    category: "entrystrategy",
+    description: "Reversal on price/indicator divergence",
+    defaultData: {
+      label: "RSI/MACD Divergence",
+      category: "entrystrategy",
+      entryType: "divergence",
+      direction: "BOTH",
+      timeframe: "H1",
+      indicator: "RSI",
+      rsiPeriod: 14,
+      appliedPrice: "CLOSE",
+      macdFast: 12,
+      macdSlow: 26,
+      macdSignal: 9,
+      lookbackBars: 20,
+      minSwingBars: 5,
+      riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+    } as DivergenceEntryData,
   },
   // Trade Management
   {

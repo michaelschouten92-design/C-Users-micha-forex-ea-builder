@@ -41,6 +41,7 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
+  DivergenceEntryData,
 } from "@/types/builder";
 
 import {
@@ -88,6 +89,7 @@ import {
   RSIReversalEntryFields,
   TrendPullbackEntryFields,
   MACDCrossoverEntryFields,
+  DivergenceEntryFields,
 } from "./entry-strategy-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
 import { OptimizationVisibleContext } from "./shared";
@@ -407,6 +409,8 @@ function NodeFields({
         return (
           <MACDCrossoverEntryFields data={data as MACDCrossoverEntryData} onChange={onChange} />
         );
+      case "divergence":
+        return <DivergenceEntryFields data={data as DivergenceEntryData} onChange={onChange} />;
     }
   }
 

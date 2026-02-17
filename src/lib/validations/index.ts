@@ -626,6 +626,22 @@ const macdCrossoverEntryDataSchema = baseNodeDataSchema
   })
   .strip();
 
+const divergenceEntryDataSchema = baseNodeDataSchema
+  .merge(baseEntryStrategyFieldsSchema)
+  .extend({
+    category: z.literal("entrystrategy"),
+    entryType: z.literal("divergence"),
+    indicator: z.enum(["RSI", "MACD"]),
+    rsiPeriod: z.number().int().min(1).max(1000),
+    appliedPrice: appliedPriceSchema.optional(),
+    macdFast: z.number().int().min(1).max(1000),
+    macdSlow: z.number().int().min(1).max(1000),
+    macdSignal: z.number().int().min(1).max(1000),
+    lookbackBars: z.number().int().min(5).max(200),
+    minSwingBars: z.number().int().min(2).max(50),
+  })
+  .strip();
+
 // Node data schema - validates entry strategy nodes strictly, other nodes permissively.
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
 const entryStrategyNodeDataSchema = z.discriminatedUnion("entryType", [
@@ -634,6 +650,7 @@ const entryStrategyNodeDataSchema = z.discriminatedUnion("entryType", [
   rsiReversalEntryDataSchema,
   trendPullbackEntryDataSchema,
   macdCrossoverEntryDataSchema,
+  divergenceEntryDataSchema,
 ]);
 
 const builderNodeDataSchema = z
@@ -681,6 +698,22 @@ const builderNodeDataSchema = z
       if (data.entryType === "macd-crossover") {
         const d = data as { macdFast?: number; macdSlow?: number };
         if (d.macdFast != null && d.macdSlow != null && d.macdFast >= d.macdSlow) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "MACD Fast period must be less than Slow period",
+            path: ["macdFast"],
+          });
+        }
+      }
+      // Cross-field validation for divergence (MACD fast < slow)
+      if (data.entryType === "divergence") {
+        const d = data as { indicator?: string; macdFast?: number; macdSlow?: number };
+        if (
+          d.indicator === "MACD" &&
+          d.macdFast != null &&
+          d.macdSlow != null &&
+          d.macdFast >= d.macdSlow
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "MACD Fast period must be less than Slow period",

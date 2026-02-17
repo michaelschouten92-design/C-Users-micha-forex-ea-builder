@@ -88,6 +88,15 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
           );
         }
         break;
+      case "divergence":
+        if ("indicator" in d && "lookbackBars" in d) {
+          const ind =
+            d.indicator === "MACD"
+              ? `MACD(${d.macdFast},${d.macdSlow},${d.macdSignal})`
+              : `RSI(${d.rsiPeriod})`;
+          lines.push(`Enter on ${ind} divergence (${d.lookbackBars}-bar lookback)${dirLabel}`);
+        }
+        break;
     }
 
     // Consistent risk model summary

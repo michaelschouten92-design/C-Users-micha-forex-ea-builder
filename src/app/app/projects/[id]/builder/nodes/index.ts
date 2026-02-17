@@ -36,6 +36,7 @@ import { RangeBreakoutEntryNode } from "./entry-strategies/range-breakout-entry-
 import { RSIReversalEntryNode } from "./entry-strategies/rsi-reversal-entry-node";
 import { TrendPullbackEntryNode } from "./entry-strategies/trend-pullback-entry-node";
 import { MACDCrossoverEntryNode } from "./entry-strategies/macd-crossover-entry-node";
+import { DivergenceEntryNode } from "./entry-strategies/divergence-entry-node";
 
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
@@ -73,6 +74,7 @@ export const nodeTypes: NodeTypes = {
   "rsi-reversal-entry": RSIReversalEntryNode,
   "trend-pullback-entry": TrendPullbackEntryNode,
   "macd-crossover-entry": MACDCrossoverEntryNode,
+  "divergence-entry": DivergenceEntryNode,
 };
 
 // Re-export individual nodes for direct imports
@@ -111,4 +113,5 @@ export {
   RSIReversalEntryNode,
   TrendPullbackEntryNode,
   MACDCrossoverEntryNode,
+  DivergenceEntryNode,
 };

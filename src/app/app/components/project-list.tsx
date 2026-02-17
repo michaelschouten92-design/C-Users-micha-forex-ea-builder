@@ -49,6 +49,10 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
     label: "Intermediate",
     color: "bg-[rgba(245,158,11,0.15)] text-[#F59E0B] border-[rgba(245,158,11,0.3)]",
   },
+  divergence: {
+    label: "Intermediate",
+    color: "bg-[rgba(245,158,11,0.15)] text-[#F59E0B] border-[rgba(245,158,11,0.3)]",
+  },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {

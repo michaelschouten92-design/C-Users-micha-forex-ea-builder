@@ -8,6 +8,7 @@ import type {
   RSIReversalEntryData,
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
+  DivergenceEntryData,
 } from "@/types/builder";
 import {
   TIMEFRAME_OPTIONS,
@@ -551,6 +552,125 @@ export function MACDCrossoverEntryFields({
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       {/* Advanced */}
+      <AdvancedToggleSection>
+        <MTFConfirmationSection data={data} onChange={onChange} />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+export function DivergenceEntryFields({
+  data,
+  onChange,
+}: {
+  data: DivergenceEntryData;
+  onChange: (updates: Partial<DivergenceEntryData>) => void;
+}) {
+  return (
+    <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+
+      {/* Indicator selection */}
+      <SelectField
+        label="Divergence Indicator"
+        value={data.indicator ?? "RSI"}
+        options={[
+          { value: "RSI", label: "RSI" },
+          { value: "MACD", label: "MACD" },
+        ]}
+        onChange={(v) => onChange({ indicator: v as "RSI" | "MACD" })}
+        tooltip="Which indicator to compare with price for divergence detection"
+      />
+
+      {/* RSI settings */}
+      {(data.indicator ?? "RSI") === "RSI" && (
+        <>
+          <NumberField
+            label="RSI Period"
+            value={data.rsiPeriod}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ rsiPeriod: v })}
+            tooltip="Number of candles for RSI calculation. 14 is standard."
+          />
+          <OptimizableFieldCheckbox fieldName="rsiPeriod" data={data} onChange={onChange} />
+          <SelectField
+            label="Applied Price"
+            value={data.appliedPrice ?? "CLOSE"}
+            options={APPLIED_PRICE_OPTIONS}
+            onChange={(v) => onChange({ appliedPrice: v as DivergenceEntryData["appliedPrice"] })}
+          />
+        </>
+      )}
+
+      {/* MACD settings */}
+      {(data.indicator ?? "RSI") === "MACD" && (
+        <>
+          <NumberField
+            label="MACD Fast"
+            value={data.macdFast}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ macdFast: v })}
+            tooltip="Short-term EMA period. 12 is standard."
+          />
+          <OptimizableFieldCheckbox fieldName="macdFast" data={data} onChange={onChange} />
+          <NumberField
+            label="MACD Slow"
+            value={data.macdSlow}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ macdSlow: v })}
+            tooltip="Long-term EMA period. 26 is standard."
+          />
+          <OptimizableFieldCheckbox fieldName="macdSlow" data={data} onChange={onChange} />
+          <NumberField
+            label="MACD Signal"
+            value={data.macdSignal}
+            min={1}
+            max={500}
+            onChange={(v) => onChange({ macdSignal: v })}
+            tooltip="Signal smoothing period. 9 is standard."
+          />
+          <OptimizableFieldCheckbox fieldName="macdSignal" data={data} onChange={onChange} />
+          {data.macdFast >= data.macdSlow && (
+            <FieldError message="MACD fast must be smaller than slow" />
+          )}
+        </>
+      )}
+
+      {/* Divergence detection settings */}
+      <NumberField
+        label="Lookback Bars"
+        value={data.lookbackBars}
+        min={5}
+        max={200}
+        onChange={(v) => onChange({ lookbackBars: v })}
+        tooltip="How many bars to scan back for swing highs/lows. 20 is a good starting point."
+      />
+      <OptimizableFieldCheckbox fieldName="lookbackBars" data={data} onChange={onChange} />
+      <NumberField
+        label="Min Swing Distance"
+        value={data.minSwingBars}
+        min={2}
+        max={50}
+        onChange={(v) => onChange({ minSwingBars: v })}
+        tooltip="Minimum bars between two swing points. Filters out noise from tiny swings."
+      />
+      <OptimizableFieldCheckbox fieldName="minSwingBars" data={data} onChange={onChange} />
+
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
       <AdvancedToggleSection>
         <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>

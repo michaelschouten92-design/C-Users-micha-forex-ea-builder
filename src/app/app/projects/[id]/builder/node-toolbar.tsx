@@ -225,7 +225,9 @@ export function NodeToolbar({
                       template.type === "rsi-reversal-entry" ||
                       template.type === "range-breakout-entry" ||
                       template.type === "macd-crossover-entry";
-                    const isIntermediate = template.type === "trend-pullback-entry";
+                    const isIntermediate =
+                      template.type === "trend-pullback-entry" ||
+                      template.type === "divergence-entry";
                     return (
                       <div
                         key={`${template.type}-${index}`}

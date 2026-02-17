@@ -109,7 +109,9 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const rsi = data as RSINodeData;
         const price =
           APPLIED_PRICE_MAP[rsi.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
-        const copyBars = rsi.signalMode === "candle_close" ? 4 : 3;
+        const copyBarsOverride = "_copyBarsOverride" in data ? Number(data._copyBarsOverride) : 0;
+        const copyBars =
+          copyBarsOverride > 0 ? copyBarsOverride : rsi.signalMode === "candle_close" ? 4 : 3;
         const group = `RSI ${index + 1}`;
 
         code.inputs.push(
@@ -185,7 +187,9 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const macd = data as MACDNodeData;
         const price =
           APPLIED_PRICE_MAP[macd.appliedPrice as keyof typeof APPLIED_PRICE_MAP] ?? "PRICE_CLOSE";
-        const copyBars = macd.signalMode === "candle_close" ? 4 : 3;
+        const copyBarsOverride = "_copyBarsOverride" in data ? Number(data._copyBarsOverride) : 0;
+        const copyBars =
+          copyBarsOverride > 0 ? copyBarsOverride : macd.signalMode === "candle_close" ? 4 : 3;
         const group = `MACD ${index + 1}`;
 
         code.inputs.push(

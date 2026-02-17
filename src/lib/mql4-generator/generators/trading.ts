@@ -10,6 +10,7 @@ import type {
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe } from "../types";
 import { createInput, sanitizeMQL4String } from "./shared";
+import { generateDivergenceHelpers } from "./divergence";
 
 export function generatePlaceBuyCode(
   node: BuilderNode,
@@ -617,6 +618,88 @@ export function generateEntryLogic(
         sellConditions.push(`(DoubleGT(${vp}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel))`);
         handledIndices.add(indIndex);
       }
+    });
+
+    // Process divergence mode indicators — these need price arrays and helper functions
+    let divergenceHelpersAdded = false;
+    indicatorNodes.forEach((indNode, indIndex) => {
+      const d = indNode.data as Record<string, unknown>;
+      if (!d._divergenceMode) return;
+
+      // Add helper functions once
+      if (!divergenceHelpersAdded) {
+        generateDivergenceHelpers(code);
+        divergenceHelpersAdded = true;
+      }
+
+      const varPrefix = `ind${indIndex}`;
+      const lookback = Number(d._divergenceLookback) || 20;
+      const minSwing = Number(d._divergenceMinSwing) || 5;
+      const indType = d.indicatorType as string;
+      const divPriceVar = `g_divPrice${indIndex}`;
+
+      // Create divergence inputs
+      code.inputs.push(
+        createInput(
+          indNode,
+          "_divergenceLookback",
+          `InpDivLookback${indIndex}`,
+          "int",
+          lookback,
+          `Divergence ${indIndex + 1} Lookback Bars`,
+          `Divergence ${indIndex + 1}`
+        )
+      );
+      code.inputs.push(
+        createInput(
+          indNode,
+          "_divergenceMinSwing",
+          `InpDivMinSwing${indIndex}`,
+          "int",
+          minSwing,
+          `Divergence ${indIndex + 1} Min Swing Bars`,
+          `Divergence ${indIndex + 1}`
+        )
+      );
+
+      // Add price low/high arrays for swing detection
+      code.globalVariables.push(`double ${divPriceVar}Low[];`);
+      code.globalVariables.push(`double ${divPriceVar}High[];`);
+      code.onInit.push(`ArrayResize(${divPriceVar}Low, InpDivLookback${indIndex}+2);`);
+      code.onInit.push(`ArrayResize(${divPriceVar}High, InpDivLookback${indIndex}+2);`);
+
+      // Get the timeframe from the indicator's input variable
+      let tfVar: string;
+      if (indType === "rsi") {
+        tfVar = `(int)InpRSI${indIndex}Timeframe`;
+      } else {
+        tfVar = `(int)InpMACD${indIndex}Timeframe`;
+      }
+
+      // Fill price arrays in OnTick using MQL4 direct calls
+      code.onTick.push(`//--- Divergence ${indIndex + 1}: fill price arrays`);
+      code.onTick.push(
+        `for(int _dp${indIndex}=0; _dp${indIndex}<InpDivLookback${indIndex}+2; _dp${indIndex}++)`
+      );
+      code.onTick.push(`{`);
+      code.onTick.push(
+        `   ${divPriceVar}Low[_dp${indIndex}] = iLow(Symbol(), ${tfVar}, _dp${indIndex});`
+      );
+      code.onTick.push(
+        `   ${divPriceVar}High[_dp${indIndex}] = iHigh(Symbol(), ${tfVar}, _dp${indIndex});`
+      );
+      code.onTick.push(`}`);
+
+      // Determine which indicator buffer to use for divergence comparison
+      const indBuffer = indType === "macd" ? `${varPrefix}MainBuffer` : `${varPrefix}Buffer`;
+
+      buyConditions.push(
+        `(CheckBullishDivergence(${divPriceVar}Low, ${indBuffer}, InpDivLookback${indIndex}, InpDivMinSwing${indIndex}))`
+      );
+      sellConditions.push(
+        `(CheckBearishDivergence(${divPriceVar}High, ${indBuffer}, InpDivLookback${indIndex}, InpDivMinSwing${indIndex}))`
+      );
+      handledIndices.add(indIndex);
     });
 
     // Process indicator conditions (skip EMA crossover indicators and filters already handled above)
