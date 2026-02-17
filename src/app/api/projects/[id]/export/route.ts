@@ -338,23 +338,43 @@ export async function GET(request: NextRequest, { params }: Props) {
       }
       const buildJson = buildJsonValidation.data as BuildJsonSchema;
 
+      // Generate new telemetry API key for redownload (old plaintext key is never stored)
+      let telemetryConfig: { apiKey: string; baseUrl: string } | undefined;
+      const liveEA = await prisma.liveEAInstance.findUnique({
+        where: { exportJobId: redownloadId },
+        select: { id: true },
+      });
+      if (liveEA) {
+        const newApiKey = randomBytes(32).toString("hex");
+        const newApiKeyHash = createHash("sha256").update(newApiKey).digest("hex");
+        await prisma.liveEAInstance.update({
+          where: { id: liveEA.id },
+          data: { apiKeyHash: newApiKeyHash },
+        });
+        const telemetryBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
+        telemetryConfig = { apiKey: newApiKey, baseUrl: `${telemetryBaseUrl}/api/telemetry` };
+      }
+
       // Regenerate code from the saved buildJson using the original export type
       const redownloadCode =
         exportJob.exportType === "MQ4"
           ? generateMQL4Code(
               buildJson,
               exportJob.project.name,
-              exportJob.project.description ?? undefined
+              exportJob.project.description ?? undefined,
+              telemetryConfig
             )
           : generateMQL5Code(
               buildJson,
               exportJob.project.name,
-              exportJob.project.description ?? undefined
+              exportJob.project.description ?? undefined,
+              telemetryConfig
             );
 
       return NextResponse.json({
         fileName: exportJob.outputName,
         code: redownloadCode,
+        telemetryApiKey: telemetryConfig?.apiKey,
       });
     } catch (error) {
       log.error(
