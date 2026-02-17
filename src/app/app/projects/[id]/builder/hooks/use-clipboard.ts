@@ -88,41 +88,9 @@ export function useClipboard({
   // Duplicate selected nodes (Ctrl+D shortcut)
   const duplicateSelectedNodes = useCallback(() => {
     copySelectedNodes();
-    // Need to wait for clipboard to be set before pasting
-    setTimeout(() => {
-      if (clipboardRef.current && clipboardRef.current.nodes.length > 0) {
-        const { nodes: copiedNodes, edges: copiedEdges } = clipboardRef.current;
-
-        const idMapping: Record<string, string> = {};
-        const offset = { x: 50, y: 50 };
-
-        const newNodes: Node[] = copiedNodes.map((node) => {
-          const newId = getNextNodeId(node.type || "node");
-          idMapping[node.id] = newId;
-          return {
-            ...node,
-            id: newId,
-            position: {
-              x: node.position.x + offset.x,
-              y: node.position.y + offset.y,
-            },
-            selected: true,
-            data: { ...node.data },
-          };
-        });
-
-        const newEdges: Edge[] = copiedEdges.map((edge) => ({
-          ...edge,
-          id: `e-${idMapping[edge.source]}-${idMapping[edge.target]}`,
-          source: idMapping[edge.source],
-          target: idMapping[edge.target],
-        }));
-
-        setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...newNodes]);
-        setEdges((eds) => [...eds, ...newEdges]);
-      }
-    }, 0);
-  }, [copySelectedNodes, setNodes, setEdges, getNextNodeId]);
+    // copySelectedNodes is synchronous and sets clipboardRef immediately
+    pasteNodes();
+  }, [copySelectedNodes, pasteNodes]);
 
   return {
     copySelectedNodes,

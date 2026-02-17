@@ -25,9 +25,17 @@ export async function GET(request: Request) {
     if (eventType) where.eventType = eventType;
     if (userId) where.userId = userId;
     if (from || to) {
+      const fromDate = from ? new Date(from) : undefined;
+      const toDate = to ? new Date(to) : undefined;
+      if ((fromDate && isNaN(fromDate.getTime())) || (toDate && isNaN(toDate.getTime()))) {
+        return NextResponse.json(
+          apiError(ErrorCode.VALIDATION_FAILED, "Invalid date format for 'from' or 'to' parameter"),
+          { status: 400 }
+        );
+      }
       where.createdAt = {
-        ...(from && { gte: new Date(from) }),
-        ...(to && { lte: new Date(to) }),
+        ...(fromDate && { gte: fromDate }),
+        ...(toDate && { lte: toDate }),
       };
     }
 

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -96,7 +97,8 @@ export async function POST(request: Request, { params }: Params) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    logger.error({ error, projectId: id, versionId }, "Failed to restore version");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

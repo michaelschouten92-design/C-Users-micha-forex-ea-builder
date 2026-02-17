@@ -77,7 +77,8 @@ export async function GET(request: Request, { params }: Params) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch {
+  } catch (error) {
+    logger.error({ error, projectId: id }, "Failed to fetch versions");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 type Params = { params: Promise<{ id: string; versionId: string }> };
 
@@ -38,7 +39,8 @@ export async function GET(request: Request, { params }: Params) {
     void request;
 
     return NextResponse.json(version);
-  } catch {
+  } catch (error) {
+    logger.error({ error, projectId: id, versionId }, "Failed to fetch version");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

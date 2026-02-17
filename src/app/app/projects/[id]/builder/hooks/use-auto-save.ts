@@ -212,20 +212,20 @@ export function useAutoSave({
   // Autosave with retry on failure
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const attemptAutoSaveRef = useRef<(() => Promise<void>) | null>(null);
   const MAX_RETRIES = 3;
+  const saveToServerRef = useRef(saveToServer);
+  saveToServerRef.current = saveToServer;
 
   const attemptAutoSave = useCallback(async () => {
-    const success = await saveToServer(true);
+    const success = await saveToServerRef.current(true);
     if (!success && retryCountRef.current < MAX_RETRIES) {
       retryCountRef.current += 1;
       const backoff = Math.pow(2, retryCountRef.current) * 1000; // 2s, 4s, 8s
-      retryTimerRef.current = setTimeout(() => attemptAutoSaveRef.current?.(), backoff);
+      retryTimerRef.current = setTimeout(() => attemptAutoSave(), backoff);
     } else if (success) {
       retryCountRef.current = 0;
     }
-  }, [saveToServer]);
-  attemptAutoSaveRef.current = attemptAutoSave;
+  }, []);
 
   // Autosave effect
   useEffect(() => {

@@ -72,12 +72,19 @@ export function ExportButton({
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKey);
     };
-  }, [showModal, setShowUpgradePrompt]);
+  }, [showModal]);
 
-  // Clean up step timers on unmount
+  // Clean up timers on unmount
+  const exportAbortRef = useRef<{ controller: AbortController; timeout: NodeJS.Timeout } | null>(
+    null
+  );
   useEffect(() => {
     return () => {
       stepTimersRef.current.forEach(clearTimeout);
+      if (exportAbortRef.current) {
+        exportAbortRef.current.controller.abort();
+        clearTimeout(exportAbortRef.current.timeout);
+      }
     };
   }, []);
 
@@ -103,6 +110,7 @@ export function ExportButton({
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
+      exportAbortRef.current = { controller, timeout };
 
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
@@ -112,6 +120,7 @@ export function ExportButton({
       });
 
       clearTimeout(timeout);
+      exportAbortRef.current = null;
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
 

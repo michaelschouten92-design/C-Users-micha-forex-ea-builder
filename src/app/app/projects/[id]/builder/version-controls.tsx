@@ -121,21 +121,27 @@ export function VersionControls({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch versions list
-  const fetchVersions = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/projects/${projectId}/versions?limit=20`);
-      if (res.ok) {
-        const json = await res.json();
-        // Support both paginated { data: [] } and legacy flat array responses
-        setVersions(Array.isArray(json) ? json : json.data);
+  const fetchVersions = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/versions?limit=20`, { signal });
+        if (res.ok) {
+          const json = await res.json();
+          // Support both paginated { data: [] } and legacy flat array responses
+          setVersions(Array.isArray(json) ? json : json.data);
+        }
+      } catch (err) {
+        // Ignore abort errors, silently fail on others
+        if (err instanceof DOMException && err.name === "AbortError") return;
       }
-    } catch {
-      // Silently fail — versions panel will show empty state
-    }
-  }, [projectId]);
+    },
+    [projectId]
+  );
 
   useEffect(() => {
-    fetchVersions();
+    const controller = new AbortController();
+    fetchVersions(controller.signal);
+    return () => controller.abort();
   }, [projectId, fetchVersions]);
 
   // Refresh versions when autosave transitions to "saved"

@@ -59,7 +59,7 @@ export async function GET() {
       }),
       // 5. Signups per day (last 30 days) - use raw query
       prisma.$queryRaw<{ date: string; count: number }[]>`
-        SELECT DATE("createdAt") as date, COUNT(*)::int as count
+        SELECT DATE("createdAt") as date, CAST(COUNT(*) AS INTEGER) as count
         FROM "User"
         WHERE "createdAt" >= ${thirtyDaysAgo}
         GROUP BY DATE("createdAt")

@@ -50,7 +50,6 @@ export function CreateProjectButton() {
       setName("");
       setDescription("");
       router.push(`/app/projects/${project.id}`);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

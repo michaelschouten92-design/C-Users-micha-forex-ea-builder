@@ -117,7 +117,7 @@ export const BaseNode = memo(function BaseNode({
   useEffect(() => {
     if (!contextMenu) return;
     const handleClick = (e: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as HTMLElement)) {
         setContextMenu(null);
       }
     };

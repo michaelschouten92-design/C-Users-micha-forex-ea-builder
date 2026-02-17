@@ -86,7 +86,8 @@ export function ProjectCard({ project }: { project: Project }) {
       });
 
       if (res.ok) {
-        router.refresh();
+        const data = await res.json();
+        router.push(`/app/projects/${data.id}`);
       } else {
         const data = await res.json().catch(() => ({}));
         showError(data.message || data.details || "Failed to duplicate project");

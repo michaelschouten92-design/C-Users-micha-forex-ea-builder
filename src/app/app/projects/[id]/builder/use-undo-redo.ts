@@ -39,6 +39,10 @@ export function useUndoRedo(
 
       // Don't add duplicate states
       const lastState = historyRef.current[historyRef.current.length - 1];
+      // Quick reference equality check first
+      if (lastState && lastState.nodes === nodes && lastState.edges === edges) {
+        return;
+      }
       if (
         lastState &&
         lastState.nodes.length === nodes.length &&
