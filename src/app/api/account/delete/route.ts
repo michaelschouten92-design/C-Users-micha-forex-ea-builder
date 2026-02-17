@@ -80,16 +80,10 @@ export async function DELETE(request: Request) {
             "Stripe subscription already deleted, proceeding with account deletion"
           );
         } else {
+          // Log the Stripe error but proceed with GDPR deletion — user's right to be deleted takes priority
           logger.error(
             { error: stripeError, userId },
-            "Failed to cancel Stripe subscription during account deletion"
-          );
-          return NextResponse.json(
-            {
-              error:
-                "Failed to cancel your subscription. Please cancel it in Stripe first, then try again.",
-            },
-            { status: 500 }
+            "Failed to cancel Stripe subscription during account deletion — proceeding with deletion anyway"
           );
         }
       }

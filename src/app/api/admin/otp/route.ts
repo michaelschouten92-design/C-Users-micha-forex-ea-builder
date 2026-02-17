@@ -12,6 +12,7 @@ import { Resend } from "resend";
 import { env, features } from "@/lib/env";
 import {
   adminRateLimiter,
+  adminOtpRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -59,6 +60,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (body.action === "request") {
+      // Stricter rate limit specifically for OTP generation (3 per 15 min)
+      const otpRateResult = await checkRateLimit(
+        adminOtpRateLimiter,
+        `admin-otp-gen:${session.user.id}`
+      );
+      if (!otpRateResult.success) {
+        return NextResponse.json(
+          { error: formatRateLimitError(otpRateResult) },
+          { status: 429, headers: createRateLimitHeaders(otpRateResult) }
+        );
+      }
+
       const code = await generateAdminOtp(session.user.email);
 
       // Send OTP via email

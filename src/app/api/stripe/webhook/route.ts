@@ -15,8 +15,12 @@ import {
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
 import type Stripe from "stripe";
+import { z } from "zod";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
+
+// CUID format validation for userId from Stripe metadata
+const cuidSchema = z.string().cuid();
 
 // Helper to safely extract string ID from Stripe expandable fields
 function getStringId(field: string | { id: string } | null | undefined): string | null {
@@ -143,12 +147,24 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.subscription.paused": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionPaused(subscription);
+        break;
+      }
+
       case "charge.dispute.created": {
         const dispute = event.data.object as Stripe.Dispute;
         log.error(
           { disputeId: dispute.id, chargeId: getStringId(dispute.charge), reason: dispute.reason },
           "Chargeback dispute created — manual review required"
         );
+        break;
+      }
+
+      case "charge.dispute.closed": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await handleDisputeClosed(dispute);
         break;
       }
     }
@@ -176,6 +192,12 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   if (!userId || !plan) {
     log.error({ sessionId: session.id }, "Missing metadata in checkout session — cannot process");
+    return;
+  }
+
+  // Validate userId format before using in raw SQL
+  if (!cuidSchema.safeParse(userId).success) {
+    log.error({ sessionId: session.id, userId }, "Invalid userId format in checkout metadata");
     return;
   }
 
@@ -291,9 +313,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   ) {
     tier = "ELITE";
   } else {
-    throw new Error(
-      `Unknown price ID "${priceId}" in subscription ${subscription.id} — will retry`
+    log.error(
+      { priceId, subscriptionId: subscription.id },
+      "Unknown price ID in subscription — skipping update (check env price IDs)"
     );
+    return;
   }
 
   // Map Stripe status to our status
@@ -577,4 +601,76 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     },
     "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"
   );
+}
+
+async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
+  const customerId = getStringId(subscription.customer);
+  if (!customerId) return;
+
+  // Update subscription status to paused
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
+
+    if (!rows.length) return null;
+
+    await tx.subscription.update({
+      where: { id: rows[0].id },
+      data: { status: "paused" },
+    });
+
+    return rows[0].userId;
+  });
+
+  if (userId) {
+    invalidateSubscriptionCache(userId);
+    log.info({ userId, customerId }, "Subscription paused");
+  }
+}
+
+async function handleDisputeClosed(dispute: Stripe.Dispute) {
+  const chargeId = getStringId(dispute.charge);
+
+  if (dispute.status === "lost") {
+    // Dispute was lost — downgrade to FREE
+    const customerId = getStringId(
+      (dispute as unknown as Record<string, unknown>).customer as string | null
+    );
+    if (!customerId) {
+      log.error({ disputeId: dispute.id }, "Dispute lost but no customer ID — manual review");
+      return;
+    }
+
+    const userId = await prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+        SELECT id, "userId" FROM "Subscription"
+        WHERE "stripeCustomerId" = ${customerId}
+        FOR UPDATE
+      `;
+
+      if (!rows.length) return null;
+
+      await tx.subscription.update({
+        where: { id: rows[0].id },
+        data: { tier: "FREE", status: "cancelled", stripeSubId: null },
+      });
+
+      return rows[0].userId;
+    });
+
+    if (userId) {
+      invalidateSubscriptionCache(userId);
+      syncDiscordRoleForUser(userId, "FREE").catch(() => {});
+    }
+
+    log.error(
+      { disputeId: dispute.id, chargeId, customerId, status: dispute.status },
+      "Dispute lost — subscription downgraded to FREE"
+    );
+  } else {
+    log.info({ disputeId: dispute.id, chargeId, status: dispute.status }, "Dispute closed");
+  }
 }

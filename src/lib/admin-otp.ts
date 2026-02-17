@@ -42,7 +42,7 @@ export async function verifyAdminOtp(email: string, code: string): Promise<boole
     where: {
       email,
       code: hashedCode,
-      expiresAt: { gt: new Date() },
+      expiresAt: { gte: new Date() },
     },
   });
 

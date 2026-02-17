@@ -15,8 +15,7 @@ import {
 } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-
-const SALT_ROUNDS = 12;
+import { SALT_ROUNDS } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/reset-password", "POST");

@@ -35,7 +35,7 @@ class RateLimitError extends CredentialsSignin {
   code = "rate_limited";
 }
 
-const SALT_ROUNDS = 12;
+export const SALT_ROUNDS = 12;
 
 /**
  * Normalize email to prevent trial abuse via +tag aliases and dot tricks.
@@ -383,10 +383,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Periodically check if password was changed (invalidates old sessions)
       if (token.id && typeof token.id === "string") {
-        // Check every 5 minutes to avoid DB queries on every request
+        // Check every 60 seconds (short interval ensures revoked impersonation/roles are caught quickly)
         const lastChecked = (token.passwordCheckedAt as number) || 0;
         const now = Math.floor(Date.now() / 1000);
-        if (now - lastChecked > 300) {
+        if (now - lastChecked > 60) {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
             select: { passwordChangedAt: true, role: true },

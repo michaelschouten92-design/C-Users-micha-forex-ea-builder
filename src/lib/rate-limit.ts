@@ -322,6 +322,15 @@ export const adminRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for admin OTP generation
+ * Limits: 3 requests per 15 minutes per admin user
+ */
+export const adminOtpRateLimiter = createRateLimiter({
+  limit: 3,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

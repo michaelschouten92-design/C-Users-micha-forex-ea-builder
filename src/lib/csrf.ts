@@ -53,7 +53,8 @@ export function validateCsrfToken(request: NextRequest): boolean {
 }
 
 /**
- * Constant-time string comparison (Edge-compatible, no Node.js crypto)
+ * Constant-time string comparison using Node.js crypto.timingSafeEqual.
+ * Falls back to manual XOR comparison for Edge runtime.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -62,11 +63,19 @@ export function timingSafeEqual(a: string, b: string): boolean {
   const bufA = encoder.encode(a);
   const bufB = encoder.encode(b);
 
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
+  // Use Node.js crypto.timingSafeEqual when available (non-Edge runtime)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { timingSafeEqual: tse } = require("crypto");
+    return tse(Buffer.from(bufA), Buffer.from(bufB));
+  } catch {
+    // Edge runtime fallback: manual constant-time comparison
+    let result = 0;
+    for (let i = 0; i < bufA.length; i++) {
+      result |= bufA[i] ^ bufB[i];
+    }
+    return result === 0;
   }
-  return result === 0;
 }
 
 /**

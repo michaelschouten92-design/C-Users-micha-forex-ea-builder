@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { SALT_ROUNDS } from "@/lib/auth";
 
 const log = logger.child({ route: "/api/account/change-password" });
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
     }
 
-    const newHash = await bcrypt.hash(newPassword, 12);
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await prisma.user.update({
       where: { id: session.user.id },
       data: { passwordHash: newHash, passwordChangedAt: new Date() },

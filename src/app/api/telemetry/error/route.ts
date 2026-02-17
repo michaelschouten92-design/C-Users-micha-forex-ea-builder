@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
+import { z } from "zod";
+
+const errorSchema = z.object({
+  errorCode: z.number().int().min(-999999).max(999999),
+  message: z.string().max(5000),
+  context: z.string().max(500).nullable().optional(),
+});
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateTelemetry(request);
@@ -8,19 +15,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { errorCode, message, context } = body;
+    const parsed = errorSchema.safeParse(body);
 
-    if (errorCode == null || !message) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid error data" }, { status: 400 });
     }
+
+    const { errorCode, message, context } = parsed.data;
 
     // Insert error record
     await prisma.eAError.create({
       data: {
         instanceId: auth.instanceId,
-        errorCode: Number(errorCode),
-        message: String(message).substring(0, 5000),
-        context: context ? String(context).substring(0, 500) : null,
+        errorCode,
+        message,
+        context: context ?? null,
       },
     });
 
@@ -28,7 +37,7 @@ export async function POST(request: NextRequest) {
     await prisma.liveEAInstance.update({
       where: { id: auth.instanceId },
       data: {
-        lastError: String(message).substring(0, 500),
+        lastError: message.substring(0, 500),
         status: "ERROR",
       },
     });
