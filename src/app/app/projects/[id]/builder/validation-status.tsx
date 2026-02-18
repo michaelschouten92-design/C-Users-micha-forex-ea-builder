@@ -90,6 +90,16 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           </svg>
         )}
       </button>
+      {/* Inline first issue hint (without requiring click) */}
+      {!showDetails && validation.issues.length > 0 && (
+        <p
+          className={`text-[10px] mt-1 max-w-[200px] truncate ${
+            errorCount > 0 ? "text-[#FCA5A5]" : "text-[#FCD34D]"
+          }`}
+        >
+          {validation.issues[0].message}
+        </p>
+      )}
 
       {/* Dropdown with details */}
       {showDetails && validation.issues.length > 0 && (

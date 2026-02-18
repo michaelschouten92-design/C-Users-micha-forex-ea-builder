@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "algostudio-builder-onboarded";
+const STEP_KEY = "algostudio-builder-onboard-step";
 
 const STEPS = [
   {
@@ -377,12 +378,30 @@ export function WelcomeModal({
 }: { forceOpen?: boolean; onClose?: () => void } = {}) {
   const onboarded = useSyncExternalStore(subscribe, getOnboarded, () => true);
   const [dismissed, setDismissed] = useState(false);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STEP_KEY) : null;
+      return saved ? Math.min(parseInt(saved, 10) || 0, STEPS.length - 1) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const open = forceOpen || (!onboarded && !dismissed);
+
+  // Persist step progress
+  useEffect(() => {
+    if (!open) return;
+    try {
+      localStorage.setItem(STEP_KEY, String(step));
+    } catch {
+      /* private browsing */
+    }
+  }, [step, open]);
 
   function dismiss() {
     try {
       localStorage.setItem(STORAGE_KEY, "1");
+      localStorage.removeItem(STEP_KEY);
     } catch {
       /* private browsing */
     }
@@ -398,6 +417,7 @@ export function WelcomeModal({
       if (e.key === "Escape") {
         try {
           localStorage.setItem(STORAGE_KEY, "1");
+          localStorage.removeItem(STEP_KEY);
         } catch {
           /* private browsing */
         }

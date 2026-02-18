@@ -117,6 +117,7 @@ export function MaxSpreadFields({
       max={100}
       step={1}
       onChange={(v) => onChange({ maxSpreadPips: v })}
+      tooltip="The EA will only open trades when the broker spread is below this value. Prevents entries during low-liquidity periods."
     />
   );
 }
@@ -137,6 +138,7 @@ export function VolatilityFilterFields({
         max={1000}
         step={1}
         onChange={(v) => onChange({ atrPeriod: v })}
+        tooltip="Number of candles used to calculate Average True Range. 14 is the standard setting."
       />
       <SelectField
         label="ATR Timeframe"

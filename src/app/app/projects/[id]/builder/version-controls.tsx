@@ -86,6 +86,8 @@ interface VersionControlsProps {
   strategySummaryLines?: string[];
   canUndo?: boolean;
   canRedo?: boolean;
+  undoDepth?: number;
+  redoDepth?: number;
   onUndo?: () => void;
   onRedo?: () => void;
 }
@@ -107,6 +109,8 @@ export function VersionControls({
   strategySummaryLines,
   canUndo = false,
   canRedo = false,
+  undoDepth = 0,
+  redoDepth = 0,
   onUndo,
   onRedo,
 }: VersionControlsProps) {
@@ -436,8 +440,12 @@ export function VersionControls({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
-            title="Undo (Ctrl+Z)"
+            className="relative p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            title={
+              canUndo
+                ? `Undo (Ctrl+Z) · ${undoDepth} step${undoDepth !== 1 ? "s" : ""}`
+                : "Undo (Ctrl+Z)"
+            }
             aria-label="Undo"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -448,12 +456,21 @@ export function VersionControls({
                 d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4"
               />
             </svg>
+            {canUndo && undoDepth > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#4F46E5] text-white rounded-full px-0.5">
+                {undoDepth}
+              </span>
+            )}
           </button>
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
-            title="Redo (Ctrl+Y)"
+            className="relative p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            title={
+              canRedo
+                ? `Redo (Ctrl+Y) · ${redoDepth} step${redoDepth !== 1 ? "s" : ""}`
+                : "Redo (Ctrl+Y)"
+            }
             aria-label="Redo"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -464,6 +481,11 @@ export function VersionControls({
                 d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4"
               />
             </svg>
+            {canRedo && redoDepth > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#4F46E5] text-white rounded-full px-0.5">
+                {redoDepth}
+              </span>
+            )}
           </button>
         </div>
 

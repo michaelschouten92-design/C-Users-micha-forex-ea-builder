@@ -145,10 +145,31 @@ export const BaseNode = memo(function BaseNode({
       {/* Validation badge */}
       {(hasErrors || hasWarnings) && (
         <div
-          className={`absolute -top-2 -left-2 z-10 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg ${hasErrors ? "bg-[#EF4444]" : "bg-[#F59E0B]"}`}
+          className={`absolute -top-2.5 -left-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white shadow-lg ${hasErrors ? "bg-[#EF4444]" : "bg-[#F59E0B]"}`}
           title={issues.map((i) => `• ${i.message}`).join("\n")}
         >
-          {badgeCount}
+          {hasErrors ? (
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
+            </svg>
+          )}
+          <span>{badgeCount}</span>
         </div>
       )}
       {/* Context Menu */}
@@ -192,6 +213,32 @@ export const BaseNode = memo(function BaseNode({
       <div
         className={`absolute -top-2 -right-2 flex gap-1 z-10 transition-all duration-200 ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       >
+        {/* Duplicate button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDuplicate();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+              handleDuplicate();
+            }
+          }}
+          tabIndex={0}
+          aria-label={`Duplicate ${label} block`}
+          className="w-6 h-6 bg-[#4F46E5] hover:bg-[#6366F1] text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]"
+          title="Duplicate block (Ctrl+D)"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+          </svg>
+        </button>
         {/* Delete button */}
         <button
           onClick={handleDelete}

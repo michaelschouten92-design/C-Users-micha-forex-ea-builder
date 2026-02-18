@@ -84,6 +84,7 @@ export function NumberField({
 }: NumberFieldProps) {
   const id = useId();
   const [localValue, setLocalValue] = useState(String(value));
+  const [clampHint, setClampHint] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalValue(String(value));
@@ -106,6 +107,7 @@ export function NumberField({
           e.stopPropagation();
           const raw = e.target.value;
           setLocalValue(raw);
+          setClampHint(null);
           const num = parseFloat(raw);
           if (!isNaN(num)) {
             const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, num));
@@ -117,16 +119,26 @@ export function NumberField({
           if (isNaN(num) || localValue === "") {
             setLocalValue(String(min));
             onChange(min);
+            setClampHint(`Invalid value — reset to ${min}`);
           } else {
             const clamped = Math.min(max, Math.max(min, num));
             setLocalValue(String(clamped));
-            if (clamped !== num) onChange(clamped);
+            if (clamped !== num) {
+              onChange(clamped);
+              if (num < min) setClampHint(`Minimum is ${min}`);
+              else if (num > max && max !== Infinity) setClampHint(`Maximum is ${max}`);
+            } else {
+              setClampHint(null);
+            }
           }
         }}
         onPointerDown={(e) => e.stopPropagation()}
-        className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+        className={`w-full px-3 py-2 text-sm bg-[#1E293B] border rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 ${clampHint ? "border-[#F59E0B]/50" : "border-[rgba(79,70,229,0.3)]"}`}
       />
-      {helpText && <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>}
+      {clampHint && <p className="mt-1 text-[10px] text-[#F59E0B] leading-snug">{clampHint}</p>}
+      {helpText && !clampHint && (
+        <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>
+      )}
     </div>
   );
 }

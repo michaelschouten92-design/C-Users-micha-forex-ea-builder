@@ -51,6 +51,31 @@ export function validateStrategy(
 
   // Timing is optional — without it, the strategy trades whenever conditions are met
 
+  // Validate timing nodes
+  for (const n of nodes) {
+    const d = n.data as Record<string, unknown>;
+    if (!("timingType" in d)) continue;
+
+    // Custom trading session: start ≠ end
+    if (
+      d.timingType === "trading-session" &&
+      d.session === "CUSTOM" &&
+      typeof d.customStartHour === "number" &&
+      typeof d.customStartMinute === "number" &&
+      typeof d.customEndHour === "number" &&
+      typeof d.customEndMinute === "number" &&
+      d.customStartHour === d.customEndHour &&
+      d.customStartMinute === d.customEndMinute
+    ) {
+      issues.push({
+        type: "warning",
+        message: "Start and end time are the same — session window is empty",
+        nodeType: n.type,
+        nodeId: n.id,
+      });
+    }
+  }
+
   // Cross-field validation warnings for entry strategy nodes
   for (const n of nodes) {
     const d = n.data as Record<string, unknown>;
@@ -136,6 +161,53 @@ export function validateStrategy(
         nodeType: n.type,
         nodeId: n.id,
       });
+    }
+
+    // SL pips must be > 0 when fixed pips method
+    if (
+      "slMethod" in d &&
+      d.slMethod === "FIXED_PIPS" &&
+      "slPips" in d &&
+      typeof d.slPips === "number" &&
+      d.slPips <= 0
+    ) {
+      issues.push({
+        type: "error",
+        message: "Stop loss must be greater than 0 pips",
+        nodeType: n.type,
+        nodeId: n.id,
+      });
+    }
+
+    // TP pips must be > 0 when fixed pips method
+    if (
+      "tpMethod" in d &&
+      d.tpMethod === "FIXED_PIPS" &&
+      "tpPips" in d &&
+      typeof d.tpPips === "number" &&
+      d.tpPips <= 0
+    ) {
+      issues.push({
+        type: "error",
+        message: "Take profit must be greater than 0 pips",
+        nodeType: n.type,
+        nodeId: n.id,
+      });
+    }
+
+    // Indicator periods must be > 0
+    for (const periodField of ["period", "fastPeriod", "slowPeriod", "signalPeriod", "atrPeriod"]) {
+      if (periodField in d && typeof d[periodField] === "number" && d[periodField] === 0) {
+        const fieldLabel = periodField
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (s: string) => s.toUpperCase());
+        issues.push({
+          type: "error",
+          message: `${fieldLabel} must be greater than 0`,
+          nodeType: n.type,
+          nodeId: n.id,
+        });
+      }
     }
   }
 

@@ -55,6 +55,7 @@ export function MovingAverageFields({
           min={1}
           max={500}
           onChange={(v) => onChange({ period: v })}
+          tooltip="Number of candles used for the calculation. Common values: 20, 50, 100, 200."
         />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>
@@ -85,6 +86,7 @@ export function MovingAverageFields({
         value={data.appliedPrice ?? "CLOSE"}
         options={APPLIED_PRICE_OPTIONS}
         onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
+        tooltip="Which price to use for calculations. Close (default) is the most common."
       />
     </>
   );
@@ -112,6 +114,7 @@ export function RSIFields({
           min={1}
           max={500}
           onChange={(v) => onChange({ period: v })}
+          tooltip="Number of candles for RSI calculation. 14 is the standard setting."
         />
         <OptimizableFieldCheckbox fieldName="period" data={data} onChange={onChange} />
       </div>

@@ -47,7 +47,7 @@ function HelpButton({ onClick }: { onClick: () => void }) {
   const [glowing, setGlowing] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setGlowing(false), 30000);
+    const timer = setTimeout(() => setGlowing(false), 60000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -133,8 +133,6 @@ function BuilderProgressStepper({
 
   // Hide when all steps are complete
   if (step1 && step2 && step3) return null;
-  // Also hide when canvas is getting busy
-  if (nodes.length >= 3 && hasExported) return null;
 
   const steps = [
     { label: "Add Entry Strategy", done: step1 },
@@ -252,10 +250,16 @@ export function StrategyCanvas({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Undo/Redo history
-  const { takeSnapshot, undo, redo, resetHistory, canUndo, canRedo } = useUndoRedo(
-    (initialData?.nodes as Node[]) ?? [],
-    (initialData?.edges as Edge[]) ?? []
-  );
+  const {
+    takeSnapshot,
+    undo,
+    redo,
+    resetHistory,
+    canUndo,
+    canRedo,
+    historyLength,
+    currentIndex: historyIndex,
+  } = useUndoRedo((initialData?.nodes as Node[]) ?? [], (initialData?.edges as Edge[]) ?? []);
 
   // Track previous state for snapshot detection (lightweight signature instead of JSON.stringify)
   const prevStateRef = useRef<string>(
@@ -428,6 +432,10 @@ export function StrategyCanvas({
 
   // Drop error (entry strategy duplicate or node limit)
   const [dropError, setDropError] = useState<string | null>(null);
+  // Success toast for node drop
+  const [dropSuccess, setDropSuccess] = useState<string | null>(null);
+  // Undo hint after delete
+  const [deleteHint, setDeleteHint] = useState<string | null>(null);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -480,6 +488,19 @@ export function StrategyCanvas({
       setNodes((nds) => {
         const newNds = [...nds, newNode as Node];
         queueMicrotask(() => takeSnapshot(newNds, edges));
+
+        // Success feedback
+        const label = (template.defaultData as BuilderNodeData)?.label ?? template.type;
+        const remaining = 50 - newNds.length;
+        if (remaining <= 5 && remaining > 0) {
+          setDropSuccess(
+            `${label} added — ${remaining} block${remaining !== 1 ? "s" : ""} remaining`
+          );
+        } else {
+          setDropSuccess(`${label} added`);
+        }
+        setTimeout(() => setDropSuccess(null), 3000);
+
         return newNds;
       });
     },
@@ -515,12 +536,21 @@ export function StrategyCanvas({
   const onNodeDelete = useCallback(
     (nodeId: string) => {
       setNodes((nds) => {
+        const deleted = nds.find((n) => n.id === nodeId);
         const filteredNodes = nds.filter((n) => n.id !== nodeId);
         setEdges((eds) => {
           const filteredEdges = eds.filter((e) => e.source !== nodeId && e.target !== nodeId);
           queueMicrotask(() => takeSnapshot(filteredNodes, filteredEdges));
           return filteredEdges;
         });
+        // Show undo hint
+        const label = (deleted?.data as BuilderNodeData)?.label ?? "Block";
+        const mod =
+          typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent)
+            ? "Cmd"
+            : "Ctrl";
+        setDeleteHint(`${label} deleted — ${mod}+Z to undo`);
+        setTimeout(() => setDeleteHint(null), 4000);
         return filteredNodes;
       });
     },
@@ -1021,6 +1051,53 @@ export function StrategyCanvas({
             </div>
           )}
 
+          {/* Delete undo hint toast */}
+          {deleteHint && !dropError && !connectionError && (
+            <div
+              role="status"
+              onClick={() => setDeleteHint(null)}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#1E293B] text-[#CBD5E1] px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex items-center gap-2 border border-[rgba(79,70,229,0.3)] max-w-[90vw] cursor-pointer"
+            >
+              <svg
+                className="w-4 h-4 flex-shrink-0 text-[#94A3B8]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              <span className="text-sm">{deleteHint}</span>
+            </div>
+          )}
+
+          {/* Drop success toast */}
+          {dropSuccess && (
+            <div
+              role="status"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#065F46] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(16,185,129,0.4)] flex items-center gap-2 border border-emerald-500/30 max-w-[90vw]"
+            >
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="text-sm font-medium">{dropSuccess}</span>
+            </div>
+          )}
+
           {/* Validation Status - top right overlay */}
           {nodes.length > 0 && (
             <div className="absolute top-4 right-4 z-10">
@@ -1153,6 +1230,8 @@ export function StrategyCanvas({
         strategySummaryLines={buildNaturalLanguageSummary(nodes as BuilderNode[])}
         canUndo={canUndo}
         canRedo={canRedo}
+        undoDepth={historyIndex}
+        redoDepth={historyLength - 1 - historyIndex}
         onUndo={handleUndo}
         onRedo={handleRedo}
       />

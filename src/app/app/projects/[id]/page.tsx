@@ -61,6 +61,7 @@ export default async function ProjectPage({ params }: Props) {
               <Link
                 href="/app"
                 className="text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+                title="Back to Dashboard"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -71,9 +72,20 @@ export default async function ProjectPage({ params }: Props) {
                   />
                 </svg>
               </Link>
-              <div className="flex items-center gap-3">
-                <h1 className="text-lg font-bold text-white">{project.name}</h1>
-                <span className="text-xs text-[#A78BFA] font-medium">AlgoStudio</span>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/app"
+                  className="hidden sm:inline text-xs text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <span className="hidden sm:inline text-[#64748B]/50 text-xs">/</span>
+                <h1
+                  className="text-lg font-bold text-white truncate max-w-[200px] sm:max-w-none"
+                  title={project.name}
+                >
+                  {project.name}
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm text-[#64748B]">
