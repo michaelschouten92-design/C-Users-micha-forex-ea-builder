@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { BreakevenStopNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: BreakevenStopNodeData };
 
-export function BreakevenStopNode({ id, data, selected }: Props) {
+export const BreakevenStopNode = memo(function BreakevenStopNode({ id, data, selected }: Props) {
   const triggerDisplay = {
     PIPS: `${data.triggerPips} pips profit`,
     ATR: `${data.triggerAtrMultiplier}x ATR profit`,
@@ -33,4 +34,4 @@ export function BreakevenStopNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

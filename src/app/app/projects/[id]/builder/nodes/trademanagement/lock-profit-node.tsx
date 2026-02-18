@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { LockProfitNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: LockProfitNodeData };
 
-export function LockProfitNode({ id, data, selected }: Props) {
+export const LockProfitNode = memo(function LockProfitNode({ id, data, selected }: Props) {
   const lockDisplay =
     data.method === "PERCENTAGE" ? `${data.lockPercent}% of profit` : `${data.lockPips} pips`;
 
@@ -30,4 +31,4 @@ export function LockProfitNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

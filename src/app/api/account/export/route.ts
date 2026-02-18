@@ -124,7 +124,7 @@ export async function GET() {
 
     logger.info({ userId }, "GDPR data export completed");
 
-    return new NextResponse(JSON.stringify(exportData, null, 2), {
+    return new NextResponse(JSON.stringify(exportData), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

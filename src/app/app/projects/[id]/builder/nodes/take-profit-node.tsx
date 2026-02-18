@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { TakeProfitNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
@@ -12,7 +13,7 @@ const methodLabels = {
   ATR_BASED: "ATR-Based",
 };
 
-export function TakeProfitNode({ id, data, selected }: Props) {
+export const TakeProfitNode = memo(function TakeProfitNode({ id, data, selected }: Props) {
   const getValue = () => {
     switch (data.method) {
       case "FIXED_PIPS":
@@ -46,4 +47,4 @@ export function TakeProfitNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

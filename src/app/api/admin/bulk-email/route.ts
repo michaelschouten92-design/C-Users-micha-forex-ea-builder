@@ -67,10 +67,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Batch send with concurrency limit of 10
+    // Batch send with concurrency limit of 5 and delay between batches
     let sent = 0;
     const failed: string[] = [];
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = 5;
 
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const batch = emails.slice(i, i + BATCH_SIZE);
@@ -84,6 +84,11 @@ export async function POST(request: Request) {
         } else {
           failed.push(batch[j]);
         }
+      }
+
+      // Rate limit: 200ms delay between batches to avoid overwhelming Resend API
+      if (i + BATCH_SIZE < emails.length) {
+        await new Promise((r) => setTimeout(r, 200));
       }
     }
 

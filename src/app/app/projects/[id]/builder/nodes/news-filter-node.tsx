@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { NewsFilterNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
 
 type Props = NodeProps & { data: NewsFilterNodeData };
 
-export function NewsFilterNode({ id, data, selected }: Props) {
+export const NewsFilterNode = memo(function NewsFilterNode({ id, data, selected }: Props) {
   const impacts: string[] = [];
   if (data.highImpact) impacts.push("High");
   if (data.mediumImpact) impacts.push("Med");
@@ -25,4 +26,4 @@ export function NewsFilterNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

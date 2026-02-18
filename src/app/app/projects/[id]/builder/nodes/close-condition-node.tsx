@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { CloseConditionNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
@@ -12,7 +13,7 @@ const directionLabels = {
   BOTH: "Close Both",
 };
 
-export function CloseConditionNode({ id, data, selected }: Props) {
+export const CloseConditionNode = memo(function CloseConditionNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -31,4 +32,4 @@ export function CloseConditionNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

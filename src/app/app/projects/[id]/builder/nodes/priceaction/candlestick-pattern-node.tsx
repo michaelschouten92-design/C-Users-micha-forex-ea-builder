@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { CandlestickPatternNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
@@ -18,7 +19,11 @@ const patternLabels: Record<string, string> = {
   THREE_BLACK_CROWS: "3 Black Crows",
 };
 
-export function CandlestickPatternNode({ id, data, selected }: Props) {
+export const CandlestickPatternNode = memo(function CandlestickPatternNode({
+  id,
+  data,
+  selected,
+}: Props) {
   const patterns = data.patterns ?? [];
   const displayPatterns = patterns
     .slice(0, 2)
@@ -52,4 +57,4 @@ export function CandlestickPatternNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

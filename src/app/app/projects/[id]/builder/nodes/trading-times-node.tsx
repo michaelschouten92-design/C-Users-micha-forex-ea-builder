@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { TradingSessionNodeData, TradingDays } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
@@ -46,7 +47,7 @@ function formatDays(days: TradingDays): string {
   return active.join(", ");
 }
 
-export function TradingTimesNode({ id, data, selected }: Props) {
+export const TradingTimesNode = memo(function TradingTimesNode({ id, data, selected }: Props) {
   const sessionInfo = SESSION_TIMES[data.session];
 
   const isCustom = data.session === "CUSTOM";
@@ -87,4 +88,4 @@ export function TradingTimesNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

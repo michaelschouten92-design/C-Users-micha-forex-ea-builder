@@ -32,6 +32,10 @@ interface FeatureUsage {
   count: number;
 }
 
+interface AnalyticsTabProps {
+  sharedUsers?: UserData[];
+}
+
 // Categorize node types by color
 const NODE_CATEGORY_COLORS: Record<string, string> = {
   // Indicators
@@ -63,7 +67,7 @@ function getNodeColor(type: string): string {
   return NODE_CATEGORY_COLORS.default;
 }
 
-export function AnalyticsTab() {
+export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [referralStats, setReferralStats] = useState<ReferralStat[]>([]);
   const [funnel, setFunnel] = useState<FunnelStep[]>([]);
@@ -73,9 +77,13 @@ export function AnalyticsTab() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, usersRes, funnelRes, usageRes] = await Promise.all([
+        const usersPromise = sharedUsers
+          ? Promise.resolve(sharedUsers)
+          : apiClient.get<{ data: UserData[] }>("/api/admin/users").then((res) => res.data);
+
+        const [statsRes, usersData, funnelRes, usageRes] = await Promise.all([
           apiClient.get<StatsData>("/api/admin/stats"),
-          apiClient.get<{ data: UserData[] }>("/api/admin/users"),
+          usersPromise,
           apiClient
             .get<{ funnel: FunnelStep[] }>("/api/admin/funnel")
             .catch(() => ({ funnel: [] })),
@@ -88,7 +96,7 @@ export function AnalyticsTab() {
         setFeatureUsage(usageRes.data);
 
         // Calculate referral stats from users data
-        const usersWithReferralCode = usersRes.data.filter((u) => u.referralCode);
+        const usersWithReferralCode = usersData.filter((u) => u.referralCode);
         const referralMap: Record<string, ReferralStat> = {};
 
         for (const user of usersWithReferralCode) {
@@ -100,7 +108,7 @@ export function AnalyticsTab() {
           };
         }
 
-        for (const user of usersRes.data) {
+        for (const user of usersData) {
           if (user.referredBy && referralMap[user.referredBy]) {
             referralMap[user.referredBy].referred++;
             if (user.subscription.tier !== "FREE") {
@@ -121,7 +129,7 @@ export function AnalyticsTab() {
       }
     }
     fetchData();
-  }, []);
+  }, [sharedUsers]);
 
   if (loading) {
     return <div className="text-[#94A3B8] py-8 text-center">Loading analytics...</div>;

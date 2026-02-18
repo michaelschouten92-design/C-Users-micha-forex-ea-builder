@@ -18,7 +18,10 @@ export async function GET() {
       orderBy: { date: "asc" },
     });
 
-    return NextResponse.json({ data: snapshots });
+    return NextResponse.json(
+      { data: snapshots },
+      { headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=600" } }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to fetch revenue history");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

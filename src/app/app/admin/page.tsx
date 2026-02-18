@@ -169,9 +169,9 @@ export default function AdminPage() {
           />
         )}
         {activeTab === "audit" && <AuditLogTab onUserClick={setDetailUserId} />}
-        {activeTab === "revenue" && <RevenueTab />}
+        {activeTab === "revenue" && <RevenueTab sharedUsers={users} />}
         {activeTab === "exports" && <ExportsTab />}
-        {activeTab === "analytics" && <AnalyticsTab />}
+        {activeTab === "analytics" && <AnalyticsTab sharedUsers={users} />}
         {activeTab === "announcements" && <AnnouncementsTab />}
         {activeTab === "live-eas" && <LiveEAsTab />}
         {activeTab === "plan-limits" && <PlanLimitsTab />}

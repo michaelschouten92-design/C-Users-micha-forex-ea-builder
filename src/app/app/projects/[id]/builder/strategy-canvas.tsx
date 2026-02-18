@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect, useMemo } from "react";
+import { useCallback, useRef, useState, useEffect, useMemo, useDeferredValue } from "react";
 import {
   ReactFlow,
   Background,
@@ -110,19 +110,6 @@ function BuilderProgressStepper({
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
-
-  // Re-check export status periodically (in case export happened in same tab)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      try {
-        const val = localStorage.getItem("algostudio-has-exported") === "1";
-        if (val !== hasExported) setHasExported(val);
-      } catch {
-        /* private browsing */
-      }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [hasExported]);
 
   // Don't show if welcome modal hasn't been dismissed yet
   if (!isOnboarded) return null;
@@ -401,11 +388,12 @@ export function StrategyCanvas({
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
-  // Validate strategy (memoized to avoid recalculating on every render)
-  const validation = useMemo(
+  // Validate strategy (memoized, deferred to avoid blocking interactions during drag)
+  const validationEager = useMemo(
     () => validateStrategy(nodes as Node<BuilderNodeData>[], edges, settings),
     [nodes, edges, settings]
   );
+  const validation = useDeferredValue(validationEager);
 
   // Handle drag start from toolbar
   const onDragStart = useCallback((event: React.DragEvent, template: NodeTemplate) => {
@@ -888,37 +876,6 @@ export function StrategyCanvas({
             </svg>
           </button>
 
-          {/* Help button — re-trigger onboarding */}
-          <style>{`
-            @keyframes help-glow {
-              0%, 100% { box-shadow: 0 4px 16px rgba(79,70,229,0.4); }
-              50% { box-shadow: 0 4px 24px rgba(79,70,229,0.7); }
-            }
-            .help-btn-glow {
-              animation: help-glow 3s ease-in-out infinite;
-            }
-            @keyframes empty-canvas-pulse {
-              0%, 100% { border-color: rgba(79,70,229,0.15); }
-              50% { border-color: rgba(79,70,229,0.35); }
-            }
-            .empty-canvas-pulse {
-              animation: empty-canvas-pulse 3s ease-in-out infinite;
-            }
-            @keyframes drag-hand {
-              0%, 100% { transform: translateX(-8px); opacity: 0.7; }
-              50% { transform: translateX(8px); opacity: 1; }
-            }
-            .drag-hand-anim {
-              animation: drag-hand 2.5s ease-in-out infinite;
-            }
-            @keyframes arrow-left {
-              0%, 100% { transform: translateX(0); opacity: 0.6; }
-              50% { transform: translateX(-4px); opacity: 1; }
-            }
-            .arrow-left-anim {
-              animation: arrow-left 2s ease-in-out infinite;
-            }
-          `}</style>
           <HelpButton onClick={() => setShowHelp(true)} />
 
           {/* Keyboard shortcut hint */}

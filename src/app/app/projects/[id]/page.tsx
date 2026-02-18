@@ -28,7 +28,7 @@ export default async function ProjectPage({ params }: Props) {
     include: {
       versions: {
         orderBy: { versionNo: "desc" },
-        take: 5,
+        take: 1,
       },
       _count: {
         select: { versions: true, exports: true },

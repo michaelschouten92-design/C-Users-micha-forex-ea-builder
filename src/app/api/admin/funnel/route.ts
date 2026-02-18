@@ -26,15 +26,18 @@ export async function GET() {
       ]
     );
 
-    return NextResponse.json({
-      funnel: [
-        { label: "Total Signups", count: totalSignups },
-        { label: "Email Verified", count: emailVerified },
-        { label: "Created Project", count: createdProject },
-        { label: "First Export", count: firstExport },
-        { label: "Paid", count: paidUsers },
-      ],
-    });
+    return NextResponse.json(
+      {
+        funnel: [
+          { label: "Total Signups", count: totalSignups },
+          { label: "Email Verified", count: emailVerified },
+          { label: "Created Project", count: createdProject },
+          { label: "First Export", count: firstExport },
+          { label: "Paid", count: paidUsers },
+        ],
+      },
+      { headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=600" } }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to fetch funnel data");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

@@ -42,7 +42,10 @@ export async function GET() {
       .slice(0, 30)
       .map(([type, count]) => ({ type, count }));
 
-    return NextResponse.json({ data: sorted });
+    return NextResponse.json(
+      { data: sorted },
+      { headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=600" } }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to fetch feature usage");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

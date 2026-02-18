@@ -55,7 +55,9 @@ export function SystemHealthTab() {
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 30000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchHealth();
+    }, 120000);
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
@@ -80,7 +82,7 @@ export function SystemHealthTab() {
         <h2 className="text-2xl font-bold text-white">System Health</h2>
         {lastUpdated && (
           <span className="text-xs text-[#64748B]">
-            Last updated: {lastUpdated.toLocaleTimeString()} (auto-refresh 30s)
+            Last updated: {lastUpdated.toLocaleTimeString()} (auto-refresh 2m)
           </span>
         )}
       </div>

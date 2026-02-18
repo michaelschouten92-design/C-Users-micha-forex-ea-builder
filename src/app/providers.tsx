@@ -12,10 +12,10 @@ export function Providers({
   session,
 }: {
   children: React.ReactNode;
-  session: Session | null;
+  session?: Session | null;
 }) {
   return (
-    <SessionProvider session={session} refetchOnWindowFocus={false}>
+    <SessionProvider session={session ?? undefined} refetchOnWindowFocus={false}>
       <ImpersonationBanner />
       <SWRConfig value={defaultSwrConfig}>{children}</SWRConfig>
       <Toaster

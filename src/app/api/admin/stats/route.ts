@@ -103,37 +103,36 @@ export async function GET() {
       count: Number(row.count),
     }));
 
-    // Count churn risk users: paid users with period ending within 7d or no login in 30d
+    // Count churn risk users: paid users with period ending within 7d OR no login in 30d
     const sevenDaysFromNow = new Date(now + 7 * 86_400_000);
-    const churnRiskExpiring = await prisma.subscription.count({
-      where: {
-        tier: { not: "FREE" },
-        status: "active",
-        currentPeriodEnd: { lte: sevenDaysFromNow, not: null },
-      },
-    });
-    const churnRiskInactive = await prisma.user.count({
+    const churnRiskCount = await prisma.user.count({
       where: {
         subscription: { tier: { not: "FREE" }, status: "active" },
-        OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: thirtyDaysAgo } }],
+        OR: [
+          { subscription: { currentPeriodEnd: { lte: sevenDaysFromNow, not: null } } },
+          { lastLoginAt: null },
+          { lastLoginAt: { lt: thirtyDaysAgo } },
+        ],
       },
     });
-    const churnRiskCount = Math.max(churnRiskExpiring, churnRiskInactive);
 
-    return NextResponse.json({
-      mrr,
-      arr: mrr * 12,
-      paidSubscribers: paidSubscriptions.length,
-      usersByTier,
-      exportStats,
-      exportsToday,
-      signups,
-      webhookEventsLast24h: webhookCount,
-      churn: totalSubCount > 0 ? cancelledCount / totalSubCount : 0,
-      cancelledCount,
-      totalSubCount,
-      churnRiskCount,
-    });
+    return NextResponse.json(
+      {
+        mrr,
+        arr: mrr * 12,
+        paidSubscribers: paidSubscriptions.length,
+        usersByTier,
+        exportStats,
+        exportsToday,
+        signups,
+        webhookEventsLast24h: webhookCount,
+        churn: totalSubCount > 0 ? cancelledCount / totalSubCount : 0,
+        cancelledCount,
+        totalSubCount,
+        churnRiskCount,
+      },
+      { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to fetch admin stats");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

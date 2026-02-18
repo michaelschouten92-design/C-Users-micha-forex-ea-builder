@@ -77,7 +77,10 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
   }, [page, eventTypeFilter, userIdFilter, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchLogs();
+    const timeout = setTimeout(() => {
+      fetchLogs();
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [fetchLogs]);
 
   useEffect(() => {

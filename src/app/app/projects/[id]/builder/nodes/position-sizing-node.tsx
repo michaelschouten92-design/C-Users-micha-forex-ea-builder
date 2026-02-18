@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { PlaceBuyNodeData, PlaceSellNodeData } from "@/types/builder";
 import { BaseNode } from "./base-node";
@@ -17,7 +18,7 @@ const orderTypeLabels: Record<string, string> = {
 
 type PlaceBuyProps = NodeProps & { data: PlaceBuyNodeData };
 
-export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
+export const PlaceBuyNode = memo(function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
   const getValue = () => {
     switch (data.method) {
       case "FIXED_LOT":
@@ -71,11 +72,11 @@ export function PlaceBuyNode({ id, data, selected }: PlaceBuyProps) {
       </div>
     </BaseNode>
   );
-}
+});
 
 type PlaceSellProps = NodeProps & { data: PlaceSellNodeData };
 
-export function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
+export const PlaceSellNode = memo(function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
   const getValue = () => {
     switch (data.method) {
       case "FIXED_LOT":
@@ -131,4 +132,4 @@ export function PlaceSellNode({ id, data, selected }: PlaceSellProps) {
       </div>
     </BaseNode>
   );
-}
+});

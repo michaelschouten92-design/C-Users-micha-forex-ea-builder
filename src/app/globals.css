@@ -251,6 +251,70 @@ body {
 }
 
 /* ============================================
+   BUILDER CANVAS ANIMATIONS
+   ============================================ */
+
+@keyframes help-glow {
+  0%,
+  100% {
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.7);
+  }
+}
+
+.help-btn-glow {
+  animation: help-glow 3s ease-in-out infinite;
+}
+
+@keyframes empty-canvas-pulse {
+  0%,
+  100% {
+    border-color: rgba(79, 70, 229, 0.15);
+  }
+  50% {
+    border-color: rgba(79, 70, 229, 0.35);
+  }
+}
+
+.empty-canvas-pulse {
+  animation: empty-canvas-pulse 3s ease-in-out infinite;
+}
+
+@keyframes drag-hand {
+  0%,
+  100% {
+    transform: translateX(-8px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(8px);
+    opacity: 1;
+  }
+}
+
+.drag-hand-anim {
+  animation: drag-hand 2.5s ease-in-out infinite;
+}
+
+@keyframes arrow-left {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(-4px);
+    opacity: 1;
+  }
+}
+
+.arrow-left-anim {
+  animation: arrow-left 2s ease-in-out infinite;
+}
+
+/* ============================================
    REDUCED MOTION (Accessibility)
    ============================================ */
 

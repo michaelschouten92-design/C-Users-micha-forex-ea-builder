@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 import { logger } from "./logger";
 
-const SLOW_QUERY_THRESHOLD_MS = 200;
+const SLOW_QUERY_THRESHOLD_MS = 100;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

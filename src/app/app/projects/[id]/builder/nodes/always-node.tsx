@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { AlwaysNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
 
 type Props = NodeProps & { data: AlwaysNodeData };
 
-export function AlwaysNode({ id, data, selected }: Props) {
+export const AlwaysNode = memo(function AlwaysNode({ id, data, selected }: Props) {
   return (
     <BaseNode
       id={id}
@@ -15,9 +16,7 @@ export function AlwaysNode({ id, data, selected }: Props) {
       label={data.label}
       icon={NodeIcons.timing}
     >
-      <div className="text-xs text-zinc-400">
-        Trading enabled at all times
-      </div>
+      <div className="text-xs text-zinc-400">Trading enabled at all times</div>
     </BaseNode>
   );
-}
+});

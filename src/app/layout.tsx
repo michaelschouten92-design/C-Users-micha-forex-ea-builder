@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CookieConsent } from "@/components/cookie-consent";
-import { auth } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,13 +58,11 @@ const organizationJsonLd = {
   sameAs: [],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-
   return (
     <html lang="en">
       <head>
@@ -72,13 +70,6 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
-          <script
-            defer
-            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
-            src="https://plausible.io/js/script.js"
-          />
-        )}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
         <a
@@ -87,8 +78,15 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        <Providers session={session}>{children}</Providers>
+        <Providers>{children}</Providers>
         <CookieConsent />
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <Script
+            src="https://plausible.io/js/script.js"
+            strategy="lazyOnload"
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+          />
+        )}
       </body>
     </html>
   );

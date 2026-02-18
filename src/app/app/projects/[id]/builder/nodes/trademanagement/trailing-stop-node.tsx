@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { TrailingStopNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: TrailingStopNodeData };
 
-export function TrailingStopNode({ id, data, selected }: Props) {
+export const TrailingStopNode = memo(function TrailingStopNode({ id, data, selected }: Props) {
   const methodDisplay = {
     FIXED_PIPS: `${data.trailPips} pips`,
     ATR_BASED: `${data.trailAtrMultiplier}x ATR`,
@@ -34,4 +35,4 @@ export function TrailingStopNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

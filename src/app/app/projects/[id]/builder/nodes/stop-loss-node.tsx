@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { StopLossNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
@@ -14,7 +15,7 @@ const methodLabels: Record<string, string> = {
   RANGE_OPPOSITE: "Range Opposite",
 };
 
-export function StopLossNode({ id, data, selected }: Props) {
+export const StopLossNode = memo(function StopLossNode({ id, data, selected }: Props) {
   const getValue = () => {
     switch (data.method) {
       case "FIXED_PIPS":
@@ -50,4 +51,4 @@ export function StopLossNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

@@ -88,27 +88,30 @@ export async function GET() {
       eaStatusMap[e.status] = e._count;
     }
 
-    return NextResponse.json({
-      services: {
-        database: { status: dbStatus, latency: dbLatency },
-        redis: { status: redisStatus, latency: redisLatency },
-        stripe: { status: stripeStatus, latency: stripeLatency },
+    return NextResponse.json(
+      {
+        services: {
+          database: { status: dbStatus, latency: dbLatency },
+          redis: { status: redisStatus, latency: redisLatency },
+          stripe: { status: stripeStatus, latency: stripeLatency },
+        },
+        exports: {
+          queueDepth,
+          failureRate: exportFailureRate,
+          failed24h: failedExports24h,
+          total24h: totalExports24h,
+        },
+        webhooks: {
+          count24h: webhookCount24h,
+        },
+        eas: {
+          online: eaStatusMap.ONLINE || 0,
+          offline: eaStatusMap.OFFLINE || 0,
+          error: eaStatusMap.ERROR || 0,
+        },
       },
-      exports: {
-        queueDepth,
-        failureRate: exportFailureRate,
-        failed24h: failedExports24h,
-        total24h: totalExports24h,
-      },
-      webhooks: {
-        count24h: webhookCount24h,
-      },
-      eas: {
-        online: eaStatusMap.ONLINE || 0,
-        offline: eaStatusMap.OFFLINE || 0,
-        error: eaStatusMap.ERROR || 0,
-      },
-    });
+      { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" } }
+    );
   } catch (error) {
     logger.error({ error }, "Failed to fetch system health");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

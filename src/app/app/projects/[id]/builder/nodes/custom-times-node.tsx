@@ -1,12 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { CustomTimesNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
 
 type Props = NodeProps & { data: CustomTimesNodeData };
 
-export function CustomTimesNode({ id, data, selected }: Props) {
+export const CustomTimesNode = memo(function CustomTimesNode({ id, data, selected }: Props) {
   const days = data.days ?? {
     monday: true,
     tuesday: true,
@@ -57,4 +58,4 @@ export function CustomTimesNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

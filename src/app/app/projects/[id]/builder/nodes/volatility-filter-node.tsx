@@ -1,12 +1,17 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { VolatilityFilterNodeData } from "@/types/builder";
 import { BaseNode, NodeIcons } from "./base-node";
 
 type Props = NodeProps & { data: VolatilityFilterNodeData };
 
-export function VolatilityFilterNode({ id, data, selected }: Props) {
+export const VolatilityFilterNode = memo(function VolatilityFilterNode({
+  id,
+  data,
+  selected,
+}: Props) {
   return (
     <BaseNode
       id={id}
@@ -25,4 +30,4 @@ export function VolatilityFilterNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

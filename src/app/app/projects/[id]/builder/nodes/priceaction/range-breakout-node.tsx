@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { RangeBreakoutNodeData } from "@/types/builder";
 import { BaseNode } from "../base-node";
@@ -25,7 +26,7 @@ const sessionLabels: Record<string, string> = {
   CUSTOM: "Custom",
 };
 
-export function RangeBreakoutNode({ id, data, selected }: Props) {
+export const RangeBreakoutNode = memo(function RangeBreakoutNode({ id, data, selected }: Props) {
   const getRangeDescription = () => {
     switch (data.rangeType) {
       case "PREVIOUS_CANDLES":
@@ -46,7 +47,13 @@ export function RangeBreakoutNode({ id, data, selected }: Props) {
       category="priceaction"
       label={data.label}
       icon={
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M3 12h4l3-9 4 18 3-9h4" />
         </svg>
       }
@@ -58,7 +65,9 @@ export function RangeBreakoutNode({ id, data, selected }: Props) {
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Range:</span>
-          <span className="font-medium">{rangeTypeLabels[data.rangeType]} ({getRangeDescription()})</span>
+          <span className="font-medium">
+            {rangeTypeLabels[data.rangeType]} ({getRangeDescription()})
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">Direction:</span>
@@ -73,4 +82,4 @@ export function RangeBreakoutNode({ id, data, selected }: Props) {
       </div>
     </BaseNode>
   );
-}
+});

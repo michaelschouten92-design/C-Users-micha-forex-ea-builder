@@ -34,6 +34,17 @@ interface RevenueSnapshot {
   churnRate: number;
 }
 
+interface SharedUserData {
+  email: string;
+  lastLoginAt?: string | null;
+  subscription: { tier: string; status: string; currentPeriodEnd?: string };
+  churnRisk?: boolean;
+}
+
+interface RevenueTabProps {
+  sharedUsers?: SharedUserData[];
+}
+
 function MRRChart({ snapshots }: { snapshots: RevenueSnapshot[] }) {
   if (snapshots.length < 2) {
     return (
@@ -91,7 +102,7 @@ function MRRChart({ snapshots }: { snapshots: RevenueSnapshot[] }) {
   );
 }
 
-export function RevenueTab() {
+export function RevenueTab({ sharedUsers }: RevenueTabProps) {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
   const [revenueHistory, setRevenueHistory] = useState<RevenueSnapshot[]>([]);
@@ -100,22 +111,21 @@ export function RevenueTab() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, usersRes, historyRes] = await Promise.all([
+        const fetches: [Promise<StatsData>, Promise<{ data: RevenueSnapshot[] }>] = [
           apiClient.get<StatsData>("/api/admin/stats"),
-          apiClient.get<{
-            data: {
-              email: string;
-              lastLoginAt?: string | null;
-              subscription: { tier: string; status: string; currentPeriodEnd?: string };
-              churnRisk?: boolean;
-            }[];
-          }>("/api/admin/users"),
           apiClient.get<{ data: RevenueSnapshot[] }>("/api/admin/revenue-history"),
-        ]);
+        ];
+
+        const usersPromise = sharedUsers
+          ? Promise.resolve(sharedUsers)
+          : apiClient.get<{ data: SharedUserData[] }>("/api/admin/users").then((res) => res.data);
+
+        const [statsRes, historyRes, usersData] = await Promise.all([...fetches, usersPromise]);
+
         setStats(statsRes);
         setRevenueHistory(historyRes.data);
         setSubscriptions(
-          usersRes.data
+          usersData
             .filter((u) => u.subscription)
             .map((u) => ({
               email: u.email,
@@ -133,7 +143,7 @@ export function RevenueTab() {
       }
     }
     fetchData();
-  }, []);
+  }, [sharedUsers]);
 
   if (loading) {
     return <div className="text-[#94A3B8] py-8 text-center">Loading revenue data...</div>;

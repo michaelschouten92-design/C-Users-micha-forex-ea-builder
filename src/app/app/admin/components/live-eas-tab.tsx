@@ -142,8 +142,10 @@ export function LiveEAsTab() {
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    // Auto-refresh every 60 seconds, only when tab visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchData();
+    }, 60000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
