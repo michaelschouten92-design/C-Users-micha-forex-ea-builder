@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { apiClient } from "@/lib/api-client";
+import { showSuccess } from "@/lib/toast";
 import { LiveEADetailModal } from "./live-ea-detail-modal";
 
 interface LiveEAData {
@@ -328,7 +329,16 @@ export function LiveEAsTab() {
           onClick={() => setShowAlerts(!showAlerts)}
           className="flex items-center gap-2 text-sm font-semibold text-[#A78BFA] hover:text-white transition-colors mb-3"
         >
-          <span>{showAlerts ? "▼" : "►"}</span> EA Alerts
+          <svg
+            className={`w-3 h-3 transition-transform ${showAlerts ? "rotate-90" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>{" "}
+          EA Alerts
           {recentAlerts.length > 0 && (
             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
               {recentAlerts.length}
@@ -359,9 +369,11 @@ export function LiveEAsTab() {
                       </div>
                       <button
                         onClick={async () => {
+                          if (!confirm("Delete this alert rule?")) return;
                           try {
                             await apiClient.delete(`/api/admin/ea-alerts?id=${rule.id}`);
                             setAlertRules((prev) => prev.filter((r) => r.id !== rule.id));
+                            showSuccess("Alert rule deleted");
                           } catch {
                             // ignore
                           }
@@ -444,6 +456,7 @@ export function LiveEAsTab() {
                               id: alert.id,
                             });
                             setRecentAlerts((prev) => prev.filter((a) => a.id !== alert.id));
+                            showSuccess("Alert acknowledged");
                           } catch {
                             // ignore
                           }

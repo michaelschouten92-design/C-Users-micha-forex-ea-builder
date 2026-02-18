@@ -39,8 +39,9 @@ export function ExportsTab() {
 
   // Stats
   const [todayCount, setTodayCount] = useState(0);
-  const [successRate, setSuccessRate] = useState(0);
+  const [successRate, setSuccessRate] = useState<number | null>(null);
   const [failedWeek, setFailedWeek] = useState(0);
+  const [statsError, setStatsError] = useState(false);
 
   const limit = 50;
 
@@ -59,6 +60,7 @@ export function ExportsTab() {
 
       setExports(exportsRes.data);
       setTotal(exportsRes.total);
+      setStatsError(false);
       setTodayCount(statsRes.exportsToday);
 
       const totalWeek = Object.values(statsRes.exportStats).reduce((a, b) => a + b, 0);
@@ -67,6 +69,8 @@ export function ExportsTab() {
       setFailedWeek(statsRes.exportStats.FAILED || 0);
     } catch {
       setExports([]);
+      setStatsError(true);
+      setSuccessRate(null);
     } finally {
       setLoading(false);
     }
@@ -97,7 +101,15 @@ export function ExportsTab() {
         </div>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">Success Rate (week)</div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">{successRate.toFixed(1)}%</div>
+          <div className="text-2xl font-bold text-emerald-400 mt-1">
+            {statsError ? (
+              <span className="text-red-400 text-sm">Failed to load</span>
+            ) : successRate !== null ? (
+              `${successRate.toFixed(1)}%`
+            ) : (
+              "—"
+            )}
+          </div>
         </div>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">Failed (week)</div>

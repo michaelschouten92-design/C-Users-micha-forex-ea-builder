@@ -127,7 +127,7 @@ export function RevenueTab() {
             }))
         );
       } catch {
-        // ignore
+        setStats(null);
       } finally {
         setLoading(false);
       }
@@ -140,7 +140,17 @@ export function RevenueTab() {
   }
 
   if (!stats) {
-    return <div className="text-red-400 py-8 text-center">Failed to load stats</div>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-400 mb-3">Failed to load revenue data</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm text-[#A78BFA] hover:text-white transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const totalTierUsers = Object.values(stats.usersByTier).reduce((a, b) => a + b, 0) || 1;

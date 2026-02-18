@@ -127,7 +127,15 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             onClick={() => setSummaryOpen(!summaryOpen)}
             className="flex items-center gap-2 text-sm font-medium text-[#A78BFA] hover:text-white transition-colors mb-2"
           >
-            <span className="text-xs">{summaryOpen ? "\u25BC" : "\u25B6"}</span>
+            <svg
+              className={`w-3 h-3 transition-transform ${summaryOpen ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
             Admin Actions (30d) &mdash; {adminSummary.totalActions} total
           </button>
           {summaryOpen && (

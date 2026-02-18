@@ -89,7 +89,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/pricing"
+                  href="/faq"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   FAQ

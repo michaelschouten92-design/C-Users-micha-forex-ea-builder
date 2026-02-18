@@ -180,7 +180,7 @@ export default function ProductPage() {
           {/* Templates */}
           <section className="mb-20">
             <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              5 strategy templates, ready to export
+              6 strategy templates, ready to export
             </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
               Each template produces a fully functional Expert Advisor with ATR-based stop loss,

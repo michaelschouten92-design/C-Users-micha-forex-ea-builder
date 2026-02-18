@@ -20,6 +20,7 @@ export function Providers({
       <SWRConfig value={defaultSwrConfig}>{children}</SWRConfig>
       <Toaster
         position="top-right"
+        visibleToasts={5}
         toastOptions={{
           style: {
             background: "#1E293B",

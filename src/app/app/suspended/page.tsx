@@ -32,10 +32,15 @@ export default function SuspendedPage() {
           </div>
         )}
         <p className="text-sm text-[#64748B] mb-6">
-          If you believe this is a mistake, please contact support.
+          If you believe this is a mistake, please{" "}
+          <a href="mailto:support@algo-studio.com" className="text-[#22D3EE] hover:underline">
+            contact support
+          </a>
+          .
         </p>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
+          aria-label="Sign out of suspended account"
           className="bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm px-6 py-2 rounded transition-colors"
         >
           Sign Out

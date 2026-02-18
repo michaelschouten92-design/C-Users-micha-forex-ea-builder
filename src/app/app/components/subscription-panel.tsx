@@ -59,14 +59,18 @@ export function SubscriptionPanel({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold text-white">{plan.name} Plan</h3>
-            {tier !== "FREE" &&
-              (subscriptionStatus === "active" || subscriptionStatus === "trialing") && (
-                <span
-                  className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
-                >
-                  Active
-                </span>
-              )}
+            {tier !== "FREE" && subscriptionStatus === "active" && (
+              <span
+                className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
+              >
+                Active
+              </span>
+            )}
+            {tier !== "FREE" && subscriptionStatus === "trialing" && (
+              <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#22D3EE]">
+                Trial
+              </span>
+            )}
             {tier !== "FREE" && subscriptionStatus === "past_due" && (
               <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#F59E0B]">
                 Past Due
@@ -163,7 +167,14 @@ export function SubscriptionPanel({
             </span>
           </div>
           {projectLimit !== Infinity && (
-            <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-[#1E293B] rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={projectCount}
+              aria-valuemin={0}
+              aria-valuemax={projectLimit}
+              aria-label={`Projects: ${projectCount} of ${projectLimit}`}
+            >
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   projectPercentage >= 100
@@ -204,7 +215,14 @@ export function SubscriptionPanel({
             </span>
           </div>
           {exportLimit !== Infinity && (
-            <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-[#1E293B] rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={exportCount}
+              aria-valuemin={0}
+              aria-valuemax={exportLimit}
+              aria-label={`Exports: ${exportCount} of ${exportLimit}`}
+            >
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   exportPercentage >= 100

@@ -12,6 +12,7 @@ export function MobileNav() {
         onClick={() => setIsOpen(!isOpen)}
         className="text-[#94A3B8] hover:text-white p-2"
         aria-label={isOpen ? "Close menu" : "Open menu"}
+        aria-expanded={isOpen}
       >
         {isOpen ? (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

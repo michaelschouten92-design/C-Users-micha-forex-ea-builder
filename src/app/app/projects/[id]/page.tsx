@@ -16,7 +16,7 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/login?expired=true");
   }
 
   const project = await prisma.project.findFirst({

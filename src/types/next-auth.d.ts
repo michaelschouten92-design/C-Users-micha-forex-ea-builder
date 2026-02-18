@@ -1,13 +1,15 @@
-import { DefaultSession } from "next-auth";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import NextAuth, { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    user: {
+    user: DefaultSession["user"] & {
       id: string;
       suspended?: boolean;
+      emailVerified?: Date | null;
       impersonatorId?: string;
       impersonatingEmail?: string;
-    } & DefaultSession["user"];
+    };
   }
 }
 

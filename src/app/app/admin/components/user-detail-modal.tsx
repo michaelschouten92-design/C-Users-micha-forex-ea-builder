@@ -80,6 +80,14 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   const [extending, setExtending] = useState(false);
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     async function fetchUser() {
       try {
         const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
@@ -217,6 +225,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
           <h2 className="text-lg font-bold text-white">User Detail</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-[#94A3B8] hover:text-white text-xl transition-colors"
           >
             &times;

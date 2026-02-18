@@ -76,8 +76,10 @@ export default function SettingsPage() {
           {/* Email */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
-            <div className="flex items-center">
-              <p className="text-[#94A3B8] text-sm">{session?.user?.email || "Loading..."}</p>
+            <div className="flex items-center flex-wrap">
+              <p className="text-[#94A3B8] text-sm break-all">
+                {session?.user?.email || "Loading..."}
+              </p>
               {session?.user?.email && <CopyButton text={session.user.email} />}
               {session?.user && (
                 <span

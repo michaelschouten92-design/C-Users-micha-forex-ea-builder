@@ -65,7 +65,7 @@ function ResetPasswordForm() {
     return (
       <div className="space-y-6">
         <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-4 rounded-lg text-sm text-center">
-          Invalid reset link. Please request a new password reset.
+          This reset link is invalid or has expired. Please request a new one.
         </div>
         <Link
           href="/forgot-password"
@@ -96,7 +96,10 @@ function ResetPasswordForm() {
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       {error && (
-        <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm">
+        <div
+          role="alert"
+          className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm"
+        >
           {error}
         </div>
       )}
@@ -110,11 +113,14 @@ function ResetPasswordForm() {
           name="password"
           type="password"
           required
+          autoFocus
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
           placeholder="Minimum 8 characters"
         />
+        <p className="text-[10px] text-[#64748B] mt-1">Must be at least 8 characters</p>
       </div>
 
       <div>
@@ -126,6 +132,7 @@ function ResetPasswordForm() {
           name="confirmPassword"
           type="password"
           required
+          autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
@@ -149,12 +156,8 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div>
-          <h2 className="text-center text-3xl font-bold text-white">
-            Set New Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-[#94A3B8]">
-            Enter your new password below
-          </p>
+          <h2 className="text-center text-3xl font-bold text-white">Set New Password</h2>
+          <p className="mt-2 text-center text-sm text-[#94A3B8]">Enter your new password below</p>
         </div>
 
         <Suspense fallback={<div className="text-center text-[#94A3B8]">Loading...</div>}>

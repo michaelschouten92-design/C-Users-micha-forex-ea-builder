@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
+import { showSuccess, showError } from "@/lib/toast";
 
 interface Heartbeat {
   id: string;
@@ -139,6 +140,14 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
   const [activeSection, setActiveSection] = useState<"trades" | "errors">("trades");
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     async function fetch() {
       try {
         const res = await apiClient.get<DetailData>(`/api/admin/live-eas/${instanceId}`);
@@ -171,6 +180,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-[#94A3B8] hover:text-white text-2xl leading-none px-2"
           >
             &times;
@@ -254,8 +264,9 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                       a.download = `trades-${data.id}-${new Date().toISOString().split("T")[0]}.csv`;
                       a.click();
                       URL.revokeObjectURL(url);
+                      showSuccess("Trades exported");
                     } catch {
-                      // ignore
+                      showError("Failed to export trades");
                     }
                   }}
                   className="px-3 py-1.5 text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 transition-colors ml-auto"

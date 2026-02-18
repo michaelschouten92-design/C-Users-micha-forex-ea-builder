@@ -104,7 +104,10 @@ export function createCsrfResponse(response: NextResponse, request: NextRequest)
  * Create error response for CSRF validation failure
  */
 export function createCsrfErrorResponse(): NextResponse {
-  return NextResponse.json({ error: "CSRF token validation failed" }, { status: 403 });
+  return NextResponse.json(
+    { error: "Your session has expired. Please refresh the page and try again." },
+    { status: 403 }
+  );
 }
 
 /**

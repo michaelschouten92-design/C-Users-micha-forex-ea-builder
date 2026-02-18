@@ -93,6 +93,10 @@ export function AnnouncementsTab() {
 
   async function handleSubmit() {
     if (!formTitle.trim() || !formMessage.trim() || creating) return;
+    if (formScheduledAt && formExpiry && new Date(formScheduledAt) >= new Date(formExpiry)) {
+      showError("Validation", "Scheduled date must be before expiry date");
+      return;
+    }
     setCreating(true);
     try {
       const payload = {
@@ -375,7 +379,16 @@ export function AnnouncementsTab() {
           onClick={() => setShowBulkEmail(!showBulkEmail)}
           className="flex items-center gap-2 text-sm font-semibold text-[#A78BFA] hover:text-white transition-colors"
         >
-          <span>{showBulkEmail ? "▼" : "►"}</span> Bulk Email
+          <svg
+            className={`w-3 h-3 transition-transform ${showBulkEmail ? "rotate-90" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          Bulk Email
         </button>
 
         {showBulkEmail && (

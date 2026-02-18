@@ -355,6 +355,24 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
           />
           Churn Risk
         </label>
+        {(searchQuery ||
+          tierFilter !== "ALL" ||
+          loginFilter !== "ALL" ||
+          activityFilter !== "ALL" ||
+          churnFilter) && (
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setTierFilter("ALL");
+              setLoginFilter("ALL");
+              setActivityFilter("ALL");
+              setChurnFilter(false);
+            }}
+            className="text-xs text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
+          >
+            Clear all filters
+          </button>
+        )}
       </div>
 
       {/* Bulk action bar */}

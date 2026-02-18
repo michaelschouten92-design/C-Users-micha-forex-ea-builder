@@ -115,7 +115,7 @@ export function AnalyticsTab() {
             .sort((a, b) => b.referred - a.referred)
         );
       } catch {
-        // ignore
+        setStats(null);
       } finally {
         setLoading(false);
       }
@@ -128,7 +128,17 @@ export function AnalyticsTab() {
   }
 
   if (!stats) {
-    return <div className="text-red-400 py-8 text-center">Failed to load analytics</div>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-400 mb-3">Failed to load analytics data</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm text-[#A78BFA] hover:text-white transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const maxSignup = Math.max(...stats.signups.map((s) => s.count), 1);

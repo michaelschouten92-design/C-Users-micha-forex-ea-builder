@@ -292,7 +292,10 @@ export function ProjectList({ projects }: { projects: Project[] }) {
     let result = projects;
     if (query) {
       result = result.filter(
-        (p) => p.name.toLowerCase().includes(query) || p.description?.toLowerCase().includes(query)
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query) ||
+          (p.tags ?? []).some((t) => t.tag.toLowerCase().includes(query))
       );
     }
 
@@ -380,12 +383,18 @@ export function ProjectList({ projects }: { projects: Project[] }) {
               </button>
             );
           })}
-          {selectedTags.size > 0 && (
+          {selectedTags.size > 1 && (
+            <span className="text-xs text-[#64748B] px-1 py-1">(matching all)</span>
+          )}
+          {(selectedTags.size > 0 || search.trim()) && (
             <button
-              onClick={() => setSelectedTags(new Set())}
+              onClick={() => {
+                setSelectedTags(new Set());
+                setSearch("");
+              }}
               className="text-xs text-[#64748B] hover:text-white px-2 py-1 transition-colors"
             >
-              Clear filters
+              Clear all filters
             </button>
           )}
         </div>

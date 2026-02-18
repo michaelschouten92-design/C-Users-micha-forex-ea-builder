@@ -35,7 +35,7 @@ export function CookieConsent() {
   if (hasConsent || dismissed) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-[#1A0626] border-t border-white/10">
+    <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-[#1A0626] border-t border-white/10">
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-4">
         <p className="text-sm text-[#94A3B8] flex-1">
           We use essential cookies for authentication and security. We also use privacy-friendly

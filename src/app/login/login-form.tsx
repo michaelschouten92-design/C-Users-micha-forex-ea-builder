@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Link from "next/link";
@@ -26,6 +26,24 @@ function LoginFormInner({
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
+  const banner = useMemo<{ type: "success" | "error"; message: string } | null>(() => {
+    if (searchParams.get("verified") === "true")
+      return { type: "success", message: "Email verified successfully! You can now sign in." };
+    const errParam = searchParams.get("error");
+    if (errParam === "token_expired")
+      return {
+        type: "error",
+        message: "Verification link expired. Please request a new one in settings.",
+      };
+    if (errParam === "invalid_token")
+      return { type: "error", message: "Invalid verification link. Please request a new one." };
+    if (errParam === "rate_limited")
+      return { type: "error", message: "Too many attempts. Please try again later." };
+    if (searchParams.get("expired") === "true")
+      return { type: "error", message: "Your session has expired. Please sign in again." };
+    return null;
+  }, [searchParams]);
+  const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaWidgetId = useRef<string | null>(null);
   const captchaContainerRef = useRef<HTMLDivElement>(null);
@@ -133,6 +151,7 @@ function LoginFormInner({
                 type="button"
                 onClick={() => handleOAuthSignIn("google")}
                 disabled={oauthLoading !== null}
+                aria-label="Continue with Google"
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-gray-50 text-gray-800 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {oauthLoading === "google" ? (
@@ -166,6 +185,7 @@ function LoginFormInner({
                 type="button"
                 onClick={() => handleOAuthSignIn("github")}
                 disabled={oauthLoading !== null}
+                aria-label="Continue with GitHub"
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {oauthLoading === "github" ? (
@@ -188,6 +208,7 @@ function LoginFormInner({
                 type="button"
                 onClick={() => handleOAuthSignIn("discord")}
                 disabled={oauthLoading !== null}
+                aria-label="Continue with Discord"
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {oauthLoading === "discord" ? (
@@ -237,8 +258,23 @@ function LoginFormInner({
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
+        {banner && (
+          <div
+            role="alert"
+            className={`p-3 rounded-lg text-sm border ${
+              banner.type === "success"
+                ? "bg-[rgba(34,211,238,0.1)] border-[rgba(34,211,238,0.3)] text-[#22D3EE]"
+                : "bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#EF4444]"
+            }`}
+          >
+            {banner.message}
+          </div>
+        )}
         {error && (
-          <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm">
+          <div
+            role="alert"
+            className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm"
+          >
             {error}
           </div>
         )}
@@ -253,6 +289,8 @@ function LoginFormInner({
               name="email"
               type="email"
               required
+              autoFocus
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
@@ -271,16 +309,54 @@ function LoginFormInner({
                 </Link>
               )}
             </div>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-              placeholder="Minimum 8 characters"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete={isRegistration ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                placeholder="Minimum 8 characters"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-0.5 text-[#64748B] hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {isRegistration && (
+              <p className="text-[10px] text-[#64748B] mt-1">Must be at least 8 characters</p>
+            )}
           </div>
 
           {isRegistration && (
@@ -291,8 +367,9 @@ function LoginFormInner({
               <input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"

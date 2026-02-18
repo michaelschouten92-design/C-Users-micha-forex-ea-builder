@@ -88,6 +88,7 @@ export function ProjectCard({ project }: { project: Project }) {
 
       if (res.ok) {
         const data = await res.json();
+        showSuccess("Project duplicated");
         router.push(`/app/projects/${data.id}`);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -135,6 +136,7 @@ export function ProjectCard({ project }: { project: Project }) {
       });
       if (res.ok) {
         setTags(newTags);
+        showSuccess("Tags saved");
       } else {
         showError("Failed to save tags");
       }
