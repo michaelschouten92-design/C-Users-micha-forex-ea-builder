@@ -1,7 +1,7 @@
 import { env } from "./env";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
-import { decrypt, isEncrypted } from "./crypto";
+import { decrypt, encrypt, isEncrypted } from "./crypto";
 
 const log = logger.child({ module: "discord" });
 
@@ -83,10 +83,63 @@ function decryptToken(token: string): string {
 }
 
 /**
+ * Refresh a Discord access token using the stored refresh token.
+ * Updates both tokens in the database. Returns the new access token or null on failure.
+ */
+async function refreshAccessToken(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { discordRefreshToken: true },
+    });
+
+    if (!user?.discordRefreshToken) return null;
+
+    const refreshToken = decryptToken(user.discordRefreshToken);
+
+    const res = await fetch(`${DISCORD_API}/oauth2/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: env.DISCORD_CLIENT_ID!,
+        client_secret: env.DISCORD_CLIENT_SECRET!,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!res.ok) {
+      log.error({ userId, status: res.status }, "Discord token refresh failed");
+      return null;
+    }
+
+    const data: DiscordTokenResponse = await res.json();
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        discordAccessToken: encrypt(data.access_token),
+        discordRefreshToken: encrypt(data.refresh_token),
+      },
+    });
+
+    log.info({ userId }, "Discord access token refreshed");
+    return data.access_token;
+  } catch (error) {
+    log.error({ userId, error }, "Discord token refresh error");
+    return null;
+  }
+}
+
+/**
  * Add a user to the Discord guild using their OAuth access token.
  * Requires the `guilds.join` scope and bot with MANAGE_GUILD permissions.
  */
-export async function addToGuild(discordUserId: string, accessToken: string): Promise<void> {
+export async function addToGuild(
+  discordUserId: string,
+  accessToken: string,
+  userId?: string
+): Promise<void> {
   if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return;
 
   const plainToken = decryptToken(accessToken);
@@ -104,10 +157,29 @@ export async function addToGuild(discordUserId: string, accessToken: string): Pr
   );
 
   // 201 = added, 204 = already a member
-  if (!res.ok && res.status !== 204) {
-    const text = await res.text();
-    log.error({ discordUserId, status: res.status, body: text }, "Failed to add user to guild");
+  if (res.ok || res.status === 204) return;
+
+  // If token expired, try refreshing and retrying once
+  if (res.status === 401 && userId) {
+    const newToken = await refreshAccessToken(userId);
+    if (newToken) {
+      const retry = await fetch(
+        `${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ access_token: newToken }),
+        }
+      );
+      if (retry.ok || retry.status === 204) return;
+    }
   }
+
+  const text = await res.text();
+  log.error({ discordUserId, status: res.status, body: text }, "Failed to add user to guild");
 }
 
 /**
@@ -180,8 +252,8 @@ export async function onboardDiscordUser(
   accessToken: string
 ): Promise<void> {
   try {
-    // Join the guild
-    await addToGuild(discordUserId, accessToken);
+    // Join the guild (pass userId for token refresh on 401)
+    await addToGuild(discordUserId, accessToken, userId);
 
     // Look up subscription tier
     const subscription = await prisma.subscription.findUnique({

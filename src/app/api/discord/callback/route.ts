@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
       data: {
         discordId: discordUser.id,
         discordAccessToken: encrypt(tokenData.access_token),
+        discordRefreshToken: tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null,
       },
     });
 

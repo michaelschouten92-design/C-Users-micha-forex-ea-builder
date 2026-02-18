@@ -10,8 +10,15 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 import { verifyCaptcha } from "@/lib/turnstile";
+import { z } from "zod";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  email: z.string().email("Valid email is required").max(200),
+  subject: z.string().max(500).optional().default(""),
+  message: z.string().min(1, "Message is required").max(5000),
+  captchaToken: z.string().optional(),
+});
 
 const log = logger.child({ route: "/api/contact" });
 
@@ -34,7 +41,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, subject, message, captchaToken } = body;
+    const validation = contactSchema.safeParse(body);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]?.message || "Validation failed";
+      return NextResponse.json({ error: firstError }, { status: 400 });
+    }
+
+    const { name, email, subject, message, captchaToken } = validation.data;
 
     // Verify CAPTCHA (skips if not configured)
     const captchaValid = await verifyCaptcha(captchaToken, ip);
@@ -42,28 +55,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "CAPTCHA verification failed" }, { status: 400 });
     }
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
-    if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email)) {
-      return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
-    }
-    if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
-    }
-    if (
-      name.length > 200 ||
-      email.length > 200 ||
-      (subject && subject.length > 500) ||
-      message.length > 5000
-    ) {
-      return NextResponse.json({ error: "Input too long" }, { status: 400 });
-    }
-
     await sendContactFormEmail(
       sanitizeText(name.trim()),
       email.trim(),
-      typeof subject === "string" ? sanitizeText(subject.trim()) : "",
+      sanitizeText(subject.trim()),
       sanitizeText(message.trim())
     );
 

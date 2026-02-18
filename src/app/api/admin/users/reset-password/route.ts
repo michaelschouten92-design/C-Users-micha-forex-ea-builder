@@ -9,6 +9,12 @@ import type { AuditEventType } from "@/lib/audit";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import crypto from "crypto";
+import {
+  checkRateLimit,
+  adminMutationRateLimiter,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const resetSchema = z.object({
   email: z.string().email(),
@@ -19,6 +25,17 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const rl = await checkRateLimit(
+      adminMutationRateLimiter,
+      `admin-mut:${adminCheck.session.user.id}`
+    );
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rl) },
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     if (!body) {

@@ -52,6 +52,7 @@ export async function POST() {
     data: {
       discordId: null,
       discordAccessToken: null,
+      discordRefreshToken: null,
     },
   });
 

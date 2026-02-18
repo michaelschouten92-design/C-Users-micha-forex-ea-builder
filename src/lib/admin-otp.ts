@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { logger } from "./logger";
 import { randomInt, createHash } from "crypto";
+import { checkRateLimit, adminOtpVerifyRateLimiter } from "./rate-limit";
 
 const log = logger.child({ module: "admin-otp" });
 const OTP_EXPIRY_MINUTES = 10;
@@ -36,6 +37,13 @@ export async function generateAdminOtp(email: string): Promise<string> {
  * Deletes the OTP after successful verification.
  */
 export async function verifyAdminOtp(email: string, code: string): Promise<boolean> {
+  // Rate limit verification attempts to prevent brute-force on 6-digit codes
+  const rateLimitResult = await checkRateLimit(adminOtpVerifyRateLimiter, `otp-verify:${email}`);
+  if (!rateLimitResult.success) {
+    log.warn({ email: email.substring(0, 3) + "***" }, "OTP verification rate limited");
+    return false;
+  }
+
   const hashedCode = createHash("sha256").update(code).digest("hex");
 
   const otp = await prisma.adminOtp.findFirst({

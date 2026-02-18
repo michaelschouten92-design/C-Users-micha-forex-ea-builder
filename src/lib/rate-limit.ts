@@ -331,6 +331,24 @@ export const adminOtpRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
 });
 
+/**
+ * Rate limiter for admin OTP verification attempts
+ * Limits: 5 attempts per 10 minutes per email (prevents brute-force on 6-digit codes)
+ */
+export const adminOtpVerifyRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 10 * 60 * 1000, // 10 minutes
+});
+
+/**
+ * Rate limiter for admin mutation endpoints (suspend, delete, etc.)
+ * Limits: 10 requests per minute per admin user
+ */
+export const adminMutationRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

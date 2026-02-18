@@ -3,19 +3,26 @@
  * Uses AES-256-GCM with a key derived from AUTH_SECRET.
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
+import { createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_SALT = "algostudio-field-encryption-v1";
+
+let cachedKey: Buffer | null = null;
 
 /**
- * Derive a 256-bit key from AUTH_SECRET using SHA-256.
+ * Derive a 256-bit key from AUTH_SECRET using PBKDF2 with a fixed salt.
+ * The key is cached in memory to avoid repeated derivation.
  */
 function getEncryptionKey(): Buffer {
+  if (cachedKey) return cachedKey;
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET not configured for encryption");
-  return createHash("sha256").update(secret).digest();
+  cachedKey = pbkdf2Sync(secret, PBKDF2_SALT, PBKDF2_ITERATIONS, 32, "sha256");
+  return cachedKey;
 }
 
 /**

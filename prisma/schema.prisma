@@ -54,7 +54,8 @@ model User {
   emailVerifiedAt    DateTime?
   role               String    @default("USER") // USER or ADMIN
   discordId          String?   @unique
-  discordAccessToken String?   // Encrypted with AES-256-GCM
+  discordAccessToken  String?   // Encrypted with AES-256-GCM
+  discordRefreshToken String?   // Encrypted with AES-256-GCM
   referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
   lastLoginAt     DateTime?

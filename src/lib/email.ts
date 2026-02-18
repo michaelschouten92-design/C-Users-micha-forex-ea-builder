@@ -7,8 +7,32 @@ const resend = features.email ? new Resend(env.RESEND_API_KEY) : null;
 
 const FROM_EMAIL = env.EMAIL_FROM;
 const SUPPORT_EMAIL = env.SUPPORT_EMAIL || "support@algo-studio.com";
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
 
 const log = logger.child({ service: "email" });
+
+/**
+ * Send an email with automatic retry on transient failures.
+ */
+async function sendWithRetry(
+  params: Parameters<NonNullable<typeof resend>["emails"]["send"]>[0]
+): Promise<{ error: unknown }> {
+  if (!resend) return { error: new Error("Email service not configured") };
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const { error } = await resend!.emails.send(params);
+    if (!error) return { error: null };
+    lastError = error;
+    // Only retry on server/network errors (5xx or timeout-like), not 4xx
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode && statusCode >= 400 && statusCode < 500) break;
+    if (attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  return { error: lastError };
+}
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   if (!resend) {
@@ -21,7 +45,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Reset your AlgoStudio password",
@@ -71,7 +95,7 @@ export async function sendVerificationEmail(email: string, verifyUrl: string) {
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Verify your AlgoStudio email",
@@ -134,7 +158,7 @@ export async function sendWelcomeEmail(email: string, loginUrl: string, verifyUr
             </div>`
     : "";
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Welcome to AlgoStudio",
@@ -177,7 +201,7 @@ export async function sendOnboardingDay1Email(email: string, appUrl: string) {
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Build your first trading strategy",
@@ -227,7 +251,7 @@ export async function sendOnboardingDay3Email(email: string, pricingUrl: string)
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Your strategy is ready to export",
@@ -275,7 +299,7 @@ export async function sendAccountDeletedEmail(email: string) {
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Your AlgoStudio account has been deleted",
@@ -333,7 +357,7 @@ export async function sendContactFormEmail(
   const safeSubject = esc(subject);
   const safeMessage = esc(message);
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: SUPPORT_EMAIL,
     replyTo: senderEmail,
@@ -449,7 +473,7 @@ export async function sendPlanChangeEmail(
               Questions? Contact us at ${SUPPORT_EMAIL}.
             </p>`;
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject,
@@ -482,7 +506,7 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Action required - Complete your payment",
@@ -549,7 +573,7 @@ export async function sendNewUserNotificationEmail(
         ? "Google OAuth"
         : "GitHub OAuth";
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: adminEmail,
     subject: `[AlgoStudio] New user signup: ${userEmail}`,
@@ -594,7 +618,7 @@ export async function sendTrialEndingEmail(email: string, tier: string, portalUr
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const safeTier = esc(tier);
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Your AlgoStudio trial ends in 3 days",
@@ -649,7 +673,7 @@ export async function sendRenewalReminderEmail(
   const safeTier = esc(tier);
   const formattedAmount = (amountDue / 100).toFixed(2);
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: `Your AlgoStudio ${safeTier} subscription renews soon`,
@@ -716,7 +740,7 @@ export async function sendAdminDailyReportEmail(
   const successRate =
     stats.exportsToday > 0 ? ((stats.exportsDone / stats.exportsToday) * 100).toFixed(1) : "100.0";
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: adminEmail,
     subject: `[AlgoStudio] Daily Report - ${date}`,
@@ -821,7 +845,7 @@ export async function sendBulkAdminEmail(email: string, subject: string, htmlMes
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const safeMessage = esc(htmlMessage).replace(/\n/g, "<br>");
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject,
@@ -859,7 +883,7 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
     return;
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
     subject: "Payment failed - Action required",
