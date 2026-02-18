@@ -301,7 +301,7 @@ export default function BreakoutEATemplatePage() {
               From Idea to EA
             </Link>
             <span className="text-[#64748B]">·</span>
-            <Link href="/product" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
+            <Link href="/" className="text-[#64748B] hover:text-[#94A3B8] transition-colors">
               No-Code EA Builder
             </Link>
           </div>

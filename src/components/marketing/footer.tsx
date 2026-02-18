@@ -10,7 +10,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/product"
+                  href="/"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Product
@@ -22,14 +22,6 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Templates
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/product/how-it-works"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  How It Works
                 </Link>
               </li>
               <li>
@@ -59,14 +51,6 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Coaching
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/about"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  About
                 </Link>
               </li>
             </ul>
@@ -105,7 +89,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/faq"
+                  href="/pricing"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   FAQ

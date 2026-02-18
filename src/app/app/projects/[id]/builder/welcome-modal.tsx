@@ -41,7 +41,7 @@ const STEPS = [
   {
     title: "The Blocks Panel (Left Side)",
     description:
-      "On the left you'll find all available blocks organised into three categories: Entry Strategies (your trade signals), Timing (session & spread filters), and Trade Management (trailing stop, breakeven). Use the search bar at the top to quickly find what you need.",
+      "On the left you'll find all available blocks organized into three categories: Entry Strategies (your trade signals), Timing (session & spread filters), and Trade Management (trailing stop, breakeven). Use the search bar at the top to quickly find what you need.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>

@@ -571,7 +571,9 @@ export async function sendNewUserNotificationEmail(
       ? "Email &amp; password"
       : provider === "google"
         ? "Google OAuth"
-        : "GitHub OAuth";
+        : provider === "discord"
+          ? "Discord OAuth"
+          : "GitHub OAuth";
 
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
