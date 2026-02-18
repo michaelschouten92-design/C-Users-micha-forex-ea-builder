@@ -79,6 +79,17 @@ export default function SettingsPage() {
             <div className="flex items-center">
               <p className="text-[#94A3B8] text-sm">{session?.user?.email || "Loading..."}</p>
               {session?.user?.email && <CopyButton text={session.user.email} />}
+              {session?.user && (
+                <span
+                  className={`ml-3 text-xs px-2 py-0.5 rounded-full font-medium ${
+                    session.user.emailVerified
+                      ? "bg-[rgba(16,185,129,0.15)] text-[#10B981]"
+                      : "bg-[rgba(245,158,11,0.15)] text-[#F59E0B]"
+                  }`}
+                >
+                  {session.user.emailVerified ? "Verified" : "Not verified"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -98,6 +109,9 @@ export default function SettingsPage() {
 
           {/* Change Password */}
           <ChangePasswordSection />
+
+          {/* Data & Privacy */}
+          <DataExportSection />
 
           {/* Delete Account */}
           <DeleteAccountSection />
@@ -209,6 +223,86 @@ function ChangePasswordSection() {
           {loading ? "Saving..." : "Change Password"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function DataExportSection() {
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/account/export", {
+        headers: getCsrfHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || "Failed to export data");
+        return;
+      }
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `algostudio-data-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Data exported successfully");
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">Data & Privacy</h2>
+      <p className="text-sm text-[#94A3B8] mb-4">
+        Download all your data including projects, exports, settings, and activity logs.
+      </p>
+      <button
+        onClick={handleExport}
+        disabled={exporting}
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+      >
+        {exporting ? (
+          <>
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Exporting...
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export My Data
+          </>
+        )}
+      </button>
     </div>
   );
 }

@@ -389,7 +389,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (now - lastChecked > 60) {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { passwordChangedAt: true, role: true, suspended: true },
+            select: { passwordChangedAt: true, role: true, suspended: true, emailVerified: true },
           });
           if (dbUser?.passwordChangedAt) {
             const changedAtSec = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
@@ -399,10 +399,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return { ...token, id: undefined };
             }
           }
-          // Store role and suspended status in token
+          // Store role, suspended, and emailVerified status in token
           if (dbUser) {
             token.role = dbUser.role;
             token.suspended = dbUser.suspended;
+            token.emailVerified = !!dbUser.emailVerified;
           }
           token.passwordCheckedAt = now;
 
@@ -445,6 +446,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (token.suspended) {
         session.user.suspended = true;
+      }
+      if (token.emailVerified) {
+        session.user.emailVerified = new Date();
       }
       if (token.impersonatorId) {
         session.user.impersonatorId = token.impersonatorId as string;

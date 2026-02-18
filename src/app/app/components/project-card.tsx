@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfHeaders } from "@/lib/api-client";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
 
 type Project = {
   id: string;
@@ -110,6 +110,7 @@ export function ProjectCard({ project }: { project: Project }) {
       });
 
       if (res.ok) {
+        showSuccess("Project deleted");
         router.refresh();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -175,7 +176,9 @@ export function ProjectCard({ project }: { project: Project }) {
       <Link href={`/app/projects/${project.id}`} className="block p-6">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-white truncate">{project.name}</h3>
+            <h3 className="font-semibold text-white truncate" title={project.name}>
+              {project.name}
+            </h3>
             {entryStrategyLabel && (
               <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-[#10B981]">
                 {entryStrategyLabel}

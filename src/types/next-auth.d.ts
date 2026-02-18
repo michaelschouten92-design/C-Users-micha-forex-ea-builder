@@ -15,6 +15,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     suspended?: boolean;
+    emailVerified?: boolean;
     impersonatorId?: string;
     impersonatingEmail?: string;
   }

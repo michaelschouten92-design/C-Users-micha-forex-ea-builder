@@ -59,13 +59,14 @@ export function SubscriptionPanel({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold text-white">{plan.name} Plan</h3>
-            {tier !== "FREE" && subscriptionStatus === "active" && (
-              <span
-                className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
-              >
-                Active
-              </span>
-            )}
+            {tier !== "FREE" &&
+              (subscriptionStatus === "active" || subscriptionStatus === "trialing") && (
+                <span
+                  className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
+                >
+                  Active
+                </span>
+              )}
             {tier !== "FREE" && subscriptionStatus === "past_due" && (
               <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#F59E0B]">
                 Past Due

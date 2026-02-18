@@ -891,6 +891,17 @@ export function StrategyCanvas({
           `}</style>
           <HelpButton onClick={() => setShowHelp(true)} />
 
+          {/* Keyboard shortcut hint */}
+          <div className="hidden md:block absolute bottom-4 left-4 z-10">
+            <span className="text-[10px] text-[#64748B]">
+              Press{" "}
+              <kbd className="px-1 py-0.5 bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8]">
+                Shift + ?
+              </kbd>{" "}
+              for keyboard shortcuts
+            </span>
+          </div>
+
           {/* Autosave error banner */}
           {autoSaveStatus === "error" && (
             <div
