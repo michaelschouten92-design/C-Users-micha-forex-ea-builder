@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
+import {
+  csvExportRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const BATCH_SIZE = 1000;
 
@@ -56,6 +62,17 @@ export async function GET() {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const rl = await checkRateLimit(
+      csvExportRateLimiter,
+      `csv-export:${adminCheck.session.user.id}`
+    );
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rl) },
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
+    }
 
     const encoder = new TextEncoder();
     const header =

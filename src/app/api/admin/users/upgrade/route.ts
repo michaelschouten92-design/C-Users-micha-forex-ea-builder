@@ -7,6 +7,13 @@ import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { audit } from "@/lib/audit";
 import { checkAdmin } from "@/lib/admin";
 import { syncDiscordRoleForUser } from "@/lib/discord";
+import { checkContentType, checkBodySize } from "@/lib/validations";
+import {
+  adminMutationRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const upgradeSchema = z.object({
   email: z.string().email(),
@@ -18,6 +25,22 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
+
+    const rl = await checkRateLimit(
+      adminMutationRateLimiter,
+      `admin-mut:${adminCheck.session.user.id}`
+    );
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rl) },
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     if (!body) {

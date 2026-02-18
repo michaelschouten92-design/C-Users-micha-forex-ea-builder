@@ -349,6 +349,42 @@ export const adminMutationRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for admin bulk operations (bulk-upgrade, bulk-email)
+ * Limits: 5 requests per minute per admin user
+ */
+export const adminBulkRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
+ * Rate limiter for CSV export endpoints
+ * Limits: 5 exports per hour per admin user
+ */
+export const csvExportRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiter for admin OTP by IP address
+ * Limits: 10 attempts per 15 minutes per IP (prevents distributed brute-force)
+ */
+export const adminOtpIpRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+});
+
+/**
+ * Rate limiter for telemetry endpoints (EA heartbeats, trades, errors)
+ * Limits: 20 requests per minute per API key
+ */
+export const telemetryRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

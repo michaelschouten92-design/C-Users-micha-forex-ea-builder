@@ -57,7 +57,9 @@ export async function POST(request: Request) {
     });
 
     // Always return success to prevent email enumeration
+    // Add a constant-time delay to prevent timing-based account enumeration
     if (!user || !user.passwordHash) {
+      await new Promise((r) => setTimeout(r, 150 + Math.random() * 100));
       return NextResponse.json(
         {
           message: "If an account with this email exists, a reset link has been sent.",
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
     // Generate secure token and hash it for storage
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     // Atomically delete old tokens and create new one
     await prisma.$transaction([

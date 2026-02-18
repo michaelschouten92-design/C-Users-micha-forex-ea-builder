@@ -38,7 +38,9 @@ export type AuditEventType =
   | "admin.user_unsuspend"
   | "admin.password_reset_triggered"
   | "admin.subscription_extended"
-  | "admin.bulk_email_sent";
+  | "admin.bulk_email_sent"
+  | "admin.bootstrap_promotion"
+  | "admin.downgrade_warning";
 
 interface AuditLogEntry {
   userId: string | null;
@@ -48,7 +50,12 @@ interface AuditLogEntry {
   metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
+  /** If the action was performed via admin impersonation, the admin's real user ID */
+  impersonatorId?: string;
 }
+
+/** Maximum size for serialized metadata (10KB) to prevent abuse */
+const MAX_METADATA_SIZE = 10_240;
 
 const auditLogger = logger.child({ component: "audit" });
 
@@ -57,7 +64,19 @@ const auditLogger = logger.child({ component: "audit" });
  * This logs to both the structured logger and can optionally persist to database.
  */
 export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
-  const { userId, eventType, resourceType, resourceId, metadata, ipAddress, userAgent } = entry;
+  const {
+    userId,
+    eventType,
+    resourceType,
+    resourceId,
+    metadata,
+    ipAddress,
+    userAgent,
+    impersonatorId,
+  } = entry;
+
+  // Include impersonatorId in metadata if present
+  const enrichedMetadata = impersonatorId ? { ...metadata, impersonatorId } : metadata;
 
   // Log to structured logger
   auditLogger.info(
@@ -67,12 +86,22 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
       eventType,
       resourceType,
       resourceId,
-      metadata,
+      metadata: enrichedMetadata,
       ipAddress: ipAddress ? maskIpAddress(ipAddress) : undefined,
       userAgent: userAgent ? truncateUserAgent(userAgent) : undefined,
     },
     `Audit: ${eventType}`
   );
+
+  // Serialize and size-limit metadata to prevent abuse
+  let metadataJson: string | null = null;
+  if (enrichedMetadata) {
+    const serialized = JSON.stringify(enrichedMetadata);
+    metadataJson =
+      serialized.length <= MAX_METADATA_SIZE
+        ? serialized
+        : JSON.stringify({ _truncated: true, _size: serialized.length });
+  }
 
   // Persist to database for compliance (retry once on failure)
   const data = {
@@ -80,7 +109,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
     eventType,
     resourceType,
     resourceId,
-    metadata: metadata ? JSON.stringify(metadata) : null,
+    metadata: metadataJson,
     ipAddress: ipAddress ? maskIpAddress(ipAddress) : null,
     userAgent: userAgent ? truncateUserAgent(userAgent) : null,
   };

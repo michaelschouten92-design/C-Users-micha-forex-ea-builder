@@ -52,48 +52,56 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find token by hash and check expiry in a single unified path to prevent timing side-channel.
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token: tokenHash },
-    });
-
-    const isValid = resetToken && resetToken.expiresAt >= new Date();
-
-    if (!isValid) {
-      // Clean up expired token if it exists
-      if (resetToken) {
-        await prisma.passwordResetToken.delete({
-          where: { id: resetToken.id },
-        });
-      }
-
-      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 400 });
-    }
-
     // Hash new password before entering transaction
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Atomic: update password + delete token in one transaction
-    await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { email: resetToken.email },
+    // Atomic: find + delete token + update password in one transaction
+    // Token is deleted first to prevent race condition (two concurrent requests using same token)
+    let resetUserId: string | null = null;
+    await prisma
+      .$transaction(async (tx) => {
+        // Find and delete token atomically within the transaction
+        const resetToken = await tx.passwordResetToken.findUnique({
+          where: { token: tokenHash },
+        });
+
+        if (!resetToken || resetToken.expiresAt < new Date()) {
+          // Clean up expired token if found
+          if (resetToken) {
+            await tx.passwordResetToken.delete({ where: { id: resetToken.id } });
+          }
+          throw new Error("INVALID_TOKEN");
+        }
+
+        // Delete token immediately to prevent reuse
+        await tx.passwordResetToken.delete({ where: { id: resetToken.id } });
+
+        const user = await tx.user.findUnique({
+          where: { email: resetToken.email },
+        });
+
+        if (!user) {
+          throw new Error("INVALID_TOKEN");
+        }
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: { passwordHash, passwordChangedAt: new Date() },
+        });
+
+        resetUserId = user.id;
+        log.info({ userId: user.id }, "Password reset completed");
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.message === "INVALID_TOKEN") {
+          return null; // Will be handled below
+        }
+        throw err;
       });
 
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      await tx.user.update({
-        where: { id: user.id },
-        data: { passwordHash, passwordChangedAt: new Date() },
-      });
-
-      await tx.passwordResetToken.delete({
-        where: { id: resetToken.id },
-      });
-
-      log.info({ userId: user.id }, "Password reset completed");
-    });
+    if (!resetUserId) {
+      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 400 });
+    }
 
     return NextResponse.json({
       message: "Password has been reset successfully",

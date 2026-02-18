@@ -5,6 +5,8 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
+import { encrypt, decrypt, isEncrypted } from "@/lib/crypto";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 
 // GET /api/admin/users/[id] - Detailed user info with full history
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -66,7 +68,24 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "User not found"), { status: 404 });
     }
 
-    return NextResponse.json({ ...user, auditLogs });
+    // Decrypt encrypted fields for admin display
+    const decryptedNotes = user.adminNotes
+      ? isEncrypted(user.adminNotes)
+        ? decrypt(user.adminNotes)
+        : user.adminNotes
+      : null;
+    const decryptedReason = user.suspendedReason
+      ? isEncrypted(user.suspendedReason)
+        ? decrypt(user.suspendedReason)
+        : user.suspendedReason
+      : null;
+
+    return NextResponse.json({
+      ...user,
+      adminNotes: decryptedNotes,
+      suspendedReason: decryptedReason,
+      auditLogs,
+    });
   } catch (error) {
     logger.error({ error }, "Failed to fetch user detail");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
@@ -81,6 +100,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
+
     const { id } = await params;
     const body = await request.json();
     const { adminNotes } = body;
@@ -92,11 +116,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       );
     }
 
+    // Encrypt admin notes before storing
+    const encryptedNotes = adminNotes ? encrypt(adminNotes) : null;
+
     const user = await prisma.user.update({
       where: { id },
-      data: { adminNotes: adminNotes || null },
+      data: { adminNotes: encryptedNotes },
       select: { id: true, adminNotes: true },
     });
+
+    // Return decrypted value to client
+    user.adminNotes = adminNotes || null;
 
     // Audit log (fire-and-forget)
     logAuditEvent({

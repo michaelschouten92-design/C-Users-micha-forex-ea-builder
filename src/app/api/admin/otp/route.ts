@@ -13,6 +13,7 @@ import { env, features } from "@/lib/env";
 import {
   adminRateLimiter,
   adminOtpRateLimiter,
+  adminOtpIpRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -31,13 +32,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Rate limit
+  // Rate limit by user
   const rateLimitResult = await checkRateLimit(adminRateLimiter, `admin-otp:${session.user.id}`);
   if (!rateLimitResult.success) {
     return NextResponse.json(
       { error: formatRateLimitError(rateLimitResult) },
       { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
     );
+  }
+
+  // Rate limit by IP to prevent distributed brute-force
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (ip) {
+    const ipRl = await checkRateLimit(adminOtpIpRateLimiter, `admin-otp-ip:${ip}`);
+    if (!ipRl.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(ipRl) },
+        { status: 429, headers: createRateLimitHeaders(ipRl) }
+      );
+    }
   }
 
   // Verify admin role

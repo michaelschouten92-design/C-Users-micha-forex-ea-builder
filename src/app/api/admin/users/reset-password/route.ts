@@ -15,6 +15,7 @@ import {
   formatRateLimitError,
   createRateLimitHeaders,
 } from "@/lib/rate-limit";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 
 const resetSchema = z.object({
   email: z.string().email(),
@@ -25,6 +26,11 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     const rl = await checkRateLimit(
       adminMutationRateLimiter,
@@ -76,7 +82,7 @@ export async function POST(request: Request) {
     // Generate token (same logic as forgot-password)
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     await prisma.$transaction([
       prisma.passwordResetToken.deleteMany({ where: { email } }),

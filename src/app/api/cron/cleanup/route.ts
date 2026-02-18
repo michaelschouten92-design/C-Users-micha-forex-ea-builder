@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
+import { sendDowngradeWarningEmail } from "@/lib/email";
+import { env } from "@/lib/env";
 
 const log = logger.child({ route: "/api/cron/cleanup" });
 
@@ -33,9 +35,16 @@ async function handleCleanup(request: NextRequest) {
 
   try {
     const BATCH_SIZE = 1000;
+    const cronStartTime = Date.now();
+    const CRON_TIMEOUT_MS = 55_000; // 55 seconds — Vercel free tier has 60s limit
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+
+    /** Check if we're approaching the cron timeout limit */
+    function isTimedOut(): boolean {
+      return Date.now() - cronStartTime > CRON_TIMEOUT_MS;
+    }
 
     // Batched delete helper to avoid long-running queries
     const MAX_ITERATIONS = 100; // Cap at 100K records per model to prevent cron timeout
@@ -54,6 +63,7 @@ async function handleCleanup(request: NextRequest) {
       let totalDeleted = 0;
 
       for (let i = 0; i < MAX_ITERATIONS; i++) {
+        if (isTimedOut()) break;
         const batch = await model.findMany({ where, select: { id: true }, take: BATCH_SIZE });
         if (batch.length === 0) break;
         const result = await model.deleteMany({ where: { id: { in: batch.map((r) => r.id) } } });
@@ -221,35 +231,65 @@ async function handleCleanup(request: NextRequest) {
       log.error({ error: alertError }, "EA alert evaluation failed (non-fatal)");
     }
 
+    // Send downgrade warning emails to past_due subscriptions (7-day warning)
+    let warningsSent = 0;
+    if (!isTimedOut()) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const warningCandidates = await prisma.subscription.findMany({
+        where: {
+          status: "past_due",
+          currentPeriodEnd: {
+            lt: sevenDaysAgo,
+            gte: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+          },
+          tier: { not: "FREE" },
+        },
+        select: { tier: true, user: { select: { email: true } } },
+      });
+
+      for (const sub of warningCandidates) {
+        if (isTimedOut()) break;
+        const settingsUrl = `${env.AUTH_URL}/app/settings`;
+        sendDowngradeWarningEmail(sub.user.email, sub.tier, 7, settingsUrl).catch(() => {});
+        warningsSent++;
+      }
+    }
+
     // Auto-downgrade past_due subscriptions after 14-day grace period
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    const pastDueSubs = await prisma.subscription.findMany({
-      where: {
-        status: "past_due",
-        currentPeriodEnd: { lt: fourteenDaysAgo },
-        // Also check manualPeriodEnd - if admin extended, respect that
-        OR: [{ manualPeriodEnd: null }, { manualPeriodEnd: { lt: fourteenDaysAgo } }],
-      },
-      select: { id: true, userId: true, tier: true },
-    });
-
     let downgraded = 0;
-    for (const sub of pastDueSubs) {
-      if (sub.tier === "FREE") continue;
-      await prisma.subscription.update({
-        where: { id: sub.id },
-        data: {
-          tier: "FREE",
-          status: "canceled",
-          stripeSubId: null,
+
+    if (!isTimedOut()) {
+      const pastDueSubs = await prisma.subscription.findMany({
+        where: {
+          status: "past_due",
+          currentPeriodEnd: { lt: fourteenDaysAgo },
+          // Also check manualPeriodEnd - if admin extended, respect that
+          OR: [{ manualPeriodEnd: null }, { manualPeriodEnd: { lt: fourteenDaysAgo } }],
         },
+        select: { id: true, userId: true, tier: true },
       });
-      downgraded++;
-      log.info(
-        { userId: sub.userId, previousTier: sub.tier },
-        "Auto-downgraded past_due subscription"
-      );
+
+      for (const sub of pastDueSubs) {
+        if (isTimedOut()) break;
+        if (sub.tier === "FREE") continue;
+        await prisma.subscription.update({
+          where: { id: sub.id },
+          data: {
+            tier: "FREE",
+            status: "canceled",
+            stripeSubId: null,
+          },
+        });
+        downgraded++;
+        log.info(
+          { userId: sub.userId, previousTier: sub.tier },
+          "Auto-downgraded past_due subscription"
+        );
+      }
     }
+
+    const timedOut = isTimedOut();
 
     log.info(
       {
@@ -263,6 +303,9 @@ async function handleCleanup(request: NextRequest) {
         deletedEAErrors,
         staleEAsOfflined: staleInstances.count,
         downgraded,
+        warningsSent,
+        timedOut,
+        durationMs: Date.now() - cronStartTime,
       },
       "Cleanup completed"
     );
@@ -280,6 +323,8 @@ async function handleCleanup(request: NextRequest) {
       },
       staleEAsOfflined: staleInstances.count,
       downgraded,
+      warningsSent,
+      timedOut,
     });
   } catch (error) {
     log.error({ error }, "Cleanup failed");

@@ -1,79 +1,7 @@
 import { createHash } from "crypto";
 import { prisma } from "./prisma";
 import { NextResponse } from "next/server";
-
-// ============================================
-// TELEMETRY RATE LIMITER
-// ============================================
-
-interface RateLimitResult {
-  success: boolean;
-  limit: number;
-  remaining: number;
-  resetAt: Date;
-}
-
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-class InMemoryTelemetryLimiter {
-  private store: Map<string, RateLimitEntry> = new Map();
-  private config = { limit: 20, windowMs: 60_000 };
-  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
-
-  constructor() {
-    this.startCleanup();
-  }
-
-  private startCleanup() {
-    if (typeof setInterval !== "undefined" && !this.cleanupInterval) {
-      this.cleanupInterval = setInterval(() => {
-        const now = Date.now();
-        for (const [key, entry] of this.store.entries()) {
-          if (entry.resetAt <= now) this.store.delete(key);
-        }
-      }, 60000);
-      if (this.cleanupInterval.unref) this.cleanupInterval.unref();
-    }
-  }
-
-  check(key: string): RateLimitResult {
-    const now = Date.now();
-    const entry = this.store.get(key);
-
-    if (!entry || entry.resetAt <= now) {
-      const resetAt = now + this.config.windowMs;
-      this.store.set(key, { count: 1, resetAt });
-      return {
-        success: true,
-        limit: this.config.limit,
-        remaining: this.config.limit - 1,
-        resetAt: new Date(resetAt),
-      };
-    }
-
-    if (entry.count >= this.config.limit) {
-      return {
-        success: false,
-        limit: this.config.limit,
-        remaining: 0,
-        resetAt: new Date(entry.resetAt),
-      };
-    }
-
-    entry.count++;
-    return {
-      success: true,
-      limit: this.config.limit,
-      remaining: this.config.limit - entry.count,
-      resetAt: new Date(entry.resetAt),
-    };
-  }
-}
-
-const telemetryLimiter = new InMemoryTelemetryLimiter();
+import { telemetryRateLimiter, checkRateLimit } from "./rate-limit";
 
 // ============================================
 // API KEY VERIFICATION
@@ -125,7 +53,7 @@ export async function authenticateTelemetry(
 
   // Rate limit by API key hash (avoid storing plaintext key)
   const keyHash = hashApiKey(apiKey);
-  const rateLimitResult = telemetryLimiter.check(`telemetry:${keyHash}`);
+  const rateLimitResult = await checkRateLimit(telemetryRateLimiter, `telemetry:${keyHash}`);
 
   if (!rateLimitResult.success) {
     return {

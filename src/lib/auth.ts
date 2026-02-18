@@ -12,12 +12,20 @@ import {
   loginIpRateLimiter,
   checkRateLimit,
 } from "./rate-limit";
-import { sendWelcomeEmail, sendVerificationEmail, sendNewUserNotificationEmail } from "./email";
+import {
+  sendWelcomeEmail,
+  sendVerificationEmail,
+  sendNewUserNotificationEmail,
+  sendOAuthLinkRejectedEmail,
+} from "./email";
 import { onboardDiscordUser } from "./discord";
 import { verifyCaptcha } from "./turnstile";
 import { randomBytes, createHash } from "crypto";
 import { encrypt } from "./crypto";
+import { logger } from "./logger";
 import type { Provider } from "next-auth/providers";
+
+const authLog = logger.child({ module: "auth" });
 
 class AccountExistsError extends CredentialsSignin {
   code = "account_exists";
@@ -246,6 +254,18 @@ providers.push(
             throw new InvalidCredentialsError();
           }
 
+          // Rehash password if bcrypt rounds have been upgraded
+          const hashRounds = bcrypt.getRounds(existingUser.passwordHash);
+          if (hashRounds < SALT_ROUNDS) {
+            const upgraded = await bcrypt.hash(password, SALT_ROUNDS);
+            prisma.user
+              .update({
+                where: { id: existingUser.id },
+                data: { passwordHash: upgraded, passwordChangedAt: new Date() },
+              })
+              .catch(() => {});
+          }
+
           return {
             id: existingUser.id,
             email: existingUser.email,
@@ -257,7 +277,7 @@ providers.push(
           throw error;
         }
         // Log unexpected errors (DB, Redis, etc.) for debugging
-        console.error("[auth] Unexpected error in authorize:", error);
+        authLog.error({ error }, "Unexpected error in authorize");
         throw new InvalidCredentialsError();
       }
     },
@@ -275,7 +295,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         account?.provider === "discord"
       ) {
         if (!user.email) {
-          console.error(`[auth] OAuth sign-in rejected: no email from ${account.provider}`);
+          authLog.error({ provider: account.provider }, "OAuth sign-in rejected: no email");
           return false;
         }
 
@@ -300,9 +320,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // This prevents both account takeover and the race condition where a credential
             // user hasn't verified their email yet. The findUnique on normalizedEmail above
             // catches all existing users regardless of verification status.
-            console.error(
-              `[auth] OAuth sign-in rejected: email ${normalizedEmail.substring(0, 3)}*** already linked to another account (provider: ${account.provider})`
+            authLog.warn(
+              { email: normalizedEmail.substring(0, 3) + "***", provider: account.provider },
+              "OAuth sign-in rejected: email already linked to another account"
             );
+            // Notify the existing account owner (fire-and-forget)
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
             return false;
           } else {
             // Create new user (OAuth users are pre-verified)
@@ -350,7 +373,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .catch((err) => {
               // Unique constraint violation — discordId already linked to another user
               if (err?.code === "P2002") {
-                console.error("[auth] Discord ID already linked to another account");
+                authLog.warn("Discord ID already linked to another account");
               }
             });
 
@@ -476,6 +499,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         sameSite: "lax" as const,
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        maxAge: 14 * 24 * 60 * 60, // Match session maxAge (14 days)
       },
     },
   },

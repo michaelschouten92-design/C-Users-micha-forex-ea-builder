@@ -14,11 +14,14 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "./rate-limit";
+import { logAuditEvent } from "./audit";
 
 interface AdminCheckResult {
   authorized: true;
   session: { user: { id: string } };
   adminEmail: string;
+  /** Set if the admin is impersonating another user */
+  impersonatorId?: string;
 }
 
 interface AdminCheckError {
@@ -94,14 +97,28 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
         where: { id: session.user.id },
         data: { role: "ADMIN" },
       })
+      .then(() => {
+        // Audit the bootstrap promotion
+        logAuditEvent({
+          userId: session.user.id,
+          eventType: "admin.bootstrap_promotion",
+          metadata: { email: adminUser.email, method: "ADMIN_EMAIL_env" },
+        }).catch(() => {});
+        logger.info({ userId: session.user.id }, "Auto-promoted admin user via ADMIN_EMAIL");
+      })
       .catch((err) => {
         logger.error({ err, userId: session.user.id }, "Failed to auto-promote admin user");
       });
   }
 
+  // Extract impersonatorId if admin is impersonating
+  const impersonatorId =
+    (session as { user: { impersonatorId?: string } }).user?.impersonatorId || undefined;
+
   return {
     authorized: true,
     session: session as { user: { id: string } },
     adminEmail: adminUser!.email,
+    impersonatorId,
   };
 }

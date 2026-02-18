@@ -12,6 +12,7 @@ import {
   formatRateLimitError,
   createRateLimitHeaders,
 } from "@/lib/rate-limit";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 
 const unsuspendSchema = z.object({
   email: z.string().email(),
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     const rl = await checkRateLimit(
       adminMutationRateLimiter,

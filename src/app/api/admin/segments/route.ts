@@ -1,10 +1,30 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
+import { checkContentType, checkBodySize } from "@/lib/validations";
+
+const segmentFiltersSchema = z
+  .object({
+    tier: z.enum(["FREE", "PRO", "ELITE"]).optional(),
+    verified: z.boolean().optional(),
+    hasProjects: z.boolean().optional(),
+    hasExports: z.boolean().optional(),
+    registeredAfter: z.string().datetime().optional(),
+    registeredBefore: z.string().datetime().optional(),
+    lastLoginAfter: z.string().datetime().optional(),
+    lastLoginBefore: z.string().datetime().optional(),
+  })
+  .strict();
+
+const createSegmentSchema = z.object({
+  name: z.string().min(1).max(100),
+  filters: segmentFiltersSchema,
+});
 
 // GET /api/admin/segments - List all segments
 export async function GET() {
@@ -36,22 +56,25 @@ export async function POST(request: Request) {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
+
     const body = await request.json();
-    const { name, filters } = body;
-
-    if (!name || typeof name !== "string" || name.length > 100) {
+    const validation = createSegmentSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "Name is required (max 100 chars)"),
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          "Validation failed",
+          validation.error.errors.map((e) => e.message)
+        ),
         { status: 400 }
       );
     }
 
-    if (!filters || typeof filters !== "object") {
-      return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "Filters object is required"),
-        { status: 400 }
-      );
-    }
+    const { name, filters } = validation.data;
 
     const segment = await prisma.userSegment.create({
       data: {

@@ -8,6 +8,13 @@ import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
 import { sendBulkAdminEmail } from "@/lib/email";
 import { getUserEmailsBySegment } from "@/lib/segment-filter";
+import { checkContentType, checkBodySize } from "@/lib/validations";
+import {
+  adminBulkRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 const bulkEmailSchema = z.object({
   subject: z.string().min(1).max(200),
@@ -22,6 +29,22 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
+
+    const rl = await checkRateLimit(
+      adminBulkRateLimiter,
+      `admin-bulk:${adminCheck.session.user.id}`
+    );
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: formatRateLimitError(rl) },
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     if (!body) {

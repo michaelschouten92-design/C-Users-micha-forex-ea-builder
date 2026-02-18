@@ -66,7 +66,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
               Reset Password
             </a>
             <p style="margin: 0 0 16px 0; font-size: 14px; color: #E2E8F0;">
-              This link will expire in 1 hour.
+              This link will expire in 30 minutes.
             </p>
             <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               If you didn't request this, you can safely ignore this email.
@@ -921,5 +921,111 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
     log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send payment failed email");
   } else {
     log.info({ to: email.substring(0, 3) + "***" }, "Payment failed email sent");
+  }
+}
+
+export async function sendDowngradeWarningEmail(
+  email: string,
+  currentTier: string,
+  daysUntilDowngrade: number,
+  settingsUrl: string
+) {
+  if (!resend) {
+    log.warn("Email not configured - skipping downgrade warning email");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeTier = esc(currentTier);
+
+  const { error } = await sendWithRetry({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Action required: Your AlgoStudio ${safeTier} plan will be downgraded`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Subscription downgrade warning</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              Your AlgoStudio <strong style="color: #ffffff;">${safeTier}</strong> payment is past due. If not resolved within <strong style="color: #ffffff;">${daysUntilDowngrade} days</strong>, your account will be automatically downgraded to the Free plan.
+            </p>
+            <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
+              Please update your payment method to keep your ${safeTier} features.
+            </p>
+            <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
+              Update Payment Method
+            </a>
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
+              If you believe this is an error, contact us at ${SUPPORT_EMAIL}.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error(
+      { error, to: email.substring(0, 3) + "***" },
+      "Failed to send downgrade warning email"
+    );
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "Downgrade warning email sent");
+  }
+}
+
+export async function sendOAuthLinkRejectedEmail(email: string, provider: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping OAuth link rejected email");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeProvider = esc(provider.charAt(0).toUpperCase() + provider.slice(1));
+
+  const { error } = await sendWithRetry({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Security notice: OAuth login attempt blocked",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Login attempt blocked</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              Someone tried to sign in to AlgoStudio using <strong style="color: #ffffff;">${safeProvider}</strong> with your email address. This was blocked because your email is already registered with a different login method.
+            </p>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              If this was you, please sign in using your original login method (email &amp; password or another OAuth provider).
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
+              If you did not attempt this login, no action is needed. Your account is safe. Contact us at ${SUPPORT_EMAIL} if you have concerns.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error(
+      { error, to: email.substring(0, 3) + "***" },
+      "Failed to send OAuth link rejected email"
+    );
+  } else {
+    log.info({ to: email.substring(0, 3) + "***" }, "OAuth link rejected email sent");
   }
 }

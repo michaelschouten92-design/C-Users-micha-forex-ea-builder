@@ -4,6 +4,7 @@ import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 
 // GET /api/admin/announcements - List all announcements (admin)
 export async function GET() {
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     const body = await request.json().catch(() => null);
     if (!body) {
@@ -106,6 +112,11 @@ export async function PATCH(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
+
+    const contentTypeError = checkContentType(request);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request);
+    if (sizeError) return sizeError;
 
     const body = await request.json().catch(() => null);
     if (!body) {
