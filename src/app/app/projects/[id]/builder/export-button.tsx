@@ -394,7 +394,7 @@ export function ExportButton({
                   </div>
                 </div>
               ) : showConfig ? (
-                <div className="space-y-6 py-4">
+                <div className="space-y-6 py-4 overflow-y-auto">
                   {/* Strategy Overview */}
                   {strategySummaryLines && strategySummaryLines.length > 0 && (
                     <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-lg p-4">
