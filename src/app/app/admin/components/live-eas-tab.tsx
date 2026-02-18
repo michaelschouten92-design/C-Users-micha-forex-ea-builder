@@ -35,6 +35,24 @@ interface LiveEAStats {
   topBrokers: { broker: string; count: number }[];
 }
 
+interface AlertRule {
+  id: string;
+  type: string;
+  threshold: number;
+  enabled: boolean;
+  createdAt: string;
+  _count: { alerts: number };
+}
+
+interface TriggeredAlert {
+  id: string;
+  message: string;
+  acknowledged: boolean;
+  createdAt: string;
+  rule: { type: string; threshold: number };
+  instance: { eaName: string; symbol: string | null; user: { email: string } };
+}
+
 interface PerformanceData {
   totalClosedTrades: number;
   totalProfit: number;
@@ -87,6 +105,14 @@ export function LiveEAsTab() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [performance, setPerformance] = useState<PerformanceData | null>(null);
 
+  // EA Alerts state
+  const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
+  const [recentAlerts, setRecentAlerts] = useState<TriggeredAlert[]>([]);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [newRuleType, setNewRuleType] = useState("DRAWDOWN_EXCEEDED");
+  const [newRuleThreshold, setNewRuleThreshold] = useState(20);
+  const [creatingRule, setCreatingRule] = useState(false);
+
   const pageSize = 20;
 
   const fetchData = useCallback(async () => {
@@ -124,6 +150,15 @@ export function LiveEAsTab() {
     apiClient
       .get<PerformanceData>("/api/admin/live-eas/performance")
       .then(setPerformance)
+      .catch(() => {});
+    // Fetch alert rules and recent alerts
+    apiClient
+      .get<{ data: AlertRule[] }>("/api/admin/ea-alerts")
+      .then((res) => setAlertRules(res.data))
+      .catch(() => {});
+    apiClient
+      .get<{ data: TriggeredAlert[] }>("/api/admin/ea-alerts/triggered?acknowledged=false&limit=10")
+      .then((res) => setRecentAlerts(res.data))
       .catch(() => {});
   }, []);
 
@@ -286,6 +321,145 @@ export function LiveEAsTab() {
           </div>
         </div>
       )}
+
+      {/* EA Alerts Section */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowAlerts(!showAlerts)}
+          className="flex items-center gap-2 text-sm font-semibold text-[#A78BFA] hover:text-white transition-colors mb-3"
+        >
+          <span>{showAlerts ? "▼" : "►"}</span> EA Alerts
+          {recentAlerts.length > 0 && (
+            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+              {recentAlerts.length}
+            </span>
+          )}
+        </button>
+
+        {showAlerts && (
+          <div className="space-y-4">
+            {/* Alert Rules */}
+            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+              <h4 className="text-sm font-semibold text-white mb-3">Alert Rules</h4>
+              {alertRules.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {alertRules.map((rule) => (
+                    <div
+                      key={rule.id}
+                      className="flex items-center justify-between text-sm py-1.5 border-b border-[rgba(79,70,229,0.1)]"
+                    >
+                      <div>
+                        <span className="text-white font-medium">
+                          {rule.type.replace(/_/g, " ")}
+                        </span>
+                        <span className="text-[#94A3B8] ml-2">Threshold: {rule.threshold}</span>
+                        <span className="text-[#64748B] ml-2 text-xs">
+                          ({rule._count.alerts} alerts)
+                        </span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiClient.delete(`/api/admin/ea-alerts?id=${rule.id}`);
+                            setAlertRules((prev) => prev.filter((r) => r.id !== rule.id));
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={newRuleType}
+                  onChange={(e) => setNewRuleType(e.target.value)}
+                  className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white focus:outline-none"
+                >
+                  <option value="DRAWDOWN_EXCEEDED">Drawdown Exceeded</option>
+                  <option value="CONSECUTIVE_LOSSES">Consecutive Losses</option>
+                  <option value="OFFLINE_DURATION">Offline Duration (min)</option>
+                  <option value="EQUITY_DROP">Equity Drop (%)</option>
+                </select>
+                <input
+                  type="number"
+                  value={newRuleThreshold}
+                  onChange={(e) => setNewRuleThreshold(Number(e.target.value))}
+                  className="w-20 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white focus:outline-none"
+                  placeholder="Threshold"
+                />
+                <button
+                  onClick={async () => {
+                    if (creatingRule) return;
+                    setCreatingRule(true);
+                    try {
+                      const rule = await apiClient.post<AlertRule>("/api/admin/ea-alerts", {
+                        type: newRuleType,
+                        threshold: newRuleThreshold,
+                        enabled: true,
+                      });
+                      setAlertRules((prev) => [{ ...rule, _count: { alerts: 0 } }, ...prev]);
+                    } catch {
+                      // ignore
+                    } finally {
+                      setCreatingRule(false);
+                    }
+                  }}
+                  disabled={creatingRule}
+                  className="text-xs bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white px-3 py-1 rounded transition-colors"
+                >
+                  {creatingRule ? "Adding..." : "Add Rule"}
+                </button>
+              </div>
+            </div>
+
+            {/* Recent Alerts */}
+            {recentAlerts.length > 0 && (
+              <div className="rounded-lg border border-red-500/20 bg-[#1A0626]/60 p-4">
+                <h4 className="text-sm font-semibold text-red-400 mb-3">
+                  Unacknowledged Alerts ({recentAlerts.length})
+                </h4>
+                <div className="space-y-2">
+                  {recentAlerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="flex items-start justify-between gap-3 text-sm py-2 border-b border-red-500/10"
+                    >
+                      <div>
+                        <div className="text-white">{alert.message}</div>
+                        <div className="text-xs text-[#64748B] mt-1">
+                          {alert.instance.eaName} ({alert.instance.user.email}) ·{" "}
+                          {alert.rule.type.replace(/_/g, " ")} &gt; {alert.rule.threshold} ·{" "}
+                          {new Date(alert.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiClient.patch("/api/admin/ea-alerts/triggered", {
+                              id: alert.id,
+                            });
+                            setRecentAlerts((prev) => prev.filter((a) => a.id !== alert.id));
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        className="text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap transition-colors"
+                      >
+                        Acknowledge
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3 mb-4">

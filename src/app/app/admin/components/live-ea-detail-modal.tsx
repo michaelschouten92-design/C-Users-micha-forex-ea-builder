@@ -241,6 +241,28 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
               >
                 Trade History ({data.trades.length})
               </button>
+              {data.trades.length > 0 && activeSection === "trades" && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/admin/live-eas/${data.id}/export-trades`);
+                      if (!res.ok) throw new Error("Export failed");
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `trades-${data.id}-${new Date().toISOString().split("T")[0]}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 transition-colors ml-auto"
+                >
+                  Export Trades CSV
+                </button>
+              )}
               <button
                 onClick={() => setActiveSection("errors")}
                 className={`px-3 py-1.5 rounded-t text-sm font-medium transition-colors ${

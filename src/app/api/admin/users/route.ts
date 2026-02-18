@@ -39,6 +39,7 @@ export async function GET(request: Request) {
           lastLoginAt: true,
           role: true,
           referredBy: true,
+          suspended: true,
           subscription: {
             select: {
               tier: true,
@@ -101,6 +102,7 @@ export async function GET(request: Request) {
         projectCount: user._count.projects,
         exportCount: user._count.exports,
         referredBy: user.referredBy ?? null,
+        suspended: user.suspended,
         activityStatus,
         churnRisk,
       };

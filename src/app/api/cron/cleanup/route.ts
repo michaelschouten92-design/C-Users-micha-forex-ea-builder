@@ -108,12 +108,132 @@ async function handleCleanup(request: NextRequest) {
       data: { status: "OFFLINE" },
     });
 
+    // Evaluate EA alert rules after marking stale instances offline
+    try {
+      const enabledRules = await prisma.eAAlertRule.findMany({
+        where: { enabled: true },
+      });
+
+      const oneDayAgoForAlerts = new Date(Date.now() - 86_400_000);
+
+      for (const rule of enabledRules) {
+        let matchingInstances: { id: string; eaName: string }[] = [];
+
+        if (rule.type === "DRAWDOWN_EXCEEDED") {
+          // Check latest heartbeat drawdown against threshold
+          const instances = await prisma.liveEAInstance.findMany({
+            where: { status: "ONLINE" },
+            select: {
+              id: true,
+              eaName: true,
+              heartbeats: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { drawdown: true },
+              },
+            },
+          });
+          matchingInstances = instances
+            .filter((i) => i.heartbeats.length > 0 && i.heartbeats[0].drawdown > rule.threshold)
+            .map((i) => ({ id: i.id, eaName: i.eaName }));
+        } else if (rule.type === "OFFLINE_DURATION") {
+          // Check how long instances have been offline (threshold in minutes)
+          const offlineSince = new Date(Date.now() - rule.threshold * 60 * 1000);
+          const instances = await prisma.liveEAInstance.findMany({
+            where: {
+              status: "OFFLINE",
+              lastHeartbeat: { lt: offlineSince },
+            },
+            select: { id: true, eaName: true },
+          });
+          matchingInstances = instances;
+        } else if (rule.type === "EQUITY_DROP") {
+          // Compare latest equity to previous equity reading
+          const instances = await prisma.liveEAInstance.findMany({
+            where: { status: "ONLINE" },
+            select: {
+              id: true,
+              eaName: true,
+              heartbeats: {
+                orderBy: { createdAt: "desc" },
+                take: 2,
+                select: { equity: true },
+              },
+            },
+          });
+          matchingInstances = instances
+            .filter((i) => {
+              if (i.heartbeats.length < 2) return false;
+              const latest = i.heartbeats[0].equity;
+              const previous = i.heartbeats[1].equity;
+              if (previous === 0) return false;
+              const dropPct = ((previous - latest) / previous) * 100;
+              return dropPct > rule.threshold;
+            })
+            .map((i) => ({ id: i.id, eaName: i.eaName }));
+        } else if (rule.type === "CONSECUTIVE_LOSSES") {
+          // Check recent consecutive losing trades
+          const instances = await prisma.liveEAInstance.findMany({
+            where: { status: "ONLINE" },
+            select: {
+              id: true,
+              eaName: true,
+              trades: {
+                where: { closeTime: { not: null } },
+                orderBy: { closeTime: "desc" },
+                take: Math.ceil(rule.threshold) + 1,
+                select: { profit: true },
+              },
+            },
+          });
+          matchingInstances = instances
+            .filter((i) => {
+              let consecutive = 0;
+              for (const trade of i.trades) {
+                if (trade.profit < 0) {
+                  consecutive++;
+                } else {
+                  break;
+                }
+              }
+              return consecutive >= rule.threshold;
+            })
+            .map((i) => ({ id: i.id, eaName: i.eaName }));
+        }
+
+        // Create alerts with dedup (max 1 per rule+instance per 24h)
+        for (const inst of matchingInstances) {
+          const existing = await prisma.eAAlert.findFirst({
+            where: {
+              ruleId: rule.id,
+              instanceId: inst.id,
+              createdAt: { gte: oneDayAgoForAlerts },
+            },
+          });
+
+          if (!existing) {
+            await prisma.eAAlert.create({
+              data: {
+                ruleId: rule.id,
+                instanceId: inst.id,
+                message: `${rule.type.replace(/_/g, " ")} alert: ${inst.eaName} exceeded threshold ${rule.threshold}`,
+              },
+            });
+          }
+        }
+      }
+    } catch (alertError) {
+      log.error({ error: alertError }, "EA alert evaluation failed (non-fatal)");
+    }
+
     // Auto-downgrade past_due subscriptions after 14-day grace period
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const pastDueSubs = await prisma.subscription.findMany({
       where: {
         status: "past_due",
         currentPeriodEnd: { lt: fourteenDaysAgo },
+        // Also check manualPeriodEnd - if admin extended, respect that
+        OR: [{ manualPeriodEnd: null }, { manualPeriodEnd: { lt: fourteenDaysAgo } }],
       },
       select: { id: true, userId: true, tier: true },
     });

@@ -23,15 +23,84 @@ interface SubscriptionRow {
   churnRisk?: boolean;
 }
 
+interface RevenueSnapshot {
+  date: string;
+  mrr: number;
+  arr: number;
+  paidCount: number;
+  freeCount: number;
+  proCount: number;
+  eliteCount: number;
+  churnRate: number;
+}
+
+function MRRChart({ snapshots }: { snapshots: RevenueSnapshot[] }) {
+  if (snapshots.length < 2) {
+    return (
+      <div className="h-40 flex items-center justify-center text-[#94A3B8] text-sm">
+        Not enough data for chart (run daily cron to collect data)
+      </div>
+    );
+  }
+
+  const mrrs = snapshots.map((s) => s.mrr);
+  const minMrr = Math.min(...mrrs);
+  const maxMrr = Math.max(...mrrs);
+  const range = maxMrr - minMrr || 1;
+
+  const width = 600;
+  const height = 140;
+  const padding = 4;
+
+  const points = snapshots.map((s, i) => {
+    const x = padding + (i / (snapshots.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((s.mrr - minMrr) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  });
+
+  const isPositive = mrrs[mrrs.length - 1] >= mrrs[0];
+
+  return (
+    <div className="w-full overflow-hidden">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon
+          points={`${padding},${height - padding} ${points.join(" ")} ${width - padding},${height - padding}`}
+          fill="url(#mrrGrad)"
+        />
+        <polyline
+          points={points.join(" ")}
+          fill="none"
+          stroke={isPositive ? "#10B981" : "#EF4444"}
+          strokeWidth="2"
+        />
+      </svg>
+      <div className="flex justify-between text-xs text-[#94A3B8] mt-1 px-1">
+        <span>{new Date(snapshots[0].date).toLocaleDateString()}</span>
+        <span>
+          &euro;{minMrr.toLocaleString()} - &euro;{maxMrr.toLocaleString()}
+        </span>
+        <span>{new Date(snapshots[snapshots.length - 1].date).toLocaleDateString()}</span>
+      </div>
+    </div>
+  );
+}
+
 export function RevenueTab() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
+  const [revenueHistory, setRevenueHistory] = useState<RevenueSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, usersRes] = await Promise.all([
+        const [statsRes, usersRes, historyRes] = await Promise.all([
           apiClient.get<StatsData>("/api/admin/stats"),
           apiClient.get<{
             data: {
@@ -41,8 +110,10 @@ export function RevenueTab() {
               churnRisk?: boolean;
             }[];
           }>("/api/admin/users"),
+          apiClient.get<{ data: RevenueSnapshot[] }>("/api/admin/revenue-history"),
         ]);
         setStats(statsRes);
+        setRevenueHistory(historyRes.data);
         setSubscriptions(
           usersRes.data
             .filter((u) => u.subscription)
@@ -118,6 +189,14 @@ export function RevenueTab() {
         <div className="rounded-lg border border-amber-500/20 bg-[#1A0626]/60 p-4">
           <div className="text-sm text-[#94A3B8]">Churn Risk</div>
           <div className="text-2xl font-bold text-amber-400 mt-1">{stats.churnRiskCount}</div>
+        </div>
+      </div>
+
+      {/* MRR Trend Chart */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-white mb-3">MRR Trend</h3>
+        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+          <MRRChart snapshots={revenueHistory} />
         </div>
       </div>
 

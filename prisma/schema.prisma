@@ -59,6 +59,9 @@ model User {
   referredBy      String?   // referralCode of the user who referred them
   lastLoginAt     DateTime?
   adminNotes      String?   @db.Text
+  suspended       Boolean   @default(false)
+  suspendedAt     DateTime?
+  suspendedReason String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -70,6 +73,7 @@ model User {
   liveEAs      LiveEAInstance[]
 
   @@index([createdAt])
+  @@index([suspended])
 }
 
 model Subscription {
@@ -83,6 +87,7 @@ model Subscription {
   stripeSubId        String?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
+  manualPeriodEnd    DateTime?  // Admin-granted extension override
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -237,17 +242,22 @@ model AdminOtp {
 }
 
 model Announcement {
-  id        String    @id @default(cuid())
-  title     String
-  message   String    @db.Text
-  type      String    @default("info") // info, warning, maintenance
-  active    Boolean   @default(true)
-  expiresAt DateTime?
-  createdBy String // admin userId
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  title       String
+  message     String    @db.Text
+  type        String    @default("info") // info, warning, maintenance
+  active      Boolean   @default(true)
+  expiresAt   DateTime?
+  scheduledAt DateTime?
+  segmentId   String?
+  createdBy   String // admin userId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  segment UserSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
 
   @@index([active, expiresAt])
+  @@index([scheduledAt])
 }
 
 // ============================================
@@ -280,6 +290,7 @@ model LiveEAInstance {
   heartbeats    EAHeartbeat[]
   trades        EATrade[]
   errors        EAError[]
+  alerts        EAAlert[]
 
   @@index([userId, status])
   @@index([status, lastHeartbeat])
@@ -358,4 +369,55 @@ model UserSegment {
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  announcements Announcement[]
+}
+
+// ============================================
+// REVENUE SNAPSHOTS
+// ============================================
+
+model RevenueSnapshot {
+  id         String   @id @default(cuid())
+  date       DateTime @unique
+  mrr        Float
+  arr        Float
+  paidCount  Int
+  freeCount  Int
+  proCount   Int
+  eliteCount Int
+  churnRate  Float
+  createdAt  DateTime @default(now())
+
+  @@index([date])
+}
+
+// ============================================
+// EA ALERT RULES & ALERTS
+// ============================================
+
+model EAAlertRule {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // DRAWDOWN_EXCEEDED, CONSECUTIVE_LOSSES, OFFLINE_DURATION, EQUITY_DROP
+  threshold Float
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  alerts    EAAlert[]
+
+  @@index([enabled, type])
+}
+
+model EAAlert {
+  id           String         @id @default(cuid())
+  ruleId       String
+  instanceId   String
+  message      String         @db.Text
+  acknowledged Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  rule         EAAlertRule    @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([acknowledged, createdAt])
 }

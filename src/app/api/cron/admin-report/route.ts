@@ -100,6 +100,38 @@ async function handleAdminReport(request: NextRequest) {
       onlineEAs,
     };
 
+    // Save revenue snapshot for historical tracking
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const totalPaidSubs = (tierMap.PRO || 0) + (tierMap.ELITE || 0);
+    const cancelledCount = await prisma.subscription.count({ where: { status: "canceled" } });
+    const totalSubCount = await prisma.subscription.count();
+    const churnRate = totalSubCount > 0 ? cancelledCount / totalSubCount : 0;
+
+    await prisma.revenueSnapshot.upsert({
+      where: { date: today },
+      create: {
+        date: today,
+        mrr,
+        arr: mrr * 12,
+        paidCount: totalPaidSubs,
+        freeCount: tierMap.FREE || 0,
+        proCount: tierMap.PRO || 0,
+        eliteCount: tierMap.ELITE || 0,
+        churnRate,
+      },
+      update: {
+        mrr,
+        arr: mrr * 12,
+        paidCount: totalPaidSubs,
+        freeCount: tierMap.FREE || 0,
+        proCount: tierMap.PRO || 0,
+        eliteCount: tierMap.ELITE || 0,
+        churnRate,
+      },
+    });
+
     const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail) {
       log.error("ADMIN_EMAIL not configured");

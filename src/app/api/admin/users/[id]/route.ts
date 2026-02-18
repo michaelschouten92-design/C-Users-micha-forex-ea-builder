@@ -27,6 +27,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           role: true,
           referralCode: true,
           referredBy: true,
+          suspended: true,
+          suspendedAt: true,
+          suspendedReason: true,
           subscription: true,
           projects: {
             where: { deletedAt: null },

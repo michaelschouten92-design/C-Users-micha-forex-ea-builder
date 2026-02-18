@@ -13,6 +13,9 @@ export async function GET() {
 
     const announcements = await prisma.announcement.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        segment: { select: { id: true, name: true } },
+      },
     });
 
     return NextResponse.json({ data: announcements });
@@ -30,6 +33,8 @@ const createSchema = z.object({
   type: z.enum(["info", "warning", "maintenance"]).default("info"),
   active: z.boolean().default(true),
   expiresAt: z.string().datetime().optional(),
+  scheduledAt: z.string().datetime().optional(),
+  segmentId: z.string().optional(),
 });
 
 // POST /api/admin/announcements - Create announcement
@@ -57,15 +62,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const { title, message, type, active, expiresAt } = validation.data;
+    const { title, message, type, active, expiresAt, scheduledAt, segmentId } = validation.data;
+
+    // If scheduledAt is in the future, set active to false automatically
+    const isScheduledFuture = scheduledAt && new Date(scheduledAt) > new Date();
+    const effectiveActive = isScheduledFuture ? false : active;
 
     const announcement = await prisma.announcement.create({
       data: {
         title,
         message,
         type,
-        active,
+        active: effectiveActive,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        segmentId: segmentId || null,
         createdBy: adminCheck.session.user.id,
       },
     });
@@ -82,9 +93,15 @@ export async function POST(request: Request) {
 const updateSchema = z.object({
   id: z.string(),
   active: z.boolean().optional(),
+  title: z.string().min(1).max(200).optional(),
+  message: z.string().min(1).max(2000).optional(),
+  type: z.enum(["info", "warning", "maintenance"]).optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  segmentId: z.string().nullable().optional(),
 });
 
-// PATCH /api/admin/announcements - Toggle active status
+// PATCH /api/admin/announcements - Update announcement
 export async function PATCH(request: Request) {
   try {
     const adminCheck = await checkAdmin();
@@ -104,9 +121,26 @@ export async function PATCH(request: Request) {
       });
     }
 
+    const { id, ...updateData } = validation.data;
+
+    const data: Record<string, unknown> = {};
+    if (updateData.active !== undefined) data.active = updateData.active;
+    if (updateData.title !== undefined) data.title = updateData.title;
+    if (updateData.message !== undefined) data.message = updateData.message;
+    if (updateData.type !== undefined) data.type = updateData.type;
+    if (updateData.expiresAt !== undefined) {
+      data.expiresAt = updateData.expiresAt ? new Date(updateData.expiresAt) : null;
+    }
+    if (updateData.scheduledAt !== undefined) {
+      data.scheduledAt = updateData.scheduledAt ? new Date(updateData.scheduledAt) : null;
+    }
+    if (updateData.segmentId !== undefined) {
+      data.segmentId = updateData.segmentId;
+    }
+
     const announcement = await prisma.announcement.update({
-      where: { id: validation.data.id },
-      data: { active: validation.data.active },
+      where: { id },
+      data,
     });
 
     return NextResponse.json(announcement);

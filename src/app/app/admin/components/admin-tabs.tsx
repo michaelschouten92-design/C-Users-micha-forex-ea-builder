@@ -8,7 +8,8 @@ export type AdminTab =
   | "analytics"
   | "announcements"
   | "live-eas"
-  | "plan-limits";
+  | "plan-limits"
+  | "system-health";
 
 const TABS: { id: AdminTab; label: string; icon: string }[] = [
   { id: "users", label: "Users", icon: "\uD83D\uDC65" },
@@ -19,6 +20,7 @@ const TABS: { id: AdminTab; label: string; icon: string }[] = [
   { id: "announcements", label: "Announcements", icon: "\uD83D\uDCE2" },
   { id: "live-eas", label: "Live EAs", icon: "\uD83D\uDCE1" },
   { id: "plan-limits", label: "Plan Limits", icon: "\u2699\uFE0F" },
+  { id: "system-health", label: "System Health", icon: "\uD83D\uDFE2" },
 ];
 
 interface AdminTabsProps {

@@ -25,6 +25,7 @@ interface UserData {
   createdAt: string;
   lastLoginAt: string | null;
   referredBy?: string;
+  suspended?: boolean;
   subscription: { tier: string; status: string };
   projectCount: number;
   exportCount: number;
@@ -439,6 +440,9 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                       {user.email}
                     </button>
                     {isAdmin && <span className="ml-2 text-xs text-[#A78BFA]">(you)</span>}
+                    {user.suspended && (
+                      <span className="ml-2 text-xs text-red-400">(suspended)</span>
+                    )}
                     {!user.emailVerified && (
                       <span className="ml-2 text-xs text-yellow-400">(unverified)</span>
                     )}

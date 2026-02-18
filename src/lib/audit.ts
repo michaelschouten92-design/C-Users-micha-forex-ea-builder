@@ -33,7 +33,12 @@ export type AuditEventType =
   | "admin.user_notes_update"
   | "admin.plan_limits_update"
   | "admin.segment_create"
-  | "admin.segment_delete";
+  | "admin.segment_delete"
+  | "admin.user_suspend"
+  | "admin.user_unsuspend"
+  | "admin.password_reset_triggered"
+  | "admin.subscription_extended"
+  | "admin.bulk_email_sent";
 
 interface AuditLogEntry {
   userId: string | null;

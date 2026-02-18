@@ -18,6 +18,9 @@ interface UserDetail {
   role: string;
   referralCode: string | null;
   referredBy: string | null;
+  suspended: boolean;
+  suspendedAt: string | null;
+  suspendedReason: string | null;
   subscription: {
     tier: string;
     status: string;
@@ -70,6 +73,11 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   const [upgrading, setUpgrading] = useState(false);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspending, setSuspending] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [extendDays, setExtendDays] = useState(30);
+  const [extending, setExtending] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -114,6 +122,71 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
       setUser(res);
     } catch (err) {
       showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    }
+  }
+
+  async function handleSuspend() {
+    if (!user || suspending) return;
+    setSuspending(true);
+    try {
+      if (user.suspended) {
+        await apiClient.post("/api/admin/users/unsuspend", { email: user.email });
+        showSuccess("Unsuspended", `${user.email} has been unsuspended`);
+      } else {
+        if (!suspendReason.trim()) {
+          showError("Required", "Please provide a reason for suspension");
+          setSuspending(false);
+          return;
+        }
+        await apiClient.post("/api/admin/users/suspend", {
+          email: user.email,
+          reason: suspendReason,
+        });
+        showSuccess("Suspended", `${user.email} has been suspended`);
+      }
+      onRefresh();
+      const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
+      setUser(res);
+      setSuspendReason("");
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSuspending(false);
+    }
+  }
+
+  async function handlePasswordReset() {
+    if (!user || resettingPassword) return;
+    setResettingPassword(true);
+    try {
+      await apiClient.post("/api/admin/users/reset-password", { email: user.email });
+      showSuccess("Sent", `Password reset email sent to ${user.email}`);
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setResettingPassword(false);
+    }
+  }
+
+  async function handleExtendSubscription() {
+    if (!user || extending) return;
+    setExtending(true);
+    try {
+      const res = await apiClient.post<{ newEnd: string }>("/api/admin/users/extend-subscription", {
+        email: user.email,
+        days: extendDays,
+      });
+      showSuccess(
+        "Extended",
+        `Subscription extended to ${new Date(res.newEnd).toLocaleDateString()}`
+      );
+      onRefresh();
+      const detail = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
+      setUser(detail);
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setExtending(false);
     }
   }
 
@@ -286,6 +359,75 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   className="text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded transition-colors"
                 >
                   Impersonate
+                </button>
+                <button
+                  onClick={handlePasswordReset}
+                  disabled={resettingPassword}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                >
+                  {resettingPassword ? "Sending..." : "Send Password Reset"}
+                </button>
+              </div>
+
+              {/* Suspend/Unsuspend */}
+              <div className="mt-3 flex items-center gap-2">
+                {!user.suspended ? (
+                  <>
+                    <input
+                      type="text"
+                      value={suspendReason}
+                      onChange={(e) => setSuspendReason(e.target.value)}
+                      placeholder="Suspension reason..."
+                      className="flex-1 bg-[#0F0318] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-red-500"
+                    />
+                    <button
+                      onClick={handleSuspend}
+                      disabled={suspending}
+                      className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                    >
+                      {suspending ? "Suspending..." : "Suspend User"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleSuspend}
+                    disabled={suspending}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                  >
+                    {suspending ? "Unsuspending..." : "Unsuspend User"}
+                  </button>
+                )}
+              </div>
+              {user.suspended && user.suspendedReason && (
+                <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-xs">
+                  <span className="text-red-400 font-medium">Suspended:</span>{" "}
+                  <span className="text-white">{user.suspendedReason}</span>
+                  {user.suspendedAt && (
+                    <span className="text-[#64748B] ml-2">
+                      ({new Date(user.suspendedAt).toLocaleString()})
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Extend Subscription */}
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs text-[#94A3B8]">Extend subscription by</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={extendDays}
+                  onChange={(e) => setExtendDays(Number(e.target.value))}
+                  className="w-16 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#4F46E5]"
+                />
+                <span className="text-xs text-[#94A3B8]">days</span>
+                <button
+                  onClick={handleExtendSubscription}
+                  disabled={extending}
+                  className="text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 border border-[#22D3EE]/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                >
+                  {extending ? "Extending..." : "Extend"}
                 </button>
               </div>
             </section>

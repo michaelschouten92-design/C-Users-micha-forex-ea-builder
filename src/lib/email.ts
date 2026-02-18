@@ -810,6 +810,49 @@ export async function sendAdminDailyReportEmail(
   log.info("Admin daily report email sent");
 }
 
+export async function sendBulkAdminEmail(email: string, subject: string, htmlMessage: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping bulk admin email");
+    return;
+  }
+
+  // Escape user-provided content for safe HTML embedding
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeMessage = esc(htmlMessage).replace(/\n/g, "<br>");
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <div style="line-height: 1.6; color: #ffffff;">
+              ${safeMessage}
+            </div>
+            <hr style="border: none; border-top: 1px solid rgba(79, 70, 229, 0.2); margin: 24px 0;" />
+            <p style="margin: 0; font-size: 12px; color: #64748B; text-align: center;">
+              Sent by AlgoStudio
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: email.substring(0, 3) + "***" }, "Failed to send bulk admin email");
+    throw new Error("Failed to send email");
+  }
+}
+
 export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
   if (!resend) {
     log.warn("Email not configured - skipping payment failed email");

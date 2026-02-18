@@ -12,6 +12,7 @@ import { AnalyticsTab } from "./components/analytics-tab";
 import { AnnouncementsTab } from "./components/announcements-tab";
 import { LiveEAsTab } from "./components/live-eas-tab";
 import { PlanLimitsTab } from "./components/plan-limits-tab";
+import { SystemHealthTab } from "./components/system-health-tab";
 import { UserDetailModal } from "./components/user-detail-modal";
 
 interface UserData {
@@ -174,6 +175,7 @@ export default function AdminPage() {
         {activeTab === "announcements" && <AnnouncementsTab />}
         {activeTab === "live-eas" && <LiveEAsTab />}
         {activeTab === "plan-limits" && <PlanLimitsTab />}
+        {activeTab === "system-health" && <SystemHealthTab />}
       </main>
 
       {/* User detail modal */}
