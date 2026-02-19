@@ -282,7 +282,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                 </button>
                 <button
                   onClick={() => handleDeleteSegment(seg.id)}
-                  className="text-xs text-[#64748B] hover:text-red-400 transition-colors"
+                  className="text-xs text-[#7C8DB0] hover:text-red-400 transition-colors"
                   title="Delete segment"
                 >
                   &times;

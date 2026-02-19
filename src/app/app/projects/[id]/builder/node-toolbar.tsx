@@ -119,7 +119,7 @@ export function NodeToolbar({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-white">Blocks</h3>
-            <p className="text-xs text-[#64748B] mt-1">Drag to canvas</p>
+            <p className="text-xs text-[#7C8DB0] mt-1">Drag to canvas</p>
           </div>
           {onClose && (
             <button
@@ -141,7 +141,7 @@ export function NodeToolbar({
         </div>
         <div className="relative mt-2">
           <svg
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#64748B]"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7C8DB0]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

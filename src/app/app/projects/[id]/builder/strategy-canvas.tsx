@@ -148,7 +148,7 @@ function BuilderProgressStepper({
                     ? "bg-[#4F46E5] text-white"
                     : isActive
                       ? "bg-[#4F46E5]/30 text-[#A78BFA] ring-1 ring-[#4F46E5]"
-                      : "bg-[#334155] text-[#64748B]"
+                      : "bg-[#334155] text-[#7C8DB0]"
                 }`}
               >
                 {s.done ? (
@@ -168,10 +168,10 @@ function BuilderProgressStepper({
               <span
                 className={`text-[11px] whitespace-nowrap ${
                   s.done
-                    ? "text-[#64748B] line-through"
+                    ? "text-[#7C8DB0] line-through"
                     : isActive
                       ? "text-white font-medium"
-                      : "text-[#64748B]"
+                      : "text-[#7C8DB0]"
                 }`}
               >
                 {s.label}
@@ -673,7 +673,7 @@ export function StrategyCanvas({
               Editing requires a desktop or tablet
             </span>
           </div>
-          <p className="text-[10px] text-[#64748B]">
+          <p className="text-[10px] text-[#7C8DB0]">
             You can view your strategy summary below. To add, remove, or configure blocks, open this
             project on a larger screen.
           </p>
@@ -681,8 +681,8 @@ export function StrategyCanvas({
 
         {nodes.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#64748B] text-sm">No blocks added yet.</p>
-            <p className="text-[#64748B] text-xs mt-1">Open on desktop to start building.</p>
+            <p className="text-[#7C8DB0] text-sm">No blocks added yet.</p>
+            <p className="text-[#7C8DB0] text-xs mt-1">Open on desktop to start building.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -707,7 +707,7 @@ export function StrategyCanvas({
                     />
                     <span className="text-sm font-medium text-white">{data.label}</span>
                   </div>
-                  <p className="text-[10px] text-[#64748B] uppercase tracking-wider">
+                  <p className="text-[10px] text-[#7C8DB0] uppercase tracking-wider">
                     {data.category
                       .replace("entrystrategy", "Entry Strategy")
                       .replace("trademanagement", "Trade Management")}
@@ -846,7 +846,7 @@ export function StrategyCanvas({
                       Start with an <span className="text-white font-medium">Entry Strategy</span>{" "}
                       block to build your trading bot
                     </p>
-                    <p className="text-xs text-[#64748B]">
+                    <p className="text-xs text-[#7C8DB0]">
                       Try <span className="text-[#A78BFA]">EMA Crossover</span> &mdash; it&apos;s
                       the simplest
                     </p>
@@ -880,7 +880,7 @@ export function StrategyCanvas({
 
           {/* Keyboard shortcut hint */}
           <div className="hidden md:block absolute bottom-4 left-4 z-10">
-            <span className="text-[10px] text-[#64748B]">
+            <span className="text-[10px] text-[#7C8DB0]">
               Press{" "}
               <kbd className="px-1 py-0.5 bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8]">
                 Shift + ?
@@ -1076,7 +1076,7 @@ export function StrategyCanvas({
                   <h3 className="text-lg font-semibold text-white">Keyboard Shortcuts</h3>
                   <button
                     onClick={() => setShowShortcuts(false)}
-                    className="text-[#64748B] hover:text-white p-1 transition-colors"
+                    className="text-[#7C8DB0] hover:text-white p-1 transition-colors"
                     aria-label="Close shortcuts"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -9,19 +9,21 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const PBKDF2_ITERATIONS = 100_000;
-const PBKDF2_SALT = "algostudio-field-encryption-v1";
+const PBKDF2_FALLBACK_SALT = "algostudio-field-encryption-v1";
 
 let cachedKey: Buffer | null = null;
 
 /**
- * Derive a 256-bit key from AUTH_SECRET using PBKDF2 with a fixed salt.
+ * Derive a 256-bit key from AUTH_SECRET using PBKDF2.
+ * Uses ENCRYPTION_SALT env var (recommended) or falls back to a static salt for backwards compatibility.
  * The key is cached in memory to avoid repeated derivation.
  */
 function getEncryptionKey(): Buffer {
   if (cachedKey) return cachedKey;
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET not configured for encryption");
-  cachedKey = pbkdf2Sync(secret, PBKDF2_SALT, PBKDF2_ITERATIONS, 32, "sha256");
+  const salt = process.env.ENCRYPTION_SALT || PBKDF2_FALLBACK_SALT;
+  cachedKey = pbkdf2Sync(secret, salt, PBKDF2_ITERATIONS, 32, "sha256");
   return cachedKey;
 }
 

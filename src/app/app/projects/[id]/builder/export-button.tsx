@@ -322,7 +322,7 @@ export function ExportButton({
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-[#64748B] hover:text-white p-1 transition-colors duration-200"
+                className="text-[#7C8DB0] hover:text-white p-1 transition-colors duration-200"
                 aria-label="Close export modal"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -387,7 +387,7 @@ export function ExportButton({
                         setShowUpgradePrompt(false);
                         setShowModal(false);
                       }}
-                      className="text-sm text-[#64748B] hover:text-white transition-colors"
+                      className="text-sm text-[#7C8DB0] hover:text-white transition-colors"
                     >
                       Maybe later
                     </button>
@@ -507,7 +507,7 @@ export function ExportButton({
                     >
                       EA Identifier (Magic Number)
                     </label>
-                    <p className="text-xs text-[#64748B] mb-3">
+                    <p className="text-xs text-[#7C8DB0] mb-3">
                       Each EA on a chart needs a unique identifier so it only manages its own
                       trades. If you run the same EA on EURUSD and GBPUSD, give each a different
                       number.
@@ -597,7 +597,7 @@ export function ExportButton({
                         <div className="w-5 h-5 rounded-full border-2 border-[rgba(79,70,229,0.3)] flex-shrink-0" />
                       )}
                       <span
-                        className={`text-sm ${i <= exportStep ? "text-white" : "text-[#64748B]"}`}
+                        className={`text-sm ${i <= exportStep ? "text-white" : "text-[#7C8DB0]"}`}
                       >
                         {step}
                       </span>
@@ -638,7 +638,7 @@ export function ExportButton({
                     <div>
                       <p className="text-[#CBD5E1]">
                         <span className="text-[#22D3EE] font-medium">{result.fileName}</span>
-                        <span className="text-[#64748B] ml-2">v{result.versionNo}</span>
+                        <span className="text-[#7C8DB0] ml-2">v{result.versionNo}</span>
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -773,9 +773,9 @@ export function ExportButton({
                     {showHistory && (
                       <div className="mt-2 space-y-1">
                         {historyLoading ? (
-                          <p className="text-xs text-[#64748B] py-2">Loading...</p>
+                          <p className="text-xs text-[#7C8DB0] py-2">Loading...</p>
                         ) : historyItems.length === 0 ? (
-                          <p className="text-xs text-[#64748B] py-2">No previous exports</p>
+                          <p className="text-xs text-[#7C8DB0] py-2">No previous exports</p>
                         ) : (
                           historyItems.slice(0, 5).map((item) => (
                             <div
@@ -786,8 +786,8 @@ export function ExportButton({
                                 {item.outputName}
                               </span>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="text-[#64748B]">v{item.versionNo}</span>
-                                <span className="text-[#64748B]">
+                                <span className="text-[#7C8DB0]">v{item.versionNo}</span>
+                                <span className="text-[#7C8DB0]">
                                   {new Date(item.createdAt).toLocaleDateString()}
                                 </span>
                                 <button
@@ -1104,7 +1104,7 @@ function BacktestChecklist() {
         <div className="px-4 pb-3 space-y-2">
           {items.map((item, i) => (
             <div key={i} className="flex items-start gap-2 text-xs text-[#CBD5E1]">
-              <span className="text-[#64748B] flex-shrink-0 mt-px">
+              <span className="text-[#7C8DB0] flex-shrink-0 mt-px">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"

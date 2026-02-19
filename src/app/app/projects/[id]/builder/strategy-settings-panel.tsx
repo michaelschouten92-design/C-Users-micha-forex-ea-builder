@@ -80,7 +80,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-[#64748B] mt-1">
+            <p className="text-[10px] text-[#7C8DB0] mt-1">
               Auto-fills risk limits for your prop firm challenge
             </p>
           </div>
@@ -147,7 +147,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               />
               <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
             </label>
-            <p className="text-[10px] text-[#64748B] mt-1 ml-6">
+            <p className="text-[10px] text-[#7C8DB0] mt-1 ml-6">
               Allow buy and sell positions open at the same time. Note: some brokers (especially US
               brokers) enforce FIFO rules and do not support hedging.
             </p>
@@ -236,7 +236,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                     placeholder="EA Builder Strategy"
                     className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
                   />
-                  <p className="text-[10px] text-[#64748B] mt-1">
+                  <p className="text-[10px] text-[#7C8DB0] mt-1">
                     Shown in the MT5/MT4 trade journal for each order (max 31 chars)
                   </p>
                 </div>
@@ -340,7 +340,7 @@ function SettingsToggleNumberField({
           onPointerDown={(e) => e.stopPropagation()}
           className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
         />
-        <span className={`text-xs font-medium ${isEnabled ? "text-[#CBD5E1]" : "text-[#64748B]"}`}>
+        <span className={`text-xs font-medium ${isEnabled ? "text-[#CBD5E1]" : "text-[#7C8DB0]"}`}>
           {label}
         </span>
       </label>
@@ -358,7 +358,7 @@ function SettingsToggleNumberField({
       )}
       {hint && (
         <p
-          className={`text-[10px] mt-1 ${isEnabled ? "text-[#64748B]" : "text-[#475569]"} ${isEnabled ? "" : "ml-6"}`}
+          className={`text-[10px] mt-1 ${isEnabled ? "text-[#7C8DB0]" : "text-[#475569]"} ${isEnabled ? "" : "ml-6"}`}
         >
           {hint}
         </p>
@@ -422,7 +422,7 @@ function SettingsNumberField({
         onPointerDown={(e) => e.stopPropagation()}
         className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
       />
-      {hint && <p className="text-[10px] text-[#64748B] mt-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-[#7C8DB0] mt-1">{hint}</p>}
     </div>
   );
 }

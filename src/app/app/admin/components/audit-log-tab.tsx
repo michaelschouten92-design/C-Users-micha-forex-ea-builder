@@ -188,7 +188,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
                               {ev.userId.substring(0, 12)}...
                             </button>
                           ) : (
-                            <span className="text-[#64748B]">-</span>
+                            <span className="text-[#7C8DB0]">-</span>
                           )}
                         </td>
                         <td className="px-3 py-1.5 text-[#94A3B8]">{ev.resourceType || "-"}</td>
@@ -304,7 +304,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
                           {log.userId.substring(0, 12)}...
                         </button>
                       ) : (
-                        <span className="text-[#64748B]">-</span>
+                        <span className="text-[#7C8DB0]">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-[#94A3B8] text-xs">
@@ -312,21 +312,21 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
                         <span>
                           {log.resourceType}
                           {log.resourceId && (
-                            <span className="text-[#64748B] ml-1 font-mono">
+                            <span className="text-[#7C8DB0] ml-1 font-mono">
                               {log.resourceId.substring(0, 8)}
                             </span>
                           )}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[#64748B] text-xs font-mono">
+                    <td className="px-4 py-3 text-[#7C8DB0] text-xs font-mono">
                       {log.ipAddress || "-"}
                     </td>
                   </tr>
                 ))}
                 {logs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-[#64748B]">
+                    <td colSpan={5} className="px-4 py-8 text-center text-[#7C8DB0]">
                       No audit logs found
                     </td>
                   </tr>

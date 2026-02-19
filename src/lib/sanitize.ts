@@ -9,12 +9,13 @@
  */
 
 /**
- * Sanitize plain text - strips ALL HTML tags.
+ * Sanitize plain text - strips ALL HTML tags and dangerous URI schemes.
  * Use for text fields like names, descriptions, comments.
  */
 export function sanitizeText(input: string): string {
   return input
     .replace(/<!--[\s\S]*?-->/g, "") // Remove HTML comments
     .replace(/<(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "") // Remove dangerous tags with content
-    .replace(/<[^>]*>/g, ""); // Remove all remaining HTML tags
+    .replace(/<[^>]*>/g, "") // Remove all remaining HTML tags
+    .replace(/\b(javascript|vbscript|data)\s*:/gi, ""); // Neutralize dangerous URI schemes
 }

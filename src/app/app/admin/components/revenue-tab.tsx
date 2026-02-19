@@ -169,7 +169,7 @@ export function RevenueTab({ sharedUsers }: RevenueTabProps) {
     active: "text-emerald-400",
     trialing: "text-blue-400",
     past_due: "text-red-400",
-    cancelled: "text-[#64748B]",
+    cancelled: "text-[#7C8DB0]",
   };
 
   // Sort: past_due first, then trialing, then cancelled, then active
@@ -345,7 +345,7 @@ export function RevenueTab({ sharedUsers }: RevenueTabProps) {
                         {daysLeft}d
                       </span>
                     ) : (
-                      <span className="text-[#64748B]">-</span>
+                      <span className="text-[#7C8DB0]">-</span>
                     )}
                   </td>
                 </tr>

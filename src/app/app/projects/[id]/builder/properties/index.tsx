@@ -145,7 +145,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 />
               </svg>
               <span className="text-xs text-[#A78BFA] font-medium">Click a block to edit</span>
-              <span className="text-[10px] font-medium text-[#64748B] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-medium text-[#7C8DB0] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
                 {nodes.length} {nodes.length === 1 ? "block" : "blocks"}
               </span>
             </div>
@@ -175,7 +175,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-[#64748B]">
+              <p className="text-xs text-[#7C8DB0]">
                 Connect your blocks to see the strategy description.
               </p>
             )}
@@ -186,7 +186,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             )}
           </div>
         ) : (
-          <div className="text-center text-[#64748B] py-8">
+          <div className="text-center text-[#7C8DB0] py-8">
             <svg
               className="mx-auto h-8 w-8 mb-3 text-[#A78BFA]"
               fill="none"
@@ -202,7 +202,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               />
             </svg>
             <p className="text-sm font-medium text-[#94A3B8] mb-1">Get started</p>
-            <p className="text-xs text-[#64748B] leading-relaxed">
+            <p className="text-xs text-[#7C8DB0] leading-relaxed">
               Drag an <span className="text-white font-medium">Entry Strategy</span> block from the
               left toolbar onto the canvas
             </p>
@@ -278,7 +278,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         {nodeTemplate?.description && (
           <p className="text-xs text-[#94A3B8] mt-1">
             {categoryLabel && (
-              <span className="text-[#64748B] font-medium">{categoryLabel} · </span>
+              <span className="text-[#7C8DB0] font-medium">{categoryLabel} · </span>
             )}
             {nodeTemplate.description}
           </p>
@@ -350,7 +350,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
           <button
             onClick={toggleOptimization}
-            className="flex items-center gap-1.5 text-[10px] text-[#64748B] hover:text-[#94A3B8] transition-colors"
+            className="flex items-center gap-1.5 text-[10px] text-[#7C8DB0] hover:text-[#94A3B8] transition-colors"
           >
             <svg
               className="w-3 h-3"

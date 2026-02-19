@@ -193,7 +193,7 @@ export function RangeBreakoutFields({
               onHourChange={(v) => onChange({ sessionStartHour: v })}
               onMinuteChange={(v) => onChange({ sessionStartMinute: v })}
             />
-            <span className="text-[#64748B] text-xs mt-4">to</span>
+            <span className="text-[#7C8DB0] text-xs mt-4">to</span>
             <TimeField
               label="End"
               hour={data.sessionEndHour}
@@ -202,7 +202,7 @@ export function RangeBreakoutFields({
               onMinuteChange={(v) => onChange({ sessionEndMinute: v })}
             />
           </div>
-          <p className="text-[10px] text-[#64748B]">
+          <p className="text-[10px] text-[#7C8DB0]">
             Times in {(data.useServerTime ?? true) ? "broker server time" : "GMT/UTC"}
           </p>
         </div>

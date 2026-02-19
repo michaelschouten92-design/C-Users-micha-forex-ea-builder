@@ -192,7 +192,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
         <h3 className="text-lg font-semibold text-white mb-3">Signups (Last 30 Days)</h3>
         <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
           {stats.signups.length === 0 ? (
-            <div className="text-[#64748B] text-sm text-center py-4">No signup data</div>
+            <div className="text-[#7C8DB0] text-sm text-center py-4">No signup data</div>
           ) : (
             <div className="flex items-end gap-1 h-40">
               {stats.signups.map((day) => {
@@ -214,7 +214,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
               })}
             </div>
           )}
-          <div className="flex justify-between mt-2 text-xs text-[#64748B]">
+          <div className="flex justify-between mt-2 text-xs text-[#7C8DB0]">
             <span>{stats.signups[0]?.date || ""}</span>
             <span>{stats.signups[stats.signups.length - 1]?.date || ""}</span>
           </div>
@@ -262,7 +262,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       <div>
         <h3 className="text-lg font-semibold text-white mb-3">Referral Tracking</h3>
         {referralStats.length === 0 ? (
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6 text-center text-[#64748B]">
+          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6 text-center text-[#7C8DB0]">
             No referrals yet
           </div>
         ) : (

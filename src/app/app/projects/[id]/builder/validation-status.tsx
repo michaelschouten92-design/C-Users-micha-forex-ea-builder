@@ -192,7 +192,7 @@ function CheckItem({
         </svg>
       ) : (
         <svg
-          className={`w-3.5 h-3.5 ${required ? "text-[#EF4444]" : "text-[#64748B]"}`}
+          className={`w-3.5 h-3.5 ${required ? "text-[#EF4444]" : "text-[#7C8DB0]"}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -205,7 +205,7 @@ function CheckItem({
           />
         </svg>
       )}
-      <span className={checked ? "text-[#CBD5E1]" : required ? "text-[#FCA5A5]" : "text-[#64748B]"}>
+      <span className={checked ? "text-[#CBD5E1]" : required ? "text-[#FCA5A5]" : "text-[#7C8DB0]"}>
         {label}
         {required && <span className="text-[#EF4444]">*</span>}
       </span>

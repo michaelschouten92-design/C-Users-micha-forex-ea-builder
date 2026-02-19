@@ -25,16 +25,19 @@ export async function POST() {
     const adminId = session.user.impersonatorId;
     const targetEmail = session.user.impersonatingEmail || "unknown";
 
-    // Look up admin to verify they still exist
+    // Look up admin and verify they still have ADMIN role
     const adminUser = await prisma.user.findUnique({
       where: { id: adminId },
-      select: { email: true },
+      select: { email: true, role: true },
     });
 
-    if (!adminUser) {
-      return NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Admin user not found"), {
-        status: 403,
-      });
+    if (!adminUser || adminUser.role !== "ADMIN") {
+      return NextResponse.json(
+        apiError(ErrorCode.FORBIDDEN, "Admin user not found or no longer admin"),
+        {
+          status: 403,
+        }
+      );
     }
 
     // Audit log

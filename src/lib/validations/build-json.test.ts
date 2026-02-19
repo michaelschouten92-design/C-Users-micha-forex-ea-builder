@@ -35,9 +35,14 @@ describe("buildJsonSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects wrong version value", () => {
-    const result = buildJsonSchema.safeParse({ ...validBuildJson, version: "2.0" });
+  it("rejects invalid version format", () => {
+    const result = buildJsonSchema.safeParse({ ...validBuildJson, version: "abc" });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts future version strings in X.Y format", () => {
+    const result = buildJsonSchema.safeParse({ ...validBuildJson, version: "2.0" });
+    expect(result.success).toBe(true);
   });
 
   it("rejects missing nodes array", () => {

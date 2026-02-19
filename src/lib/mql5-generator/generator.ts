@@ -900,7 +900,7 @@ export function generateMQL5Code(
     maxSlippage: buildJson.settings?.maxSlippage ?? 10,
   };
 
-  const descValue = `"${sanitizeMQL5String(projectName)}"`;
+  const descValue = sanitizeMQL5String(projectName);
 
   const code: GeneratedCode = {
     inputs: [
@@ -925,7 +925,7 @@ export function generateMQL5Code(
       {
         name: "InpTradeComment",
         type: "string",
-        value: `"${sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName)}"`,
+        value: sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName),
         comment: "Trade Order Comment",
         isOptimizable: false,
         alwaysVisible: true,

@@ -110,12 +110,12 @@ export function DiscordSection() {
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
             <span className="text-sm text-[#94A3B8]">Discord connected</span>
             {status.discordId && (
-              <span className="text-xs text-[#64748B]">({status.discordId})</span>
+              <span className="text-xs text-[#7C8DB0]">({status.discordId})</span>
             )}
           </div>
 
           {status.isPrimaryLogin ? (
-            <p className="text-xs text-[#64748B]">
+            <p className="text-xs text-[#7C8DB0]">
               Discord is your login method and cannot be disconnected.
             </p>
           ) : (

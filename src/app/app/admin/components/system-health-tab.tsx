@@ -81,7 +81,7 @@ export function SystemHealthTab() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white">System Health</h2>
         {lastUpdated && (
-          <span className="text-xs text-[#64748B]">
+          <span className="text-xs text-[#7C8DB0]">
             Last updated: {lastUpdated.toLocaleTimeString()} (auto-refresh 2m)
           </span>
         )}
@@ -148,7 +148,7 @@ export function SystemHealthTab() {
             <span className="text-sm text-[#94A3B8]">Failure Rate (24h)</span>
           </div>
           <div className="text-2xl font-bold text-white">{health.exports.failureRate}%</div>
-          <div className="text-xs text-[#64748B]">
+          <div className="text-xs text-[#7C8DB0]">
             {health.exports.failed24h} / {health.exports.total24h}
           </div>
         </div>
@@ -163,15 +163,15 @@ export function SystemHealthTab() {
           <div className="flex gap-4 mt-1">
             <div>
               <span className="text-emerald-400 font-bold">{health.eas.online}</span>
-              <span className="text-xs text-[#64748B] ml-1">online</span>
+              <span className="text-xs text-[#7C8DB0] ml-1">online</span>
             </div>
             <div>
               <span className="text-gray-400 font-bold">{health.eas.offline}</span>
-              <span className="text-xs text-[#64748B] ml-1">offline</span>
+              <span className="text-xs text-[#7C8DB0] ml-1">offline</span>
             </div>
             <div>
               <span className="text-red-400 font-bold">{health.eas.error}</span>
-              <span className="text-xs text-[#64748B] ml-1">error</span>
+              <span className="text-xs text-[#7C8DB0] ml-1">error</span>
             </div>
           </div>
         </div>

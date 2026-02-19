@@ -405,7 +405,7 @@ export function VersionControls({
                     className="flex-1 px-4 py-2.5 text-left text-sm flex justify-between items-center text-white"
                   >
                     <span className="font-medium">Version {version.versionNo}</span>
-                    <span className="text-[#64748B] text-xs">
+                    <span className="text-[#7C8DB0] text-xs">
                       {new Date(version.createdAt).toLocaleDateString("en-US", {
                         day: "numeric",
                         month: "short",
@@ -645,7 +645,7 @@ export function VersionControls({
             <span className="hidden md:inline">(v{latestVersion})</span>
           </span>
         ) : (
-          <span className="text-[#64748B] hidden md:inline">No versions saved yet</span>
+          <span className="text-[#7C8DB0] hidden md:inline">No versions saved yet</span>
         )}
       </div>
 
@@ -665,7 +665,7 @@ export function VersionControls({
               <h3 className="text-sm font-semibold text-white">Load Shared Strategy</h3>
               <button
                 onClick={() => setShowImportModal(false)}
-                className="text-[#64748B] hover:text-white p-1 transition-colors"
+                className="text-[#7C8DB0] hover:text-white p-1 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -726,7 +726,7 @@ export function VersionControls({
               </h3>
               <button
                 onClick={() => setDiffVersions(null)}
-                className="text-[#64748B] hover:text-white p-1 transition-colors"
+                className="text-[#7C8DB0] hover:text-white p-1 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -744,7 +744,7 @@ export function VersionControls({
               diff.nodesChanged.length === 0 &&
               diff.edgesAdded === 0 &&
               diff.edgesRemoved === 0 ? (
-                <p className="text-[#64748B] text-center py-4">No differences found</p>
+                <p className="text-[#7C8DB0] text-center py-4">No differences found</p>
               ) : (
                 <>
                   {diff.nodesAdded.length > 0 && (
@@ -756,7 +756,7 @@ export function VersionControls({
                       <ul className="space-y-1 pl-4">
                         {diff.nodesAdded.map((n) => (
                           <li key={n.id} className="text-[#CBD5E1]">
-                            {n.data.label} <span className="text-[#64748B]">({n.type})</span>
+                            {n.data.label} <span className="text-[#7C8DB0]">({n.type})</span>
                           </li>
                         ))}
                       </ul>
@@ -771,7 +771,7 @@ export function VersionControls({
                       <ul className="space-y-1 pl-4">
                         {diff.nodesRemoved.map((n) => (
                           <li key={n.id} className="text-[#CBD5E1]">
-                            {n.data.label} <span className="text-[#64748B]">({n.type})</span>
+                            {n.data.label} <span className="text-[#7C8DB0]">({n.type})</span>
                           </li>
                         ))}
                       </ul>

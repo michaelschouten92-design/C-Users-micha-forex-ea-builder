@@ -184,6 +184,9 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     // Generate telemetry API key for live tracking
+    // SECURITY NOTE: This key is embedded in the exported EA source code. Anyone with access to
+    // the EA file can extract it and send telemetry data. Telemetry integrity depends on the EA
+    // source remaining private. If EAs are distributed, consider scoping writes per MT account.
     const telemetryApiKey = randomBytes(32).toString("hex");
     const telemetryApiKeyHash = createHash("sha256").update(telemetryApiKey).digest("hex");
 

@@ -2,8 +2,12 @@ import { prisma } from "./prisma";
 import { PLANS, type PlanTier } from "./plans";
 
 // ============================================
-// SUBSCRIPTION TIER CACHE (5 minute TTL)
+// SUBSCRIPTION TIER CACHE (15 second TTL)
 // ============================================
+// NOTE: This is an in-process cache. On multi-instance deployments (e.g. Vercel),
+// cache invalidation only affects the current instance. The short 15s TTL ensures
+// stale data is bounded. For authoritative checks, the export route uses a DB
+// transaction — this cache is advisory only for pre-checks.
 
 interface CacheEntry {
   tier: PlanTier;

@@ -17,7 +17,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="ml-2 text-[#64748B] hover:text-[#22D3EE] transition-colors p-1"
+      className="ml-2 text-[#7C8DB0] hover:text-[#22D3EE] transition-colors p-1"
       title="Copy email"
       aria-label="Copy email to clipboard"
     >
@@ -59,7 +59,7 @@ export default function SettingsPage() {
               >
                 AlgoStudio
               </Link>
-              <span className="text-[#64748B]">/</span>
+              <span className="text-[#7C8DB0]">/</span>
               <span className="text-[#94A3B8]">Settings</span>
             </div>
             <Link href="/app" className="text-sm text-[#94A3B8] hover:text-white transition-colors">

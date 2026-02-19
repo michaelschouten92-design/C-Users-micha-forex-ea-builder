@@ -116,6 +116,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       );
     }
 
+    if (adminNotes.length > 10000) {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "adminNotes must be at most 10,000 characters"),
+        { status: 400 }
+      );
+    }
+
     // Encrypt admin notes before storing
     const encryptedNotes = adminNotes ? encrypt(adminNotes) : null;
 

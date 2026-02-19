@@ -5,7 +5,7 @@ import { useId, useState, useEffect } from "react";
 function Tooltip({ text }: { text: string }) {
   return (
     <span className="relative inline-flex ml-1 group/tooltip">
-      <span className="w-3.5 h-3.5 inline-flex items-center justify-center rounded-full border border-[#64748B] text-[#64748B] text-[9px] font-bold cursor-help hover:border-[#22D3EE] hover:text-[#22D3EE] transition-colors duration-200">
+      <span className="w-3.5 h-3.5 inline-flex items-center justify-center rounded-full border border-[#7C8DB0] text-[#7C8DB0] text-[9px] font-bold cursor-help hover:border-[#22D3EE] hover:text-[#22D3EE] transition-colors duration-200">
         ?
       </span>
       <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] text-[10px] rounded-lg shadow-lg whitespace-normal w-48 text-center pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50">
@@ -56,7 +56,7 @@ export function SelectField<T extends string>({
           </option>
         ))}
       </select>
-      {helpText && <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>}
+      {helpText && <p className="mt-1 text-[10px] text-[#7C8DB0] leading-snug">{helpText}</p>}
     </div>
   );
 }
@@ -137,7 +137,7 @@ export function NumberField({
       />
       {clampHint && <p className="mt-1 text-[10px] text-[#F59E0B] leading-snug">{clampHint}</p>}
       {helpText && !clampHint && (
-        <p className="mt-1 text-[10px] text-[#64748B] leading-snug">{helpText}</p>
+        <p className="mt-1 text-[10px] text-[#7C8DB0] leading-snug">{helpText}</p>
       )}
     </div>
   );
@@ -208,7 +208,7 @@ export function TimeField({
           className="w-11 px-1 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-center focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           aria-label={`${label} hour`}
         />
-        <span className="text-[#64748B] text-xs">:</span>
+        <span className="text-[#7C8DB0] text-xs">:</span>
         <input
           id={minuteId}
           type="number"

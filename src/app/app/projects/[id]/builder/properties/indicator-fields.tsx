@@ -65,7 +65,7 @@ export function MovingAverageFields({
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MovingAverageNodeData["signalMode"] })}
       />
-      <p className="text-[10px] text-[#64748B] -mt-0.5">
+      <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
         Candle close waits for bar confirmation — more reliable but slower
       </p>
       <div>
@@ -76,7 +76,7 @@ export function MovingAverageFields({
           max={100}
           onChange={(v) => onChange({ shift: v })}
         />
-        <p className="text-[10px] text-[#64748B] -mt-0.5">
+        <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
           Shifts the MA line backwards on the chart by N bars
         </p>
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />

@@ -205,7 +205,7 @@ export function ProjectCard({ project }: { project: Project }) {
               setShowMenu(!showMenu);
             }}
             aria-label="Project options"
-            className="text-[#64748B] hover:text-[#CBD5E1] p-2 -mr-2 -mt-1 transition-colors duration-200"
+            className="text-[#7C8DB0] hover:text-[#CBD5E1] p-2 -mr-2 -mt-1 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -217,7 +217,7 @@ export function ProjectCard({ project }: { project: Project }) {
           <p className="text-sm text-[#94A3B8] mt-1 line-clamp-2">{project.description}</p>
         )}
 
-        <div className="flex items-center gap-4 mt-4 text-xs text-[#64748B]">
+        <div className="flex items-center gap-4 mt-4 text-xs text-[#7C8DB0]">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE]"></span>
             {project._count.versions} versions
@@ -302,7 +302,7 @@ export function ProjectCard({ project }: { project: Project }) {
                   </button>
                 </span>
               ))}
-              {tags.length === 0 && <span className="text-xs text-[#64748B]">No tags yet</span>}
+              {tags.length === 0 && <span className="text-xs text-[#7C8DB0]">No tags yet</span>}
             </div>
             {tags.length < 5 && (
               <div className="flex gap-2 mb-4">
@@ -329,7 +329,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 </button>
               </div>
             )}
-            <p className="text-[10px] text-[#64748B] mb-4">
+            <p className="text-[10px] text-[#7C8DB0] mb-4">
               Max 5 tags, 20 characters each. Press Enter to add.
             </p>
             <button

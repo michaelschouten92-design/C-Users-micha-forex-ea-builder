@@ -898,7 +898,7 @@ export function generateMQL4Code(
     maxSlippage: buildJson.settings?.maxSlippage ?? 10,
   };
 
-  const descValue = `"${sanitizeMQL4String(projectName)}"`;
+  const descValue = sanitizeMQL4String(projectName);
 
   const code: GeneratedCode = {
     inputs: [
@@ -923,7 +923,7 @@ export function generateMQL4Code(
       {
         name: "InpTradeComment",
         type: "string",
-        value: `"${sanitizeMQL4String(ctx.comment || ctx.description || ctx.projectName)}"`,
+        value: sanitizeMQL4String(ctx.comment || ctx.description || ctx.projectName),
         comment: "Trade Order Comment",
         isOptimizable: false,
         alwaysVisible: true,

@@ -449,6 +449,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Handle session update (used for impersonation)
       if (trigger === "update" && updateData) {
         if (updateData.impersonate) {
+          // Verify the requesting user is actually an admin before allowing impersonation
+          const requestingUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true },
+          });
+          if (requestingUser?.role !== "ADMIN") {
+            return token; // Silently deny — non-admin cannot impersonate
+          }
           // Start impersonation: store admin's real ID and switch to target
           token.impersonatorId = token.id;
           token.impersonatingEmail = updateData.impersonate.email;

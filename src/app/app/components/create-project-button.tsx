@@ -130,7 +130,7 @@ export function CreateProjectButton() {
                       maxLength={100}
                       className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
                     />
-                    <span className="text-[10px] text-[#64748B] mt-0.5 block text-right">
+                    <span className="text-[10px] text-[#7C8DB0] mt-0.5 block text-right">
                       {name.length}/100
                     </span>
                   </div>
@@ -151,7 +151,7 @@ export function CreateProjectButton() {
                       maxLength={500}
                       className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
                     />
-                    <span className="text-[10px] text-[#64748B] mt-0.5 block text-right">
+                    <span className="text-[10px] text-[#7C8DB0] mt-0.5 block text-right">
                       {description.length}/500
                     </span>
                   </div>

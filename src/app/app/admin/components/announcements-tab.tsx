@@ -184,7 +184,7 @@ export function AnnouncementsTab() {
     if (!ann.active && ann.scheduledAt && new Date(ann.scheduledAt) > new Date()) {
       return { label: "Scheduled", color: "text-blue-400" };
     }
-    if (!ann.active) return { label: "Inactive", color: "text-[#64748B]" };
+    if (!ann.active) return { label: "Inactive", color: "text-[#7C8DB0]" };
     if (ann.expiresAt && new Date(ann.expiresAt) < new Date())
       return { label: "Expired", color: "text-amber-400" };
     return { label: "Active", color: "text-emerald-400" };
@@ -241,7 +241,7 @@ export function AnnouncementsTab() {
                 <option value="maintenance">Maintenance</option>
               </select>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-[#64748B]">Expires at</label>
+                <label className="text-xs text-[#7C8DB0]">Expires at</label>
                 <input
                   type="datetime-local"
                   value={formExpiry}
@@ -250,7 +250,7 @@ export function AnnouncementsTab() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-[#64748B]">Schedule at</label>
+                <label className="text-xs text-[#7C8DB0]">Schedule at</label>
                 <input
                   type="datetime-local"
                   value={formScheduledAt}
@@ -260,7 +260,7 @@ export function AnnouncementsTab() {
               </div>
               {segments.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[#64748B]">Target segment</label>
+                  <label className="text-xs text-[#7C8DB0]">Target segment</label>
                   <select
                     value={formSegmentId}
                     onChange={(e) => setFormSegmentId(e.target.value)}
@@ -289,7 +289,7 @@ export function AnnouncementsTab() {
 
       {/* Announcements list */}
       {announcements.length === 0 ? (
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6 text-center text-[#64748B]">
+        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6 text-center text-[#7C8DB0]">
           No announcements yet
         </div>
       ) : (
@@ -318,7 +318,7 @@ export function AnnouncementsTab() {
                       )}
                     </div>
                     <p className="text-sm text-[#94A3B8] mb-2">{ann.message}</p>
-                    <div className="text-xs text-[#64748B]">
+                    <div className="text-xs text-[#7C8DB0]">
                       Created {new Date(ann.createdAt).toLocaleString()}
                       {ann.expiresAt && ` · Expires ${new Date(ann.expiresAt).toLocaleString()}`}
                       {ann.scheduledAt &&

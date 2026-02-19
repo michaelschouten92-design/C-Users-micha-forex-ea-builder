@@ -43,9 +43,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Security headers
+  // Security + caching headers
   async headers() {
     return [
+      {
+        // Cache public marketing pages (homepage, pricing, templates, product, blog, etc.)
+        source:
+          "/(|pricing|templates|templates/:slug*|product|product/:slug*|blog|blog/:slug*|about|faq|contact|coaching|privacy|terms|compare/:slug*|trading-strategy-templates-mt5|visual-trading-bot-builder|build-mt5-expert-advisor-without-coding)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
       {
         // Apply to all routes
         source: "/:path*",

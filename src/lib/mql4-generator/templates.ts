@@ -69,16 +69,19 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
       lines.push(`//--- ${currentGroup}`);
     }
 
+    // Wrap string-type values in double quotes for valid MQL4 syntax
+    const formattedValue = input.type === "string" ? `"${input.value}"` : input.value;
+
     // MQL4 has no sinput keyword — use input for all visible, const for hidden
     if (input.isOptimizable) {
-      lines.push(`input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+      lines.push(`input ${input.type} ${input.name} = ${formattedValue}; // ${input.comment}`);
     } else if (input.alwaysVisible) {
       // MQL4: no sinput — use input with comment noting it's not optimizable
       lines.push(
-        `input ${input.type} ${input.name} = ${input.value}; // ${input.comment} (not optimizable)`
+        `input ${input.type} ${input.name} = ${formattedValue}; // ${input.comment} (not optimizable)`
       );
     } else {
-      lines.push(`const ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+      lines.push(`const ${input.type} ${input.name} = ${formattedValue}; // ${input.comment}`);
     }
   }
 
@@ -293,8 +296,8 @@ export function generateOnTick(
          {
             datetime dealTime = OrderCloseTime();
             if(dealTime > gLastLossTime) gLastLossTime = dealTime;
+            break; // Found the most recent loss — no need to keep searching
          }
-         break;
       }
       if(gLastLossTime > 0 && TimeCurrent() - gLastLossTime < ${ctx.cooldownAfterLossMinutes} * 60)
          return;

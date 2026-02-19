@@ -72,6 +72,7 @@ model User {
   exports      ExportJob[]
   templates    UserTemplate[]
   liveEAs      LiveEAInstance[]
+  alertRules   EAAlertRule[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -406,7 +407,9 @@ model EAAlertRule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   alerts    EAAlert[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([enabled, type])
 }
 

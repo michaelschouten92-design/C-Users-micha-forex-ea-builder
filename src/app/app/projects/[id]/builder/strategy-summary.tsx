@@ -390,13 +390,13 @@ export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNod
           </svg>
           Strategy Summary
           {lines.length > 0 && (
-            <span className="text-[10px] font-medium text-[#64748B] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-medium text-[#7C8DB0] bg-[rgba(100,116,139,0.2)] px-1.5 py-0.5 rounded">
               {lines.length}
             </span>
           )}
         </span>
         <svg
-          className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-[#7C8DB0] transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -408,7 +408,7 @@ export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNod
       {expanded && (
         <div className="px-4 pb-4">
           {nodes.length === 0 ? (
-            <p className="text-xs text-[#64748B] leading-relaxed">
+            <p className="text-xs text-[#7C8DB0] leading-relaxed">
               Add blocks to the canvas to see a live summary of your strategy.
             </p>
           ) : lines.length > 0 ? (
@@ -439,7 +439,7 @@ export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNod
               </ul>
             </div>
           ) : (
-            <p className="text-xs text-[#64748B] leading-relaxed">
+            <p className="text-xs text-[#7C8DB0] leading-relaxed">
               Connect your blocks to see the strategy description.
             </p>
           )}

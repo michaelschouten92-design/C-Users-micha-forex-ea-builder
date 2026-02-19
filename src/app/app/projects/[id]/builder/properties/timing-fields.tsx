@@ -155,7 +155,7 @@ export function VolatilityFilterFields({
           step={1}
           onChange={(v) => onChange({ minAtrPips: v })}
         />
-        <p className="text-[10px] text-[#64748B] mt-0.5">0 = no minimum</p>
+        <p className="text-[10px] text-[#7C8DB0] mt-0.5">0 = no minimum</p>
       </div>
       <div>
         <NumberField
@@ -166,7 +166,7 @@ export function VolatilityFilterFields({
           step={1}
           onChange={(v) => onChange({ maxAtrPips: v })}
         />
-        <p className="text-[10px] text-[#64748B] mt-0.5">0 = no maximum</p>
+        <p className="text-[10px] text-[#7C8DB0] mt-0.5">0 = no maximum</p>
       </div>
     </>
   );
@@ -460,7 +460,7 @@ export function CustomTimesFields({
                   onHourChange={(v) => updateTimeSlot(index, "startHour", v)}
                   onMinuteChange={(v) => updateTimeSlot(index, "startMinute", v)}
                 />
-                <span className="text-[#64748B] text-xs mt-4">to</span>
+                <span className="text-[#7C8DB0] text-xs mt-4">to</span>
                 <TimeField
                   label="End"
                   hour={slot.endHour}

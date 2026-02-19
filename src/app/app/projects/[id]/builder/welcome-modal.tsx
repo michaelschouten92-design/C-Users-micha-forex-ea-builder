@@ -449,7 +449,7 @@ export function WelcomeModal({
         </p>
 
         {/* Step counter */}
-        <p className="text-center text-xs text-[#64748B] mb-2">
+        <p className="text-center text-xs text-[#7C8DB0] mb-2">
           {step + 1} of {STEPS.length}
         </p>
 
@@ -494,7 +494,7 @@ export function WelcomeModal({
           <div className="text-center mt-3">
             <button
               onClick={dismiss}
-              className="text-xs text-[#64748B] hover:text-[#94A3B8] transition-colors"
+              className="text-xs text-[#7C8DB0] hover:text-[#94A3B8] transition-colors"
             >
               Skip tutorial
             </button>

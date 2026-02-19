@@ -85,6 +85,9 @@ const envSchema = z.object({
 
   // Stripe trial period (optional, days)
   STRIPE_TRIAL_DAYS: z.coerce.number().int().min(0).max(90).optional(),
+
+  // Field-level encryption salt (recommended for production — generate with: openssl rand -hex 32)
+  ENCRYPTION_SALT: z.string().min(16).optional(),
 });
 
 // Refinements for conditional requirements
@@ -198,6 +201,18 @@ const refinedEnvSchema = envSchema
       message: "CRON_SECRET is required in production for cron job authentication",
       path: ["CRON_SECRET"],
     }
+  )
+  .refine(
+    (data) => {
+      // In production, ENCRYPTION_SALT should be set for secure field encryption
+      if (data.NODE_ENV === "production" && !data.ENCRYPTION_SALT) return false;
+      return true;
+    },
+    {
+      message:
+        "ENCRYPTION_SALT is required in production for field-level encryption — generate with: openssl rand -hex 32",
+      path: ["ENCRYPTION_SALT"],
+    }
   );
 
 // Client-safe schema (only NEXT_PUBLIC_* variables)
@@ -259,6 +274,7 @@ function validateEnv() {
       TURNSTILE_SECRET_KEY: undefined,
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: undefined,
       STRIPE_TRIAL_DAYS: undefined,
+      ENCRYPTION_SALT: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -319,6 +335,7 @@ function validateEnv() {
         STRIPE_TRIAL_DAYS: process.env.STRIPE_TRIAL_DAYS
           ? Number(process.env.STRIPE_TRIAL_DAYS)
           : undefined,
+        ENCRYPTION_SALT: process.env.ENCRYPTION_SALT,
       } as z.infer<typeof refinedEnvSchema>;
     }
 

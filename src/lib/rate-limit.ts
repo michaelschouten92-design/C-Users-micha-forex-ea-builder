@@ -425,5 +425,16 @@ export function formatRateLimitError(result: RateLimitResult): string {
   return `Rate limit exceeded. Try again in ${resetInSeconds} seconds.`;
 }
 
+/**
+ * Extract client IP from request headers.
+ * Uses x-forwarded-for (leftmost entry) which is safe when behind a trusted proxy
+ * (Vercel always overwrites/appends the real IP). For self-hosted deployments
+ * without a trusted reverse proxy, the x-forwarded-for header can be spoofed.
+ * Ensure the deployment is behind a proxy that strips client-supplied XFF headers.
+ */
+export function getClientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

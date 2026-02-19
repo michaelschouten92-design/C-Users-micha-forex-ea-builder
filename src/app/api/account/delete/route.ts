@@ -100,7 +100,19 @@ export async function DELETE(request: Request) {
       // Delete audit logs (no cascade FK)
       await tx.auditLog.deleteMany({ where: { userId } });
 
-      // Delete user (cascades to Subscription, Project, BuildVersion, ExportJob, UserTemplate)
+      // Clear referral references from other users (GDPR right to erasure)
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { referralCode: true },
+      });
+      if (user?.referralCode) {
+        await tx.user.updateMany({
+          where: { referredBy: user.referralCode },
+          data: { referredBy: null },
+        });
+      }
+
+      // Delete user (cascades to Subscription, Project, BuildVersion, ExportJob, UserTemplate, EAAlertRule, LiveEAInstance)
       await tx.user.delete({ where: { id: userId } });
     });
 

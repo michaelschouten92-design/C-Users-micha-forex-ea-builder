@@ -245,40 +245,40 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-[#64748B]">Email:</span>{" "}
+                  <span className="text-[#7C8DB0]">Email:</span>{" "}
                   <span className="text-white">{user.email}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Verified:</span>{" "}
+                  <span className="text-[#7C8DB0]">Verified:</span>{" "}
                   <span className={user.emailVerified ? "text-emerald-400" : "text-yellow-400"}>
                     {user.emailVerified ? "Yes" : "No"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Role:</span>{" "}
+                  <span className="text-[#7C8DB0]">Role:</span>{" "}
                   <span className="text-white">{user.role}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Joined:</span>{" "}
+                  <span className="text-[#7C8DB0]">Joined:</span>{" "}
                   <span className="text-white">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Last Login:</span>{" "}
+                  <span className="text-[#7C8DB0]">Last Login:</span>{" "}
                   <span className="text-white">
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
                   </span>
                 </div>
                 {user.referralCode && (
                   <div>
-                    <span className="text-[#64748B]">Referral Code:</span>{" "}
+                    <span className="text-[#7C8DB0]">Referral Code:</span>{" "}
                     <span className="text-[#A78BFA] font-mono">{user.referralCode}</span>
                   </div>
                 )}
                 {user.referredBy && (
                   <div>
-                    <span className="text-[#64748B]">Referred By:</span>{" "}
+                    <span className="text-[#7C8DB0]">Referred By:</span>{" "}
                     <span className="text-[#A78BFA] font-mono">{user.referredBy}</span>
                   </div>
                 )}
@@ -292,16 +292,16 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-[#64748B]">Tier:</span>{" "}
+                  <span className="text-[#7C8DB0]">Tier:</span>{" "}
                   <span className="text-white">{user.subscription?.tier || "FREE"}</span>
                 </div>
                 <div>
-                  <span className="text-[#64748B]">Status:</span>{" "}
+                  <span className="text-[#7C8DB0]">Status:</span>{" "}
                   <span className="text-white">{user.subscription?.status || "active"}</span>
                 </div>
                 {user.subscription?.stripeCustomerId && (
                   <div className="col-span-2">
-                    <span className="text-[#64748B]">Stripe:</span>{" "}
+                    <span className="text-[#7C8DB0]">Stripe:</span>{" "}
                     <a
                       href={`https://dashboard.stripe.com/customers/${user.subscription.stripeCustomerId}`}
                       target="_blank"
@@ -314,7 +314,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 )}
                 {user.subscription?.currentPeriodStart && (
                   <div>
-                    <span className="text-[#64748B]">Period Start:</span>{" "}
+                    <span className="text-[#7C8DB0]">Period Start:</span>{" "}
                     <span className="text-white">
                       {new Date(user.subscription.currentPeriodStart).toLocaleDateString()}
                     </span>
@@ -322,7 +322,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 )}
                 {user.subscription?.currentPeriodEnd && (
                   <div>
-                    <span className="text-[#64748B]">Period End:</span>{" "}
+                    <span className="text-[#7C8DB0]">Period End:</span>{" "}
                     <span className="text-white">
                       {new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}
                     </span>
@@ -412,7 +412,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   <span className="text-red-400 font-medium">Suspended:</span>{" "}
                   <span className="text-white">{user.suspendedReason}</span>
                   {user.suspendedAt && (
-                    <span className="text-[#64748B] ml-2">
+                    <span className="text-[#7C8DB0] ml-2">
                       ({new Date(user.suspendedAt).toLocaleString()})
                     </span>
                   )}
@@ -479,7 +479,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 Projects ({user.projects.length})
               </h3>
               {user.projects.length === 0 ? (
-                <div className="text-[#64748B] text-sm">No projects</div>
+                <div className="text-[#7C8DB0] text-sm">No projects</div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
                   <table className="w-full text-sm">
@@ -520,7 +520,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 Recent Exports ({user.exports.length})
               </h3>
               {user.exports.length === 0 ? (
-                <div className="text-[#64748B] text-sm">No exports</div>
+                <div className="text-[#7C8DB0] text-sm">No exports</div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
                   <table className="w-full text-sm">
@@ -561,7 +561,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 Activity Log ({user.auditLogs.length})
               </h3>
               {user.auditLogs.length === 0 ? (
-                <div className="text-[#64748B] text-sm">No activity</div>
+                <div className="text-[#7C8DB0] text-sm">No activity</div>
               ) : (
                 <div className="space-y-1 max-h-60 overflow-y-auto">
                   {user.auditLogs.map((log) => (
@@ -569,7 +569,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                       key={log.id}
                       className="flex items-center gap-3 text-xs py-1.5 border-b border-[rgba(79,70,229,0.05)]"
                     >
-                      <span className="text-[#64748B] whitespace-nowrap">
+                      <span className="text-[#7C8DB0] whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString()}
                       </span>
                       <span className="text-[#A78BFA] font-medium">{log.eventType}</span>

@@ -808,8 +808,9 @@ const buildMetadataSchema = z.object({
 });
 
 // Complete BuildJson schema
+// Accept any known version string — migrations will upgrade to CURRENT_VERSION before use
 export const buildJsonSchema = z.object({
-  version: z.enum(["1.0", "1.1", "1.2"]),
+  version: z.string().regex(/^\d+\.\d+$/, "Version must be in X.Y format"),
   nodes: z.array(builderNodeSchema).max(500, "Maximum 500 nodes allowed"),
   edges: z.array(builderEdgeSchema).max(1000, "Maximum 1000 edges allowed"),
   viewport: viewportSchema,
@@ -885,6 +886,9 @@ const MAX_BODY_SIZE = 1 * 1024 * 1024;
 /**
  * Check Content-Length header and reject oversized requests.
  * Returns an error Response if too large, null if OK.
+ * Note: This is an early-reject optimization based on Content-Length header.
+ * Clients using chunked transfer encoding may omit Content-Length, so callers
+ * handling untrusted input should also verify the actual body size after reading.
  */
 export function checkBodySize(request: Request, maxBytes: number = MAX_BODY_SIZE): Response | null {
   const contentLength = request.headers.get("content-length");
@@ -898,6 +902,36 @@ export function checkBodySize(request: Request, maxBytes: number = MAX_BODY_SIZE
     );
   }
   return null;
+}
+
+/**
+ * Safely read and parse JSON body with actual size enforcement.
+ * Use this instead of request.json() when body size must be strictly enforced.
+ * Returns the parsed body or an error Response.
+ */
+export async function safeReadJson(
+  request: Request,
+  maxBytes: number = MAX_BODY_SIZE
+): Promise<{ data: unknown } | { error: Response }> {
+  const rawBody = await request.text();
+  if (rawBody.length > maxBytes) {
+    return {
+      error: Response.json(
+        {
+          error: "Request too large",
+          details: `Maximum request size is ${Math.round(maxBytes / 1024)}KB`,
+        },
+        { status: 413 }
+      ),
+    };
+  }
+  try {
+    return { data: JSON.parse(rawBody) };
+  } catch {
+    return {
+      error: Response.json({ error: "Invalid JSON" }, { status: 400 }),
+    };
+  }
 }
 
 export type ValidationResult<T> =

@@ -136,7 +136,7 @@ function OnboardingEmpty() {
 
       {/* Template section */}
       <div>
-        <h3 className="text-sm font-medium text-[#64748B] uppercase tracking-wide mb-4">
+        <h3 className="text-sm font-medium text-[#7C8DB0] uppercase tracking-wide mb-4">
           Or start from a template
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -173,7 +173,7 @@ function OnboardingEmpty() {
                 </div>
                 <p className="text-xs text-[#94A3B8] line-clamp-2 mb-3">{preset.description}</p>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-xs text-[#64748B]">
+                  <div className="flex items-center gap-3 text-xs text-[#7C8DB0]">
                     <span>{preset.buildJson.nodes.length} blocks</span>
                     <span>{preset.buildJson.edges.length} connections</span>
                   </div>
@@ -331,7 +331,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7C8DB0] pointer-events-none"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -384,7 +384,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
             );
           })}
           {selectedTags.size > 1 && (
-            <span className="text-xs text-[#64748B] px-1 py-1">(matching all)</span>
+            <span className="text-xs text-[#7C8DB0] px-1 py-1">(matching all)</span>
           )}
           {(selectedTags.size > 0 || search.trim()) && (
             <button
@@ -392,7 +392,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                 setSelectedTags(new Set());
                 setSearch("");
               }}
-              className="text-xs text-[#64748B] hover:text-white px-2 py-1 transition-colors"
+              className="text-xs text-[#7C8DB0] hover:text-white px-2 py-1 transition-colors"
             >
               Clear all filters
             </button>
@@ -468,14 +468,14 @@ export function ProjectList({ projects }: { projects: Project[] }) {
 
       {/* Results count */}
       {search.trim() && filtered.length > 0 && (
-        <p className="text-xs text-[#64748B] mb-3">
+        <p className="text-xs text-[#7C8DB0] mb-3">
           {filtered.length} project{filtered.length !== 1 ? "s" : ""} found
         </p>
       )}
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#64748B]">
+        <div className="text-center py-12 text-[#7C8DB0]">
           <p className="text-sm">No projects match &ldquo;{search}&rdquo;</p>
           <button
             onClick={() => setSearch("")}

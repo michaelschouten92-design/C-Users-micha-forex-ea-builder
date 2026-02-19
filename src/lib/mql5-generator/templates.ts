@@ -72,15 +72,18 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
       lines.push(`//--- ${currentGroup}`);
     }
 
+    // Wrap string-type values in double quotes for valid MQL5 syntax
+    const formattedValue = input.type === "string" ? `"${input.value}"` : input.value;
+
     if (input.isOptimizable) {
       // Optimizable: visible in MT5 Input Parameters and included in optimization
-      lines.push(`input ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+      lines.push(`input ${input.type} ${input.name} = ${formattedValue}; // ${input.comment}`);
     } else if (input.alwaysVisible) {
       // Core/filter settings: visible in MT5 Input Parameters but NOT optimizable
-      lines.push(`sinput ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+      lines.push(`sinput ${input.type} ${input.name} = ${formattedValue}; // ${input.comment}`);
     } else {
       // Node parameters with optimize unchecked: constant, hidden from MT5 Input tab
-      lines.push(`const ${input.type} ${input.name} = ${input.value}; // ${input.comment}`);
+      lines.push(`const ${input.type} ${input.name} = ${formattedValue}; // ${input.comment}`);
     }
   }
 
@@ -315,8 +318,8 @@ export function generateOnTick(
             {
                datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
                if(dealTime > gLastLossTime) gLastLossTime = dealTime;
+               break; // Found the most recent loss — no need to keep searching
             }
-            break;
          }
       }
       if(gLastLossTime > 0 && TimeCurrent() - gLastLossTime < ${ctx.cooldownAfterLossMinutes} * 60)

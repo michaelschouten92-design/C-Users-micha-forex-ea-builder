@@ -34,7 +34,7 @@ export default function BuilderError({
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Builder Error</h2>
         <p className="text-[#94A3B8] mb-2">An error occurred in the strategy builder.</p>
-        <p className="text-[#64748B] text-sm mb-6">
+        <p className="text-[#7C8DB0] text-sm mb-6">
           Your work has likely been saved automatically. Try reloading the page.
         </p>
         <div className="flex gap-3 justify-center">

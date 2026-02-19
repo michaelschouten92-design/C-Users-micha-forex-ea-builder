@@ -31,37 +31,37 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // Update instance status and data
-    await prisma.liveEAInstance.update({
-      where: { id: auth.instanceId },
-      data: {
-        status: "ONLINE",
-        lastHeartbeat: new Date(),
-        symbol: data.symbol ?? undefined,
-        timeframe: data.timeframe ?? undefined,
-        broker: data.broker ?? undefined,
-        accountNumber: data.accountNumber ?? undefined,
-        balance: data.balance,
-        equity: data.equity,
-        openTrades: data.openTrades,
-        totalTrades: data.totalTrades,
-        totalProfit: data.totalProfit,
-      },
-    });
-
-    // Insert heartbeat record
-    await prisma.eAHeartbeat.create({
-      data: {
-        instanceId: auth.instanceId,
-        balance: data.balance,
-        equity: data.equity,
-        openTrades: data.openTrades,
-        totalTrades: data.totalTrades,
-        totalProfit: data.totalProfit,
-        drawdown: data.drawdown,
-        spread: data.spread,
-      },
-    });
+    // Atomically update instance + insert heartbeat record
+    await prisma.$transaction([
+      prisma.liveEAInstance.update({
+        where: { id: auth.instanceId },
+        data: {
+          status: "ONLINE",
+          lastHeartbeat: new Date(),
+          symbol: data.symbol ?? undefined,
+          timeframe: data.timeframe ?? undefined,
+          broker: data.broker ?? undefined,
+          accountNumber: data.accountNumber ?? undefined,
+          balance: data.balance,
+          equity: data.equity,
+          openTrades: data.openTrades,
+          totalTrades: data.totalTrades,
+          totalProfit: data.totalProfit,
+        },
+      }),
+      prisma.eAHeartbeat.create({
+        data: {
+          instanceId: auth.instanceId,
+          balance: data.balance,
+          equity: data.equity,
+          openTrades: data.openTrades,
+          totalTrades: data.totalTrades,
+          totalProfit: data.totalProfit,
+          drawdown: data.drawdown,
+          spread: data.spread,
+        },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch {

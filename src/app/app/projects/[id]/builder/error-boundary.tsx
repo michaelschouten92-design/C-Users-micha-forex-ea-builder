@@ -78,7 +78,7 @@ export class CanvasErrorBoundary extends Component<Props, State> {
 
             {this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="text-sm text-[#64748B] cursor-pointer hover:text-[#94A3B8]">
+                <summary className="text-sm text-[#7C8DB0] cursor-pointer hover:text-[#94A3B8]">
                   Error details
                 </summary>
                 <pre className="mt-2 p-3 bg-[#0F0A1A] rounded-lg text-xs text-[#EF4444] overflow-auto max-h-32">

@@ -277,20 +277,20 @@ export function LiveEAsTab() {
                 Top 5 EAs
               </h4>
               {performance.top5.length === 0 ? (
-                <p className="text-[#64748B] text-sm">No data</p>
+                <p className="text-[#7C8DB0] text-sm">No data</p>
               ) : (
                 <div className="space-y-2">
                   {performance.top5.map((ea) => (
                     <div key={ea.id} className="flex justify-between items-center text-sm">
                       <div>
                         <span className="text-white font-medium">{ea.eaName}</span>
-                        <span className="text-[#64748B] ml-2 text-xs">{ea.userEmail}</span>
+                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.userEmail}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-emerald-400 font-mono">
                           ${ea.totalProfit.toFixed(2)}
                         </span>
-                        <span className="text-[#64748B] ml-2 text-xs">{ea.winRate}% WR</span>
+                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.winRate}% WR</span>
                       </div>
                     </div>
                   ))}
@@ -303,18 +303,18 @@ export function LiveEAsTab() {
                 Bottom 5 EAs
               </h4>
               {performance.bottom5.length === 0 ? (
-                <p className="text-[#64748B] text-sm">No data</p>
+                <p className="text-[#7C8DB0] text-sm">No data</p>
               ) : (
                 <div className="space-y-2">
                   {performance.bottom5.map((ea) => (
                     <div key={ea.id} className="flex justify-between items-center text-sm">
                       <div>
                         <span className="text-white font-medium">{ea.eaName}</span>
-                        <span className="text-[#64748B] ml-2 text-xs">{ea.userEmail}</span>
+                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.userEmail}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-red-400 font-mono">${ea.totalProfit.toFixed(2)}</span>
-                        <span className="text-[#64748B] ml-2 text-xs">{ea.winRate}% WR</span>
+                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.winRate}% WR</span>
                       </div>
                     </div>
                   ))}
@@ -365,7 +365,7 @@ export function LiveEAsTab() {
                           {rule.type.replace(/_/g, " ")}
                         </span>
                         <span className="text-[#94A3B8] ml-2">Threshold: {rule.threshold}</span>
-                        <span className="text-[#64748B] ml-2 text-xs">
+                        <span className="text-[#7C8DB0] ml-2 text-xs">
                           ({rule._count.alerts} alerts)
                         </span>
                       </div>
@@ -445,7 +445,7 @@ export function LiveEAsTab() {
                     >
                       <div>
                         <div className="text-white">{alert.message}</div>
-                        <div className="text-xs text-[#64748B] mt-1">
+                        <div className="text-xs text-[#7C8DB0] mt-1">
                           {alert.instance.eaName} ({alert.instance.user.email}) ·{" "}
                           {alert.rule.type.replace(/_/g, " ")} &gt; {alert.rule.threshold} ·{" "}
                           {new Date(alert.createdAt).toLocaleString()}

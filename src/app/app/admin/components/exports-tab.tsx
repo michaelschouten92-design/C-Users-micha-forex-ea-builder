@@ -170,7 +170,7 @@ export function ExportsTab() {
                 </div>
               );
             })()}
-            <div className="flex justify-between mt-2 text-xs text-[#64748B]">
+            <div className="flex justify-between mt-2 text-xs text-[#7C8DB0]">
               <span>{dailyStats[0]?.date || ""}</span>
               <span>{dailyStats[dailyStats.length - 1]?.date || ""}</span>
             </div>
@@ -267,7 +267,7 @@ export function ExportsTab() {
                 ))}
                 {exports.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-[#64748B]">
+                    <td colSpan={5} className="px-4 py-8 text-center text-[#7C8DB0]">
                       No exports found
                     </td>
                   </tr>

@@ -137,7 +137,7 @@ export function ToggleField({
         />
         {label}
       </label>
-      {hint && <p className="text-[10px] text-[#64748B] mt-0.5 ml-5">{hint}</p>}
+      {hint && <p className="text-[10px] text-[#7C8DB0] mt-0.5 ml-5">{hint}</p>}
       {checked && children && <div className="mt-2 ml-5 space-y-2">{children}</div>}
     </div>
   );
@@ -216,7 +216,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         onChange={(v) => onChange({ riskPercent: v } as Partial<T>)}
         tooltip="How much of your account you risk on each trade"
       />
-      <p className="text-[10px] text-[#64748B] -mt-0.5">
+      <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
         The EA calculates your position size so you only lose this % if your stop loss is hit
       </p>
       <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
@@ -336,7 +336,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
           }
           tooltip="Percentage of your position to close at TP1"
         />
-        <p className="text-[10px] text-[#64748B] -mt-0.5">
+        <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
           Remaining {100 - (data.multipleTP?.tp1Percent ?? 50)}% closes at TP2
         </p>
         <NumberField
@@ -364,7 +364,7 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             onChange={(v) => onChange({ tpRMultiple: v } as Partial<T>)}
             tooltip="How many times your stop loss distance you want as profit. 2 means your target profit is 2x your stop loss."
           />
-          <p className="text-[10px] text-[#64748B] -mt-0.5">
+          <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
             Example: if your SL is 50 pips, then {data.tpRMultiple}R ={" "}
             {Math.round(50 * data.tpRMultiple)} pips TP
           </p>
