@@ -76,7 +76,14 @@ const BLOCK_COLORS: Record<NodeCategory, string> = {
   entrystrategy: "text-[#10B981]",
 };
 
-const CATEGORIES: NodeCategory[] = ["entrystrategy", "timing", "trademanagement", "indicator"];
+const CATEGORIES: NodeCategory[] = [
+  "entrystrategy",
+  "indicator",
+  "priceaction",
+  "timing",
+  "trading",
+  "trademanagement",
+];
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, template: NodeTemplate) => void;
