@@ -16,6 +16,24 @@ const webhookUpdateSchema = z.object({
       return val.trim();
     }),
   leaderboardOptIn: z.boolean().optional(),
+  telegramBotToken: z
+    .string()
+    .max(256, "Bot token too long")
+    .nullable()
+    .optional()
+    .transform((val) => {
+      if (!val || val.trim() === "") return null;
+      return val.trim();
+    }),
+  telegramChatId: z
+    .string()
+    .max(64, "Chat ID too long")
+    .nullable()
+    .optional()
+    .transform((val) => {
+      if (!val || val.trim() === "") return null;
+      return val.trim();
+    }),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -26,12 +44,13 @@ export async function GET(): Promise<NextResponse> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { webhookUrl: true, leaderboardOptIn: true },
+    select: { webhookUrl: true, leaderboardOptIn: true, telegramChatId: true },
   });
 
   return NextResponse.json({
     webhookUrl: user?.webhookUrl ?? null,
     leaderboardOptIn: user?.leaderboardOptIn ?? false,
+    telegramChatId: user?.telegramChatId ?? null,
   });
 }
 
@@ -60,24 +79,36 @@ async function handleUpdate(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const updateData: { webhookUrl?: string | null; leaderboardOptIn?: boolean } = {};
+    const updateData: {
+      webhookUrl?: string | null;
+      leaderboardOptIn?: boolean;
+      telegramBotToken?: string | null;
+      telegramChatId?: string | null;
+    } = {};
     if (parsed.data.webhookUrl !== undefined) {
       updateData.webhookUrl = parsed.data.webhookUrl ?? null;
     }
     if (parsed.data.leaderboardOptIn !== undefined) {
       updateData.leaderboardOptIn = parsed.data.leaderboardOptIn;
     }
+    if (parsed.data.telegramBotToken !== undefined) {
+      updateData.telegramBotToken = parsed.data.telegramBotToken ?? null;
+    }
+    if (parsed.data.telegramChatId !== undefined) {
+      updateData.telegramChatId = parsed.data.telegramChatId ?? null;
+    }
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { webhookUrl: true, leaderboardOptIn: true },
+      select: { webhookUrl: true, leaderboardOptIn: true, telegramChatId: true },
     });
 
     return NextResponse.json({
       success: true,
       webhookUrl: updated.webhookUrl,
       leaderboardOptIn: updated.leaderboardOptIn,
+      telegramChatId: updated.telegramChatId,
     });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });

@@ -63,7 +63,7 @@ const templates = [
     type: "Mean Reversion",
     description:
       "Buy oversold, sell overbought. Set the RSI period, overbought/oversold levels, risk %, and ATR stop loss. Optional session filter and trend confirmation.",
-    href: "/templates/rsi-ea-template",
+    href: "/templates/rsi-reversal-ea",
     color: "#22D3EE",
     basicFields: "RSI Period, OB Level, OS Level, Risk %, SL (ATR)",
     advanced: "Session filter, Trend filter",
@@ -73,7 +73,7 @@ const templates = [
     type: "Breakout",
     description:
       "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter and cancel-opposite-on-fill toggle.",
-    href: "/templates/breakout-ea-template",
+    href: "/templates/range-breakout-ea",
     color: "#F59E0B",
     basicFields: "Range Period, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "London session filter, Cancel opposite order",
@@ -83,6 +83,7 @@ const templates = [
     type: "Trend Following",
     description:
       "Wait for a trend (EMA direction) then enter on an RSI pullback. Set the trend EMA, RSI dip level, risk %, and ATR stop loss.",
+    href: "/templates/trend-pullback-ea",
     color: "#10B981",
     basicFields: "Trend EMA, RSI Period, Dip Level, Risk %, SL (ATR)",
     advanced: "London session filter, EMA buffer",
@@ -92,6 +93,7 @@ const templates = [
     type: "Momentum",
     description:
       "Enter on MACD signal line crossover. Set the MACD parameters, risk %, and ATR stop loss. Optional higher-timeframe trend filter.",
+    href: "/templates/macd-crossover-ea",
     color: "#FB923C",
     basicFields: "Fast/Slow/Signal, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "HTF trend filter",
@@ -101,6 +103,7 @@ const templates = [
     type: "Divergence",
     description:
       "Detect RSI or MACD divergence with price action. Enter when momentum diverges from price — a classic reversal signal. Set lookback, threshold, risk %, and ATR stop loss.",
+    href: "/templates/rsi-macd-divergence-ea",
     color: "#EF4444",
     basicFields: "Indicator, Lookback, Threshold, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Trend filter, Min divergence bars",

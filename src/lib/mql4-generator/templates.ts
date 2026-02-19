@@ -400,7 +400,7 @@ interface RiskManagementCode {
  * MQL4 uses OrdersTotal()/OrderSelect() and iMA(sym,...) instead of handle-based indicators.
  */
 function generateOnTickMultiPair(
-  _ctx: GeneratorContext,
+  ctx: GeneratorContext,
   tickCode: string[],
   maxIndicatorPeriod: number,
   riskMgmt: RiskManagementCode
@@ -457,7 +457,14 @@ ${mpDrawdown}${mpEquity}${mpDailyPnl}${mpCooldown}${riskMgmt.minBarsCode}
 
       //--- Total position limit
       if(CountAllOrders() >= InpMaxTotalPositions) continue;
-
+${
+  ctx.correlationFilter
+    ? `
+      //--- Correlation filter: skip if correlated with open positions
+      if(IsCorrelatedWithOpenPositions(tradeSym)) continue;
+`
+    : ""
+}
 ${tickCode.map((line) => "      " + line).join("\n")}
    }
 }

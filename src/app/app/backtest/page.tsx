@@ -6,6 +6,7 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { BacktestUpload } from "./backtest-upload";
 import { BacktestForm } from "./backtest-form";
 import { BacktestTabs } from "./backtest-tabs";
+import { Optimization } from "./optimization";
 
 export default async function BacktestPage() {
   const session = await auth();
@@ -89,6 +90,7 @@ export default async function BacktestPage() {
 
         <BacktestTabs
           runBacktestTab={<BacktestForm projects={projects} />}
+          optimizeTab={<Optimization projects={projects} />}
           importReportTab={
             <>
               <BacktestUpload projects={projects} />

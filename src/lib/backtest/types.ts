@@ -86,6 +86,8 @@ export interface BacktestTradeResult {
   lots: number;
   profit: number;
   closeReason: string;
+  openBarIndex: number;
+  closeBarIndex: number;
 }
 
 export interface EquityCurvePoint {
@@ -94,6 +96,17 @@ export interface EquityCurvePoint {
   balance: number;
   equity: number;
   drawdown: number;
+}
+
+export interface MonthlyPnLEntry {
+  month: string;
+  pnl: number;
+  trades: number;
+}
+
+export interface UnderwaterPoint {
+  time: number;
+  drawdownPercent: number;
 }
 
 export interface BacktestEngineResult {
@@ -116,8 +129,22 @@ export interface BacktestEngineResult {
   maxConsecutiveLosses: number;
   // Performance
   sharpeRatio: number;
+  sortinoRatio: number;
+  calmarRatio: number;
+  ulcerIndex: number;
   recoveryFactor: number;
   expectedPayoff: number;
+  // Trade duration
+  averageTradeDuration: number; // in bars
+  // Long/Short breakdown
+  longTrades: number;
+  shortTrades: number;
+  longWinRate: number;
+  shortWinRate: number;
+  // Monthly P&L breakdown
+  monthlyPnL: MonthlyPnLEntry[];
+  // Underwater (drawdown over time)
+  underwaterCurve: UnderwaterPoint[];
   // Balance
   initialDeposit: number;
   finalBalance: number;

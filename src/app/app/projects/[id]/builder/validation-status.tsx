@@ -1,20 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import type { ValidationResult } from "./strategy-validation";
+import type { ValidationResult, ValidationIssue } from "./strategy-validation";
 
 interface ValidationStatusProps {
   validation: ValidationResult;
+  onFocusNode?: (nodeId: string) => void;
 }
 
-export function ValidationStatus({ validation }: ValidationStatusProps) {
+export function ValidationStatus({ validation, onFocusNode }: ValidationStatusProps) {
   const [showDetails, setShowDetails] = useState(false);
 
   const errorCount = validation.issues.filter((i) => i.type === "error").length;
   const warningCount = validation.issues.filter((i) => i.type === "warning").length;
 
+  function handleIssueClick(issue: ValidationIssue): void {
+    if (issue.nodeId && onFocusNode) {
+      onFocusNode(issue.nodeId);
+    }
+  }
+
   // Determine status color and icon
-  const getStatusDisplay = () => {
+  function getStatusDisplay(): {
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    icon: React.ReactNode;
+    label: string;
+  } {
     if (validation.isValid) {
       return {
         color: "text-[#10B981]",
@@ -32,7 +45,8 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
         ),
         label: "Strategy Complete",
       };
-    } else if (errorCount > 0) {
+    }
+    if (errorCount > 0) {
       return {
         color: "text-[#EF4444]",
         bgColor: "bg-[rgba(239,68,68,0.1)]",
@@ -49,25 +63,24 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
         ),
         label: `${errorCount} error${errorCount > 1 ? "s" : ""}`,
       };
-    } else {
-      return {
-        color: "text-[#F59E0B]",
-        bgColor: "bg-[rgba(245,158,11,0.1)]",
-        borderColor: "border-[rgba(245,158,11,0.3)]",
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        ),
-        label: `${warningCount} warning${warningCount > 1 ? "s" : ""}`,
-      };
     }
-  };
+    return {
+      color: "text-[#F59E0B]",
+      bgColor: "bg-[rgba(245,158,11,0.1)]",
+      borderColor: "border-[rgba(245,158,11,0.3)]",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      ),
+      label: `${warningCount} warning${warningCount > 1 ? "s" : ""}`,
+    };
+  }
 
   const status = getStatusDisplay();
 
@@ -105,52 +118,73 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
       {showDetails && validation.issues.length > 0 && (
         <div className="absolute top-full right-0 mt-2 w-80 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] overflow-hidden">
           <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
-            <h4 className="text-sm font-semibold text-white">Minimum Requirements</h4>
+            <h4 className="text-sm font-semibold text-white">Strategy Validation</h4>
+            <p className="text-xs text-[#7C8DB0] mt-0.5">
+              {errorCount > 0
+                ? "Fix errors before exporting. Click an issue to select the node."
+                : "Warnings are optional. Click to focus the node."}
+            </p>
           </div>
           <div className="p-2 max-h-64 overflow-y-auto">
-            {validation.issues.map((issue, idx) => (
-              <div
-                key={idx}
-                className={`flex items-start gap-2 p-2 rounded-lg mb-1 last:mb-0 ${
-                  issue.type === "error" ? "bg-[rgba(239,68,68,0.1)]" : "bg-[rgba(245,158,11,0.1)]"
-                }`}
-              >
-                {issue.type === "error" ? (
-                  <svg
-                    className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01"
-                    />
-                  </svg>
-                )}
-                <span
-                  className={`text-xs ${issue.type === "error" ? "text-[#FCA5A5]" : "text-[#FCD34D]"}`}
+            {validation.issues.map((issue, idx) => {
+              const isError = issue.type === "error";
+              const isClickable = !!issue.nodeId && !!onFocusNode;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleIssueClick(issue)}
+                  disabled={!isClickable}
+                  className={`w-full text-left flex items-start gap-2 p-2 rounded-lg mb-1 last:mb-0 transition-colors ${
+                    isError
+                      ? "bg-[rgba(239,68,68,0.1)] hover:bg-[rgba(239,68,68,0.18)]"
+                      : "bg-[rgba(245,158,11,0.1)] hover:bg-[rgba(245,158,11,0.18)]"
+                  } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
                 >
-                  {issue.message}
-                </span>
-              </div>
-            ))}
+                  {isError ? (
+                    <svg
+                      className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01"
+                      />
+                    </svg>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className={`text-xs leading-relaxed ${isError ? "text-[#FCA5A5]" : "text-[#FCD34D]"}`}
+                    >
+                      {issue.message}
+                    </span>
+                    {isClickable && (
+                      <span className="block text-[9px] text-[#7C8DB0] mt-0.5">
+                        Click to select node
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {/* Summary checklist */}

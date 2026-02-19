@@ -138,6 +138,30 @@ export function transformCodeForMultiPair(
     }
   );
 
+  // 1b. Add correlation filter inputs when enabled
+  if (settings.correlationFilter) {
+    code.inputs.push(
+      {
+        name: "InpCorrelationThreshold",
+        type: "double",
+        value: settings.correlationThreshold,
+        comment: "Correlation Threshold (0.0-1.0)",
+        isOptimizable: false,
+        alwaysVisible: true,
+        group: "Multi-Pair Settings",
+      },
+      {
+        name: "InpCorrelationPeriod",
+        type: "int",
+        value: settings.correlationPeriod,
+        comment: "Correlation Lookback Period (bars)",
+        isOptimizable: false,
+        alwaysVisible: true,
+        group: "Multi-Pair Settings",
+      }
+    );
+  }
+
   // 2. Add multi-pair globals at the start
   // MQL4 has no indicator handles, so no handle arrays needed
   code.globalVariables.unshift("string g_symbols[];", "int g_symbolCount = 0;");
@@ -149,15 +173,16 @@ export function transformCodeForMultiPair(
   transformOnTick(code);
 
   // 5. Add multi-pair helper functions
-  code.helperFunctions.push(generateMultiPairHelpers());
+  code.helperFunctions.push(generateMultiPairHelpers(settings.correlationFilter));
 }
 
 /**
- * Generate multi-pair utility functions (ParseSymbolList, CountAllOrders).
+ * Generate multi-pair utility functions (ParseSymbolList, CountAllOrders,
+ * and optionally CalculateCorrelation + IsCorrelatedWithOpenPositions).
  * MQL4 uses OrdersTotal()/OrderSelect() instead of PositionsTotal()/PositionGetTicket().
  */
-function generateMultiPairHelpers(): string {
-  return `//+------------------------------------------------------------------+
+function generateMultiPairHelpers(includeCorrelation: boolean): string {
+  let helpers = `//+------------------------------------------------------------------+
 //| Parse comma-separated symbol list                                 |
 //+------------------------------------------------------------------+
 void ParseSymbolList(string csv, string &result[], int &count)
@@ -196,4 +221,90 @@ int CountAllOrders()
    }
    return count;
 }`;
+
+  if (includeCorrelation) {
+    helpers += `
+
+//+------------------------------------------------------------------+
+//| Calculate Pearson correlation between two symbols (MQL4)           |
+//| Uses close prices over the specified period.                       |
+//| Returns value between -1.0 and 1.0, or 0.0 on error.             |
+//+------------------------------------------------------------------+
+double CalculateCorrelation(string sym1, string sym2, int period)
+{
+   //--- Collect close prices
+   double close1[];
+   double close2[];
+   ArrayResize(close1, period);
+   ArrayResize(close2, period);
+
+   for(int i = 0; i < period; i++)
+   {
+      close1[i] = iClose(sym1, PERIOD_CURRENT, i);
+      close2[i] = iClose(sym2, PERIOD_CURRENT, i);
+   }
+
+   if(close1[period - 1] == 0 || close2[period - 1] == 0)
+   {
+      Print("CalculateCorrelation: insufficient data for ", sym1, "/", sym2);
+      return 0.0;
+   }
+
+   //--- Calculate means
+   double mean1 = 0, mean2 = 0;
+   for(int i = 0; i < period; i++)
+   {
+      mean1 += close1[i];
+      mean2 += close2[i];
+   }
+   mean1 /= period;
+   mean2 /= period;
+
+   //--- Calculate Pearson correlation
+   double sumXY = 0, sumX2 = 0, sumY2 = 0;
+   for(int i = 0; i < period; i++)
+   {
+      double dx = close1[i] - mean1;
+      double dy = close2[i] - mean2;
+      sumXY += dx * dy;
+      sumX2 += dx * dx;
+      sumY2 += dy * dy;
+   }
+
+   double denominator = MathSqrt(sumX2 * sumY2);
+   if(denominator < 1e-10)
+      return 0.0;
+
+   return sumXY / denominator;
+}
+
+//+------------------------------------------------------------------+
+//| Check if a symbol is correlated with any open order                |
+//| Returns true if correlation with any open-order symbol             |
+//| exceeds the threshold (trade should be skipped).                   |
+//+------------------------------------------------------------------+
+bool IsCorrelatedWithOpenPositions(string newSym)
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() != InpMagicNumber) continue;
+      if(OrderType() > OP_SELL) continue;
+
+      string openSym = OrderSymbol();
+      if(openSym == newSym) continue;
+
+      double corr = CalculateCorrelation(newSym, openSym, InpCorrelationPeriod);
+      if(MathAbs(corr) >= InpCorrelationThreshold)
+      {
+         Print("Correlation filter: ", newSym, " correlated with open order on ", openSym,
+               " (r=", DoubleToString(corr, 3), ", threshold=", DoubleToString(InpCorrelationThreshold, 2), ")");
+         return true;
+      }
+   }
+   return false;
+}`;
+  }
+
+  return helpers;
 }

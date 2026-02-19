@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { WebhookSetupGuide } from "@/components/builder/webhook-setup-guide";
 import { LiveDashboardClient } from "./live-dashboard-client";
+import { PortfolioHeatmap } from "./portfolio-heatmap";
 
 export default async function LiveEADashboardPage() {
   const session = await auth();
@@ -52,6 +53,7 @@ export default async function LiveEADashboardPage() {
     broker: ea.broker,
     accountNumber: ea.accountNumber,
     status: ea.status,
+    paused: ea.paused,
     lastHeartbeat: ea.lastHeartbeat?.toISOString() ?? null,
     lastError: ea.lastError,
     balance: ea.balance,
@@ -148,6 +150,21 @@ export default async function LiveEADashboardPage() {
         </div>
 
         <LiveDashboardClient initialData={serializedInstances} />
+
+        {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
+        {(() => {
+          const symbols = [
+            ...new Set(
+              eaInstances.map((ea) => ea.symbol).filter((s): s is string => s !== null && s !== "")
+            ),
+          ];
+          if (symbols.length < 2) return null;
+          return (
+            <div className="mt-6">
+              <PortfolioHeatmap symbols={symbols} />
+            </div>
+          );
+        })()}
       </main>
     </div>
   );

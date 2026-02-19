@@ -24,9 +24,16 @@ export function calculateLotSize(
   if (!sizing) return backtestConfig.minLot;
 
   if (sizing.method === "RISK_PERCENT") {
-    const riskAmount = balance * (sizing.riskPercent / 100);
+    let riskAmount = balance * (sizing.riskPercent / 100);
     const pointValue = backtestConfig.pointValue;
     if (slDistancePoints <= 0 || pointValue <= 0) return sizing.fixedLot ?? backtestConfig.minLot;
+
+    // Estimate commission cost and subtract from risk budget (round-trip: x2)
+    // Use a preliminary lot estimate to approximate commission, then adjust
+    const prelimLots = riskAmount / (slDistancePoints * pointValue);
+    const estimatedCommission = backtestConfig.commission * prelimLots * 2;
+    riskAmount = Math.max(riskAmount - estimatedCommission, 0);
+    if (riskAmount <= 0) return backtestConfig.minLot;
 
     let lots = riskAmount / (slDistancePoints * pointValue);
     lots = Math.floor(lots / backtestConfig.lotStep) * backtestConfig.lotStep;
@@ -138,11 +145,17 @@ export function openPosition(
   const point = Math.pow(10, -backtestConfig.digits);
   const spreadCost = backtestConfig.spread * point;
 
-  // Entry price with spread
+  // Simulate random slippage: 0 to spread/2 points in unfavorable direction
+  const maxSlippagePoints = Math.floor(backtestConfig.spread / 2);
+  const slippagePoints =
+    maxSlippagePoints > 0 ? Math.floor(Math.random() * (maxSlippagePoints + 1)) : 0;
+  const slippageCost = slippagePoints * point;
+
+  // Entry price with spread + slippage (slippage always unfavorable)
   const entryPrice =
     direction === "BUY"
-      ? bar.close + spreadCost / 2 // Buy at ask (close + half spread)
-      : bar.close - spreadCost / 2; // Sell at bid (close - half spread)
+      ? bar.close + spreadCost / 2 + slippageCost // Buy at ask + slippage
+      : bar.close - spreadCost / 2 - slippageCost; // Sell at bid - slippage
 
   const sl = calculateStopLoss(direction, entryPrice, config, bar, atrValue, backtestConfig);
   const slDistPoints = sl > 0 ? Math.abs(entryPrice - sl) / point : 50;

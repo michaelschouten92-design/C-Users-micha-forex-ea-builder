@@ -234,7 +234,11 @@ export function NodeToolbar({
                       template.type === "macd-crossover-entry";
                     const isIntermediate =
                       template.type === "trend-pullback-entry" ||
-                      template.type === "divergence-entry";
+                      template.type === "divergence-entry" ||
+                      template.type === "bollinger-band-entry" ||
+                      template.type === "pivot-point-entry" ||
+                      template.type === "adx-trend-entry";
+                    const isAdvanced = template.type === "fibonacci-entry";
                     return (
                       <div
                         key={`${template.type}-${index}`}
@@ -256,6 +260,11 @@ export function NodeToolbar({
                           {isIntermediate && (
                             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(245,158,11,0.15)] text-[#F59E0B]">
                               Intermediate
+                            </span>
+                          )}
+                          {isAdvanced && (
+                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#EF4444]">
+                              Advanced
                             </span>
                           )}
                         </div>

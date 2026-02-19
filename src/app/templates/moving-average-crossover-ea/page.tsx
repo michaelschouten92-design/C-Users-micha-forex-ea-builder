@@ -284,17 +284,17 @@ export default function MovingAverageCrossoverTemplatePage() {
             </Link>
             <span className="text-[#64748B]">·</span>
             <Link
-              href="/templates/rsi-ea-template"
+              href="/templates/rsi-reversal-ea"
               className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              RSI EA Template
+              RSI Reversal EA
             </Link>
             <span className="text-[#64748B]">·</span>
             <Link
-              href="/templates/breakout-ea-template"
+              href="/templates/range-breakout-ea"
               className="text-[#64748B] hover:text-[#94A3B8] transition-colors"
             >
-              Breakout EA Template
+              Range Breakout EA
             </Link>
             <span className="text-[#64748B]">·</span>
             <Link

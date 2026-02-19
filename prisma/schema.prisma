@@ -63,8 +63,10 @@ model User {
   discordRefreshToken String?   // Encrypted with AES-256-GCM
   referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
-  lastLoginAt     DateTime?
-  webhookUrl      String?   // User-defined webhook URL for trade notifications
+  lastLoginAt      DateTime?
+  webhookUrl       String?  // User-defined webhook URL for trade notifications
+  telegramBotToken String?  // Encrypted Telegram Bot API token
+  telegramChatId   String?  // Telegram chat ID for alerts
   leaderboardOptIn Boolean  @default(false)
   adminNotes      String?   @db.Text
   suspended       Boolean   @default(false)
@@ -80,8 +82,10 @@ model User {
   templates      UserTemplate[]
   liveEAs        LiveEAInstance[]
   alertRules     EAAlertRule[]
+  alertConfigs   EAAlertConfig[]
   backtestResults BacktestResult[]
   templateRatings TemplateRating[]
+  tradeJournals  TradeJournal[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -127,6 +131,7 @@ model Project {
   tags            ProjectTag[]
   backtestResults BacktestResult[]
   shares          ProjectShare[]
+  tradeJournals   TradeJournal[]
 
   @@index([userId, deletedAt, updatedAt])
   @@index([deletedAt])
@@ -302,6 +307,7 @@ model LiveEAInstance {
   accountNumber String?
   status        EAStatus  @default(OFFLINE)
   mode          EAMode    @default(LIVE)
+  paused        Boolean   @default(false)
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
@@ -312,12 +318,14 @@ model LiveEAInstance {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  exportJob     ExportJob @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  heartbeats    EAHeartbeat[]
-  trades        EATrade[]
-  errors        EAError[]
-  alerts        EAAlert[]
+  exportJob      ExportJob        @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  heartbeats     EAHeartbeat[]
+  trades         EATrade[]
+  errors         EAError[]
+  alerts         EAAlert[]
+  alertConfigs   EAAlertConfig[]
+  tradeJournals  TradeJournal[]
 
   @@index([userId, status])
   @@index([status, lastHeartbeat])
@@ -421,6 +429,31 @@ model RevenueSnapshot {
 }
 
 // ============================================
+// EA ALERT CONFIGURATIONS (user-facing)
+// ============================================
+
+model EAAlertConfig {
+  id            String          @id @default(cuid())
+  userId        String
+  instanceId    String?         // null = applies to all instances
+  alertType     String          // "DRAWDOWN" | "OFFLINE" | "DAILY_LOSS" | "NEW_TRADE" | "ERROR"
+  threshold     Float?          // e.g., 5.0 for 5% drawdown
+  channel       String          // "EMAIL" | "WEBHOOK"
+  webhookUrl    String?         // for webhook channel
+  enabled       Boolean         @default(true)
+  lastTriggered DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instance LiveEAInstance?  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+  @@index([alertType, enabled])
+  @@index([instanceId])
+}
+
+// ============================================
 // EA ALERT RULES & ALERTS
 // ============================================
 
@@ -506,5 +539,36 @@ model ProjectShare {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([shareToken])
+  @@index([projectId])
+}
+
+// ============================================
+// TRADE JOURNAL
+// ============================================
+
+model TradeJournal {
+  id             String          @id @default(cuid())
+  userId         String
+  projectId      String
+  // Backtest reference
+  backtestProfit   Float?
+  backtestWinRate  Float?
+  backtestSharpe   Float?
+  // Live reference
+  instanceId     String?
+  liveProfit     Float?
+  liveWinRate    Float?
+  liveSharpe     Float?
+  // Notes
+  notes          String?         @db.Text
+  status         String          @default("BACKTESTING") // BACKTESTING, DEMO, LIVE, STOPPED
+  startedAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  instance LiveEAInstance?  @relation(fields: [instanceId], references: [id])
+
+  @@index([userId, startedAt])
   @@index([projectId])
 }

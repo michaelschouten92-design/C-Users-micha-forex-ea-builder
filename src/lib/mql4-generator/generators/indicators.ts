@@ -13,6 +13,7 @@ import type {
   StochasticNodeData,
   CCINodeData,
   IchimokuNodeData,
+  CustomIndicatorNodeData,
   OBVNodeData,
   VWAPNodeData,
   BBSqueezeNodeData,
@@ -982,6 +983,85 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           code.maxIndicatorPeriod,
           Math.max(Number(bbs.bbPeriod) || 20, Number(bbs.kcPeriod) || 20)
         );
+        break;
+      }
+
+      case "custom-indicator": {
+        const ci = data as CustomIndicatorNodeData;
+        const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
+        const group = `Custom Indicator ${index + 1}`;
+        const safeName = (ci.indicatorName || "CustomIndicator").replace(/[^a-zA-Z0-9_]/g, "_");
+        const bufferIdx = ci.bufferIndex ?? 0;
+
+        // Build iCustom parameter list with type-aware casting
+        const paramValues = (ci.params ?? []).map((p) => {
+          const paramType = p.type ?? undefined;
+          if (paramType === "int") {
+            const intVal = parseInt(p.value, 10);
+            return isNaN(intVal) ? "0" : `(int)${intVal}`;
+          }
+          if (paramType === "double") {
+            const dblVal = parseFloat(p.value);
+            return isNaN(dblVal) ? "0.0" : `(double)${dblVal}`;
+          }
+          if (paramType === "bool") {
+            const lower = p.value.toLowerCase();
+            return lower === "true" || lower === "1" ? "true" : "false";
+          }
+          if (paramType === "string") {
+            return `"${p.value.replace(/"/g, '\\"')}"`;
+          }
+          if (paramType === "color") {
+            return p.value.trim() || "clrNONE";
+          }
+          // No type hint: auto-detect
+          const num = Number(p.value);
+          if (!isNaN(num) && p.value.trim() !== "") return String(num);
+          return `"${p.value.replace(/"/g, '\\"')}"`;
+        });
+        const paramList = paramValues.length > 0 ? ", " + paramValues.join(", ") : "";
+
+        code.inputs.push(
+          createInput(
+            node,
+            "bufferIndex",
+            `InpCustom${index}Buffer`,
+            "int",
+            bufferIdx,
+            `${safeName} Buffer Index`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpCustom${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ci.timeframe),
+            `${safeName} Timeframe`,
+            group
+          )
+        );
+
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
+
+        // MQL4: iCustom(symbol, timeframe, name, ...params, buffer_index, shift)
+        code.onTick.push(`//--- Custom Indicator ${index + 1}: ${safeName}`);
+        code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
+        code.onTick.push(
+          `   ${varPrefix}Buffer[_i${index}] = iCustom(Symbol(), (int)InpCustom${index}Timeframe, "${safeName}"${paramList}, InpCustom${index}Buffer, _i${index});`
+        );
+
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
+        break;
+      }
+
+      case "condition": {
+        // Condition nodes don't create indicator calls themselves.
+        // They reference a connected indicator's buffer value and compare against a threshold.
+        // The entry logic generator handles the condition comparison.
         break;
       }
     }

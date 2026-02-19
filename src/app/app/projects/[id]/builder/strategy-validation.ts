@@ -6,6 +6,10 @@ export interface ValidationIssue {
   message: string;
   nodeType?: string;
   nodeId?: string;
+  /** Human-readable label of the node with the issue */
+  nodeLabel?: string;
+  /** Which field on the node is invalid */
+  field?: string;
 }
 
 export interface ValidationResult {
@@ -55,8 +59,9 @@ export function validateStrategy(
   for (const n of nodes) {
     const d = n.data as Record<string, unknown>;
     if (!("timingType" in d)) continue;
+    const label = (d.label as string) ?? n.type ?? "Timing";
 
-    // Custom trading session: start ≠ end
+    // Custom trading session: start != end
     if (
       d.timingType === "trading-session" &&
       d.session === "CUSTOM" &&
@@ -69,9 +74,11 @@ export function validateStrategy(
     ) {
       issues.push({
         type: "warning",
-        message: "Start and end time are the same — session window is empty",
+        message: `"${label}": Start and end time are identical -- session window is empty. Set different start/end hours.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "customStartHour",
       });
     }
   }
@@ -80,6 +87,7 @@ export function validateStrategy(
   for (const n of nodes) {
     const d = n.data as Record<string, unknown>;
     if (!("entryType" in d)) continue;
+    const label = (d.label as string) ?? n.type ?? "Entry Strategy";
 
     // RSI levels: oversold should be less than overbought
     if (
@@ -91,9 +99,11 @@ export function validateStrategy(
     ) {
       issues.push({
         type: "warning",
-        message: "RSI oversold level should be lower than overbought level",
+        message: `"${label}": Oversold (${d.oversoldLevel}) must be lower than Overbought (${d.overboughtLevel})`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "oversoldLevel",
       });
     }
 
@@ -101,9 +111,11 @@ export function validateStrategy(
     if ("tpRMultiple" in d && typeof d.tpRMultiple === "number" && d.tpRMultiple < 1) {
       issues.push({
         type: "warning",
-        message: `Take profit (${d.tpRMultiple}R) is less than 1:1 — you risk more than you win per trade`,
+        message: `"${label}": Take profit (${d.tpRMultiple}R) is below 1:1 -- you risk more than you win per trade. Set to 1.0 or higher.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "tpRMultiple",
       });
     }
 
@@ -111,9 +123,11 @@ export function validateStrategy(
     if ("slPips" in d && typeof d.slPips === "number" && d.slPips > 500) {
       issues.push({
         type: "warning",
-        message: `Stop loss of ${d.slPips} pips is very large`,
+        message: `"${label}": Stop loss of ${d.slPips} pips is very large. Typical range is 10-200 pips.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "slPips",
       });
     }
 
@@ -121,9 +135,11 @@ export function validateStrategy(
     if ("tpRMultiple" in d && typeof d.tpRMultiple === "number" && d.tpRMultiple > 10) {
       issues.push({
         type: "warning",
-        message: `Take profit of ${d.tpRMultiple}R is unusually high`,
+        message: `"${label}": Take profit of ${d.tpRMultiple}R is unusually high. Most strategies use 1-5R.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "tpRMultiple",
       });
     }
 
@@ -131,9 +147,11 @@ export function validateStrategy(
     if ("riskPercent" in d && typeof d.riskPercent === "number" && d.riskPercent > 5) {
       issues.push({
         type: "warning",
-        message: `Risk of ${d.riskPercent}% per trade is aggressive`,
+        message: `"${label}": Risk of ${d.riskPercent}% per trade is aggressive. Recommended: 1-2%.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "riskPercent",
       });
     }
 
@@ -147,9 +165,11 @@ export function validateStrategy(
     ) {
       issues.push({
         type: "warning",
-        message: "Fast EMA period should be less than slow EMA period",
+        message: `"${label}": Fast period (${d.fastPeriod}) should be less than Slow period (${d.slowPeriod})`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "fastPeriod",
       });
     }
 
@@ -159,7 +179,9 @@ export function validateStrategy(
         type: "error",
         nodeId: n.id,
         nodeType: n.type,
-        message: "Fast EMA period must be less than Slow EMA period",
+        nodeLabel: label,
+        field: "fastEma",
+        message: `"${label}": Fast EMA (${d.fastEma}) must be less than Slow EMA (${d.slowEma}). Example: Fast=9, Slow=21.`,
       });
     }
     if (
@@ -171,7 +193,9 @@ export function validateStrategy(
         type: "error",
         nodeId: n.id,
         nodeType: n.type,
-        message: "MACD fast period must be less than MACD slow period",
+        nodeLabel: label,
+        field: "macdFast",
+        message: `"${label}": MACD Fast (${d.macdFast}) must be less than MACD Slow (${d.macdSlow}). Example: Fast=12, Slow=26.`,
       });
     }
 
@@ -179,9 +203,11 @@ export function validateStrategy(
     if ("lotSize" in d && typeof d.lotSize === "number" && d.lotSize > 10) {
       issues.push({
         type: "warning",
-        message: `Lot size of ${d.lotSize} is very large`,
+        message: `"${label}": Lot size of ${d.lotSize} is very large. Consider using risk-based sizing instead.`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "lotSize",
       });
     }
 
@@ -195,9 +221,11 @@ export function validateStrategy(
     ) {
       issues.push({
         type: "error",
-        message: "Stop loss must be greater than 0 pips",
+        message: `"${label}": Stop loss pips must be greater than 0. Set a positive value (e.g. 50).`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "slPips",
       });
     }
 
@@ -211,9 +239,11 @@ export function validateStrategy(
     ) {
       issues.push({
         type: "error",
-        message: "Take profit must be greater than 0 pips",
+        message: `"${label}": Take profit pips must be greater than 0. Set a positive value (e.g. 100).`,
         nodeType: n.type,
         nodeId: n.id,
+        nodeLabel: label,
+        field: "tpPips",
       });
     }
 
@@ -225,9 +255,11 @@ export function validateStrategy(
           .replace(/^./, (s: string) => s.toUpperCase());
         issues.push({
           type: "error",
-          message: `${fieldLabel} must be greater than 0`,
+          message: `"${label}": ${fieldLabel} must be greater than 0`,
           nodeType: n.type,
           nodeId: n.id,
+          nodeLabel: label,
+          field: periodField,
         });
       }
     }

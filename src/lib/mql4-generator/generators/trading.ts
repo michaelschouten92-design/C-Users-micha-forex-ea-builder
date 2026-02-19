@@ -6,6 +6,7 @@ import type {
   StopLossNodeData,
   TakeProfitNodeData,
   TimeExitNodeData,
+  GridPyramidNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe, getTimeframeEnum } from "../types";
@@ -1431,4 +1432,175 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
   code.onTick.push("      }");
   code.onTick.push("   }");
   code.onTick.push("}");
+}
+
+export function generateGridPyramidCode(
+  node: BuilderNode,
+  code: GeneratedCode,
+  ctx: GeneratorContext
+): void {
+  const data = node.data as GridPyramidNodeData;
+  const group = "Grid/Pyramid";
+  const comment = sanitizeMQL4String(ctx.comment);
+
+  code.inputs.push(
+    createInput(
+      node,
+      "gridSpacing",
+      "InpGridSpacing",
+      "double",
+      data.gridSpacing,
+      "Grid Spacing (pips)",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "maxGridLevels",
+      "InpMaxGridLevels",
+      "int",
+      data.maxGridLevels,
+      "Max Grid Levels",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "lotMultiplier",
+      "InpGridLotMultiplier",
+      "double",
+      data.lotMultiplier,
+      "Lot Multiplier",
+      group
+    )
+  );
+
+  code.globalVariables.push("int gridLevelCount = 0;");
+  code.globalVariables.push("double gridBasePrice = 0;");
+  code.globalVariables.push("datetime gridLastOrderTime = 0;");
+
+  code.onTick.push("");
+  code.onTick.push("//--- Grid/Pyramid Management");
+
+  if (data.gridMode === "GRID") {
+    code.onTick.push("// Grid Mode: place orders at fixed intervals");
+    code.onTick.push("{");
+    code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
+    code.onTick.push("");
+    code.onTick.push("   // Initialize grid base price from first position");
+    code.onTick.push("   if(gridBasePrice == 0 && positionsCount > 0)");
+    code.onTick.push("   {");
+    code.onTick.push("      for(int i = 0; i < OrdersTotal(); i++)");
+    code.onTick.push("      {");
+    code.onTick.push("         if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
+    code.onTick.push(
+      "         if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())"
+    );
+    code.onTick.push("         { gridBasePrice = OrderOpenPrice(); break; }");
+    code.onTick.push("      }");
+    code.onTick.push("   }");
+    code.onTick.push("   if(positionsCount == 0) { gridBasePrice = 0; gridLevelCount = 0; }");
+    code.onTick.push("");
+    code.onTick.push("   if(gridBasePrice > 0 && gridLevelCount < InpMaxGridLevels)");
+    code.onTick.push("   {");
+    code.onTick.push("      double nextLevel = gridBasePrice + (gridLevelCount + 1) * spacing;");
+    code.onTick.push(
+      "      double nextLevelDown = gridBasePrice - (gridLevelCount + 1) * spacing;"
+    );
+    code.onTick.push("      double lotSize = InpBuyLotSize;");
+    code.onTick.push("      if(InpGridLotMultiplier != 1.0)");
+    code.onTick.push(
+      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridLevelCount), 2);"
+    );
+
+    if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
+      code.onTick.push("");
+      code.onTick.push("      // Buy grid: place buy when price drops to next level");
+      code.onTick.push("      if(Bid <= nextLevelDown + spacing * 0.1)");
+      code.onTick.push("      {");
+      code.onTick.push(
+        `         int ticket = OrderSend(Symbol(), OP_BUY, lotSize, Ask, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrGreen);`
+      );
+      code.onTick.push("         if(ticket > 0) gridLevelCount++;");
+      code.onTick.push("      }");
+    }
+
+    if (data.direction === "SELL_ONLY" || data.direction === "BOTH") {
+      code.onTick.push("");
+      code.onTick.push("      // Sell grid: place sell when price rises to next level");
+      code.onTick.push("      if(Ask >= nextLevel - spacing * 0.1)");
+      code.onTick.push("      {");
+      code.onTick.push(
+        `         int ticket = OrderSend(Symbol(), OP_SELL, lotSize, Bid, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrRed);`
+      );
+      code.onTick.push("         if(ticket > 0) gridLevelCount++;");
+      code.onTick.push("      }");
+    }
+
+    code.onTick.push("   }");
+    code.onTick.push("}");
+  } else {
+    // PYRAMID mode
+    code.onTick.push("// Pyramid Mode: add to winning positions");
+    code.onTick.push("{");
+    code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
+    code.onTick.push("");
+    code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
+    code.onTick.push("   {");
+    code.onTick.push("      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
+    code.onTick.push(
+      "      if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != Symbol()) continue;"
+    );
+    code.onTick.push("      if(OrderType() > OP_SELL) continue; // Skip pending orders");
+    code.onTick.push("");
+    code.onTick.push("      double openPrice = OrderOpenPrice();");
+    code.onTick.push("      int posType = OrderType();");
+    code.onTick.push("      double volume = OrderLots();");
+    code.onTick.push("");
+    code.onTick.push("      if(positionsCount >= InpMaxGridLevels) break;");
+    code.onTick.push("");
+    code.onTick.push(
+      "      double nextLotSize = NormalizeDouble(volume * InpGridLotMultiplier, 2);"
+    );
+    code.onTick.push("      double minLot = MarketInfo(Symbol(), MODE_MINLOT);");
+    code.onTick.push("      if(nextLotSize < minLot) nextLotSize = minLot;");
+
+    if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
+      code.onTick.push("");
+      code.onTick.push("      if(posType == OP_BUY)");
+      code.onTick.push("      {");
+      code.onTick.push(
+        "         if(Bid >= openPrice + spacing && TimeCurrent() > gridLastOrderTime + 60)"
+      );
+      code.onTick.push("         {");
+      code.onTick.push(
+        `            int ticket = OrderSend(Symbol(), OP_BUY, nextLotSize, Ask, InpMaxSlippage, 0, 0, "${comment} Pyramid", InpMagicNumber, 0, clrGreen);`
+      );
+      code.onTick.push("            if(ticket > 0) gridLastOrderTime = TimeCurrent();");
+      code.onTick.push("         }");
+      code.onTick.push("      }");
+    }
+
+    if (data.direction === "SELL_ONLY" || data.direction === "BOTH") {
+      code.onTick.push("");
+      code.onTick.push("      if(posType == OP_SELL)");
+      code.onTick.push("      {");
+      code.onTick.push(
+        "         if(Ask <= openPrice - spacing && TimeCurrent() > gridLastOrderTime + 60)"
+      );
+      code.onTick.push("         {");
+      code.onTick.push(
+        `            int ticket = OrderSend(Symbol(), OP_SELL, nextLotSize, Bid, InpMaxSlippage, 0, 0, "${comment} Pyramid", InpMagicNumber, 0, clrRed);`
+      );
+      code.onTick.push("            if(ticket > 0) gridLastOrderTime = TimeCurrent();");
+      code.onTick.push("         }");
+      code.onTick.push("      }");
+    }
+
+    code.onTick.push("      break; // Only process the most recent position");
+    code.onTick.push("   }");
+    code.onTick.push("}");
+  }
 }

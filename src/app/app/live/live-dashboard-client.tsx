@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { showInfo } from "@/lib/toast";
+import { showInfo, showSuccess, showError } from "@/lib/toast";
 
 // ============================================
 // TYPES
@@ -17,6 +17,7 @@ interface EAInstanceData {
   accountNumber: string | null;
   status: "ONLINE" | "OFFLINE" | "ERROR";
   mode: "LIVE" | "PAPER";
+  paused: boolean;
   lastHeartbeat: string | null;
   lastError: string | null;
   balance: number | null;
@@ -26,6 +27,33 @@ interface EAInstanceData {
   totalProfit: number;
   trades: { profit: number; closeTime: string | null }[];
   heartbeats: { equity: number; createdAt: string }[];
+}
+
+interface TradeRecord {
+  id: string;
+  ticket: string;
+  symbol: string;
+  type: string;
+  openPrice: number;
+  closePrice: number | null;
+  lots: number;
+  profit: number;
+  openTime: string;
+  closeTime: string | null;
+  mode: string | null;
+}
+
+interface AlertConfig {
+  id: string;
+  instanceId: string | null;
+  instanceName: string | null;
+  alertType: string;
+  threshold: number | null;
+  channel: string;
+  webhookUrl: string | null;
+  enabled: boolean;
+  lastTriggered: string | null;
+  createdAt: string;
 }
 
 interface LiveDashboardClientProps {
@@ -39,6 +67,14 @@ const INTERVAL_LABELS: Record<RefreshInterval, string> = {
   10000: "10s",
   30000: "30s",
   60000: "60s",
+};
+
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  DRAWDOWN: "Drawdown Threshold",
+  OFFLINE: "EA Offline",
+  NEW_TRADE: "New Trade",
+  ERROR: "EA Error",
+  DAILY_LOSS: "Daily Loss Limit",
 };
 
 // ============================================
@@ -69,6 +105,16 @@ function formatRelativeTime(dateStr: string | null): string {
   }
   const days = Math.floor(diffSec / 86400);
   return `${days}d ago`;
+}
+
+function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function calculateWinRate(trades: { profit: number; closeTime: string | null }[]): number {
@@ -195,14 +241,151 @@ function StatusBadge({
 }
 
 // ============================================
+// TRADE LOG PANEL
+// ============================================
+
+function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
+  const [trades, setTrades] = useState<TradeRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
+      if (!cancelled && res.ok) {
+        const json = await res.json();
+        setTrades(json.data);
+        setTotalPages(json.pagination.totalPages);
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, instanceId]);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Trade Log - {eaName}</p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-2 py-0.5 text-[10px] rounded border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+            <span className="text-[10px] text-[#7C8DB0]">
+              {page}/{totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-2 py-0.5 text-[10px] rounded border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading trades...</div>
+      ) : trades.length === 0 ? (
+        <div className="text-xs text-[#7C8DB0] py-4 text-center">No trades recorded yet</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(79,70,229,0.1)]">
+                <th className="text-left py-1.5 pr-2">Type</th>
+                <th className="text-left py-1.5 pr-2">Symbol</th>
+                <th className="text-right py-1.5 pr-2">Lots</th>
+                <th className="text-right py-1.5 pr-2">Open</th>
+                <th className="text-right py-1.5 pr-2">Close</th>
+                <th className="text-right py-1.5 pr-2">P/L</th>
+                <th className="text-right py-1.5 pr-2">Opened</th>
+                <th className="text-right py-1.5">Closed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trades.map((trade) => (
+                <tr
+                  key={trade.id}
+                  className="border-b border-[rgba(79,70,229,0.05)] hover:bg-[rgba(79,70,229,0.03)]"
+                >
+                  <td className="py-1.5 pr-2">
+                    <span
+                      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        trade.type.toUpperCase().includes("BUY")
+                          ? "bg-[#10B981]/15 text-[#10B981]"
+                          : "bg-[#EF4444]/15 text-[#EF4444]"
+                      }`}
+                    >
+                      {trade.type}
+                    </span>
+                  </td>
+                  <td className="py-1.5 pr-2 text-[#CBD5E1]">{trade.symbol}</td>
+                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">{trade.lots.toFixed(2)}</td>
+                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
+                    {trade.openPrice.toFixed(5)}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
+                    {trade.closePrice !== null ? trade.closePrice.toFixed(5) : "---"}
+                  </td>
+                  <td
+                    className={`py-1.5 pr-2 text-right font-medium ${
+                      trade.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                    }`}
+                  >
+                    {formatCurrency(trade.profit)}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right text-[#7C8DB0]">
+                    {formatDateTime(trade.openTime)}
+                  </td>
+                  <td className="py-1.5 text-right text-[#7C8DB0]">
+                    {trade.closeTime ? formatDateTime(trade.closeTime) : "Open"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // EA CARD
 // ============================================
 
-function EACard({ ea, statusChanged }: { ea: EAInstanceData; statusChanged: boolean }) {
+function EACard({
+  ea,
+  statusChanged,
+  onTogglePause,
+}: {
+  ea: EAInstanceData;
+  statusChanged: boolean;
+  onTogglePause: (instanceId: string, paused: boolean) => void;
+}) {
+  const [showTradeLog, setShowTradeLog] = useState(false);
+  const [pauseLoading, setPauseLoading] = useState(false);
   const winRate = calculateWinRate(ea.trades);
   const profitFactor = calculateProfitFactor(ea.trades);
   const maxDrawdown = calculateMaxDrawdown(ea.heartbeats);
   const closedCount = ea.trades.filter((t) => t.closeTime !== null).length;
+
+  async function handleTogglePause(): Promise<void> {
+    setPauseLoading(true);
+    onTogglePause(ea.id, !ea.paused);
+    setPauseLoading(false);
+  }
 
   return (
     <div
@@ -237,6 +420,11 @@ function EACard({ ea, statusChanged }: { ea: EAInstanceData; statusChanged: bool
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={ea.status} animate={statusChanged} />
+          {ea.paused && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+              Paused
+            </span>
+          )}
           {ea.mode === "PAPER" && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paper
@@ -294,17 +482,78 @@ function EACard({ ea, statusChanged }: { ea: EAInstanceData; statusChanged: bool
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+      {/* Controls Row */}
+      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+        <button
+          onClick={handleTogglePause}
+          disabled={pauseLoading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+            ea.paused
+              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
+              : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
+          } disabled:opacity-50`}
+        >
+          {ea.paused ? (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
+          {ea.paused ? "Resume" : "Pause"}
+        </button>
+
+        <button
+          onClick={() => setShowTradeLog(!showTradeLog)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          {showTradeLog ? "Hide Trades" : "Trade Log"}
+        </button>
+
+        <div className="flex-1" />
+
         <span className="text-xs text-[#7C8DB0]">
           Last heartbeat: {formatRelativeTime(ea.lastHeartbeat)}
         </span>
-        {ea.lastError && ea.status === "ERROR" && (
-          <span className="text-xs text-[#EF4444] truncate max-w-[200px]" title={ea.lastError}>
+      </div>
+
+      {/* Error display */}
+      {ea.lastError && ea.status === "ERROR" && (
+        <div className="mt-2">
+          <span className="text-xs text-[#EF4444] truncate block max-w-full" title={ea.lastError}>
             {ea.lastError}
           </span>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Trade Log (expandable) */}
+      {showTradeLog && <TradeLogPanel instanceId={ea.id} eaName={ea.eaName} />}
     </div>
   );
 }
@@ -327,10 +576,8 @@ function ConnectionIndicator({
   autoRefresh: boolean;
   lastUpdated: Date | null;
 }) {
-  // Initialize label to a static value; the interval subscription will keep it updated
   const [timeSinceUpdate, setTimeSinceUpdate] = useState(() => computeTimeLabel(lastUpdated));
 
-  // Subscribe to a 1-second timer to keep the label current
   useEffect(() => {
     if (!autoRefresh || !lastUpdated) return;
 
@@ -386,6 +633,329 @@ function SummaryCard({
 }
 
 // ============================================
+// ALERTS MODAL
+// ============================================
+
+function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onClose: () => void }) {
+  const [alerts, setAlerts] = useState<AlertConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // New alert form state
+  const [newAlertType, setNewAlertType] = useState("DRAWDOWN");
+  const [newThreshold, setNewThreshold] = useState("5");
+  const [newChannel, setNewChannel] = useState("EMAIL");
+  const [newWebhookUrl, setNewWebhookUrl] = useState("");
+  const [newInstanceId, setNewInstanceId] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const res = await fetch("/api/live/alerts");
+      if (!cancelled && res.ok) {
+        const json = await res.json();
+        setAlerts(json.data);
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleCreateAlert(): Promise<void> {
+    setSaving(true);
+    const body: Record<string, unknown> = {
+      alertType: newAlertType,
+      channel: newChannel,
+      enabled: true,
+    };
+
+    if (newInstanceId) {
+      body.instanceId = newInstanceId;
+    }
+
+    if (newAlertType === "DRAWDOWN" || newAlertType === "DAILY_LOSS") {
+      const threshold = parseFloat(newThreshold);
+      if (isNaN(threshold) || threshold <= 0) {
+        showError("Invalid threshold", "Please enter a valid percentage value.");
+        setSaving(false);
+        return;
+      }
+      body.threshold = threshold;
+    }
+
+    if (newChannel === "WEBHOOK") {
+      if (!newWebhookUrl) {
+        showError("Missing webhook URL", "Please enter a webhook URL.");
+        setSaving(false);
+        return;
+      }
+      body.webhookUrl = newWebhookUrl;
+    }
+
+    const res = await fetch("/api/live/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      showSuccess("Alert created");
+      // Refresh alerts list
+      const refreshRes = await fetch("/api/live/alerts");
+      if (refreshRes.ok) {
+        const refreshJson = await refreshRes.json();
+        setAlerts(refreshJson.data);
+      }
+      // Reset form
+      setNewAlertType("DRAWDOWN");
+      setNewThreshold("5");
+      setNewChannel("EMAIL");
+      setNewWebhookUrl("");
+      setNewInstanceId("");
+    } else {
+      const json = await res.json().catch(() => ({ error: "Failed to create alert" }));
+      showError("Failed to create alert", json.error);
+    }
+    setSaving(false);
+  }
+
+  async function handleToggleAlert(alertId: string, enabled: boolean): Promise<void> {
+    const res = await fetch("/api/live/alerts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: alertId, enabled }),
+    });
+    if (res.ok) {
+      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, enabled } : a)));
+    }
+  }
+
+  async function handleDeleteAlert(alertId: string): Promise<void> {
+    const res = await fetch("/api/live/alerts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: alertId }),
+    });
+    if (res.ok) {
+      setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      showSuccess("Alert deleted");
+    }
+  }
+
+  const needsThreshold = newAlertType === "DRAWDOWN" || newAlertType === "DAILY_LOSS";
+  const needsWebhook = newChannel === "WEBHOOK";
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-[rgba(79,70,229,0.15)]">
+          <h2 className="text-lg font-semibold text-white">Alert Configuration</h2>
+          <button onClick={onClose} className="text-[#7C8DB0] hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Create New Alert */}
+        <div className="p-6 border-b border-[rgba(79,70,229,0.15)]">
+          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Create New Alert</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Alert Type */}
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                Alert Type
+              </label>
+              <select
+                value={newAlertType}
+                onChange={(e) => setNewAlertType(e.target.value)}
+                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+              >
+                <option value="DRAWDOWN">Drawdown Threshold</option>
+                <option value="OFFLINE">EA Offline</option>
+                <option value="NEW_TRADE">New Trade</option>
+                <option value="ERROR">EA Error</option>
+                <option value="DAILY_LOSS">Daily Loss Limit</option>
+              </select>
+            </div>
+
+            {/* Instance Scope */}
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                Applies To
+              </label>
+              <select
+                value={newInstanceId}
+                onChange={(e) => setNewInstanceId(e.target.value)}
+                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+              >
+                <option value="">All Instances</option>
+                {instances.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.eaName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Threshold (conditional) */}
+            {needsThreshold && (
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Threshold (%)
+                </label>
+                <input
+                  type="number"
+                  value={newThreshold}
+                  onChange={(e) => setNewThreshold(e.target.value)}
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                  placeholder="5.0"
+                />
+              </div>
+            )}
+
+            {/* Channel */}
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                Channel
+              </label>
+              <select
+                value={newChannel}
+                onChange={(e) => setNewChannel(e.target.value)}
+                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+              >
+                <option value="EMAIL">Email</option>
+                <option value="WEBHOOK">Webhook</option>
+              </select>
+            </div>
+
+            {/* Webhook URL (conditional) */}
+            {needsWebhook && (
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Webhook URL
+                </label>
+                <input
+                  type="url"
+                  value={newWebhookUrl}
+                  onChange={(e) => setNewWebhookUrl(e.target.value)}
+                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                  placeholder="https://hooks.example.com/alert"
+                />
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleCreateAlert}
+            disabled={saving}
+            className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50"
+          >
+            {saving ? "Creating..." : "Create Alert"}
+          </button>
+        </div>
+
+        {/* Existing Alerts */}
+        <div className="p-6">
+          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Active Alerts</h3>
+
+          {loading ? (
+            <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading alerts...</div>
+          ) : alerts.length === 0 ? (
+            <div className="text-xs text-[#7C8DB0] py-4 text-center">
+              No alerts configured yet. Create one above to get started.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
+                    alert.enabled
+                      ? "bg-[rgba(79,70,229,0.05)] border-[rgba(79,70,229,0.15)]"
+                      : "bg-[#0A0118]/50 border-[rgba(79,70,229,0.08)] opacity-60"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-[#CBD5E1]">
+                        {ALERT_TYPE_LABELS[alert.alertType] ?? alert.alertType}
+                      </span>
+                      {alert.threshold !== null && (
+                        <span className="text-[10px] text-[#A78BFA]">at {alert.threshold}%</span>
+                      )}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(79,70,229,0.1)] text-[#7C8DB0]">
+                        {alert.channel}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-[#7C8DB0]">
+                        {alert.instanceName ?? "All instances"}
+                      </span>
+                      {alert.lastTriggered && (
+                        <span className="text-[10px] text-[#7C8DB0]">
+                          Last triggered: {formatRelativeTime(alert.lastTriggered)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-3">
+                    <button
+                      onClick={() => handleToggleAlert(alert.id, !alert.enabled)}
+                      className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${
+                        alert.enabled ? "bg-[#10B981]" : "bg-[#374151]"
+                      }`}
+                      title={alert.enabled ? "Disable" : "Enable"}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${
+                          alert.enabled ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAlert(alert.id)}
+                      className="text-[#7C8DB0] hover:text-[#EF4444] transition-colors"
+                      title="Delete alert"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -397,6 +967,8 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
 
   // Initialize previous data
@@ -468,6 +1040,56 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     const id = window.setInterval(fetchUpdate, interval);
     return () => window.clearInterval(id);
   }, [autoRefresh, interval, fetchUpdate]);
+
+  async function handleTogglePause(instanceId: string, paused: boolean): Promise<void> {
+    const res = await fetch(`/api/live/${instanceId}/pause`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paused }),
+    });
+
+    if (res.ok) {
+      setEaInstances((prev) => prev.map((ea) => (ea.id === instanceId ? { ...ea, paused } : ea)));
+      const ea = eaInstances.find((e) => e.id === instanceId);
+      const action = paused ? "paused" : "resumed";
+      showSuccess(`${ea?.eaName ?? "EA"} ${action}`);
+    } else {
+      showError("Failed to update EA", "Please try again.");
+    }
+  }
+
+  async function handleSaveGlobalDrawdown(): Promise<void> {
+    const threshold = parseFloat(globalDrawdownThreshold);
+    if (isNaN(threshold) || threshold <= 0 || threshold > 100) {
+      showError("Invalid threshold", "Please enter a value between 0.1 and 100.");
+      return;
+    }
+
+    // Create or update a global drawdown alert (no instanceId)
+    const res = await fetch("/api/live/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        alertType: "DRAWDOWN",
+        threshold,
+        channel: "EMAIL",
+        enabled: true,
+      }),
+    });
+
+    if (res.ok) {
+      showSuccess("Global drawdown alert saved", `Alert at ${threshold}% drawdown`);
+    } else {
+      showError("Failed to save alert");
+    }
+  }
+
+  // Calculate portfolio-level max drawdown for display
+  const portfolioMaxDrawdown = (() => {
+    const allHeartbeats = eaInstances.flatMap((ea) => ea.heartbeats);
+    if (allHeartbeats.length === 0) return 0;
+    return calculateMaxDrawdown(allHeartbeats);
+  })();
 
   return (
     <div className="space-y-6">
@@ -565,6 +1187,22 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
                 />
               )}
             </svg>
+            Notifications
+          </button>
+
+          {/* Alerts config button */}
+          <button
+            onClick={() => setShowAlertsModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-[#A78BFA] hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
             Alerts
           </button>
 
@@ -581,7 +1219,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
       {/* Portfolio Summary */}
       {eaInstances.length > 0 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <SummaryCard
               label="Live P&L"
               value={eaInstances
@@ -604,6 +1242,64 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
               value={eaInstances.reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />
+            {/* Portfolio Max Drawdown */}
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                Max Drawdown
+              </p>
+              <p
+                className={`text-lg font-semibold ${
+                  portfolioMaxDrawdown > parseFloat(globalDrawdownThreshold) || 0
+                    ? "text-[#EF4444]"
+                    : "text-white"
+                }`}
+              >
+                {portfolioMaxDrawdown.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Global Drawdown Alert Threshold */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <svg
+                  className="w-4 h-4 text-[#F59E0B] shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                <p className="text-xs text-[#CBD5E1]">
+                  Global drawdown alert threshold (applies to all EAs)
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#7C8DB0]">Alert at</span>
+                <input
+                  type="number"
+                  value={globalDrawdownThreshold}
+                  onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  className="w-20 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#4F46E5]"
+                />
+                <span className="text-xs text-[#7C8DB0]">% drawdown</span>
+                <button
+                  onClick={handleSaveGlobalDrawdown}
+                  className="px-3 py-1 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Per-Symbol Breakdown */}
@@ -692,9 +1388,19 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
             ? eaInstances
             : eaInstances.filter((ea) => ea.mode === modeFilter)
           ).map((ea) => (
-            <EACard key={ea.id} ea={ea} statusChanged={changedIds.has(ea.id)} />
+            <EACard
+              key={ea.id}
+              ea={ea}
+              statusChanged={changedIds.has(ea.id)}
+              onTogglePause={handleTogglePause}
+            />
           ))}
         </div>
+      )}
+
+      {/* Alerts Modal */}
+      {showAlertsModal && (
+        <AlertsModal instances={eaInstances} onClose={() => setShowAlertsModal(false)} />
       )}
     </div>
   );

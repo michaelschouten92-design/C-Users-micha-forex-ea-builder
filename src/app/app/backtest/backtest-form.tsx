@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
 import type { BacktestEngineResult } from "@/lib/backtest/types";
 import type { BacktestConfig } from "@/lib/backtest/types";
 import { DEFAULT_BACKTEST_CONFIG } from "@/lib/backtest/types";
 import type { BuildJsonSchema } from "@/types/builder";
 import { parseCSV } from "@/lib/backtest/data/csv-parser";
 import { runBacktestInWorker } from "@/lib/backtest/worker-client";
+import { runMonteCarloSimulation } from "@/lib/backtest/monte-carlo";
+import type { MonteCarloResult } from "@/lib/backtest/monte-carlo";
+import { runWalkForward } from "@/lib/backtest/walk-forward";
+import type { WalkForwardResult } from "@/lib/backtest/walk-forward";
+import type { OHLCVBar } from "@/lib/backtest/types";
 
 interface BacktestFormProps {
   projects: Array<{ id: string; name: string }>;
@@ -26,7 +31,7 @@ function formatPercent(value: number): string {
 }
 
 // ============================================
-// RESULTS DISPLAY
+// RESULTS DISPLAY COMPONENTS
 // ============================================
 
 function MetricCard({
@@ -130,6 +135,175 @@ function EquityChart({ points }: { points: BacktestEngineResult["equityCurve"] }
   );
 }
 
+function MonthlyPnLTable({ data }: { data: BacktestEngineResult["monthlyPnL"] }) {
+  if (data.length === 0) return null;
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">Monthly P&L</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[#7C8DB0] border-b border-[rgba(79,70,229,0.15)]">
+              <th className="text-left py-2 pr-4">Month</th>
+              <th className="text-right py-2 pr-4">P&L</th>
+              <th className="text-right py-2">Trades</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row.month} className="border-b border-[rgba(79,70,229,0.08)]">
+                <td className="py-2 pr-4 text-[#CBD5E1]">{row.month}</td>
+                <td
+                  className={`py-2 pr-4 text-right font-medium ${
+                    row.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                  }`}
+                >
+                  {formatCurrency(row.pnl)}
+                </td>
+                <td className="py-2 text-right text-[#CBD5E1]">{row.trades}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MonteCarloDisplay({ data }: { data: MonteCarloResult }) {
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">
+        Monte Carlo Simulation ({data.simulations} runs)
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-[#A78BFA]">95% Confidence</h4>
+          <div className="space-y-2">
+            <StatRow
+              label="Max Drawdown"
+              value={formatCurrency(data.confidence95.maxDrawdown)}
+              valueClass="text-[#EF4444]"
+            />
+            <StatRow
+              label="Worst Final Balance"
+              value={formatCurrency(data.confidence95.finalBalance)}
+            />
+            <StatRow
+              label="Worst Return"
+              value={formatCurrency(data.confidence95.worstReturn)}
+              valueClass={data.confidence95.worstReturn >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}
+            />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-[#A78BFA]">99% Confidence</h4>
+          <div className="space-y-2">
+            <StatRow
+              label="Max Drawdown"
+              value={formatCurrency(data.confidence99.maxDrawdown)}
+              valueClass="text-[#EF4444]"
+            />
+            <StatRow
+              label="Worst Final Balance"
+              value={formatCurrency(data.confidence99.finalBalance)}
+            />
+            <StatRow
+              label="Worst Return"
+              value={formatCurrency(data.confidence99.worstReturn)}
+              valueClass={data.confidence99.worstReturn >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)] space-y-2">
+        <StatRow label="Median Final Balance" value={formatCurrency(data.medianFinalBalance)} />
+        <StatRow
+          label="Probability of Ruin (50% DD)"
+          value={formatPercent(data.probabilityOfRuin)}
+          valueClass={data.probabilityOfRuin > 10 ? "text-[#EF4444]" : "text-[#10B981]"}
+        />
+      </div>
+    </div>
+  );
+}
+
+function WalkForwardDisplay({ data }: { data: WalkForwardResult }) {
+  if (data.windows.length === 0) {
+    return (
+      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-2">Walk-Forward Validation</h3>
+        <p className="text-sm text-[#7C8DB0]">
+          Not enough data to run walk-forward validation (requires at least 100 bars).
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">Walk-Forward Validation</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[#7C8DB0] border-b border-[rgba(79,70,229,0.15)]">
+              <th className="text-left py-2 pr-4">Window</th>
+              <th className="text-right py-2 pr-4">IS Profit</th>
+              <th className="text-right py-2 pr-4">OOS Profit</th>
+              <th className="text-right py-2 pr-4">IS Sharpe</th>
+              <th className="text-right py-2">OOS Sharpe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.windows.map((w, i) => (
+              <tr key={i} className="border-b border-[rgba(79,70,229,0.08)]">
+                <td className="py-2 pr-4 text-[#CBD5E1]">#{i + 1}</td>
+                <td
+                  className={`py-2 pr-4 text-right ${
+                    w.inSampleProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                  }`}
+                >
+                  {formatCurrency(w.inSampleProfit)}
+                </td>
+                <td
+                  className={`py-2 pr-4 text-right ${
+                    w.outOfSampleProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                  }`}
+                >
+                  {formatCurrency(w.outOfSampleProfit)}
+                </td>
+                <td className="py-2 pr-4 text-right text-[#CBD5E1]">
+                  {w.inSampleSharpe.toFixed(2)}
+                </td>
+                <td className="py-2 text-right text-[#CBD5E1]">{w.outOfSampleSharpe.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)] space-y-2">
+        <StatRow
+          label="Overall OOS Profit"
+          value={formatCurrency(data.overallOutOfSampleProfit)}
+          valueClass={data.overallOutOfSampleProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}
+        />
+        <StatRow
+          label="Walk-Forward Efficiency"
+          value={formatPercent(data.walkForwardEfficiency * 100)}
+          valueClass={data.walkForwardEfficiency >= 0.5 ? "text-[#10B981]" : "text-[#F59E0B]"}
+        />
+      </div>
+    </div>
+  );
+}
+
+function getProfitFactorColor(pf: number): string {
+  if (pf >= 1.5) return "text-[#10B981]";
+  if (pf >= 1) return "text-[#F59E0B]";
+  return "text-[#EF4444]";
+}
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -151,9 +325,22 @@ export function BacktestForm({ projects }: BacktestFormProps) {
   const cancelRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Monte Carlo and Walk-Forward state
+  const [monteCarloResult, setMonteCarloResult] = useState<MonteCarloResult | null>(null);
+  const [monteCarloRunning, setMonteCarloRunning] = useState(false);
+  const [walkForwardResult, setWalkForwardResult] = useState<WalkForwardResult | null>(null);
+  const [walkForwardRunning, setWalkForwardRunning] = useState(false);
+
+  // Store parsed bars and buildJson for MC / WF
+  const parsedBarsRef = useRef<OHLCVBar[]>([]);
+  const buildJsonRef = useRef<BuildJsonSchema | null>(null);
+  const configRef = useRef<BacktestConfig>(DEFAULT_BACKTEST_CONFIG);
+  const [saving, setSaving] = useState(false);
+  const [addingToJournal, setAddingToJournal] = useState(false);
+
   // ---- CSV Upload ----
   const handleCSVUpload = useCallback((file: File) => {
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       showError("File too large. Maximum 50MB.");
       return;
@@ -188,9 +375,10 @@ export function BacktestForm({ projects }: BacktestFormProps) {
     setRunning(true);
     setProgress(0);
     setResult(null);
+    setMonteCarloResult(null);
+    setWalkForwardResult(null);
 
     try {
-      // 1. Fetch project buildJson
       const res = await fetch(`/api/projects/${projectId}/backtest`);
       if (!res.ok) {
         const err = await res.json();
@@ -199,7 +387,6 @@ export function BacktestForm({ projects }: BacktestFormProps) {
       }
       const { buildJson } = await res.json();
 
-      // 2. Parse CSV
       const text = await csvFile.text();
       const parsed = parseCSV(text);
       if (parsed.bars.length === 0) {
@@ -207,7 +394,6 @@ export function BacktestForm({ projects }: BacktestFormProps) {
         return;
       }
 
-      // 3. Build config
       const isJPY = symbol.includes("JPY");
       const config: BacktestConfig = {
         ...DEFAULT_BACKTEST_CONFIG,
@@ -216,10 +402,14 @@ export function BacktestForm({ projects }: BacktestFormProps) {
         spread: parseInt(spread) || 10,
         commission: parseFloat(commission) || 3.5,
         digits: isJPY ? 3 : 5,
-        pointValue: isJPY ? 100 / 1e3 : 1, // Approximate for JPY pairs
+        pointValue: isJPY ? 100 / 1e3 : 1,
       };
 
-      // 4. Run backtest in Web Worker
+      // Store for MC/WF
+      parsedBarsRef.current = parsed.bars;
+      buildJsonRef.current = buildJson as BuildJsonSchema;
+      configRef.current = config;
+
       const { promise, cancel } = runBacktestInWorker(
         parsed.bars,
         buildJson as BuildJsonSchema,
@@ -242,6 +432,95 @@ export function BacktestForm({ projects }: BacktestFormProps) {
     cancelRef.current?.();
     setRunning(false);
   };
+
+  // ---- Monte Carlo ----
+  const handleMonteCarlo = useCallback(() => {
+    if (!result || result.trades.length === 0) return;
+    setMonteCarloRunning(true);
+    // Run asynchronously to avoid blocking UI
+    setTimeout(() => {
+      const mcResult = runMonteCarloSimulation(
+        result.trades,
+        configRef.current.initialBalance,
+        1000,
+        0.5
+      );
+      setMonteCarloResult(mcResult);
+      setMonteCarloRunning(false);
+    }, 50);
+  }, [result]);
+
+  // ---- Walk-Forward ----
+  const handleWalkForward = useCallback(() => {
+    if (!buildJsonRef.current || parsedBarsRef.current.length === 0) return;
+    setWalkForwardRunning(true);
+    setTimeout(() => {
+      const wfResult = runWalkForward(
+        parsedBarsRef.current,
+        buildJsonRef.current!,
+        configRef.current,
+        5,
+        0.7
+      );
+      setWalkForwardResult(wfResult);
+      setWalkForwardRunning(false);
+    }, 50);
+  }, []);
+
+  // ---- Save Results ----
+  const handleSaveResults = useCallback(async () => {
+    if (!result || !projectId || !csvFile) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/backtest-results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          results: result,
+          fileName: csvFile.name,
+        }),
+      });
+      if (res.ok) {
+        showSuccess("Backtest results saved");
+      } else {
+        const err = await res.json();
+        showError(err.error || "Failed to save results");
+      }
+    } catch {
+      showError("Failed to save results");
+    } finally {
+      setSaving(false);
+    }
+  }, [result, projectId, csvFile]);
+
+  // ---- Add to Journal ----
+  const handleAddToJournal = useCallback(async () => {
+    if (!result || !projectId) return;
+    setAddingToJournal(true);
+    try {
+      const res = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          backtestProfit: result.netProfit,
+          backtestWinRate: result.winRate,
+          backtestSharpe: result.sharpeRatio,
+          status: "BACKTESTING",
+        }),
+      });
+      if (res.ok) {
+        showSuccess("Added to Trade Journal");
+      } else {
+        const err = await res.json();
+        showError(err.error || "Failed to add to journal");
+      }
+    } catch {
+      showError("Failed to add to journal");
+    } finally {
+      setAddingToJournal(false);
+    }
+  }, [result, projectId]);
 
   const r = result;
 
@@ -431,18 +710,37 @@ export function BacktestForm({ projects }: BacktestFormProps) {
       {/* Results */}
       {r && (
         <div className="space-y-6">
-          <div className="flex items-center gap-2 text-sm text-[#7C8DB0]">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>
-              {r.barsProcessed.toLocaleString()} bars processed in {(r.duration / 1000).toFixed(1)}s
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-[#7C8DB0]">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>
+                {r.barsProcessed.toLocaleString()} bars processed in{" "}
+                {(r.duration / 1000).toFixed(1)}s
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAddToJournal}
+                disabled={addingToJournal}
+                className="px-4 py-1.5 text-xs font-medium text-[#22D3EE] border border-[#22D3EE]/30 rounded-lg hover:bg-[#22D3EE]/10 transition-colors disabled:opacity-40"
+              >
+                {addingToJournal ? "Adding..." : "Add to Journal"}
+              </button>
+              <button
+                onClick={handleSaveResults}
+                disabled={saving}
+                className="px-4 py-1.5 text-xs font-medium text-[#A78BFA] border border-[#A78BFA]/30 rounded-lg hover:bg-[#A78BFA]/10 transition-colors disabled:opacity-40"
+              >
+                {saving ? "Saving..." : "Save Results"}
+              </button>
+            </div>
           </div>
 
           {/* Key metrics */}
@@ -461,13 +759,7 @@ export function BacktestForm({ projects }: BacktestFormProps) {
             <MetricCard
               label="Profit Factor"
               value={r.profitFactor === Infinity ? "---" : r.profitFactor.toFixed(2)}
-              colorClass={
-                r.profitFactor >= 1.5
-                  ? "text-[#10B981]"
-                  : r.profitFactor >= 1
-                    ? "text-[#F59E0B]"
-                    : "text-[#EF4444]"
-              }
+              colorClass={getProfitFactorColor(r.profitFactor)}
             />
             <MetricCard
               label="Max Drawdown"
@@ -479,12 +771,42 @@ export function BacktestForm({ projects }: BacktestFormProps) {
               colorClass="text-[#EF4444]"
             />
             <MetricCard label="Sharpe Ratio" value={r.sharpeRatio.toFixed(2)} />
+            <MetricCard label="Sortino Ratio" value={r.sortinoRatio.toFixed(2)} />
+            <MetricCard label="Calmar Ratio" value={r.calmarRatio.toFixed(2)} />
+            <MetricCard label="Ulcer Index" value={r.ulcerIndex.toFixed(2)} />
             <MetricCard label="Recovery Factor" value={r.recoveryFactor.toFixed(2)} />
             <MetricCard
               label="Expected Payoff"
               value={formatCurrency(r.expectedPayoff)}
               colorClass={r.expectedPayoff >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}
             />
+            <MetricCard
+              label="Avg Trade Duration"
+              value={`${r.averageTradeDuration.toFixed(1)} bars`}
+            />
+          </div>
+
+          {/* Long vs Short Breakdown */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Long / Short Breakdown</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <StatRow label="Long Trades" value={r.longTrades.toString()} />
+                <StatRow
+                  label="Long Win Rate"
+                  value={formatPercent(r.longWinRate)}
+                  valueClass={r.longWinRate >= 50 ? "text-[#10B981]" : "text-[#F59E0B]"}
+                />
+              </div>
+              <div className="space-y-2">
+                <StatRow label="Short Trades" value={r.shortTrades.toString()} />
+                <StatRow
+                  label="Short Win Rate"
+                  value={formatPercent(r.shortWinRate)}
+                  valueClass={r.shortWinRate >= 50 ? "text-[#10B981]" : "text-[#F59E0B]"}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Equity Curve */}
@@ -535,6 +857,33 @@ export function BacktestForm({ projects }: BacktestFormProps) {
               </div>
             </div>
           </div>
+
+          {/* Monthly P&L */}
+          <MonthlyPnLTable data={r.monthlyPnL} />
+
+          {/* Monte Carlo & Walk-Forward Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={handleMonteCarlo}
+              disabled={monteCarloRunning || r.trades.length === 0}
+              className="py-3 px-4 rounded-lg font-semibold border border-[#4F46E5] text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {monteCarloRunning ? "Running Monte Carlo..." : "Run Monte Carlo (1000 sims)"}
+            </button>
+            <button
+              onClick={handleWalkForward}
+              disabled={walkForwardRunning || parsedBarsRef.current.length === 0}
+              className="py-3 px-4 rounded-lg font-semibold border border-[#4F46E5] text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {walkForwardRunning ? "Running Walk-Forward..." : "Run Walk-Forward Validation"}
+            </button>
+          </div>
+
+          {/* Monte Carlo Results */}
+          {monteCarloResult && <MonteCarloDisplay data={monteCarloResult} />}
+
+          {/* Walk-Forward Results */}
+          {walkForwardResult && <WalkForwardDisplay data={walkForwardResult} />}
         </div>
       )}
     </div>

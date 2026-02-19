@@ -63,9 +63,15 @@ export interface TradeConfig {
   timeExit: TimeExitNodeData | null;
 }
 
+export interface CandlestickPatternConfig {
+  patterns: CandlestickPattern[];
+  minBodySize: number;
+}
+
 export interface ParsedStrategy {
   indicators: IndicatorConfig[];
   indicatorBuffers: Map<string, IndicatorBuffers>;
+  candlestickPatterns: CandlestickPatternConfig[];
   buyTradeConfig: TradeConfig;
   sellTradeConfig: TradeConfig;
   conditionMode: "AND" | "OR";
@@ -104,6 +110,7 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
 
   const indicators: IndicatorConfig[] = [];
   const indicatorBuffers = new Map<string, IndicatorBuffers>();
+  const candlestickPatterns: CandlestickPatternConfig[] = [];
 
   for (const node of nodes) {
     if (indicatorTypes.has(node.type)) {
@@ -117,6 +124,15 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
       // Pre-compute all buffers
       const buffers = computeIndicator(bars, config);
       indicatorBuffers.set(node.id, buffers);
+    }
+
+    // Collect candlestick pattern nodes
+    if (node.type === "candlestick-pattern") {
+      const data = node.data as CandlestickPatternNodeData;
+      candlestickPatterns.push({
+        patterns: data.patterns ?? [],
+        minBodySize: data.minBodySize ?? 5,
+      });
     }
 
     // Warn about unsupported node types
@@ -180,6 +196,7 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
   return {
     indicators,
     indicatorBuffers,
+    candlestickPatterns,
     buyTradeConfig,
     sellTradeConfig,
     conditionMode,
@@ -232,9 +249,19 @@ export function evaluateEntrySignals(
   }
 
   // Evaluate candlestick pattern nodes
-  for (const node of findNodesByTypeFromConfigs(strategy.indicators, "candlestick-pattern")) {
-    // Candlestick patterns are evaluated inline
-    void node; // handled below
+  const point = Math.pow(10, -5); // Default 5-digit broker; adjusted patterns use pips
+  for (const patternConfig of strategy.candlestickPatterns) {
+    if (patternConfig.patterns.length > 0) {
+      const signal = evaluateCandlestickPattern(
+        bars,
+        barIndex,
+        patternConfig.patterns,
+        patternConfig.minBodySize,
+        point
+      );
+      buyConditions.push(signal.buy);
+      sellConditions.push(signal.sell);
+    }
   }
 
   if (buyConditions.length === 0 && sellConditions.length === 0) {
@@ -268,7 +295,6 @@ function evaluateIndicatorSignal(
 
   switch (config.type) {
     case "moving-average": {
-      // MA entry: price crosses above MA = buy, price crosses below = sell
       const maCurr = buffers.value?.[currBar];
       const maPrev = buffers.value?.[prevBar];
       if (maCurr === undefined || maPrev === undefined || isNaN(maCurr) || isNaN(maPrev))
@@ -276,6 +302,13 @@ function evaluateIndicatorSignal(
 
       const priceCurr = bars[currBar].close;
       const pricePrev = bars[prevBar].close;
+
+      // HTF trend filter: provide directional bias, not crossover signals
+      if (p._filterRole === "htf-trend") {
+        return { buy: priceCurr > maCurr, sell: priceCurr < maCurr };
+      }
+
+      // Default: price crosses above MA = buy, price crosses below = sell
       const cross = evaluateCrossover(priceCurr, pricePrev, maCurr, maPrev);
       return { buy: cross.crossAbove, sell: cross.crossBelow };
     }
@@ -305,9 +338,10 @@ function evaluateIndicatorSignal(
     }
 
     case "bollinger-bands": {
-      // BB entry: price touches lower band = buy, upper band = sell
       const upperCurr = buffers.upper?.[currBar];
       const lowerCurr = buffers.lower?.[currBar];
+      const upperPrev = buffers.upper?.[prevBar];
+      const lowerPrev = buffers.lower?.[prevBar];
       if (
         upperCurr === undefined ||
         lowerCurr === undefined ||
@@ -317,6 +351,25 @@ function evaluateIndicatorSignal(
         return null;
 
       const priceCurr = bars[currBar].close;
+      const bbMode = (p._bbEntryMode as string) ?? "BAND_TOUCH";
+
+      if (bbMode === "MEAN_REVERSION") {
+        // Mean reversion: buy when price crosses back above lower band, sell when crosses back below upper
+        const pricePrev = bars[prevBar].close;
+        if (
+          upperPrev === undefined ||
+          lowerPrev === undefined ||
+          isNaN(upperPrev) ||
+          isNaN(lowerPrev)
+        )
+          return null;
+        return {
+          buy: pricePrev <= lowerPrev && priceCurr > lowerCurr,
+          sell: pricePrev >= upperPrev && priceCurr < upperCurr,
+        };
+      }
+
+      // Default BAND_TOUCH: price touches lower band = buy, upper band = sell
       return {
         buy: priceCurr <= lowerCurr,
         sell: priceCurr >= upperCurr,
@@ -325,6 +378,7 @@ function evaluateIndicatorSignal(
 
     case "adx": {
       const adxCurr = buffers.main?.[currBar];
+      const adxPrev = buffers.main?.[prevBar];
       const plusDICurr = buffers.plusDI?.[currBar];
       const minusDICurr = buffers.minusDI?.[currBar];
       const plusDIPrev = buffers.plusDI?.[prevBar];
@@ -332,6 +386,39 @@ function evaluateIndicatorSignal(
       if ([adxCurr, plusDICurr, minusDICurr].some((v) => v === undefined || isNaN(v!))) return null;
 
       const trendLevel = (p.trendLevel as number) ?? 25;
+      const adxEntryMode = (p._adxEntryMode as string) ?? "DI_CROSS";
+
+      if (adxEntryMode === "ADX_RISING") {
+        // ADX rising above threshold with DI direction
+        if (adxPrev === undefined || isNaN(adxPrev!)) return null;
+        const rising = adxCurr! > trendLevel && adxPrev! <= trendLevel;
+        if (!rising) return { buy: false, sell: false };
+        return { buy: plusDICurr! > minusDICurr!, sell: minusDICurr! > plusDICurr! };
+      }
+
+      if (adxEntryMode === "TREND_START") {
+        // Trend start: ADX crosses above threshold AND DI crossover on same bar or recent
+        if (adxPrev === undefined || isNaN(adxPrev!)) return null;
+        const adxAbove = adxCurr! > trendLevel;
+        const adxJustCrossed = adxPrev! <= trendLevel && adxCurr! > trendLevel;
+        if (!adxAbove) return { buy: false, sell: false };
+        if (
+          plusDIPrev !== undefined &&
+          minusDIPrev !== undefined &&
+          !isNaN(plusDIPrev) &&
+          !isNaN(minusDIPrev)
+        ) {
+          const diCross = evaluateCrossover(plusDICurr!, plusDIPrev, minusDICurr!, minusDIPrev);
+          return {
+            buy: diCross.crossAbove || (adxJustCrossed && plusDICurr! > minusDICurr!),
+            sell: diCross.crossBelow || (adxJustCrossed && minusDICurr! > plusDICurr!),
+          };
+        }
+        if (!adxJustCrossed) return { buy: false, sell: false };
+        return { buy: plusDICurr! > minusDICurr!, sell: minusDICurr! > plusDICurr! };
+      }
+
+      // Default DI_CROSS mode
       const isTrending = adxCurr! > trendLevel;
       if (!isTrending) return { buy: false, sell: false };
 
@@ -548,6 +635,32 @@ export function evaluateCandlestickPattern(
           curr.close < prev.close &&
           currBody > minBody &&
           prevBody > minBody
+        ) {
+          sell = true;
+        }
+        break;
+      case "HARAMI_BULLISH":
+        // Bullish harami: large bearish candle followed by smaller bullish candle contained within
+        if (
+          prevBearish &&
+          currBullish &&
+          prevBody > minBody &&
+          currBody < prevBody &&
+          curr.close < prev.open &&
+          curr.open > prev.close
+        ) {
+          buy = true;
+        }
+        break;
+      case "HARAMI_BEARISH":
+        // Bearish harami: large bullish candle followed by smaller bearish candle contained within
+        if (
+          prevBullish &&
+          currBearish &&
+          prevBody > minBody &&
+          currBody < prevBody &&
+          curr.open < prev.close &&
+          curr.close > prev.open
         ) {
           sell = true;
         }

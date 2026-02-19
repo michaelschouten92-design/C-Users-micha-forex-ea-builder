@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { fireWebhook } from "@/lib/webhook";
+import { checkNewTradeAlerts } from "@/lib/alerts";
 import { z } from "zod";
 
 const tradeSchema = z.object({
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
       () => {}
     );
 
+    // Check user-configured new trade alerts (fire-and-forget)
+    fireNewTradeAlerts(auth.instanceId, auth.userId, { symbol, type, profit }).catch(() => {});
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -100,4 +104,26 @@ async function fireTradeWebhook(
       closePrice: trade.closePrice ?? null,
     },
   });
+}
+
+async function fireNewTradeAlerts(
+  instanceId: string,
+  userId: string,
+  trade: { symbol: string; type: string; profit: number }
+): Promise<void> {
+  const instance = await prisma.liveEAInstance.findUnique({
+    where: { id: instanceId },
+    select: { eaName: true },
+  });
+
+  if (!instance) return;
+
+  await checkNewTradeAlerts(
+    userId,
+    instanceId,
+    instance.eaName,
+    trade.symbol,
+    trade.type,
+    trade.profit
+  );
 }

@@ -53,6 +53,10 @@ import type {
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
   DivergenceEntryData,
+  BollingerBandEntryData,
+  FibonacciEntryData,
+  PivotPointEntryData,
+  ADXTrendEntryData,
 } from "@/types/builder";
 
 import {
@@ -112,6 +116,10 @@ import {
   TrendPullbackEntryFields,
   MACDCrossoverEntryFields,
   DivergenceEntryFields,
+  BollingerBandEntryFields,
+  FibonacciEntryFields,
+  PivotPointEntryFields,
+  ADXTrendEntryFields,
 } from "./entry-strategy-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
 import { OptimizationVisibleContext } from "./shared";
@@ -433,6 +441,16 @@ function NodeFields({
         );
       case "divergence":
         return <DivergenceEntryFields data={data as DivergenceEntryData} onChange={onChange} />;
+      case "bollinger-band-entry":
+        return (
+          <BollingerBandEntryFields data={data as BollingerBandEntryData} onChange={onChange} />
+        );
+      case "fibonacci-entry":
+        return <FibonacciEntryFields data={data as FibonacciEntryData} onChange={onChange} />;
+      case "pivot-point-entry":
+        return <PivotPointEntryFields data={data as PivotPointEntryData} onChange={onChange} />;
+      case "adx-trend-entry":
+        return <ADXTrendEntryFields data={data as ADXTrendEntryData} onChange={onChange} />;
     }
   }
 

@@ -30,6 +30,8 @@ export interface GeneratorContext {
   maxPositionsPerPair: number;
   /** Max total positions across all pairs in multi-pair mode */
   maxTotalPositions: number;
+  /** Whether correlation filter is enabled in multi-pair mode */
+  correlationFilter: boolean;
 }
 
 export interface IndicatorVariable {

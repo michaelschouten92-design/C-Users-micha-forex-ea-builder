@@ -1071,7 +1071,25 @@ export function StrategyCanvas({
 
           {/* Validation Status - top right overlay */}
           <div className="absolute top-4 right-4 z-10">
-            <ValidationStatus validation={validation} />
+            <ValidationStatus
+              validation={validation}
+              onFocusNode={(nodeId) => {
+                // Select the node and center the viewport on it
+                const targetNode = nodes.find((n) => n.id === nodeId);
+                if (!targetNode) return;
+                setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === nodeId })));
+                const zoom = 1.2;
+                setViewport({
+                  x:
+                    -targetNode.position.x * zoom +
+                    (reactFlowWrapper.current?.clientWidth ?? 800) / 2,
+                  y:
+                    -targetNode.position.y * zoom +
+                    (reactFlowWrapper.current?.clientHeight ?? 600) / 2,
+                  zoom,
+                });
+              }}
+            />
           </div>
 
           {/* Keyboard Shortcuts Modal */}

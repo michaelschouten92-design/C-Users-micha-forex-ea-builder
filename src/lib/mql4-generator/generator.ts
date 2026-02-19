@@ -12,6 +12,10 @@ import type {
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
   DivergenceEntryData,
+  BollingerBandEntryData,
+  FibonacciEntryData,
+  PivotPointEntryData,
+  ADXTrendEntryData,
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
@@ -42,6 +46,7 @@ import {
   generateTakeProfitCode,
   generateEntryLogic,
   generateTimeExitCode,
+  generateGridPyramidCode,
 } from "./generators/trading";
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
@@ -479,6 +484,161 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         })
       );
     }
+  } else if (d.entryType === "bollinger-band-entry") {
+    const bb = d as BollingerBandEntryData;
+    const bbTf = bb.timeframe ?? "H1";
+    const bbSignalMode = bb.signalMode_bb ?? "BAND_TOUCH";
+
+    if (bbSignalMode === "SQUEEZE_BREAKOUT") {
+      // Use BB Squeeze indicator node for squeeze breakout mode
+      virtualNodes.push(
+        vNode("bb-squeeze", "bb-squeeze", {
+          label: `BB Squeeze(${bb.bbPeriod})`,
+          category: "indicator",
+          indicatorType: "bb-squeeze",
+          timeframe: bbTf,
+          bbPeriod: bb.bbPeriod ?? 20,
+          bbDeviation: bb.bbDeviation ?? 2.0,
+          kcPeriod: bb.kcPeriod ?? 20,
+          kcMultiplier: bb.kcMultiplier ?? 1.5,
+          signalMode: "candle_close",
+          optimizableFields: mapOpt(
+            ["bbPeriod", "bbPeriod"],
+            ["bbDeviation", "bbDeviation"],
+            ["kcPeriod", "kcPeriod"],
+            ["kcMultiplier", "kcMultiplier"],
+            ["timeframe", "timeframe"]
+          ),
+        })
+      );
+    } else {
+      // Use Bollinger Bands indicator for BAND_TOUCH and MEAN_REVERSION
+      virtualNodes.push(
+        vNode("bb", "bollinger-bands", {
+          label: `BB(${bb.bbPeriod}, ${bb.bbDeviation})`,
+          category: "indicator",
+          indicatorType: "bollinger-bands",
+          timeframe: bbTf,
+          period: bb.bbPeriod ?? 20,
+          deviation: bb.bbDeviation ?? 2.0,
+          appliedPrice: "CLOSE",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(
+            ["bbPeriod", "period"],
+            ["bbDeviation", "deviation"],
+            ["timeframe", "timeframe"]
+          ),
+          _bbEntryMode: bbSignalMode,
+        })
+      );
+    }
+  } else if (d.entryType === "fibonacci-entry") {
+    const fib = d as FibonacciEntryData;
+    const fibTf = fib.timeframe ?? "H1";
+    // Fibonacci uses a Moving Average as a virtual indicator to calculate swing high/low
+    // The actual fib logic is done via custom metadata on the MA node
+    virtualNodes.push(
+      vNode("fib-ma", "moving-average", {
+        label: `Fib EMA(${fib.lookbackPeriod})`,
+        category: "indicator",
+        indicatorType: "moving-average",
+        timeframe: fibTf,
+        period: fib.lookbackPeriod ?? 100,
+        method: "EMA",
+        appliedPrice: "CLOSE",
+        signalMode: "candle_close",
+        shift: 0,
+        optimizableFields: mapOpt(["lookbackPeriod", "period"], ["timeframe", "timeframe"]),
+        _fibEntryMode: fib.entryMode ?? "BOUNCE",
+        _fibLevel: fib.fibLevel ?? 0.618,
+        _fibLookback: fib.lookbackPeriod ?? 100,
+        _entryStrategyType: "fibonacci-entry",
+        _entryStrategyId: baseId,
+      })
+    );
+    // Trend confirmation EMA
+    if (fib.trendConfirmation) {
+      virtualNodes.push(
+        vNode("fib-trend-ema", "moving-average", {
+          label: `Trend EMA(${fib.trendEMAPeriod ?? 200})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: fibTf,
+          period: fib.trendEMAPeriod ?? 200,
+          method: "EMA",
+          appliedPrice: "CLOSE",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["trendEMAPeriod", "period"], ["timeframe", "timeframe"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
+  } else if (d.entryType === "pivot-point-entry") {
+    const pp = d as PivotPointEntryData;
+    const ppTf = pp.timeframe ?? "H1";
+    // Pivot points use a virtual MA node with custom metadata
+    // The actual pivot calculation is done via _pivotType metadata
+    virtualNodes.push(
+      vNode("pivot-ma", "moving-average", {
+        label: `Pivot ${pp.pivotType ?? "CLASSIC"}`,
+        category: "indicator",
+        indicatorType: "moving-average",
+        timeframe: ppTf,
+        period: 1,
+        method: "SMA",
+        appliedPrice: "CLOSE",
+        signalMode: "candle_close",
+        shift: 0,
+        _pivotType: pp.pivotType ?? "CLASSIC",
+        _pivotTimeframe: pp.pivotTimeframe ?? "DAILY",
+        _pivotEntryMode: pp.entryMode ?? "BOUNCE",
+        _pivotTargetLevel: pp.targetLevel ?? "PIVOT",
+        _entryStrategyType: "pivot-point-entry",
+        _entryStrategyId: baseId,
+      })
+    );
+  } else if (d.entryType === "adx-trend-entry") {
+    const adx = d as ADXTrendEntryData;
+    const adxTf = adx.timeframe ?? "H1";
+    virtualNodes.push(
+      vNode("adx", "adx", {
+        label: `ADX(${adx.adxPeriod})`,
+        category: "indicator",
+        indicatorType: "adx",
+        timeframe: adxTf,
+        period: adx.adxPeriod ?? 14,
+        trendLevel: adx.adxThreshold ?? 25,
+        signalMode: "candle_close",
+        optimizableFields: mapOpt(
+          ["adxPeriod", "period"],
+          ["adxThreshold", "trendLevel"],
+          ["timeframe", "timeframe"]
+        ),
+        _adxEntryMode: adx.adxEntryMode ?? "DI_CROSS",
+        _entryStrategyType: "adx-trend-entry",
+        _entryStrategyId: baseId,
+      })
+    );
+    // MA direction filter
+    if (adx.maFilter) {
+      virtualNodes.push(
+        vNode("adx-ma-filter", "moving-average", {
+          label: `MA Filter(${adx.maPeriod ?? 50})`,
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: adxTf,
+          period: adx.maPeriod ?? 50,
+          method: "EMA",
+          appliedPrice: "CLOSE",
+          signalMode: "candle_close",
+          shift: 0,
+          optimizableFields: mapOpt(["maPeriod", "period"], ["timeframe", "timeframe"]),
+          _filterRole: "htf-trend",
+        })
+      );
+    }
   }
 
   // Unified MTF confirmation (takes precedence over legacy per-strategy HTF fields)
@@ -781,6 +941,10 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
     "trend-pullback": "Trend Pullback",
     "macd-crossover": "MACD Crossover",
     divergence: "RSI/MACD Divergence",
+    "bollinger-band-entry": "Bollinger Band",
+    "fibonacci-entry": "Fibonacci Retracement",
+    "pivot-point-entry": "Pivot Point",
+    "adx-trend-entry": "ADX Trend Strength",
   };
 
   for (const node of nodes) {
@@ -902,6 +1066,7 @@ export function generateMQL4Code(
     multiPairEnabled: buildJson.settings?.multiPair?.enabled ?? false,
     maxPositionsPerPair: buildJson.settings?.multiPair?.maxPositionsPerPair ?? 1,
     maxTotalPositions: buildJson.settings?.multiPair?.maxTotalPositions ?? 10,
+    correlationFilter: buildJson.settings?.multiPair?.correlationFilter ?? false,
   };
 
   const descValue = sanitizeMQL4String(projectName);
@@ -977,8 +1142,11 @@ export function generateMQL4Code(
     "adx",
     "stochastic",
     "cci",
+    "ichimoku",
+    "custom-indicator",
     "obv",
     "vwap",
+    "bb-squeeze",
   ]);
   const tradeManagementTypeSet = new Set([
     "breakeven-stop",
@@ -991,6 +1159,9 @@ export function generateMQL4Code(
     "candlestick-pattern",
     "support-resistance",
     "range-breakout",
+    "order-block",
+    "fair-value-gap",
+    "market-structure",
   ]);
 
   const indicatorNodes: BuilderNode[] = [];
@@ -1003,6 +1174,7 @@ export function generateMQL4Code(
   const priceActionNodes: BuilderNode[] = [];
   const closeConditionNodes: BuilderNode[] = [];
   const timeExitNodes: BuilderNode[] = [];
+  const gridPyramidNodes: BuilderNode[] = [];
   const maxSpreadNodes: BuilderNode[] = [];
 
   for (const n of processedBuildJson.nodes) {
@@ -1039,6 +1211,11 @@ export function generateMQL4Code(
       "tradeManagementType" in data
     ) {
       tradeManagementNodes.push(n);
+    } else if (
+      nodeType === "grid-pyramid" ||
+      ("tradingType" in data && data.tradingType === "grid-pyramid")
+    ) {
+      gridPyramidNodes.push(n);
     } else if (
       nodeType === "place-buy" ||
       ("tradingType" in data && data.tradingType === "place-buy")
@@ -1435,6 +1612,11 @@ export function generateMQL4Code(
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {
     generateTradeManagementCode(node, code);
+  });
+
+  // Generate grid/pyramid code
+  gridPyramidNodes.forEach((node) => {
+    generateGridPyramidCode(node, code, ctx);
   });
 
   // Generate telemetry code (live EA tracking)

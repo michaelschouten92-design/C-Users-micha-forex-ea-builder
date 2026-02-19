@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { BuildJsonSettings, MultiPairSettings, PerSymbolOverride } from "@/types/builder";
+import type { BuildJsonSettings, MultiPairSettings } from "@/types/builder";
 import { PROP_FIRM_PRESETS, DEFAULT_MULTI_PAIR } from "@/types/builder";
 
 const COMMON_FOREX_PAIRS = [
@@ -545,7 +545,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                           Per-Symbol Overrides
                         </label>
                         <p className="text-[10px] text-[#7C8DB0] mb-2">
-                          Optionally customize lot size or risk% for individual pairs
+                          Customize lot size, risk%, indicator periods, or spread per pair
                         </p>
                         <div className="space-y-1.5">
                           {mp.symbols.map((sym) => {
@@ -641,6 +641,99 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                                                       riskPercentOverride: isNaN(val)
                                                         ? undefined
                                                         : val,
+                                                    }
+                                                  : o
+                                              ),
+                                            });
+                                          }}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-1">
+                                      <div className="flex-1">
+                                        <label className="block text-[9px] text-[#7C8DB0] mb-0.5">
+                                          EMA Period
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={override.emaPeriodOverride ?? ""}
+                                          min={2}
+                                          max={500}
+                                          step={1}
+                                          placeholder="Default"
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const val = parseInt(e.target.value, 10);
+                                            updateMultiPair({
+                                              perSymbolOverrides: mp.perSymbolOverrides.map((o) =>
+                                                o.symbol === sym
+                                                  ? {
+                                                      ...o,
+                                                      emaPeriodOverride: isNaN(val)
+                                                        ? undefined
+                                                        : val,
+                                                    }
+                                                  : o
+                                              ),
+                                            });
+                                          }}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <label className="block text-[9px] text-[#7C8DB0] mb-0.5">
+                                          RSI Period
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={override.rsiPeriodOverride ?? ""}
+                                          min={2}
+                                          max={500}
+                                          step={1}
+                                          placeholder="Default"
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const val = parseInt(e.target.value, 10);
+                                            updateMultiPair({
+                                              perSymbolOverrides: mp.perSymbolOverrides.map((o) =>
+                                                o.symbol === sym
+                                                  ? {
+                                                      ...o,
+                                                      rsiPeriodOverride: isNaN(val)
+                                                        ? undefined
+                                                        : val,
+                                                    }
+                                                  : o
+                                              ),
+                                            });
+                                          }}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <label className="block text-[9px] text-[#7C8DB0] mb-0.5">
+                                          Max Spread
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={override.spreadOverride ?? ""}
+                                          min={0}
+                                          max={500}
+                                          step={1}
+                                          placeholder="Default"
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const val = parseInt(e.target.value, 10);
+                                            updateMultiPair({
+                                              perSymbolOverrides: mp.perSymbolOverrides.map((o) =>
+                                                o.symbol === sym
+                                                  ? {
+                                                      ...o,
+                                                      spreadOverride: isNaN(val) ? undefined : val,
                                                     }
                                                   : o
                                               ),

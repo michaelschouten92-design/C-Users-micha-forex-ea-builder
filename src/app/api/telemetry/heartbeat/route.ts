@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
+import { checkDrawdownAlerts, checkOfflineAlerts } from "@/lib/alerts";
 import { z } from "zod";
 
 const heartbeatSchema = z.object({
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       where: { id: auth.instanceId },
       select: {
         status: true,
+        paused: true,
         lastHeartbeat: true,
         eaName: true,
         symbol: true,
@@ -88,6 +90,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If the instance is paused, instruct the EA to pause trading
+    const isPaused = previousState?.paused ?? false;
+    if (isPaused) {
+      return NextResponse.json({ success: true, action: "PAUSE" });
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -96,6 +104,7 @@ export async function POST(request: NextRequest) {
 
 interface PreviousState {
   status: string;
+  paused: boolean;
   lastHeartbeat: Date | null;
   eaName: string;
   symbol: string | null;
@@ -132,10 +141,20 @@ async function processHeartbeatSideEffects(
         prev.eaName,
         `Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.`
       ).catch(() => {});
+
+      // Trigger user-configured offline alerts
+      checkOfflineAlerts(userId, instanceId, prev.eaName, Math.round(elapsed / 60000)).catch(
+        () => {}
+      );
     }
   }
 
-  // Evaluate alert rules
+  // Check user-configured drawdown alerts
+  if (data.drawdown > 0) {
+    checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch(() => {});
+  }
+
+  // Evaluate alert rules (legacy system)
   evaluateAlertRules(instanceId, userId, data.drawdown, data.balance, data.equity).catch(() => {});
 }
 

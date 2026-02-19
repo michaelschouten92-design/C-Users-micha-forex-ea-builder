@@ -310,7 +310,14 @@ ${mpDrawdown}${mpEquity}${mpDailyPnl}${mpCooldown}${mpMinBars}
 
       //--- Total position limit
       if(CountAllPositions() >= InpMaxTotalPositions) continue;
-
+${
+  ctx.correlationFilter
+    ? `
+      //--- Correlation filter: skip if correlated with open positions
+      if(IsCorrelatedWithOpenPositions(tradeSym)) continue;
+`
+    : ""
+}
 ${tickCode.map((line) => "      " + line).join("\n")}
    }
 }

@@ -1040,9 +1040,29 @@ export function generateEntryLogic(
       (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
     );
 
+  // Detect signal mode: if any signal indicator uses candle_close, use isNewBar for signal evaluation
+  const useCandleClose = indicatorNodes.some((n) => {
+    const d = n.data as Record<string, unknown>;
+    return d.signalMode === "candle_close";
+  });
+
   // One-trade-per-bar protection (reuse currentBarTime declared in OnTick template)
   code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
   code.onTick.push("");
+
+  if (useCandleClose) {
+    // candle_close mode: only evaluate signals once per new bar (confirmed close)
+    // Buffer indices are shifted by +1 so only closed bar data is used
+    code.onTick.push("//--- Signal Mode: candle_close -- evaluate only on new bar");
+    code.onTick.push("if(!isNewBar) { /* Skip signal evaluation until new bar */ }");
+    code.onTick.push("else {");
+    code.onTick.push("");
+  } else if (hasConditions) {
+    // every_tick mode: evaluate signals on every tick using current bar data
+    // The newBar check below prevents multiple entries on the same bar
+    code.onTick.push("//--- Signal Mode: every_tick -- evaluate on every tick, enter once per bar");
+  }
+
   code.onTick.push("//--- One-trade-per-bar check");
   code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
 
@@ -1357,6 +1377,12 @@ export function generateEntryLogic(
       code.onTick.push("   }");
       code.onTick.push("}");
     }
+  }
+
+  // Close candle_close signal evaluation block
+  if (useCandleClose) {
+    code.onTick.push("");
+    code.onTick.push("} // end candle_close signal evaluation");
   }
 }
 

@@ -336,7 +336,9 @@ export type CandlestickPattern =
   | "MORNING_STAR"
   | "EVENING_STAR"
   | "THREE_WHITE_SOLDIERS"
-  | "THREE_BLACK_CROWS";
+  | "THREE_BLACK_CROWS"
+  | "HARAMI_BULLISH"
+  | "HARAMI_BEARISH";
 
 export interface CandlestickPatternNodeData extends BaseNodeData {
   category: "priceaction";
@@ -763,13 +765,71 @@ export interface DivergenceEntryData extends BaseNodeData, BaseEntryStrategyFiel
   minSwingBars: number; // Min bars between two swings (default 5)
 }
 
+// 7) Bollinger Band Entry — band touch / squeeze breakout / mean reversion
+export type BollingerBandSignalMode = "BAND_TOUCH" | "SQUEEZE_BREAKOUT" | "MEAN_REVERSION";
+
+export interface BollingerBandEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "bollinger-band-entry";
+  bbPeriod: number; // default 20
+  bbDeviation: number; // default 2.0
+  signalMode_bb: BollingerBandSignalMode; // default "BAND_TOUCH"
+  kcPeriod: number; // default 20 (for squeeze detection)
+  kcMultiplier: number; // default 1.5
+}
+
+// 8) Fibonacci Retracement Entry — bounce or break at fib levels
+export type FibonacciEntryMode = "BOUNCE" | "BREAK";
+
+export interface FibonacciEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "fibonacci-entry";
+  lookbackPeriod: number; // default 100 bars
+  fibLevel: number; // default 0.618 (can be 0.236, 0.382, 0.5, 0.618, 0.786)
+  entryMode: FibonacciEntryMode; // default "BOUNCE"
+  trendConfirmation: boolean; // use EMA to confirm trend direction
+  trendEMAPeriod: number; // default 200
+}
+
+// 9) Pivot Point Entry — bounce or breakout at pivot/S/R levels
+export type PivotType = "CLASSIC" | "FIBONACCI" | "CAMARILLA" | "WOODIE";
+export type PivotTimeframe = "DAILY" | "WEEKLY" | "MONTHLY";
+export type PivotEntryMode = "BOUNCE" | "BREAKOUT";
+export type PivotTargetLevel = "PIVOT" | "S1" | "S2" | "S3" | "R1" | "R2" | "R3";
+
+export interface PivotPointEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "pivot-point-entry";
+  pivotType: PivotType; // default "CLASSIC"
+  pivotTimeframe: PivotTimeframe; // default "DAILY"
+  entryMode: PivotEntryMode; // default "BOUNCE"
+  targetLevel: PivotTargetLevel; // default "PIVOT"
+}
+
+// 10) ADX Trend Strength Entry — DI cross / ADX rising / trend start
+export type ADXTrendEntryMode = "DI_CROSS" | "ADX_RISING" | "TREND_START";
+
+export interface ADXTrendEntryData extends BaseNodeData, BaseEntryStrategyFields {
+  category: "entrystrategy";
+  entryType: "adx-trend-entry";
+  adxPeriod: number; // default 14
+  adxThreshold: number; // default 25
+  adxEntryMode: ADXTrendEntryMode; // default "DI_CROSS"
+  maFilter: boolean; // use MA to confirm direction
+  maPeriod: number; // default 50
+}
+
 export type EntryStrategyNodeData =
   | EMACrossoverEntryData
   | RangeBreakoutEntryData
   | RSIReversalEntryData
   | TrendPullbackEntryData
   | MACDCrossoverEntryData
-  | DivergenceEntryData;
+  | DivergenceEntryData
+  | BollingerBandEntryData
+  | FibonacciEntryData
+  | PivotPointEntryData
+  | ADXTrendEntryData;
 
 // Union of all node data types
 export type BuilderNodeData =
@@ -821,6 +881,10 @@ export type BuilderNodeType =
   | "trend-pullback-entry"
   | "macd-crossover-entry"
   | "divergence-entry"
+  | "bollinger-band-entry"
+  | "fibonacci-entry"
+  | "pivot-point-entry"
+  | "adx-trend-entry"
   | "max-spread"
   | "volatility-filter"
   | "friday-close"
@@ -841,9 +905,13 @@ export type BuilderEdge = Edge;
 
 export interface PerSymbolOverride {
   symbol: string;
+  enabled: boolean;
   lotSizeOverride?: number;
   riskPercentOverride?: number;
-  enabled: boolean;
+  // Indicator period overrides
+  emaPeriodOverride?: number;
+  rsiPeriodOverride?: number;
+  spreadOverride?: number;
 }
 
 export interface MultiPairSettings {
@@ -1602,6 +1670,101 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
     } as DivergenceEntryData,
+  },
+  {
+    type: "bollinger-band-entry",
+    label: "Bollinger Band",
+    category: "entrystrategy",
+    description: "Trade band touches, squeeze breakouts, or mean reversion",
+    defaultData: {
+      label: "Bollinger Band",
+      category: "entrystrategy",
+      entryType: "bollinger-band-entry",
+      direction: "BOTH",
+      timeframe: "H1",
+      bbPeriod: 20,
+      bbDeviation: 2.0,
+      signalMode_bb: "BAND_TOUCH",
+      kcPeriod: 20,
+      kcMultiplier: 1.5,
+      riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+    } as BollingerBandEntryData,
+  },
+  {
+    type: "fibonacci-entry",
+    label: "Fibonacci Retracement",
+    category: "entrystrategy",
+    description: "Trade bounces or breaks at Fibonacci levels",
+    defaultData: {
+      label: "Fibonacci Retracement",
+      category: "entrystrategy",
+      entryType: "fibonacci-entry",
+      direction: "BOTH",
+      timeframe: "H1",
+      lookbackPeriod: 100,
+      fibLevel: 0.618,
+      entryMode: "BOUNCE",
+      trendConfirmation: true,
+      trendEMAPeriod: 200,
+      riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+    } as FibonacciEntryData,
+  },
+  {
+    type: "pivot-point-entry",
+    label: "Pivot Point",
+    category: "entrystrategy",
+    description: "Trade bounces or breakouts at pivot S/R levels",
+    defaultData: {
+      label: "Pivot Point",
+      category: "entrystrategy",
+      entryType: "pivot-point-entry",
+      direction: "BOTH",
+      timeframe: "H1",
+      pivotType: "CLASSIC",
+      pivotTimeframe: "DAILY",
+      entryMode: "BOUNCE",
+      targetLevel: "PIVOT",
+      riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+    } as PivotPointEntryData,
+  },
+  {
+    type: "adx-trend-entry",
+    label: "ADX Trend Strength",
+    category: "entrystrategy",
+    description: "Enter on DI crossover or ADX strength signals",
+    defaultData: {
+      label: "ADX Trend Strength",
+      category: "entrystrategy",
+      entryType: "adx-trend-entry",
+      direction: "BOTH",
+      timeframe: "H1",
+      adxPeriod: 14,
+      adxThreshold: 25,
+      adxEntryMode: "DI_CROSS",
+      maFilter: false,
+      maPeriod: 50,
+      riskPercent: 1,
+      slMethod: "ATR",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      tpRMultiple: 2,
+    } as ADXTrendEntryData,
   },
   // Trading (manual building blocks)
   {

@@ -273,6 +273,38 @@ export function transformCodeForMultiPair(
     }
   );
 
+  // 1b. Add correlation filter inputs when enabled
+  if (settings.correlationFilter) {
+    code.inputs.push(
+      {
+        name: "InpCorrelationThreshold",
+        type: "double",
+        value: settings.correlationThreshold,
+        comment: "Correlation Threshold (0.0-1.0)",
+        isOptimizable: false,
+        alwaysVisible: true,
+        group: "Multi-Pair Settings",
+      },
+      {
+        name: "InpCorrelationPeriod",
+        type: "int",
+        value: settings.correlationPeriod,
+        comment: "Correlation Lookback Period (bars)",
+        isOptimizable: false,
+        alwaysVisible: true,
+        group: "Multi-Pair Settings",
+      }
+    );
+  }
+
+  // 1c. Add per-symbol override globals and initialization
+  const overrides = settings.perSymbolOverrides ?? [];
+  const hasSpreadOverrides = overrides.some((o) => o.spreadOverride !== undefined);
+
+  if (hasSpreadOverrides) {
+    code.globalVariables.push("int g_perSymbolMaxSpread[];");
+  }
+
   // 2. Detect handle variable names from globals
   const handleNames = collectHandleNames(code.globalVariables);
 
@@ -289,6 +321,36 @@ export function transformCodeForMultiPair(
   // 3. Transform OnInit (handle creation → per-symbol loop)
   transformOnInit(code, handleNames);
 
+  // 3b. Add per-symbol override initialization after symbol parsing
+  if (hasSpreadOverrides) {
+    const spreadInitLines: string[] = [];
+    spreadInitLines.push("");
+    spreadInitLines.push("//--- Per-symbol spread overrides");
+    spreadInitLines.push("ArrayResize(g_perSymbolMaxSpread, g_symbolCount);");
+    spreadInitLines.push("ArrayInitialize(g_perSymbolMaxSpread, 0);");
+    for (const override of overrides) {
+      if (override.spreadOverride !== undefined) {
+        spreadInitLines.push(
+          `for(int i = 0; i < g_symbolCount; i++) if(g_symbols[i] == "${override.symbol}") g_perSymbolMaxSpread[i] = ${override.spreadOverride};`
+        );
+      }
+    }
+    // Insert after symbol parsing (after the first "Print" line in onInit)
+    code.onInit.push(...spreadInitLines);
+  }
+
+  // 3c. Add per-symbol spread override check at the start of onTick
+  if (hasSpreadOverrides) {
+    code.onTick.unshift(
+      "//--- Per-symbol spread override",
+      "if(g_perSymbolMaxSpread[sym] > 0)",
+      "{",
+      "   int symSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);",
+      "   if(symSpread > g_perSymbolMaxSpread[sym] * _pipFactor) return;",
+      "}"
+    );
+  }
+
   // 4. Transform OnTick (symbol references + function calls)
   transformOnTick(code, handleNames);
 
@@ -296,14 +358,15 @@ export function transformCodeForMultiPair(
   transformOnDeinit(code, handleNames);
 
   // 6. Add multi-pair helper functions
-  code.helperFunctions.push(generateMultiPairHelpers());
+  code.helperFunctions.push(generateMultiPairHelpers(settings.correlationFilter));
 }
 
 /**
- * Generate multi-pair utility functions (ParseSymbolList, CountAllPositions).
+ * Generate multi-pair utility functions (ParseSymbolList, CountAllPositions,
+ * and optionally CalculateCorrelation + IsCorrelatedWithOpenPositions).
  */
-function generateMultiPairHelpers(): string {
-  return `//+------------------------------------------------------------------+
+function generateMultiPairHelpers(includeCorrelation: boolean): string {
+  let helpers = `//+------------------------------------------------------------------+
 //| Parse comma-separated symbol list                                 |
 //+------------------------------------------------------------------+
 void ParseSymbolList(string csv, string &result[], int &count)
@@ -342,4 +405,87 @@ int CountAllPositions()
    }
    return count;
 }`;
+
+  if (includeCorrelation) {
+    helpers += `
+
+//+------------------------------------------------------------------+
+//| Calculate Pearson correlation between two symbols                  |
+//| Uses close prices over the specified period.                       |
+//| Returns value between -1.0 and 1.0, or 0.0 on error.             |
+//+------------------------------------------------------------------+
+double CalculateCorrelation(string sym1, string sym2, int period)
+{
+   double close1[];
+   double close2[];
+   ArraySetAsSeries(close1, true);
+   ArraySetAsSeries(close2, true);
+
+   int copied1 = CopyClose(sym1, PERIOD_CURRENT, 0, period, close1);
+   int copied2 = CopyClose(sym2, PERIOD_CURRENT, 0, period, close2);
+
+   if(copied1 < period || copied2 < period)
+   {
+      Print("CalculateCorrelation: insufficient data for ", sym1, "/", sym2,
+            " (got ", copied1, "/", copied2, " of ", period, " bars)");
+      return 0.0;
+   }
+
+   //--- Calculate means
+   double mean1 = 0, mean2 = 0;
+   for(int i = 0; i < period; i++)
+   {
+      mean1 += close1[i];
+      mean2 += close2[i];
+   }
+   mean1 /= period;
+   mean2 /= period;
+
+   //--- Calculate Pearson correlation
+   double sumXY = 0, sumX2 = 0, sumY2 = 0;
+   for(int i = 0; i < period; i++)
+   {
+      double dx = close1[i] - mean1;
+      double dy = close2[i] - mean2;
+      sumXY += dx * dy;
+      sumX2 += dx * dx;
+      sumY2 += dy * dy;
+   }
+
+   double denominator = MathSqrt(sumX2 * sumY2);
+   if(denominator < 1e-10)
+      return 0.0;
+
+   return sumXY / denominator;
+}
+
+//+------------------------------------------------------------------+
+//| Check if a symbol is correlated with any open position             |
+//| Returns true if correlation with any open-position symbol          |
+//| exceeds the threshold (trade should be skipped).                   |
+//+------------------------------------------------------------------+
+bool IsCorrelatedWithOpenPositions(string newSym)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket <= 0) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+
+      string openSym = PositionGetString(POSITION_SYMBOL);
+      if(openSym == newSym) continue;
+
+      double corr = CalculateCorrelation(newSym, openSym, InpCorrelationPeriod);
+      if(MathAbs(corr) >= InpCorrelationThreshold)
+      {
+         Print("Correlation filter: ", newSym, " correlated with open position on ", openSym,
+               " (r=", DoubleToString(corr, 3), ", threshold=", DoubleToString(InpCorrelationThreshold, 2), ")");
+         return true;
+      }
+   }
+   return false;
+}`;
+  }
+
+  return helpers;
 }

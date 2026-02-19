@@ -9,6 +9,10 @@ import type {
   TrendPullbackEntryData,
   MACDCrossoverEntryData,
   DivergenceEntryData,
+  BollingerBandEntryData,
+  FibonacciEntryData,
+  PivotPointEntryData,
+  ADXTrendEntryData,
 } from "@/types/builder";
 import {
   TIMEFRAME_OPTIONS,
@@ -672,6 +676,350 @@ export function DivergenceEntryFields({
       <EntryStrategyRiskSection data={data} onChange={onChange} />
 
       <AdvancedToggleSection>
+        <MTFConfirmationSection data={data} onChange={onChange} />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+const BB_SIGNAL_MODE_OPTIONS = [
+  { value: "BAND_TOUCH", label: "Band Touch" },
+  { value: "SQUEEZE_BREAKOUT", label: "Squeeze Breakout" },
+  { value: "MEAN_REVERSION", label: "Mean Reversion" },
+] as const;
+
+export function BollingerBandEntryFields({
+  data,
+  onChange,
+}: {
+  data: BollingerBandEntryData;
+  onChange: (updates: Partial<BollingerBandEntryData>) => void;
+}) {
+  const signalMode = data.signalMode_bb ?? "BAND_TOUCH";
+
+  return (
+    <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Signal Mode"
+        value={signalMode}
+        options={BB_SIGNAL_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ signalMode_bb: v as BollingerBandEntryData["signalMode_bb"] })}
+        tooltip="Band Touch: buy at lower band, sell at upper. Squeeze Breakout: trade when BB expands after squeeze. Mean Reversion: buy below middle band, sell above."
+      />
+
+      <NumberField
+        label="BB Period"
+        value={data.bbPeriod ?? 20}
+        min={2}
+        max={500}
+        onChange={(v) => onChange({ bbPeriod: v })}
+        tooltip="Bollinger Bands period. 20 is the standard setting."
+      />
+      <OptimizableFieldCheckbox fieldName="bbPeriod" data={data} onChange={onChange} />
+      <NumberField
+        label="BB Deviation"
+        value={data.bbDeviation ?? 2.0}
+        min={0.5}
+        max={5.0}
+        onChange={(v) => onChange({ bbDeviation: v })}
+        tooltip="Standard deviation multiplier for the bands. 2.0 is standard."
+      />
+      <OptimizableFieldCheckbox fieldName="bbDeviation" data={data} onChange={onChange} />
+
+      {signalMode === "SQUEEZE_BREAKOUT" && (
+        <>
+          <NumberField
+            label="KC Period"
+            value={data.kcPeriod ?? 20}
+            min={2}
+            max={500}
+            onChange={(v) => onChange({ kcPeriod: v })}
+            tooltip="Keltner Channel period for squeeze detection."
+          />
+          <OptimizableFieldCheckbox fieldName="kcPeriod" data={data} onChange={onChange} />
+          <NumberField
+            label="KC Multiplier"
+            value={data.kcMultiplier ?? 1.5}
+            min={0.5}
+            max={5.0}
+            onChange={(v) => onChange({ kcMultiplier: v })}
+            tooltip="Keltner Channel ATR multiplier for squeeze detection."
+          />
+          <OptimizableFieldCheckbox fieldName="kcMultiplier" data={data} onChange={onChange} />
+        </>
+      )}
+
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      <AdvancedToggleSection>
+        <MTFConfirmationSection data={data} onChange={onChange} />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+const FIB_LEVEL_OPTIONS = [
+  { value: "0.236", label: "23.6%" },
+  { value: "0.382", label: "38.2%" },
+  { value: "0.5", label: "50.0%" },
+  { value: "0.618", label: "61.8%" },
+  { value: "0.786", label: "78.6%" },
+] as const;
+
+const FIB_ENTRY_MODE_OPTIONS = [
+  { value: "BOUNCE", label: "Bounce off level" },
+  { value: "BREAK", label: "Break through level" },
+] as const;
+
+export function FibonacciEntryFields({
+  data,
+  onChange,
+}: {
+  data: FibonacciEntryData;
+  onChange: (updates: Partial<FibonacciEntryData>) => void;
+}) {
+  return (
+    <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+
+      <NumberField
+        label="Lookback Period (bars)"
+        value={data.lookbackPeriod ?? 100}
+        min={10}
+        max={500}
+        onChange={(v) => onChange({ lookbackPeriod: v })}
+        tooltip="Number of bars to find swing high and swing low for Fibonacci levels."
+      />
+      <OptimizableFieldCheckbox fieldName="lookbackPeriod" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Fibonacci Level"
+        value={String(data.fibLevel ?? 0.618)}
+        options={FIB_LEVEL_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ fibLevel: parseFloat(v) })}
+        tooltip="The Fibonacci retracement level to trade at. 61.8% is the golden ratio."
+      />
+      <OptimizableFieldCheckbox fieldName="fibLevel" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Entry Mode"
+        value={data.entryMode ?? "BOUNCE"}
+        options={FIB_ENTRY_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ entryMode: v as FibonacciEntryData["entryMode"] })}
+        tooltip="Bounce: enter when price bounces off the fib level. Break: enter when price breaks through."
+      />
+
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      <AdvancedToggleSection>
+        <ToggleField
+          label="Trend EMA confirmation"
+          hint="Use an EMA to confirm the trend direction before entering"
+          checked={data.trendConfirmation ?? true}
+          onChange={(v) => onChange({ trendConfirmation: v })}
+        >
+          <NumberField
+            label="Trend EMA Period"
+            value={data.trendEMAPeriod ?? 200}
+            min={1}
+            max={1000}
+            onChange={(v) => onChange({ trendEMAPeriod: v })}
+            tooltip="EMA period for trend direction confirmation. 200 is the most common."
+          />
+          <OptimizableFieldCheckbox fieldName="trendEMAPeriod" data={data} onChange={onChange} />
+        </ToggleField>
+        <MTFConfirmationSection data={data} onChange={onChange} />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+const PIVOT_TYPE_OPTIONS = [
+  { value: "CLASSIC", label: "Classic" },
+  { value: "FIBONACCI", label: "Fibonacci" },
+  { value: "CAMARILLA", label: "Camarilla" },
+  { value: "WOODIE", label: "Woodie" },
+] as const;
+
+const PIVOT_TF_OPTIONS = [
+  { value: "DAILY", label: "Daily" },
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "MONTHLY", label: "Monthly" },
+] as const;
+
+const PIVOT_ENTRY_MODE_OPTIONS = [
+  { value: "BOUNCE", label: "Bounce off level" },
+  { value: "BREAKOUT", label: "Breakout through level" },
+] as const;
+
+const PIVOT_LEVEL_OPTIONS = [
+  { value: "PIVOT", label: "Pivot (PP)" },
+  { value: "S1", label: "Support 1 (S1)" },
+  { value: "S2", label: "Support 2 (S2)" },
+  { value: "S3", label: "Support 3 (S3)" },
+  { value: "R1", label: "Resistance 1 (R1)" },
+  { value: "R2", label: "Resistance 2 (R2)" },
+  { value: "R3", label: "Resistance 3 (R3)" },
+] as const;
+
+export function PivotPointEntryFields({
+  data,
+  onChange,
+}: {
+  data: PivotPointEntryData;
+  onChange: (updates: Partial<PivotPointEntryData>) => void;
+}) {
+  return (
+    <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Pivot Type"
+        value={data.pivotType ?? "CLASSIC"}
+        options={PIVOT_TYPE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ pivotType: v as PivotPointEntryData["pivotType"] })}
+        tooltip="Classic is the most common. Fibonacci and Camarilla use different S/R calculations."
+      />
+
+      <SelectField
+        label="Pivot Timeframe"
+        value={data.pivotTimeframe ?? "DAILY"}
+        options={PIVOT_TF_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ pivotTimeframe: v as PivotPointEntryData["pivotTimeframe"] })}
+        tooltip="The timeframe used to calculate the pivot point (previous day/week/month OHLC)."
+      />
+
+      <SelectField
+        label="Entry Mode"
+        value={data.entryMode ?? "BOUNCE"}
+        options={PIVOT_ENTRY_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ entryMode: v as PivotPointEntryData["entryMode"] })}
+        tooltip="Bounce: trade reversals at the level. Breakout: trade continuation through the level."
+      />
+
+      <SelectField
+        label="Target Level"
+        value={data.targetLevel ?? "PIVOT"}
+        options={PIVOT_LEVEL_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ targetLevel: v as PivotPointEntryData["targetLevel"] })}
+        tooltip="Which pivot level to use for entry signals."
+      />
+
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      <AdvancedToggleSection>
+        <MTFConfirmationSection data={data} onChange={onChange} />
+      </AdvancedToggleSection>
+    </>
+  );
+}
+
+const ADX_ENTRY_MODE_OPTIONS = [
+  { value: "DI_CROSS", label: "DI+/DI- Crossover" },
+  { value: "ADX_RISING", label: "ADX Rising Above Threshold" },
+  { value: "TREND_START", label: "Trend Start (ADX Crosses Threshold)" },
+] as const;
+
+export function ADXTrendEntryFields({
+  data,
+  onChange,
+}: {
+  data: ADXTrendEntryData;
+  onChange: (updates: Partial<ADXTrendEntryData>) => void;
+}) {
+  return (
+    <>
+      <DirectionSelector
+        direction={data.direction ?? "BOTH"}
+        onChange={(v) => onChange({ direction: v })}
+      />
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe ?? "H1"}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+
+      <NumberField
+        label="ADX Period"
+        value={data.adxPeriod ?? 14}
+        min={2}
+        max={500}
+        onChange={(v) => onChange({ adxPeriod: v })}
+        tooltip="Period for ADX calculation. 14 is the standard setting."
+      />
+      <OptimizableFieldCheckbox fieldName="adxPeriod" data={data} onChange={onChange} />
+
+      <NumberField
+        label="ADX Threshold"
+        value={data.adxThreshold ?? 25}
+        min={5}
+        max={80}
+        onChange={(v) => onChange({ adxThreshold: v })}
+        tooltip="ADX must be above this to confirm a strong trend. 25 is a common value."
+      />
+      <OptimizableFieldCheckbox fieldName="adxThreshold" data={data} onChange={onChange} />
+
+      <SelectField
+        label="Entry Mode"
+        value={data.adxEntryMode ?? "DI_CROSS"}
+        options={ADX_ENTRY_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ adxEntryMode: v as ADXTrendEntryData["adxEntryMode"] })}
+        tooltip="DI Cross: enter on DI+/DI- crossover when ADX > threshold. ADX Rising: enter when ADX rises above threshold. Trend Start: enter when ADX crosses above threshold from below."
+      />
+
+      <EntryStrategyRiskSection data={data} onChange={onChange} />
+
+      <AdvancedToggleSection>
+        <ToggleField
+          label="MA direction filter"
+          hint="Use a Moving Average to confirm the trade direction"
+          checked={data.maFilter ?? false}
+          onChange={(v) => onChange({ maFilter: v })}
+        >
+          <NumberField
+            label="MA Period"
+            value={data.maPeriod ?? 50}
+            min={1}
+            max={1000}
+            onChange={(v) => onChange({ maPeriod: v })}
+            tooltip="Moving Average period for direction filtering. 50 is a good default."
+          />
+          <OptimizableFieldCheckbox fieldName="maPeriod" data={data} onChange={onChange} />
+        </ToggleField>
         <MTFConfirmationSection data={data} onChange={onChange} />
       </AdvancedToggleSection>
     </>
