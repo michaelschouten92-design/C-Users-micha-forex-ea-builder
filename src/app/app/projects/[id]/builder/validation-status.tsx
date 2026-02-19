@@ -105,7 +105,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
       {showDetails && validation.issues.length > 0 && (
         <div className="absolute top-full right-0 mt-2 w-80 bg-[#1E293B] rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] border border-[rgba(79,70,229,0.3)] overflow-hidden">
           <div className="p-3 border-b border-[rgba(79,70,229,0.2)]">
-            <h4 className="text-sm font-semibold text-white">Strategy Checklist</h4>
+            <h4 className="text-sm font-semibold text-white">Minimum Requirements</h4>
           </div>
           <div className="p-2 max-h-64 overflow-y-auto">
             {validation.issues.map((issue, idx) => (
@@ -156,7 +156,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           {/* Summary checklist */}
           <div className="p-3 border-t border-[rgba(79,70,229,0.2)] bg-[rgba(0,0,0,0.2)]">
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <CheckItem label="Timing" checked={validation.summary.hasTiming} />
+              <CheckItem label="Timing (optional)" checked={validation.summary.hasTiming} />
               <CheckItem
                 label="Entry Strategy"
                 checked={validation.summary.hasEntryStrategy}

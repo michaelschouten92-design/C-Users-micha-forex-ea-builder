@@ -124,7 +124,7 @@ export default function PricingPage() {
                     ["Projects", "1", "Unlimited", "Unlimited"],
                     ["MQL5 exports per month", "1", "Unlimited", "Unlimited"],
                     ["MQL4 export (MetaTrader 4)", false, true, true],
-                    ["Strategy templates", "All 5", "All 5", "All 5"],
+                    ["Strategy templates", "All 6", "All 6", "All 6"],
                     ["Visual builder", true, true, true],
                     ["Clean MQL5 source code", true, true, true],
                     ["Priority support", false, true, true],
@@ -326,6 +326,7 @@ export default function PricingPage() {
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"

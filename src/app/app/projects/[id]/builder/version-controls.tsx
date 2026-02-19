@@ -305,6 +305,7 @@ export function VersionControls({
         <button
           onClick={handleSave}
           disabled={saving}
+          title={`Creates version ${nextVersion}`}
           className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(34,211,238,0.25)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {saving ? (
@@ -333,7 +334,7 @@ export function VersionControls({
               />
             </svg>
           )}
-          <span className="hidden sm:inline">Save</span> v{nextVersion}
+          <span className="hidden sm:inline">Save Checkpoint</span>
         </button>
 
         {/* Version dropdown */}

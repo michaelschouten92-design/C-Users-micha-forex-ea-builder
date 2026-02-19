@@ -95,6 +95,28 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Subscription */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-2">Subscription</h2>
+            <p className="text-sm text-[#94A3B8] mb-4">
+              Manage your plan, billing, and payment method from the dashboard.
+            </p>
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                />
+              </svg>
+              Manage Subscription
+            </Link>
+          </div>
+
           {/* Discord */}
           <Suspense
             fallback={
@@ -128,6 +150,7 @@ function ChangePasswordSection() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -180,7 +203,7 @@ function ChangePasswordSection() {
           </label>
           <input
             id="currentPassword"
-            type="password"
+            type={showPasswords ? "text" : "password"}
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -193,7 +216,7 @@ function ChangePasswordSection() {
           </label>
           <input
             id="newPassword"
-            type="password"
+            type={showPasswords ? "text" : "password"}
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -210,13 +233,22 @@ function ChangePasswordSection() {
           </label>
           <input
             id="confirmNewPassword"
-            type="password"
+            type={showPasswords ? "text" : "password"}
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
           />
         </div>
+        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showPasswords}
+            onChange={(e) => setShowPasswords(e.target.checked)}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#22D3EE]"
+          />
+          Show passwords
+        </label>
         <button
           type="submit"
           disabled={loading}
@@ -265,7 +297,8 @@ function DataExportSection() {
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-white mb-2">Data & Privacy</h2>
       <p className="text-sm text-[#94A3B8] mb-4">
-        Download all your data including projects, exports, settings, and activity logs.
+        Download all your projects and account data as a JSON file. Useful for backup or data
+        migration.
       </p>
       <button
         onClick={handleExport}
@@ -315,7 +348,7 @@ function DeleteAccountSection() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleDelete() {
-    if (confirmText !== "DELETE") return;
+    if (confirmText.toUpperCase() !== "DELETE") return;
 
     setLoading(true);
     try {
@@ -367,7 +400,7 @@ function DeleteAccountSection() {
           <div className="flex gap-3">
             <button
               onClick={handleDelete}
-              disabled={confirmText !== "DELETE" || loading}
+              disabled={confirmText.toUpperCase() !== "DELETE" || loading}
               className="px-6 py-2.5 text-sm font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? "Deleting..." : "Confirm Delete"}

@@ -32,11 +32,11 @@ export default function SuspendedPage() {
           </div>
         )}
         <p className="text-sm text-[#64748B] mb-6">
-          If you believe this is a mistake, please{" "}
+          If you believe this is an error, please email{" "}
           <a href="mailto:support@algo-studio.com" className="text-[#22D3EE] hover:underline">
-            contact support
-          </a>
-          .
+            support@algo-studio.com
+          </a>{" "}
+          with your account email. We will respond within 48 hours.
         </p>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}

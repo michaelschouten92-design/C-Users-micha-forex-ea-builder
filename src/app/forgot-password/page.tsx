@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
           <div className="space-y-6">
             <div className="bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.3)] text-[#22D3EE] p-4 rounded-lg text-sm text-center">
               If an account with this email exists, we&apos;ve sent a password reset link. Please
-              check your inbox and spam folder.
+              check your inbox and spam folder. The link expires in 24 hours.
             </div>
             <Link
               href="/login"

@@ -282,7 +282,10 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
 
     return NextResponse.json(
-      { error: "Failed to generate code" },
+      {
+        error:
+          "Export failed — your strategy may contain unsupported configuration. Try simplifying your setup or contact support if the issue persists.",
+      },
       { status: 500, headers: rateLimitHeaders }
     );
   }

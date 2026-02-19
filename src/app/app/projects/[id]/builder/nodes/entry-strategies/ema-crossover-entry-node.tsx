@@ -49,8 +49,11 @@ export const EMACrossoverEntryNode = memo(function EMACrossoverEntryNode({
         {(data.htfTrendFilter || data.rsiConfirmation) && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {data.htfTrendFilter && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                HTF
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#10B981]"
+                title="Higher Timeframe Trend Filter"
+              >
+                HTF Filter
               </span>
             )}
             {data.rsiConfirmation && (

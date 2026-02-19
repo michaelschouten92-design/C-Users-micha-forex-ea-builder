@@ -19,15 +19,30 @@ export default function DashboardLoading() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Stats skeleton */}
+        {/* Subscription panel skeleton */}
         <div className="mb-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="space-y-2">
+              <div className="h-5 w-32 bg-[#1E293B] rounded animate-pulse" />
+              <div className="h-3 w-64 bg-[#1E293B] rounded animate-pulse" />
+            </div>
+            <div className="h-10 w-28 bg-[#1E293B] rounded-lg animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[rgba(79,70,229,0.2)]">
+            <div className="space-y-2">
+              <div className="flex justify-between">
                 <div className="h-3 w-16 bg-[#1E293B] rounded animate-pulse" />
-                <div className="h-6 w-10 bg-[#1E293B] rounded animate-pulse" />
+                <div className="h-3 w-12 bg-[#1E293B] rounded animate-pulse" />
               </div>
-            ))}
+              <div className="h-2 w-full bg-[#1E293B] rounded-full animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <div className="h-3 w-24 bg-[#1E293B] rounded animate-pulse" />
+                <div className="h-3 w-12 bg-[#1E293B] rounded animate-pulse" />
+              </div>
+              <div className="h-2 w-full bg-[#1E293B] rounded-full animate-pulse" />
+            </div>
           </div>
         </div>
 

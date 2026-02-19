@@ -38,8 +38,11 @@ export function CreateProjectButton() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const msg = data.error || "Something went wrong";
-        if (res.status === 403 || msg.toLowerCase().includes("limit")) {
+        const msg =
+          res.status === 403
+            ? "You've reached your project limit on the current plan. Upgrade to create more projects."
+            : data.error || "Something went wrong";
+        if (res.status === 403) {
           setIsLimitError(true);
         }
         throw new Error(msg);

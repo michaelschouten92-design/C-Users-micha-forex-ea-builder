@@ -132,6 +132,8 @@ export function ExportButton({
       }
 
       setResult(data);
+      setShowHistory(true);
+      fetchHistory();
       // Track export for builder progress stepper
       try {
         localStorage.setItem("algostudio-has-exported", "1");
@@ -185,6 +187,12 @@ export function ExportButton({
   }
 
   const [redownloading, setRedownloading] = useState<string | null>(null);
+  const [redownloadError, setRedownloadError] = useState<string | null>(null);
+
+  function showError(message: string) {
+    setRedownloadError(message);
+    setTimeout(() => setRedownloadError(null), 5000);
+  }
 
   async function fetchHistory() {
     setHistoryLoading(true);
@@ -205,7 +213,10 @@ export function ExportButton({
     setRedownloading(exportId);
     try {
       const res = await fetch(`/api/projects/${projectId}/export?redownload=${exportId}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        showError("Failed to re-download. Please try again.");
+        return;
+      }
       const data = await res.json();
       if (data.code && data.fileName) {
         const blob = new Blob([data.code], { type: "text/plain" });
@@ -219,13 +230,19 @@ export function ExportButton({
         URL.revokeObjectURL(url);
       }
     } catch {
-      // Silently fail
+      showError("Failed to re-download. Please try again.");
     } finally {
       setRedownloading(null);
     }
   }
 
   const isDisabled = exporting || !hasNodes || !canExport;
+
+  const exportDisabledReason = !hasNodes
+    ? "Add nodes to export"
+    : !canExport
+      ? "Fix errors before exporting"
+      : null;
 
   return (
     <>
@@ -249,15 +266,12 @@ export function ExportButton({
             : "bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)]"
         }`}
         title={
-          !hasNodes
-            ? "Add nodes to export"
-            : !canExport
-              ? "Fix errors before exporting"
-              : !canExportMQL5
-                ? "Upgrade for unlimited exports"
-                : canExportMQL4
-                  ? "Export Code — MQL5 or MQL4"
-                  : "Export Code — MQL5"
+          exportDisabledReason ??
+          (!canExportMQL5
+            ? "Upgrade for unlimited exports"
+            : canExportMQL4
+              ? "Export Code — MQL5 or MQL4"
+              : "Export Code — MQL5")
         }
       >
         {exporting ? (
@@ -298,6 +312,11 @@ export function ExportButton({
         <span className="hidden sm:inline">Export Code</span>
         <span className="sm:hidden">Export</span>
       </button>
+      {exportDisabledReason && (
+        <p className="text-[10px] text-[#64748B] mt-1 text-center md:hidden">
+          {exportDisabledReason}
+        </p>
+      )}
 
       {/* Export Modal */}
       {showModal && (
@@ -360,6 +379,9 @@ export function ExportButton({
                     <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
                       You&apos;ve used all free exports. Upgrade to Pro for unlimited MQL5 + MQL4
                       exports, unlimited projects, and priority support.
+                    </p>
+                    <p className="text-[#64748B] text-xs mt-2">
+                      Your free export resets on the 1st of next month.
                     </p>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -746,6 +768,13 @@ export function ExportButton({
                     </div>
                   )}
 
+                  {/* Redownload error toast */}
+                  {redownloadError && (
+                    <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-sm">
+                      {redownloadError}
+                    </div>
+                  )}
+
                   {/* Export History */}
                   <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
                     <button
@@ -768,7 +797,7 @@ export function ExportButton({
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                      Export History
+                      Export History{historyItems.length > 0 ? ` (${historyItems.length})` : ""}
                     </button>
                     {showHistory && (
                       <div className="mt-2 space-y-1">
@@ -990,7 +1019,7 @@ function highlightKeywords(text: string): React.ReactNode {
 }
 
 function NextStepsGuide() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const steps = [
     <>

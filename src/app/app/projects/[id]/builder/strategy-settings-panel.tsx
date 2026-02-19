@@ -12,6 +12,7 @@ interface StrategySettingsPanelProps {
 export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null);
 
   const update = (partial: Partial<BuildJsonSettings>) => {
     onChange({ ...settings, ...partial });
@@ -20,15 +21,19 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
   const applyPreset = (presetName: string) => {
     const preset = PROP_FIRM_PRESETS.find((p) => p.name === presetName);
     if (!preset) return;
-    const confirmed = window.confirm(
-      `Apply "${presetName}" preset? This will overwrite your current risk settings (max drawdown, daily loss limit, max open trades).`
-    );
-    if (!confirmed) return;
+    setPendingPreset(presetName);
+  };
+
+  const confirmPreset = () => {
+    if (!pendingPreset) return;
+    const preset = PROP_FIRM_PRESETS.find((p) => p.name === pendingPreset);
+    if (!preset) return;
     update({
       maxDailyLossPercent: preset.dailyLossPercent,
       maxTotalDrawdownPercent: preset.totalDrawdownPercent,
       maxOpenTrades: preset.maxOpenTrades,
     });
+    setPendingPreset(null);
   };
 
   return (
@@ -80,6 +85,36 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                 </option>
               ))}
             </select>
+            {pendingPreset && (
+              <div className="mt-2 p-2.5 bg-[rgba(251,191,36,0.1)] border border-[rgba(251,191,36,0.3)] rounded-lg">
+                <p className="text-xs text-[#FBBF24] mb-2">
+                  Apply &ldquo;{pendingPreset}&rdquo; preset? This will overwrite your current risk
+                  settings (max drawdown, daily loss limit, max open trades).
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPendingPreset(null);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="flex-1 px-2 py-1 text-xs text-[#CBD5E1] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmPreset();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="flex-1 px-2 py-1 text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] rounded transition-colors"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
             <p className="text-[10px] text-[#7C8DB0] mt-1">
               Auto-fills risk limits for your prop firm challenge
             </p>

@@ -77,6 +77,20 @@ export function SubscriptionPanel({
               </span>
             )}
           </div>
+          {tier !== "FREE" && subscriptionStatus === "past_due" && (
+            <div className="mt-2 p-3 bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.3)] rounded-lg">
+              <p className="text-sm text-[#F59E0B]">
+                Your payment failed. Please{" "}
+                <button
+                  onClick={handleManageSubscription}
+                  className="underline font-medium hover:text-white"
+                >
+                  update your payment method
+                </button>{" "}
+                to keep your {plan.name} access.
+              </p>
+            </div>
+          )}
           <p className="text-sm text-[#94A3B8]">
             {tier === "FREE"
               ? "Upgrade for unlimited projects, MQL4 export, and priority support."
@@ -251,6 +265,11 @@ export function SubscriptionPanel({
           )}
           {exportLimit === Infinity && (
             <p className="text-xs text-[#22D3EE] font-medium">Unlimited</p>
+          )}
+          {tier === "FREE" && exportLimit !== Infinity && exportPercentage < 80 && (
+            <p className="text-xs text-[#64748B] mt-1">
+              Free plan: 1 export per month. Resets on the 1st.
+            </p>
           )}
         </div>
       </div>

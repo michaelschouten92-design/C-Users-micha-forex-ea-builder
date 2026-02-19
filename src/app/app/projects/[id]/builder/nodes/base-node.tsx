@@ -266,6 +266,7 @@ export const BaseNode = memo(function BaseNode({
         <Handle
           type="target"
           position={Position.Top}
+          title="Drag to connect to another block"
           className="!w-3 !h-3 !bg-[#4F46E5] !border-2 !border-[#0F172A] hover:!bg-[#22D3EE] transition-colors duration-200"
         />
       )}
@@ -283,6 +284,7 @@ export const BaseNode = memo(function BaseNode({
         <Handle
           type="source"
           position={Position.Bottom}
+          title="Drag to connect to another block"
           className="!w-3 !h-3 !bg-[#4F46E5] !border-2 !border-[#0F172A] hover:!bg-[#22D3EE] transition-colors duration-200"
         />
       )}

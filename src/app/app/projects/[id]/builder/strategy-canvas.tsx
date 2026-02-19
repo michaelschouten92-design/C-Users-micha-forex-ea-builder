@@ -44,16 +44,27 @@ import type {
 import { DEFAULT_SETTINGS, generateMagicNumber } from "@/types/builder";
 
 function HelpButton({ onClick }: { onClick: () => void }) {
-  const [glowing, setGlowing] = useState(true);
+  const [glowing, setGlowing] = useState(() => {
+    if (typeof window !== "undefined") {
+      const lastHelp = localStorage.getItem("lastHelpDismissed");
+      if (lastHelp) {
+        const daysSince = (Date.now() - parseInt(lastHelp)) / (1000 * 60 * 60 * 24);
+        return daysSince > 7;
+      }
+      return true;
+    }
+    return false;
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => setGlowing(false), 60000);
-    return () => clearTimeout(timer);
-  }, []);
+  function handleClick() {
+    localStorage.setItem("lastHelpDismissed", String(Date.now()));
+    setGlowing(false);
+    onClick();
+  }
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-all duration-200 text-sm font-medium ${glowing ? "help-btn-glow" : ""}`}
       style={!glowing ? { boxShadow: "0 4px 16px rgba(79,70,229,0.4)" } : undefined}
       title="Show getting started guide"
@@ -123,7 +134,7 @@ function BuilderProgressStepper({
 
   const steps = [
     { label: "Add Entry Strategy", done: step1 },
-    { label: "Configure Settings", done: step1 && step2 },
+    { label: "Click a Block", done: step1 && step2 },
     { label: "Export EA", done: step3 },
   ];
 
@@ -824,8 +835,8 @@ export function StrategyCanvas({
                       </svg>
                     </div>
 
-                    {/* Arrow pointing left toward toolbar */}
-                    <div className="flex items-center gap-2 mb-3">
+                    {/* Arrow pointing left toward toolbar — hidden on small screens */}
+                    <div className="hidden md:flex items-center gap-2 mb-3">
                       <svg
                         className="w-5 h-5 text-[#A78BFA] arrow-left-anim"
                         viewBox="0 0 20 20"
@@ -841,6 +852,9 @@ export function StrategyCanvas({
                         Drag a block from the toolbar
                       </p>
                     </div>
+                    <p className="text-sm text-[#94A3B8] md:hidden mb-3">
+                      Tap the + button to add your first block
+                    </p>
 
                     <p className="text-sm text-[#94A3B8] mb-2">
                       Start with an <span className="text-white font-medium">Entry Strategy</span>{" "}
@@ -880,7 +894,7 @@ export function StrategyCanvas({
 
           {/* Keyboard shortcut hint */}
           <div className="hidden md:block absolute bottom-4 left-4 z-10">
-            <span className="text-[10px] text-[#7C8DB0]">
+            <span className="text-xs text-[#7C8DB0]">
               Press{" "}
               <kbd className="px-1 py-0.5 bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8]">
                 Shift + ?
@@ -1056,11 +1070,9 @@ export function StrategyCanvas({
           )}
 
           {/* Validation Status - top right overlay */}
-          {nodes.length > 0 && (
-            <div className="absolute top-4 right-4 z-10">
-              <ValidationStatus validation={validation} />
-            </div>
-          )}
+          <div className="absolute top-4 right-4 z-10">
+            <ValidationStatus validation={validation} />
+          </div>
 
           {/* Keyboard Shortcuts Modal */}
           {showShortcuts && (

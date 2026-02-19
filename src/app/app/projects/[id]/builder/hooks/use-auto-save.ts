@@ -138,7 +138,7 @@ export function useAutoSave({
             savedCounterRef.current = changeCounterRef.current;
             if (isAutosave) {
               setAutoSaveStatus("saved");
-              setTimeout(() => setAutoSaveStatus("idle"), 2000);
+              setTimeout(() => setAutoSaveStatus("idle"), 5000);
             }
             return true;
           } else {
@@ -172,7 +172,7 @@ export function useAutoSave({
                 savedCounterRef.current = changeCounterRef.current;
                 if (isAutosave) {
                   setAutoSaveStatus("saved");
-                  setTimeout(() => setAutoSaveStatus("idle"), 2000);
+                  setTimeout(() => setAutoSaveStatus("idle"), 5000);
                 }
                 return true;
               }
@@ -233,7 +233,7 @@ export function useAutoSave({
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    if (hasUnsavedChanges && nodes.length > 0) {
+    if (hasUnsavedChanges) {
       retryCountRef.current = 0;
       autoSaveTimeoutRef.current = setTimeout(() => {
         attemptAutoSave();
@@ -248,7 +248,7 @@ export function useAutoSave({
         clearTimeout(retryTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, nodes.length, attemptAutoSave, debounceMs]);
+  }, [hasUnsavedChanges, attemptAutoSave, debounceMs]);
 
   // Warn user before leaving with unsaved changes (tab close / refresh)
   useEffect(() => {

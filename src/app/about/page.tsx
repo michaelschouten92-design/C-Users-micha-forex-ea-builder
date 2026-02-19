@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div id="main-content" className="min-h-screen flex flex-col">
       <SiteNav />
 
       <main className="pt-32 pb-8 px-4 sm:px-6">

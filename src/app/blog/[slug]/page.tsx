@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPostBySlug, getAllPosts, getRelatedPosts } from "@/lib/blog/posts";
+import { SiteNav } from "@/components/marketing/site-nav";
+import { Footer } from "@/components/marketing/footer";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -97,7 +99,8 @@ export default async function BlogPostPage({ params }: Props) {
   ];
 
   return (
-    <div className="min-h-screen py-16 px-4">
+    <div id="main-content" className="min-h-screen pt-24 pb-16 px-4">
+      <SiteNav />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -187,6 +190,7 @@ export default async function BlogPostPage({ params }: Props) {
           </Link>
         </div>
       </article>
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
@@ -24,8 +24,17 @@ interface PricingSectionProps {
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
   const router = useRouter();
-  const [interval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const [interval, setBillingInterval] = useState<"monthly" | "yearly">(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("billingInterval") as "monthly" | "yearly") || "monthly";
+    }
+    return "monthly";
+  });
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    sessionStorage.setItem("billingInterval", interval);
+  }, [interval]);
 
   const proPrice = PLANS.PRO.prices?.[interval];
   const elitePrice = PLANS.ELITE.prices?.[interval];
@@ -122,7 +131,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "All 5 strategy templates",
+              "All 6 strategy templates",
               "Full visual builder",
               "1 active project",
               "1 MQL5 export per month",
@@ -182,6 +191,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                     </span>
                   </div>
                 )}
+                {interval === "yearly" && (
+                  <p className="text-xs text-[#94A3B8] mt-1">
+                    ≈ {formatPrice(Math.round(proYearlyPrice / 12), "eur")}/month, billed annually
+                  </p>
+                )}
               </>
             ) : (
               <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
@@ -196,7 +210,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             {[
               "Unlimited projects",
               "Unlimited MQL5 + MQL4 exports",
-              "All 5 strategy templates",
+              "All 6 strategy templates",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -209,7 +223,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
               <strong>Who it&apos;s for:</strong> Active traders who iterate on multiple strategies
-              and want community access.
+              without export limits.
             </p>
           </div>
 
@@ -246,6 +260,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                       Save {formatPrice(eliteYearlySavings, "eur")}
                     </span>
                   </div>
+                )}
+                {interval === "yearly" && (
+                  <p className="text-xs text-[#94A3B8] mt-1">
+                    ≈ {formatPrice(Math.round(eliteYearlyPrice / 12), "eur")}/month, billed annually
+                  </p>
                 )}
               </>
             ) : (

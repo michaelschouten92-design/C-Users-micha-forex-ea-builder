@@ -7,12 +7,12 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Strategy Templates | 5 Ready-to-Export MT5 & MT4 Expert Advisors",
+  title: "Strategy Templates | 6 Ready-to-Export MT5 & MT4 Expert Advisors",
   description:
-    "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor. 5 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
+    "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor. 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Strategy Templates | 5 Ready-to-Export MT5 & MT4 Expert Advisors",
+    title: "Strategy Templates | 6 Ready-to-Export MT5 & MT4 Expert Advisors",
     description:
       "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor in minutes. No coding required.",
     url: "/templates",
@@ -27,7 +27,7 @@ const breadcrumbs = [
 const faqQuestions = [
   {
     q: "Are the strategy templates free?",
-    a: "Yes. All 5 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
+    a: "Yes. All 6 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
   },
   {
     q: "Can I change the template settings?",
@@ -118,7 +118,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16">
+    <div id="main-content" className="min-h-screen pt-24 pb-16">
       <SiteNav />
       <script
         type="application/ld+json"
@@ -139,7 +139,7 @@ export default function TemplatesPage() {
         {/* Header */}
         <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            5 strategy templates, ready to export
+            6 strategy templates, ready to export
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
             Pick a template, adjust a few settings, and export a working MetaTrader 5 or 4 Expert
@@ -189,7 +189,7 @@ export default function TemplatesPage() {
                     href="/login?mode=register"
                     className="text-sm text-[#A78BFA] font-medium hover:underline"
                   >
-                    Use template &rarr;
+                    Get started &rarr;
                   </Link>
                 )}
               </div>

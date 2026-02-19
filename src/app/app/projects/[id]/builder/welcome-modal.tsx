@@ -9,7 +9,7 @@ const STEPS = [
   {
     title: "Welcome to the Strategy Builder",
     description:
-      "Build a complete trading bot without writing a single line of code. Drag blocks, tweak settings, and export clean MQL5 (or MQL4). If you ever get stuck, click the Help button in the bottom-right corner of the canvas.",
+      "Build a trading bot without writing code. Drag blocks, tweak settings, and export clean MQL5 (or MQL4).",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -42,7 +42,7 @@ const STEPS = [
   {
     title: "The Blocks Panel (Left Side)",
     description:
-      "On the left you'll find all available blocks organized into three categories: Entry Strategies (your trade signals), Timing (session & spread filters), and Trade Management (trailing stop, breakeven). Use the search bar at the top to quickly find what you need.",
+      "On the left: Entry Strategies (trade signals), Timing (session & spread filters), and Trade Management (trailing stop, breakeven). Use the search bar to find blocks quickly.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -69,7 +69,7 @@ const STEPS = [
   {
     title: "Step 1: Drag an Entry Strategy",
     description:
-      "Drag an entry strategy block from the left panel onto the canvas. Try EMA Crossover — it's the simplest to start with. Each entry block already includes entry signals, stop loss, take profit, and position sizing — everything needed for a working EA.",
+      "Drag an entry strategy block onto the canvas. Try EMA Crossover — it's the simplest. Each entry block includes signals, SL, TP, and position sizing.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -119,7 +119,7 @@ const STEPS = [
   {
     title: "Step 2: Add Filters & Management",
     description:
-      "Optionally drag timing filters (Trading Sessions, Max Spread) to control when your EA trades, and trade management blocks (Trailing Stop, Breakeven) to manage open positions. These are not required — your strategy works with just an entry block.",
+      "Optionally add timing filters (Sessions, Max Spread) and trade management blocks (Trailing Stop, Breakeven). These are optional — your strategy works with just an entry block.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -165,7 +165,7 @@ const STEPS = [
   {
     title: "Step 3: Configure Block Settings",
     description:
-      'Click any block on the canvas to open its settings in the right panel. Adjust parameters like period lengths, SL/TP values, and lot sizes. Tip: check "Optimize in MT5" on any numeric parameter to include it in the MetaTrader 5 Strategy Tester optimisation.',
+      'Click any block to open its settings. Adjust periods, SL/TP, and lot sizes. Tip: check "Optimize in MT5" on any parameter to include it in Strategy Tester optimisation.',
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -210,7 +210,7 @@ const STEPS = [
   {
     title: "Step 4: Strategy Settings",
     description:
-      "Scroll down in the left panel to find Strategy Settings. Here you can set max concurrent trades, daily loss limits, trading direction (long/short/both), and apply prop firm preset rules. These apply globally to your entire EA.",
+      "Scroll down in the left panel for Strategy Settings: max trades, daily loss limits, trading direction, and prop firm presets. These apply globally to your EA.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -290,7 +290,7 @@ const STEPS = [
   {
     title: "Step 5: Export Your EA",
     description:
-      'When all blocks show a green "Strategy Complete" badge in the top-right, your strategy is ready. Click the Export button in the bottom bar to download a .mq5 file — this is your complete Expert Advisor source code.',
+      'When blocks show a green "Strategy Complete" badge, click Export in the bottom bar to download your .mq5 file.',
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -327,7 +327,7 @@ const STEPS = [
   {
     title: "Step 6: Backtest in MetaTrader 5",
     description:
-      'Open MetaTrader 5 and compile the .mq5 file. Launch the Strategy Tester (Ctrl+R), select your EA and symbol, set the model to "Every tick based on real ticks", and run at least 50 trades to get statistically meaningful results. Good luck!',
+      'Compile the .mq5 file in MetaTrader 5, launch Strategy Tester (Ctrl+R), use "Every tick based on real ticks", and run at least 50 trades. Good luck!',
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
@@ -471,7 +471,7 @@ export function WelcomeModal({
               onClick={dismiss}
               className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
             >
-              Skip
+              Skip intro
             </button>
           ) : (
             <button
@@ -499,6 +499,12 @@ export function WelcomeModal({
               Skip tutorial
             </button>
           </div>
+        )}
+
+        {isLast && (
+          <p className="text-[10px] text-[#64748B] mt-2">
+            You can access this guide anytime from the ? button in the bottom-right corner.
+          </p>
         )}
       </div>
     </div>

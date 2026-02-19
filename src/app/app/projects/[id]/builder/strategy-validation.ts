@@ -153,6 +153,28 @@ export function validateStrategy(
       });
     }
 
+    // Also check EMA-specific field names
+    if (typeof d.fastEma === "number" && typeof d.slowEma === "number" && d.fastEma >= d.slowEma) {
+      issues.push({
+        type: "error",
+        nodeId: n.id,
+        nodeType: n.type,
+        message: "Fast EMA period must be less than Slow EMA period",
+      });
+    }
+    if (
+      typeof d.macdFast === "number" &&
+      typeof d.macdSlow === "number" &&
+      d.macdFast >= d.macdSlow
+    ) {
+      issues.push({
+        type: "error",
+        nodeId: n.id,
+        nodeType: n.type,
+        message: "MACD fast period must be less than MACD slow period",
+      });
+    }
+
     // Lot size: warning if very large
     if ("lotSize" in d && typeof d.lotSize === "number" && d.lotSize > 10) {
       issues.push({

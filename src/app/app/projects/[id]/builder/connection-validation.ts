@@ -68,7 +68,7 @@ export function validateConnection(
   if (wouldCreateCycle(source!, target!, edges)) {
     return {
       isValid: false,
-      reason: "Connection would create a circular reference",
+      reason: "This connection would create a loop, which isn't allowed.",
     };
   }
 

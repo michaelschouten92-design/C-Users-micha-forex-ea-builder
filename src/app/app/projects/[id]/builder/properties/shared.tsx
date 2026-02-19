@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { SelectField } from "../components/form-fields";
 import type {
   BuilderNodeData,
@@ -47,7 +47,7 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
       />
       <span
         className="flex items-center gap-1"
-        title="Mark as optimizable input in MQL5 — MT5 Strategy Tester can auto-optimize this parameter"
+        title="Let MetaTrader 5 automatically test different values for this setting during backtesting"
       >
         <svg
           className="w-3 h-3"
@@ -151,20 +151,41 @@ export function DirectionSelector({
   onChange: (v: EntryDirection) => void;
 }) {
   return (
-    <SelectField
-      label="Direction"
-      value={direction}
-      options={DIRECTION_OPTIONS}
-      onChange={(v) => onChange(v as EntryDirection)}
-    />
+    <div>
+      <SelectField
+        label="Direction"
+        value={direction}
+        options={DIRECTION_OPTIONS}
+        onChange={(v) => onChange(v as EntryDirection)}
+      />
+      <p className="text-[10px] text-[#7C8DB0] mt-1">
+        Both = trade buys and sells. Long = buys only. Short = sells only.
+      </p>
+    </div>
   );
 }
 
 export function AdvancedToggleSection({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-      <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Advanced</span>
-      <div className="mt-2 space-y-3">{children}</div>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <svg
+          className={`w-3 h-3 text-[#94A3B8] transition-transform ${open ? "rotate-90" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Advanced</span>
+        <span className="text-[10px] text-[#64748B]">— Optional</span>
+      </button>
+      {open && <div className="mt-2 space-y-3">{children}</div>}
     </div>
   );
 }
@@ -365,8 +386,8 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
             tooltip="How many times your stop loss distance you want as profit. 2 means your target profit is 2x your stop loss."
           />
           <p className="text-[10px] text-[#7C8DB0] -mt-0.5">
-            Example: if your SL is 50 pips, then {data.tpRMultiple}R ={" "}
-            {Math.round(50 * data.tpRMultiple)} pips TP
+            {data.tpRMultiple}R means your take profit is {data.tpRMultiple}x your stop loss
+            distance.
           </p>
           <OptimizableFieldCheckbox fieldName="tpRMultiple" data={data} onChange={onChange} />
         </>

@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   return (
     <div className="md:hidden">
@@ -36,57 +43,64 @@ export function MobileNav() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-[#0D0117]/95 backdrop-blur-md border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex flex-col gap-4">
-          <Link
-            href="/"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+        <>
+          <div className="fixed inset-0 top-16 bg-black/50 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="absolute top-16 left-0 right-0 bg-[#0D0117]/95 backdrop-blur-md border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex flex-col gap-4 z-50"
           >
-            Product
-          </Link>
-          <Link
-            href="/templates"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Templates
-          </Link>
-          <Link
-            href="/pricing"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/coaching"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Coaching
-          </Link>
-          <Link
-            href="/blog"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Blog
-          </Link>
-          <Link
-            href="/login"
-            onClick={() => setIsOpen(false)}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/login?mode=register"
-            onClick={() => setIsOpen(false)}
-            className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors text-center"
-          >
-            Start Free
-          </Link>
-        </div>
+            <Link
+              href="/product"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Product
+            </Link>
+            <Link
+              href="/templates"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Templates
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/coaching"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Coaching
+            </Link>
+            <Link
+              href="/blog"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Blog
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/login?mode=register"
+              onClick={() => setIsOpen(false)}
+              className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors text-center"
+            >
+              Start Free
+            </Link>
+          </div>
+        </>
       )}
     </div>
   );

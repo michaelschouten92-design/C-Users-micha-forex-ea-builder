@@ -33,7 +33,7 @@ function LoginFormInner({
     if (errParam === "token_expired")
       return {
         type: "error",
-        message: "Verification link expired. Please request a new one in settings.",
+        message: "Verification link expired. Sign in and request a new one from your dashboard.",
       };
     if (errParam === "invalid_token")
       return { type: "error", message: "Invalid verification link. Please request a new one." };
@@ -112,7 +112,10 @@ function LoginFormInner({
         rate_limited: "Too many attempts. Please try again later.",
       };
       const code = (result as unknown as Record<string, string>).code;
-      setError(ERROR_MESSAGES[code] || "Something went wrong. Please try again.");
+      setError(
+        ERROR_MESSAGES[code] ||
+          "Something went wrong. Please try again or contact support@algo-studio.com for help."
+      );
     } else {
       router.push("/app");
       router.refresh();
@@ -355,7 +358,9 @@ function LoginFormInner({
               </button>
             </div>
             {isRegistration && (
-              <p className="text-[10px] text-[#64748B] mt-1">Must be at least 8 characters</p>
+              <p className="text-xs text-[#94A3B8] mt-1">
+                Must be at least 8 characters. Free plan: 1 project, 1 export/month.
+              </p>
             )}
           </div>
 
@@ -395,7 +400,13 @@ function LoginFormInner({
           disabled={loading}
           className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1A0626] focus:ring-[#22D3EE] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
         >
-          {loading ? "Loading..." : isRegistration ? "Create Account" : "Sign In"}
+          {loading
+            ? isRegistration
+              ? "Creating account..."
+              : "Signing in..."
+            : isRegistration
+              ? "Create Account"
+              : "Sign In"}
         </button>
       </form>
 
