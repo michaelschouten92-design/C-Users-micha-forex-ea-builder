@@ -1,13 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import { PLANS } from "@/lib/plans";
+import { checkContentType, checkBodySize } from "@/lib/validations";
 import type { PlanTier } from "@prisma/client";
 
 const TIERS: PlanTier[] = ["FREE", "PRO", "ELITE"];
+
+const planLimitSchema = z.object({
+  tier: z.enum(["FREE", "PRO", "ELITE"]),
+  maxProjects: z.number().int().min(0).max(999999),
+  maxExportsPerMonth: z.number().int().min(0).max(999999),
+  canExportMQL5: z.boolean(),
+  canExportMQL4: z.boolean(),
+});
 
 // GET /api/admin/plan-limits - Return plan limit configs (auto-seed from PLANS if empty)
 export async function GET() {
@@ -58,37 +68,40 @@ export async function PUT(request: Request) {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
+    const contentTypeError = checkContentType(request as Parameters<typeof checkContentType>[0]);
+    if (contentTypeError) return contentTypeError;
+    const sizeError = checkBodySize(request as Parameters<typeof checkBodySize>[0]);
+    if (sizeError) return sizeError;
+
     const body = await request.json();
-    const { tier, maxProjects, maxExportsPerMonth, canExportMQL5, canExportMQL4 } = body;
-
-    if (!TIERS.includes(tier)) {
-      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Invalid tier"), {
-        status: 400,
-      });
-    }
-
-    if (typeof maxProjects !== "number" || typeof maxExportsPerMonth !== "number") {
+    const validation = planLimitSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "maxProjects and maxExportsPerMonth must be numbers"),
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          validation.error.errors.map((e) => e.message).join(", ")
+        ),
         { status: 400 }
       );
     }
+
+    const { tier, maxProjects, maxExportsPerMonth, canExportMQL5, canExportMQL4 } = validation.data;
 
     const config = await prisma.planLimitConfig.upsert({
       where: { tier },
       update: {
         maxProjects,
         maxExportsPerMonth,
-        canExportMQL5: canExportMQL5 ?? true,
-        canExportMQL4: canExportMQL4 ?? false,
+        canExportMQL5,
+        canExportMQL4,
         updatedBy: adminCheck.session.user.id,
       },
       create: {
         tier,
         maxProjects,
         maxExportsPerMonth,
-        canExportMQL5: canExportMQL5 ?? true,
-        canExportMQL4: canExportMQL4 ?? false,
+        canExportMQL5,
+        canExportMQL4,
         updatedBy: adminCheck.session.user.id,
       },
     });

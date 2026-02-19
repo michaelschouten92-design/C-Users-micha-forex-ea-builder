@@ -93,12 +93,19 @@ const migrations: Migration[] = [
 
 export const CURRENT_VERSION = "1.2";
 
+function compareVersions(a: string, b: string): number {
+  const [aMajor, aMinor] = a.split(".").map(Number);
+  const [bMajor, bMinor] = b.split(".").map(Number);
+  if (aMajor !== bMajor) return aMajor - bMajor;
+  return aMinor - bMinor;
+}
+
 export function migrateProjectData(data: unknown): BuildJsonSchema {
   let current = data as Record<string, unknown>;
   let version = (current.version as string) ?? "1.0";
 
   for (const migration of migrations) {
-    if (version < migration.version) {
+    if (compareVersions(version, migration.version) < 0) {
       current = migration.up(current);
       version = migration.version;
     }

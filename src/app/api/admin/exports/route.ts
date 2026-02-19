@@ -19,8 +19,9 @@ export async function GET(request: Request) {
     const status = url.searchParams.get("status") || undefined;
     const userId = url.searchParams.get("userId") || undefined;
 
+    const VALID_STATUSES = ["DONE", "FAILED", "QUEUED", "RUNNING"];
     const where: Record<string, unknown> = {};
-    if (status) where.status = status;
+    if (status && VALID_STATUSES.includes(status)) where.status = status;
     if (userId) where.userId = userId;
 
     const [data, total] = await Promise.all([

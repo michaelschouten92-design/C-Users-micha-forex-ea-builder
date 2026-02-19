@@ -418,8 +418,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             const changedAtSec = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
             const tokenIssuedAt = (token.iat as number) || 0;
             if (changedAtSec > tokenIssuedAt) {
-              // Password was changed after this token was issued — invalidate
-              return { ...token, id: undefined };
+              // Password was changed after this token was issued — destroy session
+              return null as unknown as typeof token;
             }
           }
           // Store role, suspended, and emailVerified status in token

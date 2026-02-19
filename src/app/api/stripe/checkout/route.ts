@@ -120,14 +120,23 @@ export async function POST(request: NextRequest) {
     let stripeCustomerId = user.subscription?.stripeCustomerId;
 
     if (!stripeCustomerId) {
-      // Create new Stripe customer
-      const customer = await getStripe().customers.create({
+      // Search for existing Stripe customer first (prevents duplicates on double-click)
+      const existingCustomers = await getStripe().customers.list({
         email: user.email,
-        metadata: {
-          userId: user.id,
-        },
+        limit: 1,
       });
-      stripeCustomerId = customer.id;
+
+      if (existingCustomers.data.length > 0) {
+        stripeCustomerId = existingCustomers.data[0].id;
+      } else {
+        const customer = await getStripe().customers.create({
+          email: user.email,
+          metadata: {
+            userId: user.id,
+          },
+        });
+        stripeCustomerId = customer.id;
+      }
 
       // Save customer ID (upsert in case subscription row doesn't exist yet)
       await prisma.subscription.upsert({
@@ -159,9 +168,10 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Add trial period for users who have never had a paid subscription
+    // Add trial period for users who have NEVER had a paid subscription
+    // Uses persistent hadPaidPlan flag (survives cancellation + resubscription)
     const trialDays = env.STRIPE_TRIAL_DAYS;
-    const hasHadPaidPlan = currentTier === "PRO" || currentTier === "ELITE";
+    const hasHadPaidPlan = user.subscription?.hadPaidPlan === true;
     if (trialDays && trialDays > 0 && !hasHadPaidPlan) {
       checkoutParams.subscription_data = {
         trial_period_days: trialDays,

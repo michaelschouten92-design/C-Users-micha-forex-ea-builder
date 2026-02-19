@@ -351,14 +351,19 @@ function generatePartialCloseCode(
   code: GeneratedCode
 ): void {
   const group = "Partial Close";
+  // Deduplicate input name when multiple partial-close nodes exist
+  const existingPartialInputs = code.inputs.filter((i) =>
+    i.name.startsWith("InpPartialClosePercent")
+  );
+  const pcSuffix = existingPartialInputs.length > 0 ? `${existingPartialInputs.length + 1}` : "";
   code.inputs.push(
     createInput(
       node,
       "closePercent",
-      "InpPartialClosePercent",
+      `InpPartialClosePercent${pcSuffix}`,
       "double",
       data.closePercent,
-      "Partial Close %",
+      `Partial Close %${pcSuffix ? ` (${pcSuffix})` : ""}`,
       group
     )
   );
@@ -466,6 +471,9 @@ void CleanPartialClosedTickets()
   if (rMultipleTrigger && rMultipleTrigger > 0) {
     // R-multiple trigger: compare profit in points to SL distance × R-multiple
     code.onTick.push("         double openSL = PositionGetDouble(POSITION_SL);");
+    code.onTick.push(
+      "         if(openSL == 0) continue; // R-multiple trigger requires a defined SL"
+    );
     code.onTick.push("         double slDistPoints = MathAbs(openPrice - openSL) / point;");
     code.onTick.push("         double triggerPoints = slDistPoints * InpTP1RMultiple;");
     code.onTick.push(

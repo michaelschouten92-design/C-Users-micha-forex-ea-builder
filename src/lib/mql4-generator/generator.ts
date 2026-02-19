@@ -1169,11 +1169,9 @@ export function generateMQL4Code(
       `//--- Friday close filter (${String(closeHour).padStart(2, "0")}:${String(closeMinute).padStart(2, "0")} ${timeLabel})`
     );
     code.onTick.push(`{`);
-    code.onTick.push(`   MqlDateTime fcDt;`);
-    code.onTick.push(`   TimeToStruct(${timeFunc}, fcDt);`);
-    code.onTick.push(`   if(fcDt.day_of_week == 5)`);
+    code.onTick.push(`   if(DayOfWeek() == 5)`);
     code.onTick.push(`   {`);
-    code.onTick.push(`      int fcMinutes = fcDt.hour * 60 + fcDt.min;`);
+    code.onTick.push(`      int fcMinutes = Hour() * 60 + Minute();`);
     code.onTick.push(`      int fcCloseMinutes = InpFridayCloseHour * 60 + InpFridayCloseMinute;`);
     code.onTick.push(`      if(fcMinutes >= fcCloseMinutes)`);
     code.onTick.push(`      {`);
@@ -1318,9 +1316,7 @@ export function generateMQL4Code(
     code.onTick.push("");
     code.onTick.push(`//--- Close range breakout positions at specified time (${timeLabel})`);
     code.onTick.push("{");
-    code.onTick.push(`   MqlDateTime closeTimeDt;`);
-    code.onTick.push(`   TimeToStruct(${timeFunc}, closeTimeDt);`);
-    code.onTick.push(`   int closeMinutes = closeTimeDt.hour * 60 + closeTimeDt.min;`);
+    code.onTick.push(`   int closeMinutes = Hour() * 60 + Minute();`);
     code.onTick.push(`   if(closeMinutes >= InpRangeCloseHour * 60 + InpRangeCloseMinute)`);
     code.onTick.push("   {");
     code.onTick.push("      for(int i = OrdersTotal() - 1; i >= 0; i--)");

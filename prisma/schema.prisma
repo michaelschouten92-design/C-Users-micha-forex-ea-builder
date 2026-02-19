@@ -76,6 +76,7 @@ model User {
 
   @@index([createdAt])
   @@index([suspended])
+  @@index([referredBy])
 }
 
 model Subscription {
@@ -84,8 +85,10 @@ model Subscription {
   tier   PlanTier @default(FREE)
   status String   @default("active")
 
+  hadPaidPlan Boolean  @default(false) // Set true on first paid subscription, never reset
+
   // Future-proof Stripe fields
-  stripeCustomerId   String?
+  stripeCustomerId   String?  @unique
   stripeSubId        String?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
@@ -209,6 +212,7 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([eventType, createdAt])
   @@index([createdAt])
+  @@index([resourceType, resourceId, createdAt])
 }
 
 model WebhookEvent {
@@ -424,4 +428,6 @@ model EAAlert {
   instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([acknowledged, createdAt])
+  @@index([instanceId, acknowledged, createdAt])
+  @@index([ruleId])
 }

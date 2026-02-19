@@ -11,7 +11,6 @@ import {
   sendPaymentActionRequiredEmail,
   sendPlanChangeEmail,
   sendTrialEndingEmail,
-  sendRenewalReminderEmail,
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
 import type Stripe from "stripe";
@@ -39,11 +38,11 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
   const endRaw = raw?.current_period_end ?? subRaw.current_period_end;
 
   if (typeof startRaw !== "number" || typeof endRaw !== "number") {
-    log.warn(
+    log.error(
       { subscriptionId: subscription.id, startRaw, endRaw },
-      "Missing period dates on subscription, using current time"
+      "Missing period dates on subscription — throwing to let Stripe retry"
     );
-    return { start: new Date(), end: new Date() };
+    throw new Error(`Missing period dates on subscription ${subscription.id}`);
   }
 
   return {
@@ -141,11 +140,8 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case "invoice.upcoming": {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoiceUpcoming(invoice);
-        break;
-      }
+      // NOTE: invoice.upcoming is NOT a real Stripe webhook event — removed.
+      // Renewal reminders should be handled by a cron job instead.
 
       case "customer.subscription.paused": {
         const subscription = event.data.object as Stripe.Subscription;
@@ -260,6 +256,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
         stripeCustomerId: customerId,
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
+        hadPaidPlan: true,
       },
     });
 
@@ -355,9 +352,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       where: { id: userSubscription.id },
       data: {
         tier,
+        stripeSubId: subscription.id,
         status: statusMap[subscription.status] || subscription.status,
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
+        hadPaidPlan: true,
       },
     });
 
@@ -563,28 +562,6 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   );
 }
 
-async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
-  const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
-
-  const sub = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-    include: { user: { select: { email: true } } },
-  });
-
-  if (!sub?.user?.email) return;
-
-  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-  sendRenewalReminderEmail(sub.user.email, sub.tier, invoice.amount_due ?? 0, portalUrl).catch(
-    (err) => log.error({ err }, "Renewal reminder email send failed")
-  );
-
-  log.info(
-    { customerId, tier: sub.tier, amountDue: invoice.amount_due },
-    "Upcoming invoice — renewal reminder sent"
-  );
-}
-
 async function handleChargeRefunded(charge: Stripe.Charge) {
   const customerId = getStringId(charge.customer);
   if (!customerId) return;
@@ -635,12 +612,18 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
   const chargeId = getStringId(dispute.charge);
 
   if (dispute.status === "lost") {
-    // Dispute was lost — downgrade to FREE
-    const customerId = getStringId(
-      (dispute as unknown as Record<string, unknown>).customer as string | null
-    );
+    // Dispute was lost — retrieve the charge to get customer ID
+    if (!chargeId) {
+      log.error({ disputeId: dispute.id }, "Dispute lost but no charge ID — manual review");
+      return;
+    }
+    const charge = await getStripe().charges.retrieve(chargeId);
+    const customerId = getStringId(charge.customer);
     if (!customerId) {
-      log.error({ disputeId: dispute.id }, "Dispute lost but no customer ID — manual review");
+      log.error(
+        { disputeId: dispute.id, chargeId },
+        "Dispute lost but no customer ID on charge — manual review"
+      );
       return;
     }
 

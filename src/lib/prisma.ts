@@ -19,10 +19,16 @@ function createPrismaClient() {
         : [{ emit: "event", level: "query" }],
   });
 
-  // Log slow queries in all environments
+  // Log slow queries in all environments (omit full SQL in production)
   client.$on("query" as never, (e: { duration: number; query: string }) => {
     if (e.duration > SLOW_QUERY_THRESHOLD_MS) {
-      logger.warn({ durationMs: e.duration, query: e.query }, "Slow database query detected");
+      logger.warn(
+        {
+          durationMs: e.duration,
+          query: env.NODE_ENV === "development" ? e.query : undefined,
+        },
+        "Slow database query detected"
+      );
     }
   });
 

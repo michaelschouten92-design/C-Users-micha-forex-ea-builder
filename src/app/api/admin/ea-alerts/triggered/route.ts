@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
@@ -55,14 +56,18 @@ export async function PATCH(request: Request) {
     if (!adminCheck.authorized) return adminCheck.response;
 
     const body = await request.json().catch(() => null);
-    if (!body?.id) {
-      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Missing alert id"), {
-        status: 400,
-      });
+    const bodyValidation = z.object({ id: z.string().cuid() }).safeParse(body);
+    if (!bodyValidation.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "Missing or invalid alert id"),
+        {
+          status: 400,
+        }
+      );
     }
 
     const alert = await prisma.eAAlert.update({
-      where: { id: body.id },
+      where: { id: bodyValidation.data.id },
       data: { acknowledged: true },
     });
 

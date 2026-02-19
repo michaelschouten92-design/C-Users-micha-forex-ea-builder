@@ -127,18 +127,12 @@ class UpstashRateLimiter {
     };
   }
 
-  // Synchronous wrapper that returns a pessimistic result if async isn't possible.
-  // For endpoints that need sync behavior, use checkAsync instead.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  check(key: string): RateLimitResult {
-    // This won't actually block — we return a "pass" and let the async check
-    // happen in endpoints that support it. See createRateLimitChecker below.
-    return {
-      success: true,
-      limit: this.config.limit,
-      remaining: this.config.limit,
-      resetAt: new Date(Date.now() + this.config.windowMs),
-    };
+  // Synchronous check is not supported with Upstash Redis.
+  // All callers MUST use checkRateLimit() (async) instead.
+  check(_key: string): RateLimitResult {
+    throw new Error(
+      "UpstashRateLimiter requires async check. Use checkRateLimit() instead of limiter.check()."
+    );
   }
 }
 

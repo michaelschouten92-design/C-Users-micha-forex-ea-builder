@@ -847,10 +847,16 @@ export async function sendBulkAdminEmail(email: string, subject: string, htmlMes
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const safeMessage = esc(htmlMessage).replace(/\n/g, "<br>");
 
+  // Sanitize subject of control characters
+  const safeSubject = subject.replace(/[\x00-\x1f\x7f]/g, "");
+
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject,
+    subject: safeSubject,
+    headers: {
+      "List-Unsubscribe": `<mailto:unsubscribe@algo-studio.com?subject=unsubscribe>`,
+    },
     html: `
       <!DOCTYPE html>
       <html>

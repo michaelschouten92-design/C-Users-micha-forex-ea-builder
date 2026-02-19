@@ -279,8 +279,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}MainBuffer, true);`);
         code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
-        code.onInit.push(`ArraySetAsSeries(${varPrefix}HistogramBuffer, true);`);
         code.onInit.push(`ArrayResize(${varPrefix}HistogramBuffer, ${copyBars});`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}HistogramBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
         // Compute histogram (main - signal) after buffers are filled

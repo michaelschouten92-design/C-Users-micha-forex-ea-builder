@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
@@ -15,6 +16,7 @@ import {
   formatRateLimitError,
 } from "./rate-limit";
 import { logAuditEvent } from "./audit";
+import { OTP_COOKIE_NAME } from "./admin-otp";
 
 interface AdminCheckResult {
   authorized: true;
@@ -92,23 +94,32 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
     adminUser.email?.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase() &&
     adminUser.role !== "ADMIN"
   ) {
-    await prisma.user
-      .update({
+    try {
+      await prisma.user.update({
         where: { id: session.user.id },
         data: { role: "ADMIN" },
-      })
-      .then(() => {
-        // Audit the bootstrap promotion
-        logAuditEvent({
-          userId: session.user.id,
-          eventType: "admin.bootstrap_promotion",
-          metadata: { email: adminUser.email, method: "ADMIN_EMAIL_env" },
-        }).catch(() => {});
-        logger.info({ userId: session.user.id }, "Auto-promoted admin user via ADMIN_EMAIL");
-      })
-      .catch((err) => {
-        logger.error({ err, userId: session.user.id }, "Failed to auto-promote admin user");
       });
+      await logAuditEvent({
+        userId: session.user.id,
+        eventType: "admin.bootstrap_promotion",
+        metadata: { email: adminUser.email, method: "ADMIN_EMAIL_env" },
+      }).catch(() => {});
+      logger.info({ userId: session.user.id }, "Auto-promoted admin user via ADMIN_EMAIL");
+    } catch (err) {
+      logger.error({ err, userId: session.user.id }, "Failed to auto-promote admin user");
+    }
+  }
+
+  // Verify OTP step-up authentication cookie (skip for OTP generation route)
+  const otpCookie = (await cookies()).get(OTP_COOKIE_NAME)?.value;
+  if (!otpCookie) {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        apiError(ErrorCode.FORBIDDEN, "Admin OTP verification required"),
+        { status: 403 }
+      ),
+    };
   }
 
   // Extract impersonatorId if admin is impersonating

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
@@ -106,21 +107,30 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (sizeError) return sizeError;
 
     const { id } = await params;
-    const body = await request.json();
-    const { adminNotes } = body;
 
-    if (typeof adminNotes !== "string") {
+    // Validate id format
+    const idValidation = z.string().cuid().safeParse(id);
+    if (!idValidation.success) {
+      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Invalid user id"), {
+        status: 400,
+      });
+    }
+
+    const body = await request.json();
+    const bodyValidation = z.object({ adminNotes: z.string().max(10000) }).safeParse(body);
+    if (!bodyValidation.success) {
       return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "adminNotes must be a string"),
+        apiError(ErrorCode.VALIDATION_FAILED, "adminNotes must be a string (max 10,000 chars)"),
         { status: 400 }
       );
     }
 
-    if (adminNotes.length > 10000) {
-      return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "adminNotes must be at most 10,000 characters"),
-        { status: 400 }
-      );
+    const { adminNotes } = bodyValidation.data;
+
+    // Check user exists before updating
+    const existing = await prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "User not found"), { status: 404 });
     }
 
     // Encrypt admin notes before storing

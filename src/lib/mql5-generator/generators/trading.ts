@@ -494,6 +494,7 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
         )
       );
       code.onTick.push("double tpPips = slPips * InpRiskReward;");
+      code.tpMethod = "RISK_REWARD";
       break;
 
     case "ATR_BASED": {
@@ -1028,7 +1029,8 @@ export function generateEntryLogic(
       const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
       const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
       // Only override TP if it's risk-reward based; otherwise use the same tpPips
-      const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
+      const sellTPVar =
+        code.hasDirectionalSL && code.tpMethod === "RISK_REWARD" ? sellTP : "tpPips";
 
       const minBarsTrackSell =
         ctx.minBarsBetweenTrades > 0 ? " gLastTradeBar = iBars(_Symbol, PERIOD_CURRENT);" : "";

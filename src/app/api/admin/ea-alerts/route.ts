@@ -84,9 +84,16 @@ export async function DELETE(request: Request) {
 
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
-    if (!id) {
-      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Missing id"), {
+    if (!id || !z.string().cuid().safeParse(id).success) {
+      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Missing or invalid id"), {
         status: 400,
+      });
+    }
+
+    const existing = await prisma.eAAlertRule.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Alert rule not found"), {
+        status: 404,
       });
     }
 

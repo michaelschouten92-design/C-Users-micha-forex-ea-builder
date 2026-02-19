@@ -114,10 +114,18 @@ export async function DELETE(request: Request) {
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Segment id is required"), {
-        status: 400,
-      });
+    if (!id || !z.string().cuid().safeParse(id).success) {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "Missing or invalid segment id"),
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const existing = await prisma.userSegment.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Segment not found"), { status: 404 });
     }
 
     await prisma.userSegment.delete({ where: { id } });

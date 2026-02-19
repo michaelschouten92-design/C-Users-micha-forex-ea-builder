@@ -76,6 +76,8 @@ export interface GeneratedCode {
   hasDirectionalSL?: boolean;
   /** Tracks the SL method used (e.g. PERCENT) so pending order logic can adjust */
   slMethod?: string;
+  /** Tracks the TP method used (e.g. RISK_REWARD) for direction-aware sell TP */
+  tpMethod?: string;
   /** Tracks the max indicator period to calculate minimum bars needed in OnTick */
   maxIndicatorPeriod: number;
 }
