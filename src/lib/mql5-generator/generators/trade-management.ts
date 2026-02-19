@@ -4,13 +4,17 @@ import type {
   TrailingStopNodeData,
   PartialCloseNodeData,
   LockProfitNodeData,
+  MultiLevelTPNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { createInput } from "./shared";
 
 export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCode): void {
   const data = node.data;
-  const managementType = ("managementType" in data ? data.managementType : null) || node.type;
+  const managementType =
+    ("managementType" in data ? data.managementType : null) ||
+    ("tradeManagementType" in data ? data.tradeManagementType : null) ||
+    node.type;
 
   code.onTick.push("");
   code.onTick.push("//--- Trade Management");
@@ -27,6 +31,9 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
       break;
     case "lock-profit":
       generateLockProfitCode(node, data as LockProfitNodeData, code);
+      break;
+    case "multi-level-tp":
+      generateMultiLevelTPCode(node, data as MultiLevelTPNodeData, code);
       break;
   }
 }
@@ -661,6 +668,227 @@ function generateLockProfitCode(
   code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
+  code.onTick.push("   }");
+  code.onTick.push("}");
+}
+
+function generateMultiLevelTPCode(
+  node: BuilderNode,
+  data: MultiLevelTPNodeData,
+  code: GeneratedCode
+): void {
+  const group = "Multi-Level TP";
+
+  code.inputs.push(
+    createInput(
+      node,
+      "tp1Pips",
+      "InpMLTP1Pips",
+      "double",
+      data.tp1Pips,
+      "TP1 Distance (pips)",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "tp1Percent",
+      "InpMLTP1Percent",
+      "double",
+      data.tp1Percent,
+      "TP1 Close %",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "tp2Pips",
+      "InpMLTP2Pips",
+      "double",
+      data.tp2Pips,
+      "TP2 Distance (pips)",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "tp2Percent",
+      "InpMLTP2Percent",
+      "double",
+      data.tp2Percent,
+      "TP2 Close %",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "tp3Pips",
+      "InpMLTP3Pips",
+      "double",
+      data.tp3Pips,
+      "TP3 Distance (pips)",
+      group
+    )
+  );
+  code.inputs.push(
+    createInput(
+      node,
+      "tp3Percent",
+      "InpMLTP3Percent",
+      "double",
+      data.tp3Percent,
+      "TP3 Close %",
+      group
+    )
+  );
+
+  // Track TP state per position: 0=no TP hit, 1=TP1 hit, 2=TP2 hit, 3=TP3 hit
+  code.globalVariables.push("struct SMLTPState { ulong ticket; int level; };");
+  code.globalVariables.push("SMLTPState g_mltpStates[];");
+  code.globalVariables.push("int g_mltpCount = 0;");
+
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Get Multi-Level TP state for a ticket                            |
+//+------------------------------------------------------------------+
+int GetMLTPLevel(ulong ticket)
+{
+   for(int i = 0; i < g_mltpCount; i++)
+   {
+      if(g_mltpStates[i].ticket == ticket) return g_mltpStates[i].level;
+   }
+   return 0;
+}
+
+//+------------------------------------------------------------------+
+//| Set Multi-Level TP state for a ticket                            |
+//+------------------------------------------------------------------+
+void SetMLTPLevel(ulong ticket, int level)
+{
+   for(int i = 0; i < g_mltpCount; i++)
+   {
+      if(g_mltpStates[i].ticket == ticket) { g_mltpStates[i].level = level; return; }
+   }
+   int idx = g_mltpCount++;
+   ArrayResize(g_mltpStates, g_mltpCount);
+   g_mltpStates[idx].ticket = ticket;
+   g_mltpStates[idx].level = level;
+}
+
+//+------------------------------------------------------------------+
+//| Clean up MLTP states for closed positions                        |
+//+------------------------------------------------------------------+
+void CleanMLTPStates()
+{
+   for(int i = g_mltpCount - 1; i >= 0; i--)
+   {
+      if(!PositionSelectByTicket(g_mltpStates[i].ticket))
+      {
+         int last = g_mltpCount - 1;
+         g_mltpStates[i] = g_mltpStates[last];
+         g_mltpCount--;
+         ArrayResize(g_mltpStates, g_mltpCount);
+      }
+   }
+}`);
+
+  code.onTick.push("// Multi-Level TP Management");
+  code.onTick.push("CleanMLTPStates();");
+  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
+  code.onTick.push("{");
+  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
+  code.onTick.push("   if(!PositionSelectByTicket(ticket)) continue;");
+  code.onTick.push(
+    "   if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber || PositionGetString(POSITION_SYMBOL) != _Symbol) continue;"
+  );
+  code.onTick.push("");
+  code.onTick.push("   double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
+  code.onTick.push("   double volume = PositionGetDouble(POSITION_VOLUME);");
+  code.onTick.push("   long posType = PositionGetInteger(POSITION_TYPE);");
+  code.onTick.push("   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
+  code.onTick.push("   int tpLevel = GetMLTPLevel(ticket);");
+  code.onTick.push("");
+  code.onTick.push("   double profitPoints = 0;");
+  code.onTick.push("   if(posType == POSITION_TYPE_BUY)");
+  code.onTick.push(
+    "      profitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;"
+  );
+  code.onTick.push("   else if(posType == POSITION_TYPE_SELL)");
+  code.onTick.push(
+    "      profitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;"
+  );
+  code.onTick.push("");
+  code.onTick.push("   double tp1Points = InpMLTP1Pips * _pipFactor;");
+  code.onTick.push("   double tp2Points = InpMLTP2Pips * _pipFactor;");
+  code.onTick.push("   double tp3Points = InpMLTP3Pips * _pipFactor;");
+  code.onTick.push("");
+  code.onTick.push("   double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);");
+  code.onTick.push("   double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
+  code.onTick.push("");
+
+  // TP1 check
+  code.onTick.push("   // TP Level 1");
+  code.onTick.push("   if(tpLevel < 1 && profitPoints >= tp1Points)");
+  code.onTick.push("   {");
+  code.onTick.push(
+    "      double closeVol = MathFloor(volume * InpMLTP1Percent / 100.0 / pcLotStep) * pcLotStep;"
+  );
+  code.onTick.push(
+    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
+  );
+  code.onTick.push("      if(closeVol >= pcMinLot)");
+  code.onTick.push("      {");
+  code.onTick.push("         trade.PositionClosePartial(ticket, closeVol);");
+  code.onTick.push("         SetMLTPLevel(ticket, 1);");
+
+  // After TP1: move SL based on moveSLAfterTP1
+  if (data.moveSLAfterTP1 === "BREAKEVEN") {
+    code.onTick.push("         // Move SL to breakeven after TP1");
+    code.onTick.push("         if(PositionSelectByTicket(ticket))");
+    code.onTick.push(
+      "            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
+    );
+  } else if (data.moveSLAfterTP1 === "TRAIL") {
+    code.onTick.push("         // Move SL to breakeven and let trailing stop take over");
+    code.onTick.push("         if(PositionSelectByTicket(ticket))");
+    code.onTick.push(
+      "            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
+    );
+  }
+
+  code.onTick.push("      }");
+  code.onTick.push("      continue;");
+  code.onTick.push("   }");
+  code.onTick.push("");
+
+  // TP2 check
+  code.onTick.push("   // TP Level 2");
+  code.onTick.push("   if(tpLevel == 1 && profitPoints >= tp2Points)");
+  code.onTick.push("   {");
+  code.onTick.push(
+    "      double closeVol = MathFloor(volume * InpMLTP2Percent / (InpMLTP2Percent + InpMLTP3Percent) / pcLotStep) * pcLotStep;"
+  );
+  code.onTick.push(
+    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
+  );
+  code.onTick.push("      if(closeVol >= pcMinLot)");
+  code.onTick.push("      {");
+  code.onTick.push("         trade.PositionClosePartial(ticket, closeVol);");
+  code.onTick.push("         SetMLTPLevel(ticket, 2);");
+  code.onTick.push("      }");
+  code.onTick.push("      continue;");
+  code.onTick.push("   }");
+  code.onTick.push("");
+
+  // TP3 check: close remaining
+  code.onTick.push("   // TP Level 3: close remaining position");
+  code.onTick.push("   if(tpLevel == 2 && profitPoints >= tp3Points)");
+  code.onTick.push("   {");
+  code.onTick.push("      trade.PositionClose(ticket);");
+  code.onTick.push("      SetMLTPLevel(ticket, 3);");
   code.onTick.push("   }");
   code.onTick.push("}");
 }

@@ -18,20 +18,27 @@ import { StochasticNode } from "./indicators/stochastic-node";
 import { CCINode } from "./indicators/cci-node";
 import { IchimokuNode } from "./indicators/ichimoku-node";
 import { CustomIndicatorNode } from "./indicators/custom-indicator-node";
+import { OBVNode } from "./indicators/obv-node";
+import { VWAPNode } from "./indicators/vwap-node";
 import { ConditionNode } from "./condition-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
 import { RangeBreakoutNode } from "./priceaction/range-breakout-node";
+import { OrderBlockNode } from "./priceaction/order-block-node";
+import { FairValueGapNode } from "./priceaction/fair-value-gap-node";
+import { MarketStructureNode } from "./priceaction/market-structure-node";
 import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
 import { StopLossNode } from "./stop-loss-node";
 import { TakeProfitNode } from "./take-profit-node";
 import { CloseConditionNode } from "./close-condition-node";
 import { TimeExitNode } from "./trading/time-exit-node";
+import { GridPyramidNode } from "./trading/grid-pyramid-node";
 import {
   BreakevenStopNode,
   TrailingStopNode,
   PartialCloseNode,
   LockProfitNode,
+  MultiLevelTPNode,
 } from "./trademanagement";
 import { EMACrossoverEntryNode } from "./entry-strategies/ema-crossover-entry-node";
 import { RangeBreakoutEntryNode } from "./entry-strategies/range-breakout-entry-node";
@@ -59,20 +66,27 @@ export const nodeTypes: NodeTypes = {
   cci: CCINode,
   ichimoku: IchimokuNode,
   "custom-indicator": CustomIndicatorNode,
+  obv: OBVNode,
+  vwap: VWAPNode,
   condition: ConditionNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
   "range-breakout": RangeBreakoutNode,
+  "order-block": OrderBlockNode,
+  "fair-value-gap": FairValueGapNode,
+  "market-structure": MarketStructureNode,
   "place-buy": PlaceBuyNode,
   "place-sell": PlaceSellNode,
   "stop-loss": StopLossNode,
   "take-profit": TakeProfitNode,
   "close-condition": CloseConditionNode,
   "time-exit": TimeExitNode,
+  "grid-pyramid": GridPyramidNode,
   "breakeven-stop": BreakevenStopNode,
   "trailing-stop": TrailingStopNode,
   "partial-close": PartialCloseNode,
   "lock-profit": LockProfitNode,
+  "multi-level-tp": MultiLevelTPNode,
   "ema-crossover-entry": EMACrossoverEntryNode,
   "range-breakout-entry": RangeBreakoutEntryNode,
   "rsi-reversal-entry": RSIReversalEntryNode,
@@ -100,20 +114,27 @@ export {
   CCINode,
   IchimokuNode,
   CustomIndicatorNode,
+  OBVNode,
+  VWAPNode,
   ConditionNode,
   CandlestickPatternNode,
   SupportResistanceNode,
   RangeBreakoutNode,
+  OrderBlockNode,
+  FairValueGapNode,
+  MarketStructureNode,
   PlaceBuyNode,
   PlaceSellNode,
   StopLossNode,
   TakeProfitNode,
   CloseConditionNode,
   TimeExitNode,
+  GridPyramidNode,
   BreakevenStopNode,
   TrailingStopNode,
   PartialCloseNode,
   LockProfitNode,
+  MultiLevelTPNode,
   EMACrossoverEntryNode,
   RangeBreakoutEntryNode,
   RSIReversalEntryNode,

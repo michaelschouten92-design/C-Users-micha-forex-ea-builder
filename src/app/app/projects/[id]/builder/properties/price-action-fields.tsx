@@ -5,6 +5,9 @@ import type {
   CandlestickPatternNodeData,
   SupportResistanceNodeData,
   RangeBreakoutNodeData,
+  OrderBlockNodeData,
+  FairValueGapNodeData,
+  MarketStructureNodeData,
   CandlestickPattern,
   RangeType,
   RangeSession,
@@ -14,6 +17,7 @@ import type {
 } from "@/types/builder";
 import {
   TIMEFRAME_OPTIONS,
+  SIGNAL_MODE_OPTIONS,
   CANDLESTICK_PATTERN_OPTIONS,
   RANGE_TYPE_OPTIONS,
   RANGE_SESSION_OPTIONS,
@@ -299,6 +303,181 @@ export function RangeBreakoutFields({
           <FieldWarning message="Min range should not exceed max range" />
         )}
       </AdvancedToggleSection>
+    </>
+  );
+}
+
+export function OrderBlockFields({
+  data,
+  onChange,
+}: {
+  data: OrderBlockNodeData;
+  onChange: (updates: Partial<OrderBlockNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="Lookback Period (bars)"
+        value={data.lookbackPeriod}
+        min={10}
+        max={500}
+        onChange={(v) => onChange({ lookbackPeriod: v })}
+      />
+      <NumberField
+        label="Min Block Size (pips)"
+        value={data.minBlockSize}
+        min={1}
+        max={200}
+        onChange={(v) => onChange({ minBlockSize: v })}
+      />
+      <NumberField
+        label="Max Block Age (bars)"
+        value={data.maxBlockAge}
+        min={10}
+        max={1000}
+        onChange={(v) => onChange({ maxBlockAge: v })}
+      />
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={SIGNAL_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Detects order blocks (ICT). Bullish OB = last bearish candle before a strong bullish
+        impulse. Buy when price returns to the OB zone.
+      </div>
+    </>
+  );
+}
+
+export function FairValueGapFields({
+  data,
+  onChange,
+}: {
+  data: FairValueGapNodeData;
+  onChange: (updates: Partial<FairValueGapNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="Min Gap Size (pips)"
+        value={data.minGapSize}
+        min={1}
+        max={200}
+        onChange={(v) => onChange({ minGapSize: v })}
+      />
+      <NumberField
+        label="Max Gap Age (bars)"
+        value={data.maxGapAge}
+        min={5}
+        max={500}
+        onChange={(v) => onChange({ maxGapAge: v })}
+      />
+      <NumberField
+        label="Fill Percentage (%)"
+        value={data.fillPercentage}
+        min={0}
+        max={100}
+        onChange={(v) => onChange({ fillPercentage: v })}
+      />
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={SIGNAL_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Detects Fair Value Gaps (ICT). A 3-candle pattern where a gap forms between candle[2] high
+        and candle[0] low. Buy when price fills into a bullish FVG zone.
+      </div>
+    </>
+  );
+}
+
+export function MarketStructureFields({
+  data,
+  onChange,
+}: {
+  data: MarketStructureNodeData;
+  onChange: (updates: Partial<MarketStructureNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="Swing Strength (bars)"
+        value={data.swingStrength}
+        min={2}
+        max={50}
+        onChange={(v) => onChange({ swingStrength: v })}
+      />
+      <div>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.detectBOS}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ detectBOS: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Detect Break of Structure (BOS)
+        </label>
+      </div>
+      <div>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.detectChoCh}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ detectChoCh: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Detect Change of Character (ChoCh)
+        </label>
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={SIGNAL_MODE_OPTIONS as unknown as { value: string; label: string }[]}
+        onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Tracks market structure (SMC). Uptrend = HH + HL, Downtrend = LL + LH. Buy on HL in uptrend,
+        sell on LH in downtrend. BOS = price breaks last swing point.
+      </div>
     </>
   );
 }

@@ -10,6 +10,8 @@ import type {
   CCINodeData,
   IchimokuNodeData,
   CustomIndicatorNodeData,
+  OBVNodeData,
+  VWAPNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
@@ -796,6 +798,119 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, bufferIdx, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
+        break;
+      }
+
+      case "obv": {
+        const obv = data as OBVNodeData;
+        const copyBars = obv.signalMode === "candle_close" ? 4 : 3;
+        const signalPeriod = obv.signalPeriod ?? 20;
+        const group = `OBV ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "signalPeriod",
+            `InpOBV${index}SignalPeriod`,
+            "int",
+            signalPeriod,
+            `OBV ${index + 1} Signal SMA Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpOBV${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(obv.timeframe),
+            `OBV ${index + 1} Timeframe`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iOBV(_Symbol, (ENUM_TIMEFRAMES)InpOBV${index}Timeframe, VOLUME_TICK);`
+        );
+        addHandleValidation(varPrefix, `OBV ${index + 1}`, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        // We need enough bars for SMA calculation on OBV
+        const obvCopyBars = Math.max(copyBars, signalPeriod + 2);
+        addCopyBuffer(`${varPrefix}Handle`, 0, obvCopyBars, `${varPrefix}Buffer`, code);
+        // Calculate SMA signal line from OBV values
+        code.onTick.push(`// OBV Signal line (SMA of OBV)`);
+        code.onTick.push(`ArrayResize(${varPrefix}SignalBuffer, ${copyBars});`);
+        code.onTick.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
+        code.onTick.push(`for(int _ob${index}=0; _ob${index}<${copyBars}; _ob${index}++)`);
+        code.onTick.push(`{`);
+        code.onTick.push(`   double sum = 0;`);
+        code.onTick.push(
+          `   for(int _obs${index}=0; _obs${index}<InpOBV${index}SignalPeriod; _obs${index}++)`
+        );
+        code.onTick.push(`      sum += ${varPrefix}Buffer[_ob${index} + _obs${index}];`);
+        code.onTick.push(
+          `   ${varPrefix}SignalBuffer[_ob${index}] = sum / InpOBV${index}SignalPeriod;`
+        );
+        code.onTick.push(`}`);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, signalPeriod + 10);
+        break;
+      }
+
+      case "vwap": {
+        const vwap = data as VWAPNodeData;
+        const resetPeriod = vwap.resetPeriod ?? "daily";
+        const group = `VWAP ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpVWAP${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(vwap.timeframe),
+            `VWAP ${index + 1} Timeframe`,
+            group
+          )
+        );
+        // Global variables for VWAP calculation
+        code.globalVariables.push(`double ${varPrefix}Value = 0;`);
+        code.globalVariables.push(`double ${varPrefix}SumVP = 0;`);
+        code.globalVariables.push(`double ${varPrefix}SumVol = 0;`);
+        code.globalVariables.push(`datetime ${varPrefix}ResetTime = 0;`);
+
+        // Determine reset timeframe
+        let resetTf = "PERIOD_D1";
+        if (resetPeriod === "weekly") resetTf = "PERIOD_W1";
+        else if (resetPeriod === "monthly") resetTf = "PERIOD_MN1";
+
+        // Calculate VWAP manually in OnTick
+        code.onTick.push(`// VWAP calculation (${resetPeriod} reset)`);
+        code.onTick.push(`{`);
+        code.onTick.push(`   ENUM_TIMEFRAMES vwapTf = (ENUM_TIMEFRAMES)InpVWAP${index}Timeframe;`);
+        code.onTick.push(`   datetime barTime = iTime(_Symbol, ${resetTf}, 0);`);
+        code.onTick.push(`   if(barTime != ${varPrefix}ResetTime)`);
+        code.onTick.push(`   {`);
+        code.onTick.push(`      ${varPrefix}SumVP = 0;`);
+        code.onTick.push(`      ${varPrefix}SumVol = 0;`);
+        code.onTick.push(`      ${varPrefix}ResetTime = barTime;`);
+        code.onTick.push(`   }`);
+        code.onTick.push(
+          `   double tp = (iHigh(_Symbol, vwapTf, 0) + iLow(_Symbol, vwapTf, 0) + iClose(_Symbol, vwapTf, 0)) / 3.0;`
+        );
+        code.onTick.push(`   double vol = (double)iVolume(_Symbol, vwapTf, 0);`);
+        code.onTick.push(`   ${varPrefix}SumVP += tp * vol;`);
+        code.onTick.push(`   ${varPrefix}SumVol += vol;`);
+        code.onTick.push(
+          `   ${varPrefix}Value = (${varPrefix}SumVol > 0) ? ${varPrefix}SumVP / ${varPrefix}SumVol : tp;`
+        );
+        code.onTick.push(`}`);
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
         break;
       }

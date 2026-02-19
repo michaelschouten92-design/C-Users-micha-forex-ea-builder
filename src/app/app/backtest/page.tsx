@@ -2,7 +2,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BacktestForm } from "./backtest-form";
+import { BacktestUpload } from "./backtest-upload";
 
 export default async function BacktestPage() {
   const session = await auth();
@@ -65,45 +65,23 @@ export default async function BacktestPage() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-white">Backtesting</h2>
           <p className="mt-2 text-[#94A3B8]">
-            Test your strategy against historical data to see how it would have performed.
+            Import your MT5 Strategy Tester reports to analyze performance and track results.
           </p>
         </div>
 
-        <BacktestForm projects={projects} />
-
-        {/* Results placeholder */}
-        <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
-          <h3 className="text-lg font-semibold text-white mb-4">Backtest Results</h3>
-          <div className="flex items-center justify-center h-48 border border-dashed border-[rgba(79,70,229,0.3)] rounded-lg bg-[#0A0118]/50">
-            <div className="text-center">
-              <svg
-                className="w-12 h-12 mx-auto text-[#4F46E5]/30 mb-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-              <p className="text-[#7C8DB0] text-sm">Results will appear here</p>
-            </div>
-          </div>
-        </div>
+        <BacktestUpload projects={projects} />
 
         {/* MT5 Help Card */}
         <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8">
-          <h3 className="text-lg font-semibold text-white mb-2">How to Backtest in MetaTrader 5</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            How to Export a Strategy Tester Report
+          </h3>
           <p className="text-sm text-[#94A3B8] mb-6">
-            While we build our in-app backtesting engine, you can use the MT5 Strategy Tester for
-            full backtesting with tick data.
+            Follow these steps to get your backtest report from MetaTrader 5.
           </p>
           <ol className="space-y-4">
             <li className="flex gap-4">
@@ -111,9 +89,10 @@ export default async function BacktestPage() {
                 1
               </span>
               <div>
-                <p className="text-white font-medium">Export your EA</p>
+                <p className="text-white font-medium">Run your backtest in MT5</p>
                 <p className="text-sm text-[#94A3B8] mt-1">
-                  Go to your project, click &ldquo;Export&rdquo; and download the .mq5 file.
+                  Open the Strategy Tester (View &gt; Strategy Tester or Ctrl+R), select your EA,
+                  configure settings, and click &ldquo;Start&rdquo;.
                 </p>
               </div>
             </li>
@@ -122,9 +101,10 @@ export default async function BacktestPage() {
                 2
               </span>
               <div>
-                <p className="text-white font-medium">Open MT5 Strategy Tester</p>
+                <p className="text-white font-medium">Open the Backtest tab</p>
                 <p className="text-sm text-[#94A3B8] mt-1">
-                  In MetaTrader 5, go to View &gt; Strategy Tester (or press Ctrl+R).
+                  After the test completes, click the &ldquo;Backtest&rdquo; tab at the bottom of
+                  the Strategy Tester panel.
                 </p>
               </div>
             </li>
@@ -133,11 +113,10 @@ export default async function BacktestPage() {
                 3
               </span>
               <div>
-                <p className="text-white font-medium">Load and configure</p>
+                <p className="text-white font-medium">Save as HTML report</p>
                 <p className="text-sm text-[#94A3B8] mt-1">
-                  Place the .mq5 file in your MQL5/Experts folder, select it in the Strategy Tester,
-                  choose your symbol, timeframe, date range, and initial deposit. Click
-                  &ldquo;Start&rdquo; to run the backtest.
+                  Right-click anywhere in the results &gt; &ldquo;Save as Report&rdquo;. Save the
+                  .htm file, then upload it above.
                 </p>
               </div>
             </li>

@@ -3,6 +3,9 @@ import type {
   CandlestickPatternNodeData,
   SupportResistanceNodeData,
   RangeBreakoutNodeData,
+  OrderBlockNodeData,
+  FairValueGapNodeData,
+  MarketStructureNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { getTimeframe, getTimeframeEnum } from "../types";
@@ -753,6 +756,331 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(
           `${varPrefix}NearResistance = (${varPrefix}Resistance > 0 && MathAbs(${varPrefix}Bid - ${varPrefix}Resistance) <= ${varPrefix}ZonePoints);`
         );
+        code.onTick.push("");
+        break;
+      }
+
+      case "order-block": {
+        const ob = data as OrderBlockNodeData;
+        const obTf = getTimeframe(ob.timeframe);
+
+        // Add inputs
+        code.inputs.push(
+          createInput(
+            node,
+            "lookbackPeriod",
+            `InpOB${index}Lookback`,
+            "int",
+            ob.lookbackPeriod,
+            `Order Block ${index + 1} Lookback`
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "minBlockSize",
+            `InpOB${index}MinSize`,
+            "double",
+            ob.minBlockSize,
+            `Order Block ${index + 1} Min Size (pips)`
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "maxBlockAge",
+            `InpOB${index}MaxAge`,
+            "int",
+            ob.maxBlockAge,
+            `Order Block ${index + 1} Max Age (bars)`
+          )
+        );
+
+        // Global variables
+        code.globalVariables.push(`double ${varPrefix}BullHigh, ${varPrefix}BullLow;`);
+        code.globalVariables.push(`double ${varPrefix}BearHigh, ${varPrefix}BearLow;`);
+        code.globalVariables.push(`bool ${varPrefix}BullValid, ${varPrefix}BearValid;`);
+        code.globalVariables.push(`bool ${varPrefix}BuySignal, ${varPrefix}SellSignal;`);
+
+        // OnTick: detect order blocks
+        code.onTick.push(`// Order Block Detection ${index + 1}`);
+        code.onTick.push(`${varPrefix}BuySignal = false;`);
+        code.onTick.push(`${varPrefix}SellSignal = false;`);
+        code.onTick.push(`if(isNewBar) {`);
+        code.onTick.push(`   ${varPrefix}BullValid = false;`);
+        code.onTick.push(`   ${varPrefix}BearValid = false;`);
+        code.onTick.push(
+          `   double ${varPrefix}MinSize = InpOB${index}MinSize * _pipFactor * _Point;`
+        );
+        code.onTick.push(
+          `   int ${varPrefix}MaxAge = (int)MathMin(InpOB${index}MaxAge, InpOB${index}Lookback);`
+        );
+        code.onTick.push(`   // Scan for impulse moves and mark order blocks`);
+        code.onTick.push(`   for(int i = 1; i < ${varPrefix}MaxAge; i++) {`);
+        code.onTick.push(
+          `      double bodySize = MathAbs(iClose(_Symbol, ${obTf}, i) - iOpen(_Symbol, ${obTf}, i));`
+        );
+        code.onTick.push(`      if(bodySize > ${varPrefix}MinSize) {`);
+        code.onTick.push(`         // Bullish impulse: find last bearish candle before it`);
+        code.onTick.push(
+          `         if(iClose(_Symbol, ${obTf}, i) > iOpen(_Symbol, ${obTf}, i) && !${varPrefix}BullValid) {`
+        );
+        code.onTick.push(
+          `            for(int j = i + 1; j < i + 5 && j < InpOB${index}Lookback; j++) {`
+        );
+        code.onTick.push(
+          `               if(iClose(_Symbol, ${obTf}, j) < iOpen(_Symbol, ${obTf}, j)) {`
+        );
+        code.onTick.push(`                  ${varPrefix}BullHigh = iHigh(_Symbol, ${obTf}, j);`);
+        code.onTick.push(`                  ${varPrefix}BullLow = iLow(_Symbol, ${obTf}, j);`);
+        code.onTick.push(`                  ${varPrefix}BullValid = true;`);
+        code.onTick.push(`                  break;`);
+        code.onTick.push(`               }`);
+        code.onTick.push(`            }`);
+        code.onTick.push(`         }`);
+        code.onTick.push(`         // Bearish impulse: find last bullish candle before it`);
+        code.onTick.push(
+          `         if(iClose(_Symbol, ${obTf}, i) < iOpen(_Symbol, ${obTf}, i) && !${varPrefix}BearValid) {`
+        );
+        code.onTick.push(
+          `            for(int j = i + 1; j < i + 5 && j < InpOB${index}Lookback; j++) {`
+        );
+        code.onTick.push(
+          `               if(iClose(_Symbol, ${obTf}, j) > iOpen(_Symbol, ${obTf}, j)) {`
+        );
+        code.onTick.push(`                  ${varPrefix}BearHigh = iHigh(_Symbol, ${obTf}, j);`);
+        code.onTick.push(`                  ${varPrefix}BearLow = iLow(_Symbol, ${obTf}, j);`);
+        code.onTick.push(`                  ${varPrefix}BearValid = true;`);
+        code.onTick.push(`                  break;`);
+        code.onTick.push(`               }`);
+        code.onTick.push(`            }`);
+        code.onTick.push(`         }`);
+        code.onTick.push(`      }`);
+        code.onTick.push(`      if(${varPrefix}BullValid && ${varPrefix}BearValid) break;`);
+        code.onTick.push(`   }`);
+        code.onTick.push(`}`);
+        code.onTick.push(`// Buy signal: price enters bullish OB zone`);
+        code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
+        code.onTick.push(
+          `${varPrefix}BuySignal = (${varPrefix}BullValid && ${varPrefix}Bid <= ${varPrefix}BullHigh && ${varPrefix}Bid >= ${varPrefix}BullLow);`
+        );
+        code.onTick.push(`// Sell signal: price enters bearish OB zone`);
+        code.onTick.push(`double ${varPrefix}Ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);`);
+        code.onTick.push(
+          `${varPrefix}SellSignal = (${varPrefix}BearValid && ${varPrefix}Ask >= ${varPrefix}BearLow && ${varPrefix}Ask <= ${varPrefix}BearHigh);`
+        );
+        code.onTick.push("");
+        break;
+      }
+
+      case "fair-value-gap": {
+        const fvg = data as FairValueGapNodeData;
+        const fvgTf = getTimeframe(fvg.timeframe);
+
+        // Add inputs
+        code.inputs.push(
+          createInput(
+            node,
+            "minGapSize",
+            `InpFVG${index}MinGap`,
+            "double",
+            fvg.minGapSize,
+            `FVG ${index + 1} Min Gap Size (pips)`
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "maxGapAge",
+            `InpFVG${index}MaxAge`,
+            "int",
+            fvg.maxGapAge,
+            `FVG ${index + 1} Max Age (bars)`
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "fillPercentage",
+            `InpFVG${index}FillPct`,
+            "double",
+            fvg.fillPercentage,
+            `FVG ${index + 1} Fill Percentage`
+          )
+        );
+
+        // Global variables
+        code.globalVariables.push(`bool ${varPrefix}BuySignal, ${varPrefix}SellSignal;`);
+
+        // OnTick: detect FVG
+        code.onTick.push(`// Fair Value Gap Detection ${index + 1}`);
+        code.onTick.push(`${varPrefix}BuySignal = false;`);
+        code.onTick.push(`${varPrefix}SellSignal = false;`);
+        code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
+        code.onTick.push(`double ${varPrefix}Ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);`);
+        code.onTick.push(`// Scan for bullish FVG: candle[i+2].high < candle[i].low`);
+        code.onTick.push(
+          `for(int i = 0; i < InpFVG${index}MaxAge && !${varPrefix}BuySignal; i++) {`
+        );
+        code.onTick.push(`   double highTwo = iHigh(_Symbol, ${fvgTf}, i + 2);`);
+        code.onTick.push(`   double lowZero = iLow(_Symbol, ${fvgTf}, i);`);
+        code.onTick.push(`   if(lowZero > highTwo) {`);
+        code.onTick.push(`      double gapSize = (lowZero - highTwo) / _Point / _pipFactor;`);
+        code.onTick.push(`      if(gapSize >= InpFVG${index}MinGap) {`);
+        code.onTick.push(
+          `         double fillLevel = highTwo + (lowZero - highTwo) * (InpFVG${index}FillPct / 100.0);`
+        );
+        code.onTick.push(
+          `         if(${varPrefix}Bid <= fillLevel && ${varPrefix}Bid >= highTwo) {`
+        );
+        code.onTick.push(`            ${varPrefix}BuySignal = true;`);
+        code.onTick.push(`         }`);
+        code.onTick.push(`      }`);
+        code.onTick.push(`   }`);
+        code.onTick.push(`}`);
+        code.onTick.push(`// Scan for bearish FVG: candle[i+2].low > candle[i].high`);
+        code.onTick.push(
+          `for(int i = 0; i < InpFVG${index}MaxAge && !${varPrefix}SellSignal; i++) {`
+        );
+        code.onTick.push(`   double lowTwo = iLow(_Symbol, ${fvgTf}, i + 2);`);
+        code.onTick.push(`   double highZero = iHigh(_Symbol, ${fvgTf}, i);`);
+        code.onTick.push(`   if(lowTwo > highZero) {`);
+        code.onTick.push(`      double gapSize = (lowTwo - highZero) / _Point / _pipFactor;`);
+        code.onTick.push(`      if(gapSize >= InpFVG${index}MinGap) {`);
+        code.onTick.push(
+          `         double fillLevel = lowTwo - (lowTwo - highZero) * (InpFVG${index}FillPct / 100.0);`
+        );
+        code.onTick.push(
+          `         if(${varPrefix}Ask >= fillLevel && ${varPrefix}Ask <= lowTwo) {`
+        );
+        code.onTick.push(`            ${varPrefix}SellSignal = true;`);
+        code.onTick.push(`         }`);
+        code.onTick.push(`      }`);
+        code.onTick.push(`   }`);
+        code.onTick.push(`}`);
+        code.onTick.push("");
+        break;
+      }
+
+      case "market-structure": {
+        const ms = data as MarketStructureNodeData;
+        const msTf = getTimeframe(ms.timeframe);
+
+        // Add inputs
+        code.inputs.push(
+          createInput(
+            node,
+            "swingStrength",
+            `InpMS${index}Strength`,
+            "int",
+            ms.swingStrength,
+            `Market Structure ${index + 1} Swing Strength`
+          )
+        );
+
+        // Global variables
+        code.globalVariables.push(`double ${varPrefix}SwingHigh, ${varPrefix}SwingLow;`);
+        code.globalVariables.push(`double ${varPrefix}PrevSwingHigh, ${varPrefix}PrevSwingLow;`);
+        code.globalVariables.push(`bool ${varPrefix}IsUptrend, ${varPrefix}IsDowntrend;`);
+        code.globalVariables.push(`bool ${varPrefix}BuySignal, ${varPrefix}SellSignal;`);
+        if (ms.detectBOS) {
+          code.globalVariables.push(`bool ${varPrefix}BOS_Bull, ${varPrefix}BOS_Bear;`);
+        }
+
+        // OnTick: detect market structure
+        code.onTick.push(`// Market Structure Detection ${index + 1}`);
+        code.onTick.push(`${varPrefix}BuySignal = false;`);
+        code.onTick.push(`${varPrefix}SellSignal = false;`);
+        if (ms.detectBOS) {
+          code.onTick.push(`${varPrefix}BOS_Bull = false;`);
+          code.onTick.push(`${varPrefix}BOS_Bear = false;`);
+        }
+        code.onTick.push(`if(isNewBar) {`);
+        code.onTick.push(`   int ${varPrefix}Str = InpMS${index}Strength;`);
+        code.onTick.push(`   int ${varPrefix}Lookback = ${varPrefix}Str * 10;`);
+        code.onTick.push(`   double ${varPrefix}SH = 0, ${varPrefix}SL = DBL_MAX;`);
+        code.onTick.push(`   double ${varPrefix}PSH = 0, ${varPrefix}PSL = DBL_MAX;`);
+        code.onTick.push(`   int ${varPrefix}FoundSH = 0, ${varPrefix}FoundSL = 0;`);
+        code.onTick.push(`   // Find swing points using strength bars on each side`);
+        code.onTick.push(
+          `   for(int i = ${varPrefix}Str; i < ${varPrefix}Lookback - ${varPrefix}Str; i++) {`
+        );
+        code.onTick.push(`      bool isSwingHigh = true, isSwingLow = true;`);
+        code.onTick.push(`      double high_i = iHigh(_Symbol, ${msTf}, i);`);
+        code.onTick.push(`      double low_i = iLow(_Symbol, ${msTf}, i);`);
+        code.onTick.push(`      for(int j = 1; j <= ${varPrefix}Str; j++) {`);
+        code.onTick.push(
+          `         if(iHigh(_Symbol, ${msTf}, i - j) > high_i || iHigh(_Symbol, ${msTf}, i + j) > high_i) isSwingHigh = false;`
+        );
+        code.onTick.push(
+          `         if(iLow(_Symbol, ${msTf}, i - j) < low_i || iLow(_Symbol, ${msTf}, i + j) < low_i) isSwingLow = false;`
+        );
+        code.onTick.push(`      }`);
+        code.onTick.push(`      if(isSwingHigh) {`);
+        code.onTick.push(`         ${varPrefix}FoundSH++;`);
+        code.onTick.push(`         if(${varPrefix}FoundSH == 1) ${varPrefix}SH = high_i;`);
+        code.onTick.push(
+          `         else if(${varPrefix}FoundSH == 2) { ${varPrefix}PSH = high_i; }`
+        );
+        code.onTick.push(`      }`);
+        code.onTick.push(`      if(isSwingLow) {`);
+        code.onTick.push(`         ${varPrefix}FoundSL++;`);
+        code.onTick.push(`         if(${varPrefix}FoundSL == 1) ${varPrefix}SL = low_i;`);
+        code.onTick.push(`         else if(${varPrefix}FoundSL == 2) { ${varPrefix}PSL = low_i; }`);
+        code.onTick.push(`      }`);
+        code.onTick.push(`      if(${varPrefix}FoundSH >= 2 && ${varPrefix}FoundSL >= 2) break;`);
+        code.onTick.push(`   }`);
+        code.onTick.push(`   ${varPrefix}SwingHigh = ${varPrefix}SH;`);
+        code.onTick.push(`   ${varPrefix}SwingLow = ${varPrefix}SL;`);
+        code.onTick.push(`   ${varPrefix}PrevSwingHigh = ${varPrefix}PSH;`);
+        code.onTick.push(`   ${varPrefix}PrevSwingLow = ${varPrefix}PSL;`);
+        code.onTick.push(`   // Determine trend: HH+HL = uptrend, LL+LH = downtrend`);
+        code.onTick.push(`   bool hh = (${varPrefix}SH > ${varPrefix}PSH && ${varPrefix}PSH > 0);`);
+        code.onTick.push(
+          `   bool hl = (${varPrefix}SL > ${varPrefix}PSL && ${varPrefix}PSL < DBL_MAX);`
+        );
+        code.onTick.push(
+          `   bool ll = (${varPrefix}SL < ${varPrefix}PSL && ${varPrefix}PSL < DBL_MAX);`
+        );
+        code.onTick.push(`   bool lh = (${varPrefix}SH < ${varPrefix}PSH && ${varPrefix}PSH > 0);`);
+        code.onTick.push(`   ${varPrefix}IsUptrend = (hh && hl);`);
+        code.onTick.push(`   ${varPrefix}IsDowntrend = (ll && lh);`);
+        code.onTick.push(`}`);
+
+        // Signal generation
+        code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
+        code.onTick.push(`// Buy on HL in uptrend (price near swing low)`);
+        code.onTick.push(`if(${varPrefix}IsUptrend && ${varPrefix}SwingLow < DBL_MAX) {`);
+        code.onTick.push(
+          `   double ${varPrefix}Zone = MathAbs(${varPrefix}SwingHigh - ${varPrefix}SwingLow) * 0.25;`
+        );
+        code.onTick.push(
+          `   if(${varPrefix}Bid <= ${varPrefix}SwingLow + ${varPrefix}Zone && ${varPrefix}Bid >= ${varPrefix}SwingLow)`
+        );
+        code.onTick.push(`      ${varPrefix}BuySignal = true;`);
+        code.onTick.push(`}`);
+        code.onTick.push(`// Sell on LH in downtrend (price near swing high)`);
+        code.onTick.push(`if(${varPrefix}IsDowntrend && ${varPrefix}SwingHigh > 0) {`);
+        code.onTick.push(
+          `   double ${varPrefix}Zone2 = MathAbs(${varPrefix}SwingHigh - ${varPrefix}SwingLow) * 0.25;`
+        );
+        code.onTick.push(
+          `   if(${varPrefix}Bid >= ${varPrefix}SwingHigh - ${varPrefix}Zone2 && ${varPrefix}Bid <= ${varPrefix}SwingHigh)`
+        );
+        code.onTick.push(`      ${varPrefix}SellSignal = true;`);
+        code.onTick.push(`}`);
+
+        // BOS detection
+        if (ms.detectBOS) {
+          code.onTick.push(`// Break of Structure detection`);
+          code.onTick.push(
+            `${varPrefix}BOS_Bull = (${varPrefix}Bid > ${varPrefix}SwingHigh && ${varPrefix}SwingHigh > 0);`
+          );
+          code.onTick.push(
+            `${varPrefix}BOS_Bear = (${varPrefix}Bid < ${varPrefix}SwingLow && ${varPrefix}SwingLow < DBL_MAX && ${varPrefix}SwingLow > 0);`
+          );
+        }
+
         code.onTick.push("");
         break;
       }

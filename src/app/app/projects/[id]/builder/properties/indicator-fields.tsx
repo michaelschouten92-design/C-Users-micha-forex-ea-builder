@@ -13,6 +13,8 @@ import type {
   IchimokuNodeData,
   CustomIndicatorNodeData,
   CustomIndicatorParam,
+  OBVNodeData,
+  VWAPNodeData,
   ConditionNodeData,
   ConditionOperator,
   Timeframe,
@@ -792,6 +794,92 @@ export function CustomIndicatorFields({
       >
         Generates an iCustom() call in MQL5/MQL4. Parameters are passed in order to the indicator.
         Values are parsed as numbers when possible, otherwise passed as strings.
+      </div>
+    </>
+  );
+}
+
+export function OBVFields({
+  data,
+  onChange,
+}: {
+  data: OBVNodeData;
+  onChange: (updates: Partial<OBVNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="Signal SMA Period"
+          value={data.signalPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ signalPeriod: v })}
+          tooltip="SMA period applied to OBV for signal line. Buy when OBV > SMA(OBV), sell when OBV < SMA(OBV)."
+        />
+        <OptimizableFieldCheckbox fieldName="signalPeriod" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as OBVNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        On-Balance Volume measures buying/selling pressure. Buy when OBV crosses above its SMA
+        signal line, sell when it crosses below.
+      </div>
+    </>
+  );
+}
+
+export function VWAPFields({
+  data,
+  onChange,
+}: {
+  data: VWAPNodeData;
+  onChange: (updates: Partial<VWAPNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Reset Period"
+        value={data.resetPeriod}
+        options={[
+          { value: "daily", label: "Daily" },
+          { value: "weekly", label: "Weekly" },
+          { value: "monthly", label: "Monthly" },
+        ]}
+        onChange={(v) => onChange({ resetPeriod: v as VWAPNodeData["resetPeriod"] })}
+        tooltip="When to reset the VWAP calculation. Daily is the most common for intraday trading."
+      />
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as VWAPNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Volume Weighted Average Price shows institutional fair value. Buy when price is above VWAP,
+        sell when below. Resets at the start of each period.
       </div>
     </>
   );

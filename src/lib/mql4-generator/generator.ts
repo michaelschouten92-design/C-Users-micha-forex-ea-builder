@@ -971,12 +971,15 @@ export function generateMQL4Code(
     "adx",
     "stochastic",
     "cci",
+    "obv",
+    "vwap",
   ]);
   const tradeManagementTypeSet = new Set([
     "breakeven-stop",
     "trailing-stop",
     "partial-close",
     "lock-profit",
+    "multi-level-tp",
   ]);
   const priceActionTypeSet = new Set([
     "candlestick-pattern",
@@ -1024,7 +1027,11 @@ export function generateMQL4Code(
       indicatorNodes.push(n);
     } else if (priceActionTypeSet.has(nodeType) || "priceActionType" in data) {
       priceActionNodes.push(n);
-    } else if (tradeManagementTypeSet.has(nodeType) || "managementType" in data) {
+    } else if (
+      tradeManagementTypeSet.has(nodeType) ||
+      "managementType" in data ||
+      "tradeManagementType" in data
+    ) {
       tradeManagementNodes.push(n);
     } else if (
       nodeType === "place-buy" ||
@@ -1146,7 +1153,7 @@ export function generateMQL4Code(
     const closeMinute = fcData.closeMinute ?? 0;
     const useServer = fcData.useServerTime ?? true;
     const closePending = fcData.closePending ?? true;
-    const timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
+    const _timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
     const timeLabel = useServer ? "Server time" : "GMT";
 
     code.inputs.push({
@@ -1291,7 +1298,7 @@ export function generateMQL4Code(
     const h = (paData._closeAtHour as number) ?? 17;
     const m = (paData._closeAtMinute as number) ?? 0;
     const useServer = (paData._useServerTime as boolean) ?? true;
-    const timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
+    const _timeFunc = useServer ? "TimeCurrent()" : "TimeGMT()";
     const timeLabel = useServer ? "Server time" : "GMT";
     const group = "Range Breakout - Close At Time";
 

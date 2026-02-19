@@ -1840,6 +1840,362 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
     `,
   },
+  {
+    slug: "ema-crossover-strategy-guide",
+    title: "EMA Crossover Strategy: Complete Guide for MT5",
+    description:
+      "Learn how the EMA crossover strategy works, how to configure it for different market conditions, and how to build a complete MT5 Expert Advisor using it.",
+    date: "2025-07-20",
+    author: "AlgoStudio Team",
+    readTime: "10 min read",
+    tags: ["strategy", "indicators"],
+    content: `
+      <p>The Exponential Moving Average (EMA) crossover is one of the most widely used trading strategies in forex markets. It forms the backbone of countless profitable Expert Advisors, and for good reason: it is simple to understand, easy to automate, and adapts well to trending market conditions. In this guide, we will break down exactly how the strategy works, how to optimize it for MT5, and how to build a complete EA around it.</p>
+
+      <h2>What Is an EMA Crossover?</h2>
+      <p>An EMA crossover occurs when a shorter-period EMA crosses above or below a longer-period EMA. The shorter EMA reacts faster to price changes, while the longer EMA represents the broader trend. When the fast EMA crosses above the slow EMA, it signals a potential uptrend (buy signal). When it crosses below, it signals a potential downtrend (sell signal).</p>
+      <p>Unlike the Simple Moving Average (SMA), the EMA gives more weight to recent price data, which makes it more responsive to current market conditions. This responsiveness is critical in automated trading where timely entries and exits determine profitability.</p>
+
+      <h2>Choosing the Right EMA Periods</h2>
+      <p>The most common EMA combinations used in forex EA development are:</p>
+      <ul>
+        <li><strong>8/21 EMA</strong> — Aggressive, best for scalping and short-term trading on M15 or M30</li>
+        <li><strong>10/50 EMA</strong> — Balanced, works well on H1 and H4 for swing-style entries</li>
+        <li><strong>20/200 EMA</strong> — Conservative, ideal for daily charts and long-term trend following</li>
+        <li><strong>50/200 EMA</strong> — The classic "golden cross / death cross," used by institutional traders</li>
+      </ul>
+      <p>There is no single "best" combination. The right choice depends on your timeframe, the currency pair you are trading, and your risk tolerance. Faster periods catch trends earlier but generate more false signals. Slower periods are more reliable but enter trends later.</p>
+
+      <h2>Adding Filters to Reduce False Signals</h2>
+      <p>A raw EMA crossover strategy will produce many false signals in ranging or choppy markets. Here are the most effective filters to add:</p>
+
+      <h3>ADX Filter</h3>
+      <p>The Average Directional Index (ADX) measures trend strength. By only taking crossover signals when ADX is above 25, you filter out low-conviction setups in sideways markets. This single filter can dramatically improve your win rate.</p>
+
+      <h3>Higher-Timeframe Trend Filter</h3>
+      <p>Only take buy signals when the higher timeframe (e.g., H4 when trading H1) shows an uptrend, and vice versa. This "top-down" approach aligns your entries with the dominant trend direction and avoids counter-trend trades that often fail.</p>
+
+      <h3>Session Filter</h3>
+      <p>Limit trading to the London and New York sessions (08:00–17:00 GMT). These sessions have the highest volume and most reliable trends. The Asian session tends to range, which produces more false crossover signals.</p>
+
+      <h2>Risk Management for EMA Crossover EAs</h2>
+      <p>Even the best strategy fails without proper risk management. For an EMA crossover EA, use these settings as a starting point:</p>
+      <ul>
+        <li><strong>Stop Loss:</strong> ATR-based (1.5x ATR(14)) — adapts to current volatility automatically</li>
+        <li><strong>Take Profit:</strong> 2:1 or 3:1 risk-reward ratio — let winners run further than losers</li>
+        <li><strong>Position Sizing:</strong> 1% risk per trade — never risk more than 1% of account equity</li>
+        <li><strong>Max Trades Per Day:</strong> 3 — prevents overtrading in choppy conditions</li>
+      </ul>
+      <p>ATR-based stops are superior to fixed pip stops because they automatically widen in volatile markets (protecting you from noise) and tighten in calm markets (reducing unnecessary risk).</p>
+
+      <h2>Backtesting Your EMA Crossover EA</h2>
+      <p>Before deploying any EA with real money, backtest thoroughly in the MT5 Strategy Tester:</p>
+      <ol>
+        <li>Test on at least 2 years of historical data using "Every tick based on real ticks" mode</li>
+        <li>Run tests on multiple pairs — EURUSD, GBPUSD, and USDJPY are good starting points</li>
+        <li>Look for a profit factor above 1.3 and maximum drawdown below 25%</li>
+        <li>Ensure you have at least 100 trades for statistical significance</li>
+        <li>Use the MT5 optimization feature to find the best EMA period combinations</li>
+      </ol>
+      <p>Be careful of overfitting. If your EA only works with one specific parameter set on one pair, it is probably overfitted. A robust strategy should work reasonably well across multiple pairs and slightly different parameter values.</p>
+
+      <h2>Building It in AlgoStudio</h2>
+      <p>In AlgoStudio, you can build a complete EMA crossover EA in under 5 minutes:</p>
+      <ol>
+        <li>Select the <a href="/templates/moving-average-crossover-ea">EMA Crossover template</a></li>
+        <li>Set your fast and slow EMA periods</li>
+        <li>Enable the ADX filter and set the threshold to 25</li>
+        <li>Configure ATR-based stop loss and your preferred risk-reward ratio</li>
+        <li>Add a session filter for London/New York</li>
+        <li>Export clean MQL5 code and load it into MT5</li>
+      </ol>
+      <p>Every parameter can be adjusted without touching code. When you want to test a different period combination, change the value and re-export in seconds.</p>
+
+      <p>Want to explore more strategies? Check out our guides on <a href="/blog/rsi-reversal-strategy">RSI reversal strategies</a> and <a href="/blog/risk-management-trading-bots">risk management for trading bots</a>. If you are trading with a prop firm, read our <a href="/blog/prop-firm-ea-settings">prop firm EA settings guide</a> to make sure your EA meets challenge rules.</p>
+    `,
+  },
+  {
+    slug: "prop-firm-ea-settings",
+    title: "Best EA Settings for Prop Firm Challenges (FTMO, MyForexFunds)",
+    description:
+      "Configure your Expert Advisor to pass prop firm challenges. Learn the exact risk settings, drawdown limits, and strategy parameters for FTMO, MyForexFunds, and other funded programs.",
+    date: "2025-08-05",
+    author: "AlgoStudio Team",
+    readTime: "12 min read",
+    tags: ["prop firms", "risk management"],
+    content: `
+      <p>Prop firm challenges are the fastest way to trade with serious capital without risking your own money. But most traders fail — not because their strategy is bad, but because their EA settings do not respect the strict rules these firms enforce. In this guide, we will show you exactly how to configure your Expert Advisor to pass challenges from FTMO, MyForexFunds, and other major prop firms.</p>
+
+      <h2>Understanding Prop Firm Rules</h2>
+      <p>Before configuring anything, you need to understand the rules. Every prop firm has three primary constraints:</p>
+      <ul>
+        <li><strong>Maximum Daily Loss:</strong> Typically 5% of the account balance. If you lose more than this in a single day, you fail.</li>
+        <li><strong>Maximum Total Drawdown:</strong> Usually 10% of the starting balance. Your equity can never drop below this threshold at any point during the challenge.</li>
+        <li><strong>Profit Target:</strong> Usually 8-10% for Phase 1 and 5% for Phase 2. You must hit this target within the time limit (usually 30 days).</li>
+      </ul>
+      <p>These rules mean your EA must be conservative enough to never breach drawdown limits, yet aggressive enough to reach the profit target in time. Finding this balance is the key to passing.</p>
+
+      <h2>FTMO Challenge Settings</h2>
+      <p>FTMO is the most popular prop firm, with strict rules but a well-defined process:</p>
+      <ul>
+        <li><strong>Daily Loss Limit:</strong> 5% ($5,000 on a $100K account)</li>
+        <li><strong>Max Drawdown:</strong> 10% ($10,000 on a $100K account)</li>
+        <li><strong>Profit Target Phase 1:</strong> 10%</li>
+        <li><strong>Profit Target Phase 2:</strong> 5%</li>
+        <li><strong>Time Limit:</strong> 30 calendar days per phase</li>
+      </ul>
+      <h3>Recommended EA Settings for FTMO</h3>
+      <ul>
+        <li><strong>Risk Per Trade:</strong> 0.5% — gives you 10 consecutive losers before hitting daily limit</li>
+        <li><strong>Max Daily Loss Cap:</strong> 3% — stops trading for the day at 3%, well below FTMO's 5% limit</li>
+        <li><strong>Max Open Trades:</strong> 2 — limits exposure and prevents compounding losses</li>
+        <li><strong>Stop Loss:</strong> ATR-based (1.5x multiplier) — adaptive to volatility</li>
+        <li><strong>Take Profit:</strong> 2:1 risk-reward ratio — needs only 40% win rate to be profitable</li>
+      </ul>
+
+      <h2>MyForexFunds Settings</h2>
+      <p>MyForexFunds offers more flexible rules with lower entry costs:</p>
+      <ul>
+        <li><strong>Daily Loss Limit:</strong> 5%</li>
+        <li><strong>Max Drawdown:</strong> 12% (more generous than FTMO)</li>
+        <li><strong>Profit Target:</strong> 8%</li>
+      </ul>
+      <h3>Recommended EA Settings</h3>
+      <ul>
+        <li><strong>Risk Per Trade:</strong> 0.75% — slightly higher due to more generous drawdown limit</li>
+        <li><strong>Max Daily Loss Cap:</strong> 3.5%</li>
+        <li><strong>Max Open Trades:</strong> 3</li>
+        <li><strong>Stop Loss:</strong> ATR-based (1.5x multiplier)</li>
+        <li><strong>Take Profit:</strong> 2.5:1 risk-reward ratio</li>
+      </ul>
+
+      <h2>Universal Prop Firm EA Rules</h2>
+      <p>Regardless of which prop firm you are targeting, follow these universal principles:</p>
+
+      <h3>1. Always Risk Less Than the Maximum</h3>
+      <p>If the daily loss limit is 5%, cap your EA at 3%. If the max drawdown is 10%, design your system to never exceed 6-7%. This buffer protects you from unexpected volatility, slippage, and the compounding effect of consecutive losses.</p>
+
+      <h3>2. Use a News Filter</h3>
+      <p>High-impact news events (NFP, FOMC, ECB decisions) create extreme volatility that can blow through stop losses. Configure your EA to stop trading 30 minutes before and after major news releases. This single setting prevents most catastrophic loss days.</p>
+
+      <h3>3. Limit Correlation Risk</h3>
+      <p>If your EA trades multiple pairs, be aware of correlation. EURUSD and GBPUSD often move together. Having open positions on both means your effective risk is doubled. Either trade one pair at a time or reduce position sizes when trading correlated pairs.</p>
+
+      <h3>4. Choose Trend-Following Strategies</h3>
+      <p>For prop firm challenges, trend-following strategies (EMA crossover, MACD crossover) tend to outperform mean-reversion strategies. Trending markets produce larger wins with defined risk, which is exactly what you need to hit profit targets while respecting drawdown limits.</p>
+
+      <h3>5. Backtest with Prop Firm Constraints</h3>
+      <p>When backtesting, simulate the prop firm rules. Track maximum daily loss and total drawdown throughout the test. If your EA would have failed the challenge at any point during the backtest, it is not ready for a live challenge.</p>
+
+      <h2>Common Mistakes That Fail Challenges</h2>
+      <ul>
+        <li><strong>Risking too much per trade:</strong> 2% risk per trade means just 3 consecutive losers put you near the daily limit</li>
+        <li><strong>No daily loss cap:</strong> Without a hard stop, one bad day can end your challenge</li>
+        <li><strong>Trading during news:</strong> NFP day can move EURUSD 100+ pips in seconds</li>
+        <li><strong>Over-trading:</strong> More trades do not mean more profit — they mean more exposure to random losses</li>
+        <li><strong>Ignoring the time factor:</strong> Being too conservative means you will not reach the profit target in 30 days</li>
+      </ul>
+
+      <h2>Building a Prop Firm EA in AlgoStudio</h2>
+      <p>AlgoStudio has built-in settings specifically designed for prop firm compliance:</p>
+      <ol>
+        <li>Choose any strategy template (EMA Crossover and Trend Pullback work best for challenges)</li>
+        <li>Set risk per trade to 0.5-0.75%</li>
+        <li>Enable the daily P&L limit and set it to 3%</li>
+        <li>Enable the maximum drawdown protection</li>
+        <li>Add a session filter to avoid low-liquidity periods</li>
+        <li>Export and backtest against 2+ years of data</li>
+      </ol>
+      <p>The exported MQL5 code includes all prop firm safety checks. Review the code in MetaEditor to verify the logic before deploying on your challenge account.</p>
+
+      <p>For more on risk management fundamentals, read our <a href="/blog/risk-management-trading-bots">complete risk management guide for trading bots</a>. New to AlgoStudio? Start with our <a href="/blog/getting-started-with-algostudio">5-minute getting started tutorial</a>.</p>
+    `,
+  },
+  {
+    slug: "risk-management-trading-bots",
+    title: "Risk Management for Trading Bots: The Complete Guide",
+    description:
+      "Master risk management for automated trading. Learn position sizing, stop loss strategies, drawdown control, and portfolio-level risk for MT5 Expert Advisors.",
+    date: "2025-08-20",
+    author: "AlgoStudio Team",
+    readTime: "11 min read",
+    tags: ["risk management", "strategy"],
+    content: `
+      <p>Risk management is the single most important factor that separates profitable automated traders from those who blow up their accounts. A mediocre strategy with excellent risk management will outperform a great strategy with poor risk management every time. This guide covers everything you need to know about managing risk in your MT5 Expert Advisors.</p>
+
+      <h2>Why Risk Management Matters More Than Strategy</h2>
+      <p>Consider this scenario: you have an EA with a 55% win rate and a 1:1 risk-reward ratio. Over 100 trades, you expect roughly 55 winners and 45 losers. With proper risk management (1% per trade), your worst expected drawdown is around 8-12%. Without it (5% per trade), the same losing streak could wipe out 40-60% of your account.</p>
+      <p>The strategy is identical. The only difference is risk management. This is why professional traders spend more time on risk management than on entry signals.</p>
+
+      <h2>Position Sizing Methods</h2>
+      <p>Position sizing determines how much capital you allocate to each trade. There are three main approaches:</p>
+
+      <h3>Fixed Percentage Risk</h3>
+      <p>This is the gold standard for EA trading. You risk a fixed percentage of your current account equity on every trade — typically 0.5% to 2%. The lot size is calculated dynamically based on your stop loss distance and account balance.</p>
+      <p>Formula: <strong>Lot Size = (Account Equity x Risk %) / (Stop Loss in Pips x Pip Value)</strong></p>
+      <p>The beauty of this method is that your position sizes automatically decrease during losing streaks (protecting capital) and increase during winning streaks (compounding gains).</p>
+
+      <h3>Fixed Lot Size</h3>
+      <p>Trading the same lot size every time. Simple but inferior to percentage-based sizing because it does not adapt to your account balance. As your account grows, the risk percentage decreases. As it shrinks, the risk percentage increases — the opposite of what you want.</p>
+
+      <h3>Kelly Criterion</h3>
+      <p>A mathematical formula that calculates the optimal bet size based on your win rate and risk-reward ratio. While theoretically optimal, it often suggests aggressive position sizes that most traders find uncomfortable. A "half-Kelly" approach (using 50% of the suggested size) is more practical for EA trading.</p>
+
+      <h2>Stop Loss Strategies</h2>
+      <p>Every trade needs a stop loss. Here are the most effective approaches for EAs:</p>
+
+      <h3>ATR-Based Stop Loss</h3>
+      <p>The Average True Range (ATR) measures market volatility. An ATR-based stop loss automatically adapts: wider during volatile periods, tighter during calm ones. Use a multiplier of 1.5x to 2.5x ATR(14) for most strategies.</p>
+      <p>This is the recommended approach for almost all EA strategies because it eliminates the need to manually adjust stop losses for different pairs or market conditions.</p>
+
+      <h3>Fixed Pip Stop Loss</h3>
+      <p>A fixed number of pips from entry. Simple to understand and implement, but it does not account for changing volatility. A 30-pip stop might be too tight during volatile periods and too wide during calm ones.</p>
+
+      <h3>Structure-Based Stop Loss</h3>
+      <p>Placing stops below recent swing lows (for longs) or above recent swing highs (for shorts). This is more sophisticated and often produces better results, but it is harder to automate reliably.</p>
+
+      <h2>Take Profit Strategies</h2>
+      <p>How you exit winners is just as important as where you place stops:</p>
+      <ul>
+        <li><strong>Risk-Reward Ratio:</strong> The simplest approach. If your stop is 40 pips, set TP at 80 pips (2:1) or 120 pips (3:1). Higher ratios mean you need a lower win rate to be profitable.</li>
+        <li><strong>Trailing Stop:</strong> Move your stop loss to follow price as the trade moves in your favor. This lets you capture larger moves in trending markets.</li>
+        <li><strong>Partial Close:</strong> Close 50% of the position at 1:1, then let the rest run with a trailing stop. This locks in profit while keeping upside potential.</li>
+      </ul>
+
+      <h2>Drawdown Control</h2>
+      <p>Drawdown is the percentage decline from your account's peak equity to its lowest point. Controlling drawdown is critical for long-term survival and essential for prop firm compliance.</p>
+
+      <h3>Daily Loss Limit</h3>
+      <p>Set a maximum daily loss (typically 2-3% of account equity). When this limit is hit, the EA stops trading for the rest of the day. This prevents catastrophic single-day losses caused by news events, flash crashes, or simply a bad trading day.</p>
+
+      <h3>Weekly and Monthly Limits</h3>
+      <p>Similarly, set weekly (5-7%) and monthly (8-10%) loss limits. If your EA is having a prolonged losing streak, it is better to stop and review rather than continue losing.</p>
+
+      <h3>Equity Curve Trading</h3>
+      <p>An advanced technique where you monitor the EA's own equity curve. If the equity drops below a moving average of recent performance, reduce position sizes or stop trading. This essentially applies trend-following logic to your own results.</p>
+
+      <h2>Portfolio-Level Risk Management</h2>
+      <p>If you run multiple EAs or trade multiple pairs, you need portfolio-level risk controls:</p>
+      <ul>
+        <li><strong>Maximum total exposure:</strong> Cap your total open risk across all EAs at 5-6% of account equity</li>
+        <li><strong>Correlation awareness:</strong> EURUSD and GBPUSD move together — treat them as partially overlapping risk</li>
+        <li><strong>Diversification:</strong> Run different strategy types (trend following + mean reversion) to reduce drawdown correlation</li>
+        <li><strong>Staggered deployment:</strong> Do not launch all EAs at once — deploy one at a time and verify each works in live conditions</li>
+      </ul>
+
+      <h2>The Risk Management Checklist</h2>
+      <p>Before deploying any EA with real money, verify these settings:</p>
+      <ol>
+        <li>Risk per trade is 0.5% to 1% (2% maximum for aggressive strategies)</li>
+        <li>Every trade has a defined stop loss — never rely on "the strategy should turn around"</li>
+        <li>Daily loss limit is enabled and set below your prop firm or personal threshold</li>
+        <li>Maximum concurrent trades are limited (2-3 for single pair, 5-6 across a portfolio)</li>
+        <li>News filter is enabled to avoid high-impact events</li>
+        <li>The EA has been backtested over 2+ years with maximum drawdown below your tolerance</li>
+        <li>The EA has been forward-tested on a demo account for at least 2-4 weeks</li>
+      </ol>
+
+      <h2>Implementing Risk Management in AlgoStudio</h2>
+      <p>AlgoStudio includes all these risk management features as built-in settings — no coding required:</p>
+      <ul>
+        <li>Position sizing with fixed percentage risk</li>
+        <li>ATR-based and fixed stop losses</li>
+        <li>Risk-reward ratio take profit</li>
+        <li>Daily P&L limits</li>
+        <li>Maximum open trades</li>
+        <li>Session filters for volatility control</li>
+      </ul>
+      <p>Every setting is clearly labeled with tooltips explaining what it does and recommended values. The exported MQL5 code includes all risk checks as separate functions that you can review and modify in MetaEditor.</p>
+
+      <p>Ready to build a risk-managed EA? Start with our <a href="/blog/getting-started-with-algostudio">getting started guide</a>, or learn specific settings for <a href="/blog/prop-firm-ea-settings">prop firm challenges</a>. For strategy-specific guidance, check out our <a href="/blog/ema-crossover-strategy-guide">EMA crossover guide</a> or <a href="/blog/rsi-reversal-strategy">RSI reversal strategy guide</a>.</p>
+    `,
+  },
+  {
+    slug: "rsi-reversal-strategy",
+    title: "RSI Reversal Strategy: How to Build and Backtest",
+    description:
+      "Build an RSI reversal Expert Advisor for MT5. Learn how to configure overbought/oversold levels, add confirmation filters, and backtest effectively.",
+    date: "2025-09-10",
+    author: "AlgoStudio Team",
+    readTime: "10 min read",
+    tags: ["strategy", "indicators"],
+    content: `
+      <p>The Relative Strength Index (RSI) is one of the most versatile indicators in trading. While many traders use it for trend confirmation, its real power in automated trading lies in mean-reversion strategies — buying when the market is oversold and selling when it is overbought. This guide walks you through building, configuring, and backtesting an RSI reversal EA for MetaTrader 5.</p>
+
+      <h2>How the RSI Reversal Strategy Works</h2>
+      <p>The RSI oscillates between 0 and 100. Traditionally, readings below 30 indicate oversold conditions (potential buy), and readings above 70 indicate overbought conditions (potential sell). The reversal strategy waits for the RSI to enter these extreme zones and then exit them, signaling a potential reversal.</p>
+      <p>The key distinction is that we do not enter when RSI <em>reaches</em> the extreme — we enter when it <em>exits</em> the extreme zone. This confirmation step significantly reduces false signals because the market has already shown the first sign of turning around.</p>
+
+      <h2>Configuring RSI Parameters</h2>
+      <p>The default RSI period is 14, but this is not always optimal for automated trading:</p>
+      <ul>
+        <li><strong>RSI(7-9):</strong> More sensitive, generates more signals, better for scalping on M15-M30</li>
+        <li><strong>RSI(14):</strong> The standard, works well on H1 and H4 for most pairs</li>
+        <li><strong>RSI(21-25):</strong> Smoother, fewer signals, better for daily charts and longer-term positions</li>
+      </ul>
+
+      <h3>Adjusting Overbought/Oversold Levels</h3>
+      <p>The classic 70/30 levels work well in ranging markets, but you can adjust them:</p>
+      <ul>
+        <li><strong>80/20:</strong> Stricter thresholds — fewer signals but higher quality. Best for markets that tend to range within a defined channel.</li>
+        <li><strong>70/30:</strong> Standard thresholds — good balance of signal frequency and quality.</li>
+        <li><strong>60/40:</strong> Looser thresholds — more signals but more false ones. Only use with strong confirmation filters.</li>
+      </ul>
+
+      <h2>Adding Confirmation Filters</h2>
+      <p>A raw RSI reversal strategy will produce many losing trades in trending markets. When EURUSD is in a strong downtrend, RSI can stay oversold for days — buying each oversold reading is a recipe for losses. Here is how to filter out bad signals:</p>
+
+      <h3>Higher-Timeframe Trend Filter</h3>
+      <p>Use a 200-period EMA on a higher timeframe to determine the dominant trend. Only take buy signals (RSI oversold) when price is above the 200 EMA on the higher timeframe. Only take sell signals (RSI overbought) when price is below it. This single filter eliminates most counter-trend traps.</p>
+
+      <h3>Bollinger Band Confirmation</h3>
+      <p>When RSI shows oversold and price is touching or below the lower Bollinger Band, the reversal signal is stronger. The confluence of two independent oversold signals increases probability.</p>
+
+      <h3>Session Filter</h3>
+      <p>RSI reversals work best during active trading sessions when there is enough volume to push prices back from extremes. The London session (08:00-17:00 GMT) provides the best conditions. Avoid the Asian session for RSI reversal strategies because low-volume ranges often produce false oversold/overbought readings.</p>
+
+      <h2>Risk Management for RSI Reversals</h2>
+      <p>Mean-reversion strategies have different risk characteristics than trend-following strategies. Your risk management should reflect this:</p>
+      <ul>
+        <li><strong>Stop Loss:</strong> Place stops beyond the recent extreme — below the low that triggered the oversold reading (for buys). ATR-based stops (1.5x ATR) work well as an alternative.</li>
+        <li><strong>Take Profit:</strong> Use a 1.5:1 to 2:1 risk-reward ratio. Mean-reversion trades tend to have shorter profit runs than trend-following trades, so do not set unrealistic targets.</li>
+        <li><strong>Risk Per Trade:</strong> 0.5% to 1% of account equity. Mean-reversion strategies can have lower win rates during trending markets, so conservative sizing is important.</li>
+        <li><strong>Max Open Trades:</strong> 1-2. RSI reversals on correlated pairs (EURUSD and GBPUSD) often trigger at the same time — having positions on both doubles your risk.</li>
+      </ul>
+
+      <h2>Backtesting RSI Reversal EAs</h2>
+      <p>RSI reversal strategies have a unique backtesting challenge: they perform brilliantly during ranging periods and poorly during strong trends. To get an honest picture:</p>
+      <ol>
+        <li><strong>Test across multiple market conditions:</strong> Include at least 2 years of data that covers both ranging and trending periods</li>
+        <li><strong>Check monthly performance:</strong> A good RSI EA should not have more than 2-3 consecutive losing months</li>
+        <li><strong>Compare with and without filters:</strong> Run the raw strategy first, then add each filter one at a time to see the impact</li>
+        <li><strong>Test multiple pairs:</strong> RSI reversals tend to work better on major pairs (EURUSD, GBPUSD, USDJPY) than exotic pairs</li>
+        <li><strong>Watch for curve fitting:</strong> If the strategy only works with very specific RSI levels (e.g., exactly 72 and 28), it is probably overfitted</li>
+      </ol>
+
+      <h3>Key Metrics to Evaluate</h3>
+      <ul>
+        <li><strong>Win Rate:</strong> Expect 50-65% for a well-configured RSI reversal strategy</li>
+        <li><strong>Profit Factor:</strong> Target above 1.3</li>
+        <li><strong>Maximum Drawdown:</strong> Should be below 15% with 1% risk per trade</li>
+        <li><strong>Average Trade Duration:</strong> RSI reversal trades typically last 2-12 candles — if trades are lasting 50+ candles, something is wrong</li>
+      </ul>
+
+      <h2>Building It in AlgoStudio</h2>
+      <p>AlgoStudio's <a href="/templates/rsi-ea-template">RSI Reversal template</a> includes all the settings described in this guide:</p>
+      <ol>
+        <li>Set RSI period and overbought/oversold levels</li>
+        <li>Enable the higher-timeframe trend filter</li>
+        <li>Configure ATR-based stop loss and risk-reward ratio</li>
+        <li>Add session filter for London hours</li>
+        <li>Set position sizing to 1% risk per trade</li>
+        <li>Export clean MQL5 code and run backtests in the MT5 Strategy Tester</li>
+      </ol>
+      <p>The entire process takes under 5 minutes, and you get clean, readable MQL5 source code that you can review and modify further.</p>
+
+      <p>For more strategies, explore our <a href="/blog/ema-crossover-strategy-guide">EMA crossover guide</a> or learn about <a href="/blog/risk-management-trading-bots">risk management fundamentals</a>. Trading with a prop firm? Read our <a href="/blog/prop-firm-ea-settings">prop firm EA settings guide</a> for compliance tips.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {

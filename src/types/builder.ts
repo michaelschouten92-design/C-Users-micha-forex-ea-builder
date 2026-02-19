@@ -245,6 +245,22 @@ export interface CustomIndicatorNodeData extends BaseNodeData {
   signalMode?: "every_tick" | "candle_close";
 }
 
+export interface OBVNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "obv";
+  timeframe: Timeframe;
+  signalPeriod: number; // SMA period for signal line, default 20
+  signalMode?: "every_tick" | "candle_close";
+}
+
+export interface VWAPNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "vwap";
+  timeframe: Timeframe;
+  resetPeriod: "daily" | "weekly" | "monthly";
+  signalMode?: "every_tick" | "candle_close";
+}
+
 // Condition (Logic) Nodes
 export type ConditionOperator =
   | "GREATER_THAN"
@@ -273,6 +289,8 @@ export type IndicatorNodeData =
   | CCINodeData
   | IchimokuNodeData
   | CustomIndicatorNodeData
+  | OBVNodeData
+  | VWAPNodeData
   | ConditionNodeData;
 
 // Price Action Nodes
@@ -333,10 +351,43 @@ export interface RangeBreakoutNodeData extends BaseNodeData {
   useServerTime?: boolean;
 }
 
+export interface OrderBlockNodeData extends BaseNodeData {
+  category: "priceaction";
+  priceActionType: "order-block";
+  timeframe: Timeframe;
+  lookbackPeriod: number;
+  minBlockSize: number;
+  maxBlockAge: number;
+  signalMode?: "every_tick" | "candle_close";
+}
+
+export interface FairValueGapNodeData extends BaseNodeData {
+  category: "priceaction";
+  priceActionType: "fair-value-gap";
+  timeframe: Timeframe;
+  minGapSize: number;
+  maxGapAge: number;
+  fillPercentage: number;
+  signalMode?: "every_tick" | "candle_close";
+}
+
+export interface MarketStructureNodeData extends BaseNodeData {
+  category: "priceaction";
+  priceActionType: "market-structure";
+  timeframe: Timeframe;
+  swingStrength: number;
+  detectBOS: boolean;
+  detectChoCh: boolean;
+  signalMode?: "every_tick" | "candle_close";
+}
+
 export type PriceActionNodeData =
   | CandlestickPatternNodeData
   | SupportResistanceNodeData
-  | RangeBreakoutNodeData;
+  | RangeBreakoutNodeData
+  | OrderBlockNodeData
+  | FairValueGapNodeData
+  | MarketStructureNodeData;
 
 // Trading Nodes
 export type PositionSizingMethod = "FIXED_LOT" | "RISK_PERCENT";
@@ -421,13 +472,24 @@ export interface TimeExitNodeData extends BaseNodeData {
   exitTimeframe: Timeframe;
 }
 
+export interface GridPyramidNodeData extends BaseNodeData {
+  category: "trading";
+  tradingType: "grid-pyramid";
+  gridMode: "GRID" | "PYRAMID";
+  gridSpacing: number; // pips between levels, default 20
+  maxGridLevels: number; // maximum grid levels, default 5
+  lotMultiplier: number; // lot multiplier for martingale/anti-martingale, default 1.0
+  direction: "BUY_ONLY" | "SELL_ONLY" | "BOTH";
+}
+
 export type TradingNodeData =
   | PlaceBuyNodeData
   | PlaceSellNodeData
   | StopLossNodeData
   | TakeProfitNodeData
   | CloseConditionNodeData
-  | TimeExitNodeData;
+  | TimeExitNodeData
+  | GridPyramidNodeData;
 
 // Trade Management Nodes (Pro only)
 export type BreakevenTrigger = "PIPS" | "ATR" | "PERCENTAGE";
@@ -479,11 +541,26 @@ export interface LockProfitNodeData extends BaseNodeData {
   checkIntervalPips: number; // Minimum profit in pips before lock activates
 }
 
+export type MoveSLAfterTP = "BREAKEVEN" | "TRAIL" | "NONE";
+
+export interface MultiLevelTPNodeData extends BaseNodeData {
+  category: "trademanagement";
+  tradeManagementType: "multi-level-tp";
+  tp1Pips: number;
+  tp1Percent: number; // close % at TP1
+  tp2Pips: number;
+  tp2Percent: number; // close % at TP2
+  tp3Pips: number;
+  tp3Percent: number; // close remainder at TP3
+  moveSLAfterTP1: MoveSLAfterTP;
+}
+
 export type TradeManagementNodeData =
   | BreakevenStopNodeData
   | TrailingStopNodeData
   | PartialCloseNodeData
-  | LockProfitNodeData;
+  | LockProfitNodeData
+  | MultiLevelTPNodeData;
 
 // ============================================
 // ENTRY STRATEGY NODES (composite blocks)
@@ -692,6 +769,9 @@ export type BuilderNodeType =
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
+  | "order-block"
+  | "fair-value-gap"
+  | "market-structure"
   | "place-buy"
   | "place-sell"
   | "stop-loss"
@@ -711,7 +791,11 @@ export type BuilderNodeType =
   | "max-spread"
   | "volatility-filter"
   | "friday-close"
-  | "news-filter";
+  | "news-filter"
+  | "obv"
+  | "vwap"
+  | "grid-pyramid"
+  | "multi-level-tp";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -927,6 +1011,32 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     } as IchimokuNodeData,
   },
   {
+    type: "obv",
+    label: "OBV (On-Balance Volume)",
+    category: "indicator",
+    description: "Volume-based trend confirmation using OBV with SMA signal line",
+    defaultData: {
+      label: "OBV",
+      category: "indicator",
+      indicatorType: "obv",
+      timeframe: "H1",
+      signalPeriod: 20,
+    } as OBVNodeData,
+  },
+  {
+    type: "vwap",
+    label: "VWAP",
+    category: "indicator",
+    description: "Volume Weighted Average Price — institutional fair value benchmark",
+    defaultData: {
+      label: "VWAP",
+      category: "indicator",
+      indicatorType: "vwap",
+      timeframe: "H1",
+      resetPeriod: "daily",
+    } as VWAPNodeData,
+  },
+  {
     type: "custom-indicator",
     label: "Custom Indicator",
     category: "indicator",
@@ -953,6 +1063,52 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       conditionType: "GREATER_THAN",
       threshold: 0,
     } as ConditionNodeData,
+  },
+  // Price Action (ICT/SMC)
+  {
+    type: "order-block",
+    label: "Order Block",
+    category: "priceaction",
+    description: "Detect bullish/bearish order blocks (ICT)",
+    defaultData: {
+      label: "Order Block",
+      category: "priceaction",
+      priceActionType: "order-block",
+      timeframe: "H1",
+      lookbackPeriod: 50,
+      minBlockSize: 10,
+      maxBlockAge: 100,
+    } as OrderBlockNodeData,
+  },
+  {
+    type: "fair-value-gap",
+    label: "Fair Value Gap",
+    category: "priceaction",
+    description: "Detect FVG imbalances in price action (ICT)",
+    defaultData: {
+      label: "Fair Value Gap",
+      category: "priceaction",
+      priceActionType: "fair-value-gap",
+      timeframe: "H1",
+      minGapSize: 5,
+      maxGapAge: 50,
+      fillPercentage: 50,
+    } as FairValueGapNodeData,
+  },
+  {
+    type: "market-structure",
+    label: "Market Structure",
+    category: "priceaction",
+    description: "Track HH/HL/LL/LH and structure breaks (SMC)",
+    defaultData: {
+      label: "Market Structure",
+      category: "priceaction",
+      priceActionType: "market-structure",
+      timeframe: "H1",
+      swingStrength: 5,
+      detectBOS: true,
+      detectChoCh: true,
+    } as MarketStructureNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {
@@ -1194,6 +1350,40 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       lockPips: 20,
       checkIntervalPips: 10,
     } as LockProfitNodeData,
+  },
+  {
+    type: "multi-level-tp",
+    label: "Multi-Level TP",
+    category: "trademanagement",
+    description: "Three staged take profit levels with automatic SL management",
+    defaultData: {
+      label: "Multi-Level TP",
+      category: "trademanagement",
+      tradeManagementType: "multi-level-tp",
+      tp1Pips: 20,
+      tp1Percent: 30,
+      tp2Pips: 40,
+      tp2Percent: 30,
+      tp3Pips: 60,
+      tp3Percent: 40,
+      moveSLAfterTP1: "BREAKEVEN",
+    } as MultiLevelTPNodeData,
+  },
+  {
+    type: "grid-pyramid",
+    label: "Grid / Pyramid Entry",
+    category: "trading",
+    description: "Place orders at regular intervals (grid) or add to winning positions (pyramid)",
+    defaultData: {
+      label: "Grid / Pyramid",
+      category: "trading",
+      tradingType: "grid-pyramid",
+      gridMode: "GRID",
+      gridSpacing: 20,
+      maxGridLevels: 5,
+      lotMultiplier: 1.0,
+      direction: "BOTH",
+    } as GridPyramidNodeData,
   },
 ];
 

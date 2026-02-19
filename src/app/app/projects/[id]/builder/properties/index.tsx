@@ -24,6 +24,9 @@ import type {
   CandlestickPatternNodeData,
   SupportResistanceNodeData,
   RangeBreakoutNodeData,
+  OrderBlockNodeData,
+  FairValueGapNodeData,
+  MarketStructureNodeData,
   PlaceBuyNodeData,
   PlaceSellNodeData,
   StopLossNodeData,
@@ -36,8 +39,12 @@ import type {
   CCINodeData,
   IchimokuNodeData,
   CustomIndicatorNodeData,
+  OBVNodeData,
+  VWAPNodeData,
   ConditionNodeData,
   TimeExitNodeData,
+  GridPyramidNodeData,
+  MultiLevelTPNodeData,
   EMACrossoverEntryData,
   RangeBreakoutEntryData,
   RSIReversalEntryData,
@@ -66,12 +73,17 @@ import {
   CCIFields,
   IchimokuFields,
   CustomIndicatorFields,
+  OBVFields,
+  VWAPFields,
   ConditionFields,
 } from "./indicator-fields";
 import {
   CandlestickPatternFields,
   SupportResistanceFields,
   RangeBreakoutFields,
+  OrderBlockFields,
+  FairValueGapFields,
+  MarketStructureFields,
 } from "./price-action-fields";
 import {
   PlaceBuyFields,
@@ -80,12 +92,14 @@ import {
   TakeProfitFields,
   CloseConditionFields,
   TimeExitFields,
+  GridPyramidFields,
 } from "./trading-fields";
 import {
   BreakevenStopFields,
   TrailingStopFields,
   PartialCloseFields,
   LockProfitFields,
+  MultiLevelTPFields,
 } from "./trade-mgmt-fields";
 import {
   EMACrossoverEntryFields,
@@ -469,6 +483,10 @@ function NodeFields({
         return <IchimokuFields data={data as IchimokuNodeData} onChange={onChange} />;
       case "custom-indicator":
         return <CustomIndicatorFields data={data as CustomIndicatorNodeData} onChange={onChange} />;
+      case "obv":
+        return <OBVFields data={data as OBVNodeData} onChange={onChange} />;
+      case "vwap":
+        return <VWAPFields data={data as VWAPNodeData} onChange={onChange} />;
       case "condition":
         return <ConditionFields data={data as ConditionNodeData} onChange={onChange} />;
     }
@@ -487,6 +505,12 @@ function NodeFields({
         );
       case "range-breakout":
         return <RangeBreakoutFields data={data as RangeBreakoutNodeData} onChange={onChange} />;
+      case "order-block":
+        return <OrderBlockFields data={data as OrderBlockNodeData} onChange={onChange} />;
+      case "fair-value-gap":
+        return <FairValueGapFields data={data as FairValueGapNodeData} onChange={onChange} />;
+      case "market-structure":
+        return <MarketStructureFields data={data as MarketStructureNodeData} onChange={onChange} />;
     }
   }
 
@@ -505,6 +529,8 @@ function NodeFields({
         return <CloseConditionFields data={data as CloseConditionNodeData} onChange={onChange} />;
       case "time-exit":
         return <TimeExitFields data={data as TimeExitNodeData} onChange={onChange} />;
+      case "grid-pyramid":
+        return <GridPyramidFields data={data as GridPyramidNodeData} onChange={onChange} />;
     }
   }
 
@@ -519,6 +545,14 @@ function NodeFields({
         return <PartialCloseFields data={data as PartialCloseNodeData} onChange={onChange} />;
       case "lock-profit":
         return <LockProfitFields data={data as LockProfitNodeData} onChange={onChange} />;
+    }
+  }
+
+  // Trade Management (tradeManagementType variant)
+  if ("tradeManagementType" in data) {
+    switch (data.tradeManagementType) {
+      case "multi-level-tp":
+        return <MultiLevelTPFields data={data as MultiLevelTPNodeData} onChange={onChange} />;
     }
   }
 

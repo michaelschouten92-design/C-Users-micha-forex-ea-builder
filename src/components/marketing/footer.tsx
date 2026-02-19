@@ -53,6 +53,30 @@ export function Footer() {
                   Coaching
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/case-studies"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Case Studies
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/prop-firms"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Prop Firms
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/compare-platforms"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Compare Platforms
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

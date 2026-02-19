@@ -6,9 +6,11 @@ import type {
   TrailingStopNodeData,
   PartialCloseNodeData,
   LockProfitNodeData,
+  MultiLevelTPNodeData,
   BreakevenTrigger,
   TrailingStopMethod,
   LockProfitMethod,
+  MoveSLAfterTP,
 } from "@/types/builder";
 import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
 
@@ -362,6 +364,116 @@ export function LockProfitFields({
       >
         Automatically adjusts stop loss to lock in a portion of unrealized profit as the trade
         progresses.
+      </div>
+    </>
+  );
+}
+
+export function MultiLevelTPFields({
+  data,
+  onChange,
+}: {
+  data: MultiLevelTPNodeData;
+  onChange: (updates: Partial<MultiLevelTPNodeData>) => void;
+}) {
+  const totalPercent = data.tp1Percent + data.tp2Percent + data.tp3Percent;
+
+  return (
+    <>
+      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 1</p>
+      <div>
+        <NumberField
+          label="TP1 Distance (pips)"
+          value={data.tp1Pips}
+          min={1}
+          max={10000}
+          onChange={(v) => onChange({ tp1Pips: v })}
+          tooltip="Distance in pips from entry to first take profit level"
+        />
+        <OptimizableFieldCheckbox fieldName="tp1Pips" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="TP1 Close %"
+          value={data.tp1Percent}
+          min={1}
+          max={98}
+          onChange={(v) => onChange({ tp1Percent: v })}
+          tooltip="Percentage of the position to close at TP1"
+        />
+        <OptimizableFieldCheckbox fieldName="tp1Percent" data={data} onChange={onChange} />
+      </div>
+
+      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 2</p>
+      <div>
+        <NumberField
+          label="TP2 Distance (pips)"
+          value={data.tp2Pips}
+          min={1}
+          max={10000}
+          onChange={(v) => onChange({ tp2Pips: v })}
+          tooltip="Distance in pips from entry to second take profit level"
+        />
+        <OptimizableFieldCheckbox fieldName="tp2Pips" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="TP2 Close %"
+          value={data.tp2Percent}
+          min={1}
+          max={98}
+          onChange={(v) => onChange({ tp2Percent: v })}
+          tooltip="Percentage of the position to close at TP2"
+        />
+        <OptimizableFieldCheckbox fieldName="tp2Percent" data={data} onChange={onChange} />
+      </div>
+
+      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 3</p>
+      <div>
+        <NumberField
+          label="TP3 Distance (pips)"
+          value={data.tp3Pips}
+          min={1}
+          max={10000}
+          onChange={(v) => onChange({ tp3Pips: v })}
+          tooltip="Distance in pips from entry to final take profit level — closes all remaining"
+        />
+        <OptimizableFieldCheckbox fieldName="tp3Pips" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="TP3 Close %"
+          value={data.tp3Percent}
+          min={1}
+          max={100}
+          onChange={(v) => onChange({ tp3Percent: v })}
+          tooltip="Percentage of the position to close at TP3 (remainder)"
+        />
+        <OptimizableFieldCheckbox fieldName="tp3Percent" data={data} onChange={onChange} />
+      </div>
+
+      {totalPercent !== 100 && (
+        <FieldWarning message={`Close percentages add up to ${totalPercent}% (should be 100%)`} />
+      )}
+
+      <SelectField
+        label="After TP1 Hit"
+        value={data.moveSLAfterTP1}
+        options={[
+          { value: "BREAKEVEN", label: "Move SL to Breakeven" },
+          { value: "TRAIL", label: "Start Trailing Stop" },
+          { value: "NONE", label: "No SL Change" },
+        ]}
+        onChange={(v) => onChange({ moveSLAfterTP1: v as MoveSLAfterTP })}
+        tooltip="What to do with the stop loss after the first take profit level is hit"
+      />
+
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Closes portions of your position at three different profit levels. Secures partial profits
+        while letting the remainder run to higher targets.
       </div>
     </>
   );

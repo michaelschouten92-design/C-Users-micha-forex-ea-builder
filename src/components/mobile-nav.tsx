@@ -86,6 +86,20 @@ export function MobileNav() {
               Blog
             </Link>
             <Link
+              href="/compare-platforms"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Compare
+            </Link>
+            <Link
+              href="/prop-firms"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Prop Firms
+            </Link>
+            <Link
               href="/login"
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"

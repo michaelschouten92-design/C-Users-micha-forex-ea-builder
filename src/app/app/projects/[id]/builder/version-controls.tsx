@@ -554,16 +554,18 @@ export function VersionControls({
         <div className="w-px h-6 bg-[rgba(79,70,229,0.3)] hidden sm:block" />
 
         {/* Export Button */}
-        <ExportButton
-          projectId={projectId}
-          hasNodes={hasNodes}
-          canExport={validation.canExport}
-          canExportMQL5={canExportMQL5}
-          canExportMQL4={canExportMQL4}
-          userTier={userTier}
-          magicNumber={magicNumber}
-          strategySummaryLines={strategySummaryLines}
-        />
+        <div className="export-button-container">
+          <ExportButton
+            projectId={projectId}
+            hasNodes={hasNodes}
+            canExport={validation.canExport}
+            canExportMQL5={canExportMQL5}
+            canExportMQL4={canExportMQL4}
+            userTier={userTier}
+            magicNumber={magicNumber}
+            strategySummaryLines={strategySummaryLines}
+          />
+        </div>
       </div>
 
       {/* Right side */}

@@ -2,7 +2,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { UseTemplateButton } from "./use-template-button";
+import { MarketplaceClient } from "./marketplace-client";
 
 /**
  * Mask an email address for public display.
@@ -14,13 +14,17 @@ function maskEmail(email: string): string {
   return `${visible}***@${domain}`;
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+const CATEGORIES = [
+  "scalping",
+  "trend-following",
+  "breakout",
+  "mean-reversion",
+  "grid",
+  "martingale",
+  "hedging",
+  "news-trading",
+  "other",
+] as const;
 
 export default async function CommunityPage() {
   const session = await auth();
@@ -32,11 +36,32 @@ export default async function CommunityPage() {
   const templates = await prisma.userTemplate.findMany({
     where: { isPublic: true },
     orderBy: { createdAt: "desc" },
+    take: 20,
     include: {
-      user: {
-        select: { email: true },
-      },
+      user: { select: { email: true } },
+      ratings: { select: { rating: true } },
     },
+  });
+
+  const total = await prisma.userTemplate.count({ where: { isPublic: true } });
+
+  const initialTemplates = templates.map((t) => {
+    const ratingSum = t.ratings.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = t.ratings.length > 0 ? ratingSum / t.ratings.length : 0;
+
+    return {
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      buildJson: t.buildJson as unknown,
+      authorEmail: maskEmail(t.user.email),
+      downloads: t.downloads,
+      tags: t.tags,
+      category: t.category,
+      avgRating: Math.round(avgRating * 10) / 10,
+      ratingCount: t.ratings.length,
+      createdAt: t.createdAt.toISOString(),
+    };
   });
 
   return (
@@ -52,7 +77,7 @@ export default async function CommunityPage() {
                 AlgoStudio
               </Link>
               <span className="text-xs text-[#A78BFA] font-medium tracking-wider uppercase hidden sm:inline">
-                Community
+                Marketplace
               </span>
             </div>
             <div className="flex items-center gap-4">
@@ -88,61 +113,12 @@ export default async function CommunityPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white">Community Templates</h2>
-          <p className="mt-2 text-[#94A3B8]">
-            Browse strategies shared by the community. Use any template to create a new project.
-          </p>
-        </div>
-
-        {templates.length === 0 ? (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-[#4F46E5]/40 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-            <h3 className="text-lg font-semibold text-white mb-2">No community templates yet</h3>
-            <p className="text-[#94A3B8] max-w-md mx-auto">
-              Be the first to share a strategy! You can make your templates public from the template
-              settings in your project.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map((template) => (
-              <div
-                key={template.id}
-                className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 flex flex-col hover:border-[rgba(79,70,229,0.4)] transition-colors duration-200"
-              >
-                <h3 className="text-lg font-semibold text-white mb-2 line-clamp-1">
-                  {template.name}
-                </h3>
-                {template.description && (
-                  <p className="text-sm text-[#94A3B8] mb-4 line-clamp-3">{template.description}</p>
-                )}
-                <div className="mt-auto pt-4 border-t border-[rgba(79,70,229,0.15)]">
-                  <div className="flex items-center justify-between text-xs text-[#7C8DB0] mb-3">
-                    <span>{maskEmail(template.user.email)}</span>
-                    <span>{formatDate(template.createdAt)}</span>
-                  </div>
-                  <UseTemplateButton
-                    templateName={template.name}
-                    buildJson={template.buildJson as object}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <MarketplaceClient
+          userId={session.user.id}
+          initialTemplates={initialTemplates}
+          initialCategories={CATEGORIES}
+          initialTotal={total}
+        />
       </main>
     </div>
   );

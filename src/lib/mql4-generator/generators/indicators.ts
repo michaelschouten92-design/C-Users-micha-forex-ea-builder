@@ -13,6 +13,8 @@ import type {
   StochasticNodeData,
   CCINodeData,
   IchimokuNodeData,
+  OBVNodeData,
+  VWAPNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
@@ -738,6 +740,117 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           code.maxIndicatorPeriod,
           (Number(ichi.senkouBPeriod) || 52) * 2
         );
+        break;
+      }
+
+      case "obv": {
+        const obv = data as OBVNodeData;
+        const group = `OBV ${index + 1}`;
+        const signalPeriod = obv.signalPeriod ?? 20;
+        const copyBars = Math.max(signalPeriod + 2, obv.signalMode === "candle_close" ? 4 : 3);
+
+        code.inputs.push(
+          createInput(
+            node,
+            "signalPeriod",
+            `InpOBV${index}SignalPeriod`,
+            "int",
+            signalPeriod,
+            `OBV ${index + 1} Signal SMA Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpOBV${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(obv.timeframe),
+            `OBV ${index + 1} Timeframe`,
+            group
+          )
+        );
+
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
+        code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
+        code.onInit.push(`ArrayResize(${varPrefix}SignalBuffer, ${copyBars});`);
+
+        // MQL4: iOBV is available as iOBV(symbol, timeframe, applied_price, shift)
+        code.onTick.push(`//--- OBV ${index + 1}: fill buffer via iOBV()`);
+        code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
+        code.onTick.push(
+          `   ${varPrefix}Buffer[_i${index}] = iOBV(Symbol(), (int)InpOBV${index}Timeframe, PRICE_CLOSE, _i${index});`
+        );
+        code.onTick.push(`// Calculate OBV signal line (SMA)`);
+        code.onTick.push(`for(int _s${index}=0; _s${index}<2; _s${index}++)`);
+        code.onTick.push(`{`);
+        code.onTick.push(`   double sum = 0;`);
+        code.onTick.push(`   for(int _j=0; _j<InpOBV${index}SignalPeriod; _j++)`);
+        code.onTick.push(
+          `      sum += iOBV(Symbol(), (int)InpOBV${index}Timeframe, PRICE_CLOSE, _s${index} + _j);`
+        );
+        code.onTick.push(
+          `   ${varPrefix}SignalBuffer[_s${index}] = sum / InpOBV${index}SignalPeriod;`
+        );
+        code.onTick.push(`}`);
+
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, signalPeriod + 2);
+        break;
+      }
+
+      case "vwap": {
+        const vwap = data as VWAPNodeData;
+        const group = `VWAP ${index + 1}`;
+        const copyBars = vwap.signalMode === "candle_close" ? 4 : 3;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpVWAP${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(vwap.timeframe),
+            `VWAP ${index + 1} Timeframe`,
+            group
+          )
+        );
+
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
+
+        // MQL4: Calculate VWAP manually using price and volume arrays
+        const resetPeriod = vwap.resetPeriod ?? "daily";
+        let resetTf: string;
+        if (resetPeriod === "weekly") resetTf = "PERIOD_W1";
+        else if (resetPeriod === "monthly") resetTf = "PERIOD_MN1";
+        else resetTf = "PERIOD_D1";
+
+        code.onTick.push(`//--- VWAP ${index + 1}: manual calculation`);
+        code.onTick.push(`{`);
+        code.onTick.push(`   datetime vwapReset = iTime(Symbol(), ${resetTf}, 0);`);
+        code.onTick.push(`   int tf = (int)InpVWAP${index}Timeframe;`);
+        code.onTick.push(`   double sumPV = 0, sumV = 0;`);
+        code.onTick.push(`   for(int b = 0; b < iBars(Symbol(), tf); b++)`);
+        code.onTick.push(`   {`);
+        code.onTick.push(`      if(iTime(Symbol(), tf, b) < vwapReset) break;`);
+        code.onTick.push(
+          `      double tp = (iHigh(Symbol(), tf, b) + iLow(Symbol(), tf, b) + iClose(Symbol(), tf, b)) / 3.0;`
+        );
+        code.onTick.push(`      double vol = (double)iVolume(Symbol(), tf, b);`);
+        code.onTick.push(`      if(vol <= 0) vol = 1;`);
+        code.onTick.push(`      sumPV += tp * vol;`);
+        code.onTick.push(`      sumV += vol;`);
+        code.onTick.push(`   }`);
+        code.onTick.push(
+          `   double vwapValue = (sumV > 0) ? sumPV / sumV : iClose(Symbol(), tf, 0);`
+        );
+        code.onTick.push(`   for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
+        code.onTick.push(`      ${varPrefix}Buffer[_i${index}] = vwapValue;`);
+        code.onTick.push(`}`);
+
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
         break;
       }
     }

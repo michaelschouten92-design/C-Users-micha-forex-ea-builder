@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { ExportPreviewModal } from "@/components/builder/export-preview-modal";
+import { WebhookSetupGuide } from "@/components/builder/webhook-setup-guide";
 
 interface ExportButtonProps {
   projectId: string;
@@ -57,6 +59,7 @@ export function ExportButton({
   const [historyItems, setHistoryItems] = useState<ExportHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     if (!showModal) return;
@@ -316,6 +319,16 @@ export function ExportButton({
         <p className="text-[10px] text-[#64748B] mt-1 text-center md:hidden">
           {exportDisabledReason}
         </p>
+      )}
+
+      {/* Export Preview Modal */}
+      {result && (
+        <ExportPreviewModal
+          code={result.code}
+          fileName={result.fileName}
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+        />
       )}
 
       {/* Export Modal */}
@@ -665,6 +678,25 @@ export function ExportButton({
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => setShowPreview(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                          />
+                        </svg>
+                        Preview Code
+                      </button>
+                      <button
                         onClick={copyToClipboard}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
                       >
@@ -720,6 +752,9 @@ export function ExportButton({
 
                   {/* Backtest Checklist */}
                   <BacktestChecklist />
+
+                  {/* Webhook Setup */}
+                  <WebhookSetupGuide />
 
                   {/* Upsell for FREE users */}
                   {userTier === "FREE" && (

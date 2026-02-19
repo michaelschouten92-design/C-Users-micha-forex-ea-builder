@@ -38,6 +38,18 @@ export function SiteNav() {
           <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Blog
           </Link>
+          <Link
+            href="/compare-platforms"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Compare
+          </Link>
+          <Link
+            href="/prop-firms"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Prop Firms
+          </Link>
           <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Sign in
           </Link>

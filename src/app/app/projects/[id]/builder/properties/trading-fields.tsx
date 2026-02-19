@@ -11,6 +11,7 @@ import type {
   CloseConditionNodeData,
   CloseDirection,
   TimeExitNodeData,
+  GridPyramidNodeData,
   Timeframe,
   OrderType,
 } from "@/types/builder";
@@ -667,6 +668,84 @@ export function TimeExitFields({
         role="note"
       >
         Automatically closes positions after the specified number of bars on the selected timeframe.
+      </div>
+    </>
+  );
+}
+
+export function GridPyramidFields({
+  data,
+  onChange,
+}: {
+  data: GridPyramidNodeData;
+  onChange: (updates: Partial<GridPyramidNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Mode"
+        value={data.gridMode}
+        options={[
+          { value: "GRID", label: "Grid (pending orders at intervals)" },
+          { value: "PYRAMID", label: "Pyramid (add to winners)" },
+        ]}
+        onChange={(v) => onChange({ gridMode: v as GridPyramidNodeData["gridMode"] })}
+        tooltip="Grid places pending orders at regular intervals. Pyramid adds to winning positions."
+      />
+      <SelectField
+        label="Direction"
+        value={data.direction}
+        options={[
+          { value: "BOTH", label: "Both Directions" },
+          { value: "BUY_ONLY", label: "Buy Only" },
+          { value: "SELL_ONLY", label: "Sell Only" },
+        ]}
+        onChange={(v) => onChange({ direction: v as GridPyramidNodeData["direction"] })}
+      />
+      <div>
+        <NumberField
+          label="Grid Spacing (pips)"
+          value={data.gridSpacing}
+          min={1}
+          max={1000}
+          onChange={(v) => onChange({ gridSpacing: v })}
+          tooltip="Distance in pips between each grid level or pyramid addition"
+        />
+        <OptimizableFieldCheckbox fieldName="gridSpacing" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Max Grid Levels"
+          value={data.maxGridLevels}
+          min={1}
+          max={50}
+          onChange={(v) => onChange({ maxGridLevels: v })}
+          tooltip="Maximum number of grid levels or pyramid additions"
+        />
+        <OptimizableFieldCheckbox fieldName="maxGridLevels" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Lot Multiplier"
+          value={data.lotMultiplier}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ lotMultiplier: v })}
+          tooltip="Lot size multiplier for each level. 1.0 = same size, 2.0 = double each level (martingale), 0.5 = halve each level"
+        />
+        <OptimizableFieldCheckbox fieldName="lotMultiplier" data={data} onChange={onChange} />
+      </div>
+      {data.lotMultiplier > 1.0 && (
+        <FieldWarning message="Lot multiplier > 1.0 (martingale) increases risk exponentially with each level" />
+      )}
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        {data.gridMode === "GRID"
+          ? "Grid mode places pending orders at regular intervals from the entry price. Useful for range-bound markets."
+          : "Pyramid mode adds to winning positions at intervals. Useful for trending markets."}
       </div>
     </>
   );

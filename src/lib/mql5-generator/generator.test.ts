@@ -556,6 +556,138 @@ describe("generateMQL5Code", () => {
       // Recalculates only on new bar
       expect(code).toContain("isNewBar");
     });
+
+    it("generates Order Block code with bullish/bearish detection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ob1", "order-block", {
+          category: "priceaction",
+          priceActionType: "order-block",
+          timeframe: "H1",
+          lookbackPeriod: 50,
+          minBlockSize: 10,
+          maxBlockAge: 100,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Order Block Detection");
+      expect(code).toContain("pa0BuySignal");
+      expect(code).toContain("pa0SellSignal");
+      expect(code).toContain("pa0BullValid");
+      expect(code).toContain("pa0BearValid");
+      expect(code).toContain("pa0BullHigh");
+      expect(code).toContain("pa0BullLow");
+      expect(code).toContain("InpOB0Lookback");
+      expect(code).toContain("InpOB0MinSize");
+      expect(code).toContain("InpOB0MaxAge");
+    });
+
+    it("generates Fair Value Gap code with gap detection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("fvg1", "fair-value-gap", {
+          category: "priceaction",
+          priceActionType: "fair-value-gap",
+          timeframe: "H1",
+          minGapSize: 5,
+          maxGapAge: 50,
+          fillPercentage: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Fair Value Gap Detection");
+      expect(code).toContain("pa0BuySignal");
+      expect(code).toContain("pa0SellSignal");
+      expect(code).toContain("InpFVG0MinGap");
+      expect(code).toContain("InpFVG0MaxAge");
+      expect(code).toContain("InpFVG0FillPct");
+      expect(code).toContain("fillLevel");
+      // Bullish FVG checks candle[i+2] high vs candle[i] low
+      expect(code).toContain("highTwo");
+      expect(code).toContain("lowZero");
+    });
+
+    it("generates Market Structure code with swing detection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ms1", "market-structure", {
+          category: "priceaction",
+          priceActionType: "market-structure",
+          timeframe: "H1",
+          swingStrength: 5,
+          detectBOS: true,
+          detectChoCh: true,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Market Structure Detection");
+      expect(code).toContain("pa0BuySignal");
+      expect(code).toContain("pa0SellSignal");
+      expect(code).toContain("pa0SwingHigh");
+      expect(code).toContain("pa0SwingLow");
+      expect(code).toContain("pa0IsUptrend");
+      expect(code).toContain("pa0IsDowntrend");
+      expect(code).toContain("InpMS0Strength");
+      // BOS detection when enabled
+      expect(code).toContain("pa0BOS_Bull");
+      expect(code).toContain("pa0BOS_Bear");
+      expect(code).toContain("Break of Structure");
+    });
+
+    it("generates Market Structure code without BOS when disabled", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ms1", "market-structure", {
+          category: "priceaction",
+          priceActionType: "market-structure",
+          timeframe: "H4",
+          swingStrength: 3,
+          detectBOS: false,
+          detectChoCh: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Market Structure Detection");
+      expect(code).toContain("pa0IsUptrend");
+      expect(code).not.toContain("pa0BOS_Bull");
+      expect(code).not.toContain("Break of Structure");
+    });
   });
 
   // ============================================
@@ -4184,6 +4316,202 @@ describe("generateMQL5Code", () => {
       // Should not crash, just skip the condition — no threshold comparison in buy/sell conditions
       expect(code).toContain("void OnTick()");
       expect(code).not.toContain("DoubleGT(ind");
+    });
+  });
+
+  // ============================================
+  // NEW NODE TYPES (OBV, VWAP, Grid/Pyramid, Multi-Level TP)
+  // ============================================
+
+  describe("OBV indicator node", () => {
+    it("generates OBV indicator code with signal SMA", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("obv1", "obv", {
+          category: "indicator",
+          indicatorType: "obv",
+          timeframe: "H1",
+          signalPeriod: 20,
+          signalMode: "candle_close",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iOBV");
+      expect(code).toContain("InpOBV0SignalPeriod");
+      expect(code).toContain("ind0Buffer");
+      expect(code).toContain("ind0SignalBuffer");
+    });
+  });
+
+  describe("VWAP indicator node", () => {
+    it("generates VWAP indicator code with manual calculation", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("vwap1", "vwap", {
+          category: "indicator",
+          indicatorType: "vwap",
+          timeframe: "H1",
+          resetPeriod: "daily",
+          signalMode: "candle_close",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("VWAP calculation");
+      expect(code).toContain("ind0Value");
+      expect(code).toContain("ind0SumVP");
+      expect(code).toContain("ind0SumVol");
+      expect(code).toContain("InpVWAP0Timeframe");
+    });
+  });
+
+  describe("Grid/Pyramid node", () => {
+    it("generates grid mode code with pending orders", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("gp1", "grid-pyramid", {
+          category: "trading",
+          tradingType: "grid-pyramid",
+          gridMode: "GRID",
+          gridSpacing: 20,
+          maxGridLevels: 5,
+          lotMultiplier: 1.0,
+          direction: "BOTH",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Grid/Pyramid Management");
+      expect(code).toContain("InpGridSpacing");
+      expect(code).toContain("InpMaxGridLevels");
+      expect(code).toContain("gridBasePrice");
+      expect(code).toContain("Grid Mode");
+    });
+
+    it("generates pyramid mode code that adds to winners", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("gp1", "grid-pyramid", {
+          category: "trading",
+          tradingType: "grid-pyramid",
+          gridMode: "PYRAMID",
+          gridSpacing: 30,
+          maxGridLevels: 3,
+          lotMultiplier: 1.5,
+          direction: "BUY_ONLY",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Pyramid Mode");
+      expect(code).toContain("InpGridLotMultiplier");
+      expect(code).toContain("InpGridSpacing");
+      expect(code).toContain("InpMaxGridLevels");
+      // BUY_ONLY direction should not contain sell pyramid comment
+      expect(code).not.toContain("Sell grid");
+      expect(code).toContain("Pyramid");
+    });
+  });
+
+  describe("Multi-Level TP node", () => {
+    it("generates multi-level TP code with 3 levels", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("mltp1", "multi-level-tp", {
+          category: "trademanagement",
+          tradeManagementType: "multi-level-tp",
+          tp1Pips: 20,
+          tp1Percent: 40,
+          tp2Pips: 40,
+          tp2Percent: 30,
+          tp3Pips: 60,
+          tp3Percent: 30,
+          moveSLAfterTP1: "BREAKEVEN",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Multi-Level TP Management");
+      expect(code).toContain("InpMLTP1Pips");
+      expect(code).toContain("InpMLTP2Pips");
+      expect(code).toContain("InpMLTP3Pips");
+      expect(code).toContain("InpMLTP1Percent");
+      expect(code).toContain("GetMLTPLevel");
+      expect(code).toContain("SetMLTPLevel");
+      expect(code).toContain("TP Level 1");
+      expect(code).toContain("TP Level 2");
+      expect(code).toContain("TP Level 3");
+      expect(code).toContain("Move SL to breakeven after TP1");
+    });
+
+    it("generates multi-level TP with NONE SL behavior", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("mltp1", "multi-level-tp", {
+          category: "trademanagement",
+          tradeManagementType: "multi-level-tp",
+          tp1Pips: 10,
+          tp1Percent: 50,
+          tp2Pips: 20,
+          tp2Percent: 25,
+          tp3Pips: 30,
+          tp3Percent: 25,
+          moveSLAfterTP1: "NONE",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Multi-Level TP Management");
+      expect(code).not.toContain("Move SL to breakeven after TP1");
     });
   });
 });

@@ -43,6 +43,7 @@ import {
   generateTakeProfitCode,
   generateEntryLogic,
   generateTimeExitCode,
+  generateGridPyramidCode,
 } from "./generators/trading";
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
@@ -973,12 +974,15 @@ export function generateMQL5Code(
     "adx",
     "stochastic",
     "cci",
+    "obv",
+    "vwap",
   ]);
   const tradeManagementTypeSet = new Set([
     "breakeven-stop",
     "trailing-stop",
     "partial-close",
     "lock-profit",
+    "multi-level-tp",
   ]);
   const priceActionTypeSet = new Set([
     "candlestick-pattern",
@@ -996,6 +1000,7 @@ export function generateMQL5Code(
   const priceActionNodes: BuilderNode[] = [];
   const closeConditionNodes: BuilderNode[] = [];
   const timeExitNodes: BuilderNode[] = [];
+  const gridPyramidNodes: BuilderNode[] = [];
   const maxSpreadNodes: BuilderNode[] = [];
 
   for (const n of processedBuildJson.nodes) {
@@ -1026,8 +1031,17 @@ export function generateMQL5Code(
       indicatorNodes.push(n);
     } else if (priceActionTypeSet.has(nodeType) || "priceActionType" in data) {
       priceActionNodes.push(n);
-    } else if (tradeManagementTypeSet.has(nodeType) || "managementType" in data) {
+    } else if (
+      tradeManagementTypeSet.has(nodeType) ||
+      "managementType" in data ||
+      "tradeManagementType" in data
+    ) {
       tradeManagementNodes.push(n);
+    } else if (
+      nodeType === "grid-pyramid" ||
+      ("tradingType" in data && data.tradingType === "grid-pyramid")
+    ) {
+      gridPyramidNodes.push(n);
     } else if (
       nodeType === "place-buy" ||
       ("tradingType" in data && data.tradingType === "place-buy")
@@ -1598,6 +1612,11 @@ export function generateMQL5Code(
   // Generate trade management code (Pro only)
   tradeManagementNodes.forEach((node) => {
     generateTradeManagementCode(node, code);
+  });
+
+  // Generate grid/pyramid code
+  gridPyramidNodes.forEach((node) => {
+    generateGridPyramidCode(node, code, ctx);
   });
 
   // Generate telemetry code (live EA tracking)
