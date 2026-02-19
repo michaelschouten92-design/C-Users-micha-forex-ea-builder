@@ -24,7 +24,6 @@ import { StrategySummary, buildNaturalLanguageSummary } from "./strategy-summary
 import { useUndoRedo } from "./use-undo-redo";
 import { PanelErrorBoundary } from "./error-boundary";
 import { WelcomeModal } from "./welcome-modal";
-import { OnboardingTour } from "@/components/builder/onboarding-tour";
 import {
   useAutoSave,
   useClipboard,
@@ -663,7 +662,6 @@ export function StrategyCanvas({
         Skip to properties
       </a>
       <WelcomeModal forceOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <OnboardingTour />
 
       {/* Mobile: read-only strategy summary */}
       <div className="sm:hidden flex-1 overflow-y-auto p-4">
