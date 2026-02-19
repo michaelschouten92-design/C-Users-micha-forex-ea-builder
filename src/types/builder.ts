@@ -110,6 +110,17 @@ export interface NewsFilterNodeData extends BaseNodeData {
   closePositions: boolean; // close open positions during news, default false
 }
 
+export type VolumeFilterMode = "ABOVE_AVERAGE" | "BELOW_AVERAGE" | "SPIKE";
+
+export interface VolumeFilterNodeData extends BaseNodeData {
+  category: "timing";
+  filterType: "volume-filter";
+  timeframe: Timeframe;
+  volumePeriod: number; // default 20
+  volumeMultiplier: number; // default 1.5
+  filterMode: VolumeFilterMode; // default "ABOVE_AVERAGE"
+}
+
 export type TimingNodeData =
   | TradingSessionNodeData
   | AlwaysNodeData
@@ -117,7 +128,8 @@ export type TimingNodeData =
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
   | FridayCloseFilterNodeData
-  | NewsFilterNodeData;
+  | NewsFilterNodeData
+  | VolumeFilterNodeData;
 
 // Session time definitions (GMT)
 export const SESSION_TIMES: Record<TradingSession, { start: string; end: string; label: string }> =
@@ -220,6 +232,8 @@ export interface CCINodeData extends BaseNodeData {
   oversoldLevel: number;
 }
 
+export type IchimokuMode = "TENKAN_KIJUN_CROSS" | "PRICE_CLOUD" | "FULL";
+
 export interface IchimokuNodeData extends BaseNodeData {
   category: "indicator";
   indicatorType: "ichimoku";
@@ -227,12 +241,16 @@ export interface IchimokuNodeData extends BaseNodeData {
   tenkanPeriod: number; // default 9
   kijunPeriod: number; // default 26
   senkouBPeriod: number; // default 52
+  ichimokuMode?: IchimokuMode; // default "TENKAN_KIJUN_CROSS"
   signalMode?: "every_tick" | "candle_close";
 }
+
+export type CustomIndicatorParamType = "double" | "int" | "string" | "bool" | "color";
 
 export interface CustomIndicatorParam {
   name: string;
   value: string; // stored as string, parsed to double/int/string in codegen
+  type?: CustomIndicatorParamType; // optional type hint for validation and codegen casting
 }
 
 export interface CustomIndicatorNodeData extends BaseNodeData {
@@ -258,6 +276,20 @@ export interface VWAPNodeData extends BaseNodeData {
   indicatorType: "vwap";
   timeframe: Timeframe;
   resetPeriod: "daily" | "weekly" | "monthly";
+  signalMode?: "every_tick" | "candle_close";
+}
+
+// Bollinger Bands Squeeze Detection
+export type BBSqueezeSignalMode = "SQUEEZE" | "BREAKOUT" | "BOTH";
+
+export interface BBSqueezeNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "bb-squeeze";
+  timeframe: Timeframe;
+  bbPeriod: number; // default 20
+  bbDeviation: number; // default 2.0
+  kcPeriod: number; // default 20
+  kcMultiplier: number; // default 1.5
   signalMode?: "every_tick" | "candle_close";
 }
 
@@ -291,6 +323,7 @@ export type IndicatorNodeData =
   | CustomIndicatorNodeData
   | OBVNodeData
   | VWAPNodeData
+  | BBSqueezeNodeData
   | ConditionNodeData;
 
 // Price Action Nodes
@@ -795,10 +828,23 @@ export type BuilderNodeType =
   | "obv"
   | "vwap"
   | "grid-pyramid"
-  | "multi-level-tp";
+  | "multi-level-tp"
+  | "bb-squeeze"
+  | "volume-filter";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
+
+// ============================================
+// MULTI-PAIR SETTINGS (future feature scaffold)
+// ============================================
+
+export interface MultiPairSettings {
+  enabled: boolean;
+  symbols: string[]; // e.g., ["EURUSD", "GBPUSD", "USDJPY"]
+  correlationFilter: boolean;
+  maxTotalPositions: number;
+}
 
 // ============================================
 // BUILD JSON SCHEMA (stored in DB)
@@ -820,6 +866,7 @@ export interface BuildJsonSettings {
   maxTotalDrawdownPercent?: number;
   equityTargetPercent?: number; // Stop trading when equity grows by this % from starting balance
   maxSlippage?: number; // Max slippage in points (default 10)
+  multiPair?: MultiPairSettings; // Future: multi-pair strategy support
 }
 
 // Prop Firm Presets
@@ -963,6 +1010,21 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     } as VolatilityFilterNodeData,
   },
   {
+    type: "volume-filter",
+    label: "Volume Filter",
+    category: "timing",
+    description: "Block trades when volume is below or above average (filter)",
+    defaultData: {
+      label: "Volume Filter",
+      category: "timing",
+      filterType: "volume-filter",
+      timeframe: "H1",
+      volumePeriod: 20,
+      volumeMultiplier: 1.5,
+      filterMode: "ABOVE_AVERAGE",
+    } as VolumeFilterNodeData,
+  },
+  {
     type: "friday-close",
     label: "Friday Close",
     category: "timing",
@@ -1008,6 +1070,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       tenkanPeriod: 9,
       kijunPeriod: 26,
       senkouBPeriod: 52,
+      ichimokuMode: "TENKAN_KIJUN_CROSS",
     } as IchimokuNodeData,
   },
   {
@@ -1035,6 +1098,23 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       timeframe: "H1",
       resetPeriod: "daily",
     } as VWAPNodeData,
+  },
+  {
+    type: "bb-squeeze",
+    label: "BB Squeeze",
+    category: "indicator",
+    description:
+      "Detect Bollinger Bands squeeze inside Keltner Channel — breakout signal on expansion",
+    defaultData: {
+      label: "BB Squeeze",
+      category: "indicator",
+      indicatorType: "bb-squeeze",
+      timeframe: "H1",
+      bbPeriod: 20,
+      bbDeviation: 2.0,
+      kcPeriod: 20,
+      kcMultiplier: 1.5,
+    } as BBSqueezeNodeData,
   },
   {
     type: "custom-indicator",

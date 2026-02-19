@@ -15,6 +15,7 @@ import type {
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
+  VolumeFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -1205,6 +1206,56 @@ export function generateMQL4Code(
     code.onTick.push(`         return;`);
     code.onTick.push(`      }`);
     code.onTick.push(`   }`);
+    code.onTick.push(`}`);
+  }
+
+  // Generate volume filter code (iVolume works in MQL4 with the same API)
+  const volumeFilterNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "volume-filter"
+  );
+  if (volumeFilterNodes.length > 0) {
+    const vfNode = volumeFilterNodes[0];
+    const vfData = vfNode.data as VolumeFilterNodeData;
+    const volPeriod = vfData.volumePeriod ?? 20;
+    const volMultiplier = vfData.volumeMultiplier ?? 1.5;
+    const volMode = vfData.filterMode ?? "ABOVE_AVERAGE";
+    const vfTf = getTimeframe(vfData.timeframe ?? "H1");
+
+    code.inputs.push(
+      {
+        name: "InpVolFilterPeriod",
+        type: "int",
+        value: volPeriod,
+        comment: "Volume SMA Period",
+        isOptimizable: isFieldOptimizable(vfNode, "volumePeriod"),
+        group: "Volume Filter",
+      },
+      {
+        name: "InpVolFilterMult",
+        type: "double",
+        value: volMultiplier,
+        comment: "Volume Multiplier",
+        isOptimizable: isFieldOptimizable(vfNode, "volumeMultiplier"),
+        group: "Volume Filter",
+      }
+    );
+    code.globalVariables.push("double volFilterAvg = 0;");
+    code.onTick.push(`//--- Volume filter (${volMode})`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   long curVol = iVolume(Symbol(), ${vfTf}, 1);`);
+    code.onTick.push(`   double sumVol = 0;`);
+    code.onTick.push(`   for(int v = 2; v <= InpVolFilterPeriod + 1; v++)`);
+    code.onTick.push(`      sumVol += (double)iVolume(Symbol(), ${vfTf}, v);`);
+    code.onTick.push(`   volFilterAvg = sumVol / InpVolFilterPeriod;`);
+
+    if (volMode === "ABOVE_AVERAGE") {
+      code.onTick.push(`   if(curVol < (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    } else if (volMode === "BELOW_AVERAGE") {
+      code.onTick.push(`   if(curVol > (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    } else {
+      // SPIKE: volume must be at least multiplier * average
+      code.onTick.push(`   if(curVol < (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    }
     code.onTick.push(`}`);
   }
 

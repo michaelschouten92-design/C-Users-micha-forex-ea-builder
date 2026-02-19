@@ -2,6 +2,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { MarketplaceClient } from "./marketplace-client";
 
 /**
@@ -66,7 +67,11 @@ export default async function CommunityPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50">
+      <nav
+        role="navigation"
+        aria-label="App navigation"
+        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
@@ -113,6 +118,7 @@ export default async function CommunityPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Marketplace" }]} />
         <MarketplaceClient
           userId={session.user.id}
           initialTemplates={initialTemplates}

@@ -7,6 +7,8 @@ import type {
   AlwaysNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
+  VolumeFilterNodeData,
+  VolumeFilterMode,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
   CustomTimesNodeData,
@@ -172,6 +174,63 @@ export function VolatilityFilterFields({
   );
 }
 
+const VOLUME_FILTER_MODE_OPTIONS: { value: VolumeFilterMode; label: string }[] = [
+  { value: "ABOVE_AVERAGE", label: "Above Average" },
+  { value: "BELOW_AVERAGE", label: "Below Average" },
+  { value: "SPIKE", label: "Volume Spike" },
+];
+
+export function VolumeFilterFields({
+  data,
+  onChange,
+}: {
+  data: VolumeFilterNodeData;
+  onChange: (updates: Partial<VolumeFilterNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <NumberField
+        label="Volume SMA Period"
+        value={data.volumePeriod}
+        min={1}
+        max={500}
+        step={1}
+        onChange={(v) => onChange({ volumePeriod: v })}
+        tooltip="Number of bars used to calculate average volume. 20 is the standard setting."
+      />
+      <NumberField
+        label="Volume Multiplier"
+        value={data.volumeMultiplier}
+        min={0.1}
+        max={10}
+        step={0.1}
+        onChange={(v) => onChange({ volumeMultiplier: v })}
+        tooltip="Current volume must exceed average * multiplier to pass the filter."
+      />
+      <SelectField
+        label="Filter Mode"
+        value={data.filterMode}
+        options={VOLUME_FILTER_MODE_OPTIONS}
+        onChange={(v) => onChange({ filterMode: v as VolumeFilterMode })}
+        tooltip="Above Average: only trade when volume is high. Below Average: only trade during quiet periods. Spike: detect sudden volume surges."
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Filters entries based on volume relative to its moving average. High volume confirms
+        breakouts and trend strength.
+      </div>
+    </>
+  );
+}
+
 export function FridayCloseFields({
   data,
   onChange,
@@ -318,8 +377,15 @@ export function NewsFilterFields({
       >
         Blocks new entries {data.hoursBefore}h before and {data.hoursAfter}h after{" "}
         {impacts.length > 0 ? impacts.join(", ") : "no"} impact news events.
-        {data.closePositions ? " Also closes open positions during news windows." : ""} CSV is
-        auto-updated every time the EA runs on a live chart.
+        {data.closePositions ? " Also closes open positions during news windows." : ""} Live trading
+        uses the MQL5 Calendar API. Backtesting uses embedded static data.
+      </div>
+      <div
+        className="text-xs text-[#FBBF24] bg-[rgba(251,191,36,0.1)] border border-[rgba(251,191,36,0.2)] p-3 rounded-lg"
+        role="alert"
+      >
+        The embedded news calendar data is generated at the time of EA export. If you need
+        up-to-date events for backtesting, re-export the EA to refresh the data.
       </div>
     </>
   );

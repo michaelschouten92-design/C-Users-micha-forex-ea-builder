@@ -133,9 +133,10 @@ export function ExportPreviewModal({
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div
-        className="bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col"
         role="dialog"
+        aria-modal="true"
         aria-label="Code preview"
+        className="bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
@@ -157,6 +158,7 @@ export function ExportPreviewModal({
               }}
               className="p-1.5 text-[#7C8DB0] hover:text-white transition-colors rounded-md hover:bg-[rgba(79,70,229,0.2)]"
               title="Search (Ctrl+F)"
+              aria-label="Search in code"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -170,6 +172,7 @@ export function ExportPreviewModal({
             {/* Copy */}
             <button
               onClick={handleCopy}
+              aria-label="Copy code to clipboard"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,6 +188,7 @@ export function ExportPreviewModal({
             {/* Download */}
             <button
               onClick={handleDownload}
+              aria-label="Download file"
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -258,6 +262,7 @@ export function ExportPreviewModal({
               disabled={matchCount === 0}
               className="p-1 text-[#7C8DB0] hover:text-white disabled:opacity-30 transition-colors"
               title="Previous match"
+              aria-label="Previous search match"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -273,6 +278,7 @@ export function ExportPreviewModal({
               disabled={matchCount === 0}
               className="p-1 text-[#7C8DB0] hover:text-white disabled:opacity-30 transition-colors"
               title="Next match"
+              aria-label="Next search match"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -290,6 +296,7 @@ export function ExportPreviewModal({
               }}
               className="p-1 text-[#7C8DB0] hover:text-white transition-colors"
               title="Close search"
+              aria-label="Close search"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path

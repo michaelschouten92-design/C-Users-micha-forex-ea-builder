@@ -159,18 +159,34 @@ export function MarketplaceClient({
           </svg>
           {query || category ? (
             <>
-              <h3 className="text-lg font-semibold text-white mb-2">No results found</h3>
-              <p className="text-[#94A3B8] max-w-md mx-auto">
+              <h3 className="text-lg font-semibold text-white mb-2">
+                No templates match your search
+              </h3>
+              <p className="text-[#94A3B8] max-w-md mx-auto mb-6">
                 Try adjusting your search or filters to find strategies.
               </p>
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setCategory("");
+                }}
+                className="text-sm text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+              >
+                Clear filters
+              </button>
             </>
           ) : (
             <>
               <h3 className="text-lg font-semibold text-white mb-2">No community templates yet</h3>
-              <p className="text-[#94A3B8] max-w-md mx-auto">
-                Be the first to share a strategy! Click &ldquo;Publish Strategy&rdquo; to get
-                started.
+              <p className="text-[#94A3B8] max-w-md mx-auto mb-6">
+                Be the first to publish a strategy! Share your trading approach with the community.
               </p>
+              <button
+                onClick={() => setPublishOpen(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+              >
+                Publish a Strategy
+              </button>
             </>
           )}
         </div>

@@ -60,6 +60,7 @@ model User {
   referredBy      String?   // referralCode of the user who referred them
   lastLoginAt     DateTime?
   webhookUrl      String?   // User-defined webhook URL for trade notifications
+  leaderboardOptIn Boolean  @default(false)
   adminNotes      String?   @db.Text
   suspended       Boolean   @default(false)
   suspendedAt     DateTime?
@@ -120,6 +121,7 @@ model Project {
   exports         ExportJob[]
   tags            ProjectTag[]
   backtestResults BacktestResult[]
+  shares          ProjectShare[]
 
   @@index([userId, deletedAt, updatedAt])
   @@index([deletedAt])
@@ -481,4 +483,21 @@ model TemplateRating {
 
   @@unique([templateId, userId])
   @@index([templateId])
+}
+
+// ============================================
+// PROJECT SHARING
+// ============================================
+
+model ProjectShare {
+  id         String    @id @default(cuid())
+  projectId  String
+  shareToken String    @unique @default(cuid())
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([shareToken])
+  @@index([projectId])
 }

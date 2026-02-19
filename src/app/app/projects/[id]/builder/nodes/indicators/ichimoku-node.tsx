@@ -27,6 +27,14 @@ export const IchimokuNode = memo(function IchimokuNode({ id, data, selected }: P
             {data.tenkanPeriod}/{data.kijunPeriod}/{data.senkouBPeriod}
           </span>
         </div>
+        {data.ichimokuMode && data.ichimokuMode !== "TENKAN_KIJUN_CROSS" && (
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Mode:</span>
+            <span className="font-medium">
+              {data.ichimokuMode === "PRICE_CLOUD" ? "Price/Cloud" : "Full"}
+            </span>
+          </div>
+        )}
       </div>
     </BaseNode>
   );

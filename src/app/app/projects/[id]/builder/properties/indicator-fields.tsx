@@ -11,10 +11,13 @@ import type {
   StochasticNodeData,
   CCINodeData,
   IchimokuNodeData,
+  IchimokuMode,
   CustomIndicatorNodeData,
   CustomIndicatorParam,
+  CustomIndicatorParamType,
   OBVNodeData,
   VWAPNodeData,
+  BBSqueezeNodeData,
   ConditionNodeData,
   ConditionOperator,
   Timeframe,
@@ -543,6 +546,12 @@ export function CCIFields({
   );
 }
 
+const ICHIMOKU_MODE_OPTIONS: { value: IchimokuMode; label: string }[] = [
+  { value: "TENKAN_KIJUN_CROSS", label: "Tenkan/Kijun Cross" },
+  { value: "PRICE_CLOUD", label: "Price vs Cloud" },
+  { value: "FULL", label: "Full (TK + Cloud + Chikou)" },
+];
+
 export function IchimokuFields({
   data,
   onChange,
@@ -550,6 +559,7 @@ export function IchimokuFields({
   data: IchimokuNodeData;
   onChange: (updates: Partial<IchimokuNodeData>) => void;
 }) {
+  const mode = data.ichimokuMode ?? "TENKAN_KIJUN_CROSS";
   return (
     <>
       <SelectField
@@ -557,6 +567,13 @@ export function IchimokuFields({
         value={data.timeframe}
         options={TIMEFRAME_OPTIONS}
         onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <SelectField
+        label="Signal Mode"
+        value={mode}
+        options={ICHIMOKU_MODE_OPTIONS}
+        onChange={(v) => onChange({ ichimokuMode: v as IchimokuMode })}
+        tooltip="TK Cross: Tenkan/Kijun crossover with cloud direction. Price/Cloud: Close above/below the cloud. Full: All three plus Chikou Span confirmation."
       />
       <div>
         <NumberField
@@ -589,7 +606,7 @@ export function IchimokuFields({
         <OptimizableFieldCheckbox fieldName="senkouBPeriod" data={data} onChange={onChange} />
       </div>
       <SelectField
-        label="Signal Mode"
+        label="Bar Confirmation"
         value={data.signalMode ?? "every_tick"}
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as IchimokuNodeData["signalMode"] })}
@@ -598,8 +615,12 @@ export function IchimokuFields({
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
-        Ichimoku combines trend, momentum, and support/resistance. Buy when Tenkan crosses above
-        Kijun with price above the cloud.
+        {mode === "TENKAN_KIJUN_CROSS" &&
+          "Buy when Tenkan crosses above Kijun and cloud is bullish (SpanA > SpanB). Sell on the opposite."}
+        {mode === "PRICE_CLOUD" &&
+          "Buy when price closes above both Span A and Span B. Sell when price closes below both."}
+        {mode === "FULL" &&
+          "Combines TK cross + Price/Cloud + Chikou Span confirmation (close > close[26]). Strongest signal but fewest entries."}
       </div>
     </>
   );
@@ -663,6 +684,17 @@ export function CustomIndicatorFields({
   function updateParam(index: number, field: keyof CustomIndicatorParam, value: string): void {
     const updated = [...params];
     updated[index] = { ...updated[index], [field]: value };
+    onChange({ params: updated });
+  }
+
+  function updateParamType(index: number, type: CustomIndicatorParamType | ""): void {
+    const updated = [...params];
+    if (type === "") {
+      const { type: _removed, ...rest } = updated[index];
+      updated[index] = rest as CustomIndicatorParam;
+    } else {
+      updated[index] = { ...updated[index], type };
+    }
     onChange({ params: updated });
   }
 
@@ -736,50 +768,68 @@ export function CustomIndicatorFields({
           )}
         </div>
         {params.map((param, i) => (
-          <div key={i} className="flex items-center gap-1.5 mb-1.5">
-            <input
-              type="text"
-              value={param.name}
-              maxLength={30}
+          <div key={i} className="mb-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <input
+                type="text"
+                value={param.name}
+                maxLength={30}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  updateParam(i, "name", e.target.value);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="Name"
+                className="flex-1 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
+              />
+              <input
+                type="text"
+                value={param.value}
+                maxLength={30}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  updateParam(i, "value", e.target.value);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="Value"
+                className="w-20 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeParam(i);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="text-[#EF4444] hover:text-[#F87171] p-0.5"
+                aria-label={`Remove parameter ${param.name}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <select
+              value={param.type ?? ""}
               onChange={(e) => {
                 e.stopPropagation();
-                updateParam(i, "name", e.target.value);
+                updateParamType(i, e.target.value as CustomIndicatorParamType | "");
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              placeholder="Name"
-              className="flex-1 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
-            />
-            <input
-              type="text"
-              value={param.value}
-              maxLength={30}
-              onChange={(e) => {
-                e.stopPropagation();
-                updateParam(i, "value", e.target.value);
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              placeholder="Value"
-              className="w-20 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeParam(i);
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="text-[#EF4444] hover:text-[#F87171] p-0.5"
-              aria-label={`Remove parameter ${param.name}`}
+              className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8] focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+              <option value="">Auto-detect type</option>
+              <option value="int">int</option>
+              <option value="double">double</option>
+              <option value="string">string</option>
+              <option value="bool">bool</option>
+              <option value="color">color</option>
+            </select>
           </div>
         ))}
       </div>
@@ -880,6 +930,85 @@ export function VWAPFields({
       >
         Volume Weighted Average Price shows institutional fair value. Buy when price is above VWAP,
         sell when below. Resets at the start of each period.
+      </div>
+    </>
+  );
+}
+
+export function BBSqueezeFields({
+  data,
+  onChange,
+}: {
+  data: BBSqueezeNodeData;
+  onChange: (updates: Partial<BBSqueezeNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <NumberField
+          label="BB Period"
+          value={data.bbPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ bbPeriod: v })}
+          tooltip="Period for Bollinger Bands. Default 20."
+        />
+        <OptimizableFieldCheckbox fieldName="bbPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="BB Deviation"
+          value={data.bbDeviation}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ bbDeviation: v })}
+          tooltip="Standard deviation multiplier for Bollinger Bands. Default 2.0."
+        />
+        <OptimizableFieldCheckbox fieldName="bbDeviation" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="KC Period"
+          value={data.kcPeriod}
+          min={1}
+          max={500}
+          onChange={(v) => onChange({ kcPeriod: v })}
+          tooltip="Period for Keltner Channel (EMA + ATR). Default 20."
+        />
+        <OptimizableFieldCheckbox fieldName="kcPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="KC Multiplier"
+          value={data.kcMultiplier}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ kcMultiplier: v })}
+          tooltip="ATR multiplier for Keltner Channel width. Default 1.5."
+        />
+        <OptimizableFieldCheckbox fieldName="kcMultiplier" data={data} onChange={onChange} />
+      </div>
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as BBSqueezeNodeData["signalMode"] })}
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Detects when Bollinger Bands contract inside Keltner Channels (squeeze). Buy when the
+        squeeze releases and price is above the BB middle line. Sell on release below the middle
+        line.
       </div>
     </>
   );

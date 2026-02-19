@@ -20,6 +20,8 @@ import { IchimokuNode } from "./indicators/ichimoku-node";
 import { CustomIndicatorNode } from "./indicators/custom-indicator-node";
 import { OBVNode } from "./indicators/obv-node";
 import { VWAPNode } from "./indicators/vwap-node";
+import { BBSqueezeNode } from "./indicators/bb-squeeze-node";
+import { VolumeFilterNode as VolumeFilterNodeComponent } from "./volume-filter-node";
 import { ConditionNode } from "./condition-node";
 import { CandlestickPatternNode } from "./priceaction/candlestick-pattern-node";
 import { SupportResistanceNode } from "./priceaction/support-resistance-node";
@@ -53,6 +55,7 @@ export const nodeTypes: NodeTypes = {
   always: AlwaysNode,
   "max-spread": MaxSpreadNode,
   "volatility-filter": VolatilityFilterNode,
+  "volume-filter": VolumeFilterNodeComponent,
   "friday-close": FridayCloseNode,
   "news-filter": NewsFilterNode,
   "custom-times": CustomTimesNode,
@@ -68,6 +71,7 @@ export const nodeTypes: NodeTypes = {
   "custom-indicator": CustomIndicatorNode,
   obv: OBVNode,
   vwap: VWAPNode,
+  "bb-squeeze": BBSqueezeNode,
   condition: ConditionNode,
   "candlestick-pattern": CandlestickPatternNode,
   "support-resistance": SupportResistanceNode,
@@ -101,6 +105,7 @@ export {
   AlwaysNode,
   MaxSpreadNode,
   VolatilityFilterNode,
+  VolumeFilterNodeComponent as VolumeFilterNode,
   FridayCloseNode,
   NewsFilterNode,
   CustomTimesNode,
@@ -116,6 +121,7 @@ export {
   CustomIndicatorNode,
   OBVNode,
   VWAPNode,
+  BBSqueezeNode,
   ConditionNode,
   CandlestickPatternNode,
   SupportResistanceNode,

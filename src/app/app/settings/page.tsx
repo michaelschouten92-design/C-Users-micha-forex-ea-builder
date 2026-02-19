@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import Link from "next/link";
+import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
@@ -48,7 +49,11 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50">
+      <nav
+        role="navigation"
+        aria-label="App navigation"
+        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
@@ -69,6 +74,7 @@ export default function SettingsPage() {
       </nav>
 
       <main id="main-content" className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Settings" }]} />
         <h1 className="text-2xl font-bold text-white mb-8">Account Settings</h1>
 
         <div className="space-y-6">
@@ -116,6 +122,9 @@ export default function SettingsPage() {
             </Link>
           </div>
 
+          {/* Leaderboard Opt-in */}
+          <LeaderboardOptInSection />
+
           {/* Change Password */}
           <ChangePasswordSection />
 
@@ -126,6 +135,82 @@ export default function SettingsPage() {
           <DeleteAccountSection />
         </div>
       </main>
+    </div>
+  );
+}
+
+function LeaderboardOptInSection() {
+  const [optedIn, setOptedIn] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Fetch current opt-in status
+  useState(() => {
+    fetch("/api/account/webhook")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.leaderboardOptIn !== undefined) {
+          setOptedIn(data.leaderboardOptIn);
+        }
+        setInitialized(true);
+      })
+      .catch(() => {
+        setInitialized(true);
+      });
+  });
+
+  async function handleToggle() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/account/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ leaderboardOptIn: !optedIn }),
+      });
+
+      if (res.ok) {
+        setOptedIn(!optedIn);
+        showSuccess(
+          !optedIn ? "Leaderboard visibility enabled" : "Leaderboard visibility disabled"
+        );
+      } else {
+        showError("Failed to update setting");
+      }
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">Leaderboard</h2>
+      <p className="text-sm text-[#94A3B8] mb-4">
+        Show your live EA performance on the public leaderboard. Your EA name will be anonymized and
+        only aggregate metrics are displayed. Requires 50+ trades.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleToggle}
+          disabled={loading || !initialized}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:ring-offset-2 focus:ring-offset-[#1A0626] disabled:opacity-50 ${
+            optedIn ? "bg-[#4F46E5]" : "bg-[#334155]"
+          }`}
+          role="switch"
+          aria-checked={optedIn}
+          aria-label="Toggle leaderboard visibility"
+        >
+          <span
+            className={`inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 ${
+              optedIn ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+        <span className="text-sm text-[#CBD5E1]">
+          {optedIn ? "Visible on leaderboard" : "Hidden from leaderboard"}
+        </span>
+      </div>
     </div>
   );
 }

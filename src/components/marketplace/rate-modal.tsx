@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
@@ -16,6 +16,15 @@ export function RateModal({ isOpen, templateId, onClose, onRated }: RateModalPro
   const [hoverRating, setHoverRating] = useState(0);
   const [review, setReview] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -61,12 +70,20 @@ export function RateModal({ isOpen, templateId, onClose, onRated }: RateModalPro
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-sm mx-4 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rate-modal-title"
+        className="relative w-full max-w-sm mx-4 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl shadow-2xl"
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-white">Rate Template</h3>
+            <h3 id="rate-modal-title" className="text-lg font-bold text-white">
+              Rate Template
+            </h3>
             <button
               onClick={onClose}
+              aria-label="Close rating modal"
               className="text-[#7C8DB0] hover:text-white transition-colors p-1"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,6 +106,7 @@ export function RateModal({ isOpen, templateId, onClose, onRated }: RateModalPro
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
+                aria-label={`Rate ${star} star${star !== 1 ? "s" : ""}`}
                 className="transition-transform hover:scale-110"
               >
                 <svg

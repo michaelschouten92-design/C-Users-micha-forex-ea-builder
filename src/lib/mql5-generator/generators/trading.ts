@@ -861,14 +861,50 @@ export function generateEntryLogic(
             );
             break;
 
-          case "ichimoku":
-            // Buy: Tenkan crosses above Kijun AND price above cloud (Span A > Span B)
+          case "ichimoku": {
+            const ichiMode =
+              ("ichimokuMode" in indData ? indData.ichimokuMode : "TENKAN_KIJUN_CROSS") ??
+              "TENKAN_KIJUN_CROSS";
+
+            // Tenkan/Kijun cross conditions
+            const tkBuyC = `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`;
+            const tkSellC = `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`;
+
+            // Price above/below cloud conditions
+            const cloudBuyC = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
+            const cloudSellC = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
+
+            // Chikou Span confirmation (ChikouSpan = close shifted 26 bars back)
+            // Compare current close[26] vs chikou (which is close[0] plotted at [26])
+            const chikouBuyC = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), iClose(_Symbol, PERIOD_CURRENT, ${26 + s})))`;
+            const chikouSellC = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), iClose(_Symbol, PERIOD_CURRENT, ${26 + s})))`;
+
+            if (ichiMode === "TENKAN_KIJUN_CROSS") {
+              buyConditions.push(
+                `(${tkBuyC} && DoubleGT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+              );
+              sellConditions.push(
+                `(${tkSellC} && DoubleLT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+              );
+            } else if (ichiMode === "PRICE_CLOUD") {
+              buyConditions.push(cloudBuyC);
+              sellConditions.push(cloudSellC);
+            } else {
+              // FULL: all three conditions combined with AND
+              buyConditions.push(`(${tkBuyC} && ${cloudBuyC} && ${chikouBuyC})`);
+              sellConditions.push(`(${tkSellC} && ${cloudSellC} && ${chikouSellC})`);
+            }
+            break;
+          }
+
+          case "bb-squeeze":
+            // BB Squeeze: breakout from squeeze = buy when close > BB middle, sell when close < BB middle
+            // Squeeze state: prev bar was in squeeze (BB inside KC), current bar is not
             buyConditions.push(
-              `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]) && DoubleGT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+              `(${varPrefix}WasSqueeze && !${varPrefix}InSqueeze && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}BBMiddle[${0 + s}]))`
             );
-            // Sell: Tenkan crosses below Kijun AND price below cloud (Span A < Span B)
             sellConditions.push(
-              `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]) && DoubleLT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
+              `(${varPrefix}WasSqueeze && !${varPrefix}InSqueeze && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}BBMiddle[${0 + s}]))`
             );
             break;
 

@@ -4514,4 +4514,376 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("Move SL to breakeven after TP1");
     });
   });
+
+  // ============================================
+  // ICHIMOKU MODES
+  // ============================================
+
+  describe("ichimoku modes", () => {
+    it("generates TENKAN_KIJUN_CROSS mode (default) with cloud direction", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ichi1", "ichimoku", {
+          category: "indicator",
+          indicatorType: "ichimoku",
+          timeframe: "H1",
+          tenkanPeriod: 9,
+          kijunPeriod: 26,
+          senkouBPeriod: 52,
+          signalMode: "candle_close",
+          ichimokuMode: "TENKAN_KIJUN_CROSS",
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iIchimoku");
+      expect(code).toContain("TenkanBuffer");
+      expect(code).toContain("KijunBuffer");
+      expect(code).toContain("SpanABuffer");
+      expect(code).toContain("SpanBBuffer");
+    });
+
+    it("generates PRICE_CLOUD mode with close vs cloud check", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ichi1", "ichimoku", {
+          category: "indicator",
+          indicatorType: "ichimoku",
+          timeframe: "H1",
+          tenkanPeriod: 9,
+          kijunPeriod: 26,
+          senkouBPeriod: 52,
+          signalMode: "candle_close",
+          ichimokuMode: "PRICE_CLOUD",
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iClose(_Symbol, PERIOD_CURRENT");
+      expect(code).toContain("SpanABuffer");
+      expect(code).toContain("SpanBBuffer");
+    });
+
+    it("generates FULL mode with Chikou span at bar[26]", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ichi1", "ichimoku", {
+          category: "indicator",
+          indicatorType: "ichimoku",
+          timeframe: "H1",
+          tenkanPeriod: 9,
+          kijunPeriod: 26,
+          senkouBPeriod: 52,
+          signalMode: "candle_close",
+          ichimokuMode: "FULL",
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // FULL mode uses 28 bars for Chikou Span confirmation
+      expect(code).toContain("iClose(_Symbol, PERIOD_CURRENT, 27");
+      expect(code).toContain("TenkanBuffer");
+      expect(code).toContain("SpanABuffer");
+    });
+  });
+
+  // ============================================
+  // BB SQUEEZE NODE
+  // ============================================
+
+  describe("bb-squeeze node", () => {
+    it("generates BB Squeeze indicator with handles and squeeze detection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("bbs1", "bb-squeeze", {
+          category: "indicator",
+          indicatorType: "bb-squeeze",
+          timeframe: "H1",
+          bbPeriod: 20,
+          bbDeviation: 2.0,
+          kcPeriod: 20,
+          kcMultiplier: 1.5,
+          signalMode: "candle_close",
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Check BB handle creation
+      expect(code).toContain("iBands");
+      // Check ATR handle for KC
+      expect(code).toContain("iATR");
+      // Check KC EMA handle
+      expect(code).toContain("iMA");
+      // Squeeze state variables
+      expect(code).toContain("InSqueeze");
+      expect(code).toContain("WasSqueeze");
+      // Squeeze detection logic
+      expect(code).toContain("BBUpper");
+      expect(code).toContain("BBLower");
+      expect(code).toContain("KCEMABuffer");
+      // Entry conditions
+      expect(code).toContain("BBMiddle");
+    });
+  });
+
+  // ============================================
+  // VOLUME FILTER NODE
+  // ============================================
+
+  describe("volume-filter node", () => {
+    it("generates volume filter with SMA comparison", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("vf1", "volume-filter", {
+          category: "timing",
+          filterType: "volume-filter",
+          timeframe: "H1",
+          volumePeriod: 20,
+          volumeMultiplier: 1.5,
+          filterMode: "ABOVE_AVERAGE",
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("Volume filter");
+      expect(code).toContain("InpVolFilterPeriod");
+      expect(code).toContain("InpVolFilterMult");
+      expect(code).toContain("iVolume");
+      expect(code).toContain("volFilterAvg");
+    });
+
+    it("generates BELOW_AVERAGE volume filter correctly", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("vf1", "volume-filter", {
+          category: "timing",
+          filterType: "volume-filter",
+          timeframe: "H1",
+          volumePeriod: 20,
+          volumeMultiplier: 1.5,
+          filterMode: "BELOW_AVERAGE",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("BELOW_AVERAGE");
+      // Below average: block when volume is too high
+      expect(code).toContain("curVol > (long)(volFilterAvg");
+    });
+  });
+
+  // ============================================
+  // CUSTOM INDICATOR TYPE CASTING
+  // ============================================
+
+  describe("custom indicator type casting", () => {
+    it("applies type-aware casting for int, double, string, bool, color params", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ci1", "custom-indicator", {
+          category: "indicator",
+          indicatorType: "custom-indicator",
+          timeframe: "H1",
+          indicatorName: "MyIndicator",
+          bufferIndex: 0,
+          signalMode: "every_tick",
+          params: [
+            { name: "intParam", value: "14", type: "int" },
+            { name: "dblParam", value: "1.5", type: "double" },
+            { name: "strParam", value: "hello", type: "string" },
+            { name: "boolParam", value: "true", type: "bool" },
+            { name: "colorParam", value: "clrRed", type: "color" },
+          ],
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("iCustom");
+      expect(code).toContain("(int)14");
+      expect(code).toContain("(double)1.5");
+      expect(code).toContain('"hello"');
+      expect(code).toContain("true");
+      expect(code).toContain("clrRed");
+    });
+
+    it("auto-detects types when no type hint is provided", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ci1", "custom-indicator", {
+          category: "indicator",
+          indicatorType: "custom-indicator",
+          timeframe: "H1",
+          indicatorName: "MyIndicator",
+          bufferIndex: 0,
+          signalMode: "every_tick",
+          params: [
+            { name: "numParam", value: "42" },
+            { name: "textParam", value: "some_text" },
+          ],
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("42");
+      expect(code).toContain('"some_text"');
+    });
+  });
+
+  // ============================================
+  // NEWS CALENDAR GENERATION DATE
+  // ============================================
+
+  describe("news calendar note", () => {
+    it("includes generation date comment in news filter code", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("nf1", "news-filter", {
+          category: "timing",
+          filterType: "news-filter",
+          hoursBefore: 0.5,
+          hoursAfter: 0.5,
+          highImpact: true,
+          mediumImpact: false,
+          lowImpact: false,
+          closePositions: false,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toContain("NEWS CALENDAR DATA");
+      expect(code).toContain("Generated on");
+      expect(code).toContain("Re-export the EA to refresh");
+    });
+  });
 });

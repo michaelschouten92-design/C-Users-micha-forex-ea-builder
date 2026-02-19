@@ -15,6 +15,7 @@ import type {
   IchimokuNodeData,
   OBVNodeData,
   VWAPNodeData,
+  BBSqueezeNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
@@ -661,7 +662,9 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
       case "ichimoku": {
         const ichi = data as IchimokuNodeData;
-        const copyBars = ichi.signalMode === "candle_close" ? 4 : 3;
+        const ichiMode = ichi.ichimokuMode ?? "TENKAN_KIJUN_CROSS";
+        const baseCopyBars = ichi.signalMode === "candle_close" ? 4 : 3;
+        const copyBars = ichiMode === "FULL" ? Math.max(baseCopyBars, 28) : baseCopyBars;
         const group = `Ichimoku ${index + 1}`;
 
         code.inputs.push(
@@ -851,6 +854,134 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onTick.push(`}`);
 
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
+        break;
+      }
+
+      case "bb-squeeze": {
+        const bbs = data as BBSqueezeNodeData;
+        const copyBars = bbs.signalMode === "candle_close" ? 4 : 3;
+        const group = `BB Squeeze ${index + 1}`;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "bbPeriod",
+            `InpBBS${index}BBPeriod`,
+            "int",
+            bbs.bbPeriod,
+            `BB Squeeze ${index + 1} BB Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "bbDeviation",
+            `InpBBS${index}BBDev`,
+            "double",
+            bbs.bbDeviation,
+            `BB Squeeze ${index + 1} BB Deviation`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "kcPeriod",
+            `InpBBS${index}KCPeriod`,
+            "int",
+            bbs.kcPeriod,
+            `BB Squeeze ${index + 1} KC Period`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "kcMultiplier",
+            `InpBBS${index}KCMult`,
+            "double",
+            bbs.kcMultiplier,
+            `BB Squeeze ${index + 1} KC Multiplier`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpBBS${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(bbs.timeframe),
+            `BB Squeeze ${index + 1} Timeframe`,
+            group
+          )
+        );
+
+        // Buffer arrays for BB, ATR, and KC EMA
+        code.globalVariables.push(`double ${varPrefix}BBUpper[];`);
+        code.globalVariables.push(`double ${varPrefix}BBMiddle[];`);
+        code.globalVariables.push(`double ${varPrefix}BBLower[];`);
+        code.globalVariables.push(`double ${varPrefix}ATRBuffer[];`);
+        code.globalVariables.push(`double ${varPrefix}KCEMABuffer[];`);
+        code.globalVariables.push(`bool ${varPrefix}InSqueeze = false;`);
+        code.globalVariables.push(`bool ${varPrefix}WasSqueeze = false;`);
+        code.onInit.push(`ArrayResize(${varPrefix}BBUpper, ${copyBars});`);
+        code.onInit.push(`ArrayResize(${varPrefix}BBMiddle, ${copyBars});`);
+        code.onInit.push(`ArrayResize(${varPrefix}BBLower, ${copyBars});`);
+        code.onInit.push(`ArrayResize(${varPrefix}ATRBuffer, ${copyBars});`);
+        code.onInit.push(`ArrayResize(${varPrefix}KCEMABuffer, ${copyBars});`);
+
+        // MQL4: fill buffers with direct iBands, iATR, iMA calls
+        code.onTick.push(`//--- BB Squeeze ${index + 1}: fill buffers`);
+        code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
+        code.onTick.push(`{`);
+        code.onTick.push(
+          `   ${varPrefix}BBMiddle[_i${index}] = iBands(Symbol(), (int)InpBBS${index}Timeframe, InpBBS${index}BBPeriod, InpBBS${index}BBDev, 0, PRICE_CLOSE, MODE_MAIN, _i${index});`
+        );
+        code.onTick.push(
+          `   ${varPrefix}BBUpper[_i${index}] = iBands(Symbol(), (int)InpBBS${index}Timeframe, InpBBS${index}BBPeriod, InpBBS${index}BBDev, 0, PRICE_CLOSE, MODE_UPPER, _i${index});`
+        );
+        code.onTick.push(
+          `   ${varPrefix}BBLower[_i${index}] = iBands(Symbol(), (int)InpBBS${index}Timeframe, InpBBS${index}BBPeriod, InpBBS${index}BBDev, 0, PRICE_CLOSE, MODE_LOWER, _i${index});`
+        );
+        code.onTick.push(
+          `   ${varPrefix}ATRBuffer[_i${index}] = iATR(Symbol(), (int)InpBBS${index}Timeframe, InpBBS${index}KCPeriod, _i${index});`
+        );
+        code.onTick.push(
+          `   ${varPrefix}KCEMABuffer[_i${index}] = iMA(Symbol(), (int)InpBBS${index}Timeframe, InpBBS${index}KCPeriod, 0, MODE_EMA, PRICE_CLOSE, _i${index});`
+        );
+        code.onTick.push(`}`);
+
+        // Squeeze detection
+        code.onTick.push(`//--- BB Squeeze ${index + 1}: detect squeeze and breakout`);
+        code.onTick.push(`${varPrefix}WasSqueeze = ${varPrefix}InSqueeze;`);
+        code.onTick.push(`{`);
+        code.onTick.push(
+          `   double kcUpper1 = ${varPrefix}KCEMABuffer[1] + InpBBS${index}KCMult * ${varPrefix}ATRBuffer[1];`
+        );
+        code.onTick.push(
+          `   double kcLower1 = ${varPrefix}KCEMABuffer[1] - InpBBS${index}KCMult * ${varPrefix}ATRBuffer[1];`
+        );
+        code.onTick.push(
+          `   bool prevSqueeze = ${varPrefix}BBUpper[1] < kcUpper1 && ${varPrefix}BBLower[1] > kcLower1;`
+        );
+        code.onTick.push(
+          `   double kcUpper0 = ${varPrefix}KCEMABuffer[0] + InpBBS${index}KCMult * ${varPrefix}ATRBuffer[0];`
+        );
+        code.onTick.push(
+          `   double kcLower0 = ${varPrefix}KCEMABuffer[0] - InpBBS${index}KCMult * ${varPrefix}ATRBuffer[0];`
+        );
+        code.onTick.push(
+          `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[0] < kcUpper0 && ${varPrefix}BBLower[0] > kcLower0;`
+        );
+        code.onTick.push(`   ${varPrefix}WasSqueeze = prevSqueeze;`);
+        code.onTick.push(`}`);
+
+        code.maxIndicatorPeriod = Math.max(
+          code.maxIndicatorPeriod,
+          Math.max(Number(bbs.bbPeriod) || 20, Number(bbs.kcPeriod) || 20)
+        );
         break;
       }
     }

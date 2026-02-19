@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectSettings } from "./project-settings";
+import { ShareButton } from "./share-button";
 import { LazyStrategyBuilder } from "./builder/lazy-strategy-builder";
 import { getUserPlanLimits } from "@/lib/plan-limits";
 import { migrateProjectData } from "@/lib/migrations";
@@ -95,6 +96,8 @@ export default async function ProjectPage({ params }: Props) {
               </span>
               <span className="text-[rgba(79,70,229,0.4)]">|</span>
               <span>{project._count.exports} exports</span>
+              <span className="text-[rgba(79,70,229,0.4)]">|</span>
+              <ShareButton projectId={project.id} />
               <span className="text-[rgba(79,70,229,0.4)]">|</span>
               <ProjectSettings project={project} />
             </div>

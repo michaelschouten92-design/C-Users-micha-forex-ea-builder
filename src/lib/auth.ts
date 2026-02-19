@@ -154,12 +154,20 @@ providers.push(
           // Hash password and create user
           const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+          // Generate unique referral code
+          const referralCode = randomBytes(6)
+            .toString("base64url")
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .slice(0, 8)
+            .toUpperCase();
+
           const user = await prisma.user.create({
             data: {
               email,
               authProviderId: `credentials_${email}`,
               passwordHash,
               passwordChangedAt: new Date(),
+              referralCode,
               subscription: {
                 create: {
                   tier: "FREE",
@@ -295,6 +303,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
             return false;
           } else {
+            // Generate unique referral code for new OAuth user
+            const oauthReferralCode = randomBytes(6)
+              .toString("base64url")
+              .replace(/[^a-zA-Z0-9]/g, "")
+              .slice(0, 8)
+              .toUpperCase();
+
             // Create new user (OAuth users are pre-verified)
             existingUser = await prisma.user.create({
               data: {
@@ -302,6 +317,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 authProviderId,
                 emailVerified: true,
                 emailVerifiedAt: new Date(),
+                referralCode: oauthReferralCode,
                 subscription: {
                   create: {
                     tier: "FREE",

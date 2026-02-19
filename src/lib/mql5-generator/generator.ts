@@ -16,6 +16,7 @@ import type {
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
+  VolumeFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -1310,8 +1311,12 @@ export function generateMQL5Code(
     code.globalVariables.push("string     g_baseCurrency, g_quoteCurrency;");
 
     // Embedded news data for backtesting (generated at export time)
+    const newsGenerationDate = new Date().toISOString().split("T")[0];
     const newsData = generateEmbeddedNewsData(2015, 2030);
     const newsArrayEntries = newsData.map((entry) => `   "${entry}"`).join(",\n");
+    code.globalVariables.push(`// NEWS CALENDAR DATA — Generated on ${newsGenerationDate}`);
+    code.globalVariables.push(`// This data is static and was embedded at the time of EA export.`);
+    code.globalVariables.push(`// Re-export the EA to refresh news calendar data for backtesting.`);
     code.globalVariables.push(`const string g_embeddedNews[] = {\n${newsArrayEntries}\n};`);
 
     // OnInit
@@ -1438,6 +1443,56 @@ export function generateMQL5Code(
       `   Print("Loaded ", g_newsCount, " news events from embedded data");`
     );
     code.helperFunctions.push(`}`);
+  }
+
+  // Generate volume filter code
+  const volumeFilterNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "volume-filter"
+  );
+  if (volumeFilterNodes.length > 0) {
+    const vfNode = volumeFilterNodes[0];
+    const vfData = vfNode.data as VolumeFilterNodeData;
+    const volPeriod = vfData.volumePeriod ?? 20;
+    const volMultiplier = vfData.volumeMultiplier ?? 1.5;
+    const volMode = vfData.filterMode ?? "ABOVE_AVERAGE";
+    const vfTf = getTimeframe(vfData.timeframe ?? "H1");
+
+    code.inputs.push(
+      {
+        name: "InpVolFilterPeriod",
+        type: "int",
+        value: volPeriod,
+        comment: "Volume SMA Period",
+        isOptimizable: isFieldOptimizable(vfNode, "volumePeriod"),
+        group: "Volume Filter",
+      },
+      {
+        name: "InpVolFilterMult",
+        type: "double",
+        value: volMultiplier,
+        comment: "Volume Multiplier",
+        isOptimizable: isFieldOptimizable(vfNode, "volumeMultiplier"),
+        group: "Volume Filter",
+      }
+    );
+    code.globalVariables.push("double volFilterAvg = 0;");
+    code.onTick.push(`//--- Volume filter (${volMode})`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   long curVol = iVolume(_Symbol, ${vfTf}, 1);`);
+    code.onTick.push(`   double sumVol = 0;`);
+    code.onTick.push(`   for(int v = 2; v <= InpVolFilterPeriod + 1; v++)`);
+    code.onTick.push(`      sumVol += (double)iVolume(_Symbol, ${vfTf}, v);`);
+    code.onTick.push(`   volFilterAvg = sumVol / InpVolFilterPeriod;`);
+
+    if (volMode === "ABOVE_AVERAGE") {
+      code.onTick.push(`   if(curVol < (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    } else if (volMode === "BELOW_AVERAGE") {
+      code.onTick.push(`   if(curVol > (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    } else {
+      // SPIKE: volume must be at least multiplier * average
+      code.onTick.push(`   if(curVol < (long)(volFilterAvg * InpVolFilterMult)) return;`);
+    }
+    code.onTick.push(`}`);
   }
 
   // Generate indicator code (only connected indicators)

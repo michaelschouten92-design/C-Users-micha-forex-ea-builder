@@ -32,6 +32,22 @@ export function Footer() {
                   Pricing
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/roadmap"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Roadmap
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/status"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  System Status
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -75,6 +91,22 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Compare Platforms
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/leaderboard"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  Leaderboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/docs"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  API Docs
                 </Link>
               </li>
             </ul>

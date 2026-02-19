@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
@@ -43,6 +43,15 @@ export function PublishModal({ isOpen, onClose, onPublished, buildJson }: Publis
   const [tags, setTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -112,13 +121,21 @@ export function PublishModal({ isOpen, onClose, onPublished, buildJson }: Publis
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="publish-modal-title"
+        className="relative w-full max-w-lg mx-4 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-white">Publish to Marketplace</h3>
+            <h3 id="publish-modal-title" className="text-xl font-bold text-white">
+              Publish to Marketplace
+            </h3>
             <button
               onClick={onClose}
+              aria-label="Close publish modal"
               className="text-[#7C8DB0] hover:text-white transition-colors p-1"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

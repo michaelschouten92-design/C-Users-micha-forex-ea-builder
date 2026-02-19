@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { showInfo } from "@/lib/toast";
 
 // ============================================
@@ -542,10 +543,17 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No live EAs yet</h3>
-          <p className="text-sm text-[#94A3B8] max-w-md mx-auto">
-            Export a strategy and run it on MetaTrader to see your EA tracked here.
+          <h3 className="text-lg font-semibold text-white mb-2">No live EAs running</h3>
+          <p className="text-sm text-[#94A3B8] max-w-md mx-auto mb-6">
+            Export an EA and connect it to MT5 to get started. Your live EAs will appear here with
+            real-time performance tracking.
           </p>
+          <Link
+            href="/app"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+          >
+            Go to Dashboard
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

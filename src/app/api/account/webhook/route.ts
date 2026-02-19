@@ -15,6 +15,7 @@ const webhookUpdateSchema = z.object({
       if (!val || val.trim() === "") return null;
       return val.trim();
     }),
+  leaderboardOptIn: z.boolean().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -25,13 +26,24 @@ export async function GET(): Promise<NextResponse> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { webhookUrl: true },
+    select: { webhookUrl: true, leaderboardOptIn: true },
   });
 
-  return NextResponse.json({ webhookUrl: user?.webhookUrl ?? null });
+  return NextResponse.json({
+    webhookUrl: user?.webhookUrl ?? null,
+    leaderboardOptIn: user?.leaderboardOptIn ?? false,
+  });
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  return handleUpdate(request);
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
+  return handleUpdate(request);
+}
+
+async function handleUpdate(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,12 +60,25 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    await prisma.user.update({
+    const updateData: { webhookUrl?: string | null; leaderboardOptIn?: boolean } = {};
+    if (parsed.data.webhookUrl !== undefined) {
+      updateData.webhookUrl = parsed.data.webhookUrl ?? null;
+    }
+    if (parsed.data.leaderboardOptIn !== undefined) {
+      updateData.leaderboardOptIn = parsed.data.leaderboardOptIn;
+    }
+
+    const updated = await prisma.user.update({
       where: { id: session.user.id },
-      data: { webhookUrl: parsed.data.webhookUrl ?? null },
+      data: updateData,
+      select: { webhookUrl: true, leaderboardOptIn: true },
     });
 
-    return NextResponse.json({ success: true, webhookUrl: parsed.data.webhookUrl ?? null });
+    return NextResponse.json({
+      success: true,
+      webhookUrl: updated.webhookUrl,
+      leaderboardOptIn: updated.leaderboardOptIn,
+    });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

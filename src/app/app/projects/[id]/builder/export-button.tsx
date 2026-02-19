@@ -335,9 +335,10 @@ export function ExportButton({
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
           <div
+            role="dialog"
+            aria-modal="true"
             aria-label="Export modal"
             className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
-            role="dialog"
           >
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
@@ -535,6 +536,37 @@ export function ExportButton({
                     </div>
                   </div>
 
+                  {/* Upsell hint for free users */}
+                  {userTier === "FREE" && !canExportMQL4 && (
+                    <div className="relative bg-gradient-to-r from-[#4F46E5]/15 via-[#A78BFA]/10 to-[#22D3EE]/15 border border-[rgba(79,70,229,0.3)] rounded-lg p-3 overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#4F46E5] via-[#A78BFA] to-[#22D3EE]" />
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4 text-[#A78BFA] flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        <p className="text-xs text-[#CBD5E1]">
+                          Unlock MQL4 export and unlimited exports with{" "}
+                          <Link
+                            href="/pricing"
+                            className="text-[#22D3EE] hover:text-white underline"
+                          >
+                            Pro
+                          </Link>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor="magic-number"
@@ -679,6 +711,7 @@ export function ExportButton({
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowPreview(true)}
+                        aria-label="Preview exported code"
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
                       >
                         <svg
@@ -698,6 +731,7 @@ export function ExportButton({
                       </button>
                       <button
                         onClick={copyToClipboard}
+                        aria-label="Copy code to clipboard"
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
                       >
                         <svg
@@ -717,6 +751,7 @@ export function ExportButton({
                       </button>
                       <button
                         onClick={downloadFile}
+                        aria-label="Download exported file"
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all duration-200"
                       >
                         <svg

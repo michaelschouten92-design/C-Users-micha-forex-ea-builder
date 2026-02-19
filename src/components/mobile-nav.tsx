@@ -48,6 +48,7 @@ export function MobileNav() {
           <div
             role="dialog"
             aria-modal="true"
+            aria-label="Mobile navigation menu"
             className="absolute top-16 left-0 right-0 bg-[#0D0117]/95 backdrop-blur-md border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex flex-col gap-4 z-50"
           >
             <Link
@@ -98,6 +99,20 @@ export function MobileNav() {
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
             >
               Prop Firms
+            </Link>
+            <Link
+              href="/leaderboard"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Leaderboard
+            </Link>
+            <Link
+              href="/docs"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              API Docs
             </Link>
             <Link
               href="/login"

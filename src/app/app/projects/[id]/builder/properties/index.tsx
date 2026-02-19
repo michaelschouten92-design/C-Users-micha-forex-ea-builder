@@ -11,6 +11,7 @@ import type {
   AlwaysNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
+  VolumeFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
   CustomTimesNodeData,
@@ -41,6 +42,7 @@ import type {
   CustomIndicatorNodeData,
   OBVNodeData,
   VWAPNodeData,
+  BBSqueezeNodeData,
   ConditionNodeData,
   TimeExitNodeData,
   GridPyramidNodeData,
@@ -58,6 +60,7 @@ import {
   AlwaysFields,
   MaxSpreadFields,
   VolatilityFilterFields,
+  VolumeFilterFields,
   FridayCloseFields,
   NewsFilterFields,
   CustomTimesFields,
@@ -75,6 +78,7 @@ import {
   CustomIndicatorFields,
   OBVFields,
   VWAPFields,
+  BBSqueezeFields,
   ConditionFields,
 } from "./indicator-fields";
 import {
@@ -453,6 +457,8 @@ function NodeFields({
         return (
           <VolatilityFilterFields data={data as VolatilityFilterNodeData} onChange={onChange} />
         );
+      case "volume-filter":
+        return <VolumeFilterFields data={data as VolumeFilterNodeData} onChange={onChange} />;
       case "friday-close":
         return <FridayCloseFields data={data as FridayCloseFilterNodeData} onChange={onChange} />;
       case "news-filter":
@@ -487,6 +493,8 @@ function NodeFields({
         return <OBVFields data={data as OBVNodeData} onChange={onChange} />;
       case "vwap":
         return <VWAPFields data={data as VWAPNodeData} onChange={onChange} />;
+      case "bb-squeeze":
+        return <BBSqueezeFields data={data as BBSqueezeNodeData} onChange={onChange} />;
       case "condition":
         return <ConditionFields data={data as ConditionNodeData} onChange={onChange} />;
     }

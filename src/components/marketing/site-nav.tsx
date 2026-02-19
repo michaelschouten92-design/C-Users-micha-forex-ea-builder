@@ -3,7 +3,11 @@ import { MobileNav } from "@/components/mobile-nav";
 
 export function SiteNav() {
   return (
-    <nav className="fixed top-0 w-full z-50 bg-[#0D0117]/80 backdrop-blur-md border-b border-[rgba(79,70,229,0.1)]">
+    <nav
+      role="navigation"
+      aria-label="Main navigation"
+      className="fixed top-0 w-full z-50 bg-[#0D0117]/80 backdrop-blur-md border-b border-[rgba(79,70,229,0.1)]"
+    >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/" className="text-xl font-bold text-white">
@@ -49,6 +53,15 @@ export function SiteNav() {
             className="text-sm text-[#94A3B8] hover:text-white transition-colors"
           >
             Prop Firms
+          </Link>
+          <Link
+            href="/leaderboard"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Leaderboard
+          </Link>
+          <Link href="/docs" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+            API Docs
           </Link>
           <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Sign in
