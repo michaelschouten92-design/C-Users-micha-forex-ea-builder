@@ -59,6 +59,7 @@ model User {
   referralCode       String?   @unique
   referredBy      String?   // referralCode of the user who referred them
   lastLoginAt     DateTime?
+  webhookUrl      String?   // User-defined webhook URL for trade notifications
   adminNotes      String?   @db.Text
   suspended       Boolean   @default(false)
   suspendedAt     DateTime?
@@ -225,15 +226,18 @@ model WebhookEvent {
 }
 
 model UserTemplate {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  buildJson Json
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?  @db.Text
+  buildJson   Json
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
 }
 
 model AdminOtp {

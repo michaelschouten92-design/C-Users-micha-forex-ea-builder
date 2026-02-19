@@ -32,6 +32,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
       maxDailyLossPercent: preset.dailyLossPercent,
       maxTotalDrawdownPercent: preset.totalDrawdownPercent,
       maxOpenTrades: preset.maxOpenTrades,
+      equityTargetPercent: preset.equityTargetPercent,
     });
     setPendingPreset(null);
   };
@@ -64,27 +65,26 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
         <div className="mt-2 pl-1 space-y-3 px-3 pb-2">
           {/* Prop Firm Preset */}
           <div>
-            <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
-              Load prop firm preset
+            <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+              Prop firm presets
             </label>
-            <select
-              onChange={(e) => {
-                if (e.target.value) applyPreset(e.target.value);
-                e.target.value = "";
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select preset...
-              </option>
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {PROP_FIRM_PRESETS.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.name} (Max DD {p.totalDrawdownPercent}%, Daily Loss {p.dailyLossPercent}%)
-                </option>
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    applyPreset(p.name);
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="px-2 py-1 text-[10px] font-medium rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] text-[#A78BFA] hover:bg-[rgba(79,70,229,0.25)] hover:text-white transition-colors"
+                  title={`${p.name}: ${p.dailyLossPercent}% daily loss, ${p.totalDrawdownPercent}% max DD, ${p.maxOpenTrades} max trades${p.equityTargetPercent ? `, ${p.equityTargetPercent}% equity target` : ""}`}
+                >
+                  {p.name}
+                </button>
               ))}
-            </select>
+            </div>
             {pendingPreset && (
               <div className="mt-2 p-2.5 bg-[rgba(251,191,36,0.1)] border border-[rgba(251,191,36,0.3)] rounded-lg">
                 <p className="text-xs text-[#FBBF24] mb-2">

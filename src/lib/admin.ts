@@ -22,8 +22,6 @@ interface AdminCheckResult {
   authorized: true;
   session: { user: { id: string } };
   adminEmail: string;
-  /** Set if the admin is impersonating another user */
-  impersonatorId?: string;
 }
 
 interface AdminCheckError {
@@ -122,14 +120,9 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
     };
   }
 
-  // Extract impersonatorId if admin is impersonating
-  const impersonatorId =
-    (session as { user: { impersonatorId?: string } }).user?.impersonatorId || undefined;
-
   return {
     authorized: true,
     session: session as { user: { id: string } },
     adminEmail: adminUser!.email,
-    impersonatorId,
   };
 }

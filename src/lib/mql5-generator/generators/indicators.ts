@@ -9,6 +9,7 @@ import type {
   StochasticNodeData,
   CCINodeData,
   IchimokuNodeData,
+  CustomIndicatorNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
@@ -744,6 +745,65 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           code.maxIndicatorPeriod,
           (Number(ichi.senkouBPeriod) || 52) * 2
         );
+        break;
+      }
+
+      case "custom-indicator": {
+        const ci = data as CustomIndicatorNodeData;
+        const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
+        const group = `Custom Indicator ${index + 1}`;
+        const safeName = (ci.indicatorName || "CustomIndicator").replace(/[^a-zA-Z0-9_]/g, "_");
+        const bufferIdx = ci.bufferIndex ?? 0;
+
+        // Build iCustom parameter list
+        const paramValues = (ci.params ?? []).map((p) => {
+          const num = Number(p.value);
+          if (!isNaN(num) && p.value.trim() !== "") return String(num);
+          return `"${p.value.replace(/"/g, '\\"')}"`;
+        });
+        const paramList = paramValues.length > 0 ? ", " + paramValues.join(", ") : "";
+
+        code.inputs.push(
+          createInput(
+            node,
+            "bufferIndex",
+            `InpCustom${index}Buffer`,
+            "int",
+            bufferIdx,
+            `${safeName} Buffer Index`,
+            group
+          )
+        );
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpCustom${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ci.timeframe),
+            `${safeName} Timeframe`,
+            group
+          )
+        );
+        code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
+        code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        code.onInit.push(
+          `${varPrefix}Handle = iCustom(_Symbol, (ENUM_TIMEFRAMES)InpCustom${index}Timeframe, "${safeName}"${paramList});`
+        );
+        addHandleValidation(varPrefix, safeName, code);
+        code.onDeinit.push(
+          `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
+        );
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
+        addCopyBuffer(`${varPrefix}Handle`, bufferIdx, copyBars, `${varPrefix}Buffer`, code);
+        code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
+        break;
+      }
+
+      case "condition": {
+        // Condition nodes don't create indicator handles themselves.
+        // They reference a connected indicator's buffer value and compare against a threshold.
+        // The entry logic generator handles the condition comparison.
         break;
       }
     }

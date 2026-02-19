@@ -34,6 +34,53 @@ async function sendWithRetry(
   return { error: lastError };
 }
 
+export async function sendEAAlertEmail(to: string, eaName: string, alertMessage: string) {
+  if (!resend) {
+    log.warn("Email not configured - skipping EA alert email");
+    return;
+  }
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeEaName = esc(eaName);
+  const safeMessage = esc(alertMessage);
+
+  const { error } = await sendWithRetry({
+    from: FROM_EMAIL,
+    to,
+    subject: `[AlgoStudio] EA Alert: ${eaName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">EA Alert Triggered</h1>
+            <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
+              An alert was triggered for your Expert Advisor <strong style="color: #A78BFA;">${safeEaName}</strong>.
+            </p>
+            <div style="margin: 0 0 24px 0; padding: 16px; background-color: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">
+              <p style="margin: 0; line-height: 1.6; color: #ffffff;">${safeMessage}</p>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
+              Log in to AlgoStudio to review your EA's performance and take action if needed.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+
+  if (error) {
+    log.error({ error, to: to.substring(0, 3) + "***" }, "Failed to send EA alert email");
+  } else {
+    log.info({ to: to.substring(0, 3) + "***", eaName }, "EA alert email sent");
+  }
+}
+
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   if (!resend) {
     if (env.NODE_ENV === "production") {

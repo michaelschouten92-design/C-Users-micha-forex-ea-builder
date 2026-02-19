@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
+import { sendEAAlertEmail } from "@/lib/email";
+import { fireWebhook } from "@/lib/webhook";
 import { z } from "zod";
 
 const errorSchema = z.object({
@@ -33,6 +35,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Check previous status before updating to ERROR
+    const instance = await prisma.liveEAInstance.findUnique({
+      where: { id: auth.instanceId },
+      select: { status: true, eaName: true, user: { select: { email: true, webhookUrl: true } } },
+    });
+
     // Update instance with last error and set status to ERROR
     await prisma.liveEAInstance.update({
       where: { id: auth.instanceId },
@@ -41,6 +49,27 @@ export async function POST(request: NextRequest) {
         status: "ERROR",
       },
     });
+
+    // Send email alert if status changed to ERROR (was previously ONLINE or OFFLINE)
+    if (instance && instance.status !== "ERROR") {
+      sendEAAlertEmail(
+        instance.user.email,
+        instance.eaName,
+        `Your EA "${instance.eaName}" has entered ERROR state: ${message.substring(0, 300)}`
+      ).catch(() => {});
+
+      if (instance.user.webhookUrl) {
+        fireWebhook(instance.user.webhookUrl, {
+          event: "error",
+          data: {
+            eaName: instance.eaName,
+            errorCode,
+            message: message.substring(0, 300),
+            status: "ERROR",
+          },
+        }).catch(() => {});
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch {

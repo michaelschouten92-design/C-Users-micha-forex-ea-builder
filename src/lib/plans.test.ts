@@ -9,7 +9,7 @@ describe("plans", () => {
 
     it("FREE tier has correct limits", () => {
       expect(PLANS.FREE.limits.maxProjects).toBe(1);
-      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(1);
+      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(3);
       expect(PLANS.FREE.limits.canExportMQL5).toBe(true);
     });
 

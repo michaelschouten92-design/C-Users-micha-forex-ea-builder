@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
+import { sendEAAlertEmail } from "@/lib/email";
+import { fireWebhook } from "@/lib/webhook";
 import { z } from "zod";
 
 const heartbeatSchema = z.object({
@@ -17,6 +19,8 @@ const heartbeatSchema = z.object({
   spread: z.number().finite().min(0).max(10000).default(0),
 });
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 export async function POST(request: NextRequest) {
   const auth = await authenticateTelemetry(request);
   if (!auth.success) return auth.response;
@@ -30,6 +34,18 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
+
+    // Fetch instance state before the update for status change detection
+    const previousState = await prisma.liveEAInstance.findUnique({
+      where: { id: auth.instanceId },
+      select: {
+        status: true,
+        lastHeartbeat: true,
+        eaName: true,
+        symbol: true,
+        user: { select: { email: true, webhookUrl: true } },
+      },
+    });
 
     // Atomically update instance + insert heartbeat record
     await prisma.$transaction([
@@ -63,8 +79,105 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
+    // Fire-and-forget side effects: webhook, email alerts, alert rule evaluation
+    if (previousState) {
+      processHeartbeatSideEffects(auth.instanceId, auth.userId, data, previousState).catch(
+        () => {}
+      );
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+}
+
+interface PreviousState {
+  status: string;
+  lastHeartbeat: Date | null;
+  eaName: string;
+  symbol: string | null;
+  user: { email: string; webhookUrl: string | null };
+}
+
+async function processHeartbeatSideEffects(
+  instanceId: string,
+  userId: string,
+  data: { symbol?: string; balance: number; equity: number; drawdown: number; totalProfit: number },
+  prev: PreviousState
+): Promise<void> {
+  // Webhook notification
+  if (prev.user.webhookUrl) {
+    fireWebhook(prev.user.webhookUrl, {
+      event: "heartbeat",
+      data: {
+        eaName: prev.eaName,
+        symbol: data.symbol ?? prev.symbol ?? "",
+        balance: data.balance,
+        equity: data.equity,
+        profit: data.totalProfit,
+        status: "ONLINE",
+      },
+    }).catch(() => {});
+  }
+
+  // Email alert: EA was ONLINE but last heartbeat was more than 1 hour ago (unexpected disconnect)
+  if (prev.status === "ONLINE" && prev.lastHeartbeat) {
+    const elapsed = Date.now() - prev.lastHeartbeat.getTime();
+    if (elapsed > ONE_HOUR_MS) {
+      sendEAAlertEmail(
+        prev.user.email,
+        prev.eaName,
+        `Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.`
+      ).catch(() => {});
+    }
+  }
+
+  // Evaluate alert rules
+  evaluateAlertRules(instanceId, userId, data.drawdown, data.balance, data.equity).catch(() => {});
+}
+
+async function evaluateAlertRules(
+  instanceId: string,
+  userId: string,
+  drawdown: number,
+  balance: number,
+  equity: number
+): Promise<void> {
+  const rules = await prisma.eAAlertRule.findMany({
+    where: { userId, enabled: true },
+  });
+
+  if (rules.length === 0) return;
+
+  const instance = await prisma.liveEAInstance.findUnique({
+    where: { id: instanceId },
+    select: { eaName: true, user: { select: { email: true } } },
+  });
+
+  if (!instance) return;
+
+  for (const rule of rules) {
+    let triggered = false;
+    let message = "";
+
+    if (rule.type === "DRAWDOWN_EXCEEDED" && drawdown >= rule.threshold) {
+      triggered = true;
+      message = `Drawdown of ${drawdown.toFixed(2)}% exceeded threshold of ${rule.threshold}%`;
+    } else if (rule.type === "EQUITY_DROP" && balance > 0) {
+      const equityDropPct = ((balance - equity) / balance) * 100;
+      if (equityDropPct >= rule.threshold) {
+        triggered = true;
+        message = `Equity drop of ${equityDropPct.toFixed(2)}% exceeded threshold of ${rule.threshold}%`;
+      }
+    }
+
+    if (triggered) {
+      await prisma.eAAlert.create({
+        data: { ruleId: rule.id, instanceId, message },
+      });
+
+      sendEAAlertEmail(instance.user.email, instance.eaName, message).catch(() => {});
+    }
   }
 }

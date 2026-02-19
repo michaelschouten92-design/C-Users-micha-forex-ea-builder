@@ -11,6 +11,10 @@ import type {
   StochasticNodeData,
   CCINodeData,
   IchimokuNodeData,
+  CustomIndicatorNodeData,
+  CustomIndicatorParam,
+  ConditionNodeData,
+  ConditionOperator,
   Timeframe,
 } from "@/types/builder";
 import {
@@ -594,6 +598,200 @@ export function IchimokuFields({
       >
         Ichimoku combines trend, momentum, and support/resistance. Buy when Tenkan crosses above
         Kijun with price above the cloud.
+      </div>
+    </>
+  );
+}
+
+const CONDITION_OPERATOR_OPTIONS: { value: ConditionOperator; label: string }[] = [
+  { value: "GREATER_THAN", label: "Greater than (>)" },
+  { value: "LESS_THAN", label: "Less than (<)" },
+  { value: "GREATER_EQUAL", label: "Greater or equal (>=)" },
+  { value: "LESS_EQUAL", label: "Less or equal (<=)" },
+  { value: "EQUAL", label: "Equal (==)" },
+  { value: "CROSSES_ABOVE", label: "Crosses above" },
+  { value: "CROSSES_BELOW", label: "Crosses below" },
+];
+
+export function ConditionFields({
+  data,
+  onChange,
+}: {
+  data: ConditionNodeData;
+  onChange: (updates: Partial<ConditionNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Condition"
+        value={data.conditionType}
+        options={CONDITION_OPERATOR_OPTIONS}
+        onChange={(v) => onChange({ conditionType: v as ConditionOperator })}
+        tooltip="How to compare the connected indicator value against your threshold"
+      />
+      <NumberField
+        label="Threshold"
+        value={data.threshold}
+        min={-999999}
+        max={999999}
+        step={0.1}
+        onChange={(v) => onChange({ threshold: v })}
+        tooltip="The value to compare against (e.g. RSI > 70, price > 1.2000)"
+      />
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Connect an indicator block above. The condition compares the indicator value against your
+        threshold and routes to the True or False output.
+      </div>
+    </>
+  );
+}
+
+export function CustomIndicatorFields({
+  data,
+  onChange,
+}: {
+  data: CustomIndicatorNodeData;
+  onChange: (updates: Partial<CustomIndicatorNodeData>) => void;
+}) {
+  const params = data.params ?? [];
+
+  function updateParam(index: number, field: keyof CustomIndicatorParam, value: string): void {
+    const updated = [...params];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange({ params: updated });
+  }
+
+  function addParam(): void {
+    if (params.length >= 8) return;
+    onChange({ params: [...params, { name: `param${params.length + 1}`, value: "0" }] });
+  }
+
+  function removeParam(index: number): void {
+    onChange({ params: params.filter((_, i) => i !== index) });
+  }
+
+  return (
+    <>
+      <SelectField
+        label="Timeframe"
+        value={data.timeframe}
+        options={TIMEFRAME_OPTIONS}
+        onChange={(v) => onChange({ timeframe: v as Timeframe })}
+      />
+      <div>
+        <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Indicator Name</label>
+        <input
+          type="text"
+          value={data.indicatorName}
+          maxLength={100}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange({ indicatorName: e.target.value });
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          placeholder="e.g. MyCustomIndicator"
+          className="w-full px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+        />
+        <p className="text-[10px] text-[#7C8DB0] mt-1">
+          File name without extension. Must be in MQL5/Indicators/ folder.
+        </p>
+      </div>
+      <NumberField
+        label="Buffer Index"
+        value={data.bufferIndex}
+        min={0}
+        max={31}
+        step={1}
+        onChange={(v) => onChange({ bufferIndex: v })}
+        tooltip="Which indicator buffer to read (0 = first buffer)"
+      />
+      <SelectField
+        label="Signal Mode"
+        value={data.signalMode ?? "every_tick"}
+        options={[...SIGNAL_MODE_OPTIONS]}
+        onChange={(v) => onChange({ signalMode: v as CustomIndicatorNodeData["signalMode"] })}
+      />
+
+      {/* Parameters */}
+      <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-[#CBD5E1]">Parameters ({params.length}/8)</span>
+          {params.length < 8 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addParam();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-[10px] font-medium px-2 py-0.5 rounded bg-[rgba(79,70,229,0.2)] text-[#A78BFA] hover:bg-[rgba(79,70,229,0.3)] transition-colors"
+            >
+              + Add Param
+            </button>
+          )}
+        </div>
+        {params.map((param, i) => (
+          <div key={i} className="flex items-center gap-1.5 mb-1.5">
+            <input
+              type="text"
+              value={param.name}
+              maxLength={30}
+              onChange={(e) => {
+                e.stopPropagation();
+                updateParam(i, "name", e.target.value);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              placeholder="Name"
+              className="flex-1 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
+            />
+            <input
+              type="text"
+              value={param.value}
+              maxLength={30}
+              onChange={(e) => {
+                e.stopPropagation();
+                updateParam(i, "value", e.target.value);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              placeholder="Value"
+              className="w-20 px-2 py-1 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeParam(i);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-[#EF4444] hover:text-[#F87171] p-0.5"
+              aria-label={`Remove parameter ${param.name}`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {!data.indicatorName && (
+        <FieldError message="Indicator name is required for code generation" />
+      )}
+
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Generates an iCustom() call in MQL5/MQL4. Parameters are passed in order to the indicator.
+        Values are parsed as numbers when possible, otherwise passed as strings.
       </div>
     </>
   );

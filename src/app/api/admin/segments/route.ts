@@ -11,13 +11,6 @@ import { checkContentType, checkBodySize } from "@/lib/validations";
 const segmentFiltersSchema = z
   .object({
     tier: z.enum(["FREE", "PRO", "ELITE"]).optional(),
-    verified: z.boolean().optional(),
-    hasProjects: z.boolean().optional(),
-    hasExports: z.boolean().optional(),
-    registeredAfter: z.string().datetime().optional(),
-    registeredBefore: z.string().datetime().optional(),
-    lastLoginAfter: z.string().datetime().optional(),
-    lastLoginBefore: z.string().datetime().optional(),
   })
   .strict();
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
+import { fireWebhook } from "@/lib/webhook";
 import { z } from "zod";
 
 const tradeSchema = z.object({
@@ -57,8 +58,43 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Fire webhook notification (fire-and-forget)
+    fireTradeWebhook(auth.instanceId, { symbol, type, profit, openPrice, closePrice }).catch(
+      () => {}
+    );
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
+}
+
+async function fireTradeWebhook(
+  instanceId: string,
+  trade: {
+    symbol: string;
+    type: string;
+    profit: number;
+    openPrice: number;
+    closePrice: number | null | undefined;
+  }
+): Promise<void> {
+  const instance = await prisma.liveEAInstance.findUnique({
+    where: { id: instanceId },
+    select: { eaName: true, user: { select: { webhookUrl: true } } },
+  });
+
+  if (!instance?.user.webhookUrl) return;
+
+  await fireWebhook(instance.user.webhookUrl, {
+    event: "trade",
+    data: {
+      eaName: instance.eaName,
+      symbol: trade.symbol,
+      type: trade.type,
+      profit: trade.profit,
+      openPrice: trade.openPrice,
+      closePrice: trade.closePrice ?? null,
+    },
+  });
 }

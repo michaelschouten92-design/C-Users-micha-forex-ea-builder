@@ -211,14 +211,6 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
       tp1Percent: number;
       tp2RMultiple: number;
     };
-    trailingStop?: {
-      enabled: boolean;
-      method: "atr" | "fixed-pips";
-      atrMultiplier?: number;
-      atrPeriod?: number;
-      atrTimeframe?: string;
-      fixedPips?: number;
-    };
   };
   onChange: (updates: Partial<T>) => void;
   slOptions?: { value: EntrySlMethod; label: string }[];
@@ -401,80 +393,10 @@ export function EntryStrategyRiskSection<T extends BuilderNodeData>({
         onChange={(v) => onChange({ closeOnOpposite: v } as Partial<T>)}
       />
 
-      {/* Trailing stop */}
-      <ToggleField
-        label="Trailing stop"
-        hint="Automatically moves your stop loss to lock in profit as the price moves in your favor"
-        checked={data.trailingStop?.enabled ?? false}
-        onChange={(v) =>
-          onChange({
-            trailingStop: {
-              enabled: v,
-              method: data.trailingStop?.method ?? "atr",
-              atrMultiplier: data.trailingStop?.atrMultiplier ?? 2.0,
-              fixedPips: data.trailingStop?.fixedPips ?? 30,
-            },
-          } as Partial<T>)
-        }
-      >
-        <SelectField
-          label="Trailing method"
-          value={data.trailingStop?.method ?? "atr"}
-          options={[
-            { value: "atr", label: "ATR" },
-            { value: "fixed-pips", label: "Fixed pips" },
-          ]}
-          onChange={(v) =>
-            onChange({
-              trailingStop: { ...data.trailingStop!, method: v as "atr" | "fixed-pips" },
-            } as Partial<T>)
-          }
-        />
-        {data.trailingStop?.method === "atr" && (
-          <>
-            <NumberField
-              label="ATR Multiplier"
-              value={data.trailingStop?.atrMultiplier ?? 2.0}
-              min={0.1}
-              max={20}
-              step={0.1}
-              onChange={(v) =>
-                onChange({
-                  trailingStop: { ...data.trailingStop!, atrMultiplier: v },
-                } as Partial<T>)
-              }
-              tooltip="Distance from price to trailing stop, measured in ATR units"
-            />
-            <NumberField
-              label="ATR Period"
-              value={data.trailingStop?.atrPeriod ?? 14}
-              min={1}
-              max={500}
-              step={1}
-              onChange={(v) =>
-                onChange({
-                  trailingStop: { ...data.trailingStop!, atrPeriod: v },
-                } as Partial<T>)
-              }
-              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
-            />
-          </>
-        )}
-        {data.trailingStop?.method === "fixed-pips" && (
-          <NumberField
-            label="Trail distance (pips)"
-            value={data.trailingStop?.fixedPips ?? 30}
-            min={1}
-            max={1000}
-            step={1}
-            onChange={(v) =>
-              onChange({
-                trailingStop: { ...data.trailingStop!, fixedPips: v },
-              } as Partial<T>)
-            }
-          />
-        )}
-      </ToggleField>
+      <p className="text-[10px] text-[#7C8DB0] mt-1">
+        For trailing stops, add a Trailing Stop block from the Trade Management section in the left
+        toolbar.
+      </p>
     </>
   );
 }

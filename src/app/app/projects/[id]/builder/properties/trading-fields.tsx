@@ -6,6 +6,8 @@ import type {
   PlaceSellNodeData,
   StopLossNodeData,
   TakeProfitNodeData,
+  TakeProfitMethod,
+  TPLevel,
   CloseConditionNodeData,
   CloseDirection,
   TimeExitNodeData,
@@ -308,6 +310,119 @@ export function StopLossFields({
   );
 }
 
+const TP_METHOD_OPTIONS = [
+  { value: "FIXED_PIPS", label: "Fixed Pips" },
+  { value: "RISK_REWARD", label: "Risk:Reward Ratio" },
+  { value: "ATR_BASED", label: "ATR-Based" },
+];
+
+function TPLevelFields({
+  level,
+  index,
+  onUpdate,
+  onRemove,
+  canRemove,
+}: {
+  level: TPLevel;
+  index: number;
+  onUpdate: (updates: Partial<TPLevel>) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}) {
+  return (
+    <div className="p-2.5 bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.15)] rounded-lg space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-[#CBD5E1]">TP {index + 1}</span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="text-[#EF4444] hover:text-[#F87171] p-0.5"
+            aria-label={`Remove TP level ${index + 1}`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+      <SelectField
+        label="Method"
+        value={level.method}
+        options={TP_METHOD_OPTIONS}
+        onChange={(v) => onUpdate({ method: v as TakeProfitMethod })}
+      />
+      {level.method === "FIXED_PIPS" && (
+        <NumberField
+          label="Pips"
+          value={level.fixedPips}
+          min={1}
+          max={10000}
+          onChange={(v) => onUpdate({ fixedPips: v })}
+        />
+      )}
+      {level.method === "RISK_REWARD" && (
+        <NumberField
+          label="R:R Ratio"
+          value={level.riskRewardRatio}
+          min={0.1}
+          max={20}
+          step={0.1}
+          onChange={(v) => onUpdate({ riskRewardRatio: v })}
+        />
+      )}
+      {level.method === "ATR_BASED" && (
+        <>
+          <NumberField
+            label="ATR Period"
+            value={level.atrPeriod}
+            min={1}
+            max={500}
+            onChange={(v) => onUpdate({ atrPeriod: v })}
+          />
+          <NumberField
+            label="ATR Multiplier"
+            value={level.atrMultiplier}
+            min={0.1}
+            max={20}
+            step={0.1}
+            onChange={(v) => onUpdate({ atrMultiplier: v })}
+          />
+        </>
+      )}
+      <NumberField
+        label="Close %"
+        value={level.closePercent}
+        min={1}
+        max={100}
+        step={1}
+        onChange={(v) => onUpdate({ closePercent: v })}
+        tooltip="Percentage of remaining position to close at this level"
+      />
+    </div>
+  );
+}
+
+function defaultTPLevel(): TPLevel {
+  return {
+    method: "FIXED_PIPS",
+    fixedPips: 50,
+    riskRewardRatio: 2,
+    atrMultiplier: 2,
+    atrPeriod: 14,
+    closePercent: 100,
+  };
+}
+
 export function TakeProfitFields({
   data,
   onChange,
@@ -315,68 +430,168 @@ export function TakeProfitFields({
   data: TakeProfitNodeData;
   onChange: (updates: Partial<TakeProfitNodeData>) => void;
 }) {
+  const multipleEnabled = data.multipleTPEnabled ?? false;
+  const levels = data.tpLevels ?? [];
+
+  function toggleMultipleTP(enabled: boolean): void {
+    if (enabled && levels.length === 0) {
+      // Initialize with two levels based on current single TP settings
+      const level1: TPLevel = {
+        method: data.method,
+        fixedPips: data.fixedPips,
+        riskRewardRatio: data.riskRewardRatio,
+        atrMultiplier: data.atrMultiplier,
+        atrPeriod: data.atrPeriod,
+        closePercent: 50,
+      };
+      const level2: TPLevel = {
+        ...defaultTPLevel(),
+        method: data.method,
+        closePercent: 100,
+      };
+      onChange({ multipleTPEnabled: true, tpLevels: [level1, level2] });
+    } else {
+      onChange({ multipleTPEnabled: enabled });
+    }
+  }
+
+  function updateLevel(index: number, updates: Partial<TPLevel>): void {
+    const updated = [...levels];
+    updated[index] = { ...updated[index], ...updates };
+    onChange({ tpLevels: updated });
+  }
+
+  function removeLevel(index: number): void {
+    onChange({ tpLevels: levels.filter((_, i) => i !== index) });
+  }
+
+  function addLevel(): void {
+    if (levels.length >= 4) return;
+    onChange({ tpLevels: [...levels, defaultTPLevel()] });
+  }
+
   return (
     <>
-      <SelectField
-        label="Method"
-        value={data.method}
-        options={[
-          { value: "FIXED_PIPS", label: "Fixed Pips" },
-          { value: "RISK_REWARD", label: "Risk:Reward Ratio" },
-          { value: "ATR_BASED", label: "ATR-Based" },
-        ]}
-        onChange={(v) => onChange({ method: v as TakeProfitNodeData["method"] })}
-      />
-      {data.method === "FIXED_PIPS" && (
-        <div>
-          <NumberField
-            label="Pips"
-            value={data.fixedPips}
-            min={1}
-            max={1000}
-            onChange={(v) => onChange({ fixedPips: v })}
-          />
-          <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
+      {/* Toggle for multiple TP */}
+      <label
+        className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          checked={multipleEnabled}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleMultipleTP(e.target.checked);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#10B981] focus:ring-[#10B981]"
+        />
+        Multiple take profit levels
+      </label>
+      <p className="text-[10px] text-[#7C8DB0] -mt-1">
+        {multipleEnabled
+          ? "Close parts of your position at different profit targets"
+          : "Enable to set multiple TP targets with partial closes"}
+      </p>
+
+      {multipleEnabled ? (
+        <div className="space-y-2">
+          {levels.map((level, i) => (
+            <TPLevelFields
+              key={i}
+              level={level}
+              index={i}
+              onUpdate={(updates) => updateLevel(i, updates)}
+              onRemove={() => removeLevel(i)}
+              canRemove={levels.length > 2}
+            />
+          ))}
+          {levels.length < 4 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addLevel();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="w-full py-1.5 text-xs font-medium text-[#A78BFA] bg-[rgba(79,70,229,0.1)] border border-dashed border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.2)] transition-colors"
+            >
+              + Add TP Level
+            </button>
+          )}
+          <p className="text-[10px] text-[#7C8DB0]">
+            TP1 partial close moves SL to breakeven. Remaining position targets next TP level.
+          </p>
         </div>
-      )}
-      {data.method === "RISK_REWARD" && (
-        <div>
-          <NumberField
-            label="R:R Ratio"
-            value={data.riskRewardRatio}
-            min={0.1}
-            max={20}
-            step={0.1}
-            onChange={(v) => onChange({ riskRewardRatio: v })}
-          />
-          <OptimizableFieldCheckbox fieldName="riskRewardRatio" data={data} onChange={onChange} />
-        </div>
-      )}
-      {data.method === "ATR_BASED" && (
+      ) : (
         <>
-          <div>
-            <NumberField
-              label="ATR Period"
-              value={data.atrPeriod}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ atrPeriod: v })}
-              tooltip="Average True Range - measures market volatility"
-            />
-            <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
-          </div>
-          <div>
-            <NumberField
-              label="ATR Multiplier"
-              value={data.atrMultiplier}
-              min={0.1}
-              max={20}
-              step={0.1}
-              onChange={(v) => onChange({ atrMultiplier: v })}
-              tooltip="Multiplier applied to the ATR value"
-            />
-            <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
-          </div>
+          <SelectField
+            label="Method"
+            value={data.method}
+            options={TP_METHOD_OPTIONS}
+            onChange={(v) => onChange({ method: v as TakeProfitMethod })}
+          />
+          {data.method === "FIXED_PIPS" && (
+            <div>
+              <NumberField
+                label="Pips"
+                value={data.fixedPips}
+                min={1}
+                max={1000}
+                onChange={(v) => onChange({ fixedPips: v })}
+              />
+              <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
+            </div>
+          )}
+          {data.method === "RISK_REWARD" && (
+            <div>
+              <NumberField
+                label="R:R Ratio"
+                value={data.riskRewardRatio}
+                min={0.1}
+                max={20}
+                step={0.1}
+                onChange={(v) => onChange({ riskRewardRatio: v })}
+              />
+              <OptimizableFieldCheckbox
+                fieldName="riskRewardRatio"
+                data={data}
+                onChange={onChange}
+              />
+            </div>
+          )}
+          {data.method === "ATR_BASED" && (
+            <>
+              <div>
+                <NumberField
+                  label="ATR Period"
+                  value={data.atrPeriod}
+                  min={1}
+                  max={500}
+                  onChange={(v) => onChange({ atrPeriod: v })}
+                  tooltip="Average True Range - measures market volatility"
+                />
+                <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
+              </div>
+              <div>
+                <NumberField
+                  label="ATR Multiplier"
+                  value={data.atrMultiplier}
+                  min={0.1}
+                  max={20}
+                  step={0.1}
+                  onChange={(v) => onChange({ atrMultiplier: v })}
+                  tooltip="Multiplier applied to the ATR value"
+                />
+                <OptimizableFieldCheckbox
+                  fieldName="atrMultiplier"
+                  data={data}
+                  onChange={onChange}
+                />
+              </div>
+            </>
+          )}
         </>
       )}
     </>

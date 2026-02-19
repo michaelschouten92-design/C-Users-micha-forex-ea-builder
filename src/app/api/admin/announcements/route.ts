@@ -14,9 +14,6 @@ export async function GET() {
 
     const announcements = await prisma.announcement.findMany({
       orderBy: { createdAt: "desc" },
-      include: {
-        segment: { select: { id: true, name: true } },
-      },
     });
 
     return NextResponse.json({ data: announcements });
@@ -34,8 +31,6 @@ const createSchema = z.object({
   type: z.enum(["info", "warning", "maintenance"]).default("info"),
   active: z.boolean().default(true),
   expiresAt: z.string().datetime().optional(),
-  scheduledAt: z.string().datetime().optional(),
-  segmentId: z.string().optional(),
 });
 
 // POST /api/admin/announcements - Create announcement
@@ -68,21 +63,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const { title, message, type, active, expiresAt, scheduledAt, segmentId } = validation.data;
-
-    // If scheduledAt is in the future, set active to false automatically
-    const isScheduledFuture = scheduledAt && new Date(scheduledAt) > new Date();
-    const effectiveActive = isScheduledFuture ? false : active;
+    const { title, message, type, active, expiresAt } = validation.data;
 
     const announcement = await prisma.announcement.create({
       data: {
         title,
         message,
         type,
-        active: effectiveActive,
+        active,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-        segmentId: segmentId || null,
         createdBy: adminCheck.session.user.id,
       },
     });
@@ -103,8 +92,6 @@ const updateSchema = z.object({
   message: z.string().min(1).max(2000).optional(),
   type: z.enum(["info", "warning", "maintenance"]).optional(),
   expiresAt: z.string().datetime().nullable().optional(),
-  scheduledAt: z.string().datetime().nullable().optional(),
-  segmentId: z.string().nullable().optional(),
 });
 
 // PATCH /api/admin/announcements - Update announcement
@@ -141,12 +128,6 @@ export async function PATCH(request: Request) {
     if (updateData.type !== undefined) data.type = updateData.type;
     if (updateData.expiresAt !== undefined) {
       data.expiresAt = updateData.expiresAt ? new Date(updateData.expiresAt) : null;
-    }
-    if (updateData.scheduledAt !== undefined) {
-      data.scheduledAt = updateData.scheduledAt ? new Date(updateData.scheduledAt) : null;
-    }
-    if (updateData.segmentId !== undefined) {
-      data.segmentId = updateData.segmentId;
     }
 
     const announcement = await prisma.announcement.update({

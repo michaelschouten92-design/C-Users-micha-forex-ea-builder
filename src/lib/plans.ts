@@ -81,10 +81,10 @@ export const PLANS = {
   FREE: {
     name: "Free",
     tier: "FREE" as const,
-    features: ["1 project", "Visual strategy builder", "1 MQL5 export per month"],
+    features: ["1 project", "Visual strategy builder", "3 MQL5 exports per month"],
     limits: {
       maxProjects: 1,
-      maxExportsPerMonth: 1,
+      maxExportsPerMonth: 3,
       canExportMQL5: true,
       canExportMQL4: false,
     },

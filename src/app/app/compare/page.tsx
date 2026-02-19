@@ -2,57 +2,32 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CreateProjectButton } from "./components/create-project-button";
-import { ProjectList } from "./components/project-list";
-import { SubscriptionPanel } from "./components/subscription-panel";
-import { EmailVerificationBanner } from "./components/email-verification-banner";
+import { CompareClient } from "./compare-client";
 
-export default async function DashboardPage() {
+export default async function ComparePage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login?expired=true");
   }
 
-  // Get start of current month for export count (UTC to match backend)
-  const startOfMonth = new Date();
-  startOfMonth.setUTCDate(1);
-  startOfMonth.setUTCHours(0, 0, 0, 0);
-
-  const [projects, subscription, exportCount, user] = await Promise.all([
+  const [projects, subscription] = await Promise.all([
     prisma.project.findMany({
       where: { userId: session.user.id, deletedAt: null },
       orderBy: { updatedAt: "desc" },
       include: {
-        _count: {
-          select: { versions: true },
-        },
         versions: {
           orderBy: { versionNo: "desc" },
           take: 1,
           select: { buildJson: true },
-        },
-        tags: {
-          select: { tag: true },
         },
       },
     }),
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
     }),
-    prisma.exportJob.count({
-      where: {
-        userId: session.user.id,
-        createdAt: { gte: startOfMonth },
-      },
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { emailVerified: true, discordId: true },
-    }),
   ]);
 
-  // Determine effective tier (mirror getCachedTier logic to account for expired/cancelled)
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
     const isActive = subscription?.status === "active" || subscription?.status === "trialing";
@@ -61,6 +36,13 @@ export default async function DashboardPage() {
       tier = "FREE";
     }
   }
+
+  const serializedProjects = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    buildJson: p.versions[0]?.buildJson ?? null,
+  }));
 
   return (
     <div className="min-h-screen">
@@ -87,6 +69,12 @@ export default async function DashboardPage() {
                 {tier}
               </span>
               <Link
+                href="/app"
+                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+              >
+                Dashboard
+              </Link>
+              <Link
                 href="/app/live"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
@@ -94,7 +82,7 @@ export default async function DashboardPage() {
               </Link>
               <Link
                 href="/app/compare"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
               >
                 Compare
               </Link>
@@ -122,24 +110,9 @@ export default async function DashboardPage() {
         </div>
       </nav>
 
-      {user && !user.emailVerified && <EmailVerificationBanner />}
-
-      <main id="main-content" className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Subscription Panel */}
-        <SubscriptionPanel
-          tier={tier}
-          subscriptionStatus={subscription?.status ?? undefined}
-          projectCount={projects.length}
-          exportCount={exportCount}
-          hasStripeSubscription={!!subscription?.stripeSubId}
-        />
-
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">My Projects</h2>
-          <CreateProjectButton />
-        </div>
-
-        <ProjectList projects={projects} />
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Compare Strategies</h2>
+        <CompareClient projects={serializedProjects} />
       </main>
     </div>
   );

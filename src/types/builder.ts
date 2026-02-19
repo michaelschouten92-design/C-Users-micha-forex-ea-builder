@@ -230,6 +230,38 @@ export interface IchimokuNodeData extends BaseNodeData {
   signalMode?: "every_tick" | "candle_close";
 }
 
+export interface CustomIndicatorParam {
+  name: string;
+  value: string; // stored as string, parsed to double/int/string in codegen
+}
+
+export interface CustomIndicatorNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "custom-indicator";
+  timeframe: Timeframe;
+  indicatorName: string; // file name without extension, e.g. "MyIndicator"
+  params: CustomIndicatorParam[]; // up to 8 params
+  bufferIndex: number; // which indicator buffer to read (default 0)
+  signalMode?: "every_tick" | "candle_close";
+}
+
+// Condition (Logic) Nodes
+export type ConditionOperator =
+  | "GREATER_THAN"
+  | "LESS_THAN"
+  | "GREATER_EQUAL"
+  | "LESS_EQUAL"
+  | "EQUAL"
+  | "CROSSES_ABOVE"
+  | "CROSSES_BELOW";
+
+export interface ConditionNodeData extends BaseNodeData {
+  category: "indicator";
+  indicatorType: "condition";
+  conditionType: ConditionOperator;
+  threshold: number;
+}
+
 export type IndicatorNodeData =
   | MovingAverageNodeData
   | RSINodeData
@@ -239,7 +271,9 @@ export type IndicatorNodeData =
   | ADXNodeData
   | StochasticNodeData
   | CCINodeData
-  | IchimokuNodeData;
+  | IchimokuNodeData
+  | CustomIndicatorNodeData
+  | ConditionNodeData;
 
 // Price Action Nodes
 export type CandlestickPattern =
@@ -350,6 +384,15 @@ export interface StopLossNodeData extends BaseNodeData {
 
 export type TakeProfitMethod = "FIXED_PIPS" | "RISK_REWARD" | "ATR_BASED";
 
+export interface TPLevel {
+  method: TakeProfitMethod;
+  fixedPips: number;
+  riskRewardRatio: number;
+  atrMultiplier: number;
+  atrPeriod: number;
+  closePercent: number; // percentage of remaining position to close at this level
+}
+
 export interface TakeProfitNodeData extends BaseNodeData {
   category: "riskmanagement" | "trading";
   tradingType: "take-profit";
@@ -358,6 +401,9 @@ export interface TakeProfitNodeData extends BaseNodeData {
   riskRewardRatio: number;
   atrMultiplier: number;
   atrPeriod: number;
+  // Multiple TP levels (optional — when undefined, uses single TP above)
+  multipleTPEnabled?: boolean;
+  tpLevels?: TPLevel[];
 }
 
 export type CloseDirection = "BUY" | "SELL" | "BOTH";
@@ -641,6 +687,8 @@ export type BuilderNodeType =
   | "stochastic"
   | "cci"
   | "ichimoku"
+  | "custom-indicator"
+  | "condition"
   | "candlestick-pattern"
   | "support-resistance"
   | "range-breakout"
@@ -696,12 +744,31 @@ export interface PropFirmPreset {
   dailyLossPercent: number;
   totalDrawdownPercent: number;
   maxOpenTrades: number;
+  equityTargetPercent?: number;
 }
 
 export const PROP_FIRM_PRESETS: PropFirmPreset[] = [
-  { name: "FTMO", dailyLossPercent: 5, totalDrawdownPercent: 10, maxOpenTrades: 3 },
-  { name: "The 5%ers", dailyLossPercent: 4, totalDrawdownPercent: 6, maxOpenTrades: 3 },
-  { name: "Funding Pips", dailyLossPercent: 5, totalDrawdownPercent: 8, maxOpenTrades: 5 },
+  {
+    name: "FTMO",
+    dailyLossPercent: 5,
+    totalDrawdownPercent: 10,
+    maxOpenTrades: 3,
+    equityTargetPercent: 10,
+  },
+  {
+    name: "The 5%ers",
+    dailyLossPercent: 4,
+    totalDrawdownPercent: 6,
+    maxOpenTrades: 3,
+    equityTargetPercent: 10,
+  },
+  {
+    name: "Funding Pips",
+    dailyLossPercent: 5,
+    totalDrawdownPercent: 8,
+    maxOpenTrades: 5,
+    equityTargetPercent: 10,
+  },
 ];
 
 export interface BuildJsonMetadata {
@@ -858,6 +925,34 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       kijunPeriod: 26,
       senkouBPeriod: 52,
     } as IchimokuNodeData,
+  },
+  {
+    type: "custom-indicator",
+    label: "Custom Indicator",
+    category: "indicator",
+    description: "Use any custom indicator via iCustom() call",
+    defaultData: {
+      label: "Custom Indicator",
+      category: "indicator",
+      indicatorType: "custom-indicator",
+      timeframe: "H1",
+      indicatorName: "",
+      params: [],
+      bufferIndex: 0,
+    } as CustomIndicatorNodeData,
+  },
+  {
+    type: "condition",
+    label: "Condition (IF/THEN)",
+    category: "indicator",
+    description: "Compare indicator value against a threshold with True/False outputs",
+    defaultData: {
+      label: "Condition",
+      category: "indicator",
+      indicatorType: "condition",
+      conditionType: "GREATER_THAN",
+      threshold: 0,
+    } as ConditionNodeData,
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {

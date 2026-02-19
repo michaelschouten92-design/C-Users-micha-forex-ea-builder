@@ -1,8 +1,6 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import GitHub from "next-auth/providers/github";
-import Discord from "next-auth/providers/discord";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, features } from "./env";
@@ -18,10 +16,8 @@ import {
   sendNewUserNotificationEmail,
   sendOAuthLinkRejectedEmail,
 } from "./email";
-import { onboardDiscordUser } from "./discord";
 import { verifyCaptcha } from "./turnstile";
 import { randomBytes, createHash } from "crypto";
-import { encrypt } from "./crypto";
 import { logger } from "./logger";
 import type { Provider } from "next-auth/providers";
 
@@ -83,31 +79,6 @@ if (features.googleAuth) {
     Google({
       clientId: env.AUTH_GOOGLE_ID!,
       clientSecret: env.AUTH_GOOGLE_SECRET!,
-    })
-  );
-}
-
-// Only add GitHub if credentials are configured
-if (features.githubAuth) {
-  providers.push(
-    GitHub({
-      clientId: env.AUTH_GITHUB_ID!,
-      clientSecret: env.AUTH_GITHUB_SECRET!,
-    })
-  );
-}
-
-// Only add Discord if credentials are configured
-if (features.discordAuth) {
-  providers.push(
-    Discord({
-      clientId: env.DISCORD_CLIENT_ID!,
-      clientSecret: env.DISCORD_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "identify email guilds.join",
-        },
-      },
     })
   );
 }
@@ -289,11 +260,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account }) {
       // Handle OAuth sign-in: create or link user
-      if (
-        account?.provider === "google" ||
-        account?.provider === "github" ||
-        account?.provider === "discord"
-      ) {
+      if (account?.provider === "google") {
         if (!user.email) {
           authLog.error({ provider: account.provider }, "OAuth sign-in rejected: no email");
           return false;
@@ -349,37 +316,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
 
             // Notify admin of new signup (fire-and-forget)
-            sendNewUserNotificationEmail(
-              user.email,
-              account.provider as "google" | "github" | "discord"
-            ).catch(() => {});
-          }
-        }
-
-        // For Discord logins: save discordId and access token, trigger onboarding
-        if (account.provider === "discord") {
-          const discordId = account.providerAccountId;
-          const accessToken = account.access_token;
-
-          // Update discordId + accessToken (even for existing users, refresh the token)
-          await prisma.user
-            .update({
-              where: { id: existingUser.id },
-              data: {
-                discordId: discordId,
-                ...(accessToken ? { discordAccessToken: encrypt(accessToken) } : {}),
-              },
-            })
-            .catch((err) => {
-              // Unique constraint violation — discordId already linked to another user
-              if (err?.code === "P2002") {
-                authLog.warn("Discord ID already linked to another account");
-              }
-            });
-
-          // Fire-and-forget: guild join + role sync
-          if (accessToken) {
-            onboardDiscordUser(existingUser.id, discordId, accessToken).catch(() => {});
+            sendNewUserNotificationEmail(user.email, "google").catch(() => {});
           }
         }
 
@@ -389,7 +326,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true;
     },
-    async jwt({ token, user, trigger, session: updateData }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.iat = Math.floor(Date.now() / 1000);
@@ -406,7 +343,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Periodically check if password was changed (invalidates old sessions)
       if (token.id && typeof token.id === "string") {
-        // Check every 60 seconds (short interval ensures revoked impersonation/roles are caught quickly)
+        // Check every 60 seconds (ensures revoked roles are caught quickly)
         const lastChecked = (token.passwordCheckedAt as number) || 0;
         const now = Math.floor(Date.now() / 1000);
         if (now - lastChecked > 60) {
@@ -429,43 +366,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.emailVerified = !!dbUser.emailVerified;
           }
           token.passwordCheckedAt = now;
-
-          // If impersonating, verify the impersonator still has ADMIN role
-          if (token.impersonatorId) {
-            const impersonator = await prisma.user.findUnique({
-              where: { id: token.impersonatorId as string },
-              select: { role: true },
-            });
-            if (!impersonator || impersonator.role !== "ADMIN") {
-              // Impersonator lost admin privileges — end impersonation
-              token.id = token.impersonatorId;
-              delete token.impersonatorId;
-              delete token.impersonatingEmail;
-            }
-          }
-        }
-      }
-
-      // Handle session update (used for impersonation)
-      if (trigger === "update" && updateData) {
-        if (updateData.impersonate) {
-          // Verify the requesting user is actually an admin before allowing impersonation
-          const requestingUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { role: true },
-          });
-          if (requestingUser?.role !== "ADMIN") {
-            return token; // Silently deny — non-admin cannot impersonate
-          }
-          // Start impersonation: store admin's real ID and switch to target
-          token.impersonatorId = token.id;
-          token.impersonatingEmail = updateData.impersonate.email;
-          token.id = updateData.impersonate.userId;
-        } else if (updateData.stopImpersonation) {
-          // Stop impersonation: restore admin's real ID
-          token.id = token.impersonatorId;
-          delete token.impersonatorId;
-          delete token.impersonatingEmail;
         }
       }
 
@@ -480,10 +380,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (token.emailVerified) {
         session.user.emailVerified = new Date();
-      }
-      if (token.impersonatorId) {
-        session.user.impersonatorId = token.impersonatorId as string;
-        session.user.impersonatingEmail = token.impersonatingEmail as string;
       }
       return session;
     },
