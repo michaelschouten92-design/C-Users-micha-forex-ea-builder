@@ -1916,15 +1916,15 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "prop-firm-ea-settings",
-    title: "Best EA Settings for Prop Firm Challenges (FTMO, MyForexFunds)",
+    title: "Best EA Settings for Prop Firm Challenges (FTMO, E8 Markets)",
     description:
-      "Configure your Expert Advisor to pass prop firm challenges. Learn the exact risk settings, drawdown limits, and strategy parameters for FTMO, MyForexFunds, and other funded programs.",
+      "Configure your Expert Advisor to pass prop firm challenges. Learn the exact risk settings, drawdown limits, and strategy parameters for FTMO, E8 Markets, and other funded programs.",
     date: "2025-08-05",
     author: "AlgoStudio Team",
     readTime: "12 min read",
     tags: ["prop firms", "risk management"],
     content: `
-      <p>Prop firm challenges are the fastest way to trade with serious capital without risking your own money. But most traders fail — not because their strategy is bad, but because their EA settings do not respect the strict rules these firms enforce. In this guide, we will show you exactly how to configure your Expert Advisor to pass challenges from FTMO, MyForexFunds, and other major prop firms.</p>
+      <p>Prop firm challenges are the fastest way to trade with serious capital without risking your own money. But most traders fail — not because their strategy is bad, but because their EA settings do not respect the strict rules these firms enforce. In this guide, we will show you exactly how to configure your Expert Advisor to pass challenges from FTMO, E8 Markets, and other major prop firms.</p>
 
       <h2>Understanding Prop Firm Rules</h2>
       <p>Before configuring anything, you need to understand the rules. Every prop firm has three primary constraints:</p>
@@ -1953,20 +1953,22 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Take Profit:</strong> 2:1 risk-reward ratio — needs only 40% win rate to be profitable</li>
       </ul>
 
-      <h2>MyForexFunds Settings</h2>
-      <p>MyForexFunds offers more flexible rules with lower entry costs:</p>
+      <h2>E8 Markets Settings</h2>
+      <p>E8 Markets has tighter rules than most firms, requiring more conservative settings:</p>
       <ul>
-        <li><strong>Daily Loss Limit:</strong> 5%</li>
-        <li><strong>Max Drawdown:</strong> 12% (more generous than FTMO)</li>
-        <li><strong>Profit Target:</strong> 8%</li>
+        <li><strong>Daily Loss Limit:</strong> 4% (stricter than most firms)</li>
+        <li><strong>Max Drawdown:</strong> 8% (EOD dynamic drawdown)</li>
+        <li><strong>Profit Target Phase 1:</strong> 8%</li>
+        <li><strong>Profit Target Phase 2:</strong> 4%</li>
+        <li><strong>Time Limit:</strong> Unlimited</li>
       </ul>
-      <h3>Recommended EA Settings</h3>
+      <h3>Recommended EA Settings for E8 Markets</h3>
       <ul>
-        <li><strong>Risk Per Trade:</strong> 0.75% — slightly higher due to more generous drawdown limit</li>
-        <li><strong>Max Daily Loss Cap:</strong> 3.5%</li>
-        <li><strong>Max Open Trades:</strong> 3</li>
+        <li><strong>Risk Per Trade:</strong> 0.4% — tighter daily limit demands lower risk per trade</li>
+        <li><strong>Max Daily Loss Cap:</strong> 2.5% — well below E8's strict 4% daily limit</li>
+        <li><strong>Max Open Trades:</strong> 2</li>
         <li><strong>Stop Loss:</strong> ATR-based (1.5x multiplier)</li>
-        <li><strong>Take Profit:</strong> 2.5:1 risk-reward ratio</li>
+        <li><strong>Take Profit:</strong> 2:1 risk-reward ratio</li>
       </ul>
 
       <h2>Universal Prop Firm EA Rules</h2>

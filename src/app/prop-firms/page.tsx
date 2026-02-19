@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Prop Firm EA Builder — Pass Funded Challenges",
   description:
-    "Build Expert Advisors configured for prop firm challenges. Pre-set daily loss limits, drawdown protection, and risk settings for FTMO, MyForexFunds, The Funded Trader, and more.",
+    "Build Expert Advisors configured for prop firm challenges. Pre-set daily loss limits, drawdown protection, and risk settings for FTMO, E8 Markets, FundingPips, and more.",
   alternates: { canonical: "/prop-firms" },
 };
 
@@ -33,24 +33,24 @@ const propFirms = [
     },
   },
   {
-    name: "MyForexFunds",
-    dailyLoss: "5%",
-    maxDrawdown: "12%",
-    profitTarget: "8%",
-    timeLimit: "30 days",
+    name: "E8 Markets",
+    dailyLoss: "4%",
+    maxDrawdown: "8%",
+    profitTarget: "8% (Phase 1) / 4% (Phase 2)",
+    timeLimit: "Unlimited",
     recommended: {
-      riskPerTrade: "0.75%",
-      dailyCap: "3.5%",
-      maxTrades: "3",
+      riskPerTrade: "0.4%",
+      dailyCap: "2.5%",
+      maxTrades: "2",
       strategy: "EMA Crossover or MACD Crossover",
     },
   },
   {
-    name: "The Funded Trader",
+    name: "FundingPips",
     dailyLoss: "5%",
     maxDrawdown: "10%",
-    profitTarget: "10% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "35 days per phase",
+    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
+    timeLimit: "Unlimited",
     recommended: {
       riskPerTrade: "0.5%",
       dailyCap: "3%",
@@ -59,11 +59,11 @@ const propFirms = [
     },
   },
   {
-    name: "Funded Next",
+    name: "FundedNext",
     dailyLoss: "5%",
     maxDrawdown: "10%",
-    profitTarget: "10% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "30 days per phase",
+    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
+    timeLimit: "Unlimited",
     recommended: {
       riskPerTrade: "0.5%",
       dailyCap: "3%",
@@ -72,16 +72,29 @@ const propFirms = [
     },
   },
   {
-    name: "True Forex Funds",
+    name: "The 5%ers",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "8% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "30 days per phase",
+    timeLimit: "Unlimited",
     recommended: {
       riskPerTrade: "0.5%",
       dailyCap: "3%",
       maxTrades: "2",
       strategy: "EMA Crossover or RSI Reversal",
+    },
+  },
+  {
+    name: "Alpha Capital",
+    dailyLoss: "5%",
+    maxDrawdown: "10%",
+    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
+    timeLimit: "Unlimited",
+    recommended: {
+      riskPerTrade: "0.5%",
+      dailyCap: "3%",
+      maxTrades: "2",
+      strategy: "Trend Pullback or MACD Crossover",
     },
   },
 ];
@@ -144,7 +157,7 @@ const features = [
 const faqItems = [
   {
     q: "Do prop firms allow Expert Advisors?",
-    a: "Most major prop firms allow EAs. FTMO, MyForexFunds, The Funded Trader, Funded Next, and True Forex Funds all permit automated trading. Always check the specific firm's rules before deploying, as some have restrictions on certain trading styles (e.g., high-frequency trading or arbitrage).",
+    a: "Most major prop firms allow EAs. FTMO, E8 Markets, FundingPips, FundedNext, The 5%ers, and Alpha Capital all permit automated trading. Always check the specific firm's rules before deploying, as some have restrictions on certain trading styles (e.g., high-frequency trading or arbitrage).",
   },
   {
     q: "What is the best strategy for prop firm challenges?",

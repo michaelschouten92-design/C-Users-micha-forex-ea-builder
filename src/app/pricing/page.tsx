@@ -42,7 +42,7 @@ export default function PricingPage() {
     },
     {
       q: "Does this work with any MT5 broker?",
-      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, The Funded Trader, and others. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
+      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, E8 Markets, FundingPips, and others. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
     },
     {
       q: "What happens if I reach my export limit on Free?",
