@@ -1575,7 +1575,8 @@ export function generateMQL5Code(
     ctx,
     code,
     hasBuy ? placeBuyNodes[0] : undefined,
-    hasSell ? placeSellNodes[0] : undefined
+    hasSell ? placeSellNodes[0] : undefined,
+    processedBuildJson.edges
   );
 
   // Generate close condition code

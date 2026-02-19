@@ -4031,4 +4031,159 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Buffer[1]");
     });
   });
+
+  // ============================================
+  // CONDITION NODE CODEGEN
+  // ============================================
+
+  describe("condition node", () => {
+    it("generates GREATER_THAN condition from RSI with threshold", () => {
+      const nodes = [
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rsi1", "rsi", {
+          category: "indicator",
+          indicatorType: "rsi",
+          timeframe: "H1",
+          period: 14,
+          appliedPrice: "CLOSE",
+          overboughtLevel: 70,
+          oversoldLevel: 30,
+        }),
+        makeNode("cond1", "condition", {
+          category: "indicator",
+          indicatorType: "condition",
+          conditionType: "GREATER_THAN",
+          threshold: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ];
+      const edges = [
+        { id: "e1", source: "t1", target: "rsi1" },
+        { id: "e2", source: "rsi1", target: "cond1" },
+        { id: "e3", source: "cond1", target: "b1" },
+      ];
+      const build = makeBuild(nodes, edges);
+      const code = generateMQL5Code(build, "Test");
+      // Should generate DoubleGT for buy and DoubleLT for sell
+      expect(code).toContain("DoubleGT(ind0Buffer[0], 50)");
+    });
+
+    it("generates CROSSES_ABOVE condition with previous bar comparison", () => {
+      const nodes = [
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ma1", "moving-average", {
+          category: "indicator",
+          indicatorType: "moving-average",
+          timeframe: "H1",
+          period: 20,
+          method: "SMA",
+          appliedPrice: "CLOSE",
+          shift: 0,
+        }),
+        makeNode("cond1", "condition", {
+          category: "indicator",
+          indicatorType: "condition",
+          conditionType: "CROSSES_ABOVE",
+          threshold: 1.25,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ];
+      const edges = [
+        { id: "e1", source: "t1", target: "ma1" },
+        { id: "e2", source: "ma1", target: "cond1" },
+        { id: "e3", source: "cond1", target: "b1" },
+      ];
+      const build = makeBuild(nodes, edges);
+      const code = generateMQL5Code(build, "Test");
+      // Crosses above: previous bar <= threshold AND current bar > threshold
+      expect(code).toContain("DoubleLE(ind0Buffer[1], 1.25)");
+      expect(code).toContain("DoubleGT(ind0Buffer[0], 1.25)");
+    });
+
+    it("uses correct buffer name for MACD source indicator", () => {
+      const nodes = [
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("macd1", "macd", {
+          category: "indicator",
+          indicatorType: "macd",
+          timeframe: "H1",
+          fastPeriod: 12,
+          slowPeriod: 26,
+          signalPeriod: 9,
+          appliedPrice: "CLOSE",
+        }),
+        makeNode("cond1", "condition", {
+          category: "indicator",
+          indicatorType: "condition",
+          conditionType: "GREATER_THAN",
+          threshold: 0,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ];
+      const edges = [
+        { id: "e1", source: "t1", target: "macd1" },
+        { id: "e2", source: "macd1", target: "cond1" },
+        { id: "e3", source: "cond1", target: "b1" },
+      ];
+      const build = makeBuild(nodes, edges);
+      const code = generateMQL5Code(build, "Test");
+      // MACD uses MainBuffer, not Buffer
+      expect(code).toContain("ind0MainBuffer");
+      expect(code).toContain("DoubleGT(ind0MainBuffer[0], 0)");
+    });
+
+    it("generates no condition when condition node has no connected source indicator", () => {
+      const nodes = [
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("cond1", "condition", {
+          category: "indicator",
+          indicatorType: "condition",
+          conditionType: "GREATER_THAN",
+          threshold: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ];
+      const edges = [
+        { id: "e1", source: "t1", target: "cond1" },
+        { id: "e2", source: "cond1", target: "b1" },
+      ];
+      const build = makeBuild(nodes, edges);
+      const code = generateMQL5Code(build, "Test");
+      // Should not crash, just skip the condition — no threshold comparison in buy/sell conditions
+      expect(code).toContain("void OnTick()");
+      expect(code).not.toContain("DoubleGT(ind");
+    });
+  });
 });

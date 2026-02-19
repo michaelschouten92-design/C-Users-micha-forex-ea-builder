@@ -6,6 +6,7 @@ import type {
   StopLossNodeData,
   TakeProfitNodeData,
   TimeExitNodeData,
+  ConditionNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe, getTimeframeEnum } from "../types";
@@ -550,7 +551,8 @@ export function generateEntryLogic(
   ctx: GeneratorContext,
   code: GeneratedCode,
   buyNode?: BuilderNode,
-  sellNode?: BuilderNode
+  sellNode?: BuilderNode,
+  edges: BuilderEdge[] = []
 ): void {
   code.onTick.push("");
   code.onTick.push("//--- Entry Logic");
@@ -868,6 +870,88 @@ export function generateEntryLogic(
               `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]) && DoubleLT(${varPrefix}SpanABuffer[${0 + s}], ${varPrefix}SpanBBuffer[${0 + s}]))`
             );
             break;
+
+          case "condition": {
+            // Condition node: compares a connected indicator's buffer against a threshold
+            const condData = indData as ConditionNodeData;
+            const threshold = condData.threshold;
+
+            // Find the connected source indicator via edges
+            const connEdge = edges.find((e) => e.target === indNode.id);
+            if (!connEdge) break;
+
+            const sourceInd = indicatorNodes.find((n) => n.id === connEdge.source);
+            if (!sourceInd) break;
+
+            const sourceIndex = indicatorNodes.indexOf(sourceInd);
+            const srcPrefix = `ind${sourceIndex}`;
+            const srcData = sourceInd.data;
+
+            // Determine the correct buffer name for the source indicator
+            let bufName = `${srcPrefix}Buffer`;
+            if ("indicatorType" in srcData) {
+              switch (srcData.indicatorType) {
+                case "macd":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "adx":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "stochastic":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "ichimoku":
+                  bufName = `${srcPrefix}TenkanBuffer`;
+                  break;
+                case "bollinger-bands":
+                  bufName = `${srcPrefix}MiddleBuffer`;
+                  break;
+              }
+            }
+
+            // Use the source indicator's signal mode for bar offset
+            const cs = "signalMode" in srcData && srcData.signalMode === "candle_close" ? 1 : 0;
+
+            switch (condData.conditionType) {
+              case "GREATER_THAN":
+                buyConditions.push(`(DoubleGT(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleLT(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "LESS_THAN":
+                buyConditions.push(`(DoubleLT(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleGT(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "GREATER_EQUAL":
+                buyConditions.push(`(DoubleGE(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleLE(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "LESS_EQUAL":
+                buyConditions.push(`(DoubleLE(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleGE(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "EQUAL":
+                buyConditions.push(`(MathAbs(${bufName}[${cs}] - ${threshold}) < 1e-8)`);
+                sellConditions.push(`(MathAbs(${bufName}[${cs}] - ${threshold}) < 1e-8)`);
+                break;
+              case "CROSSES_ABOVE":
+                buyConditions.push(
+                  `(DoubleLE(${bufName}[${1 + cs}], ${threshold}) && DoubleGT(${bufName}[${cs}], ${threshold}))`
+                );
+                sellConditions.push(
+                  `(DoubleGE(${bufName}[${1 + cs}], ${threshold}) && DoubleLT(${bufName}[${cs}], ${threshold}))`
+                );
+                break;
+              case "CROSSES_BELOW":
+                buyConditions.push(
+                  `(DoubleGE(${bufName}[${1 + cs}], ${threshold}) && DoubleLT(${bufName}[${cs}], ${threshold}))`
+                );
+                sellConditions.push(
+                  `(DoubleLE(${bufName}[${1 + cs}], ${threshold}) && DoubleGT(${bufName}[${cs}], ${threshold}))`
+                );
+                break;
+            }
+            break;
+          }
         }
       }
     });
