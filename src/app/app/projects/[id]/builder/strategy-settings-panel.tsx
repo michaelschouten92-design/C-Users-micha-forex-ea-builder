@@ -1,8 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { BuildJsonSettings } from "@/types/builder";
-import { PROP_FIRM_PRESETS } from "@/types/builder";
+import type { BuildJsonSettings, MultiPairSettings, PerSymbolOverride } from "@/types/builder";
+import { PROP_FIRM_PRESETS, DEFAULT_MULTI_PAIR } from "@/types/builder";
+
+const COMMON_FOREX_PAIRS = [
+  "EURUSD",
+  "GBPUSD",
+  "USDJPY",
+  "USDCHF",
+  "AUDUSD",
+  "NZDUSD",
+  "USDCAD",
+  "EURJPY",
+  "GBPJPY",
+  "EURGBP",
+];
 
 interface StrategySettingsPanelProps {
   settings: BuildJsonSettings;
@@ -12,10 +25,30 @@ interface StrategySettingsPanelProps {
 export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMultiPair, setShowMultiPair] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<string | null>(null);
+  const [newSymbol, setNewSymbol] = useState("");
 
   const update = (partial: Partial<BuildJsonSettings>) => {
     onChange({ ...settings, ...partial });
+  };
+
+  const mp = settings.multiPair ?? DEFAULT_MULTI_PAIR;
+  const updateMultiPair = (partial: Partial<MultiPairSettings>) => {
+    update({ multiPair: { ...mp, ...partial } });
+  };
+
+  const addSymbol = (sym: string) => {
+    const s = sym.trim().toUpperCase();
+    if (!s || mp.symbols.includes(s) || mp.symbols.length >= 10) return;
+    updateMultiPair({ symbols: [...mp.symbols, s] });
+  };
+
+  const removeSymbol = (sym: string) => {
+    updateMultiPair({
+      symbols: mp.symbols.filter((s) => s !== sym),
+      perSymbolOverrides: mp.perSymbolOverrides.filter((o) => o.symbol !== sym),
+    });
   };
 
   const applyPreset = (presetName: string) => {
@@ -330,6 +363,359 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                   onChange={(v) => update({ equityTargetPercent: v || undefined })}
                   hint="Stops trading when account equity grows by this % from starting balance"
                 />
+              </div>
+            )}
+          </div>
+
+          {/* Multi-Pair section */}
+          <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMultiPair(!showMultiPair);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#94A3B8] uppercase tracking-wide hover:text-[#CBD5E1] transition-colors"
+            >
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${showMultiPair ? "rotate-90" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              Multi-Pair
+              {mp.enabled && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#22D3EE]/20 text-[#22D3EE] border border-[#22D3EE]/30">
+                  ON
+                </span>
+              )}
+            </button>
+
+            {showMultiPair && (
+              <div className="mt-3 space-y-3">
+                {/* Enable toggle */}
+                <div>
+                  <label
+                    className="flex items-center gap-2 cursor-pointer"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={mp.enabled}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        updateMultiPair({ enabled: e.target.checked });
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+                    />
+                    <span className="text-xs font-medium text-[#CBD5E1]">
+                      Enable Multi-Pair Trading
+                    </span>
+                  </label>
+                  <p className="text-[10px] text-[#7C8DB0] mt-1 ml-6">
+                    Trade the same strategy across multiple currency pairs from one EA
+                  </p>
+                </div>
+
+                {mp.enabled && (
+                  <div className="space-y-3 pl-1">
+                    {/* Symbol picker */}
+                    <div>
+                      <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+                        Trading Symbols ({mp.symbols.length}/10)
+                      </label>
+                      {/* Quick-add common pairs */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {COMMON_FOREX_PAIRS.filter((p) => !mp.symbols.includes(p)).map((pair) => (
+                          <button
+                            key={pair}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addSymbol(pair);
+                            }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            disabled={mp.symbols.length >= 10}
+                            className="px-1.5 py-0.5 text-[9px] font-medium rounded border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.05)] text-[#94A3B8] hover:bg-[rgba(79,70,229,0.15)] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            + {pair}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Active symbols */}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {mp.symbols.map((sym) => (
+                          <span
+                            key={sym}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-full bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/40"
+                          >
+                            {sym}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeSymbol(sym);
+                              }}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              className="ml-0.5 text-[#A78BFA]/60 hover:text-red-400 transition-colors"
+                            >
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      {/* Custom symbol input */}
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={newSymbol}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setNewSymbol(e.target.value.toUpperCase());
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.stopPropagation();
+                              addSymbol(newSymbol);
+                              setNewSymbol("");
+                            }
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          placeholder="Custom symbol..."
+                          maxLength={12}
+                          className="flex-1 px-2 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#475569] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addSymbol(newSymbol);
+                            setNewSymbol("");
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          disabled={!newSymbol.trim() || mp.symbols.length >= 10}
+                          className="px-2.5 py-1.5 text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Position Limits */}
+                    <SettingsNumberField
+                      label="Max Positions Per Pair"
+                      value={mp.maxPositionsPerPair}
+                      min={1}
+                      max={20}
+                      step={1}
+                      onChange={(v) => updateMultiPair({ maxPositionsPerPair: v })}
+                      hint="Maximum concurrent positions allowed per symbol"
+                    />
+
+                    <SettingsNumberField
+                      label="Max Total Positions"
+                      value={mp.maxTotalPositions}
+                      min={1}
+                      max={100}
+                      step={1}
+                      onChange={(v) => updateMultiPair({ maxTotalPositions: v })}
+                      hint="Maximum concurrent positions across all symbols combined"
+                    />
+
+                    {/* Per-Symbol Overrides */}
+                    {mp.symbols.length > 0 && (
+                      <div>
+                        <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+                          Per-Symbol Overrides
+                        </label>
+                        <p className="text-[10px] text-[#7C8DB0] mb-2">
+                          Optionally customize lot size or risk% for individual pairs
+                        </p>
+                        <div className="space-y-1.5">
+                          {mp.symbols.map((sym) => {
+                            const override = mp.perSymbolOverrides.find((o) => o.symbol === sym);
+                            const isOverridden = !!override;
+                            return (
+                              <div
+                                key={sym}
+                                className="rounded-lg border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.03)]"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isOverridden) {
+                                      updateMultiPair({
+                                        perSymbolOverrides: mp.perSymbolOverrides.filter(
+                                          (o) => o.symbol !== sym
+                                        ),
+                                      });
+                                    } else {
+                                      updateMultiPair({
+                                        perSymbolOverrides: [
+                                          ...mp.perSymbolOverrides,
+                                          { symbol: sym, enabled: true },
+                                        ],
+                                      });
+                                    }
+                                  }}
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  className="w-full flex items-center justify-between px-2.5 py-1.5 text-[10px]"
+                                >
+                                  <span
+                                    className={`font-medium ${isOverridden ? "text-[#A78BFA]" : "text-[#7C8DB0]"}`}
+                                  >
+                                    {sym}
+                                  </span>
+                                  <span className="text-[#475569]">
+                                    {isOverridden ? "Customized" : "Default"}
+                                  </span>
+                                </button>
+                                {isOverridden && override && (
+                                  <div className="px-2.5 pb-2 space-y-1.5">
+                                    <div className="flex gap-2">
+                                      <div className="flex-1">
+                                        <label className="block text-[9px] text-[#7C8DB0] mb-0.5">
+                                          Lot Size
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={override.lotSizeOverride ?? ""}
+                                          min={0.01}
+                                          max={100}
+                                          step={0.01}
+                                          placeholder="Default"
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const val = parseFloat(e.target.value);
+                                            updateMultiPair({
+                                              perSymbolOverrides: mp.perSymbolOverrides.map((o) =>
+                                                o.symbol === sym
+                                                  ? {
+                                                      ...o,
+                                                      lotSizeOverride: isNaN(val) ? undefined : val,
+                                                    }
+                                                  : o
+                                              ),
+                                            });
+                                          }}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                                        />
+                                      </div>
+                                      <div className="flex-1">
+                                        <label className="block text-[9px] text-[#7C8DB0] mb-0.5">
+                                          Risk %
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={override.riskPercentOverride ?? ""}
+                                          min={0.1}
+                                          max={100}
+                                          step={0.1}
+                                          placeholder="Default"
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            const val = parseFloat(e.target.value);
+                                            updateMultiPair({
+                                              perSymbolOverrides: mp.perSymbolOverrides.map((o) =>
+                                                o.symbol === sym
+                                                  ? {
+                                                      ...o,
+                                                      riskPercentOverride: isNaN(val)
+                                                        ? undefined
+                                                        : val,
+                                                    }
+                                                  : o
+                                              ),
+                                            });
+                                          }}
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded text-white focus:ring-1 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Correlation Filter */}
+                    <div>
+                      <label
+                        className="flex items-center gap-2 cursor-pointer"
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={mp.correlationFilter}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateMultiPair({ correlationFilter: e.target.checked });
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+                        />
+                        <span className="text-xs font-medium text-[#CBD5E1]">
+                          Correlation Filter
+                        </span>
+                      </label>
+                      <p className="text-[10px] text-[#7C8DB0] mt-1 ml-6">
+                        Skip entries when two pairs are highly correlated to reduce exposure
+                      </p>
+                    </div>
+                    {mp.correlationFilter && (
+                      <div className="pl-6 space-y-2">
+                        <div>
+                          <label className="block text-[10px] text-[#7C8DB0] mb-0.5">
+                            Threshold: {mp.correlationThreshold.toFixed(2)}
+                          </label>
+                          <input
+                            type="range"
+                            min={0.5}
+                            max={0.99}
+                            step={0.01}
+                            value={mp.correlationThreshold}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateMultiPair({ correlationThreshold: parseFloat(e.target.value) });
+                            }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            className="w-full h-1.5 rounded-lg appearance-none bg-[#1E293B] accent-[#4F46E5]"
+                          />
+                        </div>
+                        <SettingsNumberField
+                          label="Lookback Period (bars)"
+                          value={mp.correlationPeriod}
+                          min={10}
+                          max={500}
+                          step={10}
+                          onChange={(v) => updateMultiPair({ correlationPeriod: v })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

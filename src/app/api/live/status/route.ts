@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
 
@@ -12,8 +12,13 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
+    const modeFilter = request.nextUrl.searchParams.get("mode");
+
     const eaInstances = await prisma.liveEAInstance.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        ...(modeFilter === "LIVE" || modeFilter === "PAPER" ? { mode: modeFilter } : {}),
+      },
       orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
       include: {
         trades: {
@@ -37,6 +42,7 @@ export async function GET(): Promise<NextResponse> {
       broker: ea.broker,
       accountNumber: ea.accountNumber,
       status: ea.status,
+      mode: ea.mode,
       lastHeartbeat: ea.lastHeartbeat?.toISOString() ?? null,
       lastError: ea.lastError,
       balance: ea.balance,

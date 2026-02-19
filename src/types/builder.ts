@@ -836,14 +836,25 @@ export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
 
 // ============================================
-// MULTI-PAIR SETTINGS (future feature scaffold)
+// MULTI-PAIR SETTINGS
 // ============================================
+
+export interface PerSymbolOverride {
+  symbol: string;
+  lotSizeOverride?: number;
+  riskPercentOverride?: number;
+  enabled: boolean;
+}
 
 export interface MultiPairSettings {
   enabled: boolean;
   symbols: string[]; // e.g., ["EURUSD", "GBPUSD", "USDJPY"]
+  perSymbolOverrides: PerSymbolOverride[];
   correlationFilter: boolean;
+  correlationThreshold: number; // 0.0-1.0
+  correlationPeriod: number; // lookback bars
   maxTotalPositions: number;
+  maxPositionsPerPair: number;
 }
 
 // ============================================
@@ -925,6 +936,17 @@ export function generateMagicNumber(): number {
   return Math.floor(Math.random() * 900000) + 100000;
 }
 
+export const DEFAULT_MULTI_PAIR: MultiPairSettings = {
+  enabled: false,
+  symbols: ["EURUSD", "GBPUSD", "USDJPY"],
+  perSymbolOverrides: [],
+  correlationFilter: false,
+  correlationThreshold: 0.7,
+  correlationPeriod: 50,
+  maxTotalPositions: 6,
+  maxPositionsPerPair: 2,
+};
+
 export const DEFAULT_SETTINGS: BuildJsonSettings = {
   magicNumber: 123456,
   comment: "EA Builder Strategy",
@@ -933,6 +955,7 @@ export const DEFAULT_SETTINGS: BuildJsonSettings = {
   maxTradesPerDay: 0,
   maxDailyProfitPercent: 0,
   maxDailyLossPercent: 0,
+  multiPair: DEFAULT_MULTI_PAIR,
 };
 
 export const DEFAULT_BUILD_JSON: BuildJsonSchema = {

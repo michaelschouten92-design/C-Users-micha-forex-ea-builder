@@ -22,6 +22,14 @@ export interface GeneratorContext {
   maxTotalDrawdownPercent: number;
   equityTargetPercent: number;
   maxSlippage: number;
+  /** Symbol variable name in generated MQL code. Defaults to "_Symbol", becomes "tradeSym" in multi-pair mode. */
+  symbolVar: string;
+  /** Whether multi-pair mode is enabled */
+  multiPairEnabled: boolean;
+  /** Max positions per pair in multi-pair mode */
+  maxPositionsPerPair: number;
+  /** Max total positions across all pairs in multi-pair mode */
+  maxTotalPositions: number;
 }
 
 export interface IndicatorVariable {

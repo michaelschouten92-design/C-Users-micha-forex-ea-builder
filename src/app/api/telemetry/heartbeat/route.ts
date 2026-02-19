@@ -17,6 +17,7 @@ const heartbeatSchema = z.object({
   totalProfit: z.number().finite().default(0),
   drawdown: z.number().finite().min(0).max(100).default(0),
   spread: z.number().finite().min(0).max(10000).default(0),
+  mode: z.enum(["LIVE", "PAPER"]).optional(),
 });
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
           timeframe: data.timeframe ?? undefined,
           broker: data.broker ?? undefined,
           accountNumber: data.accountNumber ?? undefined,
+          mode: data.mode === "PAPER" ? "PAPER" : undefined,
           balance: data.balance,
           equity: data.equity,
           openTrades: data.openTrades,

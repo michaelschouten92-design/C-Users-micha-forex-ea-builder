@@ -113,7 +113,10 @@ function buildSendHeartbeatMQL4(): string {
       }
    }
 
+   string accMode = IsDemo() ? "PAPER" : "LIVE";
+
    string json = "{"
+      + TelemetryJsonPair("mode", accMode) + ","
       + TelemetryJsonPair("symbol", Symbol()) + ","
       + TelemetryJsonPair("timeframe", EnumToString((ENUM_TIMEFRAMES)Period())) + ","
       + TelemetryJsonPair("broker", AccountCompany()) + ","
@@ -146,7 +149,10 @@ function buildSendTradeUpdateMQL4(): string {
 
       string dealType = (OrderType() == OP_BUY) ? "BUY" : "SELL";
 
+      string accMode = IsDemo() ? "PAPER" : "LIVE";
+
       string json = "{"
+         + TelemetryJsonPair("mode", accMode) + ","
          + TelemetryJsonPair("ticket", IntegerToString(OrderTicket())) + ","
          + TelemetryJsonPair("symbol", OrderSymbol()) + ","
          + TelemetryJsonPair("type", dealType) + ","

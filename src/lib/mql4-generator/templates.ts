@@ -105,6 +105,31 @@ ${variables.join("\n")}
 }
 
 export function generateOnInit(ctx: GeneratorContext, initCode: string[]): string {
+  if (ctx.multiPairEnabled) {
+    return `//+------------------------------------------------------------------+
+//| Expert initialization function                                     |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   //--- Validate trading is allowed
+   if(!IsTradeAllowed())
+   {
+      Print("Trading is not allowed for this account/symbol");
+      return(INIT_FAILED);
+   }
+
+${initCode.map((line) => "   " + line).join("\n")}
+
+   //--- Display strategy info on chart
+   ShowStrategyOverlay();
+
+   Print("${ctx.projectName} multi-pair EA initialized: ", g_symbolCount, " symbols");
+   return(INIT_SUCCEEDED);
+}
+
+`;
+  }
+
   return `//+------------------------------------------------------------------+
 //| Expert initialization function                                     |
 //+------------------------------------------------------------------+
@@ -319,6 +344,16 @@ export function generateOnTick(
 `;
   }
 
+  if (ctx.multiPairEnabled) {
+    return generateOnTickMultiPair(ctx, tickCode, maxIndicatorPeriod, {
+      dailyPnlCode,
+      totalDrawdownCode,
+      equityTargetCode,
+      cooldownCode,
+      minBarsCode,
+    });
+  }
+
   return `//+------------------------------------------------------------------+
 //| Expert tick function                                               |
 //+------------------------------------------------------------------+
@@ -351,7 +386,93 @@ ${tickCode.map((line) => "   " + line).join("\n")}
 `;
 }
 
-export function generateHelperFunctions(_ctx: GeneratorContext): string {
+interface RiskManagementCode {
+  dailyPnlCode: string;
+  totalDrawdownCode: string;
+  equityTargetCode: string;
+  cooldownCode: string;
+  minBarsCode: string;
+}
+
+/**
+ * Multi-pair OnTick: symbol loop wraps the per-symbol trading logic.
+ * Risk management operates globally (all symbols), while entry/exit logic runs per symbol.
+ * MQL4 uses OrdersTotal()/OrderSelect() and iMA(sym,...) instead of handle-based indicators.
+ */
+function generateOnTickMultiPair(
+  _ctx: GeneratorContext,
+  tickCode: string[],
+  maxIndicatorPeriod: number,
+  riskMgmt: RiskManagementCode
+): string {
+  // For multi-pair, the daily P&L and cooldown code must NOT filter by Symbol()
+  // (they should check all symbols for this magic number)
+  const mpDailyPnl = riskMgmt.dailyPnlCode
+    .replace(/if\(OrderSymbol\(\) != Symbol\(\)\) continue;\n\s*/g, "")
+    .replace(/\bCloseAllPositions\(\)/g, "CloseAllPositionsGlobal()");
+  const mpDrawdown = riskMgmt.totalDrawdownCode.replace(
+    /\bCloseAllPositions\(\)/g,
+    "CloseAllPositionsGlobal()"
+  );
+  const mpEquity = riskMgmt.equityTargetCode.replace(
+    /\bCloseAllPositions\(\)/g,
+    "CloseAllPositionsGlobal()"
+  );
+  const mpCooldown = riskMgmt.cooldownCode.replace(
+    /if\(OrderSymbol\(\) != Symbol\(\)\) continue;\n\s*/g,
+    ""
+  );
+
+  const minBars = Math.max(maxIndicatorPeriod * 3, 100);
+
+  return `//+------------------------------------------------------------------+
+//| Expert tick function                                               |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   //--- Check if trading is allowed
+   if(!IsTradeAllowed()) return;
+
+   //--- Check for new bar (using chart symbol)
+   static datetime lastBarTime = 0;
+   datetime currentBarTime = iTime(Symbol(), PERIOD_CURRENT, 0);
+   bool isNewBar = (currentBarTime != lastBarTime);
+   if(isNewBar) lastBarTime = currentBarTime;
+
+${mpDrawdown}${mpEquity}${mpDailyPnl}${mpCooldown}${riskMgmt.minBarsCode}
+   //--- Multi-Pair: Loop over all configured symbols
+   for(int sym = 0; sym < g_symbolCount; sym++)
+   {
+      string tradeSym = g_symbols[sym];
+      double symPoint = MarketInfo(tradeSym, MODE_POINT);
+      int symDigits = (int)MarketInfo(tradeSym, MODE_DIGITS);
+      int symPipFactor = (symDigits == 3 || symDigits == 5) ? 10 : 1;
+
+      //--- Check minimum bars for this symbol
+      if(iBars(tradeSym, PERIOD_CURRENT) < ${minBars}) continue;
+
+      //--- Per-pair position limit
+      int positionsCount = CountPositions(tradeSym);
+      if(positionsCount >= InpMaxPerPair) continue;
+
+      //--- Total position limit
+      if(CountAllOrders() >= InpMaxTotalPositions) continue;
+
+${tickCode.map((line) => "      " + line).join("\n")}
+   }
+}
+
+`;
+}
+
+export function generateHelperFunctions(ctx: GeneratorContext): string {
+  const coreFunctions = ctx.multiPairEnabled
+    ? generateHelperFunctionsMultiPair()
+    : generateHelperFunctionsSinglePair();
+  return coreFunctions + "\n\n" + generateSharedHelperFunctions();
+}
+
+function generateHelperFunctionsSinglePair(): string {
   return `//+------------------------------------------------------------------+
 //| Count positions for this EA                                        |
 //+------------------------------------------------------------------+
@@ -571,9 +692,264 @@ double CalculateLotSize(double riskPercent, double slPips)
    int lotDigits = (int)MathMax(-MathLog10(lotStep), 0);
 
    return NormalizeDouble(lots, lotDigits);
+}`;
+}
+
+/**
+ * Multi-pair helper functions: all accept `string sym` as first parameter.
+ * Used when ctx.multiPairEnabled is true.
+ * MQL4 uses OrdersTotal()/OrderSelect() and MarketInfo() instead of MQL5 equivalents.
+ */
+function generateHelperFunctionsMultiPair(): string {
+  return `//+------------------------------------------------------------------+
+//| Count positions for a specific symbol                              |
+//+------------------------------------------------------------------+
+int CountPositions(string sym)
+{
+   int count = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == sym && OrderType() <= OP_SELL)
+         count++;
+   }
+   return count;
 }
 
 //+------------------------------------------------------------------+
+//| Count positions by type for a specific symbol                      |
+//+------------------------------------------------------------------+
+int CountPositionsByType(string sym, int posType)
+{
+   int count = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == sym && OrderType() == posType)
+         count++;
+   }
+   return count;
+}
+
+//+------------------------------------------------------------------+
+//| Open Buy Position on a specific symbol                             |
+//+------------------------------------------------------------------+
+bool OpenBuy(string sym, double lots, double sl = 0, double tp = 0)
+{
+   double symPoint = MarketInfo(sym, MODE_POINT);
+   int symDigits = (int)MarketInfo(sym, MODE_DIGITS);
+
+   //--- Pre-trade margin check
+   double marginRequired = lots * MarketInfo(sym, MODE_MARGINREQUIRED);
+   if(marginRequired > AccountFreeMargin())
+   {
+      Print("OpenBuy ", sym, ": insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+            " Free: ", DoubleToString(AccountFreeMargin(), 2));
+      return false;
+   }
+
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      RefreshRates();
+      double askPrice = MarketInfo(sym, MODE_ASK);
+      double slPrice = (sl > 0) ? NormalizeDouble(askPrice - sl * symPoint, symDigits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(askPrice + tp * symPoint, symDigits) : 0;
+
+      int ticket = OrderSend(sym, OP_BUY, lots, askPrice, InpMaxSlippage, slPrice, tpPrice, InpTradeComment, InpMagicNumber, 0, clrGreen);
+      if(ticket > 0) return true;
+
+      int err = GetLastError();
+      //--- Retryable errors
+      if(err == ERR_REQUOTE || err == ERR_PRICE_CHANGED || err == ERR_OFF_QUOTES)
+      {
+         Print("OpenBuy ", sym, " retry ", attempt + 1, "/", retries, ": error ", err);
+         Sleep(200 * (attempt + 1));
+         continue;
+      }
+      //--- Non-retryable errors
+      if(err == ERR_NOT_ENOUGH_MONEY)
+         Print("OpenBuy ", sym, ": insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(err == ERR_INVALID_TRADE_VOLUME)
+         Print("OpenBuy ", sym, ": invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(MarketInfo(sym, MODE_MINLOT), 2),
+               " max=", DoubleToString(MarketInfo(sym, MODE_MAXLOT), 2), ")");
+      else
+         Print("OpenBuy ", sym, " failed: error ", err);
+      return false;
+   }
+   Print("OpenBuy ", sym, " failed after ", retries, " retries");
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Open Sell Position on a specific symbol                            |
+//+------------------------------------------------------------------+
+bool OpenSell(string sym, double lots, double sl = 0, double tp = 0)
+{
+   double symPoint = MarketInfo(sym, MODE_POINT);
+   int symDigits = (int)MarketInfo(sym, MODE_DIGITS);
+
+   //--- Pre-trade margin check
+   double marginRequired = lots * MarketInfo(sym, MODE_MARGINREQUIRED);
+   if(marginRequired > AccountFreeMargin())
+   {
+      Print("OpenSell ", sym, ": insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+            " Free: ", DoubleToString(AccountFreeMargin(), 2));
+      return false;
+   }
+
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      RefreshRates();
+      double bidPrice = MarketInfo(sym, MODE_BID);
+      double slPrice = (sl > 0) ? NormalizeDouble(bidPrice + sl * symPoint, symDigits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(bidPrice - tp * symPoint, symDigits) : 0;
+
+      int ticket = OrderSend(sym, OP_SELL, lots, bidPrice, InpMaxSlippage, slPrice, tpPrice, InpTradeComment, InpMagicNumber, 0, clrRed);
+      if(ticket > 0) return true;
+
+      int err = GetLastError();
+      //--- Retryable errors
+      if(err == ERR_REQUOTE || err == ERR_PRICE_CHANGED || err == ERR_OFF_QUOTES)
+      {
+         Print("OpenSell ", sym, " retry ", attempt + 1, "/", retries, ": error ", err);
+         Sleep(200 * (attempt + 1));
+         continue;
+      }
+      //--- Non-retryable errors
+      if(err == ERR_NOT_ENOUGH_MONEY)
+         Print("OpenSell ", sym, ": insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(err == ERR_INVALID_TRADE_VOLUME)
+         Print("OpenSell ", sym, ": invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(MarketInfo(sym, MODE_MINLOT), 2),
+               " max=", DoubleToString(MarketInfo(sym, MODE_MAXLOT), 2), ")");
+      else
+         Print("OpenSell ", sym, " failed: error ", err);
+      return false;
+   }
+   Print("OpenSell ", sym, " failed after ", retries, " retries");
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Close All Positions for a specific symbol                          |
+//+------------------------------------------------------------------+
+void CloseAllPositions(string sym)
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != sym) continue;
+      if(OrderType() == OP_BUY)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(sym, MODE_BID), InpMaxSlippage, clrGreen);
+      else if(OrderType() == OP_SELL)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(sym, MODE_ASK), InpMaxSlippage, clrRed);
+      else
+         OrderDelete(OrderTicket());
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close ALL positions across all symbols (for risk management)       |
+//+------------------------------------------------------------------+
+void CloseAllPositionsGlobal()
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() != InpMagicNumber) continue;
+      string orderSym = OrderSymbol();
+      if(OrderType() == OP_BUY)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(orderSym, MODE_BID), InpMaxSlippage, clrGreen);
+      else if(OrderType() == OP_SELL)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(orderSym, MODE_ASK), InpMaxSlippage, clrRed);
+      else
+         OrderDelete(OrderTicket());
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close Buy Positions for a specific symbol                          |
+//+------------------------------------------------------------------+
+void CloseBuyPositions(string sym)
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != sym) continue;
+      if(OrderType() == OP_BUY)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(sym, MODE_BID), InpMaxSlippage, clrGreen);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close Sell Positions for a specific symbol                         |
+//+------------------------------------------------------------------+
+void CloseSellPositions(string sym)
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+      if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != sym) continue;
+      if(OrderType() == OP_SELL)
+         OrderClose(OrderTicket(), OrderLots(), MarketInfo(sym, MODE_ASK), InpMaxSlippage, clrRed);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate Lot Size for a specific symbol                           |
+//+------------------------------------------------------------------+
+double CalculateLotSize(string sym, double riskPercent, double slPips)
+{
+   double symPoint = MarketInfo(sym, MODE_POINT);
+   double minLot = MarketInfo(sym, MODE_MINLOT);
+   if(slPips <= 0)
+   {
+      Print("WARNING: CalculateLotSize called with slPips=0 on ", sym, ", using minimum lot.");
+      return minLot;
+   }
+
+   if(minLot <= 0)
+   {
+      Print("WARNING: MODE_MINLOT is 0 for ", sym, ", defaulting to 0.01");
+      minLot = 0.01;
+   }
+
+   double balance = InpUseEquityForRisk ? AccountEquity() : AccountBalance();
+   if(balance <= 0)
+   {
+      Print("WARNING: Account balance/equity is 0, using minimum lot.");
+      return minLot;
+   }
+
+   double tickValue = MarketInfo(sym, MODE_TICKVALUE);
+   double tickSize = MarketInfo(sym, MODE_TICKSIZE);
+   double lotStep = MarketInfo(sym, MODE_LOTSTEP);
+   double maxLot = MarketInfo(sym, MODE_MAXLOT);
+
+   double pipValue = (tickSize > 0) ? tickValue * (symPoint / tickSize) : 0;
+   if(pipValue <= 0)
+   {
+      Print("WARNING: Pip value is 0 for ", sym, ", using minimum lot.");
+      return minLot;
+   }
+
+   double riskAmount = balance * riskPercent / 100.0;
+   double lots = riskAmount / (slPips * pipValue);
+
+   //--- Normalize lot size
+   lots = MathFloor(lots / lotStep) * lotStep;
+   lots = MathMax(minLot, MathMin(maxLot, lots));
+   int lotDigits = (int)MathMax(-MathLog10(lotStep), 0);
+
+   return NormalizeDouble(lots, lotDigits);
+}`;
+}
+
+function generateSharedHelperFunctions(): string {
+  return `//+------------------------------------------------------------------+
 //| Epsilon-safe double comparisons                                    |
 //+------------------------------------------------------------------+
 bool DoubleGT(double a, double b)  { return (a - b) >  1e-10; }

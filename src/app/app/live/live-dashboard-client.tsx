@@ -16,6 +16,7 @@ interface EAInstanceData {
   broker: string | null;
   accountNumber: string | null;
   status: "ONLINE" | "OFFLINE" | "ERROR";
+  mode: "LIVE" | "PAPER";
   lastHeartbeat: string | null;
   lastError: string | null;
   balance: number | null;
@@ -209,7 +210,7 @@ function EACard({ ea, statusChanged }: { ea: EAInstanceData; statusChanged: bool
         statusChanged
           ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
           : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
-      }`}
+      } ${ea.mode === "PAPER" ? "border-l-2 border-l-[#F59E0B]" : ""}`}
     >
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
@@ -234,7 +235,14 @@ function EACard({ ea, statusChanged }: { ea: EAInstanceData; statusChanged: bool
             )}
           </div>
         </div>
-        <StatusBadge status={ea.status} animate={statusChanged} />
+        <div className="flex items-center gap-2">
+          <StatusBadge status={ea.status} animate={statusChanged} />
+          {ea.mode === "PAPER" && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+              Paper
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Financial Metrics */}
@@ -353,6 +361,31 @@ function ConnectionIndicator({
 }
 
 // ============================================
+// SUMMARY CARD
+// ============================================
+
+function SummaryCard({
+  label,
+  value,
+  isCurrency = true,
+}: {
+  label: string;
+  value: number;
+  isCurrency?: boolean;
+}) {
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">{label}</p>
+      <p
+        className={`text-lg font-semibold ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
+      >
+        {isCurrency ? formatCurrency(value) : value}
+      </p>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -363,6 +396,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
   const [soundAlerts, setSoundAlerts] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
+  const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
 
   // Initialize previous data
@@ -447,6 +481,25 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Mode filter */}
+          <div className="flex items-center rounded-lg border border-[rgba(79,70,229,0.2)] overflow-hidden">
+            {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setModeFilter(mode)}
+                className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  modeFilter === mode
+                    ? mode === "PAPER"
+                      ? "bg-[#F59E0B]/20 text-[#F59E0B]"
+                      : "bg-[#4F46E5]/20 text-[#A78BFA]"
+                    : "text-[#7C8DB0] hover:text-white"
+                }`}
+              >
+                {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
+              </button>
+            ))}
+          </div>
+
           {/* Connection indicator */}
           <ConnectionIndicator autoRefresh={autoRefresh} lastUpdated={lastUpdated} />
 
@@ -525,6 +578,84 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
         </div>
       </div>
 
+      {/* Portfolio Summary */}
+      {eaInstances.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <SummaryCard
+              label="Live P&L"
+              value={eaInstances
+                .filter((ea) => ea.mode === "LIVE")
+                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
+            />
+            <SummaryCard
+              label="Paper P&L"
+              value={eaInstances
+                .filter((ea) => ea.mode === "PAPER")
+                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
+            />
+            <SummaryCard
+              label="Total Trades"
+              value={eaInstances.reduce((sum, ea) => sum + ea.totalTrades, 0)}
+              isCurrency={false}
+            />
+            <SummaryCard
+              label="Open Trades"
+              value={eaInstances.reduce((sum, ea) => sum + ea.openTrades, 0)}
+              isCurrency={false}
+            />
+          </div>
+
+          {/* Per-Symbol Breakdown */}
+          {(() => {
+            const symbolMap = new Map<string, { pnl: number; count: number; openTrades: number }>();
+            const filtered =
+              modeFilter === "ALL"
+                ? eaInstances
+                : eaInstances.filter((ea) => ea.mode === modeFilter);
+            for (const ea of filtered) {
+              const sym = ea.symbol || "Unknown";
+              const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
+              existing.pnl += ea.totalProfit;
+              existing.count += 1;
+              existing.openTrades += ea.openTrades;
+              symbolMap.set(sym, existing);
+            }
+            if (symbolMap.size <= 1) return null;
+            const entries = Array.from(symbolMap.entries()).sort(
+              (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
+            );
+            return (
+              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
+                  Per-Symbol Breakdown
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {entries.map(([sym, data]) => (
+                    <div
+                      key={sym}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
+                    >
+                      <div>
+                        <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
+                        <span className="text-[9px] text-[#7C8DB0] ml-1.5">
+                          {data.count} EA{data.count > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs font-semibold ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                      >
+                        {formatCurrency(data.pnl)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
@@ -557,7 +688,10 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {eaInstances.map((ea) => (
+          {(modeFilter === "ALL"
+            ? eaInstances
+            : eaInstances.filter((ea) => ea.mode === modeFilter)
+          ).map((ea) => (
             <EACard key={ea.id} ea={ea} statusChanged={changedIds.has(ea.id)} />
           ))}
         </div>

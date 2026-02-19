@@ -14,6 +14,7 @@ const tradeSchema = z.object({
   profit: z.number().finite().default(0),
   openTime: z.string().or(z.number()),
   closeTime: z.string().or(z.number()).nullable().optional(),
+  mode: z.string().max(16).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -50,11 +51,13 @@ export async function POST(request: NextRequest) {
         profit,
         openTime: new Date(openTime),
         closeTime: closeTime ? new Date(closeTime) : null,
+        mode: parsed.data.mode ?? null,
       },
       update: {
         closePrice: closePrice != null ? closePrice : undefined,
         profit,
         closeTime: closeTime ? new Date(closeTime) : undefined,
+        mode: parsed.data.mode ?? undefined,
       },
     });
 

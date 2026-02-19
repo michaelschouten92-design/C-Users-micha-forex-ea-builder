@@ -46,6 +46,7 @@ import {
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
 import { generateTelemetryCode, type TelemetryConfig } from "./generators/telemetry";
+import { transformCodeForMultiPair } from "./generators/multi-pair";
 
 // Helper function to get all connected node IDs starting from source nodes
 function getConnectedNodeIds(
@@ -897,6 +898,10 @@ export function generateMQL4Code(
     maxTotalDrawdownPercent: buildJson.settings?.maxTotalDrawdownPercent ?? 0,
     equityTargetPercent: buildJson.settings?.equityTargetPercent ?? 0,
     maxSlippage: buildJson.settings?.maxSlippage ?? 10,
+    symbolVar: buildJson.settings?.multiPair?.enabled ? "tradeSym" : "Symbol()",
+    multiPairEnabled: buildJson.settings?.multiPair?.enabled ?? false,
+    maxPositionsPerPair: buildJson.settings?.multiPair?.maxPositionsPerPair ?? 1,
+    maxTotalPositions: buildJson.settings?.multiPair?.maxTotalPositions ?? 10,
   };
 
   const descValue = sanitizeMQL4String(projectName);
@@ -1435,6 +1440,12 @@ export function generateMQL4Code(
   // Generate telemetry code (live EA tracking)
   if (telemetry) {
     generateTelemetryCode(code, telemetry);
+  }
+
+  // Multi-Pair: transform generated code for multi-symbol trading
+  // Must run after all sub-generators but before final assembly
+  if (ctx.multiPairEnabled && buildJson.settings?.multiPair) {
+    transformCodeForMultiPair(buildJson.settings.multiPair, code, ctx);
   }
 
   // Assemble final code (array join avoids repeated string allocation)

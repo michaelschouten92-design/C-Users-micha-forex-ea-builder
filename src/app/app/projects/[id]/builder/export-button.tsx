@@ -60,6 +60,7 @@ export function ExportButton({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [paperMode, setPaperMode] = useState(false);
 
   useEffect(() => {
     if (!showModal) return;
@@ -118,7 +119,11 @@ export function ExportButton({
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ exportType: selectedFormat, magicNumber: configMagicNumber }),
+        body: JSON.stringify({
+          exportType: selectedFormat,
+          magicNumber: configMagicNumber,
+          paperMode,
+        }),
         signal: controller.signal,
       });
 
@@ -604,6 +609,39 @@ export function ExportButton({
                       </button>
                     </div>
                   </div>
+                  {/* Paper Trading Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-[rgba(245,158,11,0.05)] border border-[rgba(245,158,11,0.2)] rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-white">Paper Trading Mode</p>
+                      <p className="text-xs text-[#7C8DB0] mt-0.5">
+                        Tags this EA for demo account deployment. Results tracked separately.
+                      </p>
+                    </div>
+                    <label
+                      className="relative inline-flex items-center cursor-pointer"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={paperMode}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setPaperMode(e.target.checked);
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-[#1E293B] peer-focus:ring-2 peer-focus:ring-[#F59E0B]/30 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#7C8DB0] after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#F59E0B]/30 peer-checked:after:bg-[#F59E0B]" />
+                    </label>
+                  </div>
+                  {paperMode && (
+                    <div className="bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] rounded-lg p-3">
+                      <p className="text-xs text-[#F59E0B]">
+                        Deploy this EA on a DEMO account. It will automatically detect the account
+                        type and tag all trades as paper trades.
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => {
                       setShowConfig(false);

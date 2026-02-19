@@ -119,7 +119,11 @@ function buildSendHeartbeatMQL5(): string {
       }
    }
 
+   ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+   string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
+
    string json = "{"
+      + TelemetryJsonPair("mode", accMode) + ","
       + TelemetryJsonPair("symbol", _Symbol) + ","
       + TelemetryJsonPair("timeframe", EnumToString((ENUM_TIMEFRAMES)Period())) + ","
       + TelemetryJsonPair("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
@@ -154,7 +158,11 @@ function buildSendTradeUpdateMQL5(): string {
 
       string dealType = (HistoryDealGetInteger(dTicket, DEAL_TYPE) == DEAL_TYPE_BUY) ? "BUY" : "SELL";
 
+      ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+      string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
+
       string json = "{"
+         + TelemetryJsonPair("mode", accMode) + ","
          + TelemetryJsonPair("ticket", IntegerToString(dTicket)) + ","
          + TelemetryJsonPair("symbol", HistoryDealGetString(dTicket, DEAL_SYMBOL)) + ","
          + TelemetryJsonPair("type", dealType) + ","

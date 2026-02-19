@@ -40,6 +40,11 @@ enum EAStatus {
   ERROR
 }
 
+enum EAMode {
+  LIVE
+  PAPER
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -296,6 +301,7 @@ model LiveEAInstance {
   broker        String?
   accountNumber String?
   status        EAStatus  @default(OFFLINE)
+  mode          EAMode    @default(LIVE)
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
@@ -347,6 +353,7 @@ model EATrade {
   profit      Float    @default(0)
   openTime    DateTime
   closeTime   DateTime?
+  mode        String?   // "LIVE" | "PAPER"
   createdAt   DateTime @default(now())
 
   instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)

@@ -107,6 +107,30 @@ ${variables.join("\n")}
 }
 
 export function generateOnInit(ctx: GeneratorContext, initCode: string[]): string {
+  if (ctx.multiPairEnabled) {
+    return `//+------------------------------------------------------------------+
+//| Expert initialization function                                     |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   //--- Set magic number for trade operations
+   trade.SetExpertMagicNumber(InpMagicNumber);
+
+   //--- Set allowed slippage
+   trade.SetDeviationInPoints(InpMaxSlippage);
+
+${initCode.map((line) => "   " + line).join("\n")}
+
+   //--- Display strategy info on chart
+   ShowStrategyOverlay();
+
+   Print("${ctx.projectName} multi-pair EA initialized: ", g_symbolCount, " symbols");
+   return(INIT_SUCCEEDED);
+}
+
+`;
+  }
+
   return `//+------------------------------------------------------------------+
 //| Expert initialization function                                     |
 //+------------------------------------------------------------------+
@@ -179,7 +203,130 @@ export function generateOnTick(
   tickCode: string[],
   maxIndicatorPeriod: number = 0
 ): string {
-  // Build daily P&L check code if enabled
+  // Build risk management code blocks (shared between single-pair and multi-pair)
+  const riskMgmt = buildRiskManagementCode(ctx);
+
+  if (ctx.multiPairEnabled) {
+    return generateOnTickMultiPair(ctx, tickCode, maxIndicatorPeriod, riskMgmt);
+  }
+
+  return `//+------------------------------------------------------------------+
+//| Expert tick function                                               |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   //--- Check if trading is allowed
+   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED)) return;
+   if(!MQLInfoInteger(MQL_TRADE_ALLOWED)) return;
+
+   //--- Check for new bar (optional: only trade on new bars)
+   static datetime lastBarTime = 0;
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   bool isNewBar = (currentBarTime != lastBarTime);
+   if(isNewBar) lastBarTime = currentBarTime;
+
+   //--- Check minimum bars available
+   if(Bars(_Symbol, PERIOD_CURRENT) < ${Math.max(maxIndicatorPeriod * 3, 100)})
+   {
+      static bool barsWarned = false;
+      if(!barsWarned) { Print("Waiting for minimum bars (${Math.max(maxIndicatorPeriod * 3, 100)}) on ", _Symbol); barsWarned = true; }
+      return;
+   }
+
+${riskMgmt.totalDrawdownCode}${riskMgmt.equityTargetCode}${riskMgmt.dailyPnlCode}${riskMgmt.cooldownCode}${riskMgmt.minBarsCode}
+   //--- Count current positions
+   int positionsCount = CountPositions();
+
+${tickCode.map((line) => "   " + line).join("\n")}
+}
+
+`;
+}
+
+/**
+ * Multi-pair OnTick: symbol loop wraps the per-symbol trading logic.
+ * Risk management operates globally (all symbols), while entry/exit logic runs per symbol.
+ */
+function generateOnTickMultiPair(
+  ctx: GeneratorContext,
+  tickCode: string[],
+  maxIndicatorPeriod: number,
+  riskMgmt: RiskManagementCode
+): string {
+  // For multi-pair, the daily P&L and cooldown code must NOT filter by _Symbol
+  // (they should check all symbols for this magic number)
+  const mpDailyPnl = riskMgmt.dailyPnlCode
+    .replace(/&& HistoryDealGetString\(dealTicket, DEAL_SYMBOL\) == _Symbol\n\s*/g, "")
+    .replace(/&& PositionGetString\(POSITION_SYMBOL\) == _Symbol\n?\s*/g, "")
+    .replace(/\bCloseAllPositions\(\)/g, "CloseAllPositionsGlobal()");
+  const mpDrawdown = riskMgmt.totalDrawdownCode.replace(
+    /\bCloseAllPositions\(\)/g,
+    "CloseAllPositionsGlobal()"
+  );
+  const mpEquity = riskMgmt.equityTargetCode.replace(
+    /\bCloseAllPositions\(\)/g,
+    "CloseAllPositionsGlobal()"
+  );
+  const mpCooldown = riskMgmt.cooldownCode
+    .replace(/&& HistoryDealGetString\(dealTicket, DEAL_SYMBOL\) == _Symbol\n\s*/g, "")
+    .replace(/iTime\(_Symbol,/g, "iTime(g_symbols[0],");
+  const mpMinBars = riskMgmt.minBarsCode.replace(/iBars\(_Symbol,/g, "iBars(g_symbols[0],");
+
+  const minBars = Math.max(maxIndicatorPeriod * 3, 100);
+
+  return `//+------------------------------------------------------------------+
+//| Expert tick function                                               |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   //--- Check if trading is allowed
+   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED)) return;
+   if(!MQLInfoInteger(MQL_TRADE_ALLOWED)) return;
+
+   //--- Check for new bar (using chart symbol)
+   static datetime lastBarTime = 0;
+   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
+   bool isNewBar = (currentBarTime != lastBarTime);
+   if(isNewBar) lastBarTime = currentBarTime;
+
+${mpDrawdown}${mpEquity}${mpDailyPnl}${mpCooldown}${mpMinBars}
+   //--- Multi-Pair: Loop over all configured symbols
+   for(int sym = 0; sym < g_symbolCount; sym++)
+   {
+      string tradeSym = g_symbols[sym];
+      double symPoint = SymbolInfoDouble(tradeSym, SYMBOL_POINT);
+      int symDigits = (int)SymbolInfoInteger(tradeSym, SYMBOL_DIGITS);
+      int symPipFactor = (symDigits == 3 || symDigits == 5) ? 10 : 1;
+
+      //--- Set fill type for this symbol
+      trade.SetTypeFillingBySymbol(tradeSym);
+
+      //--- Check minimum bars for this symbol
+      if(Bars(tradeSym, PERIOD_CURRENT) < ${minBars}) continue;
+
+      //--- Per-pair position limit
+      int positionsCount = CountPositions(tradeSym);
+      if(positionsCount >= InpMaxPerPair) continue;
+
+      //--- Total position limit
+      if(CountAllPositions() >= InpMaxTotalPositions) continue;
+
+${tickCode.map((line) => "      " + line).join("\n")}
+   }
+}
+
+`;
+}
+
+interface RiskManagementCode {
+  dailyPnlCode: string;
+  totalDrawdownCode: string;
+  equityTargetCode: string;
+  cooldownCode: string;
+  minBarsCode: string;
+}
+
+function buildRiskManagementCode(ctx: GeneratorContext): RiskManagementCode {
   let dailyPnlCode = "";
   if (ctx.maxDailyProfitPercent > 0 || ctx.maxDailyLossPercent > 0) {
     dailyPnlCode = `
@@ -252,7 +399,6 @@ export function generateOnTick(
     dailyPnlCode += "   }\n";
   }
 
-  // Build total drawdown check if enabled
   let totalDrawdownCode = "";
   if (ctx.maxTotalDrawdownPercent > 0) {
     totalDrawdownCode = `
@@ -275,7 +421,6 @@ export function generateOnTick(
 `;
   }
 
-  // Build equity target check if enabled
   let equityTargetCode = "";
   if (ctx.equityTargetPercent > 0) {
     equityTargetCode = `
@@ -295,7 +440,6 @@ export function generateOnTick(
 `;
   }
 
-  // Build cooldown after loss check if enabled
   let cooldownCode = "";
   if (ctx.cooldownAfterLossMinutes > 0) {
     cooldownCode = `
@@ -328,7 +472,6 @@ export function generateOnTick(
 `;
   }
 
-  // Build min bars between trades check if enabled
   let minBarsCode = "";
   if (ctx.minBarsBetweenTrades > 0) {
     minBarsCode = `
@@ -342,40 +485,17 @@ export function generateOnTick(
 `;
   }
 
-  return `//+------------------------------------------------------------------+
-//| Expert tick function                                               |
-//+------------------------------------------------------------------+
-void OnTick()
-{
-   //--- Check if trading is allowed
-   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED)) return;
-   if(!MQLInfoInteger(MQL_TRADE_ALLOWED)) return;
-
-   //--- Check for new bar (optional: only trade on new bars)
-   static datetime lastBarTime = 0;
-   datetime currentBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);
-   bool isNewBar = (currentBarTime != lastBarTime);
-   if(isNewBar) lastBarTime = currentBarTime;
-
-   //--- Check minimum bars available
-   if(Bars(_Symbol, PERIOD_CURRENT) < ${Math.max(maxIndicatorPeriod * 3, 100)})
-   {
-      static bool barsWarned = false;
-      if(!barsWarned) { Print("Waiting for minimum bars (${Math.max(maxIndicatorPeriod * 3, 100)}) on ", _Symbol); barsWarned = true; }
-      return;
-   }
-
-${totalDrawdownCode}${equityTargetCode}${dailyPnlCode}${cooldownCode}${minBarsCode}
-   //--- Count current positions
-   int positionsCount = CountPositions();
-
-${tickCode.map((line) => "   " + line).join("\n")}
+  return { dailyPnlCode, totalDrawdownCode, equityTargetCode, cooldownCode, minBarsCode };
 }
 
-`;
+export function generateHelperFunctions(ctx: GeneratorContext): string {
+  const coreFunctions = ctx.multiPairEnabled
+    ? generateHelperFunctionsMultiPair()
+    : generateHelperFunctionsSinglePair();
+  return coreFunctions + "\n\n" + generateSharedHelperFunctions();
 }
 
-export function generateHelperFunctions(_ctx: GeneratorContext): string {
+function generateHelperFunctionsSinglePair(): string {
   return `//+------------------------------------------------------------------+
 //| Count positions for this EA                                        |
 //+------------------------------------------------------------------+
@@ -631,9 +751,271 @@ double CalculateLotSize(double riskPercent, double slPips)
    int lotDigits = (int)MathMax(-MathLog10(lotStep), 0);
 
    return NormalizeDouble(lots, lotDigits);
+}`;
+}
+
+/**
+ * Multi-pair helper functions: all accept `string sym` as first parameter.
+ * Used when ctx.multiPairEnabled is true.
+ */
+function generateHelperFunctionsMultiPair(): string {
+  return `//+------------------------------------------------------------------+
+//| Count positions for a specific symbol                              |
+//+------------------------------------------------------------------+
+int CountPositions(string sym)
+{
+   int count = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0)
+      {
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
+            PositionGetString(POSITION_SYMBOL) == sym)
+            count++;
+      }
+   }
+   return count;
 }
 
 //+------------------------------------------------------------------+
+//| Count positions by type for a specific symbol                      |
+//+------------------------------------------------------------------+
+int CountPositionsByType(string sym, ENUM_POSITION_TYPE posType)
+{
+   int count = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0)
+      {
+         if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
+            PositionGetString(POSITION_SYMBOL) == sym &&
+            PositionGetInteger(POSITION_TYPE) == posType)
+            count++;
+      }
+   }
+   return count;
+}
+
+//+------------------------------------------------------------------+
+//| Open Buy Position on a specific symbol                             |
+//+------------------------------------------------------------------+
+bool OpenBuy(string sym, double lots, double sl = 0, double tp = 0)
+{
+   double symPoint = SymbolInfoDouble(sym, SYMBOL_POINT);
+   int symDigits = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+
+   //--- Pre-trade margin check
+   double askCheck = SymbolInfoDouble(sym, SYMBOL_ASK);
+   double marginRequired = 0;
+   if(OrderCalcMargin(ORDER_TYPE_BUY, sym, lots, askCheck, marginRequired))
+   {
+      if(marginRequired > AccountInfoDouble(ACCOUNT_MARGIN_FREE))
+      {
+         Print("OpenBuy ", sym, ": insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+               " Free: ", DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2));
+         return false;
+      }
+   }
+
+   trade.SetTypeFillingBySymbol(sym);
+
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      double ask = SymbolInfoDouble(sym, SYMBOL_ASK);
+      double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * symPoint, symDigits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * symPoint, symDigits) : 0;
+
+      if(trade.Buy(lots, sym, ask, slPrice, tpPrice, InpTradeComment))
+         return true;
+
+      uint resultCode = trade.ResultRetcode();
+      if(resultCode == TRADE_RETCODE_REQUOTE || resultCode == TRADE_RETCODE_PRICE_OFF
+         || resultCode == TRADE_RETCODE_CONNECTION)
+      {
+         Print("OpenBuy ", sym, " retry ", attempt + 1, "/", retries, ": ", trade.ResultRetcodeDescription());
+         Sleep(200 * (attempt + 1));
+         continue;
+      }
+      if(resultCode == TRADE_RETCODE_NO_MONEY)
+         Print("OpenBuy ", sym, ": insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(resultCode == TRADE_RETCODE_INVALID_VOLUME)
+         Print("OpenBuy ", sym, ": invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), 2),
+               " max=", DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX), 2), ")");
+      else
+         Print("OpenBuy ", sym, " failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+      return false;
+   }
+   Print("OpenBuy ", sym, " failed after ", retries, " retries");
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Open Sell Position on a specific symbol                            |
+//+------------------------------------------------------------------+
+bool OpenSell(string sym, double lots, double sl = 0, double tp = 0)
+{
+   double symPoint = SymbolInfoDouble(sym, SYMBOL_POINT);
+   int symDigits = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+
+   //--- Pre-trade margin check
+   double bidCheck = SymbolInfoDouble(sym, SYMBOL_BID);
+   double marginRequired = 0;
+   if(OrderCalcMargin(ORDER_TYPE_SELL, sym, lots, bidCheck, marginRequired))
+   {
+      if(marginRequired > AccountInfoDouble(ACCOUNT_MARGIN_FREE))
+      {
+         Print("OpenSell ", sym, ": insufficient margin. Required: ", DoubleToString(marginRequired, 2),
+               " Free: ", DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2));
+         return false;
+      }
+   }
+
+   trade.SetTypeFillingBySymbol(sym);
+
+   int retries = 3;
+   for(int attempt = 0; attempt < retries; attempt++)
+   {
+      double bid = SymbolInfoDouble(sym, SYMBOL_BID);
+      double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * symPoint, symDigits) : 0;
+      double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * symPoint, symDigits) : 0;
+
+      if(trade.Sell(lots, sym, bid, slPrice, tpPrice, InpTradeComment))
+         return true;
+
+      uint resultCode = trade.ResultRetcode();
+      if(resultCode == TRADE_RETCODE_REQUOTE || resultCode == TRADE_RETCODE_PRICE_OFF
+         || resultCode == TRADE_RETCODE_CONNECTION)
+      {
+         Print("OpenSell ", sym, " retry ", attempt + 1, "/", retries, ": ", trade.ResultRetcodeDescription());
+         Sleep(200 * (attempt + 1));
+         continue;
+      }
+      if(resultCode == TRADE_RETCODE_NO_MONEY)
+         Print("OpenSell ", sym, ": insufficient funds for ", DoubleToString(lots, 2), " lots");
+      else if(resultCode == TRADE_RETCODE_INVALID_VOLUME)
+         Print("OpenSell ", sym, ": invalid volume ", DoubleToString(lots, 2),
+               " (min=", DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), 2),
+               " max=", DoubleToString(SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX), 2), ")");
+      else
+         Print("OpenSell ", sym, " failed: ", trade.ResultRetcodeDescription(), " (code: ", resultCode, ")");
+      return false;
+   }
+   Print("OpenSell ", sym, " failed after ", retries, " retries");
+   return false;
+}
+
+//+------------------------------------------------------------------+
+//| Close All Positions for a specific symbol                          |
+//+------------------------------------------------------------------+
+void CloseAllPositions(string sym)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
+         PositionGetString(POSITION_SYMBOL) == sym)
+         trade.PositionClose(ticket);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close ALL positions across all symbols (for risk management)       |
+//+------------------------------------------------------------------+
+void CloseAllPositionsGlobal()
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
+         trade.PositionClose(ticket);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close Buy Positions for a specific symbol                          |
+//+------------------------------------------------------------------+
+void CloseBuyPositions(string sym)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
+         PositionGetString(POSITION_SYMBOL) == sym &&
+         PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+         trade.PositionClose(ticket);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Close Sell Positions for a specific symbol                         |
+//+------------------------------------------------------------------+
+void CloseSellPositions(string sym)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
+         PositionGetString(POSITION_SYMBOL) == sym &&
+         PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+         trade.PositionClose(ticket);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate Lot Size for a specific symbol                           |
+//+------------------------------------------------------------------+
+double CalculateLotSize(string sym, double riskPercent, double slPips)
+{
+   double symPoint = SymbolInfoDouble(sym, SYMBOL_POINT);
+   double minLot = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
+   if(slPips <= 0)
+   {
+      Print("WARNING: CalculateLotSize called with slPips=0 on ", sym, ", using minimum lot.");
+      return minLot;
+   }
+
+   if(minLot <= 0)
+   {
+      Print("WARNING: SYMBOL_VOLUME_MIN is 0 for ", sym, ", defaulting to 0.01");
+      minLot = 0.01;
+   }
+
+   double balance = InpUseEquityForRisk ? AccountInfoDouble(ACCOUNT_EQUITY) : AccountInfoDouble(ACCOUNT_BALANCE);
+   if(balance <= 0)
+   {
+      Print("WARNING: Account balance/equity is 0, using minimum lot.");
+      return minLot;
+   }
+
+   double tickValue = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_VALUE);
+   double tickSize = SymbolInfoDouble(sym, SYMBOL_TRADE_TICK_SIZE);
+   double lotStep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+   double maxLot = SymbolInfoDouble(sym, SYMBOL_VOLUME_MAX);
+
+   double pipValue = (tickSize > 0) ? tickValue * (symPoint / tickSize) : 0;
+   if(pipValue <= 0)
+   {
+      Print("WARNING: Pip value is 0 for ", sym, ", using minimum lot.");
+      return minLot;
+   }
+
+   double riskAmount = balance * riskPercent / 100.0;
+   double lots = riskAmount / (slPips * pipValue);
+
+   lots = MathFloor(lots / lotStep) * lotStep;
+   lots = MathMax(minLot, MathMin(maxLot, lots));
+   int lotDigits = (int)MathMax(-MathLog10(lotStep), 0);
+
+   return NormalizeDouble(lots, lotDigits);
+}`;
+}
+
+function generateSharedHelperFunctions(): string {
+  return `//+------------------------------------------------------------------+
 //| Epsilon-safe double comparisons                                    |
 //+------------------------------------------------------------------+
 bool DoubleGT(double a, double b)  { return (a - b) >  1e-10; }
