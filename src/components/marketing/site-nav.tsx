@@ -33,9 +33,6 @@ export function SiteNav() {
           <Link href="/about" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             About
           </Link>
-          <Link href="/docs" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-            Docs
-          </Link>
           <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Sign in
           </Link>

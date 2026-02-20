@@ -63,14 +63,6 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/docs"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  API Docs
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/coaching"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >

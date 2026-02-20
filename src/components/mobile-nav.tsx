@@ -87,13 +87,6 @@ export function MobileNav() {
               Prop Firms
             </Link>
             <Link
-              href="/docs"
-              onClick={() => setIsOpen(false)}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-            >
-              Docs
-            </Link>
-            <Link
               href="/blog"
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
