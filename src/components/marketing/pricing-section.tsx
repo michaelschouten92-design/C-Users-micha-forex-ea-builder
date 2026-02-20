@@ -80,8 +80,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
     <div>
       {showHeader && (
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-4">Simple, transparent pricing</h2>
-          <p className="text-[#94A3B8]">Start free. Upgrade when you need unlimited exports.</p>
+          <h2 className="text-3xl font-bold text-white mb-4">Choose how you want to trade</h2>
+          <p className="text-[#94A3B8]">
+            From your first EA to a fully monitored portfolio. Start free, upgrade when you&apos;re
+            ready.
+          </p>
         </div>
       )}
 
@@ -112,30 +115,35 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
       {/* Pricing Cards */}
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {/* Free */}
+        {/* Free — Learn & Explore */}
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
             <h3 className="text-xl font-semibold text-white">Free</h3>
           </div>
+          <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
+            Learn &amp; Explore
+          </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Build and export your first MQL5 Expert Advisor
+            Build your first EA and see what&apos;s possible
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Access all templates, customize your strategy, and export a working Expert Advisor.
+            Full visual builder access. Build, backtest, and export your first strategy with no
+            commitment.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
+              "Visual strategy builder",
               "All 6 strategy templates",
-              "Full visual builder",
               "1 active project",
-              "1 MQL5 export per month",
-              "Clean, commented MQL5 source code",
+              "3 MQL5 exports per month",
+              "Basic backtesting",
+              "Basic Reality Check",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -146,8 +154,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Who it&apos;s for:</strong> Traders building their first automated strategy
-              and testing the workflow.
+              <strong>Perfect for:</strong> Traders exploring automated strategies for the first
+              time.
             </p>
           </div>
 
@@ -157,11 +165,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             href="/login?mode=register"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Start Free
+            Start Building Free
           </Link>
         </div>
 
-        {/* Pro — Most Popular */}
+        {/* Pro — Build & Run (Most Popular) */}
         <div className="bg-gradient-to-b from-[#1A0626] to-[#1A0626]/80 border-2 border-[#4F46E5] rounded-xl p-8 relative flex flex-col shadow-[0_0_30px_rgba(79,70,229,0.15)]">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <span className="bg-[#4F46E5] text-white text-xs font-medium px-4 py-1 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.4)]">
@@ -172,6 +180,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
             <h3 className="text-xl font-semibold text-white">Pro</h3>
           </div>
+          <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
+            Build &amp; Run
+          </p>
           <div className="mt-4">
             {proPrice ? (
               <>
@@ -193,7 +204,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                 )}
                 {interval === "yearly" && (
                   <p className="text-xs text-[#94A3B8] mt-1">
-                    ≈ {formatPrice(Math.round(proYearlyPrice / 12), "eur")}/month, billed annually
+                    = {formatPrice(Math.round(proYearlyPrice / 12), "eur")}/month, billed annually
                   </p>
                 )}
               </>
@@ -201,16 +212,23 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
             )}
           </div>
-          <p className="mt-3 text-white font-medium text-sm">Unlimited projects and exports</p>
+          <p className="mt-3 text-white font-medium text-sm">
+            Go from idea to live trading with full verification
+          </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Build, iterate, and export as many strategies as you want. MQL5 + MQL4 support included.
+            Unlimited strategies, verified track records, and live monitoring. Everything you need
+            to build and run EAs with confidence.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Unlimited projects",
-              "Unlimited MQL5 + MQL4 exports",
-              "All 6 strategy templates",
+              "Unlimited projects & exports",
+              "MQL5 + MQL4 code export",
+              "Full backtesting + Monte Carlo",
+              "Strategy Identity & versioning",
+              "Verified Track Record",
+              "Live EA monitoring dashboard",
+              "Full Reality Check suite",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -222,8 +240,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Who it&apos;s for:</strong> Active traders who iterate on multiple strategies
-              without export limits.
+              <strong>Perfect for:</strong> Active traders who build, verify, and run multiple
+              strategies live.
             </p>
           </div>
 
@@ -232,16 +250,20 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !proPrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
-            {loadingPlan === "PRO" ? "Loading..." : "Upgrade to Pro"}
+            {loadingPlan === "PRO" ? "Loading..." : "Start Building EAs"}
           </button>
+          <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
 
-        {/* Elite */}
+        {/* Elite — Protect Capital */}
         <div className="bg-[#1A0626] border border-[rgba(167,139,250,0.3)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
             <h3 className="text-xl font-semibold text-white">Elite</h3>
           </div>
+          <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1">
+            Protect Capital
+          </p>
           <div className="mt-4">
             {elitePrice ? (
               <>
@@ -263,7 +285,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                 )}
                 {interval === "yearly" && (
                   <p className="text-xs text-[#94A3B8] mt-1">
-                    ≈ {formatPrice(Math.round(eliteYearlyPrice / 12), "eur")}/month, billed annually
+                    = {formatPrice(Math.round(eliteYearlyPrice / 12), "eur")}/month, billed annually
                   </p>
                 )}
               </>
@@ -272,21 +294,24 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Everything in Pro, plus personal support
+            Know when your edge is fading before your account does
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            For serious traders who want priority feature requests, personal strategy reviews, and
-            direct developer support.
+            Everything in Pro, plus advanced health monitoring and capital protection tools. Built
+            for traders who manage real money.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Everything in Pro",
-              "MQL5 & MQL4 exports",
-              "Priority feature requests",
+              "Strategy Health Monitor",
+              "Edge degradation alerts",
+              "Advanced drawdown monitoring",
+              "Multi-strategy portfolio overview",
+              "Verified Strategy Page (public)",
               "1-on-1 strategy review session",
+              "Priority feature requests",
               "Direct developer support",
-              "Weekly Elite members call",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon className="w-5 h-5 text-[#A78BFA]" />
@@ -297,8 +322,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Who it&apos;s for:</strong> Serious traders who want personal strategy
-              feedback and direct developer access.
+              <strong>Perfect for:</strong> Traders running live capital who need to know when a
+              strategy stops working.
             </p>
           </div>
 
@@ -307,8 +332,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !elitePrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border-2 border-[#A78BFA] text-white hover:bg-[rgba(167,139,250,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
           >
-            {loadingPlan === "ELITE" ? "Loading..." : "Upgrade to Elite"}
+            {loadingPlan === "ELITE" ? "Loading..." : "Protect Your Capital"}
           </button>
+          <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
       </div>
 

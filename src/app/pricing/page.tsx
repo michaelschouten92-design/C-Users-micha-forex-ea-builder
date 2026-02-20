@@ -45,36 +45,36 @@ export default function PricingPage() {
       a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, E8 Markets, FundingPips, and others. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
     },
     {
-      q: "What happens if I reach my export limit on Free?",
-      a: "Your projects stay saved. You can upgrade to Pro or Elite at any time to unlock unlimited exports. No data is lost when you hit the limit.",
+      q: "What is the Strategy Health Monitor?",
+      a: "The Strategy Health Monitor (Elite only) continuously compares your live trading performance against your backtest baseline. It scores 5 key metrics \u2014 return, volatility, drawdown, win rate, and trade frequency \u2014 and alerts you when your strategy\u2019s edge begins to degrade. Think of it as an early warning system for your capital.",
+    },
+    {
+      q: "What is a Verified Track Record?",
+      a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real \u2014 no screenshot manipulation, no cherry-picking. Pro and Elite users can share a public Verified Strategy Page with their track record.",
+    },
+    {
+      q: "What is Reality Check?",
+      a: "Reality Check analyzes your strategy before you risk real money. It runs Monte Carlo simulations, evaluates drawdown probabilities, and flags unrealistic expectations. Free users get basic checks. Pro and Elite get the full suite including multi-scenario simulation.",
+    },
+    {
+      q: "What happens to my projects if I downgrade?",
+      a: "All your projects remain saved. You just won\u2019t be able to create new projects or export beyond the Free plan limits. Your verified track records stay intact. You can upgrade again anytime to regain full access.",
     },
     {
       q: "Can I cancel anytime?",
       a: "Yes. Cancel from your account settings at any time. No long-term contracts, no cancellation fees. Your subscription remains active until the end of the current billing period.",
     },
     {
-      q: "What happens to my projects if I downgrade?",
-      a: "All your projects remain saved. You just won\u2019t be able to create new projects or export beyond the Free plan limits. You can upgrade again anytime to regain full access.",
-    },
-    {
       q: "What payment methods do you accept?",
       a: "All major credit and debit cards (Visa, Mastercard, American Express) through Stripe. All payments are processed securely. We do not store your card details.",
     },
     {
-      q: "Is there a money-back guarantee?",
-      a: "All sales are final. You can cancel your subscription at any time from your account settings \u2014 your access continues until the end of the current billing period. We recommend starting with the free plan to make sure AlgoStudio is right for you.",
-    },
-    {
       q: "What is 1-on-1 coaching?",
-      a: "Coaching sessions are 60-minute video calls with screen sharing where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac179 per session with package deals. Elite members already get 1 complimentary strategy review per month.",
-    },
-    {
-      q: "Do you support MetaTrader 4 (MQL4)?",
-      a: "Yes! Pro and Elite subscribers can export strategies as MQL4 code for MetaTrader 4. The Free plan focuses on MQL5 (MetaTrader 5) export. Our primary focus is on MQL5, which is the latest and most powerful platform, but we fully support MQL4 for traders who need it.",
+      a: "Coaching sessions are 60-minute video calls with screen sharing where you get personalized guidance on strategy building, risk management, and MT5 setup. Sessions start at \u20ac179 per session with package deals. Elite members get 1 complimentary strategy review per month.",
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you unlimited projects, unlimited MQL5 + MQL4 exports, and priority support. Elite adds priority feature requests, a personal 1-on-1 strategy review session, direct developer support, and a weekly Elite members call.",
+      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, live monitoring, and full Reality Check. Elite adds capital protection features: the Strategy Health Monitor with edge degradation alerts, advanced drawdown monitoring, a public Verified Strategy Page, plus 1-on-1 strategy reviews and direct developer support.",
     },
   ];
 
@@ -83,20 +83,36 @@ export default function PricingPage() {
       <SiteNav />
       <div className="max-w-6xl mx-auto pt-32 pb-16 px-4 flex-1">
         {/* ================================================================ */}
-        {/* PRICING HERO                                                     */}
+        {/* HERO — Outcome-based headline                                    */}
         {/* ================================================================ */}
         <div className="text-center mb-6">
-          <Link href="/" className="text-2xl font-bold text-white mb-4 inline-block">
-            AlgoStudio
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mt-4">
-            Invest in your trading infrastructure, not in developers
+          <h1 className="text-4xl md:text-5xl font-bold text-white mt-4 leading-tight">
+            Build EAs that you can trust with real money
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            A single MQL5 developer costs {formatPrice(20000, "eur")}&ndash;
-            {formatPrice(100000, "eur")}+ per EA. AlgoStudio gives you unlimited EAs from just{" "}
-            {formatPrice(proPrice?.amount ?? 3900, "eur")}/month.
+            From your first strategy to a verified, health-monitored portfolio. Build with
+            confidence, trade with proof.
           </p>
+        </div>
+
+        {/* ================================================================ */}
+        {/* DECISION HELPER                                                  */}
+        {/* ================================================================ */}
+        <div className="max-w-3xl mx-auto mt-8 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-[#0D0117]/50 border border-[rgba(34,211,238,0.15)] rounded-lg px-4 py-3 text-center">
+              <p className="text-xs text-[#64748B] mb-1">Just getting started?</p>
+              <p className="text-sm font-medium text-[#22D3EE]">Start Free</p>
+            </div>
+            <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
+              <p className="text-xs text-[#64748B] mb-1">Ready to go live?</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Go Pro</p>
+            </div>
+            <div className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3 text-center">
+              <p className="text-xs text-[#64748B] mb-1">Trading real capital?</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Go Elite</p>
+            </div>
+          </div>
         </div>
 
         <PricingSection showHeader={false} />
@@ -105,9 +121,12 @@ export default function PricingPage() {
         {/* FEATURE COMPARISON TABLE                                         */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-8">
+          <h2 className="text-2xl font-bold text-white text-center mb-2">
             Detailed feature comparison
           </h2>
+          <p className="text-[#94A3B8] text-center text-sm mb-8">
+            See exactly what&apos;s included in each plan
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -119,22 +138,167 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody className="text-[#94A3B8]">
+                {/* Builder & Export */}
+                <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                  <td
+                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider"
+                    colSpan={4}
+                  >
+                    Builder &amp; Export
+                  </td>
+                </tr>
                 {(
                   [
-                    ["Projects", "1", "Unlimited", "Unlimited"],
-                    ["MQL5 exports per month", "1", "Unlimited", "Unlimited"],
-                    ["MQL4 export (MetaTrader 4)", false, true, true],
+                    ["Visual strategy builder", true, true, true],
                     ["Strategy templates", "All 6", "All 6", "All 6"],
-                    ["Visual builder", true, true, true],
-                    ["Clean MQL5 source code", true, true, true],
-                    ["Priority support", false, true, true],
-                    ["Priority feature requests", false, false, true],
-                    ["1-on-1 strategy review", false, false, true],
-                    ["Direct developer support", false, false, true],
-                    ["Weekly Elite members call", false, false, true],
+                    ["Active projects", "1", "Unlimited", "Unlimited"],
+                    ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
+                    ["MQL4 export (MetaTrader 4)", false, true, true],
+                    ["Clean, commented source code", true, true, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">
+                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                    {[free, pro, elite].map((val, i) => (
+                      <td key={i} className="py-3 px-4 text-center">
+                        {typeof val === "boolean" ? (
+                          val ? (
+                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                          ) : (
+                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                          )
+                        ) : (
+                          <span className="text-[#CBD5E1]">{val}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Testing & Validation */}
+                <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                  <td
+                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                    colSpan={4}
+                  >
+                    Testing &amp; Validation
+                  </td>
+                </tr>
+                {(
+                  [
+                    ["Backtesting", "Basic", "Full", "Full"],
+                    ["Monte Carlo simulation", false, true, true],
+                    ["Reality Check", "Basic", "Full suite", "Full suite"],
+                  ] as [string, string | boolean, string | boolean, string | boolean][]
+                ).map(([feature, free, pro, elite]) => (
+                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                    {[free, pro, elite].map((val, i) => (
+                      <td key={i} className="py-3 px-4 text-center">
+                        {typeof val === "boolean" ? (
+                          val ? (
+                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                          ) : (
+                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                          )
+                        ) : (
+                          <span className="text-[#CBD5E1]">{val}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Verification & Tracking */}
+                <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                  <td
+                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                    colSpan={4}
+                  >
+                    Verification &amp; Tracking
+                  </td>
+                </tr>
+                {(
+                  [
+                    ["Strategy Identity (AS-xxxx)", false, true, true],
+                    ["Strategy versioning", false, true, true],
+                    ["Verified Track Record", false, true, true],
+                    ["Tamper-resistant hash chain", false, true, true],
+                    ["Public Verified Strategy Page", false, false, true],
+                  ] as [string, string | boolean, string | boolean, string | boolean][]
+                ).map(([feature, free, pro, elite]) => (
+                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                    {[free, pro, elite].map((val, i) => (
+                      <td key={i} className="py-3 px-4 text-center">
+                        {typeof val === "boolean" ? (
+                          val ? (
+                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                          ) : (
+                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                          )
+                        ) : (
+                          <span className="text-[#CBD5E1]">{val}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Live Monitoring & Protection */}
+                <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                  <td
+                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                    colSpan={4}
+                  >
+                    Live Monitoring &amp; Protection
+                  </td>
+                </tr>
+                {(
+                  [
+                    ["Live EA monitoring dashboard", false, true, true],
+                    ["Strategy Health Monitor", false, false, true],
+                    ["Edge degradation alerts", false, false, true],
+                    ["Advanced drawdown monitoring", false, false, true],
+                    ["Multi-strategy portfolio view", false, false, true],
+                  ] as [string, string | boolean, string | boolean, string | boolean][]
+                ).map(([feature, free, pro, elite]) => (
+                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                    {[free, pro, elite].map((val, i) => (
+                      <td key={i} className="py-3 px-4 text-center">
+                        {typeof val === "boolean" ? (
+                          val ? (
+                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                          ) : (
+                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                          )
+                        ) : (
+                          <span className="text-[#CBD5E1]">{val}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Support & Access */}
+                <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                  <td
+                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                    colSpan={4}
+                  >
+                    Support &amp; Access
+                  </td>
+                </tr>
+                {(
+                  [
+                    ["Priority support", false, true, true],
+                    ["Priority feature requests", false, false, true],
+                    ["1-on-1 strategy review session", false, false, true],
+                    ["Direct developer support", false, false, true],
+                  ] as [string, string | boolean, string | boolean, string | boolean][]
+                ).map(([feature, free, pro, elite]) => (
+                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
                     <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
                     {[free, pro, elite].map((val, i) => (
                       <td key={i} className="py-3 px-4 text-center">
@@ -157,11 +321,11 @@ export default function PricingPage() {
         </div>
 
         {/* ================================================================ */}
-        {/* ROI COMPARISON                                                   */}
+        {/* WHY PRO PAYS FOR ITSELF                                          */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-white text-center mb-4">
-            AlgoStudio vs hiring an MQL5 developer
+            Why Pro pays for itself
           </h2>
           <p className="text-[#94A3B8] text-center mb-8 max-w-2xl mx-auto">
             Most MQL5 freelancers charge {formatPrice(20000, "eur")}&ndash;
@@ -171,15 +335,15 @@ export default function PricingPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.1)] rounded-xl p-6">
-              <h3 className="text-base font-semibold text-white mb-4">MQL5 Developer</h3>
+              <h3 className="text-base font-semibold text-white mb-4">Hiring an MQL5 Developer</h3>
               <ul className="space-y-3 text-sm text-[#94A3B8]">
                 {[
                   `${formatPrice(20000, "eur")}–${formatPrice(100000, "eur")}+ per EA`,
                   "Days to weeks delivery time",
                   "Extra cost per modification",
                   "Communication overhead",
-                  "Code quality varies",
-                  "No instant iteration",
+                  "No verification or track record",
+                  "No health monitoring",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <svg
@@ -214,9 +378,9 @@ export default function PricingPage() {
                   `${formatPrice(proPrice?.amount ?? 3900, "eur")}/month for unlimited EAs`,
                   "Build in under 5 minutes",
                   "Instant rebuilds, no extra cost",
-                  "No developer needed",
-                  "Clean, consistent MQL5 output",
-                  "Iterate as fast as you think",
+                  "Verified track record built-in",
+                  "Strategy Identity & versioning",
+                  "Live monitoring dashboard",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <CheckIcon className="w-4 h-4" />
@@ -226,9 +390,70 @@ export default function PricingPage() {
               </ul>
               <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
                 <p className="text-xs text-[#22D3EE]">
-                  Cost for unlimited EAs: {formatPrice(proPrice?.amount ?? 3900, "eur")}/month
+                  Cost for unlimited EAs + verification:{" "}
+                  {formatPrice(proPrice?.amount ?? 3900, "eur")}/month
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================================================================ */}
+        {/* ELITE VALUE PROPOSITION                                          */}
+        {/* ================================================================ */}
+        <div className="mt-20 max-w-4xl mx-auto">
+          <div className="bg-[#1A0626]/60 border border-[rgba(167,139,250,0.2)] rounded-xl p-8">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-[rgba(167,139,250,0.15)] rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-[#A78BFA]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Why Elite traders choose capital protection
+                </h3>
+                <p className="text-sm text-[#94A3B8] mt-1">
+                  Every strategy has a lifespan. Market conditions change, edges erode, and what
+                  worked last quarter can silently bleed your account. Elite&apos;s Health Monitor
+                  compares your live performance against your backtest baseline across 5 key metrics
+                  &mdash; and alerts you before a drawdown becomes a disaster.
+                </p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                {
+                  metric: "Return drift",
+                  desc: "Spots declining returns vs. backtest expectations",
+                },
+                {
+                  metric: "Drawdown alerts",
+                  desc: "Warns when max drawdown exceeds historical norms",
+                },
+                {
+                  metric: "Edge degradation",
+                  desc: "Detects when win rate or trade frequency shifts",
+                },
+              ].map((item) => (
+                <div
+                  key={item.metric}
+                  className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.1)] rounded-lg px-4 py-3"
+                >
+                  <p className="text-sm font-medium text-[#A78BFA]">{item.metric}</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">{item.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -237,12 +462,12 @@ export default function PricingPage() {
         {/* TRUST SECTION                                                    */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-4xl mx-auto">
-          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
             {[
               {
                 title: "Cancel anytime",
                 description:
-                  "No long-term contracts. Cancel from your account settings whenever you want. Your subscription stays active until the end of the billing period.",
+                  "No long-term contracts. Cancel from your account settings whenever you want.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -253,15 +478,28 @@ export default function PricingPage() {
                 ),
               },
               {
-                title: "Secure payments via Stripe",
+                title: "Secure via Stripe",
                 description:
-                  "All payments processed through Stripe. We never see or store your card details. PCI-DSS compliant. Visa, Mastercard, and American Express accepted.",
+                  "All payments through Stripe. We never see your card details. PCI-DSS compliant.",
                 icon: (
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                ),
+              },
+              {
+                title: "Prop firm compatible",
+                description:
+                  "Standard MQL5/MQL4 output. Works with FTMO, E8 Markets, FundingPips, and more.",
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 ),
               },
@@ -294,14 +532,15 @@ export default function PricingPage() {
                 Want personalized guidance?
               </h3>
               <p className="text-sm text-[#94A3B8]">
-                Book a 1-on-1 coaching session for expert strategy review, build guidance, and more.
+                Book a 1-on-1 coaching session for expert strategy review, build guidance, and risk
+                management.
               </p>
             </div>
             <Link
               href="/coaching"
               className="text-sm text-[#22D3EE] hover:underline whitespace-nowrap flex-shrink-0"
             >
-              From €179/session &mdash; Learn More &rarr;
+              From &euro;179/session &mdash; Learn More &rarr;
             </Link>
           </div>
         </div>
@@ -350,13 +589,14 @@ export default function PricingPage() {
             Start building your Expert Advisor today
           </h2>
           <p className="text-[#94A3B8] mb-6 max-w-lg mx-auto">
-            No credit card required for the free plan. Upgrade when you&apos;re ready.
+            No credit card required for the free plan. Build, verify, and go live when you&apos;re
+            ready.
           </p>
           <Link
             href="/login?mode=register"
             className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
           >
-            Build Your First Bot — Free
+            Build Your First EA — Free
           </Link>
           <p className="mt-4 text-[#64748B] text-sm">
             Already have an account?{" "}
