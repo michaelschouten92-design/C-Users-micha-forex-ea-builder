@@ -45,6 +45,13 @@ enum EAMode {
   PAPER
 }
 
+enum HealthStatus {
+  HEALTHY
+  WARNING
+  DEGRADED
+  INSUFFICIENT_DATA
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -130,8 +137,9 @@ model Project {
   exports         ExportJob[]
   tags            ProjectTag[]
   backtestResults BacktestResult[]
-  shares          ProjectShare[]
-  tradeJournals   TradeJournal[]
+  shares            ProjectShare[]
+  tradeJournals     TradeJournal[]
+  strategyIdentity  StrategyIdentity?
 
   @@index([userId, deletedAt, updatedAt])
   @@index([deletedAt])
@@ -157,8 +165,9 @@ model BuildVersion {
   createdAt  DateTime @default(now())
 
   // Relations
-  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  exports ExportJob[]
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  exports           ExportJob[]
+  strategyVersions  StrategyVersion[]
 
   // Unique constraint: one version number per project
   @@unique([projectId, versionNo])
@@ -320,8 +329,11 @@ model LiveEAInstance {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Soft delete
 
+  strategyVersionId String?
+
   exportJob      ExportJob        @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyVersion StrategyVersion? @relation(fields: [strategyVersionId], references: [id])
   heartbeats     EAHeartbeat[]
   trades         EATrade[]
   errors         EAError[]
@@ -331,10 +343,12 @@ model LiveEAInstance {
   trackRecordEvents      TrackRecordEvent[]
   trackRecordCheckpoints TrackRecordCheckpoint[]
   trackRecordState       TrackRecordState?
+  healthSnapshots        HealthSnapshot[]
 
   @@index([userId, status])
   @@index([status, lastHeartbeat])
   @@index([exportJobId])
+  @@index([strategyVersionId])
 }
 
 model EAHeartbeat {
@@ -508,8 +522,9 @@ model BacktestResult {
   fileName  String
   createdAt DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  backtestBaselines  BacktestBaseline[]
 
   @@index([userId, createdAt])
   @@index([projectId, createdAt])
@@ -650,4 +665,112 @@ model TrackRecordState {
   updatedAt       DateTime @updatedAt
 
   instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// STRATEGY IDENTITY & HEALTH MONITORING
+// ============================================
+
+model StrategyIdentity {
+  id                 String   @id @default(cuid())
+  projectId          String   @unique
+  strategyId         String   @unique  // "AS-" + 8 hex chars, permanent public ID
+  currentFingerprint String
+  currentVersionId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  project    Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions   StrategyVersion[]
+  publicPage VerifiedStrategyPage?
+
+  @@index([strategyId])
+}
+
+model StrategyVersion {
+  id                 String   @id @default(cuid())
+  strategyIdentityId String
+  buildVersionId     String
+  versionNo          Int
+  fingerprint        String   // SHA-256(logicHash + parameterHash + schemaVersion)
+  logicHash          String   // SHA-256 of canonical node/edge topology
+  parameterHash      String   // SHA-256 of canonical settings + node params
+  createdAt          DateTime @default(now())
+
+  strategyIdentity StrategyIdentity  @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
+  buildVersion     BuildVersion      @relation(fields: [buildVersionId], references: [id])
+  backtestBaseline BacktestBaseline?
+  instances        LiveEAInstance[]
+
+  @@unique([strategyIdentityId, fingerprint])
+  @@index([buildVersionId])
+}
+
+model BacktestBaseline {
+  id                   String   @id @default(cuid())
+  strategyVersionId    String   @unique
+  backtestResultId     String
+  totalTrades          Int
+  winRate              Float
+  profitFactor         Float
+  maxDrawdownPct       Float
+  avgTradesPerDay      Float
+  netReturnPct         Float
+  sharpeRatio          Float
+  initialDeposit       Float
+  backtestDurationDays Int
+  rawMetrics           Json
+  createdAt            DateTime @default(now())
+
+  strategyVersion StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Cascade)
+  backtestResult  BacktestResult  @relation(fields: [backtestResultId], references: [id])
+
+  @@index([backtestResultId])
+}
+
+model HealthSnapshot {
+  id                  String       @id @default(cuid())
+  instanceId          String
+  strategyVersionId   String?
+  status              HealthStatus
+  overallScore        Float
+  returnScore         Float
+  volatilityScore     Float
+  drawdownScore       Float
+  winRateScore        Float
+  tradeFrequencyScore Float
+  liveReturnPct       Float
+  liveVolatility      Float
+  liveMaxDrawdownPct  Float
+  liveWinRate         Float
+  liveTradesPerDay    Float
+  baselineReturnPct   Float?
+  baselineMaxDDPct    Float?
+  baselineWinRate     Float?
+  baselineTradesPerDay Float?
+  tradesSampled       Int
+  windowDays          Int
+  createdAt           DateTime @default(now())
+
+  instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, createdAt])
+  @@index([status])
+}
+
+model VerifiedStrategyPage {
+  id                 String   @id @default(cuid())
+  strategyIdentityId String   @unique
+  slug               String   @unique
+  isPublic           Boolean  @default(false)
+  showEquityCurve    Boolean  @default(true)
+  showTradeLog       Boolean  @default(false)
+  showHealthStatus   Boolean  @default(true)
+  pinnedInstanceId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  strategyIdentity StrategyIdentity @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
 }

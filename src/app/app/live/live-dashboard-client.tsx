@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
+import { HealthBadge } from "@/components/app/health-detail-panel";
+import { HealthDetailPanel } from "@/components/app/health-detail-panel";
 
 // ============================================
 // TYPES
@@ -27,6 +29,8 @@ interface EAInstanceData {
   totalProfit: number;
   trades: { profit: number; closeTime: string | null }[];
   heartbeats: { equity: number; createdAt: string }[];
+  healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
+  healthScore?: number | null;
 }
 
 interface TradeRecord {
@@ -629,6 +633,7 @@ function EACard({
 }) {
   const [showTradeLog, setShowTradeLog] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
+  const [showHealth, setShowHealth] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
   const winRate = calculateWinRate(ea.trades);
   const profitFactor = calculateProfitFactor(ea.trades);
@@ -674,6 +679,7 @@ function EACard({
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={ea.status} animate={statusChanged} />
+          <HealthBadge status={ea.healthStatus ?? null} score={ea.healthScore ?? null} />
           {ea.paused && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paused
@@ -838,6 +844,25 @@ function EACard({
           {showTrackRecord ? "Hide Record" : "Track Record"}
         </button>
 
+        <button
+          onClick={() => setShowHealth(!showHealth)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+            showHealth
+              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30"
+              : "border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)]"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          {showHealth ? "Hide Health" : "Health"}
+        </button>
+
         <div className="flex-1" />
 
         <span className="text-xs text-[#7C8DB0]">
@@ -859,6 +884,9 @@ function EACard({
 
       {/* Track Record (expandable) */}
       {showTrackRecord && <TrackRecordPanel instanceId={ea.id} eaName={ea.eaName} />}
+
+      {/* Health Detail (expandable) */}
+      {showHealth && <HealthDetailPanel instanceId={ea.id} />}
     </div>
   );
 }

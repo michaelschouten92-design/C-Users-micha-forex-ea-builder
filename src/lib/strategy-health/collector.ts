@@ -1,0 +1,154 @@
+/**
+ * Live metrics collector — queries track record events to compute live trading metrics.
+ */
+
+import { prisma } from "@/lib/prisma";
+import type { LiveMetrics } from "./types";
+
+/**
+ * Collect live trading metrics for a given instance over a rolling window.
+ */
+export async function collectLiveMetrics(
+  instanceId: string,
+  windowDays: number = 30
+): Promise<LiveMetrics> {
+  const windowStart = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+
+  // Fetch track record state and closed trades in the window
+  const [state, tradeCloseEvents] = await Promise.all([
+    prisma.trackRecordState.findUnique({
+      where: { instanceId },
+      select: {
+        balance: true,
+        equity: true,
+        highWaterMark: true,
+        maxDrawdownPct: true,
+        totalTrades: true,
+        winCount: true,
+        lossCount: true,
+      },
+    }),
+    prisma.trackRecordEvent.findMany({
+      where: {
+        instanceId,
+        eventType: "TRADE_CLOSE",
+        timestamp: { gte: windowStart },
+      },
+      select: {
+        payload: true,
+        timestamp: true,
+      },
+      orderBy: { timestamp: "asc" },
+    }),
+  ]);
+
+  if (!state) {
+    return {
+      returnPct: 0,
+      volatility: 0,
+      maxDrawdownPct: 0,
+      winRate: 0,
+      tradesPerDay: 0,
+      totalTrades: 0,
+      windowDays,
+    };
+  }
+
+  const closedTrades = tradeCloseEvents.map((e) => {
+    const payload = e.payload as Record<string, unknown>;
+    return {
+      profit: (payload.profit as number) || 0,
+      swap: (payload.swap as number) || 0,
+      commission: (payload.commission as number) || 0,
+      timestamp: e.timestamp,
+    };
+  });
+
+  const tradeCount = closedTrades.length;
+
+  // Calculate return percentage from trades in window
+  const totalPnL = closedTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
+
+  // Use initial balance estimate (balance minus total PnL)
+  const estimatedStartBalance = Math.max(state.balance - totalPnL, 1);
+  const returnPct = (totalPnL / estimatedStartBalance) * 100;
+
+  // Calculate daily returns for volatility
+  const dailyReturns = computeDailyReturns(closedTrades, estimatedStartBalance);
+  const volatility = computeAnnualizedVolatility(dailyReturns);
+
+  // Max drawdown from state (overall, not just window)
+  const maxDrawdownPct = state.maxDrawdownPct;
+
+  // Win rate from trades in window
+  const wins = closedTrades.filter((t) => t.profit + t.swap + t.commission > 0).length;
+  const winRate = tradeCount > 0 ? (wins / tradeCount) * 100 : 0;
+
+  // Calculate actual days with data
+  let actualDays = windowDays;
+  if (closedTrades.length > 0) {
+    const firstTrade = closedTrades[0].timestamp;
+    const lastTrade = closedTrades[closedTrades.length - 1].timestamp;
+    actualDays = Math.max(1, (lastTrade.getTime() - firstTrade.getTime()) / (24 * 60 * 60 * 1000));
+  }
+
+  const tradesPerDay = tradeCount / Math.max(actualDays, 1);
+
+  return {
+    returnPct,
+    volatility,
+    maxDrawdownPct,
+    winRate,
+    tradesPerDay,
+    totalTrades: tradeCount,
+    windowDays: Math.round(actualDays),
+  };
+}
+
+/**
+ * Group trades into daily buckets and compute daily return percentages.
+ */
+function computeDailyReturns(
+  trades: Array<{ profit: number; swap: number; commission: number; timestamp: Date }>,
+  startBalance: number
+): number[] {
+  if (trades.length === 0) return [];
+
+  const dailyPnL = new Map<string, number>();
+
+  for (const trade of trades) {
+    const dayKey = trade.timestamp.toISOString().slice(0, 10);
+    const pnl = trade.profit + trade.swap + trade.commission;
+    dailyPnL.set(dayKey, (dailyPnL.get(dayKey) || 0) + pnl);
+  }
+
+  let runningBalance = startBalance;
+  const returns: number[] = [];
+
+  // Sort days chronologically
+  const sortedDays = [...dailyPnL.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+  for (const [, pnl] of sortedDays) {
+    if (runningBalance > 0) {
+      returns.push(pnl / runningBalance);
+    }
+    runningBalance += pnl;
+  }
+
+  return returns;
+}
+
+/**
+ * Compute annualized volatility from daily returns.
+ */
+function computeAnnualizedVolatility(dailyReturns: number[]): number {
+  if (dailyReturns.length < 2) return 0;
+
+  const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+  const variance =
+    dailyReturns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (dailyReturns.length - 1);
+
+  const dailyStdDev = Math.sqrt(variance);
+  // Annualize: assuming ~252 trading days
+  return dailyStdDev * Math.sqrt(252);
+}

@@ -7,6 +7,7 @@ import { TrackRecordEventType } from "@/lib/track-record/types";
 import { verifySingleEvent } from "@/lib/track-record/chain-verifier";
 import { processEvent, stateToDbUpdate, stateFromDb } from "@/lib/track-record/state-manager";
 import { shouldCreateCheckpoint, buildCheckpointData } from "@/lib/track-record/checkpoint";
+import { evaluateHealthIfDue } from "@/lib/strategy-health";
 
 const ingestSchema = z.object({
   eventType: z.enum([
@@ -137,6 +138,11 @@ export async function POST(request: NextRequest) {
       }),
       ...(checkpoint ? [prisma.trackRecordCheckpoint.create({ data: checkpoint })] : []),
     ]);
+
+    // Fire-and-forget: evaluate health after trade closes
+    if (eventType === "TRADE_CLOSE") {
+      evaluateHealthIfDue(instanceId).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

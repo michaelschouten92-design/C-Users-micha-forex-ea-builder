@@ -24,6 +24,11 @@ import {
 } from "@/lib/rate-limit";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
+import {
+  computeStrategyFingerprint,
+  ensureStrategyIdentity,
+  recordStrategyVersion,
+} from "@/lib/strategy-identity";
 import type { BuildJsonSchema } from "@/types/builder";
 
 type Props = {
@@ -228,7 +233,19 @@ export async function POST(request: NextRequest, { params }: Props) {
         },
       });
 
-      // Create LiveEAInstance for telemetry tracking
+      // Compute strategy fingerprint and ensure identity + version exist
+      const fingerprintResult = computeStrategyFingerprint(
+        buildJson as unknown as Parameters<typeof computeStrategyFingerprint>[0]
+      );
+      const identity = await ensureStrategyIdentity(tx, project.id, fingerprintResult.fingerprint);
+      const strategyVersion = await recordStrategyVersion(
+        tx,
+        identity.id,
+        version.id,
+        fingerprintResult
+      );
+
+      // Create LiveEAInstance for telemetry tracking (linked to strategy version)
       const liveEA = await tx.liveEAInstance.create({
         data: {
           exportJobId: job.id,
@@ -236,6 +253,7 @@ export async function POST(request: NextRequest, { params }: Props) {
           apiKeyHash: telemetryApiKeyHash,
           eaName: project.name,
           mode: paperMode ? "PAPER" : "LIVE",
+          strategyVersionId: strategyVersion.id,
         },
       });
 
