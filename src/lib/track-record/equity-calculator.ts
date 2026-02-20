@@ -58,10 +58,8 @@ export function updateStateOnTradeClose(
   swap: number,
   commission: number
 ): void {
-  // Remove from open positions
   state.openPositions = state.openPositions.filter((p) => p.ticket !== ticket);
 
-  // Update running totals
   state.totalTrades++;
   const netProfit = profit + swap + commission;
   state.totalProfit += profit;
@@ -69,17 +67,21 @@ export function updateStateOnTradeClose(
   state.totalCommission += commission;
   state.balance += netProfit;
 
-  // Win/loss counting
   if (netProfit >= 0) {
     state.winCount++;
   } else {
     state.lossCount++;
   }
 
-  // Update equity (assuming unrealized PnL unchanged for remaining positions)
-  state.equity = state.balance + computeUnrealizedPnL(state.openPositions);
+  // Equity correction: the closed trade's unrealized PnL was approximately equal to profit.
+  // After closing: equity adjusts by swap + commission (profit was already reflected in equity).
+  // Falls back to balance if equity was never set (first trade scenario).
+  if (state.equity > 0) {
+    state.equity += swap + commission;
+  } else {
+    state.equity = state.balance;
+  }
 
-  // Update high water mark
   if (state.equity > state.highWaterMark) {
     state.highWaterMark = state.equity;
   }
@@ -104,7 +106,12 @@ export function updateStateOnPartialClose(
   state.totalProfit += profit;
   state.balance += profit;
 
-  state.equity = state.balance + computeUnrealizedPnL(state.openPositions);
+  // Partial close realized profit adjusts balance; equity follows
+  if (state.equity > 0) {
+    state.equity += profit;
+  } else {
+    state.equity = state.balance;
+  }
 
   if (state.equity > state.highWaterMark) {
     state.highWaterMark = state.equity;
@@ -138,18 +145,18 @@ export function updateStateOnSessionStart(state: TrackRecordRunningState, balanc
     state.balance = balance;
     state.equity = balance;
     state.highWaterMark = balance;
+  } else if (state.balance > 0) {
+    // Subsequent session — check for drift
+    const drift = Math.abs(balance - state.balance) / state.balance;
+    if (drift > 0.5) {
+      // >50% drift is suspicious but could be a large deposit/withdrawal
+      // Log warning but don't reject — the CASHFLOW event should follow
+      console.warn(
+        `TrackRecord: SESSION_START balance drift ${(drift * 100).toFixed(1)}%: ` +
+          `expected ~${state.balance.toFixed(2)}, got ${balance.toFixed(2)}`
+      );
+    }
   }
-}
-
-/**
- * Compute unrealized PnL from open positions.
- * Note: This is a simplified placeholder — the EA reports actual unrealized PnL in snapshots.
- * We store positions for tracking but use snapshot-reported equity for accuracy.
- */
-function computeUnrealizedPnL(_positions: OpenPosition[]): number {
-  // In practice, unrealized PnL comes from the EA's snapshot events
-  // which report actual equity. This is only used between snapshots.
-  return 0;
 }
 
 /**
@@ -166,5 +173,22 @@ function updateDrawdown(state: TrackRecordRunningState): void {
   }
   if (drawdownPct > state.maxDrawdownPct) {
     state.maxDrawdownPct = drawdownPct;
+  }
+
+  // Track peak equity timestamp
+  if (state.equity >= state.highWaterMark) {
+    state.peakEquityTimestamp = Math.floor(Date.now() / 1000);
+    state.drawdownStartTimestamp = 0; // Not in drawdown
+  } else if (state.drawdownStartTimestamp === 0 && drawdownAbs > 0.01) {
+    state.drawdownStartTimestamp = Math.floor(Date.now() / 1000);
+  }
+
+  // Update max drawdown duration
+  if (state.drawdownStartTimestamp > 0) {
+    const now = Math.floor(Date.now() / 1000);
+    const duration = now - state.drawdownStartTimestamp;
+    if (duration > state.maxDrawdownDurationSec) {
+      state.maxDrawdownDurationSec = duration;
+    }
   }
 }

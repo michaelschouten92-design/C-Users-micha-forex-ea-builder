@@ -661,8 +661,12 @@ model TrackRecordState {
   totalCommission Float   @default(0)
   winCount        Int     @default(0)
   lossCount       Int     @default(0)
-  openPositions   Json    @default("[]")     // Serialized open position array
-  updatedAt       DateTime @updatedAt
+  openPositions          Json    @default("[]")     // Serialized open position array
+  cumulativeCashflow     Float   @default(0)
+  maxDrawdownDurationSec Int     @default(0)
+  drawdownStartTimestamp Int     @default(0)
+  peakEquityTimestamp    Int     @default(0)
+  updatedAt              DateTime @updatedAt
 
   instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 }

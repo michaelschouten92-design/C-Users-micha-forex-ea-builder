@@ -6,6 +6,7 @@ import {
   buildBrokerDigestPayload,
   analyzeBrokerCorroboration,
 } from "@/lib/track-record/broker-corroboration";
+import { appendChainEvent } from "@/lib/track-record/chain-append";
 
 const digestSchema = z.object({
   instanceId: z.string().min(1),
@@ -52,10 +53,20 @@ export async function POST(request: NextRequest) {
   try {
     const digest = buildBrokerDigestPayload(rawContent, periodStart, periodEnd, exportFormat);
 
+    // Insert BROKER_HISTORY_DIGEST into the event chain
+    const chainEvent = await appendChainEvent(instanceId, "BROKER_HISTORY_DIGEST", {
+      historyHash: digest.historyHash,
+      periodStart: digest.periodStart,
+      periodEnd: digest.periodEnd,
+      tradeCount: digest.tradeCount,
+      exportFormat: digest.exportFormat,
+    });
+
     return NextResponse.json({
       success: true,
       digest,
       historyHash: digest.historyHash,
+      chainEvent: { seqNo: chainEvent.seqNo, eventHash: chainEvent.eventHash },
     });
   } catch (error) {
     console.error("Broker evidence error:", error);

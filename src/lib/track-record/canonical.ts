@@ -51,6 +51,16 @@ const INT_FIELDS = new Set([
 ]);
 
 /**
+ * Round-half-away-from-zero, matching MQL5 DoubleToString() behavior.
+ * JavaScript's toFixed() uses banker's rounding which can differ.
+ */
+function toFixedMQL(value: number, decimals: number): string {
+  const factor = Math.pow(10, decimals);
+  const rounded = (Math.sign(value) * Math.round(Math.abs(value) * factor)) / factor;
+  return rounded.toFixed(decimals);
+}
+
+/**
  * Format a number to the canonical string representation.
  */
 function formatNumber(key: string, value: number): string {
@@ -58,13 +68,13 @@ function formatNumber(key: string, value: number): string {
     return Math.floor(value).toString();
   }
   if (PRICE_FIELDS.has(key)) {
-    return value.toFixed(8);
+    return toFixedMQL(value, 8);
   }
   if (MONEY_FIELDS.has(key)) {
-    return value.toFixed(2);
+    return toFixedMQL(value, 2);
   }
   // Default: 2 decimal places
-  return value.toFixed(2);
+  return toFixedMQL(value, 2);
 }
 
 /**

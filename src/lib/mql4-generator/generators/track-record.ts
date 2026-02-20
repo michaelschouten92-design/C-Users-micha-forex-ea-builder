@@ -293,6 +293,52 @@ void TrackRecordLoadState()
    double gvSeq = GlobalVariableGet("ASTR_TRSeqNo_" + IntegerToString(InpMagicNumber));
    if((int)gvSeq > g_trSeqNo)
       g_trSeqNo = (int)gvSeq;
+
+   // If no instance ID, try to recover from server
+   if(StringLen(g_trInstanceId) == 0)
+      TrackRecordRecoverFromServer();
+}
+
+void TrackRecordRecoverFromServer()
+{
+   string url = InpTrackRecordURL + "/state/" + g_trInstanceId;
+   string headers = "Content-Type: application/json\\r\\nX-EA-Key: " + InpTelemetryKey;
+
+   char data[];
+   char result[];
+   string resultHeaders;
+
+   int res = WebRequest("GET", url, headers, 5000, data, result, resultHeaders);
+
+   if(res != 200)
+   {
+      Print("TrackRecord: Recovery failed, status ", res, ". Starting fresh.");
+      return;
+   }
+
+   string response = CharArrayToString(result);
+
+   // Parse lastSeqNo
+   int seqPos = StringFind(response, "\\"lastSeqNo\\":");
+   if(seqPos >= 0)
+   {
+      int valStart = seqPos + 12;
+      int valEnd = StringFind(response, ",", valStart);
+      if(valEnd < 0) valEnd = StringFind(response, "}", valStart);
+      string seqStr = StringSubstr(response, valStart, valEnd - valStart);
+      g_trSeqNo = (int)StringToInteger(seqStr);
+   }
+
+   // Parse lastEventHash
+   int hashPos = StringFind(response, "\\"lastEventHash\\":\\"");
+   if(hashPos >= 0)
+   {
+      int valStart = hashPos + 17;
+      g_trLastHash = StringSubstr(response, valStart, 64);
+   }
+
+   if(g_trSeqNo > 0)
+      Print("TrackRecord: Recovered from server. SeqNo=", g_trSeqNo, " Hash=", StringSubstr(g_trLastHash, 0, 8), "...");
 }`;
 }
 

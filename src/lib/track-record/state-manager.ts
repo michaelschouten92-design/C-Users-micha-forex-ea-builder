@@ -176,6 +176,10 @@ export function stateToDbUpdate(state: TrackRecordRunningState) {
     winCount: state.winCount,
     lossCount: state.lossCount,
     openPositions: JSON.parse(JSON.stringify(state.openPositions)),
+    cumulativeCashflow: state.cumulativeCashflow,
+    maxDrawdownDurationSec: state.maxDrawdownDurationSec,
+    drawdownStartTimestamp: state.drawdownStartTimestamp,
+    peakEquityTimestamp: state.peakEquityTimestamp,
   };
 }
 
@@ -197,6 +201,10 @@ export function stateFromDb(dbState: {
   winCount: number;
   lossCount: number;
   openPositions: unknown;
+  cumulativeCashflow: number;
+  maxDrawdownDurationSec: number;
+  drawdownStartTimestamp: number;
+  peakEquityTimestamp: number;
 }): TrackRecordRunningState {
   return {
     lastSeqNo: dbState.lastSeqNo,
@@ -213,9 +221,9 @@ export function stateFromDb(dbState: {
     winCount: dbState.winCount,
     lossCount: dbState.lossCount,
     openPositions: (dbState.openPositions as OpenPosition[]) ?? [],
-    cumulativeCashflow: 0,
-    maxDrawdownDurationSec: 0,
-    drawdownStartTimestamp: 0,
-    peakEquityTimestamp: 0,
+    cumulativeCashflow: dbState.cumulativeCashflow,
+    maxDrawdownDurationSec: dbState.maxDrawdownDurationSec,
+    drawdownStartTimestamp: dbState.drawdownStartTimestamp,
+    peakEquityTimestamp: dbState.peakEquityTimestamp,
   };
 }

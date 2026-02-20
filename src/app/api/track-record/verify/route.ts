@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { verifyChain, type StoredEvent } from "@/lib/track-record/chain-verifier";
 import { verifyCheckpointHmac } from "@/lib/track-record/checkpoint";
 import { stateFromDb } from "@/lib/track-record/state-manager";
+import {
+  verifyRateLimiter,
+  getClientIp,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  checkRateLimit,
+} from "@/lib/rate-limit";
 
 const verifySchema = z.object({
   instanceId: z.string().min(1),
@@ -11,6 +18,16 @@ const verifySchema = z.object({
 
 // GET /api/track-record/verify?instanceId=... — public chain verification
 export async function GET(request: NextRequest) {
+  // Rate limit check
+  const clientIp = getClientIp(request);
+  const rateLimitResult = await checkRateLimit(verifyRateLimiter, clientIp);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimitResult) },
+      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const instanceId = request.nextUrl.searchParams.get("instanceId");
   if (!instanceId) {
     return NextResponse.json({ error: "instanceId is required" }, { status: 400 });
@@ -30,6 +47,15 @@ export async function GET(request: NextRequest) {
 
     if (!instance) {
       return NextResponse.json({ error: "Instance not found" }, { status: 404 });
+    }
+
+    // Guard against DoS: cap event count
+    const eventCount = await prisma.trackRecordEvent.count({ where: { instanceId } });
+    if (eventCount > 50000) {
+      return NextResponse.json(
+        { error: "Instance has too many events for full verification. Use proof bundles." },
+        { status: 413 }
+      );
     }
 
     // Load all events for this instance

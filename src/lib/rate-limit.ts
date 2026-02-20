@@ -379,6 +379,15 @@ export const telemetryRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for public verification endpoints
+ * Limits: 5 requests per minute per IP
+ */
+export const verifyRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

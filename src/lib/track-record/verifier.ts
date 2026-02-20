@@ -202,10 +202,33 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
     reportReproducible = false;
   }
 
+  // 6. Verify checkpoints: replay state at each checkpoint's seqNo must match
+  let checkpointsValid = bundle.checkpoints.length === 0; // vacuously true if none
+  if (bundle.checkpoints.length > 0) {
+    checkpointsValid = true;
+    for (const cp of bundle.checkpoints) {
+      const eventsUpToCheckpoint = replayEvents.filter((e) => e.seqNo <= cp.seqNo);
+      if (eventsUpToCheckpoint.length === 0) {
+        checkpointsValid = false;
+        errors.push(`Checkpoint at seqNo ${cp.seqNo}: no events found up to this point`);
+        continue;
+      }
+      const replayStateAtSeq = replayAll(eventsUpToCheckpoint);
+      if (
+        moneyStr(replayStateAtSeq.balance) !== cp.balance ||
+        moneyStr(replayStateAtSeq.equity) !== cp.equity ||
+        moneyStr(replayStateAtSeq.highWaterMark) !== cp.highWaterMark
+      ) {
+        checkpointsValid = false;
+        errors.push(`Checkpoint at seqNo ${cp.seqNo}: state mismatch`);
+      }
+    }
+  }
+
   return {
     chainValid,
     chainLength: events.length,
-    checkpointsValid: bundle.checkpoints.length > 0,
+    checkpointsValid,
     checkpointCount: bundle.checkpoints.length,
     signatureValid,
     reportReproducible,
@@ -261,8 +284,19 @@ function verifyLevel2(bundle: ProofBundle): L2Result {
     }
   }
 
-  // Verify broker history digests
-  const digestValid = digests.length > 0; // Digest presence = L2 intention
+  // Verify broker history digests: check they are present in the event chain
+  let digestValid = digests.length > 0;
+  for (const d of digests) {
+    const digestEvent = bundle.events.find(
+      (e) =>
+        e.eventType === "BROKER_HISTORY_DIGEST" &&
+        (e.payload as Record<string, unknown>).historyHash === d.historyHash
+    );
+    if (!digestEvent) {
+      digestValid = false;
+      mismatches.push(`Digest ${d.historyHash.slice(0, 16)}...: not found in event chain`);
+    }
+  }
 
   return {
     brokerEvidenceCount: evidence.length,
