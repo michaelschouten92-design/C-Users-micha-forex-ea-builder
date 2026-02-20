@@ -14,7 +14,6 @@ import type {
   VolumeFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
-  CustomTimesNodeData,
   MovingAverageNodeData,
   RSINodeData,
   MACDNodeData,
@@ -67,7 +66,6 @@ import {
   VolumeFilterFields,
   FridayCloseFields,
   NewsFilterFields,
-  CustomTimesFields,
 } from "./timing-fields";
 import {
   MovingAverageFields,
@@ -462,7 +460,13 @@ function NodeFields({
       case "always":
         return <AlwaysFields data={data as AlwaysNodeData} onChange={onChange} />;
       case "custom-times":
-        return <CustomTimesFields data={data as CustomTimesNodeData} onChange={onChange} />;
+        // Backwards compat: legacy custom-times nodes render with TradingSessionFields
+        return (
+          <TradingSessionFields
+            data={data as unknown as TradingSessionNodeData}
+            onChange={onChange}
+          />
+        );
     }
   }
 

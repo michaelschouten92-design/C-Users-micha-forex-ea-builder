@@ -85,6 +85,7 @@ export const TradingTimesNode = memo(function TradingTimesNode({ id, data, selec
           <span className="text-zinc-500">Days:</span>
           <span className="font-medium">{formatDays(days)}</span>
         </div>
+        {data.closeOnSessionEnd && <div className="text-xs text-orange-400">Close on end</div>}
       </div>
     </BaseNode>
   );

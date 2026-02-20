@@ -7,7 +7,6 @@ import { MaxSpreadNode } from "./max-spread-node";
 import { VolatilityFilterNode } from "./volatility-filter-node";
 import { FridayCloseNode } from "./friday-close-node";
 import { NewsFilterNode } from "./news-filter-node";
-import { CustomTimesNode } from "./custom-times-node";
 import { MovingAverageNode } from "./indicators/moving-average-node";
 import { RSINode } from "./indicators/rsi-node";
 import { MACDNode } from "./indicators/macd-node";
@@ -58,7 +57,7 @@ export const nodeTypes: NodeTypes = {
   "volume-filter": VolumeFilterNodeComponent,
   "friday-close": FridayCloseNode,
   "news-filter": NewsFilterNode,
-  "custom-times": CustomTimesNode,
+  "custom-times": TradingTimesNode, // backwards compat: legacy custom-times nodes render as TradingTimesNode
   "moving-average": MovingAverageNode,
   rsi: RSINode,
   macd: MACDNode,
@@ -108,7 +107,6 @@ export {
   VolumeFilterNodeComponent as VolumeFilterNode,
   FridayCloseNode,
   NewsFilterNode,
-  CustomTimesNode,
   MovingAverageNode,
   RSINode,
   MACDNode,

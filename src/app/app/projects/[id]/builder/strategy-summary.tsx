@@ -42,6 +42,7 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
         timingLines.push(`Trade during the ${d.session} session`);
       }
     } else if (n.type === "custom-times") {
+      // Legacy custom-times nodes — treated same as trading-session
       timingLines.push("Trade during custom time windows");
       hasTimingNode = true;
     } else if (n.type === "max-spread" && "maxSpreadPips" in d) {

@@ -38,6 +38,7 @@ export interface TradingSessionNodeData extends BaseNodeData {
   session: TradingSession;
   tradingDays: TradingDays;
   useServerTime?: boolean;
+  closeOnSessionEnd?: boolean;
   customStartHour?: number;
   customStartMinute?: number;
   customEndHour?: number;
@@ -1157,29 +1158,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       category: "timing",
       timingType: "always",
     } as AlwaysNodeData,
-  },
-  {
-    type: "custom-times",
-    label: "Custom Times",
-    category: "timing",
-    description: "Define custom trading hours and days",
-    defaultData: {
-      label: "Custom Times",
-      category: "timing",
-      timingType: "custom-times",
-      days: {
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: false,
-        sunday: false,
-      },
-      timeSlots: [{ startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
-      useServerTime: true,
-      closeOnSessionEnd: false,
-    } as CustomTimesNodeData,
   },
   // Indicators
   {
