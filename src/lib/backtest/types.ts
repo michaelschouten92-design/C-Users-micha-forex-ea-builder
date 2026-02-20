@@ -30,6 +30,11 @@ export interface BacktestConfig {
   lotStep: number; // Minimum lot increment (typically 0.01)
   minLot: number;
   maxLot: number;
+  // Swap/overnight fee per lot in account currency (applied daily when position held overnight)
+  swapLong: number; // Swap cost for BUY positions (negative = credit)
+  swapShort: number; // Swap cost for SELL positions (negative = credit)
+  // Requote simulation: probability (0-0.3) that a market order gets requoted (skipped)
+  requoteRate: number;
 }
 
 export const DEFAULT_BACKTEST_CONFIG: BacktestConfig = {
@@ -42,6 +47,9 @@ export const DEFAULT_BACKTEST_CONFIG: BacktestConfig = {
   lotStep: 0.01,
   minLot: 0.01,
   maxLot: 100,
+  swapLong: 0,
+  swapShort: 0,
+  requoteRate: 0,
 };
 
 // ============================================
@@ -63,6 +71,10 @@ export interface SimulatedPosition {
   // Partial close tracking
   originalLots: number;
   partialCloseExecuted: boolean;
+  // Accumulated swap cost for this position (running total)
+  accumulatedSwap: number;
+  // Track commission already charged on partial closes
+  commissionCharged: number;
   // Close info (set when position is closed)
   closeTime?: number;
   closePrice?: number;
@@ -70,6 +82,8 @@ export interface SimulatedPosition {
   closeReason?: "SL" | "TP" | "SIGNAL" | "RISK_MGMT" | "MANUAL";
   // Bar index tracking
   openBarIndex: number;
+  // Last day swap was applied (to detect overnight rollovers)
+  lastSwapDay: number;
 }
 
 // ============================================
@@ -85,6 +99,8 @@ export interface BacktestTradeResult {
   closePrice: number;
   lots: number;
   profit: number;
+  swap: number; // Accumulated swap for this trade
+  commission: number; // Total commission charged for this trade
   closeReason: string;
   openBarIndex: number;
   closeBarIndex: number;
@@ -151,6 +167,11 @@ export interface BacktestEngineResult {
   // Data
   trades: BacktestTradeResult[];
   equityCurve: EquityCurvePoint[];
+  // Swap & Commission totals
+  totalSwap: number;
+  totalCommission: number;
+  // Requote tracking
+  requoteCount: number;
   // Metadata
   barsProcessed: number;
   duration: number; // ms

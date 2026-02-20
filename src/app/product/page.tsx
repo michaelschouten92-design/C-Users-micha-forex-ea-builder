@@ -3,7 +3,6 @@ import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
-import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
@@ -18,51 +17,12 @@ const breadcrumbs = [
   { name: "Product", href: "/product" },
 ];
 
-const faqItems = [
-  {
-    q: "Do I need coding experience to use AlgoStudio?",
-    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, MQL4, Python, or any other programming knowledge required.",
-  },
-  {
-    q: "What strategy templates are included?",
-    a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each produces a fully functional Expert Advisor.",
-  },
-  {
-    q: "Can I use the exported EA in live trading?",
-    a: "Yes. The exported .mq5 (or .mq4) file is a standard MetaTrader Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 or MT4 broker.",
-  },
-  {
-    q: "Is the generated code editable?",
-    a: "Yes. You get clean, well-commented MQL5 (or MQL4) source code that you can open and modify in MetaEditor or any text editor.",
-  },
-  {
-    q: "What makes AlgoStudio different from other EA builders?",
-    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. Pre-configured blocks with sensible defaults instead of complex logic wiring.",
-  },
-  {
-    q: "Is there a free plan?",
-    a: "Yes. The free plan gives you full access to all templates and the builder. 1 project and 1 MQL5 export per month. MQL4 export available on Pro and Elite plans. No credit card required.",
-  },
-  {
-    q: "How long does it take to build an EA?",
-    a: "Most users export their first EA in under 5 minutes. Choose a template, adjust a few settings, and export. That's it.",
-  },
-  {
-    q: "Which brokers are supported?",
-    a: "The exported EA runs on any broker that supports MetaTrader 5. Pro and Elite subscribers can also export MQL4 for MetaTrader 4 brokers. The output uses standard .mq5/.mq4 files — no proprietary formats.",
-  },
-];
-
 export default function ProductPage() {
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqItems)) }}
       />
 
       <SiteNav />
@@ -97,18 +57,13 @@ export default function ProductPage() {
             </div>
           </section>
 
-          {/* Why AlgoStudio */}
+          {/* Quick links to product sections */}
           <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-6 text-center">
-              Why traders choose AlgoStudio
-            </h2>
-            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
-              Most EA builders give you a blank canvas with hundreds of blocks and wires. You spend
-              hours figuring out logic flows — before you even test your idea. AlgoStudio takes the
-              opposite approach.
-            </p>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              <Link
+                href="/product/how-it-works"
+                className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
                 <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
                   <svg
                     className="w-5 h-5 text-[#A78BFA]"
@@ -124,13 +79,16 @@ export default function ProductPage() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Fast</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">How It Works</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Export your first EA in under 5 minutes. No learning curve, no tutorials needed.
-                  Pick a template and go.
+                  See the 3-step process: choose a template, customize, and export clean MQL5/MQL4
+                  code.
                 </p>
-              </div>
-              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              </Link>
+              <Link
+                href="/templates"
+                className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
                 <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
                   <svg
                     className="w-5 h-5 text-[#A78BFA]"
@@ -146,13 +104,16 @@ export default function ProductPage() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Simple</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Strategy Templates</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Sensible defaults for every strategy. No 50-field forms, no complex logic wiring.
-                  Only the controls that matter.
+                  6 proven templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback,
+                  MACD, and Divergence.
                 </p>
-              </div>
-              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              </Link>
+              <Link
+                href="/product/mt5-export"
+                className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
                 <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
                   <svg
                     className="w-5 h-5 text-[#A78BFA]"
@@ -168,218 +129,47 @@ export default function ProductPage() {
                     />
                   </svg>
                 </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Clean MQL5 & MQL4 Export</h3>
+                <p className="text-sm text-[#94A3B8]">
+                  Readable, well-commented source code. Standard .mq5/.mq4 format compatible with
+                  any broker.
+                </p>
+              </Link>
+            </div>
+          </section>
+
+          {/* Why AlgoStudio — concise */}
+          <section className="mb-20">
+            <h2 className="text-3xl font-bold text-white mb-6 text-center">
+              Why traders choose AlgoStudio
+            </h2>
+            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
+              Most EA builders give you a blank canvas with hundreds of blocks and wires. You spend
+              hours figuring out logic flows — before you even test your idea. AlgoStudio takes the
+              opposite approach.
+            </p>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Fast</h3>
+                <p className="text-sm text-[#94A3B8]">
+                  Export your first EA in under 5 minutes. No learning curve, no tutorials needed.
+                  Pick a template and go.
+                </p>
+              </div>
+              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Simple</h3>
+                <p className="text-sm text-[#94A3B8]">
+                  Sensible defaults for every strategy. No 50-field forms, no complex logic wiring.
+                  Only the controls that matter.
+                </p>
+              </div>
+              <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-2">Clean output</h3>
                 <p className="text-sm text-[#94A3B8]">
                   Readable, well-commented MQL5 & MQL4 source code. Load it in MetaTrader, backtest
                   it, edit it. The code is yours.
                 </p>
               </div>
-            </div>
-          </section>
-
-          {/* Templates */}
-          <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              6 strategy templates, ready to export
-            </h2>
-            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
-              Each template produces a fully functional Expert Advisor with ATR-based stop loss,
-              take profit based on risk-reward ratio, and proper position sizing — all
-              pre-configured.
-            </p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  name: "EMA Crossover",
-                  type: "Trend Following",
-                  color: "#A78BFA",
-                  desc: "Enter when fast EMA crosses slow EMA. Set your EMA periods, risk %, and ATR stop loss.",
-                },
-                {
-                  name: "RSI Reversal",
-                  type: "Mean Reversion",
-                  color: "#22D3EE",
-                  desc: "Buy oversold, sell overbought. Set RSI period, OB/OS levels, and risk %.",
-                },
-                {
-                  name: "Range Breakout",
-                  type: "Breakout",
-                  color: "#F59E0B",
-                  desc: "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss.",
-                },
-                {
-                  name: "Trend Pullback",
-                  type: "Trend Following",
-                  color: "#34D399",
-                  desc: "Wait for a pullback in a trending market. Uses EMA for trend + RSI for entry timing.",
-                },
-                {
-                  name: "MACD Crossover",
-                  type: "Momentum",
-                  color: "#F472B6",
-                  desc: "Enter on MACD signal line crossover. Configurable fast/slow EMA and signal periods.",
-                },
-                {
-                  name: "RSI/MACD Divergence",
-                  type: "Divergence",
-                  color: "#EF4444",
-                  desc: "Detect RSI or MACD divergence with price. Trade when momentum diverges from price action.",
-                },
-              ].map((t) => (
-                <div
-                  key={t.name}
-                  className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: t.color }}
-                    />
-                    <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wider">
-                      {t.type}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{t.name}</h3>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed">{t.desc}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-center mt-8">
-              <Link
-                href="/templates"
-                className="text-sm text-[#A78BFA] font-medium hover:underline"
-              >
-                View template details &rarr;
-              </Link>
-            </p>
-          </section>
-
-          {/* Visual Builder */}
-          <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              A visual builder designed for clarity
-            </h2>
-            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
-              No tangled node graphs or hundreds of configuration options. AlgoStudio shows you
-              exactly what your EA does — and only the settings you can change.
-            </p>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-3">What you see</h3>
-                <ul className="space-y-3 text-sm text-[#94A3B8]">
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#22D3EE] mt-0.5">&#10003;</span>
-                    Your strategy flow as a clear visual diagram
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#22D3EE] mt-0.5">&#10003;</span>
-                    Settings panel with only the parameters that matter
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#22D3EE] mt-0.5">&#10003;</span>
-                    Real-time preview of your strategy logic
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-3">What you don&apos;t need</h3>
-                <ul className="space-y-3 text-sm text-[#94A3B8]">
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#64748B] mt-0.5">&#10007;</span>
-                    No complex logic programming
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#64748B] mt-0.5">&#10007;</span>
-                    No tangled node graphs
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-[#64748B] mt-0.5">&#10007;</span>
-                    No 50-field configuration forms
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Export */}
-          <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              Export clean MQL5 & MQL4 code
-            </h2>
-            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
-              One click, one file. You get a standard .mq5 (or .mq4) Expert Advisor that compiles in
-              MetaEditor and runs on any MetaTrader broker.
-            </p>
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: "Standard .mq5 & .mq4 format",
-                  desc: "Compatible with every MT5 and MT4 broker. No proprietary formats or plugins required.",
-                },
-                {
-                  title: "Well-commented code",
-                  desc: "Every section is explained. Understand what the code does, modify it if you want.",
-                },
-                {
-                  title: "Built-in risk management",
-                  desc: "ATR-based stop loss, take profit based on risk-reward ratio, and percentage-based position sizing.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6"
-                >
-                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-[#94A3B8]">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-center mt-8">
-              <Link
-                href="/product/mt5-export"
-                className="text-sm text-[#A78BFA] font-medium hover:underline"
-              >
-                Learn more about the export process &rarr;
-              </Link>
-            </p>
-          </section>
-
-          {/* Who is it for */}
-          <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              Built for traders, not developers
-            </h2>
-            <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-10">
-              AlgoStudio is designed for people who trade — and want to automate their strategies
-              without learning to code.
-            </p>
-            <div className="grid md:grid-cols-2 gap-8">
-              {[
-                {
-                  title: "Forex traders",
-                  desc: "You have a strategy that works manually. Now you want to automate it and backtest it properly in MT5.",
-                },
-                {
-                  title: "Algo-curious beginners",
-                  desc: "You've heard about algorithmic trading but don't know MQL5 or MQL4. AlgoStudio removes the coding barrier entirely.",
-                },
-                {
-                  title: "Strategy testers",
-                  desc: "You want to quickly test variations of a strategy. Export, backtest, adjust, repeat — in minutes, not days.",
-                },
-                {
-                  title: "Experienced traders",
-                  desc: "You know what you want but don't want to spend hours in MetaEditor. Get a working EA fast, then customize the code.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6"
-                >
-                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-[#94A3B8]">{item.desc}</p>
-                </div>
-              ))}
             </div>
           </section>
 
@@ -433,8 +223,6 @@ export default function ProductPage() {
           </section>
         </div>
       </main>
-
-      <FAQSection questions={faqItems} />
 
       <CTASection
         title="Start building your Expert Advisor today"

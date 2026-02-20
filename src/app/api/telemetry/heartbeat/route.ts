@@ -6,6 +6,10 @@ import { fireWebhook } from "@/lib/webhook";
 import { checkDrawdownAlerts, checkOfflineAlerts } from "@/lib/alerts";
 import { z } from "zod";
 
+// NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
+// The legacy EAAlertRule/EAAlert system has been removed from runtime code.
+// See prisma/schema.prisma for deprecated model annotations.
+
 const heartbeatSchema = z.object({
   symbol: z.string().max(32).optional(),
   timeframe: z.string().max(8).optional(),
@@ -13,9 +17,9 @@ const heartbeatSchema = z.object({
   accountNumber: z.union([z.string(), z.number()]).transform(String).optional(),
   balance: z.number().finite().min(0).max(1e12).default(0),
   equity: z.number().finite().min(0).max(1e12).default(0),
-  openTrades: z.number().int().min(0).max(10000).default(0),
+  openTrades: z.number().int().min(0).max(1000).default(0),
   totalTrades: z.number().int().min(0).max(1e8).default(0),
-  totalProfit: z.number().finite().default(0),
+  totalProfit: z.number().finite().min(-1e12).max(1e12).default(0),
   drawdown: z.number().finite().min(0).max(100).default(0),
   spread: z.number().finite().min(0).max(10000).default(0),
   mode: z.enum(["LIVE", "PAPER"]).optional(),
@@ -36,6 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
+
+    // Security: auth.instanceId is derived from the API key (one key = one instance).
+    // The request body has no instanceId field, preventing a leaked key from affecting other instances.
 
     // Fetch instance state before the update for status change detection
     const previousState = await prisma.liveEAInstance.findUnique({
@@ -83,7 +90,7 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Fire-and-forget side effects: webhook, email alerts, alert rule evaluation
+    // Fire-and-forget side effects: webhook and EAAlertConfig-based alerts
     if (previousState) {
       processHeartbeatSideEffects(auth.instanceId, auth.userId, data, previousState).catch(
         () => {}
@@ -142,63 +149,15 @@ async function processHeartbeatSideEffects(
         `Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.`
       ).catch(() => {});
 
-      // Trigger user-configured offline alerts
+      // Trigger user-configured offline alerts (EAAlertConfig system)
       checkOfflineAlerts(userId, instanceId, prev.eaName, Math.round(elapsed / 60000)).catch(
         () => {}
       );
     }
   }
 
-  // Check user-configured drawdown alerts
+  // Check user-configured drawdown alerts (EAAlertConfig system)
   if (data.drawdown > 0) {
     checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch(() => {});
-  }
-
-  // Evaluate alert rules (legacy system)
-  evaluateAlertRules(instanceId, userId, data.drawdown, data.balance, data.equity).catch(() => {});
-}
-
-async function evaluateAlertRules(
-  instanceId: string,
-  userId: string,
-  drawdown: number,
-  balance: number,
-  equity: number
-): Promise<void> {
-  const rules = await prisma.eAAlertRule.findMany({
-    where: { userId, enabled: true },
-  });
-
-  if (rules.length === 0) return;
-
-  const instance = await prisma.liveEAInstance.findUnique({
-    where: { id: instanceId },
-    select: { eaName: true, user: { select: { email: true } } },
-  });
-
-  if (!instance) return;
-
-  for (const rule of rules) {
-    let triggered = false;
-    let message = "";
-
-    if (rule.type === "DRAWDOWN_EXCEEDED" && drawdown >= rule.threshold) {
-      triggered = true;
-      message = `Drawdown of ${drawdown.toFixed(2)}% exceeded threshold of ${rule.threshold}%`;
-    } else if (rule.type === "EQUITY_DROP" && balance > 0) {
-      const equityDropPct = ((balance - equity) / balance) * 100;
-      if (equityDropPct >= rule.threshold) {
-        triggered = true;
-        message = `Equity drop of ${equityDropPct.toFixed(2)}% exceeded threshold of ${rule.threshold}%`;
-      }
-    }
-
-    if (triggered) {
-      await prisma.eAAlert.create({
-        data: { ruleId: rule.id, instanceId, message },
-      });
-
-      sendEAAlertEmail(instance.user.email, instance.eaName, message).catch(() => {});
-    }
   }
 }

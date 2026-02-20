@@ -13,6 +13,21 @@ import {
 
 type Params = { params: Promise<{ id: string }> };
 
+const metadataSchema = z
+  .object({
+    entryReason: z
+      .enum(["trend-following", "mean-reversion", "breakout", "scalp", "other"])
+      .optional(),
+    exitReason: z
+      .enum(["hit-tp", "hit-sl", "manual", "trailing", "time-based", "other"])
+      .optional(),
+    setupQuality: z.number().min(1).max(5).optional(),
+    symbol: z.string().max(20).optional(),
+    pnl: z.number().optional(),
+    tags: z.array(z.string().max(50)).max(10).optional(),
+  })
+  .optional();
+
 const updateJournalSchema = z.object({
   backtestProfit: z.number().nullable().optional(),
   backtestWinRate: z.number().min(0).max(100).nullable().optional(),
@@ -22,6 +37,7 @@ const updateJournalSchema = z.object({
   liveWinRate: z.number().min(0).max(100).nullable().optional(),
   liveSharpe: z.number().nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
+  metadata: metadataSchema,
   status: z.enum(["BACKTESTING", "DEMO", "LIVE", "STOPPED"]).optional(),
 });
 
@@ -123,6 +139,7 @@ export async function PUT(request: Request, { params }: Params): Promise<NextRes
     if (data.liveWinRate !== undefined) updateData.liveWinRate = data.liveWinRate;
     if (data.liveSharpe !== undefined) updateData.liveSharpe = data.liveSharpe;
     if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.metadata !== undefined) updateData.metadata = data.metadata;
     if (data.status !== undefined) updateData.status = data.status;
 
     const entry = await prisma.tradeJournal.update({

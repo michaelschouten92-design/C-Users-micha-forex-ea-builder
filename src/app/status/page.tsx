@@ -155,25 +155,21 @@ export default function StatusPage() {
             <p className="text-3xl font-bold text-white">99.9%</p>
           </div>
 
-          {/* Subscribe to Updates */}
+          {/* Status Updates */}
           <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-8">
-            <h2 className="text-lg font-semibold text-white mb-2">Subscribe to Updates</h2>
-            <p className="text-sm text-[#94A3B8] mb-4">
-              Get notified when there are changes to the system status.
-            </p>
-            <form action="#" className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 px-4 py-2.5 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 text-sm"
-              />
-              <button
-                type="submit"
-                className="bg-[#4F46E5] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-colors text-sm whitespace-nowrap"
+            <h2 className="text-lg font-semibold text-white mb-2">Stay Informed</h2>
+            <p className="text-sm text-[#94A3B8]">
+              For real-time status updates and incident notifications, follow us on{" "}
+              <a
+                href="https://x.com/algostudio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#22D3EE] hover:underline"
               >
-                Subscribe
-              </button>
-            </form>
+                Twitter/X
+              </a>
+              .
+            </p>
           </div>
 
           {/* Last Updated */}

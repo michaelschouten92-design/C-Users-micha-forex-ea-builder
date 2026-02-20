@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { showError, showSuccess } from "@/lib/toast";
 import type { BacktestEngineResult } from "@/lib/backtest/types";
 import type { BacktestConfig } from "@/lib/backtest/types";
@@ -308,12 +309,61 @@ function getProfitFactorColor(pf: number): string {
 // MAIN COMPONENT
 // ============================================
 
+// Broker presets
+const BROKER_PRESETS: Record<
+  string,
+  { label: string; spread: string; commission: string; description: string }
+> = {
+  custom: {
+    label: "Custom (Manual Entry)",
+    spread: "",
+    commission: "",
+    description: "Enter your own spread and commission values",
+  },
+  oanda: {
+    label: "OANDA",
+    spread: "12",
+    commission: "0",
+    description: "Spread ~1.2 pips, no commission",
+  },
+  icmarkets: {
+    label: "IC Markets Raw",
+    spread: "1",
+    commission: "7.0",
+    description: "Spread ~0.1 pips, $7/lot RT",
+  },
+  pepperstone: {
+    label: "Pepperstone Razor",
+    spread: "1",
+    commission: "7.0",
+    description: "Spread ~0.1 pips, $7/lot RT",
+  },
+  ftmo: {
+    label: "FTMO Challenge",
+    spread: "10",
+    commission: "4.0",
+    description: "Spread ~1.0 pip, $4/lot RT",
+  },
+  genericecn: {
+    label: "Generic ECN",
+    spread: "3",
+    commission: "6.0",
+    description: "Spread ~0.3 pips, $6/lot RT",
+  },
+};
+
 export function BacktestForm({ projects }: BacktestFormProps) {
   const [projectId, setProjectId] = useState("");
   const [initialBalance, setInitialBalance] = useState("10000");
   const [spread, setSpread] = useState("10");
   const [commission, setCommission] = useState("3.5");
   const [symbol, setSymbol] = useState("EURUSD");
+  const [brokerPreset, setBrokerPreset] = useState("custom");
+  const [swapLong, setSwapLong] = useState("0");
+  const [swapShort, setSwapShort] = useState("0");
+  const [requoteRate, setRequoteRate] = useState("0");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [dataHelpOpen, setDataHelpOpen] = useState(false);
 
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvBarsCount, setCsvBarsCount] = useState(0);
@@ -395,6 +445,7 @@ export function BacktestForm({ projects }: BacktestFormProps) {
       }
 
       const isJPY = symbol.includes("JPY");
+      const parsedRequotePercent = parseFloat(requoteRate) || 0;
       const config: BacktestConfig = {
         ...DEFAULT_BACKTEST_CONFIG,
         initialBalance: parseFloat(initialBalance) || 10000,
@@ -403,6 +454,9 @@ export function BacktestForm({ projects }: BacktestFormProps) {
         commission: parseFloat(commission) || 3.5,
         digits: isJPY ? 3 : 5,
         pointValue: isJPY ? 100 / 1e3 : 1,
+        swapLong: parseFloat(swapLong) || 0,
+        swapShort: parseFloat(swapShort) || 0,
+        requoteRate: Math.min(Math.max(parsedRequotePercent / 100, 0), 0.3),
       };
 
       // Store for MC/WF
@@ -426,7 +480,17 @@ export function BacktestForm({ projects }: BacktestFormProps) {
       setRunning(false);
       cancelRef.current = null;
     }
-  }, [projectId, csvFile, initialBalance, spread, commission, symbol]);
+  }, [
+    projectId,
+    csvFile,
+    initialBalance,
+    spread,
+    commission,
+    symbol,
+    swapLong,
+    swapShort,
+    requoteRate,
+  ]);
 
   const handleCancel = () => {
     cancelRef.current?.();
@@ -605,6 +669,142 @@ export function BacktestForm({ projects }: BacktestFormProps) {
                 </>
               )}
             </div>
+
+            {/* Data Source Help */}
+            <div className="mt-2">
+              <button
+                onClick={() => setDataHelpOpen(!dataHelpOpen)}
+                className="flex items-center gap-1.5 text-[11px] text-[#7C8DB0] hover:text-[#A78BFA] transition-colors"
+              >
+                <svg
+                  className={`w-3 h-3 transition-transform duration-200 ${dataHelpOpen ? "rotate-90" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                Where to get historical data?
+              </button>
+
+              {dataHelpOpen && (
+                <div className="mt-3 p-4 bg-[#0A0118] rounded-lg border border-[rgba(79,70,229,0.15)] space-y-4">
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#A78BFA] mb-2">
+                      Export from MetaTrader 5
+                    </h4>
+                    <ol className="space-y-1.5 text-[11px] text-[#94A3B8]">
+                      <li className="flex gap-2">
+                        <span className="text-[#4F46E5] font-bold shrink-0">1.</span>
+                        <span>
+                          Open MT5 and go to <span className="text-white">View &gt; Symbols</span>{" "}
+                          (or press Ctrl+U)
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-[#4F46E5] font-bold shrink-0">2.</span>
+                        <span>
+                          Select the symbol and timeframe, then click{" "}
+                          <span className="text-white">Bars</span> tab
+                        </span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-[#4F46E5] font-bold shrink-0">3.</span>
+                        <span>
+                          Click <span className="text-white">Export Bars</span> and save as CSV
+                        </span>
+                      </li>
+                    </ol>
+                    <p className="text-[10px] text-[#7C8DB0] mt-2">
+                      Tip: Open a free MetaQuotes demo account for access to historical data without
+                      a broker.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#A78BFA] mb-2">
+                      Expected CSV Format
+                    </h4>
+                    <div className="bg-[#1A0626] rounded p-2 font-mono text-[10px] text-[#CBD5E1] overflow-x-auto">
+                      <p className="text-[#7C8DB0]"># Date, Open, High, Low, Close, Volume</p>
+                      <p>2024.01.02 00:00,1.10245,1.10312,1.10201,1.10289,4521</p>
+                      <p>2024.01.02 01:00,1.10289,1.10345,1.10267,1.10331,3872</p>
+                    </div>
+                    <p className="text-[10px] text-[#7C8DB0] mt-1.5">
+                      MetaTrader, TradingView, and most generic CSV formats are auto-detected.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#A78BFA] mb-2">
+                      Download Sample Template
+                    </h4>
+                    <button
+                      onClick={() => {
+                        const sampleCSV = `Date,Open,High,Low,Close,Volume\n2024.01.02 00:00,1.10245,1.10312,1.10201,1.10289,4521\n2024.01.02 01:00,1.10289,1.10345,1.10267,1.10331,3872\n2024.01.02 02:00,1.10331,1.10398,1.10310,1.10376,2941\n2024.01.02 03:00,1.10376,1.10401,1.10342,1.10358,1856\n2024.01.02 04:00,1.10358,1.10412,1.10345,1.10395,2234`;
+                        const blob = new Blob([sampleCSV], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "sample_ohlcv_template.csv";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-[#A78BFA] border border-[#A78BFA]/30 rounded-lg hover:bg-[#A78BFA]/10 transition-colors"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                      Download sample_ohlcv_template.csv
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Broker Preset */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">Broker Preset</label>
+            <select
+              value={brokerPreset}
+              onChange={(e) => {
+                const key = e.target.value;
+                setBrokerPreset(key);
+                const preset = BROKER_PRESETS[key];
+                if (preset && key !== "custom") {
+                  setSpread(preset.spread);
+                  setCommission(preset.commission);
+                }
+              }}
+              className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+            >
+              {Object.entries(BROKER_PRESETS).map(([key, preset]) => (
+                <option key={key} value={key}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+            {brokerPreset !== "custom" && (
+              <p className="text-[10px] text-[#7C8DB0] mt-1">
+                {BROKER_PRESETS[brokerPreset]?.description}
+              </p>
+            )}
           </div>
 
           {/* Symbol */}
@@ -643,7 +843,10 @@ export function BacktestForm({ projects }: BacktestFormProps) {
               min="0"
               step="1"
               value={spread}
-              onChange={(e) => setSpread(e.target.value)}
+              onChange={(e) => {
+                setSpread(e.target.value);
+                setBrokerPreset("custom");
+              }}
               className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
             />
             <p className="text-[10px] text-[#7C8DB0] mt-1">10 points = 1 pip on 5-digit brokers</p>
@@ -659,10 +862,97 @@ export function BacktestForm({ projects }: BacktestFormProps) {
               min="0"
               step="0.5"
               value={commission}
-              onChange={(e) => setCommission(e.target.value)}
+              onChange={(e) => {
+                setCommission(e.target.value);
+                setBrokerPreset("custom");
+              }}
               className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
             />
           </div>
+        </div>
+
+        {/* Advanced Settings (collapsible) */}
+        <div className="mt-4 border border-[rgba(79,70,229,0.2)] rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen(!advancedOpen)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[#A78BFA] bg-[#0A0118]/50 hover:bg-[#0A0118]/80 transition-colors"
+          >
+            <span>Advanced Settings</span>
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {advancedOpen && (
+            <div className="px-4 pb-4 pt-2 space-y-4 bg-[#0A0118]/30">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Swap Long */}
+                <div>
+                  <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">
+                    Swap Long ($/lot/night)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={swapLong}
+                    onChange={(e) => setSwapLong(e.target.value)}
+                    className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+                  />
+                  <p className="text-[10px] text-[#7C8DB0] mt-1">
+                    Overnight swap for BUY positions. Negative = credit.
+                  </p>
+                </div>
+
+                {/* Swap Short */}
+                <div>
+                  <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">
+                    Swap Short ($/lot/night)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={swapShort}
+                    onChange={(e) => setSwapShort(e.target.value)}
+                    className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+                  />
+                  <p className="text-[10px] text-[#7C8DB0] mt-1">
+                    Overnight swap for SELL positions. Negative = credit.
+                  </p>
+                </div>
+
+                {/* Requote Rate */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">
+                    Requote Rate (0-30%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    step="1"
+                    value={requoteRate}
+                    onChange={(e) => setRequoteRate(e.target.value)}
+                    className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+                    placeholder="0"
+                  />
+                  <p className="text-[10px] text-[#7C8DB0] mt-1">
+                    Probability of trade entry being rejected (requoted). 0 = no requotes, 30 = 30%
+                    chance.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Run / Cancel button */}
@@ -742,6 +1032,32 @@ export function BacktestForm({ projects }: BacktestFormProps) {
               </button>
             </div>
           </div>
+
+          {/* Monte Carlo & Walk-Forward Buttons (prominent position) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={handleMonteCarlo}
+              disabled={monteCarloRunning || r.trades.length === 0}
+              className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
+            >
+              {monteCarloRunning
+                ? "Running Monte Carlo..."
+                : "Run Monte Carlo Simulation (1000 sims)"}
+            </button>
+            <button
+              onClick={handleWalkForward}
+              disabled={walkForwardRunning || parsedBarsRef.current.length === 0}
+              className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
+            >
+              {walkForwardRunning ? "Running Walk-Forward..." : "Run Walk-Forward Validation"}
+            </button>
+          </div>
+
+          {/* Monte Carlo Results (shown immediately after buttons) */}
+          {monteCarloResult && <MonteCarloDisplay data={monteCarloResult} />}
+
+          {/* Walk-Forward Results */}
+          {walkForwardResult && <WalkForwardDisplay data={walkForwardResult} />}
 
           {/* Key metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -853,6 +1169,23 @@ export function BacktestForm({ projects }: BacktestFormProps) {
                   />
                   <StatRow label="Initial Deposit" value={formatCurrency(r.initialDeposit)} />
                   <StatRow label="Final Balance" value={formatCurrency(r.finalBalance)} />
+                  <StatRow
+                    label="Total Swap"
+                    value={formatCurrency(r.totalSwap)}
+                    valueClass={r.totalSwap >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}
+                  />
+                  <StatRow
+                    label="Total Commission"
+                    value={formatCurrency(-r.totalCommission)}
+                    valueClass="text-[#EF4444]"
+                  />
+                  {r.requoteCount > 0 && (
+                    <StatRow
+                      label="Requotes"
+                      value={r.requoteCount.toString()}
+                      valueClass="text-[#F59E0B]"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -861,29 +1194,114 @@ export function BacktestForm({ projects }: BacktestFormProps) {
           {/* Monthly P&L */}
           <MonthlyPnLTable data={r.monthlyPnL} />
 
-          {/* Monte Carlo & Walk-Forward Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={handleMonteCarlo}
-              disabled={monteCarloRunning || r.trades.length === 0}
-              className="py-3 px-4 rounded-lg font-semibold border border-[#4F46E5] text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {monteCarloRunning ? "Running Monte Carlo..." : "Run Monte Carlo (1000 sims)"}
-            </button>
-            <button
-              onClick={handleWalkForward}
-              disabled={walkForwardRunning || parsedBarsRef.current.length === 0}
-              className="py-3 px-4 rounded-lg font-semibold border border-[#4F46E5] text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {walkForwardRunning ? "Running Walk-Forward..." : "Run Walk-Forward Validation"}
-            </button>
+          {/* Workflow Navigation */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Workflow Stepper */}
+                <div className="flex items-center gap-1.5">
+                  <Link
+                    href="/app"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
+                  >
+                    <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
+                      <svg
+                        className="w-2.5 h-2.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    Build
+                  </Link>
+                  <svg
+                    className="w-3 h-3 text-[#4F46E5]/40"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  <span className="flex items-center gap-1 px-2 py-1 rounded bg-[#4F46E5]/20 text-[10px] font-semibold text-[#A78BFA]">
+                    <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
+                      <svg
+                        className="w-2.5 h-2.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    Test
+                  </span>
+                  <svg
+                    className="w-3 h-3 text-[#4F46E5]/40"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  <span className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0]">
+                    <span className="w-4 h-4 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
+                      3
+                    </span>
+                    Deploy
+                  </span>
+                  <svg
+                    className="w-3 h-3 text-[#4F46E5]/40"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                  <span className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0]">
+                    <span className="w-4 h-4 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
+                      4
+                    </span>
+                    Monitor
+                  </span>
+                </div>
+              </div>
+              <Link
+                href="/app/live"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#10B981] rounded-lg hover:bg-[#059669] transition-all duration-200 hover:shadow-[0_0_16px_rgba(16,185,129,0.3)]"
+              >
+                Next: Go Live
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              </Link>
+            </div>
           </div>
 
-          {/* Monte Carlo Results */}
-          {monteCarloResult && <MonteCarloDisplay data={monteCarloResult} />}
-
-          {/* Walk-Forward Results */}
-          {walkForwardResult && <WalkForwardDisplay data={walkForwardResult} />}
+          {/* (Monte Carlo & Walk-Forward buttons moved above key metrics) */}
         </div>
       )}
     </div>

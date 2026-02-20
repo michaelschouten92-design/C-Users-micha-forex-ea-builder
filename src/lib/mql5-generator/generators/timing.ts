@@ -73,7 +73,7 @@ function generateCustomTimesCode(
   code.onTick.push("// Custom Trading Times");
   code.onTick.push(`bool ${varName} = false;`);
 
-  // Only declare MqlDateTime/currentMinutes if not already declared
+  // Declare MqlDateTime if not already declared, always refresh TimeToStruct
   const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
   const timeSource = (data.useServerTime ?? true) ? "TimeCurrent()" : "TimeGMT()";
   if (needsTimeDecl) {
@@ -83,17 +83,11 @@ function generateCustomTimesCode(
     );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   } else {
-    // Re-initialize dt if current time source differs from the last TimeToStruct call
-    const timeStructCalls = code.onTick.filter((l) => l.includes("TimeToStruct("));
-    const lastCall = timeStructCalls[timeStructCalls.length - 1] ?? "";
-    const lastUsedGMT = lastCall.includes("TimeGMT()");
-    const currentWantsGMT = !(data.useServerTime ?? true);
-    if (lastUsedGMT !== currentWantsGMT) {
-      code.onTick.push(
-        `TimeToStruct(${timeSource}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
-      );
-      code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
-    }
+    // Always re-call TimeToStruct for each timing block to avoid stale dt struct
+    code.onTick.push(
+      `TimeToStruct(${timeSource}, dt); // Refresh for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
+    );
+    code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
   }
   code.onTick.push("");
 
@@ -222,7 +216,7 @@ function generateTradingSessionCode(
   );
   code.onTick.push(`bool ${varName} = false;`);
 
-  // Only declare MqlDateTime/currentMinutes if not already declared
+  // Declare MqlDateTime if not already declared, always refresh TimeToStruct
   const needsTimeDecl2 = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
   const timeSource2 = (data.useServerTime ?? true) ? "TimeCurrent()" : "TimeGMT()";
   if (needsTimeDecl2) {
@@ -232,17 +226,11 @@ function generateTradingSessionCode(
     );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   } else {
-    // Re-initialize dt if current time source differs from the last TimeToStruct call
-    const timeStructCalls2 = code.onTick.filter((l) => l.includes("TimeToStruct("));
-    const lastCall2 = timeStructCalls2[timeStructCalls2.length - 1] ?? "";
-    const lastUsedGMT2 = lastCall2.includes("TimeGMT()");
-    const currentWantsGMT2 = !(data.useServerTime ?? true);
-    if (lastUsedGMT2 !== currentWantsGMT2) {
-      code.onTick.push(
-        `TimeToStruct(${timeSource2}, dt); // Re-init for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
-      );
-      code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
-    }
+    // Always re-call TimeToStruct for each timing block to avoid stale dt struct
+    code.onTick.push(
+      `TimeToStruct(${timeSource2}, dt); // Refresh for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
+    );
+    code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
   }
 
   // Day-of-week filter

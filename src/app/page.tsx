@@ -526,7 +526,7 @@ export default async function Home() {
               {
                 title: "Strategy templates that work instantly",
                 description:
-                  "Every template exports a valid Expert Advisor immediately. ATR-based stop loss, take profit based on risk-reward ratio, and proper position sizing — all pre-configured.",
+                  "Go from idea to running bot in under 5 minutes. Every template exports a valid Expert Advisor immediately. ATR-based stop loss, take profit based on risk-reward ratio, and proper position sizing — all pre-configured.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -539,7 +539,7 @@ export default async function Home() {
               {
                 title: "Built-in risk management",
                 description:
-                  "Control your exposure with risk percentage sizing, ATR or fixed stop loss, take profit ratios, and maximum daily loss limits. Professional risk controls without the complexity.",
+                  "Protect your capital with proven position sizing. Control your exposure with risk percentage sizing, ATR or fixed stop loss, take profit ratios, and maximum daily loss limits. Professional risk controls without the complexity.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -552,7 +552,7 @@ export default async function Home() {
               {
                 title: "Clean, readable MQL5 export",
                 description:
-                  "Get well-structured, commented source code for MetaTrader 5. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. MQL4 export available on Pro and Elite plans.",
+                  "Audit every trade decision with clean, well-structured source code for MetaTrader 5. Open it in MetaEditor, review the logic, modify it further, or hand it to a developer. MQL4 export available on Pro and Elite plans.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -565,7 +565,7 @@ export default async function Home() {
               {
                 title: "Backtesting ready",
                 description:
-                  "Every exported EA works directly in MT5 Strategy Tester. Backtest across multiple timeframes and currency pairs. Optimize parameters with MT5's built-in optimization engine.",
+                  "Validate your strategy with real historical data before risking capital. Every exported EA works directly in MT5 Strategy Tester. Backtest across multiple timeframes and currency pairs. Optimize parameters with MT5's built-in optimization engine.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -578,7 +578,7 @@ export default async function Home() {
               {
                 title: "No-code visual interface",
                 description:
-                  "Build your trading bot with a visual interface. No programming, no complex logic wiring. Just clear settings organized by function — entry, exit, risk, timing.",
+                  "Build strategies in minutes, not weeks. A visual interface with no programming, no complex logic wiring. Just clear settings organized by function — entry, exit, risk, timing.",
                 icon: (
                   <path
                     strokeLinecap="round"
@@ -591,7 +591,7 @@ export default async function Home() {
               {
                 title: "Works with any MT5 or MT4 broker",
                 description:
-                  "The generated code is standard MQL5/MQL4 that runs on any MetaTrader platform. Compatible with forex brokers, prop firms, and CFD providers worldwide.",
+                  "Deploy anywhere with zero vendor lock-in. The generated code is standard MQL5/MQL4 that runs on any MetaTrader platform. Compatible with forex brokers, prop firms, and CFD providers worldwide.",
                 icon: (
                   <path
                     strokeLinecap="round"

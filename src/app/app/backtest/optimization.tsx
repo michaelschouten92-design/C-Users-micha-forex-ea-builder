@@ -42,7 +42,7 @@ interface OptimizationResult {
   totalTrades: number;
 }
 
-type SortField = keyof Omit<OptimizationResult, "paramValues">;
+type SortField = keyof Omit<OptimizationResult, "paramValues"> | "compound";
 type SortDirection = "asc" | "desc";
 
 // ============================================
@@ -346,6 +346,14 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
   const [heatmapMetric, setHeatmapMetric] = useState<"sharpeRatio" | "netProfit">("sharpeRatio");
 
+  // Compound metric weights
+  const [compoundWeights, setCompoundWeights] = useState({
+    sharpe: 0.5,
+    profitFactor: 0.3,
+    winRate: 0.2,
+  });
+  const [showCompound, setShowCompound] = useState(false);
+
   const cancelRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -425,9 +433,9 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
       return;
     }
 
-    if (combinations.length > 500) {
+    if (combinations.length > 2000) {
       showError(
-        `Too many combinations (${combinations.length}). Reduce parameter ranges or increase step sizes to stay under 500.`
+        `Too many combinations (${combinations.length}). Reduce parameter ranges or increase step sizes to stay under 2,000.`
       );
       return;
     }
@@ -514,9 +522,30 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
     }
   }
 
+  function computeCompoundScore(r: OptimizationResult): number {
+    // Normalize values to roughly 0-1 range
+    const maxSharpe = Math.max(...results.map((x) => x.sharpeRatio), 1);
+    const maxPF = Math.max(...results.map((x) => x.profitFactor), 1);
+
+    const normSharpe = maxSharpe > 0 ? r.sharpeRatio / maxSharpe : 0;
+    const normPF = maxPF > 0 ? r.profitFactor / maxPF : 0;
+    const normWR = r.winRate / 100;
+
+    return (
+      compoundWeights.sharpe * normSharpe +
+      compoundWeights.profitFactor * normPF +
+      compoundWeights.winRate * normWR
+    );
+  }
+
   const sortedResults = [...results].sort((a, b) => {
-    const aVal = a[sortField];
-    const bVal = b[sortField];
+    if (sortField === "compound") {
+      const aVal = computeCompoundScore(a);
+      const bVal = computeCompoundScore(b);
+      return sortDir === "desc" ? bVal - aVal : aVal - bVal;
+    }
+    const aVal = a[sortField as keyof Omit<OptimizationResult, "paramValues">];
+    const bVal = b[sortField as keyof Omit<OptimizationResult, "paramValues">];
     return sortDir === "desc" ? bVal - aVal : aVal - bVal;
   });
 
@@ -685,7 +714,7 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">Select Parameters to Optimize</h3>
           <p className="text-xs text-[#7C8DB0] mb-4">
-            Enable parameters and set min/max/step values. Keep combinations under 500 for
+            Enable parameters and set min/max/step values. Keep combinations under 2,000 for
             reasonable run times.
           </p>
 
@@ -811,6 +840,86 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
         </div>
       )}
 
+      {/* Compound Metric Config */}
+      {results.length > 0 && (
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Compound Metric Sorting</h3>
+            <button
+              onClick={() => setShowCompound(!showCompound)}
+              className="text-xs text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+            >
+              {showCompound ? "Hide" : "Configure"}
+            </button>
+          </div>
+          <p className="text-xs text-[#7C8DB0] mb-3">
+            Sort results by a weighted combination of metrics. Click &quot;Compound&quot; column
+            header in the table to apply.
+          </p>
+          {showCompound && (
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Sharpe Weight
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={compoundWeights.sharpe}
+                  onChange={(e) =>
+                    setCompoundWeights({
+                      ...compoundWeights,
+                      sharpe: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full rounded bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-2 py-1 text-xs focus:outline-none focus:border-[#4F46E5]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Profit Factor Weight
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={compoundWeights.profitFactor}
+                  onChange={(e) =>
+                    setCompoundWeights({
+                      ...compoundWeights,
+                      profitFactor: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full rounded bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-2 py-1 text-xs focus:outline-none focus:border-[#4F46E5]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Win Rate Weight
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={compoundWeights.winRate}
+                  onChange={(e) =>
+                    setCompoundWeights({
+                      ...compoundWeights,
+                      winRate: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full rounded bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-2 py-1 text-xs focus:outline-none focus:border-[#4F46E5]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Results Table */}
       {results.length > 0 && (
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
@@ -901,6 +1010,14 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
                     Trades
                     {renderSortIndicator("totalTrades")}
                   </th>
+                  <th
+                    className="text-right py-2 px-3 text-[#A78BFA] font-medium text-xs cursor-pointer hover:text-white"
+                    onClick={() => handleSort("compound")}
+                    title={`Weighted: ${compoundWeights.sharpe}*Sharpe + ${compoundWeights.profitFactor}*PF + ${compoundWeights.winRate}*WR`}
+                  >
+                    Compound
+                    {renderSortIndicator("compound")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -946,6 +1063,9 @@ export function Optimization({ projects, onApplyBest }: OptimizationProps) {
                       </td>
                       <td className="py-2 px-3 text-right text-xs text-[#CBD5E1]">
                         {result.totalTrades}
+                      </td>
+                      <td className="py-2 px-3 text-right text-xs text-[#A78BFA] font-medium">
+                        {computeCompoundScore(result).toFixed(3)}
                       </td>
                     </tr>
                   );

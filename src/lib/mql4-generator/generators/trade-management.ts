@@ -155,17 +155,31 @@ function generateBreakevenStopCode(
   code.onTick.push("         {");
   code.onTick.push("            double newBE = openPrice + lockPoints * point;");
   code.onTick.push("            if(currentSL < newBE)");
+  code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newBE, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newBE, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("BE Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
+  code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("         else if(posType == OP_SELL)");
   code.onTick.push("         {");
   code.onTick.push("            double newBE = openPrice - lockPoints * point;");
   code.onTick.push("            if(currentSL > newBE || currentSL == 0)");
+  code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newBE, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newBE, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("BE Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
+  code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
   code.onTick.push("   }");
@@ -290,9 +304,14 @@ function generateTrailingStopCode(
   code.onTick.push("            double newSL = bid - trailPoints * point;");
   code.onTick.push("            if(newSL > currentSL)");
   code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("Trail Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
   code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
@@ -304,9 +323,14 @@ function generateTrailingStopCode(
   code.onTick.push("            double newSL = ask + trailPoints * point;");
   code.onTick.push("            if(newSL < currentSL || currentSL == 0)");
   code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("Trail Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
   code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
@@ -491,9 +515,16 @@ void CleanPartialClosedTickets()
   if (data.moveSLToBreakeven) {
     code.onTick.push("            // Move SL to breakeven after partial close");
     code.onTick.push("            if(reselected)");
+    code.onTick.push("            {");
+    code.onTick.push("               RefreshRates();");
     code.onTick.push(
-      "               OrderModify(ticket, OrderOpenPrice(), openPrice, cachedTP, 0);"
+      "               if(!OrderModify(ticket, OrderOpenPrice(), openPrice, cachedTP, 0))"
     );
+    code.onTick.push(
+      '                  Print("PartialClose BE Modify failed ticket=", ticket, " err=", GetLastError());'
+    );
+    code.onTick.push("               Sleep(100);");
+    code.onTick.push("            }");
   }
 
   code.onTick.push("         }");
@@ -575,9 +606,14 @@ function generateLockProfitCode(
   code.onTick.push("            double newSL = openPrice + lockPoints * point;");
   code.onTick.push("            if(newSL > currentSL)");
   code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("Lock Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
   code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
@@ -599,9 +635,14 @@ function generateLockProfitCode(
   code.onTick.push("            double newSL = openPrice - lockPoints * point;");
   code.onTick.push("            if(newSL < currentSL || currentSL == 0)");
   code.onTick.push("            {");
+  code.onTick.push("               RefreshRates();");
   code.onTick.push(
-    "               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0);"
+    "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0))"
   );
+  code.onTick.push(
+    '                  Print("Lock Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+  );
+  code.onTick.push("               Sleep(100);");
   code.onTick.push("            }");
   code.onTick.push("         }");
   code.onTick.push("      }");
@@ -797,9 +838,14 @@ void CleanMLTPStates()
       "            if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())"
     );
     code.onTick.push("            {");
+    code.onTick.push("               RefreshRates();");
     code.onTick.push(
-      "               OrderModify(OrderTicket(), OrderOpenPrice(), openPrice, OrderTakeProfit(), 0);"
+      "               if(!OrderModify(OrderTicket(), OrderOpenPrice(), openPrice, OrderTakeProfit(), 0))"
     );
+    code.onTick.push(
+      '                  Print("MLTP BE Modify failed ticket=", OrderTicket(), " err=", GetLastError());'
+    );
+    code.onTick.push("               Sleep(100);");
     code.onTick.push("               break;");
     code.onTick.push("            }");
     code.onTick.push("         }");

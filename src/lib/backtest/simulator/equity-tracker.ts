@@ -13,6 +13,8 @@ export class EquityTracker {
   private maxDrawdownPercent = 0;
   private equityCurve: EquityCurvePoint[] = [];
   private config: BacktestConfig;
+  // Track total swap applied across all positions for accurate equity reporting
+  private accumulatedSwapTotal = 0;
 
   constructor(config: BacktestConfig) {
     this.balance = config.initialBalance;
@@ -32,9 +34,12 @@ export class EquityTracker {
   getEquityCurve(): EquityCurvePoint[] {
     return this.equityCurve;
   }
+  getAccumulatedSwapTotal(): number {
+    return this.accumulatedSwapTotal;
+  }
 
   /**
-   * Record a closed trade's profit/loss.
+   * Record a closed trade's profit/loss (profit should already include swap & commission).
    */
   recordTrade(profit: number): void {
     this.balance += profit;
@@ -44,10 +49,19 @@ export class EquityTracker {
   }
 
   /**
-   * Update equity snapshot at each bar (includes unrealized P&L).
+   * Record swap applied to open positions (for running total tracking).
+   */
+  recordSwap(swapAmount: number): void {
+    this.accumulatedSwapTotal += swapAmount;
+  }
+
+  /**
+   * Update equity snapshot at each bar (includes unrealized P&L + accumulated swap).
+   * calcPositionProfit already includes pos.accumulatedSwap in its calculation,
+   * so equity = balance + unrealizedPnL (which contains swap).
    */
   updateEquity(barIndex: number, bar: OHLCVBar, openPositions: SimulatedPosition[]): void {
-    // Calculate unrealized P&L
+    // Calculate unrealized P&L (includes accumulated swap per position)
     let unrealizedPnL = 0;
     for (const pos of openPositions) {
       unrealizedPnL += calcPositionProfit(pos, bar, this.config);

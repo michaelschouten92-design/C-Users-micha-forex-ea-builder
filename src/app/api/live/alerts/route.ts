@@ -95,10 +95,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Validate threshold is provided for threshold-based alerts
-  if (alertType === "DRAWDOWN" && (threshold === null || threshold === undefined)) {
+  // Validate threshold is required and must be > 0 for threshold-based alert types
+  const THRESHOLD_REQUIRED_TYPES = ["DRAWDOWN", "DAILY_LOSS"] as const;
+  if (
+    (THRESHOLD_REQUIRED_TYPES as readonly string[]).includes(alertType) &&
+    (threshold === null || threshold === undefined || threshold <= 0)
+  ) {
     return NextResponse.json(
-      apiError(ErrorCode.VALIDATION_FAILED, "Threshold is required for DRAWDOWN alerts"),
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        `Threshold is required and must be greater than 0 for ${alertType} alerts`
+      ),
       { status: 400 }
     );
   }
@@ -165,6 +172,24 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Alert config not found"), {
       status: 404,
     });
+  }
+
+  // Validate threshold when alert type requires it (considering both new and existing values)
+  const effectiveAlertType = updates.alertType ?? existing.alertType;
+  const effectiveThreshold =
+    updates.threshold !== undefined ? updates.threshold : existing.threshold;
+  const THRESHOLD_REQUIRED_UPDATE = ["DRAWDOWN", "DAILY_LOSS"];
+  if (
+    THRESHOLD_REQUIRED_UPDATE.includes(effectiveAlertType) &&
+    (effectiveThreshold === null || effectiveThreshold === undefined || effectiveThreshold <= 0)
+  ) {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        `Threshold is required and must be greater than 0 for ${effectiveAlertType} alerts`
+      ),
+      { status: 400 }
+    );
   }
 
   // Build update data, only including fields that were provided

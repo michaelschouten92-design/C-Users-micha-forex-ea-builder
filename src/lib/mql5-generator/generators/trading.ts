@@ -706,16 +706,24 @@ export function generateEntryLogic(
         tfVar = `(ENUM_TIMEFRAMES)InpMACD${indIndex}Timeframe`;
       }
 
-      // Copy price data in OnTick
+      // Copy price data in OnTick (with explicit count validation)
       code.onTick.push(
-        `if(CopyLow(_Symbol, ${tfVar}, 0, InpDivLookback${indIndex}+2, ${divPriceVar}Low) < InpDivLookback${indIndex}+2) return;`
+        `int divCopied${indIndex}L = CopyLow(_Symbol, ${tfVar}, 0, InpDivLookback${indIndex}+2, ${divPriceVar}Low);`
       );
       code.onTick.push(
-        `if(CopyHigh(_Symbol, ${tfVar}, 0, InpDivLookback${indIndex}+2, ${divPriceVar}High) < InpDivLookback${indIndex}+2) return;`
+        `int divCopied${indIndex}H = CopyHigh(_Symbol, ${tfVar}, 0, InpDivLookback${indIndex}+2, ${divPriceVar}High);`
+      );
+      code.onTick.push(
+        `if(divCopied${indIndex}L < InpDivLookback${indIndex}+2 || divCopied${indIndex}H < InpDivLookback${indIndex}+2) return; // Not enough bars for divergence`
       );
 
       // Determine which indicator buffer to use for divergence comparison
       const indBuffer = indType === "macd" ? `${varPrefix}MainBuffer` : `${varPrefix}Buffer`;
+
+      // Also verify indicator buffer has enough bars (ArraySize check)
+      code.onTick.push(
+        `if(ArraySize(${indBuffer}) < InpDivLookback${indIndex}+2) return; // Indicator buffer too small for divergence lookback`
+      );
 
       buyConditions.push(
         `(CheckBullishDivergence(${divPriceVar}Low, ${indBuffer}, InpDivLookback${indIndex}, InpDivMinSwing${indIndex}))`
@@ -874,10 +882,11 @@ export function generateEntryLogic(
             const cloudBuyC = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
             const cloudSellC = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
 
-            // Chikou Span confirmation (ChikouSpan = close shifted 26 bars back)
-            // Compare current close[26] vs chikou (which is close[0] plotted at [26])
-            const chikouBuyC = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), iClose(_Symbol, PERIOD_CURRENT, ${26 + s})))`;
-            const chikouSellC = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), iClose(_Symbol, PERIOD_CURRENT, ${26 + s})))`;
+            // Chikou Span confirmation: close 26 bars ago must be above/below the cloud AT THAT TIME
+            // Chikou Span = current close plotted 26 bars back; the confirmation checks
+            // whether close[26] is above SpanA[26] and SpanB[26] (cloud at that historical bar)
+            const chikouBuyC = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanABuffer[${26 + s}]) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanBBuffer[${26 + s}]))`;
+            const chikouSellC = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanABuffer[${26 + s}]) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanBBuffer[${26 + s}]))`;
 
             if (ichiMode === "TENKAN_KIJUN_CROSS") {
               buyConditions.push(
@@ -896,6 +905,16 @@ export function generateEntryLogic(
             }
             break;
           }
+
+          case "vwap":
+            // VWAP: price above VWAP = buy, price below VWAP = sell
+            buyConditions.push(
+              `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+            );
+            sellConditions.push(
+              `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+            );
+            break;
 
           case "bb-squeeze":
             // BB Squeeze: breakout from squeeze = buy when close > BB middle, sell when close < BB middle
@@ -1023,6 +1042,27 @@ export function generateEntryLogic(
 
     if (buyConditions.length === 0) buyConditions.push("false");
     if (sellConditions.length === 0) sellConditions.push("false");
+
+    // Fix 10: Warn when direction is BOTH but only one side has real conditions
+    const buyIsAlwaysFalse = buyConditions.length === 1 && buyConditions[0] === "false";
+    const sellIsAlwaysFalse = sellConditions.length === 1 && sellConditions[0] === "false";
+    if (hasBuyNode && hasSellNode) {
+      if (buyIsAlwaysFalse && !sellIsAlwaysFalse) {
+        code.onTick.push(
+          "// WARNING: Direction is BOTH but no BUY entry conditions were generated."
+        );
+        code.onTick.push(
+          "// The EA will only open SELL positions. Add buy-side indicator conditions or change direction to SELL."
+        );
+      } else if (!buyIsAlwaysFalse && sellIsAlwaysFalse) {
+        code.onTick.push(
+          "// WARNING: Direction is BOTH but no SELL entry conditions were generated."
+        );
+        code.onTick.push(
+          "// The EA will only open BUY positions. Add sell-side indicator conditions or change direction to BUY."
+        );
+      }
+    }
 
     const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
     code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
@@ -1606,23 +1646,36 @@ export function generateGridPyramidCode(
     )
   );
 
-  code.globalVariables.push("int gridLevelCount = 0;");
   code.globalVariables.push("double gridBasePrice = 0;");
-  code.globalVariables.push("datetime gridLastOrderTime = 0;");
+  code.globalVariables.push("datetime gridLastBarTime = 0; // Bar-based throttle for grid/pyramid");
 
   code.onTick.push("");
   code.onTick.push("//--- Grid/Pyramid Management");
 
   if (data.gridMode === "GRID") {
-    // GRID mode: place pending orders at fixed intervals from the base price
+    // GRID mode: place orders at fixed intervals from the base price
     code.onTick.push("// Grid Mode: place orders at fixed intervals");
     code.onTick.push("{");
     code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
     code.onTick.push("   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);");
     code.onTick.push("   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
     code.onTick.push("");
+    code.onTick.push("   // Count ACTUAL open positions (not a stale counter)");
+    code.onTick.push("   int gridOpenCount = 0;");
+    code.onTick.push("   for(int i = 0; i < PositionsTotal(); i++)");
+    code.onTick.push("   {");
+    code.onTick.push("      ulong ticket = PositionGetTicket(i);");
+    code.onTick.push(
+      "      if(PositionSelectByTicket(ticket) && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+    );
+    code.onTick.push("         gridOpenCount++;");
+    code.onTick.push("   }");
+    code.onTick.push("");
+    code.onTick.push("   // Reset base price when all positions closed (new grid cycle)");
+    code.onTick.push("   if(gridOpenCount == 0) gridBasePrice = 0;");
+    code.onTick.push("");
     code.onTick.push("   // Initialize grid base price from first position");
-    code.onTick.push("   if(gridBasePrice == 0 && positionsCount > 0)");
+    code.onTick.push("   if(gridBasePrice == 0 && gridOpenCount > 0)");
     code.onTick.push("   {");
     code.onTick.push("      for(int i = 0; i < PositionsTotal(); i++)");
     code.onTick.push("      {");
@@ -1633,40 +1686,69 @@ export function generateGridPyramidCode(
     code.onTick.push("         { gridBasePrice = PositionGetDouble(POSITION_PRICE_OPEN); break; }");
     code.onTick.push("      }");
     code.onTick.push("   }");
-    code.onTick.push("   if(positionsCount == 0) { gridBasePrice = 0; gridLevelCount = 0; }");
     code.onTick.push("");
-    code.onTick.push("   if(gridBasePrice > 0 && gridLevelCount < InpMaxGridLevels)");
+    code.onTick.push("   // Bar-based throttle: only place one grid order per bar");
+    code.onTick.push("   datetime gridBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);");
+    code.onTick.push("   bool gridNewBar = (gridBarTime != gridLastBarTime);");
+    code.onTick.push("");
+    code.onTick.push("   if(gridBasePrice > 0 && gridOpenCount < InpMaxGridLevels && gridNewBar)");
     code.onTick.push("   {");
-    code.onTick.push("      double nextLevel = gridBasePrice + (gridLevelCount + 1) * spacing;");
-    code.onTick.push(
-      "      double nextLevelDown = gridBasePrice - (gridLevelCount + 1) * spacing;"
-    );
+    code.onTick.push("      // Check if price is at a grid level not already occupied");
     code.onTick.push("      double lotSize = InpBuyLotSize;");
     code.onTick.push("      if(InpGridLotMultiplier != 1.0)");
     code.onTick.push(
-      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridLevelCount), 2);"
+      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridOpenCount), 2);"
     );
+    code.onTick.push("");
+    code.onTick.push("      // Check each level to find one that matches current price");
+    code.onTick.push("      for(int lvl = 1; lvl <= InpMaxGridLevels; lvl++)");
+    code.onTick.push("      {");
+    code.onTick.push("         double levelUp = gridBasePrice + lvl * spacing;");
+    code.onTick.push("         double levelDown = gridBasePrice - lvl * spacing;");
+    code.onTick.push("");
+    code.onTick.push(
+      "         // Check if a position already exists at this level (deduplication)"
+    );
+    code.onTick.push("         bool levelOccupied = false;");
+    code.onTick.push("         for(int p = 0; p < PositionsTotal(); p++)");
+    code.onTick.push("         {");
+    code.onTick.push("            ulong pt = PositionGetTicket(p);");
+    code.onTick.push(
+      "            if(!PositionSelectByTicket(pt) || PositionGetInteger(POSITION_MAGIC) != InpMagicNumber || PositionGetString(POSITION_SYMBOL) != _Symbol) continue;"
+    );
+    code.onTick.push("            double poPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
+    code.onTick.push(
+      "            if(MathAbs(poPrice - levelUp) < spacing * 0.3 || MathAbs(poPrice - levelDown) < spacing * 0.3)"
+    );
+    code.onTick.push("            { levelOccupied = true; break; }");
+    code.onTick.push("         }");
+    code.onTick.push("         if(levelOccupied) continue;");
 
     if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      // Buy grid: place buy limit below current price");
-      code.onTick.push("      if(bid <= nextLevelDown + spacing * 0.1)");
-      code.onTick.push("      {");
-      code.onTick.push(`         if(trade.Buy(lotSize, _Symbol, 0, 0, 0, "${comment} Grid"))`);
-      code.onTick.push("            gridLevelCount++;");
-      code.onTick.push("      }");
+      code.onTick.push("         // Buy grid: place buy when price drops to level");
+      code.onTick.push(
+        "         if(bid <= levelDown + spacing * 0.1 && bid >= levelDown - spacing * 0.3)"
+      );
+      code.onTick.push("         {");
+      code.onTick.push(`            if(trade.Buy(lotSize, _Symbol, 0, 0, 0, "${comment} Grid"))`);
+      code.onTick.push("            { gridLastBarTime = gridBarTime; break; }");
+      code.onTick.push("         }");
     }
 
     if (data.direction === "SELL_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      // Sell grid: place sell limit above current price");
-      code.onTick.push("      if(ask >= nextLevel - spacing * 0.1)");
-      code.onTick.push("      {");
-      code.onTick.push(`         if(trade.Sell(lotSize, _Symbol, 0, 0, 0, "${comment} Grid"))`);
-      code.onTick.push("            gridLevelCount++;");
-      code.onTick.push("      }");
+      code.onTick.push("         // Sell grid: place sell when price rises to level");
+      code.onTick.push(
+        "         if(ask >= levelUp - spacing * 0.1 && ask <= levelUp + spacing * 0.3)"
+      );
+      code.onTick.push("         {");
+      code.onTick.push(`            if(trade.Sell(lotSize, _Symbol, 0, 0, 0, "${comment} Grid"))`);
+      code.onTick.push("            { gridLastBarTime = gridBarTime; break; }");
+      code.onTick.push("         }");
     }
 
+    code.onTick.push("      } // end level loop");
     code.onTick.push("   }");
     code.onTick.push("}");
   } else {
@@ -1674,63 +1756,75 @@ export function generateGridPyramidCode(
     code.onTick.push("// Pyramid Mode: add to winning positions");
     code.onTick.push("{");
     code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
+    code.onTick.push("   datetime pyramidBarTime = iTime(_Symbol, PERIOD_CURRENT, 0);");
+    code.onTick.push("   bool pyramidNewBar = (pyramidBarTime != gridLastBarTime);");
     code.onTick.push("");
-    code.onTick.push("   for(int i = PositionsTotal() - 1; i >= 0; i--)");
+    code.onTick.push("   // Count actual open positions");
+    code.onTick.push("   int pyramidCount = 0;");
+    code.onTick.push("   for(int c = 0; c < PositionsTotal(); c++)");
     code.onTick.push("   {");
-    code.onTick.push("      ulong ticket = PositionGetTicket(i);");
-    code.onTick.push("      if(!PositionSelectByTicket(ticket)) continue;");
+    code.onTick.push("      ulong ct = PositionGetTicket(c);");
     code.onTick.push(
-      "      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber || PositionGetString(POSITION_SYMBOL) != _Symbol) continue;"
+      "      if(PositionSelectByTicket(ct) && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
+    );
+    code.onTick.push("         pyramidCount++;");
+    code.onTick.push("   }");
+    code.onTick.push("");
+    code.onTick.push("   if(pyramidCount < InpMaxGridLevels && pyramidNewBar)");
+    code.onTick.push("   {");
+    code.onTick.push("      // Process ALL winning positions (not just the most recent)");
+    code.onTick.push("      for(int i = PositionsTotal() - 1; i >= 0; i--)");
+    code.onTick.push("      {");
+    code.onTick.push("         ulong ticket = PositionGetTicket(i);");
+    code.onTick.push("         if(!PositionSelectByTicket(ticket)) continue;");
+    code.onTick.push(
+      "         if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber || PositionGetString(POSITION_SYMBOL) != _Symbol) continue;"
     );
     code.onTick.push("");
-    code.onTick.push("      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-    code.onTick.push("      long posType = PositionGetInteger(POSITION_TYPE);");
-    code.onTick.push("      double volume = PositionGetDouble(POSITION_VOLUME);");
+    code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
+    code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
+    code.onTick.push("         double volume = PositionGetDouble(POSITION_VOLUME);");
     code.onTick.push("");
-    code.onTick.push("      // Count existing positions to determine pyramid level");
-    code.onTick.push("      if(positionsCount >= InpMaxGridLevels) break;");
+    code.onTick.push("         // Re-check count inside loop (may have just added)");
+    code.onTick.push("         if(pyramidCount >= InpMaxGridLevels) break;");
     code.onTick.push("");
     code.onTick.push(
-      "      double nextLotSize = NormalizeDouble(volume * InpGridLotMultiplier, 2);"
+      "         double nextLotSize = NormalizeDouble(volume * InpGridLotMultiplier, 2);"
     );
-    code.onTick.push("      double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
-    code.onTick.push("      if(nextLotSize < minLot) nextLotSize = minLot;");
+    code.onTick.push("         double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
+    code.onTick.push("         if(nextLotSize < minLot) nextLotSize = minLot;");
 
     if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      if(posType == POSITION_TYPE_BUY)");
-      code.onTick.push("      {");
-      code.onTick.push("         double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
-      code.onTick.push(
-        "         if(bid >= openPrice + spacing && TimeCurrent() > gridLastOrderTime + 60)"
-      );
+      code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
       code.onTick.push("         {");
+      code.onTick.push("            double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
+      code.onTick.push("            if(bid >= openPrice + spacing)");
+      code.onTick.push("            {");
       code.onTick.push(
-        `            if(trade.Buy(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
+        `               if(trade.Buy(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
       );
-      code.onTick.push("               gridLastOrderTime = TimeCurrent();");
+      code.onTick.push("               { gridLastBarTime = pyramidBarTime; pyramidCount++; }");
+      code.onTick.push("            }");
       code.onTick.push("         }");
-      code.onTick.push("      }");
     }
 
     if (data.direction === "SELL_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      if(posType == POSITION_TYPE_SELL)");
-      code.onTick.push("      {");
-      code.onTick.push("         double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);");
-      code.onTick.push(
-        "         if(ask <= openPrice - spacing && TimeCurrent() > gridLastOrderTime + 60)"
-      );
+      code.onTick.push("         if(posType == POSITION_TYPE_SELL)");
       code.onTick.push("         {");
+      code.onTick.push("            double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);");
+      code.onTick.push("            if(ask <= openPrice - spacing)");
+      code.onTick.push("            {");
       code.onTick.push(
-        `            if(trade.Sell(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
+        `               if(trade.Sell(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
       );
-      code.onTick.push("               gridLastOrderTime = TimeCurrent();");
+      code.onTick.push("               { gridLastBarTime = pyramidBarTime; pyramidCount++; }");
+      code.onTick.push("            }");
       code.onTick.push("         }");
-      code.onTick.push("      }");
     }
 
-    code.onTick.push("      break; // Only process the most recent position");
+    code.onTick.push("      } // end position loop");
     code.onTick.push("   }");
     code.onTick.push("}");
   }

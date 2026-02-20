@@ -299,6 +299,22 @@ export default function AIGeneratorPage() {
                 )}
               </button>
 
+              {/* Backtest This Strategy button */}
+              <Link
+                href="/app/backtest"
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#6366F1] transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                Backtest This Strategy
+              </Link>
+
               {result.remaining !== null && (
                 <p className="text-xs text-[#7C8DB0] mt-3 text-center">
                   {result.remaining} generation{result.remaining !== 1 ? "s" : ""} remaining today
@@ -308,6 +324,111 @@ export default function AIGeneratorPage() {
                   </Link>
                 </p>
               )}
+            </div>
+
+            {/* Parameter Range Suggestions */}
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+              <h3 className="text-sm font-semibold text-white mb-3">
+                Suggested Parameter Ranges for Optimization
+              </h3>
+              <p className="text-xs text-[#7C8DB0] mb-4">
+                Based on the generated strategy type, here are recommended optimization ranges to
+                try in the backtest optimizer.
+              </p>
+              <div className="space-y-2">
+                {(() => {
+                  const desc = description.toLowerCase();
+                  const suggestions: { param: string; range: string; note: string }[] = [];
+
+                  if (
+                    desc.includes("ema") ||
+                    desc.includes("moving average") ||
+                    desc.includes("ma ")
+                  ) {
+                    suggestions.push(
+                      {
+                        param: "Fast MA Period",
+                        range: "5 - 50, step 5",
+                        note: "Shorter for scalping, longer for swing",
+                      },
+                      {
+                        param: "Slow MA Period",
+                        range: "20 - 200, step 10",
+                        note: "Should be > fast period",
+                      }
+                    );
+                  }
+                  if (desc.includes("rsi")) {
+                    suggestions.push(
+                      { param: "RSI Period", range: "7 - 21, step 2", note: "Standard is 14" },
+                      {
+                        param: "RSI Overbought",
+                        range: "65 - 80, step 5",
+                        note: "Higher = fewer signals",
+                      },
+                      {
+                        param: "RSI Oversold",
+                        range: "20 - 35, step 5",
+                        note: "Lower = fewer signals",
+                      }
+                    );
+                  }
+                  if (desc.includes("bollinger") || desc.includes("bb")) {
+                    suggestions.push(
+                      { param: "BB Period", range: "14 - 30, step 2", note: "Standard is 20" },
+                      {
+                        param: "BB Deviation",
+                        range: "1.5 - 3.0, step 0.5",
+                        note: "Standard is 2.0",
+                      }
+                    );
+                  }
+                  if (desc.includes("macd")) {
+                    suggestions.push(
+                      { param: "MACD Fast", range: "8 - 16, step 2", note: "Standard is 12" },
+                      { param: "MACD Slow", range: "20 - 30, step 2", note: "Standard is 26" },
+                      { param: "MACD Signal", range: "7 - 12, step 1", note: "Standard is 9" }
+                    );
+                  }
+                  if (desc.includes("breakout")) {
+                    suggestions.push(
+                      {
+                        param: "Lookback Period",
+                        range: "10 - 50, step 5",
+                        note: "Higher = stronger breakouts",
+                      },
+                      {
+                        param: "ATR Multiplier",
+                        range: "1.0 - 3.0, step 0.5",
+                        note: "For SL/TP distance",
+                      }
+                    );
+                  }
+
+                  // Always suggest risk parameters
+                  suggestions.push(
+                    {
+                      param: "Risk %",
+                      range: "0.5 - 3.0, step 0.5",
+                      note: "Per-trade risk as % of balance",
+                    },
+                    { param: "SL Pips", range: "10 - 50, step 5", note: "Tighter for scalping" }
+                  );
+
+                  return suggestions.map((s, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between py-1.5 px-3 rounded bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
+                    >
+                      <div>
+                        <span className="text-xs font-medium text-[#CBD5E1]">{s.param}</span>
+                        <span className="text-[10px] text-[#7C8DB0] ml-2">{s.note}</span>
+                      </div>
+                      <span className="text-xs text-[#A78BFA] font-mono">{s.range}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
           </div>
         )}

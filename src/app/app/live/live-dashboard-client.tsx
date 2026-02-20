@@ -207,6 +207,12 @@ function MiniEquityChart({ heartbeats }: { heartbeats: { equity: number; created
 // STATUS BADGE
 // ============================================
 
+const STATUS_TOOLTIPS: Record<string, string> = {
+  ONLINE: "EA is connected and actively trading. Heartbeat received within the last 2 minutes.",
+  OFFLINE: "EA has not sent a heartbeat recently. Check your MT5 terminal and internet connection.",
+  ERROR: "EA reported an error. Check the error message below for details.",
+};
+
 function StatusBadge({
   status,
   animate,
@@ -218,6 +224,7 @@ function StatusBadge({
     return (
       <span
         className={`inline-flex items-center gap-1.5 text-xs font-medium text-[#10B981] ${animate ? "animate-pulse" : ""}`}
+        title={STATUS_TOOLTIPS.ONLINE}
       >
         <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
         Online
@@ -226,14 +233,20 @@ function StatusBadge({
   }
   if (status === "ERROR") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#EF4444]">
+      <span
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#EF4444]"
+        title={STATUS_TOOLTIPS.ERROR}
+      >
         <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
         Error
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748B]">
+    <span
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748B]"
+      title={STATUS_TOOLTIPS.OFFLINE}
+    >
       <span className="w-2 h-2 rounded-full bg-[#64748B]" />
       Offline
     </span>
@@ -267,10 +280,65 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
     };
   }, [page, instanceId]);
 
+  function handleExportCSV() {
+    if (trades.length === 0) return;
+    const headers = [
+      "Type",
+      "Symbol",
+      "Lots",
+      "Open Price",
+      "Close Price",
+      "P/L",
+      "Open Time",
+      "Close Time",
+    ];
+    const rows = trades.map((t) => [
+      t.type,
+      t.symbol,
+      t.lots.toFixed(2),
+      t.openPrice.toFixed(5),
+      t.closePrice !== null ? t.closePrice.toFixed(5) : "",
+      t.profit.toFixed(2),
+      t.openTime,
+      t.closeTime ?? "",
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${eaName.replace(/[^a-zA-Z0-9]/g, "_")}_trades.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Trade Log - {eaName}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">
+            Trade Log - {eaName}
+          </p>
+          {trades.length > 0 && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-[rgba(79,70,229,0.2)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.1)] transition-colors"
+              title="Export trades as CSV"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Export CSV
+            </button>
+          )}
+        </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <button
@@ -481,6 +549,35 @@ function EACard({
           <p className="text-sm font-medium text-[#CBD5E1]">{maxDrawdown.toFixed(1)}%</p>
         </div>
       </div>
+
+      {/* Slippage info (estimated from trade data) */}
+      {(() => {
+        const closedTrades = ea.trades.filter((t) => t.closeTime !== null);
+        if (closedTrades.length < 5) return null;
+        // Estimate average absolute profit deviation as a proxy for slippage awareness
+        const avgProfit =
+          closedTrades.reduce((s, t) => s + Math.abs(t.profit), 0) / closedTrades.length;
+        const variance =
+          closedTrades.reduce((s, t) => s + Math.pow(Math.abs(t.profit) - avgProfit, 2), 0) /
+          closedTrades.length;
+        const stdDev = Math.sqrt(variance);
+        return (
+          <div
+            className="flex items-center gap-2 mt-2 text-[10px] text-[#7C8DB0]"
+            title="Estimated from trade profit variance. High variance may indicate significant slippage."
+          >
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>P/L Std Dev: {formatCurrency(stdDev)} (higher values may indicate slippage)</span>
+          </div>
+        );
+      })()}
 
       {/* Controls Row */}
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
@@ -1349,6 +1446,118 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Workflow Navigation */}
+      {eaInstances.length > 0 && (
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/app"
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
+              >
+                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                Build
+              </Link>
+              <svg
+                className="w-3 h-3 text-[#4F46E5]/40"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <Link
+                href="/app/backtest"
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
+              >
+                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                Test
+              </Link>
+              <svg
+                className="w-3 h-3 text-[#4F46E5]/40"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <span className="flex items-center gap-1 px-2 py-1 rounded bg-[#4F46E5]/20 text-[10px] font-semibold text-[#A78BFA]">
+                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
+                  3
+                </span>
+                Deploy
+              </span>
+              <svg
+                className="w-3 h-3 text-[#4F46E5]/40"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              <Link
+                href="/app/journal"
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
+              >
+                <span className="w-4 h-4 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
+                  4
+                </span>
+                Monitor
+              </Link>
+            </div>
+            <Link
+              href="/app/journal"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-[#22D3EE] border border-[#22D3EE]/30 rounded-lg hover:bg-[#22D3EE]/10 transition-all duration-200"
+            >
+              Compare with Backtest
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </Link>
+          </div>
         </div>
       )}
 

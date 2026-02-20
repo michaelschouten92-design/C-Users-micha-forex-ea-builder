@@ -106,6 +106,7 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
     "ichimoku",
     "obv",
     "bb-squeeze",
+    "vwap",
   ]);
 
   const indicators: IndicatorConfig[] = [];
@@ -143,7 +144,6 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
         "fair-value-gap",
         "market-structure",
         "news-filter",
-        "vwap",
       ].includes(node.type)
     ) {
       warnings.push(
@@ -152,12 +152,24 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
     }
   }
 
-  // Calculate warmup period
-  let warmupBars = 0;
+  // Calculate warmup period: sum of all indicator periods + 10-bar safety buffer.
+  // This ensures chained indicators (e.g., RSI(14) feeding into MA(20)) have enough
+  // data. Using sum is more conservative than max for multi-indicator strategies.
+  let warmupBarsSum = 0;
+  let warmupBarsMax = 0;
   for (const ind of indicators) {
-    warmupBars = Math.max(warmupBars, getIndicatorWarmup(ind));
+    const w = getIndicatorWarmup(ind);
+    warmupBarsSum += w;
+    warmupBarsMax = Math.max(warmupBarsMax, w);
   }
-  warmupBars = Math.max(warmupBars, 5); // Minimum 5 bars
+  // Use sum if multiple indicators (they may be chained), otherwise use max
+  // Add 10 bars safety buffer on top to avoid edge effects
+  const WARMUP_SAFETY_BUFFER = 10;
+  let warmupBars =
+    indicators.length > 1
+      ? warmupBarsSum + WARMUP_SAFETY_BUFFER
+      : warmupBarsMax + WARMUP_SAFETY_BUFFER;
+  warmupBars = Math.max(warmupBars, 5); // Absolute minimum 5 bars
 
   // Parse trading nodes
   const buyNodes = findNodesByType<PlaceBuyNodeData>(nodes, "place-buy");
@@ -498,6 +510,17 @@ function evaluateIndicatorSignal(
       return {
         buy: priceCurr > middleCurr,
         sell: priceCurr < middleCurr,
+      };
+    }
+
+    case "vwap": {
+      const vwapCurr = buffers.value?.[currBar];
+      if (vwapCurr === undefined || isNaN(vwapCurr)) return null;
+
+      const priceCurr = bars[currBar].close;
+      return {
+        buy: priceCurr > vwapCurr,
+        sell: priceCurr < vwapCurr,
       };
     }
 

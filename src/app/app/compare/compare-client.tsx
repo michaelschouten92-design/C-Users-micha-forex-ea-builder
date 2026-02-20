@@ -367,6 +367,16 @@ export function CompareClient({ projects }: { projects: ProjectSummary[] }) {
 
   return (
     <div>
+      {/* Header explanation */}
+      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold text-white mb-2">Strategy Comparison</h2>
+        <p className="text-sm text-[#94A3B8]">
+          Compare your strategy configurations and backtest results side by side. Select two
+          projects below to see differences in strategy blocks, settings, and performance metrics
+          highlighted automatically.
+        </p>
+      </div>
+
       {/* Selectors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -505,9 +515,25 @@ export function CompareClient({ projects }: { projects: ProjectSummary[] }) {
 
       {/* No projects selected prompt */}
       {!leftProject && !rightProject && (
-        <div className="text-center py-12">
-          <p className="text-sm text-[#7C8DB0]">
-            Select two projects above to compare their strategies side by side.
+        <div className="text-center py-12 bg-[#1A0626] border border-dashed border-[rgba(79,70,229,0.3)] rounded-xl">
+          <svg
+            className="w-12 h-12 mx-auto text-[#4F46E5]/30 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+          <p className="text-lg font-medium text-white mb-2">Select two projects to compare</p>
+          <p className="text-sm text-[#7C8DB0] max-w-md mx-auto">
+            Use the dropdowns above to choose Project A and Project B. The comparison will show
+            differences in strategy blocks, settings (risk, SL/TP, timeframe), and backtest results
+            (profit, drawdown, Sharpe ratio, and more) with the better values highlighted in green.
           </p>
         </div>
       )}

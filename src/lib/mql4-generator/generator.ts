@@ -20,6 +20,7 @@ import type {
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
   VolumeFilterNodeData,
+  NewsFilterNodeData,
 } from "@/types/builder";
 
 import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
@@ -51,6 +52,7 @@ import {
 import { generateTradeManagementCode } from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
 import { generateTelemetryCode, type TelemetryConfig } from "./generators/telemetry";
+import { generateEmbeddedNewsData } from "../news-calendar";
 import { transformCodeForMultiPair } from "./generators/multi-pair";
 
 // Helper function to get all connected node IDs starting from source nodes
@@ -1441,7 +1443,192 @@ export function generateMQL4Code(
     code.onTick.push(`}`);
   }
 
-  // News filter: SKIPPED for MQL4 — CalendarValueHistory is not available in MQL4
+  // Generate news filter code (embedded data for both live & backtest — MQL4 lacks Calendar API)
+  const newsFilterNodes = maxSpreadNodes.filter(
+    (n) => (n.data as { filterType?: string }).filterType === "news-filter"
+  );
+  if (newsFilterNodes.length > 0) {
+    const nfNode = newsFilterNodes[0];
+    const nfData = nfNode.data as NewsFilterNodeData;
+    const hoursBefore = nfData.hoursBefore ?? 0.5;
+    const hoursAfter = nfData.hoursAfter ?? 0.5;
+    const minBefore = Math.round(hoursBefore * 60);
+    const minAfter = Math.round(hoursAfter * 60);
+    const highImpact = nfData.highImpact ?? true;
+    const mediumImpact = nfData.mediumImpact ?? false;
+    const lowImpact = nfData.lowImpact ?? false;
+    const closePositions = nfData.closePositions ?? false;
+
+    // Inputs
+    code.inputs.push(
+      {
+        name: "InpNewsMinBefore",
+        type: "int",
+        value: minBefore,
+        comment: `Minutes Before News (${hoursBefore}h)`,
+        isOptimizable: isFieldOptimizable(nfNode, "hoursBefore"),
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsMinAfter",
+        type: "int",
+        value: minAfter,
+        comment: `Minutes After News (${hoursAfter}h)`,
+        isOptimizable: isFieldOptimizable(nfNode, "hoursAfter"),
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsHigh",
+        type: "bool",
+        value: highImpact,
+        comment: "Filter High Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsMedium",
+        type: "bool",
+        value: mediumImpact,
+        comment: "Filter Medium Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsLow",
+        type: "bool",
+        value: lowImpact,
+        comment: "Filter Low Impact",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpNewsClosePos",
+        type: "bool",
+        value: closePositions,
+        comment: "Close Positions During News",
+        isOptimizable: false,
+        group: "News Filter",
+      },
+      {
+        name: "InpBrokerUTCOffset",
+        type: "int",
+        value: 0,
+        comment: "Broker UTC Offset (hours, e.g. 2 for UTC+2)",
+        isOptimizable: false,
+        group: "News Filter",
+      }
+    );
+
+    // Global variables
+    code.globalVariables.push("struct SNewsEvent { datetime time; int importance; };");
+    code.globalVariables.push("SNewsEvent g_newsEvents[];");
+    code.globalVariables.push("int        g_newsCount = 0;");
+    code.globalVariables.push("string     g_baseCurrency, g_quoteCurrency;");
+
+    // Embedded news data for backtesting and live (MQL4 has no Calendar API)
+    const newsGenerationDate = new Date().toISOString().split("T")[0];
+    const newsData = generateEmbeddedNewsData(2015, 2030);
+    const newsArrayEntries = newsData.map((entry) => `   "${entry}"`).join(",\n");
+    code.globalVariables.push(`// NEWS CALENDAR DATA — Generated on ${newsGenerationDate}`);
+    code.globalVariables.push(`// This data is static and was embedded at the time of EA export.`);
+    code.globalVariables.push(`// Re-export the EA to refresh news calendar data.`);
+    code.globalVariables.push(`const string g_embeddedNews[] = {\n${newsArrayEntries}\n};`);
+
+    // OnInit — extract base/quote currencies and load embedded news
+    code.onInit.push(`   // Extract base and quote currencies from symbol name`);
+    code.onInit.push(`   string symName = Symbol();`);
+    code.onInit.push(`   if(StringLen(symName) >= 6)`);
+    code.onInit.push(`   {`);
+    code.onInit.push(`      g_baseCurrency = StringSubstr(symName, 0, 3);`);
+    code.onInit.push(`      g_quoteCurrency = StringSubstr(symName, 3, 3);`);
+    code.onInit.push(`   }`);
+    code.onInit.push(`   else`);
+    code.onInit.push(`   {`);
+    code.onInit.push(`      g_baseCurrency = symName;`);
+    code.onInit.push(`      g_quoteCurrency = "";`);
+    code.onInit.push(`   }`);
+    code.onInit.push(`   LoadEmbeddedNews();`);
+
+    // OnTick — news filter block
+    code.onTick.push(`//--- News filter`);
+    code.onTick.push(`{`);
+    code.onTick.push(`   if(IsNewsTime())`);
+    code.onTick.push(`   {`);
+    if (closePositions) {
+      code.onTick.push(`      if(InpNewsClosePos)`);
+      code.onTick.push(`      {`);
+      code.onTick.push(`         for(int i = OrdersTotal()-1; i >= 0; i--)`);
+      code.onTick.push(`         {`);
+      code.onTick.push(`            if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;`);
+      code.onTick.push(
+        `            if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())`
+      );
+      code.onTick.push(`            {`);
+      code.onTick.push(`               if(OrderType() == OP_BUY)`);
+      code.onTick.push(
+        `                  OrderClose(OrderTicket(), OrderLots(), Bid, InpMaxSlippage, clrYellow);`
+      );
+      code.onTick.push(`               else if(OrderType() == OP_SELL)`);
+      code.onTick.push(
+        `                  OrderClose(OrderTicket(), OrderLots(), Ask, InpMaxSlippage, clrYellow);`
+      );
+      code.onTick.push(`            }`);
+      code.onTick.push(`         }`);
+      code.onTick.push(`      }`);
+    }
+    code.onTick.push(`      return;`);
+    code.onTick.push(`   }`);
+    code.onTick.push(`}`);
+
+    // Helper functions
+    code.helperFunctions.push(`bool IsNewsTime()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(`   datetime now = TimeCurrent();`);
+    code.helperFunctions.push(`   for(int i = 0; i < g_newsCount; i++)`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      if(now >= g_newsEvents[i].time - InpNewsMinBefore*60`);
+    code.helperFunctions.push(`         && now <= g_newsEvents[i].time + InpNewsMinAfter*60)`);
+    code.helperFunctions.push(`      {`);
+    code.helperFunctions.push(`         int imp = g_newsEvents[i].importance;`);
+    code.helperFunctions.push(
+      `         if((imp==3 && InpNewsHigh) || (imp==2 && InpNewsMedium) || (imp==1 && InpNewsLow))`
+    );
+    code.helperFunctions.push(`            return true;`);
+    code.helperFunctions.push(`      }`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(`   return false;`);
+    code.helperFunctions.push(`}`);
+    code.helperFunctions.push(``);
+
+    code.helperFunctions.push(`void LoadEmbeddedNews()`);
+    code.helperFunctions.push(`{`);
+    code.helperFunctions.push(`   ArrayResize(g_newsEvents, 0);`);
+    code.helperFunctions.push(`   g_newsCount = 0;`);
+    code.helperFunctions.push(`   for(int i = 0; i < ArraySize(g_embeddedNews); i++)`);
+    code.helperFunctions.push(`   {`);
+    code.helperFunctions.push(`      string parts[];`);
+    code.helperFunctions.push(`      StringSplit(g_embeddedNews[i], ',', parts);`);
+    code.helperFunctions.push(`      if(ArraySize(parts) < 3) continue;`);
+    code.helperFunctions.push(`      string cur = parts[2];`);
+    code.helperFunctions.push(
+      `      if(cur != g_baseCurrency && cur != g_quoteCurrency) continue;`
+    );
+    code.helperFunctions.push(`      int imp = (int)StringToInteger(parts[1]);`);
+    code.helperFunctions.push(
+      `      if((imp==1 && !InpNewsLow) || (imp==2 && !InpNewsMedium) || (imp==3 && !InpNewsHigh)) continue;`
+    );
+    code.helperFunctions.push(`      int idx = g_newsCount++;`);
+    code.helperFunctions.push(`      ArrayResize(g_newsEvents, g_newsCount, 1000);`);
+    code.helperFunctions.push(
+      `      g_newsEvents[idx].time = StringToTime(parts[0]) + InpBrokerUTCOffset*3600;`
+    );
+    code.helperFunctions.push(`      g_newsEvents[idx].importance = imp;`);
+    code.helperFunctions.push(`   }`);
+    code.helperFunctions.push(
+      `   Print("Loaded ", g_newsCount, " news events from embedded data");`
+    );
+    code.helperFunctions.push(`}`);
+  }
 
   // Generate indicator code (only connected indicators)
   indicatorNodes.forEach((node, index) => {
@@ -1590,7 +1777,8 @@ export function generateMQL4Code(
     ctx,
     code,
     hasBuy ? placeBuyNodes[0] : undefined,
-    hasSell ? placeSellNodes[0] : undefined
+    hasSell ? placeSellNodes[0] : undefined,
+    processedBuildJson.edges
   );
 
   // Generate close condition code

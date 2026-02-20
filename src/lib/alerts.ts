@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
 import { sendTelegramAlert } from "@/lib/telegram";
+import { decrypt, isEncrypted } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "alerts" });
@@ -67,11 +68,15 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         triggeredAt: now.toISOString(),
       }).catch(() => {});
     } else if (config.channel === "TELEGRAM") {
-      const botToken = config.user.telegramBotToken;
+      const rawToken = config.user.telegramBotToken;
       const chatId = config.user.telegramChatId;
-      if (botToken && chatId) {
-        const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
-        sendTelegramAlert(botToken, chatId, telegramMessage).catch(() => {});
+      if (rawToken && chatId) {
+        // Decrypt the bot token if it was stored encrypted
+        const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
+        if (botToken) {
+          const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
+          sendTelegramAlert(botToken, chatId, telegramMessage).catch(() => {});
+        }
       }
     }
 

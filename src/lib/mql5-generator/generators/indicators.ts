@@ -114,8 +114,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        // Validate MA period: minimum 1
         code.onInit.push(
-          `${varPrefix}Handle = iMA(_Symbol, (ENUM_TIMEFRAMES)InpMA${index}Timeframe, InpMA${index}Period, InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price);`
+          `if(InpMA${index}Period < 1) Print("WARNING: MA ${index + 1} period (", InpMA${index}Period, ") is < 1. Clamping to 1.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iMA(_Symbol, (ENUM_TIMEFRAMES)InpMA${index}Timeframe, MathMax(1, InpMA${index}Period), InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price);`
         );
         addHandleValidation(varPrefix, `MA ${index + 1}`, code);
         code.onDeinit.push(
@@ -193,8 +197,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        // Validate RSI period: minimum 2 (MQL5 requires at least 2 for RSI calculation)
         code.onInit.push(
-          `${varPrefix}Handle = iRSI(_Symbol, (ENUM_TIMEFRAMES)InpRSI${index}Timeframe, InpRSI${index}Period, InpRSI${index}Price);`
+          `if(InpRSI${index}Period < 2) { Print("WARNING: RSI ${index + 1} period (", InpRSI${index}Period, ") is < 2. Clamping to 2."); }`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iRSI(_Symbol, (ENUM_TIMEFRAMES)InpRSI${index}Timeframe, MathMax(2, InpRSI${index}Period), InpRSI${index}Price);`
         );
         addHandleValidation(varPrefix, `RSI ${index + 1}`, code);
         code.onDeinit.push(
@@ -274,8 +282,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}HistogramBuffer[];`);
+        // Validate MACD: fast period must be less than slow period, all periods >= 1
         code.onInit.push(
-          `${varPrefix}Handle = iMACD(_Symbol, (ENUM_TIMEFRAMES)InpMACD${index}Timeframe, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price);`
+          `if(InpMACD${index}Fast < 1 || InpMACD${index}Slow < 1 || InpMACD${index}Signal < 1) Print("WARNING: MACD ${index + 1} has period(s) < 1. Clamping to minimum 1.");`
+        );
+        code.onInit.push(
+          `if(InpMACD${index}Fast >= InpMACD${index}Slow) Print("WARNING: MACD ${index + 1} fast period (", InpMACD${index}Fast, ") >= slow period (", InpMACD${index}Slow, "). This produces unreliable signals.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iMACD(_Symbol, (ENUM_TIMEFRAMES)InpMACD${index}Timeframe, MathMax(1, InpMACD${index}Fast), MathMax(1, InpMACD${index}Slow), MathMax(1, InpMACD${index}Signal), InpMACD${index}Price);`
         );
         addHandleValidation(varPrefix, `MACD ${index + 1}`, code);
         code.onDeinit.push(
@@ -410,8 +425,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        // Validate ATR period: minimum 1, warn if > 500 (excessive lookback)
         code.onInit.push(
-          `${varPrefix}Handle = iATR(_Symbol, (ENUM_TIMEFRAMES)InpATR${index}Timeframe, InpATR${index}Period);`
+          `if(InpATR${index}Period < 1) Print("WARNING: ATR ${index + 1} period (", InpATR${index}Period, ") is < 1. Clamping to 1.");`
+        );
+        code.onInit.push(
+          `if(InpATR${index}Period > 500) Print("WARNING: ATR ${index + 1} period (", InpATR${index}Period, ") is very large (> 500). This may cause slow calculation and unreliable signals.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iATR(_Symbol, (ENUM_TIMEFRAMES)InpATR${index}Timeframe, MathMax(1, InpATR${index}Period));`
         );
         addHandleValidation(varPrefix, `ATR ${index + 1}`, code);
         code.onDeinit.push(
@@ -977,16 +999,22 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             group
           )
         );
+        // Clamp kcMultiplier: minimum 1.0 to ensure KC is wider than BB (otherwise squeeze is meaningless)
+        const clampedKCMult = Math.max(1.0, bbs.kcMultiplier ?? 1.5);
         code.inputs.push(
           createInput(
             node,
             "kcMultiplier",
             `InpBBS${index}KCMult`,
             "double",
-            bbs.kcMultiplier,
-            `BB Squeeze ${index + 1} KC Multiplier`,
+            clampedKCMult,
+            `BB Squeeze ${index + 1} KC Multiplier (min 1.0)`,
             group
           )
+        );
+        // Add runtime clamping in generated code
+        code.onInit.push(
+          `if(InpBBS${index}KCMult < 1.0) { Print("WARNING: BB Squeeze KC Multiplier clamped to 1.0 (was ", InpBBS${index}KCMult, "). Values < 1.0 produce nonsensical signals."); }`
         );
         code.inputs.push(
           createInput(

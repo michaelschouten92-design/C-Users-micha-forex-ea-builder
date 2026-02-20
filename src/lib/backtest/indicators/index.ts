@@ -116,6 +116,11 @@ export function computeIndicator(bars: OHLCVBar[], config: IndicatorConfig): Ind
       return calcBBSqueeze(bars, bbPeriod, bbDev, kcPeriod, kcMult);
     }
 
+    case "vwap": {
+      const resetPeriod = (p.resetPeriod as string) ?? "daily";
+      return { value: calcVWAP(bars, resetPeriod) };
+    }
+
     default:
       return {};
   }
@@ -215,6 +220,48 @@ function calcBBSqueeze(
   return { squeeze, middle: bb.middle };
 }
 
+function calcVWAP(bars: OHLCVBar[], resetPeriod: string): number[] {
+  const result = new Array<number>(bars.length).fill(NaN);
+  if (bars.length === 0) return result;
+
+  let sumVP = 0;
+  let sumVol = 0;
+  let lastResetDate = "";
+
+  for (let i = 0; i < bars.length; i++) {
+    // Determine reset boundary (daily, weekly, monthly)
+    const date = new Date(bars[i].time);
+    let resetKey: string;
+    if (resetPeriod === "weekly") {
+      // ISO week: year + week number
+      const dayOfYear = Math.floor(
+        (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000
+      );
+      const weekNum = Math.ceil(dayOfYear / 7);
+      resetKey = `${date.getFullYear()}-W${weekNum}`;
+    } else if (resetPeriod === "monthly") {
+      resetKey = `${date.getFullYear()}-${date.getMonth()}`;
+    } else {
+      // daily
+      resetKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }
+
+    if (resetKey !== lastResetDate) {
+      sumVP = 0;
+      sumVol = 0;
+      lastResetDate = resetKey;
+    }
+
+    const tp = (bars[i].high + bars[i].low + bars[i].close) / 3.0;
+    const vol = bars[i].volume > 0 ? bars[i].volume : 1;
+    sumVP += tp * vol;
+    sumVol += vol;
+    result[i] = sumVol > 0 ? sumVP / sumVol : tp;
+  }
+
+  return result;
+}
+
 /**
  * Get the minimum number of bars required before an indicator produces valid output.
  */
@@ -245,6 +292,8 @@ export function getIndicatorWarmup(config: IndicatorConfig): number {
       return (p.senkouBPeriod as number) ?? 52;
     case "bb-squeeze":
       return Math.max((p.bbPeriod as number) ?? 20, (p.kcPeriod as number) ?? 20) + 1;
+    case "vwap":
+      return 5; // VWAP is valid from the first bar of each reset period
     default:
       return 50;
   }

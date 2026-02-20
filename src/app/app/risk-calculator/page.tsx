@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { RiskCalculator } from "./risk-calculator";
+import { PositionSizing } from "./position-sizing";
 
 export const metadata: Metadata = {
-  title: "Risk Calculator — Monte Carlo Simulator | AlgoStudio",
+  title: "Risk Calculator — Monte Carlo Simulator & Position Sizing | AlgoStudio",
   description:
-    "Run Monte Carlo simulations to estimate the risk profile of your trading strategy. Analyze drawdown, ruin probability, and equity curves.",
+    "Run Monte Carlo simulations to estimate the risk profile of your trading strategy. Compare Kelly Criterion, Fixed Fractional, and Optimal-f position sizing methods.",
 };
 
 export default async function RiskCalculatorPage() {
@@ -49,6 +50,10 @@ export default async function RiskCalculatorPage() {
         </div>
 
         <RiskCalculator />
+
+        <div className="mt-12 pt-8 border-t border-[rgba(79,70,229,0.15)]">
+          <PositionSizing />
+        </div>
       </main>
     </div>
   );

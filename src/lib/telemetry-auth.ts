@@ -17,6 +17,10 @@ export function hashApiKey(apiKey: string): string {
 /**
  * Verify a telemetry API key and return the instance ID.
  * Returns null if the key is invalid.
+ *
+ * Security: Each API key maps to exactly one instance via apiKeyHash.
+ * This provides per-instance context — a leaked key can only affect
+ * the single instance it belongs to, not other instances owned by the same user.
  */
 export async function verifyTelemetryApiKey(
   apiKey: string

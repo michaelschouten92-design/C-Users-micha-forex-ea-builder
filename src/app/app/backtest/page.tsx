@@ -7,6 +7,8 @@ import { BacktestUpload } from "./backtest-upload";
 import { BacktestForm } from "./backtest-form";
 import { BacktestTabs } from "./backtest-tabs";
 import { Optimization } from "./optimization";
+import { StressTesting } from "./stress-testing";
+import { Sensitivity } from "./sensitivity";
 
 export default async function BacktestPage() {
   const session = await auth();
@@ -91,6 +93,8 @@ export default async function BacktestPage() {
         <BacktestTabs
           runBacktestTab={<BacktestForm projects={projects} />}
           optimizeTab={<Optimization projects={projects} />}
+          stressTestTab={<StressTesting />}
+          sensitivityTab={<Sensitivity projects={projects} />}
           importReportTab={
             <>
               <BacktestUpload projects={projects} />

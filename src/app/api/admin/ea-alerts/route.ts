@@ -5,6 +5,11 @@ import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 
+// DEPRECATED: This entire route manages the legacy EAAlertRule system.
+// The new alert system uses EAAlertConfig (see /api/live/alerts).
+// Kept for admin access to existing legacy rule data.
+// TODO: Remove once EAAlertRule/EAAlert models are dropped.
+
 // GET /api/admin/ea-alerts - List alert rules
 export async function GET() {
   try {

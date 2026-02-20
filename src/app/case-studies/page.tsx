@@ -23,10 +23,10 @@ const caseStudies = [
     role: "Prop Firm Trader",
     strategy: "EMA Crossover",
     quote:
-      "I failed two FTMO challenges trading manually because emotions kept taking over. I built an EMA crossover EA in AlgoStudio with strict risk settings and passed on my third attempt. The EA executed my plan perfectly while I focused on my day job.",
+      "I failed two FTMO challenges trading manually because emotions kept taking over. I built an EMA crossover EA in AlgoStudio with strict risk settings and passed on my third attempt. The EA executed my plan while I focused on my day job. It wasn't a perfect run — I had a rough first week — but the consistency of automated execution made the difference.",
     result: "Passed FTMO challenge in 12 days",
     before: "Failed 2 manual challenges, emotional trading, inconsistent execution",
-    after: "Passed Phase 1 in 12 days, Phase 2 in 18 days, now managing $100K funded account",
+    after: "Passed Phase 1 in 12 days, Phase 2 in 18 days, now managing a funded account",
     metric: "12 days",
     metricLabel: "To pass FTMO Phase 1",
   },
@@ -35,10 +35,10 @@ const caseStudies = [
     role: "Swing Trader",
     strategy: "RSI Reversal",
     quote:
-      "I spent 3 months trying to learn MQL5 and never got a working EA. With AlgoStudio, I had my RSI reversal strategy running in MT5 Strategy Tester within 10 minutes of signing up. The code quality is better than what I was trying to write myself.",
+      "I spent 3 months trying to learn MQL5 and never got a working EA. With AlgoStudio, I had my RSI reversal strategy running in MT5 Strategy Tester within 10 minutes of signing up. The initial backtest results were mixed, but it gave me a solid starting point to iterate from — much better than wrestling with syntax errors.",
     result: "First working EA in 10 minutes",
     before: "3 months learning MQL5, no working EA, frustrated with syntax errors",
-    after: "Working EA in 10 minutes, backtested across 5 pairs, running live on 2 pairs",
+    after: "Working EA in 10 minutes, backtested across 5 pairs, iterating on 2 pairs",
     metric: "10 min",
     metricLabel: "From signup to working EA",
   },
@@ -47,10 +47,10 @@ const caseStudies = [
     role: "Part-Time Trader",
     strategy: "Range Breakout",
     quote:
-      "I paid a developer $800 for a breakout EA that did not work as expected. Modifications cost extra and took weeks. AlgoStudio let me build the exact same strategy myself, test variations instantly, and I have not needed a developer since.",
+      "I paid a developer $800 for a breakout EA that did not work as expected. Modifications cost extra and took weeks. AlgoStudio let me build a similar strategy myself, test variations quickly, and iterate without waiting on anyone. The workflow is much faster, though I still needed time to find the right parameter settings through backtesting.",
     result: "Saved $800+ on development costs",
     before: "$800 spent on developer, 3-week wait for delivery, costly modification requests",
-    after: "Built it himself in 5 minutes, iterates freely, tests new variations daily",
+    after: "Built it himself in 5 minutes, iterates freely, tests new variations regularly",
     metric: "$800+",
     metricLabel: "Saved vs hiring a developer",
   },
@@ -59,10 +59,11 @@ const caseStudies = [
     role: "Forex Trader",
     strategy: "Trend Pullback",
     quote:
-      "I wanted to test whether pullback entries work better than breakout entries for my GBPUSD strategy. In AlgoStudio, I built both EAs in under 15 minutes total and ran them through MT5 backtesting side by side. The data clearly showed pullbacks outperformed for my pair and timeframe.",
+      "I wanted to test whether pullback entries work better than breakout entries for my GBPUSD strategy. In AlgoStudio, I built both EAs in under 15 minutes total and ran them through MT5 backtesting side by side. The data showed pullbacks performed better for my specific pair and timeframe — but results varied on other pairs, which is exactly why testing matters.",
     result: "Tested 2 strategy variants in 15 minutes",
     before: "Manual testing, gut-feel decisions, no data to compare approaches",
-    after: "Data-driven strategy selection, backtested across 3 years, found optimal approach",
+    after:
+      "Data-driven strategy selection, backtested across 3 years, found what works for specific pairs",
     metric: "15 min",
     metricLabel: "To build and compare 2 strategies",
   },
@@ -71,8 +72,8 @@ const caseStudies = [
     role: "Funded Trader",
     strategy: "MACD Crossover",
     quote:
-      "I run EAs on three funded accounts across different prop firms. AlgoStudio lets me customize risk settings per account quickly — different daily loss limits, position sizes, and session filters for each. The clean MQL5 code makes it easy to verify the logic matches each firm's rules.",
-    result: "Managing 3 funded accounts with custom EAs",
+      "I run EAs on multiple funded accounts across different prop firms. AlgoStudio lets me customize risk settings per account quickly — different daily loss limits, position sizes, and session filters for each. The clean MQL5 code makes it easy to verify the logic. Some months are better than others, but the automated discipline keeps me within the rules.",
+    result: "Managing multiple funded accounts with custom EAs",
     before: "One-size-fits-all approach, manual trading on multiple accounts",
     after: "Custom EA per funded account, automated execution, consistent rule compliance",
     metric: "3",
@@ -83,8 +84,8 @@ const caseStudies = [
     role: "Strategy Tester",
     strategy: "RSI/MACD Divergence",
     quote:
-      "I test 3-5 new strategy ideas every week. Before AlgoStudio, each idea took days to code and debug. Now I can go from concept to backtest in under 10 minutes. I have tested more strategies in the last month than I did in the previous year.",
-    result: "10x faster strategy testing cycle",
+      "I test 3-5 new strategy ideas every week. Before AlgoStudio, each idea took days to code and debug. Now I can go from concept to backtest in under 10 minutes. Most ideas don't pan out — that's normal — but the speed of iteration means I find the promising ones much faster.",
+    result: "Much faster strategy testing cycle",
     before: "Days per strategy, coding bottleneck, limited testing throughput",
     after: "5+ strategies tested per week, rapid iteration, data-driven decisions",
     metric: "10x",
@@ -107,7 +108,7 @@ export default function CaseStudiesPage() {
           <Breadcrumbs items={breadcrumbs} />
 
           {/* Hero */}
-          <section className="text-center mb-20">
+          <section className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
               Trader Success Stories
             </h1>
@@ -115,10 +116,17 @@ export default function CaseStudiesPage() {
               Real traders using AlgoStudio to automate their strategies, pass prop firm challenges,
               and save time on EA development.
             </p>
-            <div className="inline-flex items-center gap-2 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)] rounded-full px-4 py-1.5">
-              <span className="text-xs text-[#A78BFA] font-medium">
-                Join 1,000+ traders building profitable EAs
-              </span>
+          </section>
+
+          {/* Top disclaimer */}
+          <section className="mb-12">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-xs text-amber-300/90 leading-relaxed">
+                <strong>Important:</strong> These case studies represent possible outcomes.
+                Individual results vary based on strategy, market conditions, and risk management.
+                Past performance does not guarantee future results. All trading involves substantial
+                risk of loss.
+              </p>
             </div>
           </section>
 
@@ -163,7 +171,7 @@ export default function CaseStudiesPage() {
                     </div>
 
                     {/* Before / After */}
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-[#EF4444] font-medium uppercase tracking-wider mb-2">
                           Before AlgoStudio
@@ -177,6 +185,13 @@ export default function CaseStudiesPage() {
                         <p className="text-sm text-[#CBD5E1] leading-relaxed">{study.after}</p>
                       </div>
                     </div>
+
+                    {/* Per-case-study disclaimer */}
+                    <p className="text-[10px] text-[#64748B] leading-relaxed mt-4 pt-4 border-t border-[rgba(79,70,229,0.08)]">
+                      Results shown are from specific time periods and may not be reproducible.
+                      Individual trading outcomes depend on strategy, market conditions, risk
+                      management, and other factors.
+                    </p>
                   </div>
                 </div>
               ))}
@@ -211,7 +226,7 @@ export default function CaseStudiesPage() {
             </div>
           </section>
 
-          {/* Disclaimer */}
+          {/* Bottom Disclaimer */}
           <section className="mb-20">
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <p className="text-xs text-amber-300/90 leading-relaxed">

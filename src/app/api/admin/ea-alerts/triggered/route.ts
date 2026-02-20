@@ -5,6 +5,10 @@ import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 
+// DEPRECATED: This reads from the legacy EAAlert table (tied to EAAlertRule).
+// Kept for admin access to existing legacy alert data.
+// TODO: Remove once EAAlertRule/EAAlert models are dropped.
+
 // GET /api/admin/ea-alerts/triggered - List triggered alerts
 export async function GET(request: Request) {
   try {

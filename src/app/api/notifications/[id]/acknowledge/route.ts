@@ -9,6 +9,7 @@ type Props = {
 };
 
 // POST /api/notifications/[id]/acknowledge - Mark a notification as read
+// DEPRECATED: This operates on the legacy EAAlert table. See notifications/route.ts.
 export async function POST(_request: NextRequest, { params }: Props) {
   const session = await auth();
   const { id } = await params;

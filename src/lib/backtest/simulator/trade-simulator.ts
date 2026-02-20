@@ -130,6 +130,37 @@ export function calculateTakeProfit(
 }
 
 /**
+ * Check if this market order gets requoted (skipped).
+ * Returns true if the order should be rejected due to requote.
+ */
+export function checkRequote(backtestConfig: BacktestConfig): boolean {
+  if (backtestConfig.requoteRate <= 0) return false;
+  return Math.random() < backtestConfig.requoteRate;
+}
+
+/**
+ * Calculate slippage for market orders.
+ * Uses a realistic model: random slippage between -0.5*spread to +1.5*spread.
+ * Negative slippage = favorable fill, positive = unfavorable fill.
+ * For limit orders, slippage = 0.
+ */
+export function calculateMarketOrderSlippage(
+  backtestConfig: BacktestConfig,
+  isLimitOrder: boolean
+): number {
+  if (isLimitOrder) return 0;
+
+  const point = Math.pow(10, -backtestConfig.digits);
+  const spreadPrice = backtestConfig.spread * point;
+
+  // Random slippage between -0.5*spread to +1.5*spread
+  // This means slippage can occasionally be favorable
+  const minSlippage = -0.5 * spreadPrice;
+  const maxSlippage = 1.5 * spreadPrice;
+  return minSlippage + Math.random() * (maxSlippage - minSlippage);
+}
+
+/**
  * Open a new position.
  */
 export function openPosition(
@@ -145,23 +176,25 @@ export function openPosition(
   const point = Math.pow(10, -backtestConfig.digits);
   const spreadCost = backtestConfig.spread * point;
 
-  // Simulate random slippage: 0 to spread/2 points in unfavorable direction
-  const maxSlippagePoints = Math.floor(backtestConfig.spread / 2);
-  const slippagePoints =
-    maxSlippagePoints > 0 ? Math.floor(Math.random() * (maxSlippagePoints + 1)) : 0;
-  const slippageCost = slippagePoints * point;
+  // Market order slippage: random between -0.5*spread to +1.5*spread
+  const slippage = calculateMarketOrderSlippage(backtestConfig, false);
 
-  // Entry price with spread + slippage (slippage always unfavorable)
+  // ASK = close + spread/2, BID = close - spread/2
+  // For BUY: fill at ASK + slippage (positive slippage is unfavorable)
+  // For SELL: fill at BID - slippage (positive slippage is unfavorable)
   const entryPrice =
     direction === "BUY"
-      ? bar.close + spreadCost / 2 + slippageCost // Buy at ask + slippage
-      : bar.close - spreadCost / 2 - slippageCost; // Sell at bid - slippage
+      ? bar.close + spreadCost / 2 + slippage
+      : bar.close - spreadCost / 2 - slippage;
 
   const sl = calculateStopLoss(direction, entryPrice, config, bar, atrValue, backtestConfig);
   const slDistPoints = sl > 0 ? Math.abs(entryPrice - sl) / point : 50;
 
   const lots = calculateLotSize(config, balance, slDistPoints, backtestConfig);
   const tp = calculateTakeProfit(direction, entryPrice, sl, config, atrValue, backtestConfig);
+
+  // Determine the day this position opens (for swap tracking)
+  const openDay = new Date(bar.time).getUTCDate();
 
   return {
     id,
@@ -174,7 +207,10 @@ export function openPosition(
     currentSL: sl,
     originalLots: lots,
     partialCloseExecuted: false,
+    accumulatedSwap: 0,
+    commissionCharged: 0,
     openBarIndex: barIndex,
+    lastSwapDay: openDay,
   };
 }
 
@@ -220,6 +256,7 @@ export function checkSLTP(
 
 /**
  * Calculate unrealized profit for a position at a given bar.
+ * Includes accumulated swap in the calculation.
  */
 export function calcPositionProfit(
   pos: SimulatedPosition,
@@ -245,26 +282,47 @@ export function calcPositionProfit(
   // Subtract commission (per side, so x2 for round trip)
   const commission = backtestConfig.commission * pos.lots * 2;
 
-  return profit - commission;
+  // Include accumulated swap
+  return profit - commission + pos.accumulatedSwap;
 }
 
 /**
  * Calculate realized profit when position is closed at a specific price.
+ * Uses proportional commission based on lots being closed vs original lots.
+ * Includes accumulated swap in the result.
  */
 export function calcRealizedProfit(
   pos: SimulatedPosition,
   closePrice: number,
   backtestConfig: BacktestConfig
-): number {
+): { profit: number; swap: number; commission: number } {
   const point = Math.pow(10, -backtestConfig.digits);
   const priceDiff =
     pos.direction === "BUY" ? closePrice - pos.openPrice : pos.openPrice - closePrice;
 
   const pointProfit = priceDiff / point;
-  const profit = pointProfit * backtestConfig.pointValue * pos.lots;
-  const commission = backtestConfig.commission * pos.lots * 2;
+  const rawProfit = pointProfit * backtestConfig.pointValue * pos.lots;
 
-  return profit - commission;
+  // Proportional commission: charge based on the fraction of the original position being closed
+  // Full round-trip commission for the original lot size = commission * originalLots * 2
+  // This close covers: commission * originalLots * 2 * (closingLots / originalLots)
+  // = commission * closingLots * 2 (but we subtract what was already charged on prior partials)
+  const totalRoundTripCommission = backtestConfig.commission * pos.originalLots * 2;
+  const fractionClosing = pos.lots / pos.originalLots;
+  const proportionalCommission = totalRoundTripCommission * fractionClosing;
+  // Subtract any commission already charged on previous partial closes for this fraction
+  const remainingCommission = Math.max(0, proportionalCommission);
+
+  // Proportional swap: allocate accumulated swap based on fraction being closed
+  const swapForThisClose = pos.accumulatedSwap;
+
+  const netProfit = rawProfit - remainingCommission + swapForThisClose;
+
+  return {
+    profit: netProfit,
+    swap: swapForThisClose,
+    commission: remainingCommission,
+  };
 }
 
 /**
@@ -374,6 +432,30 @@ export function applyBreakevenStop(
 }
 
 /**
+ * Apply overnight swap/rollover fee when a new day is detected.
+ * Should be called each bar; it checks if a new day has started.
+ * Returns the swap cost applied (0 if no new day).
+ */
+export function applySwap(
+  pos: SimulatedPosition,
+  bar: OHLCVBar,
+  backtestConfig: BacktestConfig
+): number {
+  if (backtestConfig.swapLong === 0 && backtestConfig.swapShort === 0) return 0;
+
+  const barDay = new Date(bar.time).getUTCDate();
+  if (barDay === pos.lastSwapDay) return 0;
+
+  // New day detected - apply swap
+  pos.lastSwapDay = barDay;
+  const swapRate = pos.direction === "BUY" ? backtestConfig.swapLong : backtestConfig.swapShort;
+  const swapCost = pos.lots * swapRate;
+  pos.accumulatedSwap += swapCost;
+
+  return swapCost;
+}
+
+/**
  * Check partial close trigger. Returns the percentage to close, or 0.
  */
 export function checkPartialClose(
@@ -406,7 +488,12 @@ export function checkPartialClose(
     if (pc.moveSLToBreakeven) {
       pos.currentSL = pos.openPrice;
     }
-    return pc.closePercent / 100;
+    // Apply closePercent to ORIGINAL lot size, not remaining lots.
+    // This prevents compounding errors when partial close is applied after
+    // other lot-reducing operations (e.g., multi-level TP).
+    const lotsToClose = (pos.originalLots * pc.closePercent) / 100;
+    const actualClose = Math.min(lotsToClose, pos.lots);
+    return pos.lots > 0 ? actualClose / pos.lots : 0;
   }
 
   return 0;

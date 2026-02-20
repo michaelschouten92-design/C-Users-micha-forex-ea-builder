@@ -98,11 +98,16 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
 
+        // Validate MA period: minimum 1
+        code.onInit.push(
+          `if(InpMA${index}Period < 1) Print("WARNING: MA ${index + 1} period (", InpMA${index}Period, ") is < 1. Clamping to 1.");`
+        );
+
         // OnTick: fill buffer with direct iMA calls
         code.onTick.push(`//--- MA ${index + 1}: fill buffer via iMA()`);
         code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
         code.onTick.push(
-          `   ${varPrefix}Buffer[_i${index}] = iMA(Symbol(), (int)InpMA${index}Timeframe, InpMA${index}Period, InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price, _i${index});`
+          `   ${varPrefix}Buffer[_i${index}] = iMA(Symbol(), (int)InpMA${index}Timeframe, MathMax(1, InpMA${index}Period), InpMA${index}Shift, InpMA${index}Method, InpMA${index}Price, _i${index});`
         );
 
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(ma.period) || 14);
@@ -177,10 +182,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
 
+        // Validate RSI period: minimum 2
+        code.onInit.push(
+          `if(InpRSI${index}Period < 2) Print("WARNING: RSI ${index + 1} period (", InpRSI${index}Period, ") is < 2. Clamping to 2.");`
+        );
+
         code.onTick.push(`//--- RSI ${index + 1}: fill buffer via iRSI()`);
         code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
         code.onTick.push(
-          `   ${varPrefix}Buffer[_i${index}] = iRSI(Symbol(), (int)InpRSI${index}Timeframe, InpRSI${index}Period, InpRSI${index}Price, _i${index});`
+          `   ${varPrefix}Buffer[_i${index}] = iRSI(Symbol(), (int)InpRSI${index}Timeframe, MathMax(2, InpRSI${index}Period), InpRSI${index}Price, _i${index});`
         );
 
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(rsi.period) || 14);
@@ -259,15 +269,23 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArrayResize(${varPrefix}SignalBuffer, ${copyBars});`);
         code.onInit.push(`ArrayResize(${varPrefix}HistogramBuffer, ${copyBars});`);
 
+        // Validate MACD: fast must be < slow, all periods >= 1
+        code.onInit.push(
+          `if(InpMACD${index}Fast < 1 || InpMACD${index}Slow < 1 || InpMACD${index}Signal < 1) Print("WARNING: MACD ${index + 1} has period(s) < 1. Clamping to minimum 1.");`
+        );
+        code.onInit.push(
+          `if(InpMACD${index}Fast >= InpMACD${index}Slow) Print("WARNING: MACD ${index + 1} fast period (", InpMACD${index}Fast, ") >= slow period (", InpMACD${index}Slow, "). This produces unreliable signals.");`
+        );
+
         // MQL4 iMACD: buffer 0 = main line, buffer 1 = signal line
         code.onTick.push(`//--- MACD ${index + 1}: fill buffers via iMACD()`);
         code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
         code.onTick.push(`{`);
         code.onTick.push(
-          `   ${varPrefix}MainBuffer[_i${index}] = iMACD(Symbol(), (int)InpMACD${index}Timeframe, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price, MODE_MAIN, _i${index});`
+          `   ${varPrefix}MainBuffer[_i${index}] = iMACD(Symbol(), (int)InpMACD${index}Timeframe, MathMax(1, InpMACD${index}Fast), MathMax(1, InpMACD${index}Slow), MathMax(1, InpMACD${index}Signal), InpMACD${index}Price, MODE_MAIN, _i${index});`
         );
         code.onTick.push(
-          `   ${varPrefix}SignalBuffer[_i${index}] = iMACD(Symbol(), (int)InpMACD${index}Timeframe, InpMACD${index}Fast, InpMACD${index}Slow, InpMACD${index}Signal, InpMACD${index}Price, MODE_SIGNAL, _i${index});`
+          `   ${varPrefix}SignalBuffer[_i${index}] = iMACD(Symbol(), (int)InpMACD${index}Timeframe, MathMax(1, InpMACD${index}Fast), MathMax(1, InpMACD${index}Slow), MathMax(1, InpMACD${index}Signal), InpMACD${index}Price, MODE_SIGNAL, _i${index});`
         );
         code.onTick.push(
           `   ${varPrefix}HistogramBuffer[_i${index}] = ${varPrefix}MainBuffer[_i${index}] - ${varPrefix}SignalBuffer[_i${index}];`
@@ -401,10 +419,18 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.onInit.push(`ArrayResize(${varPrefix}Buffer, ${copyBars});`);
 
+        // Validate ATR period: minimum 1, warn if > 500
+        code.onInit.push(
+          `if(InpATR${index}Period < 1) Print("WARNING: ATR ${index + 1} period (", InpATR${index}Period, ") is < 1. Clamping to 1.");`
+        );
+        code.onInit.push(
+          `if(InpATR${index}Period > 500) Print("WARNING: ATR ${index + 1} period (", InpATR${index}Period, ") is very large (> 500). This may cause slow calculation and unreliable signals.");`
+        );
+
         code.onTick.push(`//--- ATR ${index + 1}: fill buffer via iATR()`);
         code.onTick.push(`for(int _i${index}=0; _i${index}<${copyBars}; _i${index}++)`);
         code.onTick.push(
-          `   ${varPrefix}Buffer[_i${index}] = iATR(Symbol(), (int)InpATR${index}Timeframe, InpATR${index}Period, _i${index});`
+          `   ${varPrefix}Buffer[_i${index}] = iATR(Symbol(), (int)InpATR${index}Timeframe, MathMax(1, InpATR${index}Period), _i${index});`
         );
 
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, Number(atr.period) || 14);
@@ -896,16 +922,21 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             group
           )
         );
+        // Clamp kcMultiplier: minimum 1.0 to ensure KC is wider than BB
+        const clampedKCMult = Math.max(1.0, bbs.kcMultiplier ?? 1.5);
         code.inputs.push(
           createInput(
             node,
             "kcMultiplier",
             `InpBBS${index}KCMult`,
             "double",
-            bbs.kcMultiplier,
-            `BB Squeeze ${index + 1} KC Multiplier`,
+            clampedKCMult,
+            `BB Squeeze ${index + 1} KC Multiplier (min 1.0)`,
             group
           )
+        );
+        code.onInit.push(
+          `if(InpBBS${index}KCMult < 1.0) Print("WARNING: BB Squeeze KC Multiplier clamped to 1.0 (was ", InpBBS${index}KCMult, "). Values < 1.0 produce nonsensical signals.");`
         );
         code.inputs.push(
           createInput(

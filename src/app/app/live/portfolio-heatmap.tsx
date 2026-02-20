@@ -185,21 +185,78 @@ function correlationTextColor(value: number | null): string {
 
 interface PortfolioHeatmapProps {
   symbols: string[];
+  /** Optional: per-instance trade profit arrays keyed by symbol for live correlation calculation */
+  tradeDataBySymbol?: Record<string, number[]>;
 }
 
-export function PortfolioHeatmap({ symbols }: PortfolioHeatmapProps) {
+function computeLiveCorrelation(profits1: number[], profits2: number[]): number | null {
+  const n = Math.min(profits1.length, profits2.length);
+  if (n < 10) return null; // Need sufficient data
+
+  const arr1 = profits1.slice(0, n);
+  const arr2 = profits2.slice(0, n);
+
+  const mean1 = arr1.reduce((a, b) => a + b, 0) / n;
+  const mean2 = arr2.reduce((a, b) => a + b, 0) / n;
+
+  let cov = 0;
+  let var1 = 0;
+  let var2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    const d1 = arr1[i] - mean1;
+    const d2 = arr2[i] - mean2;
+    cov += d1 * d2;
+    var1 += d1 * d1;
+    var2 += d2 * d2;
+  }
+
+  const denom = Math.sqrt(var1 * var2);
+  if (denom === 0) return null;
+  return cov / denom;
+}
+
+export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatmapProps) {
   const uniqueSymbols = [...new Set(symbols.map((s) => s.toUpperCase().replace(/[^A-Z]/g, "")))];
 
   if (uniqueSymbols.length < 2) return null;
 
+  const hasLiveData = tradeDataBySymbol && Object.keys(tradeDataBySymbol).length >= 2;
   const cellSize = Math.max(48, Math.min(72, 500 / uniqueSymbols.length));
+
+  // Determine correlation source
+  function getEffectiveCorrelation(sym1: string, sym2: string): number | null {
+    if (hasLiveData && tradeDataBySymbol) {
+      const data1 = tradeDataBySymbol[sym1];
+      const data2 = tradeDataBySymbol[sym2];
+      if (data1 && data2) {
+        const liveCorr = computeLiveCorrelation(data1, data2);
+        if (liveCorr !== null) return liveCorr;
+      }
+    }
+    return getCorrelation(sym1, sym2);
+  }
 
   return (
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
       <h3 className="text-lg font-semibold text-white mb-1">Portfolio Correlation</h3>
-      <p className="text-xs text-[#7C8DB0] mb-4">
-        Static correlation estimates between major forex pairs in your portfolio.
-      </p>
+      {hasLiveData ? (
+        <p className="text-xs text-[#10B981] mb-4">
+          Correlations calculated from your actual trade P&L data where available, with historical
+          averages as fallback.
+        </p>
+      ) : (
+        <div className="mb-4">
+          <p className="text-xs text-[#7C8DB0] mb-1">
+            Correlations are approximate, based on historical averages for major forex pairs.
+          </p>
+          <p className="text-xs text-[#F59E0B]">
+            For live correlation data, connect your MT5 terminal or accumulate trade history across
+            multiple symbols. You can also use MT5&apos;s built-in correlation indicator for
+            real-time values.
+          </p>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <div className="inline-block">
@@ -226,7 +283,7 @@ export function PortfolioHeatmap({ symbols }: PortfolioHeatmapProps) {
                 {rowSym}
               </div>
               {uniqueSymbols.map((colSym) => {
-                const corr = getCorrelation(rowSym, colSym);
+                const corr = getEffectiveCorrelation(rowSym, colSym);
                 const bg = correlationColor(corr);
                 const textColor = correlationTextColor(corr);
 
@@ -290,7 +347,9 @@ export function PortfolioHeatmap({ symbols }: PortfolioHeatmapProps) {
       </div>
 
       <p className="text-[10px] text-[#64748B] mt-2">
-        Note: These are static historical averages. Actual correlations vary with market conditions.
+        {hasLiveData
+          ? "Values from your trade data are shown where sufficient history exists (10+ trades per pair). Others use historical averages."
+          : "Note: These are static historical averages. Actual correlations vary with market conditions."}{" "}
         High absolute correlation means overlapping risk exposure.
       </p>
     </div>

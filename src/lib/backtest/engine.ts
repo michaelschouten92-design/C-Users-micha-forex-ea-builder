@@ -25,6 +25,8 @@ import {
   applyTrailingStop,
   applyBreakevenStop,
   checkPartialClose,
+  applySwap,
+  checkRequote,
 } from "./simulator/trade-simulator";
 import { EquityTracker } from "./simulator/equity-tracker";
 import { computeIndicator } from "./indicators";
@@ -99,6 +101,7 @@ export function runBacktest(
   let tradesToday = 0;
   let currentDay = -1;
   let lastEntryBar = -999;
+  let requoteCount = 0;
   const minBarsBetweenTrades = settings?.minBarsBetweenTrades ?? 0;
 
   const totalBars = bars.length;
@@ -115,13 +118,21 @@ export function runBacktest(
 
     const atrValue = atrValues?.[i];
 
+    // Step 0: Apply swap to all open positions (overnight fee on new day)
+    for (const pos of openPositions) {
+      const swapCost = applySwap(pos, bar, config);
+      if (swapCost !== 0) {
+        equity.recordSwap(swapCost);
+      }
+    }
+
     // Step 1: Check SL/TP hits
     for (let p = openPositions.length - 1; p >= 0; p--) {
       const pos = openPositions[p];
       const hit = checkSLTP(pos, bar, config);
       if (hit) {
-        const profit = calcRealizedProfit(pos, hit.closePrice, config);
-        equity.recordTrade(profit);
+        const result = calcRealizedProfit(pos, hit.closePrice, config);
+        equity.recordTrade(result.profit);
         closedTrades.push({
           id: pos.id,
           direction: pos.direction,
@@ -130,7 +141,9 @@ export function runBacktest(
           openPrice: pos.openPrice,
           closePrice: hit.closePrice,
           lots: pos.lots,
-          profit,
+          profit: result.profit,
+          swap: result.swap,
+          commission: result.commission,
           closeReason: hit.reason,
           openBarIndex: pos.openBarIndex,
           closeBarIndex: i,
@@ -152,8 +165,17 @@ export function runBacktest(
       if (partialFraction > 0) {
         const closeAmount = pos.lots * partialFraction;
         const closePrice = bar.close;
-        const partialProfit = calcRealizedProfit({ ...pos, lots: closeAmount }, closePrice, config);
-        equity.recordTrade(partialProfit);
+
+        // Proportional swap for the partial close
+        const swapFraction = pos.accumulatedSwap * (closeAmount / pos.lots);
+        const partialPos = {
+          ...pos,
+          lots: closeAmount,
+          accumulatedSwap: swapFraction,
+        };
+        const partialResult = calcRealizedProfit(partialPos, closePrice, config);
+
+        equity.recordTrade(partialResult.profit);
         closedTrades.push({
           id: pos.id,
           direction: pos.direction,
@@ -162,11 +184,17 @@ export function runBacktest(
           openPrice: pos.openPrice,
           closePrice,
           lots: closeAmount,
-          profit: partialProfit,
+          profit: partialResult.profit,
+          swap: partialResult.swap,
+          commission: partialResult.commission,
           closeReason: "SIGNAL",
           openBarIndex: pos.openBarIndex,
           closeBarIndex: i,
         });
+
+        // Update remaining position: reduce lots and subtract the swap already realized
+        pos.accumulatedSwap -= swapFraction;
+        pos.commissionCharged += partialResult.commission;
         pos.lots -= closeAmount;
         if (pos.lots <= config.lotStep / 2) openPositions.splice(p, 1);
       }
@@ -174,8 +202,8 @@ export function runBacktest(
       const timeExit = tradeConfig.timeExit;
       if (timeExit && i - pos.openBarIndex >= timeExit.exitAfterBars) {
         const closePrice = bar.close;
-        const profit = calcRealizedProfit(pos, closePrice, config);
-        equity.recordTrade(profit);
+        const result = calcRealizedProfit(pos, closePrice, config);
+        equity.recordTrade(result.profit);
         closedTrades.push({
           id: pos.id,
           direction: pos.direction,
@@ -184,7 +212,9 @@ export function runBacktest(
           openPrice: pos.openPrice,
           closePrice,
           lots: pos.lots,
-          profit,
+          profit: result.profit,
+          swap: result.swap,
+          commission: result.commission,
           closeReason: "SIGNAL",
           openBarIndex: pos.openBarIndex,
           closeBarIndex: i,
@@ -217,8 +247,8 @@ export function runBacktest(
           (pos.direction === "SELL" && exitSignals.closeSell);
         if (shouldClose) {
           const closePrice = bar.close;
-          const profit = calcRealizedProfit(pos, closePrice, config);
-          equity.recordTrade(profit);
+          const result = calcRealizedProfit(pos, closePrice, config);
+          equity.recordTrade(result.profit);
           closedTrades.push({
             id: pos.id,
             direction: pos.direction,
@@ -227,7 +257,9 @@ export function runBacktest(
             openPrice: pos.openPrice,
             closePrice,
             lots: pos.lots,
-            profit,
+            profit: result.profit,
+            swap: result.swap,
+            commission: result.commission,
             closeReason: "SIGNAL",
             openBarIndex: pos.openBarIndex,
             closeBarIndex: i,
@@ -247,32 +279,16 @@ export function runBacktest(
             entrySignals.buy &&
             canOpenBuy(openPositions, allowHedging, settings?.maxBuyPositions)
           ) {
-            const pos = openPosition(
-              nextPositionId++,
-              "BUY",
-              bar,
-              i,
-              strategy.buyTradeConfig,
-              equity.getBalance(),
-              atrValue,
-              config
-            );
-            openPositions.push(pos);
-            tradesToday++;
-            lastEntryBar = i;
-          }
-
-          if (
-            entrySignals.sell &&
-            canOpenSell(openPositions, allowHedging, settings?.maxSellPositions)
-          ) {
-            if (openPositions.length < maxOpenTrades) {
+            // Requote check: market order may get rejected
+            if (checkRequote(config)) {
+              requoteCount++;
+            } else {
               const pos = openPosition(
                 nextPositionId++,
-                "SELL",
+                "BUY",
                 bar,
                 i,
-                strategy.sellTradeConfig,
+                strategy.buyTradeConfig,
                 equity.getBalance(),
                 atrValue,
                 config
@@ -280,6 +296,32 @@ export function runBacktest(
               openPositions.push(pos);
               tradesToday++;
               lastEntryBar = i;
+            }
+          }
+
+          if (
+            entrySignals.sell &&
+            canOpenSell(openPositions, allowHedging, settings?.maxSellPositions)
+          ) {
+            if (openPositions.length < maxOpenTrades) {
+              // Requote check: market order may get rejected
+              if (checkRequote(config)) {
+                requoteCount++;
+              } else {
+                const pos = openPosition(
+                  nextPositionId++,
+                  "SELL",
+                  bar,
+                  i,
+                  strategy.sellTradeConfig,
+                  equity.getBalance(),
+                  atrValue,
+                  config
+                );
+                openPositions.push(pos);
+                tradesToday++;
+                lastEntryBar = i;
+              }
             }
           }
         }
@@ -311,7 +353,15 @@ export function runBacktest(
   }
 
   const duration = performance.now() - startTime;
-  return computeResults(closedTrades, equity, config, bars.length, duration, warnings);
+  return computeResults(
+    closedTrades,
+    equity,
+    config,
+    bars.length,
+    duration,
+    warnings,
+    requoteCount
+  );
 }
 
 // ============================================
@@ -328,8 +378,8 @@ function closeAllPositions(
   reason: "RISK_MGMT" | "MANUAL"
 ): void {
   for (const pos of positions) {
-    const profit = calcRealizedProfit(pos, bar.close, config);
-    equity.recordTrade(profit);
+    const result = calcRealizedProfit(pos, bar.close, config);
+    equity.recordTrade(result.profit);
     closedTrades.push({
       id: pos.id,
       direction: pos.direction,
@@ -338,7 +388,9 @@ function closeAllPositions(
       openPrice: pos.openPrice,
       closePrice: bar.close,
       lots: pos.lots,
-      profit,
+      profit: result.profit,
+      swap: result.swap,
+      commission: result.commission,
       closeReason: reason,
       openBarIndex: pos.openBarIndex,
       closeBarIndex: barIndex,
@@ -453,10 +505,13 @@ function computeResults(
   config: BacktestConfig,
   barsProcessed: number,
   duration: number,
-  warnings: string[]
+  warnings: string[],
+  requoteCount: number = 0
 ): BacktestEngineResult {
   const totalTrades = trades.length;
   const equityCurve = equity.getEquityCurve();
+  const totalSwap = trades.reduce((s, t) => s + t.swap, 0);
+  const totalCommission = trades.reduce((s, t) => s + t.commission, 0);
 
   if (totalTrades === 0) {
     return {
@@ -489,6 +544,9 @@ function computeResults(
       underwaterCurve: [],
       initialDeposit: config.initialBalance,
       finalBalance: equity.getBalance(),
+      totalSwap: 0,
+      totalCommission: 0,
+      requoteCount,
       trades,
       equityCurve,
       barsProcessed,
@@ -578,6 +636,9 @@ function computeResults(
     underwaterCurve: computeUnderwaterCurve(equityCurve),
     initialDeposit: config.initialBalance,
     finalBalance: equity.getBalance(),
+    totalSwap,
+    totalCommission,
+    requoteCount,
     trades,
     equityCurve,
     barsProcessed,

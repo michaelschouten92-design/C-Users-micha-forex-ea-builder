@@ -5,6 +5,9 @@ import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 
 // GET /api/notifications - Fetch user's notifications (alerts from their EA instances)
+// DEPRECATED: This reads from the legacy EAAlert table (tied to EAAlertRule).
+// The new alert system uses EAAlertConfig. This endpoint remains for reading
+// existing legacy alert data. TODO: Migrate to a new notification system.
 export async function GET() {
   const session = await auth();
   const log = createApiLogger("/api/notifications", "GET", session?.user?.id);

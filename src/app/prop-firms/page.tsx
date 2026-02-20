@@ -21,6 +21,7 @@ const breadcrumbs = [
 const propFirms = [
   {
     name: "FTMO",
+    rulesUrl: "https://ftmo.com/en/trading-objectives/",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "10% (Phase 1) / 5% (Phase 2)",
@@ -34,6 +35,7 @@ const propFirms = [
   },
   {
     name: "E8 Markets",
+    rulesUrl: "https://e8markets.com/",
     dailyLoss: "4%",
     maxDrawdown: "8%",
     profitTarget: "8% (Phase 1) / 4% (Phase 2)",
@@ -47,6 +49,7 @@ const propFirms = [
   },
   {
     name: "FundingPips",
+    rulesUrl: "https://fundingpips.com/",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "8% (Phase 1) / 5% (Phase 2)",
@@ -60,6 +63,7 @@ const propFirms = [
   },
   {
     name: "FundedNext",
+    rulesUrl: "https://fundednext.com/",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "8% (Phase 1) / 5% (Phase 2)",
@@ -73,6 +77,7 @@ const propFirms = [
   },
   {
     name: "The 5%ers",
+    rulesUrl: "https://the5ers.com/",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "8% (Phase 1) / 5% (Phase 2)",
@@ -86,6 +91,7 @@ const propFirms = [
   },
   {
     name: "Alpha Capital",
+    rulesUrl: "https://alphacapitalgroup.com/",
     dailyLoss: "5%",
     maxDrawdown: "10%",
     profitTarget: "8% (Phase 1) / 5% (Phase 2)",
@@ -223,6 +229,21 @@ export default function PropFirmsPage() {
             </Link>
           </section>
 
+          {/* Top disclaimer */}
+          <section className="mb-12">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
+              <p className="text-xs text-amber-300/90 leading-relaxed">
+                <strong>Important:</strong> Prop firm rules change frequently. Always verify current
+                rules on the firm&apos;s official website before using these settings. The
+                information below may be outdated.
+              </p>
+              <p className="text-xs text-amber-300/90 leading-relaxed">
+                AlgoStudio is not affiliated with, endorsed by, or partnered with any prop firm
+                listed below. All firm names and logos are trademarks of their respective owners.
+              </p>
+            </div>
+          </section>
+
           {/* Supported prop firms */}
           <section className="mb-20">
             <h2 className="text-3xl font-bold text-white mb-4 text-center">
@@ -230,7 +251,7 @@ export default function PropFirmsPage() {
             </h2>
             <p className="text-[#94A3B8] text-center mb-10 max-w-2xl mx-auto">
               Each prop firm has unique rules. Here are the challenge requirements and our
-              recommended EA settings for each.
+              recommended EA settings for each. Always verify on the firm&apos;s website.
             </p>
 
             <div className="space-y-6">
@@ -240,7 +261,17 @@ export default function PropFirmsPage() {
                   className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl overflow-hidden"
                 >
                   <div className="p-6 sm:p-8">
-                    <h3 className="text-xl font-bold text-white mb-6">{firm.name}</h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-white">{firm.name}</h3>
+                      <a
+                        href={firm.rulesUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#A78BFA] hover:underline"
+                      >
+                        Official Rules &rarr;
+                      </a>
+                    </div>
 
                     {/* Rules */}
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

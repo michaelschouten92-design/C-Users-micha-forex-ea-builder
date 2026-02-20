@@ -24,7 +24,7 @@ const jsonLd = {
         price: "0",
         priceCurrency: "EUR",
         description:
-          "All 5 strategy templates, full builder access, 1 project, 1 MQL5 export per month",
+          "All 6 strategy templates, full builder access, 1 project, 1 MQL5 export per month",
       },
       {
         "@type": "Offer",

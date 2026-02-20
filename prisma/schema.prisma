@@ -179,6 +179,7 @@ model ExportJob {
   errorMessage   String?      @db.Text
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?    // Soft delete
 
   // Relations
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -317,6 +318,7 @@ model LiveEAInstance {
   totalProfit   Float     @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // Soft delete
 
   exportJob      ExportJob        @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -437,7 +439,7 @@ model EAAlertConfig {
   userId        String
   instanceId    String?         // null = applies to all instances
   alertType     String          // "DRAWDOWN" | "OFFLINE" | "DAILY_LOSS" | "NEW_TRADE" | "ERROR"
-  threshold     Float?          // e.g., 5.0 for 5% drawdown
+  threshold     Float?          // Required for DRAWDOWN and DAILY_LOSS alert types; e.g., 5.0 for 5% drawdown
   channel       String          // "EMAIL" | "WEBHOOK"
   webhookUrl    String?         // for webhook channel
   enabled       Boolean         @default(true)
@@ -454,7 +456,11 @@ model EAAlertConfig {
 }
 
 // ============================================
-// EA ALERT RULES & ALERTS
+// EA ALERT RULES & ALERTS (DEPRECATED)
+// These models are superseded by EAAlertConfig above.
+// Kept for migration compatibility only — do NOT use in new code.
+// Runtime code has been removed; see heartbeat/route.ts.
+// TODO: Remove these models in a future migration once data is migrated.
 // ============================================
 
 model EAAlertRule {
@@ -559,8 +565,9 @@ model TradeJournal {
   liveProfit     Float?
   liveWinRate    Float?
   liveSharpe     Float?
-  // Notes
+  // Notes & structured review data
   notes          String?         @db.Text
+  metadata       Json?           // Structured review fields: entryReason, exitReason, setupQuality, symbol, etc.
   status         String          @default("BACKTESTING") // BACKTESTING, DEMO, LIVE, STOPPED
   startedAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

@@ -7,6 +7,7 @@ import type {
   TakeProfitNodeData,
   TimeExitNodeData,
   GridPyramidNodeData,
+  ConditionNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
 import { getTimeframe, getTimeframeEnum } from "../types";
@@ -481,6 +482,7 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
         )
       );
       code.onTick.push("double tpPips = slPips * InpRiskReward;");
+      code.tpMethod = "RISK_REWARD";
       break;
 
     case "ATR_BASED": {
@@ -530,7 +532,8 @@ export function generateEntryLogic(
   ctx: GeneratorContext,
   code: GeneratedCode,
   buyNode?: BuilderNode,
-  sellNode?: BuilderNode
+  sellNode?: BuilderNode,
+  edges: BuilderEdge[] = []
 ): void {
   code.onTick.push("");
   code.onTick.push("//--- Entry Logic");
@@ -857,9 +860,9 @@ export function generateEntryLogic(
             const cloudBuyC = `(DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
             const cloudSellC = `(DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
 
-            // Chikou Span confirmation
-            const chikouBuyC = `(DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), iClose(Symbol(), PERIOD_CURRENT, ${26 + s})))`;
-            const chikouSellC = `(DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), iClose(Symbol(), PERIOD_CURRENT, ${26 + s})))`;
+            // Chikou Span confirmation: close 26 bars ago must be above/below the cloud AT THAT TIME
+            const chikouBuyC = `(DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanABuffer[${26 + s}]) && DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanBBuffer[${26 + s}]))`;
+            const chikouSellC = `(DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanABuffer[${26 + s}]) && DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${26 + s}), ${varPrefix}SpanBBuffer[${26 + s}]))`;
 
             if (ichiMode === "TENKAN_KIJUN_CROSS") {
               buyConditions.push(
@@ -879,6 +882,16 @@ export function generateEntryLogic(
             break;
           }
 
+          case "vwap":
+            // VWAP: price above VWAP = buy, price below VWAP = sell
+            buyConditions.push(
+              `(DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${0 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}Buffer[${0 + s}]))`
+            );
+            break;
+
           case "bb-squeeze":
             // BB Squeeze: breakout from squeeze = buy when close > BB middle, sell when close < BB middle
             buyConditions.push(
@@ -888,6 +901,88 @@ export function generateEntryLogic(
               `(${varPrefix}WasSqueeze && !${varPrefix}InSqueeze && DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${0 + s}), ${varPrefix}BBMiddle[${0 + s}]))`
             );
             break;
+
+          case "condition": {
+            // Condition node: compares a connected indicator's buffer against a threshold
+            const condData = indData as ConditionNodeData;
+            const threshold = condData.threshold;
+
+            // Find the connected source indicator via edges
+            const connEdge = edges.find((e) => e.target === indNode.id);
+            if (!connEdge) break;
+
+            const sourceInd = indicatorNodes.find((n) => n.id === connEdge.source);
+            if (!sourceInd) break;
+
+            const sourceIndex = indicatorNodes.indexOf(sourceInd);
+            const srcPrefix = `ind${sourceIndex}`;
+            const srcData = sourceInd.data;
+
+            // Determine the correct buffer name for the source indicator
+            let bufName = `${srcPrefix}Buffer`;
+            if ("indicatorType" in srcData) {
+              switch (srcData.indicatorType) {
+                case "macd":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "adx":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "stochastic":
+                  bufName = `${srcPrefix}MainBuffer`;
+                  break;
+                case "ichimoku":
+                  bufName = `${srcPrefix}TenkanBuffer`;
+                  break;
+                case "bollinger-bands":
+                  bufName = `${srcPrefix}MiddleBuffer`;
+                  break;
+              }
+            }
+
+            // Use the source indicator's signal mode for bar offset
+            const cs = "signalMode" in srcData && srcData.signalMode === "candle_close" ? 1 : 0;
+
+            switch (condData.conditionType) {
+              case "GREATER_THAN":
+                buyConditions.push(`(DoubleGT(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleLT(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "LESS_THAN":
+                buyConditions.push(`(DoubleLT(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleGT(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "GREATER_EQUAL":
+                buyConditions.push(`(DoubleGE(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleLE(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "LESS_EQUAL":
+                buyConditions.push(`(DoubleLE(${bufName}[${cs}], ${threshold}))`);
+                sellConditions.push(`(DoubleGE(${bufName}[${cs}], ${threshold}))`);
+                break;
+              case "EQUAL":
+                buyConditions.push(`(MathAbs(${bufName}[${cs}] - ${threshold}) < 1e-8)`);
+                sellConditions.push(`(MathAbs(${bufName}[${cs}] - ${threshold}) < 1e-8)`);
+                break;
+              case "CROSSES_ABOVE":
+                buyConditions.push(
+                  `(DoubleLE(${bufName}[${1 + cs}], ${threshold}) && DoubleGT(${bufName}[${cs}], ${threshold}))`
+                );
+                sellConditions.push(
+                  `(DoubleGE(${bufName}[${1 + cs}], ${threshold}) && DoubleLT(${bufName}[${cs}], ${threshold}))`
+                );
+                break;
+              case "CROSSES_BELOW":
+                buyConditions.push(
+                  `(DoubleGE(${bufName}[${1 + cs}], ${threshold}) && DoubleLT(${bufName}[${cs}], ${threshold}))`
+                );
+                sellConditions.push(
+                  `(DoubleLE(${bufName}[${1 + cs}], ${threshold}) && DoubleGT(${bufName}[${cs}], ${threshold}))`
+                );
+                break;
+            }
+            break;
+          }
         }
       }
     });
@@ -922,6 +1017,27 @@ export function generateEntryLogic(
 
     if (buyConditions.length === 0) buyConditions.push("false");
     if (sellConditions.length === 0) sellConditions.push("false");
+
+    // Fix 10: Warn when direction is BOTH but only one side has real conditions
+    const buyIsAlwaysFalse = buyConditions.length === 1 && buyConditions[0] === "false";
+    const sellIsAlwaysFalse = sellConditions.length === 1 && sellConditions[0] === "false";
+    if (hasBuyNode && hasSellNode) {
+      if (buyIsAlwaysFalse && !sellIsAlwaysFalse) {
+        code.onTick.push(
+          "// WARNING: Direction is BOTH but no BUY entry conditions were generated."
+        );
+        code.onTick.push(
+          "// The EA will only open SELL positions. Add buy-side indicator conditions or change direction to SELL."
+        );
+      } else if (!buyIsAlwaysFalse && sellIsAlwaysFalse) {
+        code.onTick.push(
+          "// WARNING: Direction is BOTH but no SELL entry conditions were generated."
+        );
+        code.onTick.push(
+          "// The EA will only open BUY positions. Add sell-side indicator conditions or change direction to BUY."
+        );
+      }
+    }
 
     const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
     code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
@@ -1048,7 +1164,8 @@ export function generateEntryLogic(
       const sellSL = code.hasDirectionalSL ? "slSellPips" : "slPips";
       const sellTP = code.hasDirectionalSL ? "(slSellPips * InpRiskReward)" : "tpPips";
       // Only override TP if it's risk-reward based; otherwise use the same tpPips
-      const sellTPVar = code.onTick.some((l) => l.includes("InpRiskReward")) ? sellTP : "tpPips";
+      const sellTPVar =
+        code.hasDirectionalSL && code.tpMethod === "RISK_REWARD" ? sellTP : "tpPips";
 
       const minBarsTrackSell = ctx.minBarsBetweenTrades > 0 ? " gLastTradeBar = Bars;" : "";
       if (sellOrderType === "MARKET") {
@@ -1477,9 +1594,8 @@ export function generateGridPyramidCode(
     )
   );
 
-  code.globalVariables.push("int gridLevelCount = 0;");
   code.globalVariables.push("double gridBasePrice = 0;");
-  code.globalVariables.push("datetime gridLastOrderTime = 0;");
+  code.globalVariables.push("datetime gridLastBarTime = 0;");
 
   code.onTick.push("");
   code.onTick.push("//--- Grid/Pyramid Management");
@@ -1489,53 +1605,100 @@ export function generateGridPyramidCode(
     code.onTick.push("{");
     code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
     code.onTick.push("");
+    code.onTick.push("   // Count ACTUAL open positions (not a stale counter)");
+    code.onTick.push("   int gridOpenCount = 0;");
+    code.onTick.push("   for(int i = 0; i < OrdersTotal(); i++)");
+    code.onTick.push("   {");
+    code.onTick.push("      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
+    code.onTick.push(
+      "      if(OrderType() <= OP_SELL && OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())"
+    );
+    code.onTick.push("         gridOpenCount++;");
+    code.onTick.push("   }");
+    code.onTick.push("");
+    code.onTick.push("   // Reset base price when all positions closed (new grid cycle)");
+    code.onTick.push("   if(gridOpenCount == 0) gridBasePrice = 0;");
+    code.onTick.push("");
     code.onTick.push("   // Initialize grid base price from first position");
-    code.onTick.push("   if(gridBasePrice == 0 && positionsCount > 0)");
+    code.onTick.push("   if(gridBasePrice == 0 && gridOpenCount > 0)");
     code.onTick.push("   {");
     code.onTick.push("      for(int i = 0; i < OrdersTotal(); i++)");
     code.onTick.push("      {");
     code.onTick.push("         if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
     code.onTick.push(
-      "         if(OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())"
+      "         if(OrderType() <= OP_SELL && OrderMagicNumber() == InpMagicNumber && OrderSymbol() == Symbol())"
     );
     code.onTick.push("         { gridBasePrice = OrderOpenPrice(); break; }");
     code.onTick.push("      }");
     code.onTick.push("   }");
-    code.onTick.push("   if(positionsCount == 0) { gridBasePrice = 0; gridLevelCount = 0; }");
     code.onTick.push("");
-    code.onTick.push("   if(gridBasePrice > 0 && gridLevelCount < InpMaxGridLevels)");
-    code.onTick.push("   {");
-    code.onTick.push("      double nextLevel = gridBasePrice + (gridLevelCount + 1) * spacing;");
+    code.onTick.push("   // Bar-based throttle: only allow one grid order per bar");
+    code.onTick.push("   datetime currentBarTime = iTime(Symbol(), Period(), 0);");
+    code.onTick.push("   bool gridBarAllowed = (currentBarTime != gridLastBarTime);");
+    code.onTick.push("");
     code.onTick.push(
-      "      double nextLevelDown = gridBasePrice - (gridLevelCount + 1) * spacing;"
+      "   if(gridBasePrice > 0 && gridOpenCount < InpMaxGridLevels && gridBarAllowed)"
     );
+    code.onTick.push("   {");
     code.onTick.push("      double lotSize = InpBuyLotSize;");
     code.onTick.push("      if(InpGridLotMultiplier != 1.0)");
     code.onTick.push(
-      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridLevelCount), 2);"
+      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridOpenCount), 2);"
     );
 
     if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      // Buy grid: place buy when price drops to next level");
+      code.onTick.push("      // Buy grid: place buy when price drops to next level down");
+      code.onTick.push("      double nextLevelDown = gridBasePrice - (gridOpenCount) * spacing;");
       code.onTick.push("      if(Bid <= nextLevelDown + spacing * 0.1)");
       code.onTick.push("      {");
+      code.onTick.push("         // Price-level dedup: check no existing position at this level");
+      code.onTick.push("         bool levelExists = false;");
+      code.onTick.push("         for(int j = 0; j < OrdersTotal(); j++)");
+      code.onTick.push("         {");
+      code.onTick.push("            if(!OrderSelect(j, SELECT_BY_POS, MODE_TRADES)) continue;");
       code.onTick.push(
-        `         int ticket = OrderSend(Symbol(), OP_BUY, lotSize, Ask, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrGreen);`
+        "            if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != Symbol()) continue;"
       );
-      code.onTick.push("         if(ticket > 0) gridLevelCount++;");
+      code.onTick.push(
+        "            if(MathAbs(OrderOpenPrice() - nextLevelDown) < spacing * 0.3) { levelExists = true; break; }"
+      );
+      code.onTick.push("         }");
+      code.onTick.push("         if(!levelExists)");
+      code.onTick.push("         {");
+      code.onTick.push(
+        `            int ticket = OrderSend(Symbol(), OP_BUY, lotSize, Ask, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrGreen);`
+      );
+      code.onTick.push("            if(ticket > 0) gridLastBarTime = currentBarTime;");
+      code.onTick.push("         }");
       code.onTick.push("      }");
     }
 
     if (data.direction === "SELL_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");
-      code.onTick.push("      // Sell grid: place sell when price rises to next level");
+      code.onTick.push("      // Sell grid: place sell when price rises to next level up");
+      code.onTick.push("      double nextLevel = gridBasePrice + (gridOpenCount) * spacing;");
       code.onTick.push("      if(Ask >= nextLevel - spacing * 0.1)");
       code.onTick.push("      {");
+      code.onTick.push("         // Price-level dedup: check no existing position at this level");
+      code.onTick.push("         bool levelExists = false;");
+      code.onTick.push("         for(int j = 0; j < OrdersTotal(); j++)");
+      code.onTick.push("         {");
+      code.onTick.push("            if(!OrderSelect(j, SELECT_BY_POS, MODE_TRADES)) continue;");
       code.onTick.push(
-        `         int ticket = OrderSend(Symbol(), OP_SELL, lotSize, Bid, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrRed);`
+        "            if(OrderMagicNumber() != InpMagicNumber || OrderSymbol() != Symbol()) continue;"
       );
-      code.onTick.push("         if(ticket > 0) gridLevelCount++;");
+      code.onTick.push(
+        "            if(MathAbs(OrderOpenPrice() - nextLevel) < spacing * 0.3) { levelExists = true; break; }"
+      );
+      code.onTick.push("         }");
+      code.onTick.push("         if(!levelExists)");
+      code.onTick.push("         {");
+      code.onTick.push(
+        `            int ticket = OrderSend(Symbol(), OP_SELL, lotSize, Bid, InpMaxSlippage, 0, 0, "${comment} Grid", InpMagicNumber, 0, clrRed);`
+      );
+      code.onTick.push("            if(ticket > 0) gridLastBarTime = currentBarTime;");
+      code.onTick.push("         }");
       code.onTick.push("      }");
     }
 
@@ -1547,6 +1710,15 @@ export function generateGridPyramidCode(
     code.onTick.push("{");
     code.onTick.push("   double spacing = InpGridSpacing * _pipFactor * _Point;");
     code.onTick.push("");
+    code.onTick.push("   // Bar-based throttle: only allow one pyramid order per bar");
+    code.onTick.push("   datetime currentBarTime = iTime(Symbol(), Period(), 0);");
+    code.onTick.push("   bool pyramidBarAllowed = (currentBarTime != gridLastBarTime);");
+    code.onTick.push("");
+    code.onTick.push("   // Count actual pyramid positions and track for max level check");
+    code.onTick.push("   int pyramidCount = positionsCount;");
+    code.onTick.push("");
+    code.onTick.push("   if(pyramidBarAllowed)");
+    code.onTick.push("   {");
     code.onTick.push("   for(int i = OrdersTotal() - 1; i >= 0; i--)");
     code.onTick.push("   {");
     code.onTick.push("      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;");
@@ -1559,7 +1731,7 @@ export function generateGridPyramidCode(
     code.onTick.push("      int posType = OrderType();");
     code.onTick.push("      double volume = OrderLots();");
     code.onTick.push("");
-    code.onTick.push("      if(positionsCount >= InpMaxGridLevels) break;");
+    code.onTick.push("      if(pyramidCount >= InpMaxGridLevels) break;");
     code.onTick.push("");
     code.onTick.push(
       "      double nextLotSize = NormalizeDouble(volume * InpGridLotMultiplier, 2);"
@@ -1571,14 +1743,14 @@ export function generateGridPyramidCode(
       code.onTick.push("");
       code.onTick.push("      if(posType == OP_BUY)");
       code.onTick.push("      {");
-      code.onTick.push(
-        "         if(Bid >= openPrice + spacing && TimeCurrent() > gridLastOrderTime + 60)"
-      );
+      code.onTick.push("         if(Bid >= openPrice + spacing)");
       code.onTick.push("         {");
       code.onTick.push(
         `            int ticket = OrderSend(Symbol(), OP_BUY, nextLotSize, Ask, InpMaxSlippage, 0, 0, "${comment} Pyramid", InpMagicNumber, 0, clrGreen);`
       );
-      code.onTick.push("            if(ticket > 0) gridLastOrderTime = TimeCurrent();");
+      code.onTick.push(
+        "            if(ticket > 0) { gridLastBarTime = currentBarTime; pyramidCount++; }"
+      );
       code.onTick.push("         }");
       code.onTick.push("      }");
     }
@@ -1587,20 +1759,21 @@ export function generateGridPyramidCode(
       code.onTick.push("");
       code.onTick.push("      if(posType == OP_SELL)");
       code.onTick.push("      {");
-      code.onTick.push(
-        "         if(Ask <= openPrice - spacing && TimeCurrent() > gridLastOrderTime + 60)"
-      );
+      code.onTick.push("         if(Ask <= openPrice - spacing)");
       code.onTick.push("         {");
       code.onTick.push(
         `            int ticket = OrderSend(Symbol(), OP_SELL, nextLotSize, Bid, InpMaxSlippage, 0, 0, "${comment} Pyramid", InpMagicNumber, 0, clrRed);`
       );
-      code.onTick.push("            if(ticket > 0) gridLastOrderTime = TimeCurrent();");
+      code.onTick.push(
+        "            if(ticket > 0) { gridLastBarTime = currentBarTime; pyramidCount++; }"
+      );
       code.onTick.push("         }");
       code.onTick.push("      }");
     }
 
-    code.onTick.push("      break; // Only process the most recent position");
+    code.onTick.push("      // Process ALL winning positions (no break)");
     code.onTick.push("   }");
+    code.onTick.push("   } // end pyramidBarAllowed");
     code.onTick.push("}");
   }
 }
