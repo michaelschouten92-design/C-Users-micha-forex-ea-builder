@@ -17,6 +17,7 @@ import type { OHLCVBar } from "@/lib/backtest/types";
 
 interface BacktestFormProps {
   projects: Array<{ id: string; name: string }>;
+  tier?: "FREE" | "PRO" | "ELITE";
 }
 
 function formatCurrency(value: number): string {
@@ -352,7 +353,8 @@ const BROKER_PRESETS: Record<
   },
 };
 
-export function BacktestForm({ projects }: BacktestFormProps) {
+export function BacktestForm({ projects, tier = "FREE" }: BacktestFormProps) {
+  const isPro = tier !== "FREE";
   const [projectId, setProjectId] = useState("");
   const [initialBalance, setInitialBalance] = useState("10000");
   const [spread, setSpread] = useState("10");
@@ -1035,22 +1037,40 @@ export function BacktestForm({ projects }: BacktestFormProps) {
 
           {/* Monte Carlo & Walk-Forward Buttons (prominent position) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={handleMonteCarlo}
-              disabled={monteCarloRunning || r.trades.length === 0}
-              className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
-            >
-              {monteCarloRunning
-                ? "Running Monte Carlo..."
-                : "Run Monte Carlo Simulation (1000 sims)"}
-            </button>
-            <button
-              onClick={handleWalkForward}
-              disabled={walkForwardRunning || parsedBarsRef.current.length === 0}
-              className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
-            >
-              {walkForwardRunning ? "Running Walk-Forward..." : "Run Walk-Forward Validation"}
-            </button>
+            {isPro ? (
+              <button
+                onClick={handleMonteCarlo}
+                disabled={monteCarloRunning || r.trades.length === 0}
+                className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
+              >
+                {monteCarloRunning
+                  ? "Running Monte Carlo..."
+                  : "Run Monte Carlo Simulation (1000 sims)"}
+              </button>
+            ) : (
+              <a
+                href="/pricing"
+                className="py-3 px-4 rounded-lg font-semibold border border-[rgba(79,70,229,0.3)] text-[#94A3B8] text-sm text-center hover:border-[#4F46E5] hover:text-white transition-all duration-200"
+              >
+                Monte Carlo Simulation — Pro
+              </a>
+            )}
+            {isPro ? (
+              <button
+                onClick={handleWalkForward}
+                disabled={walkForwardRunning || parsedBarsRef.current.length === 0}
+                className="py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-white hover:from-[#6366F1] hover:to-[#818CF8] transition-all duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(79,70,229,0.3)]"
+              >
+                {walkForwardRunning ? "Running Walk-Forward..." : "Run Walk-Forward Validation"}
+              </button>
+            ) : (
+              <a
+                href="/pricing"
+                className="py-3 px-4 rounded-lg font-semibold border border-[rgba(79,70,229,0.3)] text-[#94A3B8] text-sm text-center hover:border-[#4F46E5] hover:text-white transition-all duration-200"
+              >
+                Walk-Forward Validation — Pro
+              </a>
+            )}
           </div>
 
           {/* Monte Carlo Results (shown immediately after buttons) */}

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCachedTier } from "@/lib/plan-limits";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   computeStrategyFingerprint,
   ensureStrategyIdentity,
@@ -18,6 +20,18 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier === "FREE") {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.PLAN_REQUIRED,
+        "Strategy Identity requires Pro or Elite",
+        "Upgrade to Pro to unlock Strategy Identity, versioning, and verified track records."
+      ),
+      { status: 403 }
+    );
   }
 
   const project = await prisma.project.findFirst({
@@ -56,6 +70,18 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier === "FREE") {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.PLAN_REQUIRED,
+        "Strategy Identity requires Pro or Elite",
+        "Upgrade to Pro to unlock Strategy Identity, versioning, and verified track records."
+      ),
+      { status: 403 }
+    );
   }
 
   const project = await prisma.project.findFirst({

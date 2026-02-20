@@ -113,12 +113,6 @@ export default async function LiveEADashboardPage() {
                 Live EAs
               </Link>
               <Link
-                href="/app/compare"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-              >
-                Compare
-              </Link>
-              <Link
                 href="/app/settings"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >

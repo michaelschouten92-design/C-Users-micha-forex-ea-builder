@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCachedTier } from "@/lib/plan-limits";
+import { ErrorCode, apiError } from "@/lib/error-codes";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -22,6 +24,18 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier !== "ELITE") {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.PLAN_REQUIRED,
+        "Verified Strategy Page requires Elite",
+        "Upgrade to Elite to create a public Verified Strategy Page and share your verified track record."
+      ),
+      { status: 403 }
+    );
   }
 
   let body: unknown;
@@ -85,6 +99,18 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier !== "ELITE") {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.PLAN_REQUIRED,
+        "Verified Strategy Page requires Elite",
+        "Upgrade to Elite to access Verified Strategy Page settings."
+      ),
+      { status: 403 }
+    );
   }
 
   const identity = await prisma.strategyIdentity.findUnique({

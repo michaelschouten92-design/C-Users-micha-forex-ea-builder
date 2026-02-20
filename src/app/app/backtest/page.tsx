@@ -17,11 +17,25 @@ export default async function BacktestPage() {
     redirect("/login?expired=true");
   }
 
-  const projects = await prisma.project.findMany({
-    where: { userId: session.user.id, deletedAt: null },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true, name: true },
-  });
+  const [projects, subscription] = await Promise.all([
+    prisma.project.findMany({
+      where: { userId: session.user.id, deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, name: true },
+    }),
+    prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    }),
+  ]);
+
+  let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
+  if (tier !== "FREE") {
+    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
+    if (!isActive || isExpired) {
+      tier = "FREE";
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -91,7 +105,7 @@ export default async function BacktestPage() {
         </div>
 
         <BacktestTabs
-          runBacktestTab={<BacktestForm projects={projects} />}
+          runBacktestTab={<BacktestForm projects={projects} tier={tier} />}
           optimizeTab={<Optimization projects={projects} />}
           stressTestTab={<StressTesting />}
           sensitivityTab={<Sensitivity projects={projects} />}
