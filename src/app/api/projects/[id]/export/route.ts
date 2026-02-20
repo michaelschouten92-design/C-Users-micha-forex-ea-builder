@@ -229,7 +229,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       });
 
       // Create LiveEAInstance for telemetry tracking
-      await tx.liveEAInstance.create({
+      const liveEA = await tx.liveEAInstance.create({
         data: {
           exportJobId: job.id,
           userId: session.user.id,
@@ -237,6 +237,11 @@ export async function POST(request: NextRequest, { params }: Props) {
           eaName: project.name,
           mode: paperMode ? "PAPER" : "LIVE",
         },
+      });
+
+      // Initialize TrackRecordState for the event-sourced track record system
+      await tx.trackRecordState.create({
+        data: { instanceId: liveEA.id },
       });
 
       return job;

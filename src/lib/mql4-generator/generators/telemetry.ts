@@ -2,6 +2,7 @@
 // Adds WebRequest-based telemetry to exported EAs for live tracking
 
 import type { GeneratedCode } from "../types";
+import { generateTrackRecordCode } from "./track-record";
 
 export interface TelemetryConfig {
   apiKey: string;
@@ -75,6 +76,9 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
   code.helperFunctions.push(buildSendErrorMQL4());
   code.helperFunctions.push(buildJsonHelperMQL4());
   code.helperFunctions.push(buildHttpPostMQL4());
+
+  // --- Track Record (event-sourced hash chain) ---
+  generateTrackRecordCode(code, config);
 }
 
 function buildSendHeartbeatMQL4(): string {

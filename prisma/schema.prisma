@@ -328,6 +328,9 @@ model LiveEAInstance {
   alerts         EAAlert[]
   alertConfigs   EAAlertConfig[]
   tradeJournals  TradeJournal[]
+  trackRecordEvents      TrackRecordEvent[]
+  trackRecordCheckpoints TrackRecordCheckpoint[]
+  trackRecordState       TrackRecordState?
 
   @@index([userId, status])
   @@index([status, lastHeartbeat])
@@ -578,4 +581,73 @@ model TradeJournal {
 
   @@index([userId, startedAt])
   @@index([projectId])
+}
+
+// ============================================
+// TRACK RECORD — Event-Sourced, Tamper-Resistant
+// ============================================
+
+model TrackRecordEvent {
+  id           String   @id @default(cuid())
+  instanceId   String
+  seqNo        Int                          // Monotonic sequence per instance
+  eventType    String                       // TRADE_OPEN, TRADE_CLOSE, SNAPSHOT, etc.
+  eventHash    String                       // SHA-256 of canonical JSON
+  prevHash     String                       // Hash of previous event (genesis = "0"×64)
+  payload      Json                         // Full event data
+  timestamp    DateTime                     // EA-reported time
+  receivedAt   DateTime @default(now())     // Server wall clock
+
+  instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, seqNo])             // Enforces monotonic chain per instance
+  @@index([instanceId, timestamp])
+  @@index([instanceId, eventType, timestamp])
+  @@index([eventHash])                      // For chain verification lookups
+}
+
+model TrackRecordCheckpoint {
+  id              String   @id @default(cuid())
+  instanceId      String
+  seqNo           Int                       // seqNo of the event this checkpoint covers
+  balance         Float
+  equity          Float
+  highWaterMark   Float
+  maxDrawdown     Float
+  maxDrawdownPct  Float
+  totalTrades     Int
+  totalProfit     Float
+  totalSwap       Float
+  totalCommission Float
+  winCount        Int
+  lossCount       Int
+  hmac            String                    // HMAC-SHA256(state, derived key)
+  createdAt       DateTime @default(now())
+
+  instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, seqNo])
+  @@index([instanceId, createdAt])
+}
+
+model TrackRecordState {
+  id              String  @id @default(cuid())
+  instanceId      String  @unique            // One state per instance
+  lastSeqNo       Int     @default(0)
+  lastEventHash   String  @default("0000000000000000000000000000000000000000000000000000000000000000")
+  balance         Float   @default(0)
+  equity          Float   @default(0)
+  highWaterMark   Float   @default(0)
+  maxDrawdown     Float   @default(0)
+  maxDrawdownPct  Float   @default(0)
+  totalTrades     Int     @default(0)
+  totalProfit     Float   @default(0)
+  totalSwap       Float   @default(0)
+  totalCommission Float   @default(0)
+  winCount        Int     @default(0)
+  lossCount       Int     @default(0)
+  openPositions   Json    @default("[]")     // Serialized open position array
+  updatedAt       DateTime @updatedAt
+
+  instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 }
