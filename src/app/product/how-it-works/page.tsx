@@ -6,44 +6,108 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "How It Works — Build an MT5 & MT4 EA in 3 Steps | AlgoStudio",
+  title: "How It Works — Strategy Validation in 4 Steps | AlgoStudio",
   description:
-    "Learn how AlgoStudio works: choose a strategy template, adjust a few settings, and export clean MQL5 & MQL4 code. Build your first MT5 Expert Advisor in under 5 minutes.",
+    "From trading idea to validated, monitored strategy in 4 steps. Build with templates, validate with Monte Carlo, verify with immutable track records, and monitor health in production.",
   alternates: { canonical: "/product/how-it-works" },
 };
 
 const breadcrumbs = [
   { name: "Home", href: "/" },
-  { name: "Product", href: "/product" },
+  { name: "Platform", href: "/product" },
   { name: "How It Works", href: "/product/how-it-works" },
+];
+
+const templates = [
+  { name: "EMA Crossover", desc: "Trend following with moving average crossovers" },
+  { name: "RSI Reversal", desc: "Mean reversion based on RSI overbought/oversold" },
+  { name: "Range Breakout", desc: "Breakout trading of price ranges" },
+  { name: "Trend Pullback", desc: "Enter on pullbacks in trending markets" },
+  { name: "MACD Crossover", desc: "Momentum-based entries on MACD signals" },
+  { name: "RSI/MACD Divergence", desc: "Reversal entries based on indicator divergence" },
+];
+
+const typicalSettings = [
+  { label: "Risk per trade", example: "1-2% of balance" },
+  { label: "Stop loss", example: "ATR multiplier (e.g. 1.5x ATR)" },
+  { label: "Take profit", example: "Risk-reward ratio (e.g. 2:1)" },
+  { label: "Strategy parameters", example: "Periods, levels, thresholds" },
+];
+
+const validationMethods = [
+  {
+    title: "Backtesting",
+    description:
+      "Upload your MT5 Strategy Tester results. Analyze win rate, profit factor, drawdown, and Sharpe ratio.",
+    badge: null,
+  },
+  {
+    title: "Monte Carlo Simulation",
+    description:
+      "Run 1,000 randomized simulations. See the probability distribution — not just the best case.",
+    badge: "PRO",
+  },
+  {
+    title: "Reality Check",
+    description:
+      "Automatic flags for overfitting, unrealistic win rates, and suspiciously smooth equity curves.",
+    badge: null,
+  },
+];
+
+const monitoringFeatures = [
+  {
+    title: "Verified Track Record",
+    description:
+      "Tamper-resistant hash chain records every trade. Cryptographically verified performance.",
+    badge: null,
+  },
+  {
+    title: "Strategy Health Monitor",
+    description:
+      "5 metrics tracked against your baseline. Alerts when your edge begins to degrade.",
+    badge: "ELITE",
+  },
+  {
+    title: "Strategy Identity",
+    description:
+      "Permanent AS-xxxx ID with version history. Know exactly what's deployed and what changed.",
+    badge: null,
+  },
 ];
 
 export default function HowItWorksPage() {
   const howToJsonLd = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "How to Build an MT5 & MT4 Expert Advisor with AlgoStudio",
+    name: "How to Validate a Trading Strategy with AlgoStudio",
     description:
-      "Build your first Expert Advisor for MT5 or MT4 in 3 simple steps using AlgoStudio. No coding required.",
-    totalTime: "PT5M",
+      "From trading idea to validated, monitored strategy in 4 steps. No coding required.",
+    totalTime: "PT15M",
     step: [
       {
         "@type": "HowToStep",
         position: 1,
         name: "Choose a strategy template",
-        text: "Pick from 6 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, or RSI/MACD Divergence. Each comes with sensible defaults that work out of the box.",
+        text: "Pick from 6 proven strategy templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, or RSI/MACD Divergence. Each comes with sensible defaults designed around real trading approaches.",
       },
       {
         "@type": "HowToStep",
         position: 2,
-        name: "Adjust a few settings",
-        text: "Set your risk percentage, stop loss multiplier, and take profit ratio. Optional advanced toggles for trend filters and session timing. Each template has sensible defaults for every setting.",
+        name: "Customize and export",
+        text: "Set your risk parameters, stop loss, and take profit. Export clean MQL5 or MQL4 source code. The code is yours to modify, optimize, and deploy.",
       },
       {
         "@type": "HowToStep",
         position: 3,
-        name: "Export and test in MetaTrader",
-        text: "Click Export to download a clean .mq5 file. Open it in MetaTrader 5, compile in MetaEditor, and run it in the Strategy Tester to backtest your strategy.",
+        name: "Validate with data",
+        text: "Upload backtest results, run Monte Carlo simulations across 1,000 randomized scenarios, and get automatic Reality Check flags for overfitting and unrealistic expectations.",
+      },
+      {
+        "@type": "HowToStep",
+        position: 4,
+        name: "Deploy and monitor",
+        text: "Go live with a verified track record, strategy health monitoring, and a permanent strategy identity. Every trade is recorded. Your performance is verified. Your health is monitored.",
       },
     ],
   };
@@ -65,13 +129,14 @@ export default function HowItWorksPage() {
         <div className="max-w-4xl mx-auto">
           <Breadcrumbs items={breadcrumbs} />
 
+          {/* Hero */}
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              From trading idea to working EA in 3 steps
+              From trading idea to validated strategy in 4 steps
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
-              No coding. No complex configuration. AlgoStudio turns your strategy into a real
-              MetaTrader 5 or 4 Expert Advisor in under 5 minutes.
+              No coding at any step. AlgoStudio guides you from strategy construction through
+              validation, verification, and live monitoring.
             </p>
           </section>
 
@@ -84,27 +149,11 @@ export default function HowItWorksPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Choose a strategy template</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  AlgoStudio starts you with a working strategy — not a blank canvas. Pick from 6
-                  proven templates, each designed around a different trading approach.
+                  AlgoStudio starts you with a working strategy — not a blank canvas. Each template
+                  is designed around a real trading approach that traders actually use.
                 </p>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {[
-                    {
-                      name: "EMA Crossover",
-                      desc: "Trend following with moving average crossovers",
-                    },
-                    {
-                      name: "RSI Reversal",
-                      desc: "Mean reversion based on RSI overbought/oversold",
-                    },
-                    { name: "Range Breakout", desc: "Breakout trading of price ranges" },
-                    { name: "Trend Pullback", desc: "Enter on pullbacks in trending markets" },
-                    { name: "MACD Crossover", desc: "Momentum-based entries on MACD signals" },
-                    {
-                      name: "RSI/MACD Divergence",
-                      desc: "Reversal entries based on indicator divergence",
-                    },
-                  ].map((t) => (
+                  {templates.map((t) => (
                     <div
                       key={t.name}
                       className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-4"
@@ -115,8 +164,7 @@ export default function HowItWorksPage() {
                   ))}
                 </div>
                 <p className="text-sm text-[#94A3B8] mt-4">
-                  Every template includes sensible defaults for all parameters. You can export
-                  immediately or customize first —{" "}
+                  Every template includes sensible defaults. Export immediately or customize first —{" "}
                   <Link href="/templates" className="text-[#A78BFA] hover:underline">
                     explore all templates
                   </Link>
@@ -133,20 +181,15 @@ export default function HowItWorksPage() {
                 2
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Adjust a few settings</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Customize and export</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  Each template has sensible defaults. Set your risk percentage, stop loss
-                  multiplier, and take profit ratio. That&apos;s usually all you need to change.
+                  Set your risk parameters, stop loss, and take profit. Export clean MQL5 or MQL4
+                  source code. The code is yours to modify, optimize, and deploy.
                 </p>
                 <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                   <h3 className="text-sm font-semibold text-white mb-4">Typical settings</h3>
                   <div className="space-y-3">
-                    {[
-                      { label: "Risk per trade", example: "1-2% of account balance" },
-                      { label: "Stop loss", example: "ATR multiplier (e.g. 1.5x ATR)" },
-                      { label: "Take profit", example: "Risk-reward ratio (e.g. 2:1)" },
-                      { label: "Strategy parameters", example: "EMA periods, RSI levels, etc." },
-                    ].map((s) => (
+                    {typicalSettings.map((s) => (
                       <div key={s.label} className="flex items-center justify-between text-sm">
                         <span className="text-[#CBD5E1]">{s.label}</span>
                         <span className="text-[#64748B]">{s.example}</span>
@@ -169,68 +212,77 @@ export default function HowItWorksPage() {
                 3
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Export & test in MetaTrader</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Validate with data</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  Click Export to download your .mq5 (or .mq4) file. It&apos;s a standard MetaTrader
-                  5 Expert Advisor — open it in MetaEditor, compile, and run it in the Strategy
-                  Tester.
+                  A single backtest tells you nothing. True validation requires statistical rigor.
                 </p>
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-white">What you get</h3>
-                  <ul className="space-y-2 text-sm text-[#94A3B8]">
-                    {[
-                      "A single .mq5 or .mq4 file — no dependencies, no external libraries",
-                      "Clean, well-commented MQL5/MQL4 source code",
-                      "Built-in risk management (position sizing, stop loss, take profit)",
-                      "Compatible with any MT5 broker",
-                      "Ready for backtesting in the MT5 Strategy Tester",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#22D3EE] mt-0.5">&#10003;</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {validationMethods.map((method) => (
+                    <div
+                      key={method.title}
+                      className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-semibold text-white">{method.title}</h3>
+                        {method.badge && (
+                          <span className="text-[10px] font-semibold text-[#22D3EE] bg-[rgba(34,211,238,0.1)] px-1.5 py-0.5 rounded">
+                            {method.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#94A3B8] leading-relaxed">{method.description}</p>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm text-[#94A3B8] mt-4">
-                  <Link href="/product/mt5-export" className="text-[#A78BFA] hover:underline">
-                    Learn more about the export process &rarr;
+                <p className="text-sm text-[#64748B] mt-4">
+                  Monte Carlo simulation requires{" "}
+                  <Link href="/pricing" className="text-[#A78BFA] hover:underline">
+                    Pro or Elite plan
                   </Link>
+                  .
                 </p>
               </div>
             </div>
           </section>
 
-          {/* After export */}
-          <section className="mb-20 bg-[#1A0626]/30 border border-[rgba(79,70,229,0.15)] rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-4">What happens after export?</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-semibold text-white mb-2">Backtest</h3>
-                <p className="text-sm text-[#94A3B8]">
-                  Load your EA in the MT5 Strategy Tester. Test it across different time periods,
-                  symbols, and market conditions.
-                </p>
+          {/* Step 4 */}
+          <section className="mb-20">
+            <div className="flex items-start gap-6">
+              <div className="w-12 h-12 bg-[#4F46E5] rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-lg">
+                4
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white mb-2">Optimize</h3>
-                <p className="text-sm text-[#94A3B8]">
-                  Use the MT5 optimizer to find the best parameter combinations. Then come back to
-                  AlgoStudio and adjust your settings.
+                <h2 className="text-2xl font-bold text-white mb-4">Deploy and monitor</h2>
+                <p className="text-[#94A3B8] mb-6 leading-relaxed">
+                  Go live with confidence. Every trade is recorded. Your performance is verified.
+                  Your health is monitored.
                 </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white mb-2">Demo trade</h3>
-                <p className="text-sm text-[#94A3B8]">
-                  Run your EA on a demo account to verify it works in real-time market conditions
-                  before risking real money.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white mb-2">Go live</h3>
-                <p className="text-sm text-[#94A3B8]">
-                  When you&apos;re confident in your strategy, move it to a live account. The EA
-                  works with any MT5 broker.
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {monitoringFeatures.map((feature) => (
+                    <div
+                      key={feature.title}
+                      className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-sm font-semibold text-white">{feature.title}</h3>
+                        {feature.badge && (
+                          <span className="text-[10px] font-semibold text-[#22D3EE] bg-[rgba(34,211,238,0.1)] px-1.5 py-0.5 rounded">
+                            {feature.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#94A3B8] leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-[#64748B] mt-4">
+                  Health Monitor requires Elite plan. Strategy Identity and Track Record require{" "}
+                  <Link href="/pricing" className="text-[#A78BFA] hover:underline">
+                    Pro or Elite
+                  </Link>
+                  .
                 </p>
               </div>
             </div>
@@ -239,8 +291,9 @@ export default function HowItWorksPage() {
       </main>
 
       <CTASection
-        title="Ready to build your first EA?"
-        description="Pick a template and export clean MQL5 or MQL4 code in under 5 minutes. No credit card required."
+        title="Ready to validate your strategy?"
+        description="Build, verify, and monitor with objective data. Free — no credit card required."
+        ctaText="Start Validating — Free"
       />
 
       <Footer />

@@ -56,14 +56,7 @@ export function MobileNav() {
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
             >
-              Product
-            </Link>
-            <Link
-              href="/templates"
-              onClick={() => setIsOpen(false)}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-            >
-              Templates
+              Platform
             </Link>
             <Link
               href="/pricing"
@@ -73,25 +66,18 @@ export function MobileNav() {
               Pricing
             </Link>
             <Link
-              href="/coaching"
+              href="/about"
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
             >
-              Coaching
+              About
             </Link>
             <Link
-              href="/blog"
+              href="/templates"
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
             >
-              Blog
-            </Link>
-            <Link
-              href="/compare-platforms"
-              onClick={() => setIsOpen(false)}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-            >
-              Compare
+              Templates
             </Link>
             <Link
               href="/prop-firms"
@@ -101,18 +87,18 @@ export function MobileNav() {
               Prop Firms
             </Link>
             <Link
-              href="/leaderboard"
-              onClick={() => setIsOpen(false)}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-            >
-              Leaderboard
-            </Link>
-            <Link
               href="/docs"
               onClick={() => setIsOpen(false)}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors"
             >
-              API Docs
+              Docs
+            </Link>
+            <Link
+              href="/blog"
+              onClick={() => setIsOpen(false)}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Blog
             </Link>
             <Link
               href="/login"

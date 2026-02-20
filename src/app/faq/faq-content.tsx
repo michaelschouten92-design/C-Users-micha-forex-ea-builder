@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 
-type FAQCategory = "General" | "Templates & Builder" | "Technical" | "Pricing";
+type FAQCategory = "General" | "Validation" | "Track Record & Monitoring" | "Technical" | "Pricing";
 
 interface FAQItem {
   q: string;
@@ -10,7 +10,13 @@ interface FAQItem {
   category: FAQCategory;
 }
 
-const CATEGORIES: FAQCategory[] = ["General", "Templates & Builder", "Technical", "Pricing"];
+const CATEGORIES: FAQCategory[] = [
+  "General",
+  "Validation",
+  "Track Record & Monitoring",
+  "Technical",
+  "Pricing",
+];
 
 export function FAQContent({ items }: { items: FAQItem[] }) {
   const [search, setSearch] = useState("");

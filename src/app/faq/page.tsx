@@ -9,7 +9,7 @@ import { FAQContent } from "./faq-content";
 export const metadata: Metadata = {
   title: "FAQ — Frequently Asked Questions | AlgoStudio",
   description:
-    "Answers to common questions about AlgoStudio: how it works, pricing, templates, MT5 export, code quality, and more.",
+    "Common questions about AlgoStudio: strategy validation, Monte Carlo simulation, verified track records, health monitoring, pricing, and technical details.",
   alternates: { canonical: "/faq" },
 };
 
@@ -19,59 +19,93 @@ const breadcrumbs = [
 ];
 
 const faqItems = [
+  // General
   {
     q: "What is AlgoStudio?",
-    a: "AlgoStudio is the simplest way to build an MT5 Expert Advisor. Pick a strategy template, adjust a few settings, and export clean MQL5 code. No coding required.",
+    a: "AlgoStudio is a strategy validation platform for algorithmic traders. It helps you determine whether a trading strategy has a real edge — before you risk capital. Build strategies with proven templates, validate with Monte Carlo simulation, verify performance with immutable track records, and monitor strategy health in production.",
+    category: "General" as const,
+  },
+  {
+    q: "What is strategy validation?",
+    a: "Strategy validation goes beyond backtesting. It's the process of objectively determining whether a trading strategy has a real, repeatable edge. AlgoStudio combines Monte Carlo simulation, verified track records, and live health monitoring to give you a complete picture of strategy viability.",
     category: "General" as const,
   },
   {
     q: "Do I need coding experience?",
-    a: "No. You pick a strategy template, adjust the settings you want, and export. No MQL5, Python, or any other programming knowledge required.",
+    a: "No. AlgoStudio is a no-code platform. Pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 or .mq4 file. No MQL5, Python, or programming knowledge required.",
     category: "General" as const,
   },
   {
     q: "How is AlgoStudio different from other EA builders?",
-    a: "Most EA builders give you a blank canvas with hundreds of options. AlgoStudio starts you with a working strategy template — you only adjust what matters. Pre-configured blocks with sensible defaults instead of complex logic wiring and 50-field forms.",
+    a: "Most EA builders give you a builder and stop. AlgoStudio goes further with strategy validation (Monte Carlo), verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison). It's not just building — it's knowing if your strategy works.",
     category: "General" as const,
   },
+
+  // Validation
   {
-    q: "What strategy templates are available?",
-    a: "AlgoStudio includes 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence. Each produces a fully functional Expert Advisor with built-in risk management.",
-    category: "Templates & Builder" as const,
+    q: "What is Monte Carlo simulation?",
+    a: "Monte Carlo simulation randomizes your trade sequence thousands of times to reveal the probability distribution of outcomes. Instead of relying on one backtest result, you see the realistic range — best case, worst case, and everything in between. This separates luck from genuine edge.",
+    category: "Validation" as const,
   },
   {
-    q: "How long does it take to build an EA?",
-    a: "Most users export their first EA in under 5 minutes. Choose a template, adjust a few settings, and export. That's it.",
-    category: "Templates & Builder" as const,
+    q: "What is a Reality Check?",
+    a: "The Reality Check analyzes your backtest results and flags patterns that suggest overfitting or unrealistic expectations — such as unusually high win rates, excessive profit factors, or suspiciously smooth equity curves. It helps you identify when results are too good to be true.",
+    category: "Validation" as const,
   },
   {
-    q: "Can I use the exported EA in live trading?",
-    a: "Yes. The exported .mq5 file is a standard MetaTrader 5 Expert Advisor. Backtest it in Strategy Tester and run it on any MT5 broker.",
-    category: "Technical" as const,
+    q: "Can I backtest in AlgoStudio?",
+    a: "Yes. Upload your MT5 backtest results (.htm files) for analysis. AlgoStudio extracts the key metrics — win rate, profit factor, max drawdown, Sharpe ratio — and makes them available for Monte Carlo simulation, baseline comparison, and strategy validation.",
+    category: "Validation" as const,
+  },
+
+  // Track Record & Monitoring
+  {
+    q: "What is a Verified Track Record?",
+    a: "Every trade your EA makes is recorded in a tamper-resistant hash chain — similar to how blockchain works. Each event is linked to the previous one with a cryptographic hash, creating an auditable history that proves your results are genuine. No manipulation, no cherry-picking.",
+    category: "Track Record & Monitoring" as const,
   },
   {
-    q: "Is the generated code editable?",
-    a: "Yes. You get clean, well-commented MQL5 source code that you can open and modify in MetaEditor or any text editor. The code is yours.",
-    category: "Technical" as const,
+    q: "What is the Strategy Health Monitor?",
+    a: "The Health Monitor continuously compares your live trading performance against your backtest baseline across 5 key metrics: return, volatility, drawdown, win rate, and trade frequency. It alerts you when your strategy's edge begins to degrade — before a drawdown becomes a disaster.",
+    category: "Track Record & Monitoring" as const,
   },
+  {
+    q: "What is Strategy Identity?",
+    a: "Each strategy gets a permanent, unique identifier (AS-xxxx) and version history. When you change parameters or logic, a new version is created with its own fingerprint. This lets you track exactly what's deployed, what changed, and when.",
+    category: "Track Record & Monitoring" as const,
+  },
+
+  // Technical
   {
     q: "What file format does AlgoStudio export?",
-    a: "AlgoStudio exports a single .mq5 file — the standard source code format for MetaTrader 5 Expert Advisors. No external dependencies, no proprietary formats.",
+    a: "AlgoStudio exports standard .mq5 files for MetaTrader 5, and .mq4 files for MetaTrader 4 (Pro and Elite plans). Clean, well-commented source code with no external dependencies or proprietary formats. The code is yours.",
     category: "Technical" as const,
   },
   {
     q: "Which brokers are supported?",
-    a: "The exported EA runs on any broker that supports MetaTrader 5. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers. The output uses standard MQL functions — no broker-specific code.",
+    a: "The exported EA runs on any broker that supports MetaTrader 5 or MetaTrader 4. Compatible with prop firms like FTMO, E8 Markets, and FundingPips. The output uses standard MQL functions — no broker-specific code.",
     category: "Technical" as const,
   },
   {
+    q: "Can I edit the exported code?",
+    a: "Yes. You get clean, well-commented MQL5/MQL4 source code that you can open and modify in MetaEditor or any text editor. The code is yours to customize, optimize, or extend.",
+    category: "Technical" as const,
+  },
+
+  // Pricing
+  {
     q: "What do I get with the free plan?",
-    a: "Full access to all templates and the builder. 1 project and 1 MQL5 export per month. No credit card required.",
+    a: "Full access to the strategy builder and all templates. 1 project and 3 MQL5 exports per month. Backtesting and Reality Check included. No credit card required.",
     category: "Pricing" as const,
   },
   {
-    q: "What does the Pro plan include?",
-    a: "Unlimited projects, unlimited MQL5 + MQL4 exports, all strategy templates, and priority support. Cancel anytime from your account settings.",
+    q: "What's included in Pro?",
+    a: "Unlimited projects and exports. MQL5 + MQL4 export. Monte Carlo simulation, walk-forward analysis, Strategy Identity, and Verified Track Record. Everything you need to build and validate strategies.",
+    category: "Pricing" as const,
+  },
+  {
+    q: "What's included in Elite?",
+    a: "Everything in Pro, plus Strategy Health Monitor, edge degradation alerts, and public Verified Strategy Pages. Designed for traders who run strategies with real capital and need ongoing protection.",
     category: "Pricing" as const,
   },
   {
@@ -111,8 +145,9 @@ export default function FAQPage() {
       </main>
 
       <CTASection
-        title="Ready to get started?"
-        description="Pick a template and export your first MT5 Expert Advisor. Free — no credit card required."
+        title="Ready to validate your strategy?"
+        description="Build, verify, and monitor your trading strategy with objective data. Free — no credit card required."
+        ctaText="Start Validating — Free"
       />
 
       <Footer />

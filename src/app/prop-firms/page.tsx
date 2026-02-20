@@ -7,7 +7,7 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Prop Firm EA Builder — Pass Funded Challenges",
+  title: "Prop Firm Strategies — Validated EAs for Funded Challenges | AlgoStudio",
   description:
     "Build Expert Advisors configured for prop firm challenges. Pre-set daily loss limits, drawdown protection, and risk settings for FTMO, E8 Markets, FundingPips, and more.",
   alternates: { canonical: "/prop-firms" },

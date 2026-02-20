@@ -13,19 +13,16 @@ export function SiteNav() {
           <Link href="/" className="text-xl font-bold text-white">
             AlgoStudio
           </Link>
+          <span className="text-[10px] text-[#64748B] font-medium tracking-wider uppercase border border-[rgba(79,70,229,0.3)] rounded px-1.5 py-0.5 hidden sm:inline">
+            Strategy Validation
+          </span>
         </div>
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/product"
             className="text-sm text-[#94A3B8] hover:text-white transition-colors"
           >
-            Product
-          </Link>
-          <Link
-            href="/templates"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Templates
+            Platform
           </Link>
           <Link
             href="/pricing"
@@ -33,35 +30,11 @@ export function SiteNav() {
           >
             Pricing
           </Link>
-          <Link
-            href="/coaching"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Coaching
-          </Link>
-          <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-            Blog
-          </Link>
-          <Link
-            href="/compare-platforms"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Compare
-          </Link>
-          <Link
-            href="/prop-firms"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Prop Firms
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
-            Leaderboard
+          <Link href="/about" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+            About
           </Link>
           <Link href="/docs" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-            API Docs
+            Docs
           </Link>
           <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
             Sign in

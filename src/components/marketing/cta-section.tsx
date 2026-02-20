@@ -10,7 +10,7 @@ interface CTASectionProps {
 export function CTASection({
   title,
   description,
-  ctaText = "Start Building Free",
+  ctaText = "Start Validating — Free",
   ctaHref = "/login?mode=register",
 }: CTASectionProps) {
   return (
@@ -28,9 +28,8 @@ export function CTASection({
           <p className="text-xs text-amber-300/90 leading-relaxed">
             <strong>Risk Warning:</strong> Trading in financial markets involves substantial risk of
             loss and is not suitable for every investor. Past performance does not guarantee future
-            results. Always test strategies on a demo account first. AlgoStudio is a tool for
-            building and testing automated trading strategies — it does not provide financial advice
-            or guarantee profits. See our{" "}
+            results. Always test strategies on a demo account first. AlgoStudio is a strategy
+            validation platform — it does not provide financial advice or guarantee profits. See our{" "}
             <Link href="/terms" className="underline hover:text-amber-200">
               Terms of Service
             </Link>{" "}

@@ -10,10 +10,10 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/"
+                  href="/product"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
-                  Product
+                  Platform Overview
                 </Link>
               </li>
               <li>
@@ -21,7 +21,7 @@ export function Footer() {
                   href="/templates"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
-                  Templates
+                  Strategy Templates
                 </Link>
               </li>
               <li>
@@ -51,7 +51,7 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white mb-4">Learn</h3>
+            <h3 className="text-sm font-semibold text-white mb-4">Resources</h3>
             <ul className="space-y-2">
               <li>
                 <Link
@@ -59,6 +59,14 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Blog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/docs"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  API Docs
                 </Link>
               </li>
               <li>
@@ -91,22 +99,6 @@ export function Footer() {
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
                   Compare Platforms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/leaderboard"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  Leaderboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/docs"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
-                >
-                  API Docs
                 </Link>
               </li>
             </ul>
@@ -164,6 +156,10 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-[rgba(79,70,229,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-white">AlgoStudio</span>
+            <span className="text-xs text-[#64748B]">Strategy Validation Platform</span>
+          </div>
           <span className="text-sm text-[#64748B]">
             &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.
           </span>

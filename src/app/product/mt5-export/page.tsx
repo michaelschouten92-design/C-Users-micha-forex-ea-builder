@@ -186,8 +186,8 @@ export default function MT5ExportPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Export your first EA today"
-        description="Pick a template, adjust settings, export clean MQL5 or MQL4 code. Free to start — no credit card required."
+        title="Start validating your strategy"
+        description="Build, export, and validate your trading strategy with objective data. Free — no credit card required."
       />
 
       <Footer />
