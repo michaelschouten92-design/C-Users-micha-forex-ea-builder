@@ -55,107 +55,128 @@ export async function POST(request: NextRequest) {
   const { eventType, seqNo, prevHash, eventHash, timestamp, payload } = validation.data;
 
   try {
-    // Load or create state
-    let dbState = await prisma.trackRecordState.findUnique({
-      where: { instanceId },
-    });
-
-    if (!dbState) {
-      dbState = await prisma.trackRecordState.create({
-        data: { instanceId },
-      });
-    }
-
-    // Idempotency check: if EA resends same seqNo, check if eventHash matches
-    if (seqNo <= dbState.lastSeqNo) {
-      if (seqNo === dbState.lastSeqNo) {
-        // Check if it's a retry of the same event
-        const existingEvent = await prisma.trackRecordEvent.findUnique({
-          where: { instanceId_seqNo: { instanceId, seqNo } },
-          select: { eventHash: true },
+    // All state reads + writes inside one interactive transaction to prevent races.
+    // Serializable isolation ensures no concurrent reader sees stale state.
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Load or create state (inside transaction — locked against concurrent writes)
+        let dbState = await tx.trackRecordState.findUnique({
+          where: { instanceId },
         });
-        if (existingEvent?.eventHash === eventHash) {
-          // Safe retry — return success with current state
-          return NextResponse.json({
-            success: true,
-            lastSeqNo: dbState.lastSeqNo,
-            lastEventHash: dbState.lastEventHash,
+
+        if (!dbState) {
+          dbState = await tx.trackRecordState.create({
+            data: { instanceId },
           });
         }
-      }
-      return NextResponse.json(
-        { error: `Duplicate or past seqNo: ${seqNo}, expected ${dbState.lastSeqNo + 1}` },
-        { status: 409 }
-      );
-    }
 
-    // Verify chain integrity
-    const verification = verifySingleEvent(
-      { eventType, seqNo, prevHash, eventHash, timestamp, payload },
-      instanceId,
-      dbState.lastSeqNo,
-      dbState.lastEventHash
+        // Idempotency check: if EA resends same seqNo, check if eventHash matches
+        if (seqNo <= dbState.lastSeqNo) {
+          if (seqNo === dbState.lastSeqNo) {
+            const existingEvent = await tx.trackRecordEvent.findUnique({
+              where: { instanceId_seqNo: { instanceId, seqNo } },
+              select: { eventHash: true },
+            });
+            if (existingEvent?.eventHash === eventHash) {
+              return {
+                status: 200 as const,
+                body: {
+                  success: true,
+                  lastSeqNo: dbState.lastSeqNo,
+                  lastEventHash: dbState.lastEventHash,
+                },
+              };
+            }
+          }
+          return {
+            status: 409 as const,
+            body: {
+              error: `Duplicate or past seqNo: ${seqNo}, expected ${dbState.lastSeqNo + 1}`,
+            },
+          };
+        }
+
+        // Verify chain integrity
+        const verification = verifySingleEvent(
+          { eventType, seqNo, prevHash, eventHash, timestamp, payload },
+          instanceId,
+          dbState.lastSeqNo,
+          dbState.lastEventHash
+        );
+
+        if (!verification.valid) {
+          return {
+            status: 409 as const,
+            body: {
+              error: "Chain verification failed",
+              details: verification.error,
+              lastSeqNo: dbState.lastSeqNo,
+              lastEventHash: dbState.lastEventHash,
+            },
+          };
+        }
+
+        // Process event to compute new state
+        const state = stateFromDb(dbState);
+        processEvent(state, eventType as TrackRecordEventType, eventHash, seqNo, payload);
+        const stateUpdate = stateToDbUpdate(state);
+
+        // Build checkpoint if needed
+        const checkpoint = shouldCreateCheckpoint(eventType, seqNo)
+          ? buildCheckpointData(instanceId, state)
+          : null;
+
+        // Store event + update state + optional checkpoint (all inside the same tx)
+        await tx.trackRecordEvent.create({
+          data: {
+            instanceId,
+            seqNo,
+            eventType,
+            eventHash,
+            prevHash,
+            payload: payload as Prisma.InputJsonValue,
+            timestamp: new Date(timestamp * 1000),
+          },
+        });
+
+        await tx.trackRecordState.update({
+          where: { instanceId },
+          data: stateUpdate,
+        });
+
+        if (checkpoint) {
+          await tx.trackRecordCheckpoint.create({ data: checkpoint });
+        }
+
+        return {
+          status: 200 as const,
+          body: {
+            success: true,
+            lastSeqNo: state.lastSeqNo,
+            lastEventHash: state.lastEventHash,
+          },
+        };
+      },
+      { isolationLevel: "Serializable" }
     );
 
-    if (!verification.valid) {
-      return NextResponse.json(
-        {
-          error: "Chain verification failed",
-          details: verification.error,
-          lastSeqNo: dbState.lastSeqNo,
-          lastEventHash: dbState.lastEventHash,
-        },
-        { status: 409 }
-      );
-    }
-
-    // Process event to compute new state
-    const state = stateFromDb(dbState);
-    processEvent(state, eventType as TrackRecordEventType, eventHash, seqNo, payload);
-    const stateUpdate = stateToDbUpdate(state);
-
-    // Build checkpoint if needed
-    const checkpoint = shouldCreateCheckpoint(eventType, seqNo)
-      ? buildCheckpointData(instanceId, state)
-      : null;
-
-    // Atomic transaction: store event + update state + optional checkpoint
-    await prisma.$transaction([
-      prisma.trackRecordEvent.create({
-        data: {
-          instanceId,
-          seqNo,
-          eventType,
-          eventHash,
-          prevHash,
-          payload: payload as Prisma.InputJsonValue,
-          timestamp: new Date(timestamp * 1000),
-        },
-      }),
-      prisma.trackRecordState.update({
-        where: { instanceId },
-        data: stateUpdate,
-      }),
-      ...(checkpoint ? [prisma.trackRecordCheckpoint.create({ data: checkpoint })] : []),
-    ]);
-
-    // Fire-and-forget: evaluate health after trade closes
-    if (eventType === "TRADE_CLOSE") {
+    // Fire-and-forget: evaluate health after trade closes (outside tx)
+    if (result.status === 200 && eventType === "TRADE_CLOSE") {
       evaluateHealthIfDue(instanceId).catch(() => {});
     }
 
-    return NextResponse.json({
-      success: true,
-      lastSeqNo: state.lastSeqNo,
-      lastEventHash: state.lastEventHash,
-    });
+    return NextResponse.json(result.body, { status: result.status });
   } catch (error) {
-    // Handle unique constraint violation (race condition / duplicate)
+    // Handle unique constraint violation or serialization failure (concurrent write)
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return NextResponse.json(
         { error: "Duplicate event (concurrent write)", lastSeqNo: seqNo },
         { status: 409 }
       );
+    }
+    // Prisma serialization failures (P2034) — EA can retry
+    if (error instanceof Error && error.message.includes("P2034")) {
+      return NextResponse.json({ error: "Transaction conflict, please retry" }, { status: 409 });
     }
     console.error("Track record ingest error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

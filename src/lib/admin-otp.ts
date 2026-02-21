@@ -8,13 +8,19 @@ const OTP_EXPIRY_MINUTES = 10;
 const OTP_COOKIE_NAME = "admin_otp_verified";
 const OTP_COOKIE_MAX_AGE = 60 * 60; // 1 hour
 
+function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET environment variable is required");
+  return secret;
+}
+
 /**
  * Create a signed OTP cookie value bound to the user's ID.
  * Format: userId:timestamp:hmac
  */
 export function signOtpCookie(userId: string): string {
   const timestamp = Math.floor(Date.now() / 1000);
-  const secret = process.env.AUTH_SECRET || "dev-secret";
+  const secret = getAuthSecret();
   const data = `${userId}:${timestamp}`;
   const hmac = createHmac("sha256", secret).update(data).digest("hex");
   return `${data}:${hmac}`;
@@ -38,7 +44,7 @@ export function verifyOtpCookie(cookieValue: string, userId: string): boolean {
   if (now - timestamp > OTP_COOKIE_MAX_AGE) return false;
 
   // Verify HMAC
-  const secret = process.env.AUTH_SECRET || "dev-secret";
+  const secret = getAuthSecret();
   const data = `${cookieUserId}:${timestampStr}`;
   const expectedHmac = createHmac("sha256", secret).update(data).digest("hex");
 

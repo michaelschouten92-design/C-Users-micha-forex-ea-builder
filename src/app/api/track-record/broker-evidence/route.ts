@@ -10,10 +10,10 @@ import { appendChainEvent } from "@/lib/track-record/chain-append";
 
 const digestSchema = z.object({
   instanceId: z.string().min(1),
-  rawContent: z.string().min(1),
-  periodStart: z.string().min(1),
-  periodEnd: z.string().min(1),
-  exportFormat: z.string().min(1),
+  rawContent: z.string().min(1).max(1_000_000),
+  periodStart: z.string().min(1).max(100),
+  periodEnd: z.string().min(1).max(100),
+  exportFormat: z.string().min(1).max(50),
 });
 
 // POST /api/track-record/broker-evidence — submit broker history for digest creation

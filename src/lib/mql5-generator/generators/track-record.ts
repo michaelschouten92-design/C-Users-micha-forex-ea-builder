@@ -30,7 +30,7 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
     "datetime g_trLastSnapshot = 0;",
     "int      g_trSnapshotInterval = 300;",
     "// Track known positions for detecting opens/closes/modifications",
-    "int      g_trKnownTickets[];",
+    "long     g_trKnownTickets[];",
     "double   g_trKnownSL[];",
     "double   g_trKnownTP[];",
     "double   g_trKnownLots[];"
@@ -77,11 +77,12 @@ function buildSHA256Helper(): string {
 string TrackRecordSHA256(string input)
 {
    uchar data[];
+   uchar key[];  // empty key (unused for hash algorithms)
    uchar hash[];
    StringToCharArray(input, data, 0, WHOLE_ARRAY, CP_UTF8);
    // Remove null terminator
    ArrayResize(data, ArraySize(data) - 1);
-   if(!CryptEncode(CRYPT_HASH_SHA256, data, hash, hash))
+   if(!CryptEncode(CRYPT_HASH_SHA256, data, key, hash))
       return "";
    string result = "";
    for(int i = 0; i < ArraySize(hash); i++)
@@ -297,7 +298,7 @@ function buildEventDetection(): string {
 void TrackRecordDetectTradeEvents()
 {
    // Scan current positions
-   int currentTickets[];
+   long currentTickets[];
    double currentSL[];
    double currentTP[];
    double currentLots[];
@@ -315,7 +316,7 @@ void TrackRecordDetectTradeEvents()
       ArrayResize(currentSL, sz + 1);
       ArrayResize(currentTP, sz + 1);
       ArrayResize(currentLots, sz + 1);
-      currentTickets[sz] = (int)ticket;
+      currentTickets[sz] = (long)ticket;
       currentSL[sz] = PositionGetDouble(POSITION_SL);
       currentTP[sz] = PositionGetDouble(POSITION_TP);
       currentLots[sz] = PositionGetDouble(POSITION_VOLUME);
@@ -396,7 +397,7 @@ void TrackRecordDetectTradeEvents()
    }
 }
 
-void TrackRecordDetectClose(int ticket)
+void TrackRecordDetectClose(long ticket)
 {
    // Search deal history for this position's closing deal
    HistorySelect(0, TimeCurrent());
@@ -405,7 +406,7 @@ void TrackRecordDetectClose(int ticket)
       ulong dTicket = HistoryDealGetTicket(i);
       if(dTicket == 0) continue;
       if(HistoryDealGetInteger(dTicket, DEAL_MAGIC) != InpMagicNumber) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) != ticket) continue;
+      if((long)HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) != ticket) continue;
       if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
       double profit = HistoryDealGetDouble(dTicket, DEAL_PROFIT);
@@ -570,7 +571,7 @@ void TrackRecordSendSnapshot()
    }
 }
 
-void TrackRecordSendTradeOpen(int ticket, string symbol, string dir,
+void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
                               double lots, double openPrice, double sl, double tp)
 {
    int nextSeq = g_trSeqNo + 1;
@@ -611,7 +612,7 @@ void TrackRecordSendTradeOpen(int ticket, string symbol, string dir,
    }
 }
 
-void TrackRecordSendTradeClose(int ticket, double closePrice, double profit,
+void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
                                double swap, double commission, string closeReason)
 {
    int nextSeq = g_trSeqNo + 1;
@@ -650,7 +651,7 @@ void TrackRecordSendTradeClose(int ticket, double closePrice, double profit,
    }
 }
 
-void TrackRecordSendTradeModify(int ticket, double newSL, double newTP,
+void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
                                 double oldSL, double oldTP)
 {
    int nextSeq = g_trSeqNo + 1;
@@ -687,7 +688,7 @@ void TrackRecordSendTradeModify(int ticket, double newSL, double newTP,
    }
 }
 
-void TrackRecordSendPartialClose(int ticket, double closedLots, double remainingLots)
+void TrackRecordSendPartialClose(long ticket, double closedLots, double remainingLots)
 {
    int nextSeq = g_trSeqNo + 1;
    long ts = (long)TimeCurrent();
@@ -700,7 +701,7 @@ void TrackRecordSendPartialClose(int ticket, double closedLots, double remaining
    {
       ulong dTicket = HistoryDealGetTicket(i);
       if(dTicket == 0) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) == ticket)
+      if((long)HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) == ticket)
       {
          closePrice = HistoryDealGetDouble(dTicket, DEAL_PRICE);
          profit = HistoryDealGetDouble(dTicket, DEAL_PROFIT);

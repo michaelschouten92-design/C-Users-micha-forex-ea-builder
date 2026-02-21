@@ -161,7 +161,27 @@ function buildSendTradeUpdateMQL5(): string {
       if(HistoryDealGetString(dTicket, DEAL_SYMBOL) != _Symbol) continue;
       if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
-      string dealType = (HistoryDealGetInteger(dTicket, DEAL_TYPE) == DEAL_TYPE_BUY) ? "BUY" : "SELL";
+      // Close deal data
+      double closePrice = HistoryDealGetDouble(dTicket, DEAL_PRICE);
+      datetime closeTime = (datetime)HistoryDealGetInteger(dTicket, DEAL_TIME);
+
+      // Find the opening deal via DEAL_POSITION_ID to get correct open price/time
+      long posId = (long)HistoryDealGetInteger(dTicket, DEAL_POSITION_ID);
+      double openPrice = closePrice;   // fallback
+      datetime openTime = closeTime;   // fallback
+      for(int j = 0; j < total; j++)
+      {
+         ulong oTicket = HistoryDealGetTicket(j);
+         if(oTicket == 0) continue;
+         if((long)HistoryDealGetInteger(oTicket, DEAL_POSITION_ID) != posId) continue;
+         if(HistoryDealGetInteger(oTicket, DEAL_ENTRY) != DEAL_ENTRY_IN) continue;
+         openPrice = HistoryDealGetDouble(oTicket, DEAL_PRICE);
+         openTime = (datetime)HistoryDealGetInteger(oTicket, DEAL_TIME);
+         break;
+      }
+
+      // The close deal type is the opposite of the position direction
+      string dealType = (HistoryDealGetInteger(dTicket, DEAL_TYPE) == DEAL_TYPE_BUY) ? "SELL" : "BUY";
 
       ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
       string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
@@ -171,12 +191,12 @@ function buildSendTradeUpdateMQL5(): string {
          + TelemetryJsonPair("ticket", IntegerToString(dTicket)) + ","
          + TelemetryJsonPair("symbol", HistoryDealGetString(dTicket, DEAL_SYMBOL)) + ","
          + TelemetryJsonPair("type", dealType) + ","
-         + TelemetryJsonNum("openPrice", HistoryDealGetDouble(dTicket, DEAL_PRICE)) + ","
-         + TelemetryJsonNum("closePrice", HistoryDealGetDouble(dTicket, DEAL_PRICE)) + ","
+         + TelemetryJsonNum("openPrice", openPrice) + ","
+         + TelemetryJsonNum("closePrice", closePrice) + ","
          + TelemetryJsonNum("lots", HistoryDealGetDouble(dTicket, DEAL_VOLUME)) + ","
          + TelemetryJsonNum("profit", HistoryDealGetDouble(dTicket, DEAL_PROFIT)) + ","
-         + TelemetryJsonPair("openTime", TimeToString(HistoryDealGetInteger(dTicket, DEAL_TIME))) + ","
-         + TelemetryJsonPair("closeTime", TimeToString(HistoryDealGetInteger(dTicket, DEAL_TIME)))
+         + TelemetryJsonPair("openTime", TimeToString(openTime)) + ","
+         + TelemetryJsonPair("closeTime", TimeToString(closeTime))
          + "}";
 
       TelemetryHttpPost("/trade", json);
