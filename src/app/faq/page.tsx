@@ -9,7 +9,7 @@ import { FAQContent } from "./faq-content";
 export const metadata: Metadata = {
   title: "FAQ — Frequently Asked Questions | AlgoStudio",
   description:
-    "Common questions about AlgoStudio: strategy validation, Monte Carlo simulation, verified track records, health monitoring, pricing, and technical details.",
+    "Common questions about AlgoStudio: strategy validation, Monte Carlo risk analysis, verified track records, health monitoring, pricing, and technical details.",
   alternates: { canonical: "/faq" },
 };
 
@@ -22,12 +22,12 @@ const faqItems = [
   // General
   {
     q: "What is AlgoStudio?",
-    a: "AlgoStudio is a strategy validation platform for algorithmic traders. It helps you determine whether a trading strategy has a real edge — before you risk capital. Build strategies with proven templates, validate with Monte Carlo simulation, verify performance with immutable track records, and monitor strategy health in production.",
+    a: "AlgoStudio is a strategy validation platform for algorithmic traders. It helps you determine whether a trading strategy has a real edge \u2014 before you risk capital. Build strategies with proven templates, validate with Monte Carlo risk analysis, verify performance with immutable track records, and monitor strategy health in production.",
     category: "General" as const,
   },
   {
     q: "What is strategy validation?",
-    a: "Strategy validation goes beyond backtesting. It's the process of objectively determining whether a trading strategy has a real, repeatable edge. AlgoStudio combines Monte Carlo simulation, verified track records, and live health monitoring to give you a complete picture of strategy viability.",
+    a: "Strategy validation is the process of objectively determining whether a trading strategy has a real, repeatable edge. AlgoStudio combines Monte Carlo risk analysis, verified track records, and live health monitoring to give you a complete picture of strategy viability.",
     category: "General" as const,
   },
   {
@@ -37,7 +37,7 @@ const faqItems = [
   },
   {
     q: "How is AlgoStudio different from other EA builders?",
-    a: "Most EA builders give you a builder and stop. AlgoStudio goes further with strategy validation (Monte Carlo), verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison). It's not just building — it's knowing if your strategy works.",
+    a: "Most EA builders give you a builder and stop. AlgoStudio goes further with Monte Carlo risk analysis, verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison). It's not just building \u2014 it's knowing if your strategy works.",
     category: "General" as const,
   },
 
@@ -48,13 +48,13 @@ const faqItems = [
     category: "Validation" as const,
   },
   {
-    q: "What is a Reality Check?",
-    a: "The Reality Check analyzes your backtest results and flags patterns that suggest overfitting or unrealistic expectations — such as unusually high win rates, excessive profit factors, or suspiciously smooth equity curves. It helps you identify when results are too good to be true.",
+    q: "How does the Monte Carlo risk calculator work?",
+    a: "The Monte Carlo risk calculator randomizes your trade sequence thousands of times to reveal the probability distribution of outcomes. Instead of relying on a single test, you see the realistic range \u2014 best case, worst case, and everything in between. This separates luck from genuine edge.",
     category: "Validation" as const,
   },
   {
-    q: "Can I backtest in AlgoStudio?",
-    a: "Yes. Upload your MT5 backtest results (.htm files) for analysis. AlgoStudio extracts the key metrics — win rate, profit factor, max drawdown, Sharpe ratio — and makes them available for Monte Carlo simulation, baseline comparison, and strategy validation.",
+    q: "How do I test my EA?",
+    a: "Export your EA as an MQL5 file and load it into MetaTrader 5's Strategy Tester. AlgoStudio generates clean, optimizable code that works directly with the MT5 backtester. Use the built-in optimization support to test different parameter combinations.",
     category: "Validation" as const,
   },
 
@@ -95,12 +95,12 @@ const faqItems = [
   // Pricing
   {
     q: "What do I get with the free plan?",
-    a: "Full access to the strategy builder and all templates. 1 project and 3 MQL5 exports per month. Backtesting and Reality Check included. No credit card required.",
+    a: "Full access to the strategy builder and all templates. 1 project and 3 MQL5 exports per month. Monte Carlo risk calculator and AI strategy generator included. No credit card required.",
     category: "Pricing" as const,
   },
   {
     q: "What's included in Pro?",
-    a: "Unlimited projects and exports. Monte Carlo simulation, walk-forward analysis, Strategy Identity, and Verified Track Record. Everything you need to build and validate strategies.",
+    a: "Unlimited projects and exports. Strategy Identity, Verified Track Record, live EA monitoring, and priority support. Everything you need to build and run strategies with confidence.",
     category: "Pricing" as const,
   },
   {

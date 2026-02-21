@@ -8,7 +8,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "How It Works — Strategy Validation in 4 Steps | AlgoStudio",
   description:
-    "From trading idea to validated, monitored strategy in 4 steps. Build with templates, validate with Monte Carlo, verify with immutable track records, and monitor health in production.",
+    "From trading idea to validated, monitored strategy in 4 steps. Build with templates, test in MT5, verify with immutable track records, and monitor health in production.",
   alternates: { canonical: "/product/how-it-works" },
 };
 
@@ -36,21 +36,21 @@ const typicalSettings = [
 
 const validationMethods = [
   {
-    title: "Backtesting",
+    title: "MT5 Strategy Tester",
     description:
-      "Upload your MT5 Strategy Tester results. Analyze win rate, profit factor, drawdown, and Sharpe ratio.",
+      "Export optimization-ready MQL5 code. Test in MT5 Strategy Tester with full parameter optimization support.",
     badge: null,
   },
   {
-    title: "Monte Carlo Simulation",
+    title: "Monte Carlo Risk Calculator",
     description:
-      "Run 1,000 randomized simulations. See the probability distribution — not just the best case.",
-    badge: "PRO",
+      "Run 1,000 randomized simulations. See the probability distribution \u2014 not just the best case.",
+    badge: null,
   },
   {
-    title: "Reality Check",
+    title: "Strategy Journal",
     description:
-      "Automatic flags for overfitting, unrealistic win rates, and suspiciously smooth equity curves.",
+      "Track your strategies from testing to live. Compare performance across stages and keep notes on each iteration.",
     badge: null,
   },
 ];
@@ -101,7 +101,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 3,
         name: "Validate with data",
-        text: "Upload backtest results, run Monte Carlo simulations across 1,000 randomized scenarios, and get automatic Reality Check flags for overfitting and unrealistic expectations.",
+        text: "Export to MT5 Strategy Tester, run Monte Carlo simulations across 1,000 randomized scenarios, and analyze risk profiles before going live.",
       },
       {
         "@type": "HowToStep",
@@ -214,7 +214,7 @@ export default function HowItWorksPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Validate with data</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  A single backtest tells you nothing. True validation requires statistical rigor.
+                  A single test tells you nothing. True validation requires statistical rigor.
                 </p>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {validationMethods.map((method) => (
@@ -235,11 +235,7 @@ export default function HowItWorksPage() {
                   ))}
                 </div>
                 <p className="text-sm text-[#64748B] mt-4">
-                  Monte Carlo simulation requires{" "}
-                  <Link href="/pricing" className="text-[#A78BFA] hover:underline">
-                    Pro or Elite plan
-                  </Link>
-                  .
+                  All validation tools are available on every plan, including Free.
                 </p>
               </div>
             </div>

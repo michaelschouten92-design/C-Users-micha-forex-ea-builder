@@ -57,7 +57,7 @@ export default function AboutPage() {
 
             <p>
               The platform is built around a simple pipeline: Build → Verify → Monitor. Each stage
-              builds confidence before you commit more capital. One backtest tells you nothing. A
+              builds confidence before you commit more capital. One test tells you nothing. A
               thousand Monte Carlo simulations tell you everything.
             </p>
 

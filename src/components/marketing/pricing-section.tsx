@@ -132,8 +132,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Build your first EA and see what&apos;s possible
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Full visual builder access. Build, backtest, and export your first strategy with no
-            commitment.
+            Full visual builder access. Build and export your first strategy with no commitment.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
@@ -142,8 +141,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "All 6 strategy templates",
               "1 active project",
               "3 MQL5 exports per month",
-              "Basic backtesting",
-              "Basic Reality Check",
+              "Monte Carlo risk calculator",
+              "AI strategy generator",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -224,11 +223,11 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             {[
               "Unlimited projects & exports",
               "MQL5 code export",
-              "Full backtesting + Monte Carlo",
+              "MT5 Strategy Tester optimization",
               "Strategy Identity & versioning",
               "Verified Track Record",
               "Live EA monitoring dashboard",
-              "Full Reality Check suite",
+              "Strategy journal & tracking",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">

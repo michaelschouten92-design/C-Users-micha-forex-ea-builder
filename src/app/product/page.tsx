@@ -8,7 +8,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Platform — Strategy Validation for Algorithmic Traders | AlgoStudio",
   description:
-    "Build, validate, and monitor automated trading strategies. Monte Carlo simulation, verified track records, strategy health monitoring, and no-code EA building.",
+    "Build, validate, and monitor automated trading strategies. Monte Carlo risk analysis, verified track records, strategy health monitoring, and no-code EA building.",
   alternates: { canonical: "/product" },
 };
 
@@ -31,8 +31,12 @@ const pipelineSteps = [
     label: "Verify",
     title: "Strategy Validation",
     description:
-      "Don't trust a single backtest. Run Monte Carlo simulations. Upload backtest results. Get a Reality Check that flags unrealistic expectations.",
-    features: ["Backtesting engine", "Monte Carlo simulator", "Walk-forward analysis"],
+      "Export to MT5 Strategy Tester. Run Monte Carlo simulations to stress-test your edge. Analyze risk profiles before going live.",
+    features: [
+      "MT5 Strategy Tester export",
+      "Monte Carlo risk calculator",
+      "Optimization-ready parameters",
+    ],
   },
   {
     step: "03",
@@ -54,17 +58,17 @@ const platformModules = [
   },
   {
     color: "#22D3EE",
-    title: "Backtesting Engine",
+    title: "Monte Carlo Risk Calculator",
     description:
-      "Test strategies against historical data in your browser. Analyze win rate, profit factor, drawdown, and Sharpe ratio before risking capital.",
-    href: "/product/backtesting",
+      "Run 1,000 randomized simulations. See the probability distribution of outcomes \u2014 not just the best case, but the realistic range of what to expect.",
+    href: "/product/monte-carlo",
   },
   {
     color: "#F59E0B",
-    title: "Monte Carlo Simulator",
+    title: "AI Strategy Generator",
     description:
-      "Run 1,000 randomized simulations. See the probability distribution of outcomes — not just the best case, but the realistic range of what to expect.",
-    href: "/product/monte-carlo",
+      "Describe your trading idea in plain language. The AI generates a complete strategy configuration that you can fine-tune in the visual builder.",
+    href: "/product/how-it-works",
   },
   {
     color: "#10B981",
@@ -84,7 +88,7 @@ const platformModules = [
     color: "#EF4444",
     title: "Health Monitor",
     description:
-      "Continuously compares live performance against your backtest baseline. 5 metrics tracked. Alerts when returns drift, drawdowns exceed norms, or edge degrades.",
+      "Continuously compares live performance against your baseline. 5 metrics tracked. Alerts when returns drift, drawdowns exceed norms, or edge degrades.",
     href: "/product/health-monitor",
   },
 ];
@@ -93,12 +97,12 @@ const differentiators = [
   {
     title: "Validation, not just building",
     description:
-      "Most EA tools give you a builder and stop. AlgoStudio validates your strategy with Monte Carlo simulation, verifies performance with immutable records, and monitors health in production.",
+      "Most EA tools give you a builder and stop. AlgoStudio validates your strategy with Monte Carlo risk analysis, verifies performance with immutable records, and monitors health in production.",
   },
   {
     title: "Simplicity with depth",
     description:
-      "Start with a working template. Export in minutes. When you're ready, unlock Monte Carlo, verified track records, and health monitoring. Power when you need it, simplicity by default.",
+      "Start with a working template. Export in minutes. When you're ready, unlock verified track records and health monitoring. Power when you need it, simplicity by default.",
   },
   {
     title: "Proof over promises",

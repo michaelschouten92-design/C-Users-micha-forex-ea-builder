@@ -94,7 +94,7 @@ export default function VsStrategyQuantPage() {
                       "AI generates thousands of strategies",
                     ],
                     ["Walk-forward analysis", "Not included (use MT5)", "Built-in"],
-                    ["Monte Carlo simulation", "Not included", "Built-in"],
+                    ["Monte Carlo simulation", "Built-in risk calculator", "Built-in"],
                     ["Portfolio building", "Not included", "Built-in"],
                     ["MQL5 output", "Clean, commented source", "Generated code"],
                     ["MQL4 output", "Not supported", "Yes"],
@@ -187,7 +187,7 @@ export default function VsStrategyQuantPage() {
                   </p>
                   <ul className="space-y-2 text-sm text-[#94A3B8]">
                     <li>No AI strategy discovery</li>
-                    <li>No built-in backtesting or optimization</li>
+                    <li>Backtesting via MT5 Strategy Tester</li>
                     <li>Limited to template strategies</li>
                   </ul>
                 </div>

@@ -53,8 +53,8 @@ export default function PricingPage() {
       a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real \u2014 no screenshot manipulation, no cherry-picking. Pro and Elite users can share a public Verified Strategy Page with their track record.",
     },
     {
-      q: "What is Reality Check?",
-      a: "Reality Check analyzes your strategy before you risk real money. It runs Monte Carlo simulations, evaluates drawdown probabilities, and flags unrealistic expectations. Free users get basic checks. Pro and Elite get the full suite including multi-scenario simulation.",
+      q: "What is the Monte Carlo risk calculator?",
+      a: "The Monte Carlo risk calculator randomizes your trade sequence across thousands of simulated scenarios to reveal the probability distribution of outcomes. Instead of relying on a single result, you see the realistic range \u2014 best case, worst case, and everything in between. Available to all users, including Free.",
     },
     {
       q: "What happens to my projects if I downgrade?",
@@ -74,7 +74,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, live monitoring, and full Reality Check. Elite adds capital protection features: the Strategy Health Monitor with edge degradation alerts, advanced drawdown monitoring, a public Verified Strategy Page, plus 1-on-1 strategy reviews and direct developer support.",
+      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, and live monitoring. Elite adds capital protection features: the Strategy Health Monitor with edge degradation alerts, advanced drawdown monitoring, a public Verified Strategy Page, plus 1-on-1 strategy reviews and direct developer support.",
     },
   ];
 
@@ -175,20 +175,20 @@ export default function PricingPage() {
                   </tr>
                 ))}
 
-                {/* Testing & Validation */}
+                {/* Tools & Analysis */}
                 <tr className="border-b border-[rgba(79,70,229,0.05)]">
                   <td
                     className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
                     colSpan={4}
                   >
-                    Testing &amp; Validation
+                    Tools &amp; Analysis
                   </td>
                 </tr>
                 {(
                   [
-                    ["Backtesting", "Basic", "Full", "Full"],
-                    ["Monte Carlo simulation", false, true, true],
-                    ["Reality Check", "Basic", "Full suite", "Full suite"],
+                    ["Monte Carlo risk calculator", true, true, true],
+                    ["AI strategy generator", true, true, true],
+                    ["Strategy journal", true, true, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (
                   <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">

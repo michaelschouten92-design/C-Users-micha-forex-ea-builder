@@ -10,7 +10,7 @@ import { PricingSection } from "@/components/marketing/pricing-section";
 export const metadata: Metadata = {
   title: "AlgoStudio — Strategy Validation Platform for Algorithmic Traders",
   description:
-    "Know if your trading strategy actually works before risking capital. Build, backtest, verify, and monitor automated trading strategies with immutable track records and health monitoring.",
+    "Know if your trading strategy actually works before risking capital. Build, verify, and monitor automated trading strategies with immutable track records and health monitoring.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "AlgoStudio — Strategy Validation Platform",
@@ -31,7 +31,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "Strategy Validation Platform for algorithmic traders. Build, backtest, verify, and monitor automated trading strategies.",
+      "Strategy Validation Platform for algorithmic traders. Build, verify, and monitor automated trading strategies.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -44,7 +44,7 @@ export default async function Home() {
     },
     featureList: [
       "No-code strategy builder for MT5",
-      "Monte Carlo simulation",
+      "Monte Carlo risk calculator",
       "Verified Track Record with immutable hash chain",
       "Strategy Identity and versioning",
       "Strategy Health Monitor",
@@ -55,7 +55,7 @@ export default async function Home() {
   const faqItems = [
     {
       q: "What is strategy validation?",
-      a: "Strategy validation is the process of objectively determining whether a trading strategy has a real edge — before you risk capital. It goes beyond backtesting: AlgoStudio combines Monte Carlo simulation, verified track records, and live health monitoring to give you a complete picture of strategy viability.",
+      a: "Strategy validation is the process of objectively determining whether a trading strategy has a real edge \u2014 before you risk capital. AlgoStudio combines Monte Carlo risk analysis, verified track records, and live health monitoring to give you a complete picture of strategy viability.",
     },
     {
       q: "Do I need coding experience?",
@@ -263,15 +263,14 @@ export default async function Home() {
                   Strategy Validation
                 </p>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Backtest with historical data. Run Monte Carlo simulations to stress-test edge
-                  durability. Get a Reality Check that flags unrealistic expectations before you
-                  trade.
+                  Export to MT5 Strategy Tester. Run Monte Carlo simulations to stress-test edge
+                  durability. Analyze risk profiles before you trade.
                 </p>
                 <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
                   <ul className="space-y-1.5 text-xs text-[#64748B]">
-                    <li>Backtesting engine</li>
-                    <li>Monte Carlo simulation</li>
-                    <li>Reality Check suite</li>
+                    <li>MT5 Strategy Tester export</li>
+                    <li>Monte Carlo risk calculator</li>
+                    <li>Optimization-ready parameters</li>
                   </ul>
                 </div>
               </div>
@@ -337,9 +336,9 @@ export default async function Home() {
           <div className="grid sm:grid-cols-2 gap-6">
             {[
               {
-                problem: "One backtest is not validation",
+                problem: "One test is not validation",
                 description:
-                  "A single backtest on cherry-picked data proves nothing. Without Monte Carlo simulation, you don't know if your results were skill or luck.",
+                  "A single test on cherry-picked data proves nothing. Without Monte Carlo simulation, you don't know if your results were skill or luck.",
               },
               {
                 problem: "No proof your results are real",
@@ -393,15 +392,15 @@ export default async function Home() {
                 accent: "#A78BFA",
               },
               {
-                title: "Backtesting Engine",
+                title: "Monte Carlo Risk Calculator",
                 description:
-                  "Test strategies against historical data directly in your browser. Analyze win rate, profit factor, drawdown, and Sharpe ratio before risking any capital.",
+                  "Run 1,000 randomized simulations of your trade sequence. See the probability distribution of outcomes \u2014 not just the best case, but the realistic range.",
                 accent: "#22D3EE",
               },
               {
-                title: "Monte Carlo Simulator",
+                title: "AI Strategy Generator",
                 description:
-                  "Run 1,000 randomized simulations of your trade sequence. See the probability distribution of outcomes — not just the best case, but the realistic range.",
+                  "Describe your trading idea in plain language. The AI generates a complete strategy configuration that you can fine-tune in the visual builder.",
                 accent: "#F59E0B",
               },
               {
@@ -644,13 +643,13 @@ export default async function Home() {
                 step: "3",
                 title: "Validate with data",
                 description:
-                  "Backtest with historical data. Run Monte Carlo simulations. Get a Reality Check that flags unrealistic expectations.",
+                  "Test in MT5 Strategy Tester. Run Monte Carlo simulations to stress-test your edge. Analyze risk profiles before going live.",
               },
               {
                 step: "4",
                 title: "Deploy and monitor",
                 description:
-                  "Go live with a verified track record. Monitor strategy health against your backtest baseline. Get alerts when performance drifts.",
+                  "Go live with a verified track record. Monitor strategy health with live performance tracking. Get alerts when performance drifts.",
               },
             ].map((item) => (
               <div
