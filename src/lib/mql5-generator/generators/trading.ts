@@ -12,7 +12,7 @@ import type {
   GridPyramidNodeData,
 } from "@/types/builder";
 import type { GeneratorContext, GeneratedCode } from "../types";
-import { getTimeframe, getTimeframeEnum } from "../types";
+import { getTimeframeEnum } from "../types";
 import { createInput, sanitizeMQL5String } from "./shared";
 import { generateDivergenceHelpers } from "./divergence";
 
@@ -546,14 +546,42 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
   }
 }
 
+// Map optimizableFields from buy/sell field names to SL/TP field names
+function mapOptimizableFields(
+  sourceNode: BuilderNode | undefined,
+  fieldMap: Record<string, string>
+): string[] {
+  if (!sourceNode) return [];
+  const sourceFields = sourceNode.data.optimizableFields;
+  if (!sourceFields || !Array.isArray(sourceFields)) return [];
+  const mapped: string[] = [];
+  for (const field of sourceFields) {
+    if (field in fieldMap) {
+      mapped.push(fieldMap[field]);
+    }
+  }
+  return mapped;
+}
+
 // Generate SL code from embedded fields in a buy/sell node
 export function generateStopLossFromBuySell(
   data: EmbeddedStopLossFields,
   indicatorNodes: BuilderNode[],
   edges: BuilderEdge[],
   code: GeneratedCode,
-  priceActionNodes: BuilderNode[] = []
+  priceActionNodes: BuilderNode[] = [],
+  sourceNode?: BuilderNode
 ): void {
+  // Map field names from buy/sell format to SL format
+  const slFieldMap: Record<string, string> = {
+    slFixedPips: "fixedPips",
+    slAtrMultiplier: "atrMultiplier",
+    slAtrPeriod: "atrPeriod",
+    slPercent: "slPercent",
+    slAtrTimeframe: "atrTimeframe",
+  };
+  const mappedOptFields = mapOptimizableFields(sourceNode, slFieldMap);
+
   // Create a virtual SL node from embedded fields and delegate to existing codegen
   const virtualNode: BuilderNode = {
     id: "__embedded_sl",
@@ -570,6 +598,7 @@ export function generateStopLossFromBuySell(
       atrPeriod: data.slAtrPeriod,
       atrTimeframe: data.slAtrTimeframe,
       indicatorNodeId: data.slIndicatorNodeId,
+      optimizableFields: mappedOptFields,
     } as BuilderNode["data"],
   };
   generateStopLossCode(virtualNode, indicatorNodes, edges, code, priceActionNodes);
@@ -578,8 +607,18 @@ export function generateStopLossFromBuySell(
 // Generate TP code from embedded fields in a buy/sell node
 export function generateTakeProfitFromBuySell(
   data: EmbeddedTakeProfitFields,
-  code: GeneratedCode
+  code: GeneratedCode,
+  sourceNode?: BuilderNode
 ): void {
+  // Map field names from buy/sell format to TP format
+  const tpFieldMap: Record<string, string> = {
+    tpFixedPips: "fixedPips",
+    tpRiskRewardRatio: "riskRewardRatio",
+    tpAtrMultiplier: "atrMultiplier",
+    tpAtrPeriod: "atrPeriod",
+  };
+  const mappedOptFields = mapOptimizableFields(sourceNode, tpFieldMap);
+
   // Create a virtual TP node from embedded fields and delegate to existing codegen
   const virtualNode: BuilderNode = {
     id: "__embedded_tp",
@@ -596,6 +635,7 @@ export function generateTakeProfitFromBuySell(
       atrPeriod: data.tpAtrPeriod,
       multipleTPEnabled: data.tpMultipleTPEnabled,
       tpLevels: data.tpLevels,
+      optimizableFields: mappedOptFields,
     } as BuilderNode["data"],
   };
   generateTakeProfitCode(virtualNode, code);
@@ -1829,6 +1869,17 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
       group
     )
   );
+  code.inputs.push(
+    createInput(
+      node,
+      "exitTimeframe",
+      "InpTimeExitTimeframe",
+      "ENUM_AS_TIMEFRAMES",
+      getTimeframeEnum(data.exitTimeframe),
+      "Time Exit Timeframe",
+      group
+    )
+  );
 
   code.onTick.push("");
   code.onTick.push("//--- Time-Based Exit");
@@ -1843,10 +1894,10 @@ export function generateTimeExitCode(node: BuilderNode, code: GeneratedCode): vo
   code.onTick.push("      {");
   code.onTick.push("         datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);");
   code.onTick.push(
-    `         if(Bars(_Symbol, ${getTimeframe(data.exitTimeframe)}) < InpTimeExitBars + 10) continue;`
+    `         if(Bars(_Symbol, (ENUM_TIMEFRAMES)InpTimeExitTimeframe) < InpTimeExitBars + 10) continue;`
   );
   code.onTick.push(
-    `         int barsSinceEntry = iBarShift(_Symbol, ${getTimeframe(data.exitTimeframe)}, openTime);`
+    `         int barsSinceEntry = iBarShift(_Symbol, (ENUM_TIMEFRAMES)InpTimeExitTimeframe, openTime);`
   );
   code.onTick.push("         if(barsSinceEntry < 0) continue; // iBarShift failed");
   code.onTick.push("         if(barsSinceEntry >= InpTimeExitBars)");

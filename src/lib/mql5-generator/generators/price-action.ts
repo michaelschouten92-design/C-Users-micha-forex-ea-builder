@@ -8,7 +8,7 @@ import type {
   MarketStructureNodeData,
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
-import { getTimeframe, getTimeframeEnum } from "../types";
+import { getTimeframeEnum } from "../types";
 import { createInput } from "./shared";
 
 export function generatePriceActionCode(
@@ -429,12 +429,23 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
           )
         );
 
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpCP${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(cp.timeframe),
+            `Candle Pattern ${index + 1} Timeframe`
+          )
+        );
+
         // Global variables for buy/sell signals
         code.globalVariables.push(`bool ${varPrefix}BuySignal;`);
         code.globalVariables.push(`bool ${varPrefix}SellSignal;`);
 
         // OnTick: fetch OHLC for last 2 candles
-        const cpTf = getTimeframe(cp.timeframe);
+        const cpTf = `(ENUM_TIMEFRAMES)InpCP${index}Timeframe`;
         code.onTick.push(`// Candlestick Pattern Detection ${index + 1}`);
         code.onTick.push(`${varPrefix}BuySignal = false;`);
         code.onTick.push(`${varPrefix}SellSignal = false;`);
@@ -605,6 +616,18 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
       case "support-resistance": {
         const sr = data as SupportResistanceNodeData;
 
+        // Add timeframe input
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpSR${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(sr.timeframe),
+            `S/R ${index + 1} Timeframe`
+          )
+        );
+
         // Add inputs
         code.inputs.push(
           createInput(
@@ -743,7 +766,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`if(isNewBar || ${varPrefix}Support == 0)`);
         code.onTick.push(`{`);
         code.onTick.push(
-          `   ${fnName}(${getTimeframe(sr.timeframe)}, InpSR${index}Lookback, InpSR${index}Touches, InpSR${index}ZoneSize, ${varPrefix}Support, ${varPrefix}Resistance);`
+          `   ${fnName}((ENUM_TIMEFRAMES)InpSR${index}Timeframe, InpSR${index}Lookback, InpSR${index}Touches, InpSR${index}ZoneSize, ${varPrefix}Support, ${varPrefix}Resistance);`
         );
         code.onTick.push(`}`);
         code.onTick.push(
@@ -762,7 +785,19 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
       case "order-block": {
         const ob = data as OrderBlockNodeData;
-        const obTf = getTimeframe(ob.timeframe);
+
+        // Add timeframe input
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpOB${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ob.timeframe),
+            `Order Block ${index + 1} Timeframe`
+          )
+        );
+        const obTf = `(ENUM_TIMEFRAMES)InpOB${index}Timeframe`;
 
         // Add inputs
         code.inputs.push(
@@ -875,7 +910,19 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
       case "fair-value-gap": {
         const fvg = data as FairValueGapNodeData;
-        const fvgTf = getTimeframe(fvg.timeframe);
+
+        // Add timeframe input
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpFVG${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(fvg.timeframe),
+            `FVG ${index + 1} Timeframe`
+          )
+        );
+        const fvgTf = `(ENUM_TIMEFRAMES)InpFVG${index}Timeframe`;
 
         // Add inputs
         code.inputs.push(
@@ -964,7 +1011,19 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
       case "market-structure": {
         const ms = data as MarketStructureNodeData;
-        const msTf = getTimeframe(ms.timeframe);
+
+        // Add timeframe input
+        code.inputs.push(
+          createInput(
+            node,
+            "timeframe",
+            `InpMS${index}Timeframe`,
+            "ENUM_AS_TIMEFRAMES",
+            getTimeframeEnum(ms.timeframe),
+            `Market Structure ${index + 1} Timeframe`
+          )
+        );
+        const msTf = `(ENUM_TIMEFRAMES)InpMS${index}Timeframe`;
 
         // Add inputs
         code.inputs.push(

@@ -44,12 +44,15 @@ export function CandlestickPatternFields({
 
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <label className="block text-xs font-medium text-[#CBD5E1] mb-2">Patterns to Detect</label>
         <div className="space-y-1 max-h-48 overflow-y-auto bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg p-2">
@@ -70,13 +73,16 @@ export function CandlestickPatternFields({
           ))}
         </div>
       </div>
-      <NumberField
-        label="Min Body Size (pips)"
-        value={data.minBodySize}
-        min={0}
-        max={100}
-        onChange={(v) => onChange({ minBodySize: v })}
-      />
+      <div>
+        <NumberField
+          label="Min Body Size (pips)"
+          value={data.minBodySize}
+          min={0}
+          max={100}
+          onChange={(v) => onChange({ minBodySize: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="minBodySize" data={data} onChange={onChange} />
+      </div>
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
@@ -96,33 +102,45 @@ export function SupportResistanceFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="Lookback Period"
-        value={data.lookbackPeriod}
-        min={10}
-        max={500}
-        onChange={(v) => onChange({ lookbackPeriod: v })}
-      />
-      <NumberField
-        label="Min Touches"
-        value={data.touchCount}
-        min={1}
-        max={10}
-        onChange={(v) => onChange({ touchCount: v })}
-      />
-      <NumberField
-        label="Zone Size (pips)"
-        value={data.zoneSize}
-        min={1}
-        max={100}
-        onChange={(v) => onChange({ zoneSize: v })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Lookback Period"
+          value={data.lookbackPeriod}
+          min={10}
+          max={500}
+          onChange={(v) => onChange({ lookbackPeriod: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="lookbackPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Min Touches"
+          value={data.touchCount}
+          min={1}
+          max={10}
+          onChange={(v) => onChange({ touchCount: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="touchCount" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Zone Size (pips)"
+          value={data.zoneSize}
+          min={1}
+          max={100}
+          onChange={(v) => onChange({ zoneSize: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="zoneSize" data={data} onChange={onChange} />
+      </div>
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
@@ -143,12 +161,15 @@ export function RangeBreakoutFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
 
       {/* Range Definition */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
@@ -316,33 +337,45 @@ export function OrderBlockFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="Lookback Period (bars)"
-        value={data.lookbackPeriod}
-        min={10}
-        max={500}
-        onChange={(v) => onChange({ lookbackPeriod: v })}
-      />
-      <NumberField
-        label="Min Block Size (pips)"
-        value={data.minBlockSize}
-        min={1}
-        max={200}
-        onChange={(v) => onChange({ minBlockSize: v })}
-      />
-      <NumberField
-        label="Max Block Age (bars)"
-        value={data.maxBlockAge}
-        min={10}
-        max={1000}
-        onChange={(v) => onChange({ maxBlockAge: v })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Lookback Period (bars)"
+          value={data.lookbackPeriod}
+          min={10}
+          max={500}
+          onChange={(v) => onChange({ lookbackPeriod: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="lookbackPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Min Block Size (pips)"
+          value={data.minBlockSize}
+          min={1}
+          max={200}
+          onChange={(v) => onChange({ minBlockSize: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="minBlockSize" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Max Block Age (bars)"
+          value={data.maxBlockAge}
+          min={10}
+          max={1000}
+          onChange={(v) => onChange({ maxBlockAge: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="maxBlockAge" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Signal Mode"
         value={data.signalMode ?? "every_tick"}
@@ -369,33 +402,45 @@ export function FairValueGapFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="Min Gap Size (pips)"
-        value={data.minGapSize}
-        min={1}
-        max={200}
-        onChange={(v) => onChange({ minGapSize: v })}
-      />
-      <NumberField
-        label="Max Gap Age (bars)"
-        value={data.maxGapAge}
-        min={5}
-        max={500}
-        onChange={(v) => onChange({ maxGapAge: v })}
-      />
-      <NumberField
-        label="Fill Percentage (%)"
-        value={data.fillPercentage}
-        min={0}
-        max={100}
-        onChange={(v) => onChange({ fillPercentage: v })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Min Gap Size (pips)"
+          value={data.minGapSize}
+          min={1}
+          max={200}
+          onChange={(v) => onChange({ minGapSize: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="minGapSize" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Max Gap Age (bars)"
+          value={data.maxGapAge}
+          min={5}
+          max={500}
+          onChange={(v) => onChange({ maxGapAge: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="maxGapAge" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Fill Percentage (%)"
+          value={data.fillPercentage}
+          min={0}
+          max={100}
+          onChange={(v) => onChange({ fillPercentage: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="fillPercentage" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Signal Mode"
         value={data.signalMode ?? "every_tick"}
@@ -422,19 +467,25 @@ export function MarketStructureFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="Swing Strength (bars)"
-        value={data.swingStrength}
-        min={2}
-        max={50}
-        onChange={(v) => onChange({ swingStrength: v })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Swing Strength (bars)"
+          value={data.swingStrength}
+          min={2}
+          max={50}
+          onChange={(v) => onChange({ swingStrength: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="swingStrength" data={data} onChange={onChange} />
+      </div>
       <div>
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
           <input

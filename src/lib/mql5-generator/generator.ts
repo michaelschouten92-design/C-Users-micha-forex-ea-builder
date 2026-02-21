@@ -12,7 +12,7 @@ import type {
   VolumeFilterNodeData,
 } from "@/types/builder";
 
-import { type GeneratorContext, type GeneratedCode, getTimeframe } from "./types";
+import { type GeneratorContext, type GeneratedCode, getTimeframeEnum } from "./types";
 
 import {
   generateFileHeader,
@@ -374,10 +374,17 @@ export function generateMQL5Code(
     const vNode = volatilityNodes[0];
     const vData = vNode.data as VolatilityFilterNodeData;
     const atrPeriod = vData.atrPeriod ?? 14;
-    const atrTf = getTimeframe(vData.atrTimeframe ?? "H1");
     const minPips = vData.minAtrPips ?? 0;
     const maxPips = vData.maxAtrPips ?? 50;
     code.inputs.push(
+      {
+        name: "InpVolATRTimeframe",
+        type: "ENUM_AS_TIMEFRAMES",
+        value: getTimeframeEnum(vData.atrTimeframe ?? "H1"),
+        comment: "ATR Timeframe (Volatility Filter)",
+        isOptimizable: isFieldOptimizable(vNode, "atrTimeframe"),
+        group: "Volatility Filter",
+      },
       {
         name: "InpVolATRPeriod",
         type: "int",
@@ -405,7 +412,9 @@ export function generateMQL5Code(
     );
     code.globalVariables.push("int volATRHandle = INVALID_HANDLE;");
     code.globalVariables.push("double volATRBuf[];");
-    code.onInit.push(`volATRHandle = iATR(_Symbol, ${atrTf}, InpVolATRPeriod);`);
+    code.onInit.push(
+      `volATRHandle = iATR(_Symbol, (ENUM_TIMEFRAMES)InpVolATRTimeframe, InpVolATRPeriod);`
+    );
     code.onInit.push(
       'if(volATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for volatility filter"); return(INIT_FAILED); }'
     );
@@ -717,9 +726,16 @@ export function generateMQL5Code(
     const volPeriod = vfData.volumePeriod ?? 20;
     const volMultiplier = vfData.volumeMultiplier ?? 1.5;
     const volMode = vfData.filterMode ?? "ABOVE_AVERAGE";
-    const vfTf = getTimeframe(vfData.timeframe ?? "H1");
 
     code.inputs.push(
+      {
+        name: "InpVolFilterTimeframe",
+        type: "ENUM_AS_TIMEFRAMES",
+        value: getTimeframeEnum(vfData.timeframe ?? "H1"),
+        comment: "Volume Filter Timeframe",
+        isOptimizable: isFieldOptimizable(vfNode, "timeframe"),
+        group: "Volume Filter",
+      },
       {
         name: "InpVolFilterPeriod",
         type: "int",
@@ -740,10 +756,14 @@ export function generateMQL5Code(
     code.globalVariables.push("double volFilterAvg = 0;");
     code.onTick.push(`//--- Volume filter (${volMode})`);
     code.onTick.push(`{`);
-    code.onTick.push(`   long curVol = iVolume(_Symbol, ${vfTf}, 1);`);
+    code.onTick.push(
+      `   long curVol = iVolume(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, 1);`
+    );
     code.onTick.push(`   double sumVol = 0;`);
     code.onTick.push(`   for(int v = 2; v <= InpVolFilterPeriod + 1; v++)`);
-    code.onTick.push(`      sumVol += (double)iVolume(_Symbol, ${vfTf}, v);`);
+    code.onTick.push(
+      `      sumVol += (double)iVolume(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, v);`
+    );
     code.onTick.push(`   volFilterAvg = sumVol / InpVolFilterPeriod;`);
 
     if (volMode === "ABOVE_AVERAGE") {
@@ -785,14 +805,21 @@ export function generateMQL5Code(
   const slTpSource = placeBuyNodes[0] ?? placeSellNodes[0];
   if (slTpSource) {
     const slTpData = slTpSource.data as PlaceBuyNodeData;
-    generateStopLossFromBuySell(slTpData, indicatorNodes, buildJson.edges, code, priceActionNodes);
+    generateStopLossFromBuySell(
+      slTpData,
+      indicatorNodes,
+      buildJson.edges,
+      code,
+      priceActionNodes,
+      slTpSource
+    );
   } else {
     code.onTick.push("double slPips = 0;");
   }
 
   if (slTpSource) {
     const tpData = slTpSource.data as PlaceBuyNodeData;
-    generateTakeProfitFromBuySell(tpData, code);
+    generateTakeProfitFromBuySell(tpData, code, slTpSource);
   } else {
     code.onTick.push("double tpPips = 0;");
   }

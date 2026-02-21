@@ -40,23 +40,29 @@ export function MovingAverageFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <SelectField
-        label="Method"
-        value={data.method}
-        options={[
-          { value: "SMA", label: "Simple (SMA)" },
-          { value: "EMA", label: "Exponential (EMA)" },
-          { value: "SMMA", label: "Smoothed (SMMA)" },
-          { value: "LWMA", label: "Linear Weighted (LWMA)" },
-        ]}
-        onChange={(v) => onChange({ method: v as MovingAverageNodeData["method"] })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <SelectField
+          label="Method"
+          value={data.method}
+          options={[
+            { value: "SMA", label: "Simple (SMA)" },
+            { value: "EMA", label: "Exponential (EMA)" },
+            { value: "SMMA", label: "Smoothed (SMMA)" },
+            { value: "LWMA", label: "Linear Weighted (LWMA)" },
+          ]}
+          onChange={(v) => onChange({ method: v as MovingAverageNodeData["method"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="method" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -90,13 +96,16 @@ export function MovingAverageFields({
         </p>
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
-      <SelectField
-        label="Applied Price"
-        value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
-        onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
-        tooltip="Which price to use for calculations. Close (default) is the most common."
-      />
+      <div>
+        <SelectField
+          label="Applied Price"
+          value={data.appliedPrice ?? "CLOSE"}
+          options={APPLIED_PRICE_OPTIONS}
+          onChange={(v) => onChange({ appliedPrice: v as MovingAverageNodeData["appliedPrice"] })}
+          tooltip="Which price to use for calculations. Close (default) is the most common."
+        />
+        <OptimizableFieldCheckbox fieldName="appliedPrice" data={data} onChange={onChange} />
+      </div>
     </>
   );
 }
@@ -110,12 +119,15 @@ export function RSIFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -156,12 +168,15 @@ export function RSIFields({
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldError message="Overbought level must be higher than oversold level" />
       )}
-      <SelectField
-        label="Applied Price"
-        value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
-        onChange={(v) => onChange({ appliedPrice: v as RSINodeData["appliedPrice"] })}
-      />
+      <div>
+        <SelectField
+          label="Applied Price"
+          value={data.appliedPrice ?? "CLOSE"}
+          options={APPLIED_PRICE_OPTIONS}
+          onChange={(v) => onChange({ appliedPrice: v as RSINodeData["appliedPrice"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="appliedPrice" data={data} onChange={onChange} />
+      </div>
     </>
   );
 }
@@ -175,12 +190,15 @@ export function MACDFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Fast Period"
@@ -217,12 +235,15 @@ export function MACDFields({
         options={[...SIGNAL_MODE_OPTIONS]}
         onChange={(v) => onChange({ signalMode: v as MACDNodeData["signalMode"] })}
       />
-      <SelectField
-        label="Applied Price"
-        value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
-        onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
-      />
+      <div>
+        <SelectField
+          label="Applied Price"
+          value={data.appliedPrice ?? "CLOSE"}
+          options={APPLIED_PRICE_OPTIONS}
+          onChange={(v) => onChange({ appliedPrice: v as MACDNodeData["appliedPrice"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="appliedPrice" data={data} onChange={onChange} />
+      </div>
       {data.fastPeriod >= data.slowPeriod && (
         <FieldError message="Fast period must be smaller than slow period" />
       )}
@@ -239,12 +260,15 @@ export function BollingerBandsFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -282,12 +306,15 @@ export function BollingerBandsFields({
         />
         <OptimizableFieldCheckbox fieldName="shift" data={data} onChange={onChange} />
       </div>
-      <SelectField
-        label="Applied Price"
-        value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
-        onChange={(v) => onChange({ appliedPrice: v as BollingerBandsNodeData["appliedPrice"] })}
-      />
+      <div>
+        <SelectField
+          label="Applied Price"
+          value={data.appliedPrice ?? "CLOSE"}
+          options={APPLIED_PRICE_OPTIONS}
+          onChange={(v) => onChange({ appliedPrice: v as BollingerBandsNodeData["appliedPrice"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="appliedPrice" data={data} onChange={onChange} />
+      </div>
     </>
   );
 }
@@ -301,12 +328,15 @@ export function ATRFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -342,12 +372,15 @@ export function ADXFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -394,12 +427,15 @@ export function StochasticFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="K Period"
@@ -450,18 +486,24 @@ export function StochasticFields({
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
-      <SelectField
-        label="MA Method"
-        value={data.maMethod ?? "SMA"}
-        options={MA_METHOD_OPTIONS}
-        onChange={(v) => onChange({ maMethod: v as StochasticNodeData["maMethod"] })}
-      />
-      <SelectField
-        label="Price Field"
-        value={data.priceField ?? "LOWHIGH"}
-        options={STO_PRICE_FIELD_OPTIONS}
-        onChange={(v) => onChange({ priceField: v as StochasticNodeData["priceField"] })}
-      />
+      <div>
+        <SelectField
+          label="MA Method"
+          value={data.maMethod ?? "SMA"}
+          options={MA_METHOD_OPTIONS}
+          onChange={(v) => onChange({ maMethod: v as StochasticNodeData["maMethod"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="maMethod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <SelectField
+          label="Price Field"
+          value={data.priceField ?? "LOWHIGH"}
+          options={STO_PRICE_FIELD_OPTIONS}
+          onChange={(v) => onChange({ priceField: v as StochasticNodeData["priceField"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="priceField" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Signal Mode"
         value={data.signalMode ?? "every_tick"}
@@ -491,12 +533,15 @@ export function CCIFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Period"
@@ -533,12 +578,15 @@ export function CCIFields({
         />
         <OptimizableFieldCheckbox fieldName="oversoldLevel" data={data} onChange={onChange} />
       </div>
-      <SelectField
-        label="Applied Price"
-        value={data.appliedPrice ?? "CLOSE"}
-        options={APPLIED_PRICE_OPTIONS}
-        onChange={(v) => onChange({ appliedPrice: v as CCINodeData["appliedPrice"] })}
-      />
+      <div>
+        <SelectField
+          label="Applied Price"
+          value={data.appliedPrice ?? "CLOSE"}
+          options={APPLIED_PRICE_OPTIONS}
+          onChange={(v) => onChange({ appliedPrice: v as CCINodeData["appliedPrice"] })}
+        />
+        <OptimizableFieldCheckbox fieldName="appliedPrice" data={data} onChange={onChange} />
+      </div>
       {data.overboughtLevel <= data.oversoldLevel && (
         <FieldError message="Overbought level must be higher than oversold level" />
       )}
@@ -562,12 +610,15 @@ export function IchimokuFields({
   const mode = data.ichimokuMode ?? "TENKAN_KIJUN_CROSS";
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Signal Mode"
         value={mode}
@@ -709,12 +760,15 @@ export function CustomIndicatorFields({
 
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Indicator Name</label>
         <input
@@ -733,15 +787,18 @@ export function CustomIndicatorFields({
           File name without extension. Must be in MQL5/Indicators/ folder.
         </p>
       </div>
-      <NumberField
-        label="Buffer Index"
-        value={data.bufferIndex}
-        min={0}
-        max={31}
-        step={1}
-        onChange={(v) => onChange({ bufferIndex: v })}
-        tooltip="Which indicator buffer to read (0 = first buffer)"
-      />
+      <div>
+        <NumberField
+          label="Buffer Index"
+          value={data.bufferIndex}
+          min={0}
+          max={31}
+          step={1}
+          onChange={(v) => onChange({ bufferIndex: v })}
+          tooltip="Which indicator buffer to read (0 = first buffer)"
+        />
+        <OptimizableFieldCheckbox fieldName="bufferIndex" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Signal Mode"
         value={data.signalMode ?? "every_tick"}
@@ -858,12 +915,15 @@ export function OBVFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Signal SMA Period"
@@ -901,12 +961,15 @@ export function VWAPFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Reset Period"
         value={data.resetPeriod}
@@ -944,12 +1007,15 @@ export function BBSqueezeFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="BB Period"

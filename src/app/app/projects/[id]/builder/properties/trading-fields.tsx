@@ -46,14 +46,17 @@ export function PlaceBuyFields({
         onChange={(v) => onChange({ orderType: v as OrderType })}
       />
       {data.orderType && data.orderType !== "MARKET" && (
-        <NumberField
-          label="Pending Offset (pips)"
-          value={data.pendingOffset ?? 10}
-          min={1}
-          max={10000}
-          step={1}
-          onChange={(v) => onChange({ pendingOffset: v })}
-        />
+        <div>
+          <NumberField
+            label="Pending Offset (pips)"
+            value={data.pendingOffset ?? 10}
+            min={1}
+            max={10000}
+            step={1}
+            onChange={(v) => onChange({ pendingOffset: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="pendingOffset" data={data} onChange={onChange} />
+        </div>
       )}
       <SelectField
         label="Position Size Method"
@@ -90,22 +93,28 @@ export function PlaceBuyFields({
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
       )}
-      <NumberField
-        label="Min Lot"
-        value={data.minLot}
-        min={0.01}
-        max={100}
-        step={0.01}
-        onChange={(v) => onChange({ minLot: v })}
-      />
-      <NumberField
-        label="Max Lot"
-        value={data.maxLot}
-        min={0.01}
-        max={1000}
-        step={0.01}
-        onChange={(v) => onChange({ maxLot: v })}
-      />
+      <div>
+        <NumberField
+          label="Min Lot"
+          value={data.minLot}
+          min={0.01}
+          max={100}
+          step={0.01}
+          onChange={(v) => onChange({ minLot: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="minLot" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Max Lot"
+          value={data.maxLot}
+          min={0.01}
+          max={1000}
+          step={0.01}
+          onChange={(v) => onChange({ maxLot: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="maxLot" data={data} onChange={onChange} />
+      </div>
       {data.minLot > data.maxLot && <FieldError message="Min lot must not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
@@ -127,42 +136,58 @@ export function PlaceBuyFields({
           onChange={(v) => onChange({ slMethod: v } as Partial<PlaceBuyNodeData>)}
         />
         {(data as Record<string, unknown>).slMethod === "FIXED_PIPS" && (
-          <NumberField
-            label="SL Pips"
-            value={((data as Record<string, unknown>).slFixedPips as number) ?? 50}
-            min={1}
-            max={1000}
-            onChange={(v) => onChange({ slFixedPips: v } as Partial<PlaceBuyNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="SL Pips"
+              value={((data as Record<string, unknown>).slFixedPips as number) ?? 50}
+              min={1}
+              max={1000}
+              onChange={(v) => onChange({ slFixedPips: v } as Partial<PlaceBuyNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="slFixedPips" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).slMethod === "ATR_BASED" && (
           <>
-            <NumberField
-              label="ATR Multiplier"
-              value={((data as Record<string, unknown>).slAtrMultiplier as number) ?? 1.5}
-              min={0.1}
-              max={10}
-              step={0.1}
-              onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<PlaceBuyNodeData>)}
-            />
-            <NumberField
-              label="ATR Period"
-              value={((data as Record<string, unknown>).slAtrPeriod as number) ?? 14}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ slAtrPeriod: v } as Partial<PlaceBuyNodeData>)}
-            />
+            <div>
+              <NumberField
+                label="ATR Multiplier"
+                value={((data as Record<string, unknown>).slAtrMultiplier as number) ?? 1.5}
+                min={0.1}
+                max={10}
+                step={0.1}
+                onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<PlaceBuyNodeData>)}
+              />
+              <OptimizableFieldCheckbox
+                fieldName="slAtrMultiplier"
+                data={data}
+                onChange={onChange}
+              />
+            </div>
+            <div>
+              <NumberField
+                label="ATR Period"
+                value={((data as Record<string, unknown>).slAtrPeriod as number) ?? 14}
+                min={1}
+                max={500}
+                onChange={(v) => onChange({ slAtrPeriod: v } as Partial<PlaceBuyNodeData>)}
+              />
+              <OptimizableFieldCheckbox fieldName="slAtrPeriod" data={data} onChange={onChange} />
+            </div>
           </>
         )}
         {(data as Record<string, unknown>).slMethod === "PERCENT" && (
-          <NumberField
-            label="Stop Loss (%)"
-            value={((data as Record<string, unknown>).slPercent as number) ?? 1}
-            min={0.01}
-            max={50}
-            step={0.1}
-            onChange={(v) => onChange({ slPercent: v } as Partial<PlaceBuyNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="Stop Loss (%)"
+              value={((data as Record<string, unknown>).slPercent as number) ?? 1}
+              min={0.01}
+              max={50}
+              step={0.1}
+              onChange={(v) => onChange({ slPercent: v } as Partial<PlaceBuyNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).slMethod === "INDICATOR" && (
           <div
@@ -196,41 +221,61 @@ export function PlaceBuyFields({
           onChange={(v) => onChange({ tpMethod: v } as Partial<PlaceBuyNodeData>)}
         />
         {(data as Record<string, unknown>).tpMethod === "FIXED_PIPS" && (
-          <NumberField
-            label="TP Pips"
-            value={((data as Record<string, unknown>).tpFixedPips as number) ?? 100}
-            min={1}
-            max={10000}
-            onChange={(v) => onChange({ tpFixedPips: v } as Partial<PlaceBuyNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="TP Pips"
+              value={((data as Record<string, unknown>).tpFixedPips as number) ?? 100}
+              min={1}
+              max={10000}
+              onChange={(v) => onChange({ tpFixedPips: v } as Partial<PlaceBuyNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="tpFixedPips" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).tpMethod === "RISK_REWARD" && (
-          <NumberField
-            label="Risk:Reward Ratio"
-            value={((data as Record<string, unknown>).tpRiskRewardRatio as number) ?? 2}
-            min={0.1}
-            max={20}
-            step={0.1}
-            onChange={(v) => onChange({ tpRiskRewardRatio: v } as Partial<PlaceBuyNodeData>)}
-          />
-        )}
-        {(data as Record<string, unknown>).tpMethod === "ATR_BASED" && (
-          <>
+          <div>
             <NumberField
-              label="ATR Multiplier"
-              value={((data as Record<string, unknown>).tpAtrMultiplier as number) ?? 3}
+              label="Risk:Reward Ratio"
+              value={((data as Record<string, unknown>).tpRiskRewardRatio as number) ?? 2}
               min={0.1}
               max={20}
               step={0.1}
-              onChange={(v) => onChange({ tpAtrMultiplier: v } as Partial<PlaceBuyNodeData>)}
+              onChange={(v) => onChange({ tpRiskRewardRatio: v } as Partial<PlaceBuyNodeData>)}
             />
-            <NumberField
-              label="ATR Period"
-              value={((data as Record<string, unknown>).tpAtrPeriod as number) ?? 14}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ tpAtrPeriod: v } as Partial<PlaceBuyNodeData>)}
+            <OptimizableFieldCheckbox
+              fieldName="tpRiskRewardRatio"
+              data={data}
+              onChange={onChange}
             />
+          </div>
+        )}
+        {(data as Record<string, unknown>).tpMethod === "ATR_BASED" && (
+          <>
+            <div>
+              <NumberField
+                label="ATR Multiplier"
+                value={((data as Record<string, unknown>).tpAtrMultiplier as number) ?? 3}
+                min={0.1}
+                max={20}
+                step={0.1}
+                onChange={(v) => onChange({ tpAtrMultiplier: v } as Partial<PlaceBuyNodeData>)}
+              />
+              <OptimizableFieldCheckbox
+                fieldName="tpAtrMultiplier"
+                data={data}
+                onChange={onChange}
+              />
+            </div>
+            <div>
+              <NumberField
+                label="ATR Period"
+                value={((data as Record<string, unknown>).tpAtrPeriod as number) ?? 14}
+                min={1}
+                max={500}
+                onChange={(v) => onChange({ tpAtrPeriod: v } as Partial<PlaceBuyNodeData>)}
+              />
+              <OptimizableFieldCheckbox fieldName="tpAtrPeriod" data={data} onChange={onChange} />
+            </div>
           </>
         )}
       </div>
@@ -270,14 +315,17 @@ export function PlaceSellFields({
         onChange={(v) => onChange({ orderType: v as OrderType })}
       />
       {data.orderType && data.orderType !== "MARKET" && (
-        <NumberField
-          label="Pending Offset (pips)"
-          value={data.pendingOffset ?? 10}
-          min={1}
-          max={10000}
-          step={1}
-          onChange={(v) => onChange({ pendingOffset: v })}
-        />
+        <div>
+          <NumberField
+            label="Pending Offset (pips)"
+            value={data.pendingOffset ?? 10}
+            min={1}
+            max={10000}
+            step={1}
+            onChange={(v) => onChange({ pendingOffset: v })}
+          />
+          <OptimizableFieldCheckbox fieldName="pendingOffset" data={data} onChange={onChange} />
+        </div>
       )}
       <SelectField
         label="Position Size Method"
@@ -314,22 +362,28 @@ export function PlaceSellFields({
           <OptimizableFieldCheckbox fieldName="riskPercent" data={data} onChange={onChange} />
         </div>
       )}
-      <NumberField
-        label="Min Lot"
-        value={data.minLot}
-        min={0.01}
-        max={100}
-        step={0.01}
-        onChange={(v) => onChange({ minLot: v })}
-      />
-      <NumberField
-        label="Max Lot"
-        value={data.maxLot}
-        min={0.01}
-        max={1000}
-        step={0.01}
-        onChange={(v) => onChange({ maxLot: v })}
-      />
+      <div>
+        <NumberField
+          label="Min Lot"
+          value={data.minLot}
+          min={0.01}
+          max={100}
+          step={0.01}
+          onChange={(v) => onChange({ minLot: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="minLot" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Max Lot"
+          value={data.maxLot}
+          min={0.01}
+          max={1000}
+          step={0.01}
+          onChange={(v) => onChange({ maxLot: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="maxLot" data={data} onChange={onChange} />
+      </div>
       {data.minLot > data.maxLot && <FieldError message="Min lot must not exceed max lot" />}
       {data.method === "RISK_PERCENT" && data.riskPercent > 5 && (
         <FieldWarning message="Risk above 5% per trade is considered aggressive" />
@@ -351,42 +405,58 @@ export function PlaceSellFields({
           onChange={(v) => onChange({ slMethod: v } as Partial<PlaceSellNodeData>)}
         />
         {(data as Record<string, unknown>).slMethod === "FIXED_PIPS" && (
-          <NumberField
-            label="SL Pips"
-            value={((data as Record<string, unknown>).slFixedPips as number) ?? 50}
-            min={1}
-            max={1000}
-            onChange={(v) => onChange({ slFixedPips: v } as Partial<PlaceSellNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="SL Pips"
+              value={((data as Record<string, unknown>).slFixedPips as number) ?? 50}
+              min={1}
+              max={1000}
+              onChange={(v) => onChange({ slFixedPips: v } as Partial<PlaceSellNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="slFixedPips" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).slMethod === "ATR_BASED" && (
           <>
-            <NumberField
-              label="ATR Multiplier"
-              value={((data as Record<string, unknown>).slAtrMultiplier as number) ?? 1.5}
-              min={0.1}
-              max={10}
-              step={0.1}
-              onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<PlaceSellNodeData>)}
-            />
-            <NumberField
-              label="ATR Period"
-              value={((data as Record<string, unknown>).slAtrPeriod as number) ?? 14}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ slAtrPeriod: v } as Partial<PlaceSellNodeData>)}
-            />
+            <div>
+              <NumberField
+                label="ATR Multiplier"
+                value={((data as Record<string, unknown>).slAtrMultiplier as number) ?? 1.5}
+                min={0.1}
+                max={10}
+                step={0.1}
+                onChange={(v) => onChange({ slAtrMultiplier: v } as Partial<PlaceSellNodeData>)}
+              />
+              <OptimizableFieldCheckbox
+                fieldName="slAtrMultiplier"
+                data={data}
+                onChange={onChange}
+              />
+            </div>
+            <div>
+              <NumberField
+                label="ATR Period"
+                value={((data as Record<string, unknown>).slAtrPeriod as number) ?? 14}
+                min={1}
+                max={500}
+                onChange={(v) => onChange({ slAtrPeriod: v } as Partial<PlaceSellNodeData>)}
+              />
+              <OptimizableFieldCheckbox fieldName="slAtrPeriod" data={data} onChange={onChange} />
+            </div>
           </>
         )}
         {(data as Record<string, unknown>).slMethod === "PERCENT" && (
-          <NumberField
-            label="Stop Loss (%)"
-            value={((data as Record<string, unknown>).slPercent as number) ?? 1}
-            min={0.01}
-            max={50}
-            step={0.1}
-            onChange={(v) => onChange({ slPercent: v } as Partial<PlaceSellNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="Stop Loss (%)"
+              value={((data as Record<string, unknown>).slPercent as number) ?? 1}
+              min={0.01}
+              max={50}
+              step={0.1}
+              onChange={(v) => onChange({ slPercent: v } as Partial<PlaceSellNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).slMethod === "INDICATOR" && (
           <div
@@ -420,41 +490,61 @@ export function PlaceSellFields({
           onChange={(v) => onChange({ tpMethod: v } as Partial<PlaceSellNodeData>)}
         />
         {(data as Record<string, unknown>).tpMethod === "FIXED_PIPS" && (
-          <NumberField
-            label="TP Pips"
-            value={((data as Record<string, unknown>).tpFixedPips as number) ?? 100}
-            min={1}
-            max={10000}
-            onChange={(v) => onChange({ tpFixedPips: v } as Partial<PlaceSellNodeData>)}
-          />
+          <div>
+            <NumberField
+              label="TP Pips"
+              value={((data as Record<string, unknown>).tpFixedPips as number) ?? 100}
+              min={1}
+              max={10000}
+              onChange={(v) => onChange({ tpFixedPips: v } as Partial<PlaceSellNodeData>)}
+            />
+            <OptimizableFieldCheckbox fieldName="tpFixedPips" data={data} onChange={onChange} />
+          </div>
         )}
         {(data as Record<string, unknown>).tpMethod === "RISK_REWARD" && (
-          <NumberField
-            label="Risk:Reward Ratio"
-            value={((data as Record<string, unknown>).tpRiskRewardRatio as number) ?? 2}
-            min={0.1}
-            max={20}
-            step={0.1}
-            onChange={(v) => onChange({ tpRiskRewardRatio: v } as Partial<PlaceSellNodeData>)}
-          />
-        )}
-        {(data as Record<string, unknown>).tpMethod === "ATR_BASED" && (
-          <>
+          <div>
             <NumberField
-              label="ATR Multiplier"
-              value={((data as Record<string, unknown>).tpAtrMultiplier as number) ?? 3}
+              label="Risk:Reward Ratio"
+              value={((data as Record<string, unknown>).tpRiskRewardRatio as number) ?? 2}
               min={0.1}
               max={20}
               step={0.1}
-              onChange={(v) => onChange({ tpAtrMultiplier: v } as Partial<PlaceSellNodeData>)}
+              onChange={(v) => onChange({ tpRiskRewardRatio: v } as Partial<PlaceSellNodeData>)}
             />
-            <NumberField
-              label="ATR Period"
-              value={((data as Record<string, unknown>).tpAtrPeriod as number) ?? 14}
-              min={1}
-              max={500}
-              onChange={(v) => onChange({ tpAtrPeriod: v } as Partial<PlaceSellNodeData>)}
+            <OptimizableFieldCheckbox
+              fieldName="tpRiskRewardRatio"
+              data={data}
+              onChange={onChange}
             />
+          </div>
+        )}
+        {(data as Record<string, unknown>).tpMethod === "ATR_BASED" && (
+          <>
+            <div>
+              <NumberField
+                label="ATR Multiplier"
+                value={((data as Record<string, unknown>).tpAtrMultiplier as number) ?? 3}
+                min={0.1}
+                max={20}
+                step={0.1}
+                onChange={(v) => onChange({ tpAtrMultiplier: v } as Partial<PlaceSellNodeData>)}
+              />
+              <OptimizableFieldCheckbox
+                fieldName="tpAtrMultiplier"
+                data={data}
+                onChange={onChange}
+              />
+            </div>
+            <div>
+              <NumberField
+                label="ATR Period"
+                value={((data as Record<string, unknown>).tpAtrPeriod as number) ?? 14}
+                min={1}
+                max={500}
+                onChange={(v) => onChange({ tpAtrPeriod: v } as Partial<PlaceSellNodeData>)}
+              />
+              <OptimizableFieldCheckbox fieldName="tpAtrPeriod" data={data} onChange={onChange} />
+            </div>
           </>
         )}
       </div>
@@ -513,19 +603,25 @@ export function TimeExitFields({
 }) {
   return (
     <>
-      <NumberField
-        label="Exit After Bars"
-        value={data.exitAfterBars}
-        min={1}
-        max={1000}
-        onChange={(v) => onChange({ exitAfterBars: v })}
-      />
-      <SelectField
-        label="Timeframe"
-        value={data.exitTimeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ exitTimeframe: v as Timeframe })}
-      />
+      <div>
+        <NumberField
+          label="Exit After Bars"
+          value={data.exitAfterBars}
+          min={1}
+          max={1000}
+          onChange={(v) => onChange({ exitAfterBars: v })}
+        />
+        <OptimizableFieldCheckbox fieldName="exitAfterBars" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.exitTimeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ exitTimeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="exitTimeframe" data={data} onChange={onChange} />
+      </div>
       <div
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"

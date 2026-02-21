@@ -15,6 +15,7 @@ import type {
 } from "@/types/builder";
 import { SESSION_TIMES } from "@/types/builder";
 import { TRADING_SESSION_OPTIONS, DAY_LABELS, TIMEFRAME_OPTIONS } from "./constants";
+import { OptimizableFieldCheckbox } from "./shared";
 
 export function TradingSessionFields({
   data,
@@ -131,15 +132,18 @@ export function MaxSpreadFields({
   onChange: (updates: Partial<MaxSpreadNodeData>) => void;
 }) {
   return (
-    <NumberField
-      label="Max Spread (pips)"
-      value={data.maxSpreadPips}
-      min={1}
-      max={100}
-      step={1}
-      onChange={(v) => onChange({ maxSpreadPips: v })}
-      tooltip="The EA will only open trades when the broker spread is below this value. Prevents entries during low-liquidity periods."
-    />
+    <div>
+      <NumberField
+        label="Max Spread (pips)"
+        value={data.maxSpreadPips}
+        min={1}
+        max={100}
+        step={1}
+        onChange={(v) => onChange({ maxSpreadPips: v })}
+        tooltip="The EA will only open trades when the broker spread is below this value. Prevents entries during low-liquidity periods."
+      />
+      <OptimizableFieldCheckbox fieldName="maxSpreadPips" data={data} onChange={onChange} />
+    </div>
   );
 }
 
@@ -152,21 +156,27 @@ export function VolatilityFilterFields({
 }) {
   return (
     <>
-      <NumberField
-        label="ATR Period"
-        value={data.atrPeriod}
-        min={1}
-        max={1000}
-        step={1}
-        onChange={(v) => onChange({ atrPeriod: v })}
-        tooltip="Number of candles used to calculate Average True Range. 14 is the standard setting."
-      />
-      <SelectField
-        label="ATR Timeframe"
-        value={data.atrTimeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ atrTimeframe: v as Timeframe })}
-      />
+      <div>
+        <NumberField
+          label="ATR Period"
+          value={data.atrPeriod}
+          min={1}
+          max={1000}
+          step={1}
+          onChange={(v) => onChange({ atrPeriod: v })}
+          tooltip="Number of candles used to calculate Average True Range. 14 is the standard setting."
+        />
+        <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <SelectField
+          label="ATR Timeframe"
+          value={data.atrTimeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ atrTimeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="atrTimeframe" data={data} onChange={onChange} />
+      </div>
       <div>
         <NumberField
           label="Min ATR (pips)"
@@ -177,6 +187,7 @@ export function VolatilityFilterFields({
           onChange={(v) => onChange({ minAtrPips: v })}
         />
         <p className="text-[10px] text-[#7C8DB0] mt-0.5">0 = no minimum</p>
+        <OptimizableFieldCheckbox fieldName="minAtrPips" data={data} onChange={onChange} />
       </div>
       <div>
         <NumberField
@@ -188,6 +199,7 @@ export function VolatilityFilterFields({
           onChange={(v) => onChange({ maxAtrPips: v })}
         />
         <p className="text-[10px] text-[#7C8DB0] mt-0.5">0 = no maximum</p>
+        <OptimizableFieldCheckbox fieldName="maxAtrPips" data={data} onChange={onChange} />
       </div>
     </>
   );
@@ -208,30 +220,39 @@ export function VolumeFilterFields({
 }) {
   return (
     <>
-      <SelectField
-        label="Timeframe"
-        value={data.timeframe}
-        options={TIMEFRAME_OPTIONS}
-        onChange={(v) => onChange({ timeframe: v as Timeframe })}
-      />
-      <NumberField
-        label="Volume SMA Period"
-        value={data.volumePeriod}
-        min={1}
-        max={500}
-        step={1}
-        onChange={(v) => onChange({ volumePeriod: v })}
-        tooltip="Number of bars used to calculate average volume. 20 is the standard setting."
-      />
-      <NumberField
-        label="Volume Multiplier"
-        value={data.volumeMultiplier}
-        min={0.1}
-        max={10}
-        step={0.1}
-        onChange={(v) => onChange({ volumeMultiplier: v })}
-        tooltip="Current volume must exceed average * multiplier to pass the filter."
-      />
+      <div>
+        <SelectField
+          label="Timeframe"
+          value={data.timeframe}
+          options={TIMEFRAME_OPTIONS}
+          onChange={(v) => onChange({ timeframe: v as Timeframe })}
+        />
+        <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Volume SMA Period"
+          value={data.volumePeriod}
+          min={1}
+          max={500}
+          step={1}
+          onChange={(v) => onChange({ volumePeriod: v })}
+          tooltip="Number of bars used to calculate average volume. 20 is the standard setting."
+        />
+        <OptimizableFieldCheckbox fieldName="volumePeriod" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Volume Multiplier"
+          value={data.volumeMultiplier}
+          min={0.1}
+          max={10}
+          step={0.1}
+          onChange={(v) => onChange({ volumeMultiplier: v })}
+          tooltip="Current volume must exceed average * multiplier to pass the filter."
+        />
+        <OptimizableFieldCheckbox fieldName="volumeMultiplier" data={data} onChange={onChange} />
+      </div>
       <SelectField
         label="Filter Mode"
         value={data.filterMode}
@@ -261,13 +282,17 @@ export function FridayCloseFields({
   const minute = data.closeMinute ?? 0;
   return (
     <>
-      <TimeField
-        label="Close Time"
-        hour={hour}
-        minute={minute}
-        onHourChange={(h) => onChange({ closeHour: h })}
-        onMinuteChange={(m) => onChange({ closeMinute: m })}
-      />
+      <div>
+        <TimeField
+          label="Close Time"
+          hour={hour}
+          minute={minute}
+          onHourChange={(h) => onChange({ closeHour: h })}
+          onMinuteChange={(m) => onChange({ closeMinute: m })}
+        />
+        <OptimizableFieldCheckbox fieldName="closeHour" data={data} onChange={onChange} />
+        <OptimizableFieldCheckbox fieldName="closeMinute" data={data} onChange={onChange} />
+      </div>
       <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
         <input
           type="checkbox"
@@ -319,22 +344,28 @@ export function NewsFilterFields({
 
   return (
     <>
-      <NumberField
-        label="Hours Before News"
-        value={data.hoursBefore}
-        min={0}
-        max={24}
-        step={0.25}
-        onChange={(v) => onChange({ hoursBefore: Math.round(v * 100) / 100 })}
-      />
-      <NumberField
-        label="Hours After News"
-        value={data.hoursAfter}
-        min={0}
-        max={24}
-        step={0.25}
-        onChange={(v) => onChange({ hoursAfter: Math.round(v * 100) / 100 })}
-      />
+      <div>
+        <NumberField
+          label="Hours Before News"
+          value={data.hoursBefore}
+          min={0}
+          max={24}
+          step={0.25}
+          onChange={(v) => onChange({ hoursBefore: Math.round(v * 100) / 100 })}
+        />
+        <OptimizableFieldCheckbox fieldName="hoursBefore" data={data} onChange={onChange} />
+      </div>
+      <div>
+        <NumberField
+          label="Hours After News"
+          value={data.hoursAfter}
+          min={0}
+          max={24}
+          step={0.25}
+          onChange={(v) => onChange({ hoursAfter: Math.round(v * 100) / 100 })}
+        />
+        <OptimizableFieldCheckbox fieldName="hoursAfter" data={data} onChange={onChange} />
+      </div>
       <div className="mt-2 space-y-1.5">
         <span className="text-xs font-medium text-[#CBD5E1]">Impact Levels</span>
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
