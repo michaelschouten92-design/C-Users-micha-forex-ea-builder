@@ -56,8 +56,9 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  entrystrategy: "#10B981",
+  indicator: "#22D3EE",
   timing: "#F59E0B",
+  trading: "#6366F1",
   trademanagement: "#A78BFA",
 };
 
@@ -183,7 +184,7 @@ function OnboardingEmpty() {
                       title={nodeCategories
                         .map((c) =>
                           c
-                            .replace("entrystrategy", "Entry")
+                            .replace("indicator", "Indicator")
                             .replace("trademanagement", "Management")
                         )
                         .join(", ")}

@@ -39,37 +39,9 @@ const migrations: Migration[] = [
   {
     version: "1.2",
     up: (data) => {
-      // Migrate per-strategy HTF fields to unified mtfConfirmation
-      const nodes = data.nodes as Array<Record<string, unknown>> | undefined;
-      if (nodes) {
-        for (const node of nodes) {
-          const d = node.data as Record<string, unknown> | undefined;
-          if (!d || d.category !== "entrystrategy" || !("entryType" in d)) continue;
-
-          const entryType = d.entryType as string;
-
-          // EMA Crossover: htfTrendFilter/htfTimeframe/htfEma
-          if (entryType === "ema-crossover" && d.htfTrendFilter === true && !d.mtfConfirmation) {
-            d.mtfConfirmation = {
-              enabled: true,
-              timeframe: d.htfTimeframe ?? "H4",
-              method: "ema",
-              emaPeriod: d.htfEma ?? 200,
-            };
-          }
-
-          // Trend Pullback: useAdxFilter → map to ADX MTF
-          if (entryType === "trend-pullback" && d.useAdxFilter === true && !d.mtfConfirmation) {
-            d.mtfConfirmation = {
-              enabled: true,
-              timeframe: (d.timeframe as string) ?? "H1",
-              method: "adx",
-              adxPeriod: d.adxPeriod ?? 14,
-              adxThreshold: d.adxThreshold ?? 25,
-            };
-          }
-        }
-      }
+      // Previously migrated entry strategy HTF fields to mtfConfirmation.
+      // Entry strategy nodes have been removed; this migration is now a no-op
+      // but kept for version sequencing.
       return data;
     },
   },

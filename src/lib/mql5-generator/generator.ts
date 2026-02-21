@@ -3,20 +3,9 @@
 import type {
   BuildJsonSchema,
   BuilderNode,
-  BuilderNodeType,
   BuilderEdge,
   BuilderNodeData,
-  VirtualNodeMetadata,
-  EMACrossoverEntryData,
-  TrendPullbackEntryData,
-  DivergenceEntryData,
-  FibonacciEntryData,
-  PivotPointEntryData,
-  EntryStrategyNodeData,
   PlaceBuyNodeData,
-  EmbeddedStopLossFields,
-  EmbeddedTakeProfitFields,
-  StopLossMethod,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
@@ -103,615 +92,9 @@ function getConnectedNodeIds(
   return connectedIds;
 }
 
-// Decompose entry strategy composite nodes into virtual primitive nodes.
-// All entry strategies use: Risk %, ATR-based SL, R-multiple TP.
-// Direction is always BOTH — the entry logic determines long/short internally.
-function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: BuilderEdge[] } {
-  const d = node.data as EntryStrategyNodeData;
-  const baseId = node.id;
-  const virtualNodes: BuilderNode[] = [];
-  const virtualEdges: BuilderEdge[] = [];
-
-  // Helper to create a virtual node with typed metadata
-  const vNode = (
-    suffix: string,
-    type: BuilderNodeType,
-    data: Partial<BuilderNodeData> & VirtualNodeMetadata & Record<string, unknown>
-  ): BuilderNode => ({
-    id: `${baseId}__${suffix}`,
-    type,
-    position: node.position,
-    data: data as BuilderNodeData,
-  });
-
-  // Map parent entry strategy optimizableFields to virtual node fields.
-  // When the parent has no optimizableFields (undefined), returns undefined → all optimizable.
-  // When the parent has an explicit array, maps parent field names to virtual field names.
-  const parentOpt = d.optimizableFields;
-  const mapOpt = (...mappings: [string, string][]): string[] | undefined => {
-    if (!parentOpt || !Array.isArray(parentOpt)) return undefined;
-    const result: string[] = [];
-    for (const [parentField, virtualField] of mappings) {
-      if (parentOpt.includes(parentField) && !result.includes(virtualField)) {
-        result.push(virtualField);
-      }
-    }
-    return result;
-  };
-
-  // Create indicator/priceaction nodes based on entry type
-  if (d.entryType === "ema-crossover") {
-    const ema = d as EMACrossoverEntryData;
-    const emaTf = ema.timeframe ?? "H1";
-    const emaAppliedPrice = ema.appliedPrice ?? "CLOSE";
-    virtualNodes.push(
-      vNode("ma-fast", "moving-average", {
-        label: `Fast EMA(${ema.fastEma})`,
-        category: "indicator",
-        indicatorType: "moving-average",
-        timeframe: emaTf,
-        period: ema.fastEma,
-        method: "EMA",
-        appliedPrice: emaAppliedPrice,
-        signalMode: "candle_close",
-        shift: 0,
-        optimizableFields: mapOpt(
-          ["fastEma", "period"],
-          ["minEmaSeparation", "_minEmaSeparation"],
-          ["timeframe", "timeframe"]
-        ),
-        _entryStrategyType: "ema-crossover",
-        _entryStrategyId: baseId,
-        _role: "fast",
-        _minEmaSeparation: ema.minEmaSeparation ?? 0,
-      }),
-      vNode("ma-slow", "moving-average", {
-        label: `Slow EMA(${ema.slowEma})`,
-        category: "indicator",
-        indicatorType: "moving-average",
-        timeframe: emaTf,
-        period: ema.slowEma,
-        method: "EMA",
-        appliedPrice: emaAppliedPrice,
-        signalMode: "candle_close",
-        shift: 0,
-        optimizableFields: mapOpt(["slowEma", "period"], ["timeframe", "timeframe"]),
-        _entryStrategyType: "ema-crossover",
-        _entryStrategyId: baseId,
-        _role: "slow",
-      })
-    );
-    // Legacy HTF trend filter (fallback for pre-migration data)
-    if (ema.htfTrendFilter && !d.mtfConfirmation?.enabled) {
-      virtualNodes.push(
-        vNode("htf-ema", "moving-average", {
-          label: `HTF EMA(${ema.htfEma})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: ema.htfTimeframe ?? "H4",
-          period: ema.htfEma,
-          method: "EMA",
-          appliedPrice: emaAppliedPrice,
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
-    // RSI confirmation filter
-    if (ema.rsiConfirmation) {
-      virtualNodes.push(
-        vNode("rsi-confirm", "rsi", {
-          label: `RSI Filter(${ema.rsiPeriod})`,
-          category: "indicator",
-          indicatorType: "rsi",
-          timeframe: emaTf,
-          period: ema.rsiPeriod,
-          appliedPrice: emaAppliedPrice,
-          overboughtLevel: ema.rsiLongMax,
-          oversoldLevel: ema.rsiShortMin,
-          signalMode: "candle_close",
-          optimizableFields: mapOpt(
-            ["rsiPeriod", "period"],
-            ["rsiLongMax", "overboughtLevel"],
-            ["rsiShortMin", "oversoldLevel"],
-            ["timeframe", "timeframe"]
-          ),
-          _filterRole: "rsi-confirm",
-        })
-      );
-    }
-  } else if (d.entryType === "trend-pullback") {
-    const tp = d as TrendPullbackEntryData;
-    const tpTf = tp.timeframe ?? "H1";
-    const tpAppliedPrice = tp.appliedPrice ?? "CLOSE";
-    // Trend EMA for direction + pullback proximity
-    virtualNodes.push(
-      vNode("ma-trend", "moving-average", {
-        label: `Trend EMA(${tp.trendEma})`,
-        category: "indicator",
-        indicatorType: "moving-average",
-        timeframe: tpTf,
-        period: tp.trendEma,
-        method: "EMA",
-        appliedPrice: tpAppliedPrice,
-        signalMode: "candle_close",
-        shift: 0,
-        optimizableFields: mapOpt(
-          ["trendEma", "period"],
-          ["pullbackMaxDistance", "_pullbackMaxDistance"],
-          ["timeframe", "timeframe"]
-        ),
-        _requireEmaBuffer: tp.requireEmaBuffer ?? false,
-        _pullbackMaxDistance: tp.pullbackMaxDistance ?? 2.0,
-      }),
-      // RSI for pullback detection
-      vNode("rsi-pullback", "rsi", {
-        label: `Pullback RSI(${tp.pullbackRsiPeriod})`,
-        category: "indicator",
-        indicatorType: "rsi",
-        timeframe: tpTf,
-        period: tp.pullbackRsiPeriod,
-        appliedPrice: tpAppliedPrice,
-        overboughtLevel: 100 - tp.rsiPullbackLevel,
-        oversoldLevel: tp.rsiPullbackLevel,
-        signalMode: "candle_close",
-        optimizableFields: mapOpt(
-          ["pullbackRsiPeriod", "period"],
-          ["rsiPullbackLevel", "oversoldLevel"],
-          ["rsiPullbackLevel", "overboughtLevel"],
-          ["timeframe", "timeframe"]
-        ),
-      })
-    );
-    // Legacy ADX trend strength filter (fallback for pre-migration data)
-    if (tp.useAdxFilter && !d.mtfConfirmation?.enabled) {
-      virtualNodes.push(
-        vNode("adx-filter", "adx", {
-          label: `ADX(${tp.adxPeriod})`,
-          category: "indicator",
-          indicatorType: "adx",
-          timeframe: tpTf,
-          period: tp.adxPeriod,
-          trendLevel: tp.adxThreshold,
-          signalMode: "candle_close",
-          optimizableFields: mapOpt(
-            ["adxPeriod", "period"],
-            ["adxThreshold", "trendLevel"],
-            ["timeframe", "timeframe"]
-          ),
-          _filterRole: "adx-trend-strength",
-        })
-      );
-    }
-  } else if (d.entryType === "divergence") {
-    const div = d as DivergenceEntryData;
-    const divTf = div.timeframe ?? "H1";
-
-    if ((div.indicator ?? "RSI") === "RSI") {
-      const rsiAppliedPrice = div.appliedPrice ?? "CLOSE";
-      virtualNodes.push(
-        vNode("rsi", "rsi", {
-          label: `RSI(${div.rsiPeriod})`,
-          category: "indicator",
-          indicatorType: "rsi",
-          timeframe: divTf,
-          period: div.rsiPeriod,
-          appliedPrice: rsiAppliedPrice,
-          overboughtLevel: 70,
-          oversoldLevel: 30,
-          signalMode: "candle_close",
-          _divergenceMode: true,
-          _divergenceLookback: div.lookbackBars ?? 20,
-          _divergenceMinSwing: div.minSwingBars ?? 5,
-          _copyBarsOverride: (div.lookbackBars ?? 20) + 2,
-          optimizableFields: mapOpt(
-            ["rsiPeriod", "period"],
-            ["lookbackBars", "_divergenceLookback"],
-            ["minSwingBars", "_divergenceMinSwing"],
-            ["timeframe", "timeframe"]
-          ),
-        })
-      );
-    } else {
-      // MACD
-      virtualNodes.push(
-        vNode("macd", "macd", {
-          label: `MACD(${div.macdFast},${div.macdSlow},${div.macdSignal})`,
-          category: "indicator",
-          indicatorType: "macd",
-          timeframe: divTf,
-          fastPeriod: div.macdFast,
-          slowPeriod: div.macdSlow,
-          signalPeriod: div.macdSignal,
-          appliedPrice: div.appliedPrice ?? "CLOSE",
-          signalMode: "candle_close",
-          _divergenceMode: true,
-          _divergenceLookback: div.lookbackBars ?? 20,
-          _divergenceMinSwing: div.minSwingBars ?? 5,
-          _copyBarsOverride: (div.lookbackBars ?? 20) + 2,
-          optimizableFields: mapOpt(
-            ["macdFast", "fastPeriod"],
-            ["macdSlow", "slowPeriod"],
-            ["macdSignal", "signalPeriod"],
-            ["lookbackBars", "_divergenceLookback"],
-            ["minSwingBars", "_divergenceMinSwing"],
-            ["timeframe", "timeframe"]
-          ),
-        })
-      );
-    }
-  } else if (d.entryType === "fibonacci-entry") {
-    const fib = d as FibonacciEntryData;
-    const fibTf = fib.timeframe ?? "H1";
-    // Fibonacci uses a Moving Average as a virtual indicator to calculate swing high/low
-    // The actual fib logic is done via custom metadata on the MA node
-    virtualNodes.push(
-      vNode("fib-ma", "moving-average", {
-        label: `Fib EMA(${fib.lookbackPeriod})`,
-        category: "indicator",
-        indicatorType: "moving-average",
-        timeframe: fibTf,
-        period: fib.lookbackPeriod ?? 100,
-        method: "EMA",
-        appliedPrice: "CLOSE",
-        signalMode: "candle_close",
-        shift: 0,
-        optimizableFields: mapOpt(["lookbackPeriod", "period"], ["timeframe", "timeframe"]),
-        _fibEntryMode: fib.entryMode ?? "BOUNCE",
-        _fibLevel: fib.fibLevel ?? 0.618,
-        _fibLookback: fib.lookbackPeriod ?? 100,
-        _entryStrategyType: "fibonacci-entry",
-        _entryStrategyId: baseId,
-      })
-    );
-    // Trend confirmation EMA
-    if (fib.trendConfirmation) {
-      virtualNodes.push(
-        vNode("fib-trend-ema", "moving-average", {
-          label: `Trend EMA(${fib.trendEMAPeriod ?? 200})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: fibTf,
-          period: fib.trendEMAPeriod ?? 200,
-          method: "EMA",
-          appliedPrice: "CLOSE",
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["trendEMAPeriod", "period"], ["timeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
-  } else if (d.entryType === "pivot-point-entry") {
-    const pp = d as PivotPointEntryData;
-    const ppTf = pp.timeframe ?? "H1";
-    // Pivot points use a virtual MA node with custom metadata
-    // The actual pivot calculation is done via _pivotType metadata
-    virtualNodes.push(
-      vNode("pivot-ma", "moving-average", {
-        label: `Pivot ${pp.pivotType ?? "CLASSIC"}`,
-        category: "indicator",
-        indicatorType: "moving-average",
-        timeframe: ppTf,
-        period: 1,
-        method: "SMA",
-        appliedPrice: "CLOSE",
-        signalMode: "candle_close",
-        shift: 0,
-        _pivotType: pp.pivotType ?? "CLASSIC",
-        _pivotTimeframe: pp.pivotTimeframe ?? "DAILY",
-        _pivotEntryMode: pp.entryMode ?? "BOUNCE",
-        _pivotTargetLevel: pp.targetLevel ?? "PIVOT",
-        _entryStrategyType: "pivot-point-entry",
-        _entryStrategyId: baseId,
-      })
-    );
-  }
-
-  // Unified MTF confirmation (takes precedence over legacy per-strategy HTF fields)
-  const mtf = d.mtfConfirmation;
-  if (mtf?.enabled) {
-    if (mtf.method === "ema") {
-      virtualNodes.push(
-        vNode("mtf-ema", "moving-average", {
-          label: `MTF EMA(${mtf.emaPeriod ?? 200})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: mtf.timeframe ?? "H4",
-          period: mtf.emaPeriod ?? 200,
-          method: "EMA",
-          signalMode: "candle_close",
-          shift: 0,
-          _filterRole: "htf-trend",
-        })
-      );
-    } else if (mtf.method === "adx") {
-      virtualNodes.push(
-        vNode("mtf-adx", "adx", {
-          label: `MTF ADX(${mtf.adxPeriod ?? 14})`,
-          category: "indicator",
-          indicatorType: "adx",
-          timeframe: mtf.timeframe ?? "H4",
-          period: mtf.adxPeriod ?? 14,
-          trendLevel: mtf.adxThreshold ?? 25,
-          signalMode: "candle_close",
-          _filterRole: "adx-trend-strength",
-        })
-      );
-    }
-  }
-
-  // Create buy + sell nodes based on direction setting
-  const direction = d.direction ?? "BOTH";
-  const rawSlMethod = d.slMethod ?? "ATR";
-  const embeddedSlMethod: StopLossMethod =
-    rawSlMethod === "RANGE_OPPOSITE"
-      ? "RANGE_OPPOSITE"
-      : rawSlMethod === "PIPS"
-        ? "FIXED_PIPS"
-        : rawSlMethod === "PERCENT"
-          ? "PERCENT"
-          : "ATR_BASED";
-  const sizingData = {
-    method: "RISK_PERCENT" as const,
-    fixedLot: 0.1,
-    riskPercent: d.riskPercent,
-    minLot: 0.01,
-    maxLot: 100,
-    optimizableFields: mapOpt(["riskPercent", "riskPercent"]),
-    // Embedded SL fields
-    slMethod: embeddedSlMethod,
-    slFixedPips: d.slFixedPips ?? 50,
-    slPercent: d.slPercent ?? 1,
-    slAtrMultiplier: d.slAtrMultiplier,
-    slAtrPeriod: d.slAtrPeriod ?? 14,
-    slAtrTimeframe: d.slAtrTimeframe,
-    // Embedded TP fields
-    tpMethod: "RISK_REWARD" as const,
-    tpFixedPips: 100,
-    tpRiskRewardRatio: d.tpRMultiple,
-    tpAtrMultiplier: 3,
-    tpAtrPeriod: 14,
-  };
-
-  if (direction === "BUY" || direction === "BOTH") {
-    virtualNodes.push(
-      vNode("buy", "place-buy", {
-        label: "Place Buy",
-        category: "entry",
-        tradingType: "place-buy",
-        ...sizingData,
-        _closeOnOpposite: d.closeOnOpposite ?? false,
-      })
-    );
-  }
-  if (direction === "SELL" || direction === "BOTH") {
-    virtualNodes.push(
-      vNode("sell", "place-sell", {
-        label: "Place Sell",
-        category: "entry",
-        tradingType: "place-sell",
-        ...sizingData,
-        _closeOnOpposite: d.closeOnOpposite ?? false,
-      })
-    );
-  }
-
-  // Multiple TP: create partial-close node for TP1
-  const mtp = d.multipleTP;
-  if (mtp?.enabled) {
-    virtualNodes.push(
-      vNode("partial-tp1", "partial-close", {
-        label: "TP1 Partial Close",
-        category: "trademanagement",
-        managementType: "partial-close",
-        closePercent: mtp.tp1Percent,
-        triggerMethod: "PIPS",
-        triggerPips: 0, // Will be overridden by _rMultipleTrigger
-        triggerPercent: 1,
-        moveSLToBreakeven: true,
-        _rMultipleTrigger: mtp.tp1RMultiple,
-      })
-    );
-    // Override TP ratio in buy/sell nodes to use TP2
-    for (const vn of virtualNodes) {
-      if (
-        "tradingType" in vn.data &&
-        (vn.data.tradingType === "place-buy" || vn.data.tradingType === "place-sell")
-      ) {
-        (vn.data as Record<string, unknown>).tpRiskRewardRatio = mtp.tp2RMultiple;
-      }
-    }
-  }
-
-  // Create trailing stop node if enabled
-  const ts = d.trailingStop;
-  if (ts?.enabled) {
-    virtualNodes.push(
-      vNode("trailing", "trailing-stop", {
-        label: "Trailing Stop",
-        category: "trademanagement",
-        managementType: "trailing-stop",
-        method: ts.method === "atr" ? "ATR_BASED" : "FIXED_PIPS",
-        trailPips: ts.fixedPips ?? 30,
-        trailAtrMultiplier: ts.atrMultiplier ?? 2.0,
-        trailAtrPeriod: ts.atrPeriod ?? 14,
-        trailPercent: 50,
-        startAfterPips: 0,
-      })
-    );
-  }
-
-  // Create edges: indicators → buy/sell, buy/sell → partial-tp/trailing
-  const indicatorIds = virtualNodes
-    .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
-    .map((n) => n.id);
-
-  for (const indId of indicatorIds) {
-    if (direction === "BUY" || direction === "BOTH") {
-      virtualEdges.push({
-        id: `${baseId}__e-${indId}-buy`,
-        source: indId,
-        target: `${baseId}__buy`,
-      });
-    }
-    if (direction === "SELL" || direction === "BOTH") {
-      virtualEdges.push({
-        id: `${baseId}__e-${indId}-sell`,
-        source: indId,
-        target: `${baseId}__sell`,
-      });
-    }
-  }
-
-  if (direction === "BUY" || direction === "BOTH") {
-    if (mtp?.enabled) {
-      virtualEdges.push({
-        id: `${baseId}__e-buy-ptp1`,
-        source: `${baseId}__buy`,
-        target: `${baseId}__partial-tp1`,
-      });
-    }
-    if (ts?.enabled) {
-      virtualEdges.push({
-        id: `${baseId}__e-buy-trail`,
-        source: `${baseId}__buy`,
-        target: `${baseId}__trailing`,
-      });
-    }
-  }
-  if (direction === "SELL" || direction === "BOTH") {
-    if (mtp?.enabled) {
-      virtualEdges.push({
-        id: `${baseId}__e-sell-ptp1`,
-        source: `${baseId}__sell`,
-        target: `${baseId}__partial-tp1`,
-      });
-    }
-    if (ts?.enabled) {
-      virtualEdges.push({
-        id: `${baseId}__e-sell-trail`,
-        source: `${baseId}__sell`,
-        target: `${baseId}__trailing`,
-      });
-    }
-  }
-
-  return { nodes: virtualNodes, edges: virtualEdges };
-}
-
-function decomposeEntryStrategies(
-  nodes: BuilderNode[],
-  edges: BuilderEdge[]
-): { nodes: BuilderNode[]; edges: BuilderEdge[] } {
-  const resultNodes: BuilderNode[] = [];
-  const resultEdges: BuilderEdge[] = [...edges];
-
-  for (const node of nodes) {
-    if (!("entryType" in node.data)) {
-      resultNodes.push(node);
-      continue;
-    }
-
-    const { nodes: virtualNodes, edges: virtualEdges } = expandEntryStrategy(node);
-    resultNodes.push(...virtualNodes);
-    resultEdges.push(...virtualEdges);
-
-    // Re-wire: any edge pointing TO the entry strategy node should point to the virtual indicators
-    const indicatorIds = virtualNodes
-      .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
-      .map((n) => n.id);
-
-    for (let i = 0; i < resultEdges.length; i++) {
-      const edge = resultEdges[i];
-      if (edge.target === node.id && indicatorIds.length > 0) {
-        // Replace this edge with edges to each virtual indicator
-        resultEdges.splice(i, 1);
-        for (const indId of indicatorIds) {
-          resultEdges.push({
-            id: `${edge.id}__rewire-${indId}`,
-            source: edge.source,
-            target: indId,
-          });
-        }
-        i--; // Adjust index after splice
-      }
-    }
-
-    // Re-wire: any edge going FROM the entry strategy node to downstream nodes
-    // (e.g., entry-strategy → breakeven-stop) should come from virtual indicator nodes
-    for (let i = 0; i < resultEdges.length; i++) {
-      const edge = resultEdges[i];
-      if (edge.source === node.id && indicatorIds.length > 0) {
-        resultEdges.splice(i, 1);
-        for (const indId of indicatorIds) {
-          resultEdges.push({
-            id: `${edge.id}__rewire-out-${indId}`,
-            source: indId,
-            target: edge.target,
-          });
-        }
-        i--;
-      }
-    }
-  }
-
-  return { nodes: resultNodes, edges: resultEdges };
-}
-
 // Build a const string array with strategy summary lines for the chart overlay.
-// Uses the original (pre-decomposition) nodes so entry strategy blocks are still intact.
 function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext): string {
   const lines: string[] = [];
-
-  const entryTypeNames: Record<string, string> = {
-    "ema-crossover": "EMA Crossover",
-    "trend-pullback": "Trend Pullback",
-    divergence: "RSI/MACD Divergence",
-    "fibonacci-entry": "Fibonacci Retracement",
-    "pivot-point-entry": "Pivot Point",
-  };
-
-  for (const node of nodes) {
-    const d = node.data;
-    if (!("entryType" in d)) continue;
-    const entry = d as EntryStrategyNodeData;
-
-    // Entry + timeframe
-    const name = entryTypeNames[entry.entryType] ?? entry.entryType;
-    lines.push(`Entry: ${name} (${entry.timeframe ?? "H1"})`);
-
-    // Direction (only show if not BOTH, since BOTH is default)
-    const dir = entry.direction ?? "BOTH";
-    if (dir !== "BOTH") lines.push(`Direction: ${dir} only`);
-
-    // Risk
-    lines.push(`Risk: ${entry.riskPercent}% per trade`);
-
-    // SL
-    const slm = entry.slMethod ?? "ATR";
-    if (slm === "ATR") lines.push(`SL: ${entry.slAtrMultiplier}x ATR(${entry.slAtrPeriod ?? 14})`);
-    else if (slm === "PIPS") lines.push(`SL: ${entry.slFixedPips} pips`);
-    else if (slm === "PERCENT") lines.push(`SL: ${entry.slPercent}%`);
-    else if (slm === "RANGE_OPPOSITE") lines.push("SL: Range opposite side");
-
-    // TP
-    const mtp = entry.multipleTP;
-    if (mtp?.enabled) {
-      lines.push(`TP: ${mtp.tp1RMultiple}R (${mtp.tp1Percent}%) / ${mtp.tp2RMultiple}R`);
-    } else {
-      lines.push(`TP: ${entry.tpRMultiple}R`);
-    }
-
-    // Trailing stop
-    if (entry.trailingStop?.enabled) {
-      const ts = entry.trailingStop;
-      if (ts.method === "atr") lines.push(`Trail: ${ts.atrMultiplier ?? 2}x ATR`);
-      else lines.push(`Trail: ${ts.fixedPips ?? 30} pips`);
-    }
-  }
 
   // Timing info
   for (const node of nodes) {
@@ -765,14 +148,6 @@ export function generateMQL5Code(
   description?: string,
   telemetry?: TelemetryConfig
 ): string {
-  // Preprocess: decompose entry strategy composite blocks into virtual primitive nodes
-  const decomposed = decomposeEntryStrategies(buildJson.nodes, buildJson.edges);
-  const processedBuildJson: BuildJsonSchema = {
-    ...buildJson,
-    nodes: decomposed.nodes,
-    edges: decomposed.edges,
-  };
-
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
     description: sanitizeMQL5String(description ?? ""),
@@ -851,7 +226,7 @@ export function generateMQL5Code(
   };
 
   // Get all nodes that are connected to the strategy (starting from timing nodes)
-  const connectedNodeIds = getConnectedNodeIds(processedBuildJson.nodes, processedBuildJson.edges, [
+  const connectedNodeIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, [
     "trading-session",
     "custom-times",
   ]);
@@ -904,7 +279,7 @@ export function generateMQL5Code(
   const gridPyramidNodes: BuilderNode[] = [];
   const maxSpreadNodes: BuilderNode[] = [];
 
-  for (const n of processedBuildJson.nodes) {
+  for (const n of buildJson.nodes) {
     const nodeType = n.type as string;
     const data = n.data;
     const connected = isConnected(n);
@@ -1410,13 +785,7 @@ export function generateMQL5Code(
   const slTpSource = placeBuyNodes[0] ?? placeSellNodes[0];
   if (slTpSource) {
     const slTpData = slTpSource.data as PlaceBuyNodeData;
-    generateStopLossFromBuySell(
-      slTpData,
-      indicatorNodes,
-      processedBuildJson.edges,
-      code,
-      priceActionNodes
-    );
+    generateStopLossFromBuySell(slTpData, indicatorNodes, buildJson.edges, code, priceActionNodes);
   } else {
     code.onTick.push("double slPips = 0;");
   }
@@ -1435,7 +804,7 @@ export function generateMQL5Code(
     ) &&
     indicatorNodes.filter((n) => {
       const d = n.data as Record<string, unknown>;
-      return !d._filterRole && !d._entryStrategyType;
+      return !d._filterRole;
     }).length === 0 &&
     priceActionNodes.every(
       (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
@@ -1531,18 +900,12 @@ export function generateMQL5Code(
     code,
     hasBuy ? placeBuyNodes[0] : undefined,
     hasSell ? placeSellNodes[0] : undefined,
-    processedBuildJson.edges
+    buildJson.edges
   );
 
   // Generate close condition code
   closeConditionNodes.forEach((ccNode) => {
-    generateCloseConditionCode(
-      ccNode,
-      indicatorNodes,
-      priceActionNodes,
-      processedBuildJson.edges,
-      code
-    );
+    generateCloseConditionCode(ccNode, indicatorNodes, priceActionNodes, buildJson.edges, code);
   });
 
   // Generate time-based exit code

@@ -259,66 +259,76 @@ export function generateStrategy(description: string): BuildJsonSchema {
   const usesTrendPullback =
     lower.includes("pullback") || lower.includes("pull back") || lower.includes("dip buy");
 
-  // Determine SL method and TP multiplier
-  const slMethod = lower.includes("atr") ? "ATR" : "PIPS";
-  const tpRMultiple = 2;
-  const riskPercent = 1;
-
   let lastNodeId: string;
 
   if (usesEma && !usesBreakout) {
-    // EMA Crossover — entry strategy node (kept)
+    // EMA Crossover — two MA indicator nodes + trading nodes
     const periods = parsePeriods(lower);
-    const hasRsiFilter = lower.includes("rsi") && !usesRsiReversal;
-    lastNodeId = addNode("entry", "ema-crossover-entry", {
-      label: "EMA Crossover",
-      category: "entrystrategy",
-      entryType: "ema-crossover",
-      direction: "BOTH",
+    const fastNodeId = addNode("ind", "moving-average", {
+      label: `Fast EMA(${periods.fast})`,
+      category: "indicator",
+      indicatorType: "moving-average",
       timeframe,
-      fastEma: periods.fast,
-      slowEma: periods.slow,
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
-      rsiConfirmation: hasRsiFilter,
-      rsiPeriod: hasRsiFilter ? parseRsiPeriod(lower) : 14,
-      rsiLongMax: 60,
-      rsiShortMin: 40,
-      minEmaSeparation: 0,
-    });
-    addEdge(timingNodeId, lastNodeId);
-  } else if (usesDivergence) {
-    // Divergence — entry strategy node (kept)
-    const indicator = usesMacd ? "MACD" : "RSI";
-    lastNodeId = addNode("entry", "divergence-entry", {
-      label: `${indicator} Divergence`,
-      category: "entrystrategy",
-      entryType: "divergence",
-      direction: "BOTH",
-      timeframe,
-      indicator,
-      rsiPeriod: parseRsiPeriod(lower),
+      period: periods.fast,
+      method: "EMA",
       appliedPrice: "CLOSE",
-      macdFast: 12,
-      macdSlow: 26,
-      macdSignal: 9,
-      lookbackBars: 20,
-      minSwingBars: 5,
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
+      signalMode: "candle_close",
+      shift: 0,
     });
-    addEdge(timingNodeId, lastNodeId);
+    const slowNodeId = addNode("ind", "moving-average", {
+      label: `Slow EMA(${periods.slow})`,
+      category: "indicator",
+      indicatorType: "moving-average",
+      timeframe,
+      period: periods.slow,
+      method: "EMA",
+      appliedPrice: "CLOSE",
+      signalMode: "candle_close",
+      shift: 0,
+    });
+    addEdge(timingNodeId, fastNodeId);
+    addEdge(timingNodeId, slowNodeId);
+    addStandaloneTradingNodes(nodes, edges, fastNodeId, nodeCounter, yPosition);
+    // Also connect slow EMA to the buy/sell nodes
+    const buyId = nodes[nodes.length - 2].id;
+    const sellId = nodes[nodes.length - 1].id;
+    addEdge(slowNodeId, buyId);
+    addEdge(slowNodeId, sellId);
+    yPosition += Y_STEP * 3;
+    lastNodeId = fastNodeId;
+  } else if (usesDivergence) {
+    // Divergence — RSI/MACD indicator + trading nodes
+    const indicator = usesMacd ? "MACD" : "RSI";
+    let indNodeId: string;
+    if (indicator === "MACD") {
+      indNodeId = addNode("ind", "macd", {
+        label: "MACD(12,26,9)",
+        category: "indicator",
+        indicatorType: "macd",
+        timeframe,
+        fastPeriod: 12,
+        slowPeriod: 26,
+        signalPeriod: 9,
+        appliedPrice: "CLOSE",
+        signalMode: "candle_close",
+      });
+    } else {
+      indNodeId = addNode("ind", "rsi", {
+        label: `RSI(${parseRsiPeriod(lower)})`,
+        category: "indicator",
+        indicatorType: "rsi",
+        timeframe,
+        period: parseRsiPeriod(lower),
+        appliedPrice: "CLOSE",
+        signalMode: "candle_close",
+        overboughtLevel: 70,
+        oversoldLevel: 30,
+      });
+    }
+    addEdge(timingNodeId, indNodeId);
+    addStandaloneTradingNodes(nodes, edges, indNodeId, nodeCounter, yPosition);
+    yPosition += Y_STEP * 3;
+    lastNodeId = indNodeId;
   } else if (usesMacd) {
     // MACD — standalone indicator + trading nodes
     const indNodeId = addNode("ind", "macd", {
@@ -354,29 +364,38 @@ export function generateStrategy(description: string): BuildJsonSchema {
     yPosition += Y_STEP * 3;
     lastNodeId = indNodeId;
   } else if (usesTrendPullback) {
-    // Trend Pullback — entry strategy node (kept)
-    lastNodeId = addNode("entry", "trend-pullback-entry", {
-      label: "Trend Pullback",
-      category: "entrystrategy",
-      entryType: "trend-pullback",
-      direction: "BOTH",
+    // Trend Pullback — EMA trend + RSI pullback + trading nodes
+    const emaNodeId = addNode("ind", "moving-average", {
+      label: "Trend EMA(200)",
+      category: "indicator",
+      indicatorType: "moving-average",
       timeframe,
-      trendEma: 200,
-      pullbackRsiPeriod: 14,
-      rsiPullbackLevel: 40,
-      pullbackMaxDistance: 2.0,
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
-      requireEmaBuffer: false,
-      useAdxFilter: false,
-      adxPeriod: 14,
-      adxThreshold: 25,
+      period: 200,
+      method: "EMA",
+      appliedPrice: "CLOSE",
+      signalMode: "candle_close",
+      shift: 0,
     });
-    addEdge(timingNodeId, lastNodeId);
+    const rsiNodeId = addNode("ind", "rsi", {
+      label: "Pullback RSI(14)",
+      category: "indicator",
+      indicatorType: "rsi",
+      timeframe,
+      period: 14,
+      appliedPrice: "CLOSE",
+      signalMode: "candle_close",
+      overboughtLevel: 60,
+      oversoldLevel: 40,
+    });
+    addEdge(timingNodeId, emaNodeId);
+    addEdge(timingNodeId, rsiNodeId);
+    addStandaloneTradingNodes(nodes, edges, emaNodeId, nodeCounter, yPosition);
+    const buyId = nodes[nodes.length - 2].id;
+    const sellId = nodes[nodes.length - 1].id;
+    addEdge(rsiNodeId, buyId);
+    addEdge(rsiNodeId, sellId);
+    yPosition += Y_STEP * 3;
+    lastNodeId = emaNodeId;
   } else if (usesBreakout) {
     // Range Breakout — standalone price action + trading nodes
     const indNodeId = addNode("ind", "range-breakout", {
@@ -402,31 +421,38 @@ export function generateStrategy(description: string): BuildJsonSchema {
     yPosition += Y_STEP * 3;
     lastNodeId = indNodeId;
   } else {
-    // Default: EMA crossover entry strategy
-    lastNodeId = addNode("entry", "ema-crossover-entry", {
-      label: "EMA Crossover",
-      category: "entrystrategy",
-      entryType: "ema-crossover",
-      direction: "BOTH",
+    // Default: EMA(50)/EMA(200) crossover with standalone nodes
+    const fastNodeId = addNode("ind", "moving-average", {
+      label: "Fast EMA(50)",
+      category: "indicator",
+      indicatorType: "moving-average",
       timeframe,
-      fastEma: 50,
-      slowEma: 200,
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
-      rsiConfirmation: false,
-      rsiPeriod: 14,
-      rsiLongMax: 60,
-      rsiShortMin: 40,
-      minEmaSeparation: 0,
+      period: 50,
+      method: "EMA",
+      appliedPrice: "CLOSE",
+      signalMode: "candle_close",
+      shift: 0,
     });
-    addEdge(timingNodeId, lastNodeId);
+    const slowNodeId = addNode("ind", "moving-average", {
+      label: "Slow EMA(200)",
+      category: "indicator",
+      indicatorType: "moving-average",
+      timeframe,
+      period: 200,
+      method: "EMA",
+      appliedPrice: "CLOSE",
+      signalMode: "candle_close",
+      shift: 0,
+    });
+    addEdge(timingNodeId, fastNodeId);
+    addEdge(timingNodeId, slowNodeId);
+    addStandaloneTradingNodes(nodes, edges, fastNodeId, nodeCounter, yPosition);
+    const buyId = nodes[nodes.length - 2].id;
+    const sellId = nodes[nodes.length - 1].id;
+    addEdge(slowNodeId, buyId);
+    addEdge(slowNodeId, sellId);
+    yPosition += Y_STEP * 3;
+    lastNodeId = fastNodeId;
   }
 
   // --- Optional: add trailing stop if mentioned ---

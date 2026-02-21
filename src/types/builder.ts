@@ -13,8 +13,7 @@ export type NodeCategory =
   | "entry"
   | "trading"
   | "riskmanagement"
-  | "trademanagement"
-  | "entrystrategy";
+  | "trademanagement";
 
 // Base data all nodes have
 export interface BaseNodeData extends Record<string, unknown> {
@@ -620,198 +619,13 @@ export type TradeManagementNodeData =
   | LockProfitNodeData
   | MultiLevelTPNodeData;
 
-// ============================================
-// ENTRY STRATEGY NODES (composite blocks)
-// ============================================
-
-// Consistent risk model across all entry strategies:
-//   Risk % → position sizing
-//   SL = ATR(14) * slAtrMultiplier
-//   TP = tpRMultiple * SL distance
-export type EntryDirection = "BUY" | "SELL" | "BOTH";
-
-export type EntrySlMethod = "ATR" | "PIPS" | "PERCENT" | "RANGE_OPPOSITE";
-
-export interface MTFConfirmation {
-  enabled: boolean;
-  timeframe: Timeframe;
-  method: "ema" | "adx";
-  emaPeriod?: number;
-  adxPeriod?: number;
-  adxThreshold?: number;
-}
-
-export interface BaseEntryStrategyFields {
-  direction: EntryDirection;
-  timeframe: Timeframe;
-  riskPercent: number;
-  slMethod: EntrySlMethod;
-  slFixedPips: number;
-  slPercent: number;
-  slAtrMultiplier: number;
-  slAtrPeriod?: number;
-  slAtrTimeframe?: Timeframe;
-  tpRMultiple: number;
-  closeOnOpposite?: boolean;
-  mtfConfirmation?: MTFConfirmation;
-  multipleTP?: {
-    enabled: boolean;
-    tp1RMultiple: number;
-    tp1Percent: number;
-    tp2RMultiple: number;
-  };
-  trailingStop?: {
-    enabled: boolean;
-    method: "atr" | "fixed-pips";
-    atrMultiplier?: number;
-    atrPeriod?: number;
-    atrTimeframe?: string;
-    fixedPips?: number;
-  };
-}
-
-// 1) EMA Crossover — trend following
-export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "ema-crossover";
-  // Basic
-  fastEma: number;
-  slowEma: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW";
-  // Advanced toggles
-  htfTrendFilter: boolean;
-  htfTimeframe: Timeframe;
-  htfEma: number;
-  rsiConfirmation: boolean;
-  rsiPeriod: number;
-  rsiLongMax: number;
-  rsiShortMin: number;
-  minEmaSeparation?: number; // pips, 0 = disabled
-}
-
-// 4) Trend Pullback — EMA trend + RSI dip entry
-export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "trend-pullback";
-  // Basic
-  trendEma: number;
-  pullbackRsiPeriod: number;
-  rsiPullbackLevel: number; // long threshold; short = 100 - this
-  pullbackMaxDistance: number; // max % distance from EMA (default 2.0)
-  // Advanced toggles
-  requireEmaBuffer: boolean;
-  useAdxFilter: boolean;
-  adxPeriod: number;
-  adxThreshold: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-}
-
-// 6) RSI/MACD Divergence — reversal on indicator/price divergence
-export type DivergenceIndicator = "RSI" | "MACD";
-
-export interface DivergenceEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "divergence";
-  // Indicator selection
-  indicator: DivergenceIndicator;
-  // RSI settings (when indicator = "RSI")
-  rsiPeriod: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-  // MACD settings (when indicator = "MACD")
-  macdFast: number;
-  macdSlow: number;
-  macdSignal: number;
-  // Divergence detection
-  lookbackBars: number; // Bars to scan for swing points (default 20)
-  minSwingBars: number; // Min bars between two swings (default 5)
-}
-
-// 8) Fibonacci Retracement Entry — bounce or break at fib levels
-export type FibonacciEntryMode = "BOUNCE" | "BREAK";
-
-export interface FibonacciEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "fibonacci-entry";
-  lookbackPeriod: number; // default 100 bars
-  fibLevel: number; // default 0.618 (can be 0.236, 0.382, 0.5, 0.618, 0.786)
-  entryMode: FibonacciEntryMode; // default "BOUNCE"
-  trendConfirmation: boolean; // use EMA to confirm trend direction
-  trendEMAPeriod: number; // default 200
-}
-
-// 9) Pivot Point Entry — bounce or breakout at pivot/S/R levels
-export type PivotType = "CLASSIC" | "FIBONACCI" | "CAMARILLA" | "WOODIE";
-export type PivotTimeframe = "DAILY" | "WEEKLY" | "MONTHLY";
-export type PivotEntryMode = "BOUNCE" | "BREAKOUT";
-export type PivotTargetLevel = "PIVOT" | "S1" | "S2" | "S3" | "R1" | "R2" | "R3";
-
-export interface PivotPointEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "pivot-point-entry";
-  pivotType: PivotType; // default "CLASSIC"
-  pivotTimeframe: PivotTimeframe; // default "DAILY"
-  entryMode: PivotEntryMode; // default "BOUNCE"
-  targetLevel: PivotTargetLevel; // default "PIVOT"
-}
-
-export type EntryStrategyNodeData =
-  | EMACrossoverEntryData
-  | TrendPullbackEntryData
-  | DivergenceEntryData
-  | FibonacciEntryData
-  | PivotPointEntryData;
-
-// ============================================
-// VIRTUAL NODE METADATA (used by generators on decomposed entry strategy nodes)
-// ============================================
-
-/** Metadata fields attached to virtual nodes via `_prefixed` keys during entry strategy decomposition. */
-export interface VirtualNodeMetadata {
-  // EMA Crossover
-  _entryStrategyType?: string;
-  _entryStrategyId?: string;
-  _role?: "fast" | "slow";
-  _minEmaSeparation?: number;
-
-  // Filter roles
-  _filterRole?: "htf-trend" | "rsi-confirm" | "adx-trend-strength";
-
-  // Trend Pullback
-  _requireEmaBuffer?: boolean;
-  _pullbackMaxDistance?: number;
-
-  // Divergence
-  _divergenceMode?: boolean;
-  _divergenceLookback?: number;
-  _divergenceMinSwing?: number;
-  _copyBarsOverride?: number;
-
-  // Fibonacci entry
-  _fibEntryMode?: "BOUNCE" | "BREAK";
-  _fibLevel?: number;
-  _fibLookback?: number;
-
-  // Pivot Point entry
-  _pivotType?: "CLASSIC" | "FIBONACCI" | "CAMARILLA" | "WOODIE";
-  _pivotTimeframe?: "DAILY" | "WEEKLY" | "MONTHLY";
-  _pivotEntryMode?: "BOUNCE" | "BREAKOUT";
-  _pivotTargetLevel?: "PIVOT" | "S1" | "S2" | "S3" | "R1" | "R2" | "R3";
-
-  // Close on opposite
-  _closeOnOpposite?: boolean;
-
-  // Multiple TP R-multiple trigger
-  _rMultipleTrigger?: number;
-}
-
 // Union of all node data types
 export type BuilderNodeData =
   | TimingNodeData
   | IndicatorNodeData
   | PriceActionNodeData
   | TradingNodeData
-  | TradeManagementNodeData
-  | EntryStrategyNodeData;
+  | TradeManagementNodeData;
 
 // ============================================
 // NODE TYPES
@@ -845,11 +659,6 @@ export type BuilderNodeType =
   | "trailing-stop"
   | "partial-close"
   | "lock-profit"
-  | "ema-crossover-entry"
-  | "trend-pullback-entry"
-  | "divergence-entry"
-  | "fibonacci-entry"
-  | "pivot-point-entry"
   | "max-spread"
   | "volatility-filter"
   | "friday-close"
@@ -1431,137 +1240,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       detectChoCh: true,
     } as MarketStructureNodeData,
   },
-  // Entry Strategies (composite blocks) — ordered by UX appeal
-  {
-    type: "ema-crossover-entry",
-    label: "EMA Crossover",
-    category: "entrystrategy",
-    description: "Classic trend following with EMAs",
-    defaultData: {
-      label: "EMA Crossover",
-      category: "entrystrategy",
-      entryType: "ema-crossover",
-      direction: "BOTH",
-      timeframe: "H1",
-      fastEma: 50,
-      slowEma: 200,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
-      rsiConfirmation: false,
-      rsiPeriod: 14,
-      rsiLongMax: 60,
-      rsiShortMin: 40,
-      minEmaSeparation: 0,
-    } as EMACrossoverEntryData,
-  },
-  {
-    type: "trend-pullback-entry",
-    label: "Trend Pullback",
-    category: "entrystrategy",
-    description: "Enter on pullback in a trending market",
-    defaultData: {
-      label: "Trend Pullback",
-      category: "entrystrategy",
-      entryType: "trend-pullback",
-      direction: "BOTH",
-      timeframe: "H1",
-      trendEma: 200,
-      pullbackRsiPeriod: 14,
-      rsiPullbackLevel: 40,
-      pullbackMaxDistance: 2.0,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-      requireEmaBuffer: false,
-      useAdxFilter: false,
-      adxPeriod: 14,
-      adxThreshold: 25,
-    } as TrendPullbackEntryData,
-  },
-  {
-    type: "divergence-entry",
-    label: "RSI/MACD Divergence",
-    category: "entrystrategy",
-    description: "Reversal on price/indicator divergence",
-    defaultData: {
-      label: "RSI/MACD Divergence",
-      category: "entrystrategy",
-      entryType: "divergence",
-      direction: "BOTH",
-      timeframe: "H1",
-      indicator: "RSI",
-      rsiPeriod: 14,
-      appliedPrice: "CLOSE",
-      macdFast: 12,
-      macdSlow: 26,
-      macdSignal: 9,
-      lookbackBars: 20,
-      minSwingBars: 5,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-    } as DivergenceEntryData,
-  },
-  {
-    type: "fibonacci-entry",
-    label: "Fibonacci Retracement",
-    category: "entrystrategy",
-    description: "Trade bounces or breaks at Fibonacci levels",
-    defaultData: {
-      label: "Fibonacci Retracement",
-      category: "entrystrategy",
-      entryType: "fibonacci-entry",
-      direction: "BOTH",
-      timeframe: "H1",
-      lookbackPeriod: 100,
-      fibLevel: 0.618,
-      entryMode: "BOUNCE",
-      trendConfirmation: true,
-      trendEMAPeriod: 200,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-    } as FibonacciEntryData,
-  },
-  {
-    type: "pivot-point-entry",
-    label: "Pivot Point",
-    category: "entrystrategy",
-    description: "Trade bounces or breakouts at pivot S/R levels",
-    defaultData: {
-      label: "Pivot Point",
-      category: "entrystrategy",
-      entryType: "pivot-point-entry",
-      direction: "BOTH",
-      timeframe: "H1",
-      pivotType: "CLASSIC",
-      pivotTimeframe: "DAILY",
-      entryMode: "BOUNCE",
-      targetLevel: "PIVOT",
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-    } as PivotPointEntryData,
-  },
   // Trading (manual building blocks)
   {
     type: "place-buy",
@@ -1764,7 +1442,6 @@ export function getCategoryColor(category: NodeCategory): string {
       return "yellow";
     case "entry":
     case "trading":
-    case "entrystrategy":
       return "green";
     case "riskmanagement":
       return "rose";
@@ -1785,8 +1462,6 @@ export function getCategoryLabel(category: NodeCategory): string {
       return "Price Action";
     case "entry":
       return "Entry";
-    case "entrystrategy":
-      return "Entry Strategies";
     case "trading":
       return "Trade Execution";
     case "riskmanagement":

@@ -43,11 +43,6 @@ import type {
   TimeExitNodeData,
   GridPyramidNodeData,
   MultiLevelTPNodeData,
-  EMACrossoverEntryData,
-  TrendPullbackEntryData,
-  DivergenceEntryData,
-  FibonacciEntryData,
-  PivotPointEntryData,
 } from "@/types/builder";
 
 import {
@@ -96,13 +91,6 @@ import {
   LockProfitFields,
   MultiLevelTPFields,
 } from "./trade-mgmt-fields";
-import {
-  EMACrossoverEntryFields,
-  TrendPullbackEntryFields,
-  DivergenceEntryFields,
-  FibonacciEntryFields,
-  PivotPointEntryFields,
-} from "./entry-strategy-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
 import { OptimizationVisibleContext } from "./shared";
 import type { BuildJsonSettings } from "@/types/builder";
@@ -215,8 +203,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             </svg>
             <p className="text-sm font-medium text-[#94A3B8] mb-1">Get started</p>
             <p className="text-xs text-[#7C8DB0] leading-relaxed">
-              Drag an <span className="text-white font-medium">Entry Strategy</span> block from the
-              left toolbar onto the canvas
+              Drag blocks from the left toolbar onto the canvas to build your strategy
             </p>
           </div>
         )}
@@ -402,24 +389,6 @@ function NodeFields({
   data: BuilderNodeData;
   onChange: (updates: Partial<BuilderNodeData>) => void;
 }) {
-  // Entry Strategy nodes
-  if ("entryType" in data) {
-    switch (data.entryType) {
-      case "ema-crossover":
-        return <EMACrossoverEntryFields data={data as EMACrossoverEntryData} onChange={onChange} />;
-      case "trend-pullback":
-        return (
-          <TrendPullbackEntryFields data={data as TrendPullbackEntryData} onChange={onChange} />
-        );
-      case "divergence":
-        return <DivergenceEntryFields data={data as DivergenceEntryData} onChange={onChange} />;
-      case "fibonacci-entry":
-        return <FibonacciEntryFields data={data as FibonacciEntryData} onChange={onChange} />;
-      case "pivot-point-entry":
-        return <PivotPointEntryFields data={data as PivotPointEntryData} onChange={onChange} />;
-    }
-  }
-
   // Timing nodes
   if ("timingType" in data) {
     switch (data.timingType) {

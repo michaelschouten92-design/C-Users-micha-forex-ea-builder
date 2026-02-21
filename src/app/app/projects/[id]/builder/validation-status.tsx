@@ -192,8 +192,8 @@ export function ValidationStatus({ validation, onFocusNode }: ValidationStatusPr
             <div className="grid grid-cols-2 gap-2 text-xs">
               <CheckItem label="Timing (optional)" checked={validation.summary.hasTiming} />
               <CheckItem
-                label="Entry Strategy"
-                checked={validation.summary.hasEntryStrategy}
+                label="Signal / Trading"
+                checked={validation.summary.hasSignalNode}
                 required
               />
             </div>

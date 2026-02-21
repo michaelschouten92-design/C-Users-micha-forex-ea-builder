@@ -92,7 +92,6 @@ const nodeCategorySchema = z.enum([
   "trading",
   "riskmanagement",
   "trademanagement",
-  "entrystrategy",
 ]);
 
 const timeframeSchema = z.enum(["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"]);
@@ -512,119 +511,8 @@ const lockProfitNodeDataSchema = baseNodeDataSchema
 
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-// ---- Entry Strategy node data schemas ----
-// Consistent risk model: Risk %, ATR-based SL, R-multiple TP
-const baseEntryStrategyFieldsSchema = z.object({
-  direction: z.enum(["BUY", "SELL", "BOTH"]).default("BOTH"),
-  timeframe: timeframeSchema.default("H1"),
-  riskPercent: z.number().min(0.1).max(10),
-  slMethod: z.enum(["ATR", "PIPS", "PERCENT", "RANGE_OPPOSITE"]).default("ATR"),
-  slFixedPips: z.number().min(1).max(10000).default(50),
-  slPercent: z.number().min(0.01).max(50).default(1),
-  slAtrMultiplier: z.number().min(0.1).max(20),
-  slAtrPeriod: z.number().int().min(1).max(500).optional(),
-  slAtrTimeframe: timeframeSchema.optional(),
-  tpRMultiple: z.number().min(0.1).max(20),
-  closeOnOpposite: z.boolean().optional(),
-  mtfConfirmation: z
-    .object({
-      enabled: z.boolean(),
-      timeframe: timeframeSchema,
-      method: z.enum(["ema", "adx"]),
-      emaPeriod: z.number().int().min(1).max(1000).optional(),
-      adxPeriod: z.number().int().min(1).max(500).optional(),
-      adxThreshold: z.number().min(1).max(100).optional(),
-    })
-    .optional(),
-  multipleTP: z
-    .object({
-      enabled: z.boolean(),
-      tp1RMultiple: z.number().min(0.5).max(20),
-      tp1Percent: z.number().int().min(10).max(90),
-      tp2RMultiple: z.number().min(0.5).max(20),
-    })
-    .superRefine((data, ctx) => {
-      if (data.enabled && data.tp2RMultiple <= data.tp1RMultiple) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "TP2 R-multiple must be greater than TP1 R-multiple",
-          path: ["tp2RMultiple"],
-        });
-      }
-    })
-    .optional(),
-  trailingStop: z
-    .object({
-      enabled: z.boolean(),
-      method: z.enum(["atr", "fixed-pips"]),
-      atrMultiplier: z.number().min(0.1).max(20).optional(),
-      atrPeriod: z.number().int().min(1).max(500).optional(),
-      atrTimeframe: z.string().optional(),
-      fixedPips: z.number().min(1).max(10000).optional(),
-    })
-    .optional(),
-});
-
-const emaCrossoverEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("ema-crossover"),
-    fastEma: z.number().int().min(1).max(1000),
-    slowEma: z.number().int().min(1).max(1000),
-    appliedPrice: z.enum(["CLOSE", "OPEN", "HIGH", "LOW"]).optional(),
-    htfTrendFilter: z.boolean(),
-    htfTimeframe: timeframeSchema,
-    htfEma: z.number().int().min(1).max(1000),
-    rsiConfirmation: z.boolean(),
-    rsiPeriod: z.number().int().min(1).max(1000),
-    rsiLongMax: z.number().min(0).max(100),
-    rsiShortMin: z.number().min(0).max(100),
-    minEmaSeparation: z.number().min(0).max(10000).optional(),
-  })
-  .strip();
-
-const trendPullbackEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("trend-pullback"),
-    trendEma: z.number().int().min(1).max(1000),
-    pullbackRsiPeriod: z.number().int().min(1).max(500),
-    rsiPullbackLevel: z.number().min(10).max(50),
-    pullbackMaxDistance: z.number().min(0.1).max(100),
-    requireEmaBuffer: z.boolean(),
-    useAdxFilter: z.boolean(),
-    adxPeriod: z.number().int().min(1).max(500),
-    adxThreshold: z.number().min(1).max(100),
-    appliedPrice: appliedPriceSchema.optional(),
-  })
-  .strip();
-
-const divergenceEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("divergence"),
-    indicator: z.enum(["RSI", "MACD"]),
-    rsiPeriod: z.number().int().min(1).max(1000),
-    appliedPrice: appliedPriceSchema.optional(),
-    macdFast: z.number().int().min(1).max(1000),
-    macdSlow: z.number().int().min(1).max(1000),
-    macdSignal: z.number().int().min(1).max(1000),
-    lookbackBars: z.number().int().min(5).max(200),
-    minSwingBars: z.number().int().min(2).max(50),
-  })
-  .strip();
-
-// Node data schema - validates entry strategy nodes strictly, other nodes permissively.
+// Node data schema - validates nodes permissively.
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
-const entryStrategyNodeDataSchema = z.discriminatedUnion("entryType", [
-  emaCrossoverEntryDataSchema,
-  trendPullbackEntryDataSchema,
-  divergenceEntryDataSchema,
-]);
-
 const builderNodeDataSchema = z
   .object({
     label: z.string(),
@@ -632,42 +520,6 @@ const builderNodeDataSchema = z
   })
   .passthrough()
   .superRefine((data, ctx) => {
-    // Entry strategy nodes get strict per-field validation
-    if (data.category === "entrystrategy" && "entryType" in data) {
-      const result = entryStrategyNodeDataSchema.safeParse(data);
-      if (!result.success) {
-        for (const issue of result.error.issues) {
-          ctx.addIssue(issue);
-        }
-      }
-      // Cross-field validation for EMA crossover
-      if (data.entryType === "ema-crossover") {
-        const d = data as { fastEma?: number; slowEma?: number };
-        if (d.fastEma != null && d.slowEma != null && d.fastEma >= d.slowEma) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Fast EMA period must be less than Slow EMA period",
-            path: ["fastEma"],
-          });
-        }
-      }
-      // Cross-field validation for divergence (MACD fast < slow)
-      if (data.entryType === "divergence") {
-        const d = data as { indicator?: string; macdFast?: number; macdSlow?: number };
-        if (
-          d.indicator === "MACD" &&
-          d.macdFast != null &&
-          d.macdSlow != null &&
-          d.macdFast >= d.macdSlow
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "MACD Fast period must be less than Slow period",
-            path: ["macdFast"],
-          });
-        }
-      }
-    }
     // Timing filter nodes get strict validation
     if (data.category === "timing" && "filterType" in data) {
       const filterSchemaMap: Record<string, z.ZodType> = {

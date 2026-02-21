@@ -63,12 +63,6 @@ const categoryStyles: Record<
     header: "bg-gradient-to-r from-[#7C3AED] to-[#A855F7]",
     glow: "shadow-[0_0_16px_rgba(168,85,247,0.25)]",
   },
-  entrystrategy: {
-    bg: "bg-[rgba(16,185,129,0.08)]",
-    border: "border-[rgba(16,185,129,0.3)]",
-    header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
-    glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
-  },
 };
 
 export const BaseNode = memo(function BaseNode({
@@ -393,16 +387,6 @@ export const NodeIcons = {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  ),
-  entryStrategy: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
       />
     </svg>
   ),

@@ -454,16 +454,22 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
   const errors: string[] = [];
 
   if (!buildJson.nodes || buildJson.nodes.length === 0) {
-    errors.push("No nodes found. Add an entry strategy.");
+    errors.push("No nodes found. Add blocks to define your strategy.");
     return errors;
   }
 
-  // Entry strategy blocks contain signal, SL, TP, and position sizing
-  const hasEntryStrategy = buildJson.nodes.some((n) => n.data && "entryType" in n.data);
+  // Check for at least one trading node (place-buy or place-sell)
+  const hasTradingNode = buildJson.nodes.some(
+    (n) =>
+      n.data &&
+      "tradingType" in n.data &&
+      ((n.data as Record<string, unknown>).tradingType === "place-buy" ||
+        (n.data as Record<string, unknown>).tradingType === "place-sell")
+  );
 
-  if (!hasEntryStrategy) {
+  if (!hasTradingNode) {
     errors.push(
-      "No entry strategy found. Add an entry strategy block to define your trading logic."
+      "No trading block found. Add a Place Buy or Place Sell block to define your trading logic."
     );
   }
 

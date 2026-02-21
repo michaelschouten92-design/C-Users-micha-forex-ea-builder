@@ -125,7 +125,7 @@ function BuilderProgressStepper({
   // Don't show if welcome modal hasn't been dismissed yet
   if (!isOnboarded) return null;
 
-  const step1 = nodes.some((n) => n.data && "entryType" in (n.data as Record<string, unknown>));
+  const step1 = nodes.length > 0;
   const step2 = selectedNode !== null;
   const step3 = hasExported;
 
@@ -133,7 +133,7 @@ function BuilderProgressStepper({
   if (step1 && step2 && step3) return null;
 
   const steps = [
-    { label: "Add Entry Strategy", done: step1 },
+    { label: "Add Blocks", done: step1 },
     { label: "Click a Block", done: step1 && step2 },
     { label: "Export EA", done: step3 },
   ];
@@ -456,20 +456,6 @@ export function StrategyCanvas({
         return;
       }
 
-      // Enforce: only one entry strategy block on canvas
-      if (template.defaultData && "entryType" in template.defaultData) {
-        const existingEntry = nodes.find((n) => n.data && "entryType" in n.data);
-        if (existingEntry) {
-          // Select the existing entry strategy so the user can find it
-          setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === existingEntry.id })));
-          setDropError(
-            `Only one entry strategy allowed. "${(existingEntry.data as BuilderNodeData).label}" is selected — delete it first.`
-          );
-          setTimeout(() => setDropError(null), 6000);
-          return;
-        }
-      }
-
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -699,9 +685,10 @@ export function StrategyCanvas({
             {nodes.map((node) => {
               const data = node.data as BuilderNodeData;
               const categoryColors: Record<string, string> = {
-                entrystrategy: "#10B981",
                 timing: "#F59E0B",
                 trademanagement: "#A78BFA",
+                indicator: "#22D3EE",
+                trading: "#10B981",
               };
               const color = categoryColors[data.category] || "#64748B";
               return (
@@ -718,8 +705,9 @@ export function StrategyCanvas({
                   </div>
                   <p className="text-[10px] text-[#7C8DB0] uppercase tracking-wider">
                     {data.category
-                      .replace("entrystrategy", "Entry Strategy")
-                      .replace("trademanagement", "Trade Management")}
+                      .replace("trademanagement", "Trade Management")
+                      .replace("priceaction", "Price Action")
+                      .replace("riskmanagement", "Risk Management")}
                   </p>
                 </div>
               );
@@ -855,12 +843,7 @@ export function StrategyCanvas({
                     </p>
 
                     <p className="text-sm text-[#94A3B8] mb-2">
-                      Start with an <span className="text-white font-medium">Entry Strategy</span>{" "}
-                      block to build your trading bot
-                    </p>
-                    <p className="text-xs text-[#7C8DB0]">
-                      Try <span className="text-[#A78BFA]">EMA Crossover</span> &mdash; it&apos;s
-                      the simplest
+                      Add indicators, trade execution, and filter blocks to build your trading bot
                     </p>
                   </div>
                 </div>

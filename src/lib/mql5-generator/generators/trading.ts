@@ -1329,7 +1329,7 @@ export function generateEntryLogic(
     rangeBreakoutPAIndex >= 0 &&
     indicatorNodes.filter((n) => {
       const d = n.data as Record<string, unknown>;
-      return !d._filterRole && !d._entryStrategyType;
+      return !d._filterRole;
     }).length === 0 &&
     priceActionNodes.every(
       (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"

@@ -57,12 +57,6 @@ const CATEGORY_STYLES: Record<
     hoverShadow: "hover:shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
     border: "border-[#A855F7]/30",
   },
-  entrystrategy: {
-    gradient: "bg-gradient-to-r from-[#059669] to-[#10B981]",
-    shadow: "shadow-[0_2px_8px_rgba(16,185,129,0.3)]",
-    hoverShadow: "hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)]",
-    border: "border-[#10B981]/30",
-  },
 };
 
 const BLOCK_COLORS: Record<NodeCategory, string> = {
@@ -73,11 +67,9 @@ const BLOCK_COLORS: Record<NodeCategory, string> = {
   trading: "text-[#00C853]",
   riskmanagement: "text-[#FB7185]",
   trademanagement: "text-[#A855F7]",
-  entrystrategy: "text-[#10B981]",
 };
 
 const CATEGORIES: NodeCategory[] = [
-  "entrystrategy",
   "indicator",
   "priceaction",
   "timing",
@@ -99,7 +91,7 @@ export function NodeToolbar({
   onSettingsChange,
 }: NodeToolbarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
-    new Set(["entrystrategy"])
+    new Set(["indicator"])
   );
   const [search, setSearch] = useState("");
 
@@ -227,12 +219,6 @@ export function NodeToolbar({
               {isExpanded && (
                 <div className="mt-2 space-y-1 pl-1">
                   {templates.map((template, index) => {
-                    const isBeginner = template.type === "ema-crossover-entry";
-                    const isIntermediate =
-                      template.type === "trend-pullback-entry" ||
-                      template.type === "divergence-entry" ||
-                      template.type === "pivot-point-entry";
-                    const isAdvanced = template.type === "fibonacci-entry";
                     return (
                       <div
                         key={`${template.type}-${index}`}
@@ -246,21 +232,6 @@ export function NodeToolbar({
                           <div className={`text-sm font-medium ${BLOCK_COLORS[template.category]}`}>
                             {template.label}
                           </div>
-                          {isBeginner && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-[#10B981]">
-                              Beginner
-                            </span>
-                          )}
-                          {isIntermediate && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(245,158,11,0.15)] text-[#F59E0B]">
-                              Intermediate
-                            </span>
-                          )}
-                          {isAdvanced && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#EF4444]">
-                              Advanced
-                            </span>
-                          )}
                         </div>
                         <div className="text-xs text-[#94A3B8] truncate mt-0.5">
                           {template.description}

@@ -2,7 +2,7 @@
  * Strategy evaluator - walks the BuildJsonSchema node graph and produces
  * buy/sell signals for each bar by evaluating indicator conditions.
  *
- * This mirrors the MQL5 generator's expandEntryStrategy() + condition evaluation
+ * This mirrors the MQL5 generator's condition evaluation
  * but runs in JavaScript for client-side backtesting.
  */
 

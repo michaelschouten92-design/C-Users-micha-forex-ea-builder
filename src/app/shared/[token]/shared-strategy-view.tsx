@@ -12,7 +12,6 @@ interface SharedStrategyViewProps {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  entrystrategy: "#10B981",
   indicator: "#22D3EE",
   priceaction: "#F59E0B",
   timing: "#F59E0B",
@@ -111,9 +110,7 @@ export function SharedStrategyView({ buildJson }: SharedStrategyViewProps) {
                 <span className="text-sm font-medium text-white">{data.label}</span>
               </div>
               <p className="text-[10px] text-[#7C8DB0] uppercase tracking-wider">
-                {data.category
-                  .replace("entrystrategy", "Entry Strategy")
-                  .replace("trademanagement", "Trade Management")}
+                {data.category.replace("trademanagement", "Trade Management")}
               </p>
             </div>
           );

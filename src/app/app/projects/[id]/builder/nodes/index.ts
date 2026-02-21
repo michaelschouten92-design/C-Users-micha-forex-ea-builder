@@ -39,10 +39,6 @@ import {
   LockProfitNode,
   MultiLevelTPNode,
 } from "./trademanagement";
-import { EMACrossoverEntryNode } from "./entry-strategies/ema-crossover-entry-node";
-import { TrendPullbackEntryNode } from "./entry-strategies/trend-pullback-entry-node";
-import { DivergenceEntryNode } from "./entry-strategies/divergence-entry-node";
-
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
@@ -82,9 +78,6 @@ export const nodeTypes: NodeTypes = {
   "partial-close": PartialCloseNode,
   "lock-profit": LockProfitNode,
   "multi-level-tp": MultiLevelTPNode,
-  "ema-crossover-entry": EMACrossoverEntryNode,
-  "trend-pullback-entry": TrendPullbackEntryNode,
-  "divergence-entry": DivergenceEntryNode,
 };
 
 // Re-export individual nodes for direct imports
@@ -125,7 +118,4 @@ export {
   PartialCloseNode,
   LockProfitNode,
   MultiLevelTPNode,
-  EMACrossoverEntryNode,
-  TrendPullbackEntryNode,
-  DivergenceEntryNode,
 };

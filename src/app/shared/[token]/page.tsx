@@ -77,9 +77,12 @@ export default async function SharedProjectPage({ params }: Props) {
     categories[category] = (categories[category] ?? 0) + 1;
   }
 
-  const entryNode = nodes.find((n) => (n.data as { entryType?: string })?.entryType !== undefined);
-  const strategyType = entryNode
-    ? String((entryNode.data as { entryType: string }).entryType)
+  // Determine strategy type from nodes
+  const indicatorNode = nodes.find(
+    (n) => (n.data as { indicatorType?: string })?.indicatorType !== undefined
+  );
+  const strategyType = indicatorNode
+    ? String((indicatorNode.data as { indicatorType: string }).indicatorType)
         .replace(/-/g, " ")
         .replace(/\b\w/g, (c) => c.toUpperCase())
     : "Custom";
@@ -124,8 +127,7 @@ export default async function SharedProjectPage({ params }: Props) {
                     key={cat}
                     className="text-xs bg-[rgba(79,70,229,0.15)] text-[#CBD5E1] px-2 py-0.5 rounded"
                   >
-                    {cat.replace("entrystrategy", "Entry").replace("trademanagement", "Trade Mgmt")}{" "}
-                    ({count})
+                    {cat.replace("trademanagement", "Trade Mgmt")} ({count})
                   </span>
                 ))}
               </div>

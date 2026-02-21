@@ -1,17 +1,5 @@
 import type { Node, Edge } from "@xyflow/react";
-import type { BuilderNodeData, BuildJsonSettings, Timeframe } from "@/types/builder";
-
-const TIMEFRAME_MINUTES: Record<Timeframe, number> = {
-  M1: 1,
-  M5: 5,
-  M15: 15,
-  M30: 30,
-  H1: 60,
-  H4: 240,
-  D1: 1440,
-  W1: 10080,
-  MN1: 43200,
-};
+import type { BuilderNodeData, BuildJsonSettings } from "@/types/builder";
 
 export interface ValidationIssue {
   type: "error" | "warning";
@@ -31,7 +19,7 @@ export interface ValidationResult {
   issuesByNodeId: Record<string, ValidationIssue[]>;
   summary: {
     hasTiming: boolean;
-    hasEntryStrategy: boolean;
+    hasSignalNode: boolean;
   };
 }
 
@@ -50,20 +38,13 @@ export function validateStrategy(
     });
   }
 
-  // Check for entry strategy composite blocks (contain signal, SL, TP, position sizing)
-  const hasEntryStrategy = nodes.some((n) => "entryType" in n.data);
-
   // Check for timing block
   const hasTiming = nodes.some((n) => "timingType" in n.data);
 
-  // An entry strategy block is the minimum requirement
-  if (!hasEntryStrategy) {
-    issues.push({
-      type: "error",
-      message: "Drag an Entry Strategy block from the left toolbar onto the canvas",
-      nodeType: "entrystrategy",
-    });
-  }
+  // Check for signal nodes (indicators, price action, or trading nodes)
+  const hasSignalNode = nodes.some(
+    (n) => "indicatorType" in n.data || "priceActionType" in n.data || "tradingType" in n.data
+  );
 
   // Timing is optional — without it, the strategy trades whenever conditions are met
 
@@ -93,225 +74,6 @@ export function validateStrategy(
         field: "customStartHour",
       });
     }
-  }
-
-  // Cross-field validation warnings for entry strategy nodes
-  for (const n of nodes) {
-    const d = n.data as Record<string, unknown>;
-    if (!("entryType" in d)) continue;
-    const label = (d.label as string) ?? n.type ?? "Entry Strategy";
-
-    // RSI levels: oversold should be less than overbought
-    if (
-      "oversoldLevel" in d &&
-      "overboughtLevel" in d &&
-      typeof d.oversoldLevel === "number" &&
-      typeof d.overboughtLevel === "number" &&
-      d.oversoldLevel >= d.overboughtLevel
-    ) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Oversold (${d.oversoldLevel}) must be lower than Overbought (${d.overboughtLevel})`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "oversoldLevel",
-      });
-    }
-
-    // TP R-multiple below 1 means you win less than you risk
-    if ("tpRMultiple" in d && typeof d.tpRMultiple === "number" && d.tpRMultiple < 1) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Take profit (${d.tpRMultiple}R) is below 1:1 -- you risk more than you win per trade. Set to 1.0 or higher.`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "tpRMultiple",
-      });
-    }
-
-    // SL pips: warning if very large
-    if ("slPips" in d && typeof d.slPips === "number" && d.slPips > 500) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Stop loss of ${d.slPips} pips is very large. Typical range is 10-200 pips.`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "slPips",
-      });
-    }
-
-    // TP R-multiple: warning if unusually high
-    if ("tpRMultiple" in d && typeof d.tpRMultiple === "number" && d.tpRMultiple > 10) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Take profit of ${d.tpRMultiple}R is unusually high. Most strategies use 1-5R.`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "tpRMultiple",
-      });
-    }
-
-    // Risk %: warning if aggressive
-    if ("riskPercent" in d && typeof d.riskPercent === "number" && d.riskPercent > 5) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Risk of ${d.riskPercent}% per trade is aggressive. Recommended: 1-2%.`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "riskPercent",
-      });
-    }
-
-    // EMA periods: fast should be less than slow
-    if (
-      "fastPeriod" in d &&
-      "slowPeriod" in d &&
-      typeof d.fastPeriod === "number" &&
-      typeof d.slowPeriod === "number" &&
-      d.fastPeriod >= d.slowPeriod
-    ) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Fast period (${d.fastPeriod}) should be less than Slow period (${d.slowPeriod})`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "fastPeriod",
-      });
-    }
-
-    // Also check EMA-specific field names
-    if (typeof d.fastEma === "number" && typeof d.slowEma === "number" && d.fastEma >= d.slowEma) {
-      issues.push({
-        type: "error",
-        nodeId: n.id,
-        nodeType: n.type,
-        nodeLabel: label,
-        field: "fastEma",
-        message: `"${label}": Fast EMA (${d.fastEma}) must be less than Slow EMA (${d.slowEma}). Example: Fast=9, Slow=21.`,
-      });
-    }
-    if (
-      typeof d.macdFast === "number" &&
-      typeof d.macdSlow === "number" &&
-      d.macdFast >= d.macdSlow
-    ) {
-      issues.push({
-        type: "error",
-        nodeId: n.id,
-        nodeType: n.type,
-        nodeLabel: label,
-        field: "macdFast",
-        message: `"${label}": MACD Fast (${d.macdFast}) must be less than MACD Slow (${d.macdSlow}). Example: Fast=12, Slow=26.`,
-      });
-    }
-
-    // Lot size: warning if very large
-    if ("lotSize" in d && typeof d.lotSize === "number" && d.lotSize > 10) {
-      issues.push({
-        type: "warning",
-        message: `"${label}": Lot size of ${d.lotSize} is very large. Consider using risk-based sizing instead.`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "lotSize",
-      });
-    }
-
-    // SL pips must be > 0 when fixed pips method
-    if (
-      "slMethod" in d &&
-      d.slMethod === "FIXED_PIPS" &&
-      "slPips" in d &&
-      typeof d.slPips === "number" &&
-      d.slPips <= 0
-    ) {
-      issues.push({
-        type: "error",
-        message: `"${label}": Stop loss pips must be greater than 0. Set a positive value (e.g. 50).`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "slPips",
-      });
-    }
-
-    // TP pips must be > 0 when fixed pips method
-    if (
-      "tpMethod" in d &&
-      d.tpMethod === "FIXED_PIPS" &&
-      "tpPips" in d &&
-      typeof d.tpPips === "number" &&
-      d.tpPips <= 0
-    ) {
-      issues.push({
-        type: "error",
-        message: `"${label}": Take profit pips must be greater than 0. Set a positive value (e.g. 100).`,
-        nodeType: n.type,
-        nodeId: n.id,
-        nodeLabel: label,
-        field: "tpPips",
-      });
-    }
-
-    // Indicator periods must be > 0
-    for (const periodField of ["period", "fastPeriod", "slowPeriod", "signalPeriod", "atrPeriod"]) {
-      if (periodField in d && typeof d[periodField] === "number" && d[periodField] === 0) {
-        const fieldLabel = periodField
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (s: string) => s.toUpperCase());
-        issues.push({
-          type: "error",
-          message: `"${label}": ${fieldLabel} must be greater than 0`,
-          nodeType: n.type,
-          nodeId: n.id,
-          nodeLabel: label,
-          field: periodField,
-        });
-      }
-    }
-  }
-
-  // --- Fix 3: Timeframe conflict detection (SL ATR timeframe vs entry timeframe)
-  for (const n of nodes) {
-    const d = n.data as Record<string, unknown>;
-    if (!("entryType" in d)) continue;
-    const label = (d.label as string) ?? n.type ?? "Entry Strategy";
-    const entryTf = (d.timeframe as Timeframe) ?? "H1";
-    const slAtrTf = d.slAtrTimeframe as Timeframe | undefined;
-
-    if (slAtrTf && d.slMethod === "ATR") {
-      const entryMinutes = TIMEFRAME_MINUTES[entryTf] ?? 60;
-      const slMinutes = TIMEFRAME_MINUTES[slAtrTf] ?? 60;
-      const ratio = slMinutes / entryMinutes;
-      if (ratio > 4) {
-        issues.push({
-          type: "warning",
-          message: `"${label}": SL ATR timeframe (${slAtrTf}) is ${ratio}x larger than entry timeframe (${entryTf}). This typically causes oversized stops. Consider using ${entryTf} or one step up.`,
-          nodeType: n.type,
-          nodeId: n.id,
-          nodeLabel: label,
-          field: "slAtrTimeframe",
-        });
-      }
-    }
-  }
-
-  // --- Fix 5a: Trade management without entry strategy
-  const hasTradeManagement = nodes.some(
-    (n) => "managementType" in n.data || "tradeManagementType" in n.data
-  );
-  if (hasTradeManagement && !hasEntryStrategy) {
-    issues.push({
-      type: "warning",
-      message:
-        "Trade management blocks have no effect without an Entry Strategy. Add an entry strategy first.",
-    });
   }
 
   // --- Fix 5b: Disconnected indicator/priceaction nodes (not connected to anything)
@@ -420,7 +182,7 @@ export function validateStrategy(
     issuesByNodeId,
     summary: {
       hasTiming,
-      hasEntryStrategy,
+      hasSignalNode,
     },
   };
 }

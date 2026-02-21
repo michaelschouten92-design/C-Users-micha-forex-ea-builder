@@ -213,26 +213,20 @@ export async function POST(request: Request, { params }: Params) {
         warnings.push("No timing block found — add a 'When to trade' block.");
       }
 
-      const hasEntryStrategy = nodes.some(
-        (n: Record<string, unknown>) =>
-          n.data && typeof n.data === "object" && "entryType" in (n.data as Record<string, unknown>)
+      const hasSignalNode = nodes.some((n: Record<string, unknown>) =>
+        [
+          "moving-average",
+          "rsi",
+          "macd",
+          "bollinger-bands",
+          "atr",
+          "adx",
+          "stochastic",
+          "candlestick-pattern",
+          "support-resistance",
+          "range-breakout",
+        ].includes(n.type as string)
       );
-      const hasSignalNode =
-        hasEntryStrategy ||
-        nodes.some((n: Record<string, unknown>) =>
-          [
-            "moving-average",
-            "rsi",
-            "macd",
-            "bollinger-bands",
-            "atr",
-            "adx",
-            "stochastic",
-            "candlestick-pattern",
-            "support-resistance",
-            "range-breakout",
-          ].includes(n.type as string)
-        );
       if (!hasSignalNode) {
         warnings.push("No entry strategy found — add an entry strategy block.");
       }

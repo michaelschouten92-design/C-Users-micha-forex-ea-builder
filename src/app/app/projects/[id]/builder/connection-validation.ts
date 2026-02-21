@@ -97,10 +97,9 @@ export function validateConnection(
  * If a source category is not listed, it can connect to anything (no restriction).
  */
 const ALLOWED_TARGETS: Partial<Record<NodeCategory, Set<NodeCategory>>> = {
-  timing: new Set(["indicator", "priceaction", "trading", "entrystrategy"]),
-  indicator: new Set(["trading", "indicator", "entry", "entrystrategy"]),
-  priceaction: new Set(["trading", "entry", "entrystrategy"]),
-  entrystrategy: new Set(["trademanagement"]),
+  timing: new Set(["indicator", "priceaction", "trading"]),
+  indicator: new Set(["trading", "indicator", "entry"]),
+  priceaction: new Set(["trading", "entry"]),
   entry: new Set(["riskmanagement", "trademanagement"]),
   trading: new Set(["riskmanagement", "trademanagement"]),
   riskmanagement: new Set([]), // output-only
@@ -111,7 +110,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   timing: "Filter/Timing",
   indicator: "Indicator",
   priceaction: "Price Action",
-  entrystrategy: "Entry Strategy",
   entry: "Entry",
   trading: "Trade Execution",
   riskmanagement: "Risk Management",

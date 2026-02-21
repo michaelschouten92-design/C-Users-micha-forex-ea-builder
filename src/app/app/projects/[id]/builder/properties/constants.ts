@@ -6,8 +6,6 @@ import type {
   BreakoutDirection,
   EntryMode,
   Timeframe,
-  EntrySlMethod,
-  EntryDirection,
 } from "@/types/builder";
 
 export const SIGNAL_MODE_OPTIONS = [
@@ -86,31 +84,12 @@ export const ENTRY_MODE_OPTIONS: { value: EntryMode; label: string }[] = [
   { value: "AFTER_RETEST", label: "After Retest" },
 ];
 
-export const BASE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
-  { value: "ATR", label: "ATR Based" },
-  { value: "PIPS", label: "Fixed Pips" },
-  { value: "PERCENT", label: "Percentage (%)" },
-];
-
-export const RANGE_SL_OPTIONS: { value: EntrySlMethod; label: string }[] = [
-  { value: "ATR", label: "ATR Based" },
-  { value: "PIPS", label: "Fixed Pips" },
-  { value: "PERCENT", label: "Percentage (%)" },
-  { value: "RANGE_OPPOSITE", label: "Range Opposite" },
-];
-
 export const TRADING_SESSION_OPTIONS_SHORT: { value: TradingSession; label: string }[] = [
   { value: "LONDON", label: "London" },
   { value: "NEW_YORK", label: "New York" },
   { value: "TOKYO", label: "Tokyo" },
   { value: "LONDON_NY_OVERLAP", label: "London/NY Overlap" },
   { value: "CUSTOM", label: "Custom" },
-];
-
-export const DIRECTION_OPTIONS: { value: EntryDirection; label: string }[] = [
-  { value: "BOTH", label: "Buy & Sell" },
-  { value: "BUY", label: "Buy Only" },
-  { value: "SELL", label: "Sell Only" },
 ];
 
 export const APPLIED_PRICE_OPTIONS: { value: string; label: string }[] = [

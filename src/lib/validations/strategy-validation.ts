@@ -24,16 +24,7 @@ export function validateStrategyForExport(
   const errors: ValidationIssue[] = [];
   const warnings: ValidationIssue[] = [];
 
-  // 1. Must have at least one entry node (entry strategy)
-  const hasEntryStrategy = nodes.some((n) => "entryType" in n.data);
-  if (!hasEntryStrategy) {
-    errors.push({
-      message: "No entry strategy found. Add an entry strategy block to define your trading logic.",
-      severity: "error",
-    });
-  }
-
-  // 2. Timing node check (warning if missing)
+  // 1. Timing node check (warning if missing)
   const hasTimingNode = nodes.some((n) => "timingType" in n.data || "filterType" in n.data);
   if (!hasTimingNode && nodes.length > 0) {
     warnings.push({
@@ -43,14 +34,12 @@ export function validateStrategyForExport(
     });
   }
 
-  // 3. Risk management check (warning if no SL/TP blocks on non-entry-strategy nodes)
+  // 2. Risk management check (warning if no SL/TP blocks)
   const hasRiskManagement = nodes.some((n) => {
     const d = n.data as Record<string, unknown>;
     return d.tradingType === "stop-loss" || d.tradingType === "take-profit";
   });
-  const entryStrategyNodes = nodes.filter((n) => "entryType" in n.data);
-  // Entry strategies have built-in SL/TP, so only warn if using legacy individual nodes
-  if (!hasRiskManagement && entryStrategyNodes.length === 0 && nodes.length > 0) {
+  if (!hasRiskManagement && nodes.length > 0) {
     warnings.push({
       message:
         "No stop loss or take profit blocks found. Consider adding risk management to protect your account.",
@@ -58,7 +47,7 @@ export function validateStrategyForExport(
     });
   }
 
-  // 4. Orphaned nodes (nodes with no connections)
+  // 3. Orphaned nodes (nodes with no connections)
   if (nodes.length > 1) {
     const connectedNodeIds = new Set<string>();
     for (const edge of edges) {
@@ -78,7 +67,7 @@ export function validateStrategyForExport(
     }
   }
 
-  // 5. Validate required node parameters
+  // 4. Validate required node parameters
   for (const node of nodes) {
     const d = node.data as Record<string, unknown>;
 
@@ -177,7 +166,7 @@ export function validateStrategyForExport(
     }
   }
 
-  // 6. Settings validation
+  // 5. Settings validation
   if (settings) {
     if (settings.maxOpenTrades > 10) {
       warnings.push({
@@ -201,7 +190,7 @@ export function validateStrategyForExport(
     }
   }
 
-  // 7. Max nodes check
+  // 6. Max nodes check
   if (nodes.length > 50) {
     errors.push({
       message: `Too many blocks (${nodes.length}). Maximum is 50.`,
