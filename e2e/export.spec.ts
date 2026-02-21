@@ -19,12 +19,10 @@ test.describe("Export Flow", () => {
       await page.waitForURL(/\/app\/projects\/.*/);
 
       // Click export button
-      await page.getByRole("button", { name: /Export MQL5/i }).click();
+      await page.getByRole("button", { name: /Export Code|Export/i }).click();
 
       // Should see export modal
-      await expect(
-        page.getByRole("heading", { name: /Export/i })
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Export/i })).toBeVisible();
 
       // If successful, should see code preview
       const successModal = page.getByText(/Export Successful/i);
@@ -44,7 +42,7 @@ test.describe("Export Flow", () => {
         await page.waitForURL(/\/app\/projects\/.*/);
 
         // Click export
-        await page.getByRole("button", { name: /Export MQL5/i }).click();
+        await page.getByRole("button", { name: /Export Code|Export/i }).click();
 
         // If export successful, click download
         const downloadButton = page.getByRole("button", { name: /Download/i });
@@ -70,7 +68,7 @@ test.describe("Export Flow", () => {
         await page.waitForURL(/\/app\/projects\/.*/);
 
         // Click export
-        await page.getByRole("button", { name: /Export MQL5/i }).click();
+        await page.getByRole("button", { name: /Export Code|Export/i }).click();
 
         // If export successful, click copy
         const copyButton = page.getByRole("button", { name: /Copy/i });
@@ -78,10 +76,10 @@ test.describe("Export Flow", () => {
           await copyButton.click();
 
           // Verify clipboard contains MQL5 code
-          const clipboardText = await page.evaluate(() =>
-            navigator.clipboard.readText()
+          const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+          expect(clipboardText).toContain(
+            "//+------------------------------------------------------------------+"
           );
-          expect(clipboardText).toContain("//+------------------------------------------------------------------+");
         }
       }
     });

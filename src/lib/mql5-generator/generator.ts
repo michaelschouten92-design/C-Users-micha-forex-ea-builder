@@ -965,29 +965,22 @@ export function generateMQL5Code(
   const newsSetupGuide =
     newsFilterNodes.length > 0
       ? `//+------------------------------------------------------------------+
-//| NEWS FILTER — SETUP GUIDE                                        |
+//| NEWS FILTER — HOW IT WORKS                                       |
 //+------------------------------------------------------------------+
 //| This EA uses a News Filter that avoids trading around economic    |
-//| news events. Follow these steps to enable backtesting support:    |
+//| news events.                                                      |
 //|                                                                   |
-//| STEP 1: Compile this EA in MetaEditor (F7)                       |
+//| LIVE TRADING:                                                     |
+//|   The EA uses the MQL5 Calendar API to fetch upcoming news        |
+//|   events in real-time. No setup required.                         |
 //|                                                                   |
-//| STEP 2: Attach the EA to any live or demo chart                  |
-//|         → The EA will automatically download all historical news  |
-//|           data and save it to:                                    |
-//|           [Common Files]/ea_builder_news.csv                      |
-//|         → This happens once; future runs only append new events   |
+//| BACKTESTING:                                                      |
+//|   News data is embedded in this EA at export time. The EA         |
+//|   detects Strategy Tester mode and uses the embedded data.        |
+//|   To refresh the news calendar, re-export the EA.                 |
 //|                                                                   |
-//| STEP 3: Open the Strategy Tester and run your backtest            |
-//|         → The EA detects tester mode and reads from the CSV       |
-//|         → News events are filtered by your symbol's currencies    |
-//|                                                                   |
-//| OPTIONAL: Set "Export News History" input to true for a full      |
-//|           re-download of all calendar data since 2010.            |
-//|                                                                   |
-//| NOTE: The CSV is stored in the Common Files folder so it works    |
-//|       across all terminals and accounts. You only need to do      |
-//|       Step 2 once — after that, backtesting works immediately.    |
+//| News events are filtered by your symbol's base and quote          |
+//| currencies automatically.                                         |
 //+------------------------------------------------------------------+
 
 `

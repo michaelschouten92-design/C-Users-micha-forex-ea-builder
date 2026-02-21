@@ -65,6 +65,7 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
   code.onTick.push("      TelemetrySendHeartbeat();");
   code.onTick.push("      g_lastHeartbeat = TimeCurrent();");
   code.onTick.push("   }");
+  code.onTick.push("   HistorySelect(0, TimeCurrent());");
   code.onTick.push("   int currentTotal = (int)HistoryDealsTotal();");
   code.onTick.push("   if(currentTotal != g_prevTotalTrades)");
   code.onTick.push("   {");

@@ -86,9 +86,6 @@ string TrackRecordSHA256(string input)
    string result = "";
    for(int i = 0; i < ArraySize(hash); i++)
    {
-      string hex = "";
-      StringConcatenate(hex, IntegerToString(hash[i] >> 4, 1, '0'), IntegerToString(hash[i] & 0x0F, 1, '0'));
-      // Manual hex conversion
       uchar hi = (uchar)(hash[i] >> 4);
       uchar lo = (uchar)(hash[i] & 0x0F);
       result += StringFormat("%c%c", hi < 10 ? '0'+hi : 'a'+hi-10, lo < 10 ? '0'+lo : 'a'+lo-10);
@@ -239,8 +236,8 @@ void TrackRecordLoadState()
    if((int)gvSeq > g_trSeqNo)
       g_trSeqNo = (int)gvSeq;
 
-   // If no instance ID, try to get from server
-   if(StringLen(g_trInstanceId) == 0)
+   // If we have an instance ID but lost state, try to recover from server
+   if(StringLen(g_trInstanceId) > 0 && g_trSeqNo == 0)
       TrackRecordRecoverFromServer();
 }
 
