@@ -970,61 +970,25 @@ export function generateEntryLogic(
             );
             break;
 
-          case "macd": {
-            const macdSignalType = (
-              "_macdSignalType" in indData ? indData._macdSignalType : "SIGNAL_CROSS"
-            ) as string;
-            if (macdSignalType === "ZERO_CROSS") {
-              // MACD main crosses zero line
-              buyConditions.push(
-                `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], 0) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], 0))`
-              );
-              sellConditions.push(
-                `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], 0) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], 0))`
-              );
-            } else if (macdSignalType === "HISTOGRAM_SIGN") {
-              // Histogram changes sign (negative to positive = buy, positive to negative = sell)
-              buyConditions.push(
-                `(DoubleLE(${varPrefix}HistogramBuffer[${1 + s}], 0) && DoubleGT(${varPrefix}HistogramBuffer[${0 + s}], 0))`
-              );
-              sellConditions.push(
-                `(DoubleGE(${varPrefix}HistogramBuffer[${1 + s}], 0) && DoubleLT(${varPrefix}HistogramBuffer[${0 + s}], 0))`
-              );
-            } else {
-              // SIGNAL_CROSS: MACD main crosses signal line (default)
-              buyConditions.push(
-                `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
-              );
-              sellConditions.push(
-                `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
-              );
-            }
+          case "macd":
+            // SIGNAL_CROSS: MACD main crosses signal line
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}MainBuffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+            );
             break;
-          }
 
-          case "bollinger-bands": {
-            const bbEntryMode = (
-              "_bbEntryMode" in indData ? indData._bbEntryMode : "BAND_TOUCH"
-            ) as string;
-            if (bbEntryMode === "MEAN_REVERSION") {
-              // MEAN_REVERSION: price was outside band, crosses back inside
-              buyConditions.push(
-                `(DoubleLE(iLow(Symbol(), PERIOD_CURRENT, ${2 + s}), ${varPrefix}LowerBuffer[${2 + s}]) && DoubleGT(iClose(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
-              );
-              sellConditions.push(
-                `(DoubleGE(iHigh(Symbol(), PERIOD_CURRENT, ${2 + s}), ${varPrefix}UpperBuffer[${2 + s}]) && DoubleLT(iClose(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
-              );
-            } else {
-              // BAND_TOUCH (default): price touches lower band (buy) / upper band (sell)
-              buyConditions.push(
-                `(DoubleLE(iLow(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
-              );
-              sellConditions.push(
-                `(DoubleGE(iHigh(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
-              );
-            }
+          case "bollinger-bands":
+            // BAND_TOUCH: price touches lower band (buy) / upper band (sell)
+            buyConditions.push(
+              `(DoubleLE(iLow(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(iHigh(Symbol(), PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
+            );
             break;
-          }
 
           case "atr":
             // ATR is non-directional (volatility filter) - rising ATR confirms both buy and sell
@@ -1037,28 +1001,12 @@ export function generateEntryLogic(
             break;
 
           case "adx": {
-            const adxEntryMode = (
-              "_adxEntryMode" in indData ? indData._adxEntryMode : "DI_CROSS"
-            ) as string;
+            // DI_CROSS: +DI > -DI (buy), -DI > +DI (sell) with ADX above threshold
             const diPlusBuy = `DoubleGT(${varPrefix}PlusDIBuffer[${0 + s}], ${varPrefix}MinusDIBuffer[${0 + s}])`;
             const diPlusSell = `DoubleGT(${varPrefix}MinusDIBuffer[${0 + s}], ${varPrefix}PlusDIBuffer[${0 + s}])`;
             const adxAbove = `DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel)`;
-
-            if (adxEntryMode === "ADX_RISING") {
-              // ADX rising AND above threshold + DI direction
-              const adxRising = `DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}MainBuffer[${1 + s}])`;
-              buyConditions.push(`(${adxAbove} && ${adxRising} && ${diPlusBuy})`);
-              sellConditions.push(`(${adxAbove} && ${adxRising} && ${diPlusSell})`);
-            } else if (adxEntryMode === "TREND_START") {
-              // ADX crosses above threshold from below + DI direction
-              const adxWasBelow = `DoubleLE(${varPrefix}MainBuffer[${1 + s}], InpADX${indIndex}TrendLevel)`;
-              buyConditions.push(`(${adxWasBelow} && ${adxAbove} && ${diPlusBuy})`);
-              sellConditions.push(`(${adxWasBelow} && ${adxAbove} && ${diPlusSell})`);
-            } else {
-              // DI_CROSS (default): +DI > -DI (buy), -DI > +DI (sell) with ADX above threshold
-              buyConditions.push(`(${adxAbove} && ${diPlusBuy})`);
-              sellConditions.push(`(${adxAbove} && ${diPlusSell})`);
-            }
+            buyConditions.push(`(${adxAbove} && ${diPlusBuy})`);
+            sellConditions.push(`(${adxAbove} && ${diPlusSell})`);
             break;
           }
 

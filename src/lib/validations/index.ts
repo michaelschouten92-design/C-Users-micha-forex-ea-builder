@@ -549,50 +549,6 @@ const emaCrossoverEntryDataSchema = baseNodeDataSchema
   })
   .strip();
 
-const rangeBreakoutEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("range-breakout"),
-    rangePeriod: z.number().int().min(2).max(10000),
-    rangeMethod: z.enum(["CANDLES", "CUSTOM_TIME"]).default("CUSTOM_TIME"),
-    rangeTimeframe: timeframeSchema,
-    breakoutEntry: z.enum(["CANDLE_CLOSE", "CURRENT_PRICE"]).default("CANDLE_CLOSE"),
-    breakoutTimeframe: timeframeSchema,
-    customStartHour: z.number().int().min(0).max(23),
-    customStartMinute: z.number().int().min(0).max(59),
-    customEndHour: z.number().int().min(0).max(23),
-    customEndMinute: z.number().int().min(0).max(59),
-    useServerTime: z.boolean(),
-    bufferPips: z.number().min(0).max(1000),
-    cancelOpposite: z.boolean(),
-    closeAtTime: z.boolean(),
-    closeAtHour: z.number().int().min(0).max(23),
-    closeAtMinute: z.number().int().min(0).max(59),
-    htfTrendFilter: z.boolean(),
-    htfTimeframe: timeframeSchema,
-    htfEma: z.number().int().min(1).max(1000),
-    minRangePips: z.number().min(0).max(10000),
-    maxRangePips: z.number().min(0).max(10000),
-    volumeConfirmation: z.boolean().optional(),
-    volumeConfirmationPeriod: z.number().int().min(5).max(200).optional(),
-  })
-  .strip();
-
-const rsiReversalEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("rsi-reversal"),
-    rsiPeriod: z.number().int().min(1).max(1000),
-    oversoldLevel: z.number().min(0).max(50),
-    overboughtLevel: z.number().min(50).max(100),
-    trendFilter: z.boolean(),
-    trendEma: z.number().int().min(1).max(1000),
-    appliedPrice: appliedPriceSchema.optional(),
-  })
-  .strip();
-
 const trendPullbackEntryDataSchema = baseNodeDataSchema
   .merge(baseEntryStrategyFieldsSchema)
   .extend({
@@ -607,22 +563,6 @@ const trendPullbackEntryDataSchema = baseNodeDataSchema
     adxPeriod: z.number().int().min(1).max(500),
     adxThreshold: z.number().min(1).max(100),
     appliedPrice: appliedPriceSchema.optional(),
-  })
-  .strip();
-
-const macdCrossoverEntryDataSchema = baseNodeDataSchema
-  .merge(baseEntryStrategyFieldsSchema)
-  .extend({
-    category: z.literal("entrystrategy"),
-    entryType: z.literal("macd-crossover"),
-    macdFast: z.number().int().min(1).max(1000),
-    macdSlow: z.number().int().min(1).max(1000),
-    macdSignal: z.number().int().min(1).max(1000),
-    appliedPrice: z.enum(["CLOSE", "OPEN", "HIGH", "LOW"]).optional(),
-    macdSignalType: z.enum(["SIGNAL_CROSS", "ZERO_CROSS", "HISTOGRAM_SIGN"]).optional(),
-    htfTrendFilter: z.boolean(),
-    htfTimeframe: timeframeSchema,
-    htfEma: z.number().int().min(1).max(1000),
   })
   .strip();
 
@@ -646,10 +586,7 @@ const divergenceEntryDataSchema = baseNodeDataSchema
 // Business logic validation (required node types etc.) is handled by validateBuildJson.
 const entryStrategyNodeDataSchema = z.discriminatedUnion("entryType", [
   emaCrossoverEntryDataSchema,
-  rangeBreakoutEntryDataSchema,
-  rsiReversalEntryDataSchema,
   trendPullbackEntryDataSchema,
-  macdCrossoverEntryDataSchema,
   divergenceEntryDataSchema,
 ]);
 
@@ -676,32 +613,6 @@ const builderNodeDataSchema = z
             code: z.ZodIssueCode.custom,
             message: "Fast EMA period must be less than Slow EMA period",
             path: ["fastEma"],
-          });
-        }
-      }
-      // Cross-field validation for RSI reversal
-      if (data.entryType === "rsi-reversal") {
-        const d = data as { overboughtLevel?: number; oversoldLevel?: number };
-        if (
-          d.overboughtLevel != null &&
-          d.oversoldLevel != null &&
-          d.overboughtLevel <= d.oversoldLevel
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Overbought level must be greater than Oversold level",
-            path: ["overboughtLevel"],
-          });
-        }
-      }
-      // Cross-field validation for MACD crossover
-      if (data.entryType === "macd-crossover") {
-        const d = data as { macdFast?: number; macdSlow?: number };
-        if (d.macdFast != null && d.macdSlow != null && d.macdFast >= d.macdSlow) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "MACD Fast period must be less than Slow period",
-            path: ["macdFast"],
           });
         }
       }

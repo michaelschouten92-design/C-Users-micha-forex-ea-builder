@@ -206,9 +206,10 @@ export default function RSIReversalTemplatePage() {
                 2. Add the RSI indicator block
               </h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Drag an RSI Reversal entry strategy block onto the canvas. Set the RSI period to 14,
-                overbought level to 70, and oversold level to 30. These are the standard settings
-                used by most professional traders.
+                Drag an RSI indicator block onto the canvas and set the period to 14, overbought
+                level to 70, and oversold level to 30. Connect it to Buy and Sell condition nodes,
+                then add Stop Loss and Take Profit nodes. These are the standard settings used by
+                most professional traders.
               </p>
             </div>
             <div>

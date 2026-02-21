@@ -42,10 +42,7 @@ import {
   MultiLevelTPNode,
 } from "./trademanagement";
 import { EMACrossoverEntryNode } from "./entry-strategies/ema-crossover-entry-node";
-import { RangeBreakoutEntryNode } from "./entry-strategies/range-breakout-entry-node";
-import { RSIReversalEntryNode } from "./entry-strategies/rsi-reversal-entry-node";
 import { TrendPullbackEntryNode } from "./entry-strategies/trend-pullback-entry-node";
-import { MACDCrossoverEntryNode } from "./entry-strategies/macd-crossover-entry-node";
 import { DivergenceEntryNode } from "./entry-strategies/divergence-entry-node";
 
 // Register all custom node types
@@ -91,10 +88,7 @@ export const nodeTypes: NodeTypes = {
   "lock-profit": LockProfitNode,
   "multi-level-tp": MultiLevelTPNode,
   "ema-crossover-entry": EMACrossoverEntryNode,
-  "range-breakout-entry": RangeBreakoutEntryNode,
-  "rsi-reversal-entry": RSIReversalEntryNode,
   "trend-pullback-entry": TrendPullbackEntryNode,
-  "macd-crossover-entry": MACDCrossoverEntryNode,
   "divergence-entry": DivergenceEntryNode,
 };
 
@@ -140,9 +134,6 @@ export {
   LockProfitNode,
   MultiLevelTPNode,
   EMACrossoverEntryNode,
-  RangeBreakoutEntryNode,
-  RSIReversalEntryNode,
   TrendPullbackEntryNode,
-  MACDCrossoverEntryNode,
   DivergenceEntryNode,
 };

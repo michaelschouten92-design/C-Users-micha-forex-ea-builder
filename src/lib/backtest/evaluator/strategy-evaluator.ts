@@ -344,16 +344,13 @@ function evaluateIndicatorSignal(
       if ([mainCurr, mainPrev, sigCurr, sigPrev].some((v) => v === undefined || isNaN(v!)))
         return null;
 
-      const signalType = (p._macdSignalType as string) ?? "SIGNAL_CROSS";
-      const macdSig = evaluateMACDSignal(mainCurr!, mainPrev!, sigCurr!, sigPrev!, signalType);
+      const macdSig = evaluateMACDSignal(mainCurr!, mainPrev!, sigCurr!, sigPrev!, "SIGNAL_CROSS");
       return { buy: macdSig.buySignal, sell: macdSig.sellSignal };
     }
 
     case "bollinger-bands": {
       const upperCurr = buffers.upper?.[currBar];
       const lowerCurr = buffers.lower?.[currBar];
-      const upperPrev = buffers.upper?.[prevBar];
-      const lowerPrev = buffers.lower?.[prevBar];
       if (
         upperCurr === undefined ||
         lowerCurr === undefined ||
@@ -363,25 +360,8 @@ function evaluateIndicatorSignal(
         return null;
 
       const priceCurr = bars[currBar].close;
-      const bbMode = (p._bbEntryMode as string) ?? "BAND_TOUCH";
 
-      if (bbMode === "MEAN_REVERSION") {
-        // Mean reversion: buy when price crosses back above lower band, sell when crosses back below upper
-        const pricePrev = bars[prevBar].close;
-        if (
-          upperPrev === undefined ||
-          lowerPrev === undefined ||
-          isNaN(upperPrev) ||
-          isNaN(lowerPrev)
-        )
-          return null;
-        return {
-          buy: pricePrev <= lowerPrev && priceCurr > lowerCurr,
-          sell: pricePrev >= upperPrev && priceCurr < upperCurr,
-        };
-      }
-
-      // Default BAND_TOUCH: price touches lower band = buy, upper band = sell
+      // BAND_TOUCH: price touches lower band = buy, upper band = sell
       return {
         buy: priceCurr <= lowerCurr,
         sell: priceCurr >= upperCurr,
@@ -390,7 +370,6 @@ function evaluateIndicatorSignal(
 
     case "adx": {
       const adxCurr = buffers.main?.[currBar];
-      const adxPrev = buffers.main?.[prevBar];
       const plusDICurr = buffers.plusDI?.[currBar];
       const minusDICurr = buffers.minusDI?.[currBar];
       const plusDIPrev = buffers.plusDI?.[prevBar];
@@ -398,43 +377,11 @@ function evaluateIndicatorSignal(
       if ([adxCurr, plusDICurr, minusDICurr].some((v) => v === undefined || isNaN(v!))) return null;
 
       const trendLevel = (p.trendLevel as number) ?? 25;
-      const adxEntryMode = (p._adxEntryMode as string) ?? "DI_CROSS";
 
-      if (adxEntryMode === "ADX_RISING") {
-        // ADX rising above threshold with DI direction
-        if (adxPrev === undefined || isNaN(adxPrev!)) return null;
-        const rising = adxCurr! > trendLevel && adxPrev! <= trendLevel;
-        if (!rising) return { buy: false, sell: false };
-        return { buy: plusDICurr! > minusDICurr!, sell: minusDICurr! > plusDICurr! };
-      }
-
-      if (adxEntryMode === "TREND_START") {
-        // Trend start: ADX crosses above threshold AND DI crossover on same bar or recent
-        if (adxPrev === undefined || isNaN(adxPrev!)) return null;
-        const adxAbove = adxCurr! > trendLevel;
-        const adxJustCrossed = adxPrev! <= trendLevel && adxCurr! > trendLevel;
-        if (!adxAbove) return { buy: false, sell: false };
-        if (
-          plusDIPrev !== undefined &&
-          minusDIPrev !== undefined &&
-          !isNaN(plusDIPrev) &&
-          !isNaN(minusDIPrev)
-        ) {
-          const diCross = evaluateCrossover(plusDICurr!, plusDIPrev, minusDICurr!, minusDIPrev);
-          return {
-            buy: diCross.crossAbove || (adxJustCrossed && plusDICurr! > minusDICurr!),
-            sell: diCross.crossBelow || (adxJustCrossed && minusDICurr! > plusDICurr!),
-          };
-        }
-        if (!adxJustCrossed) return { buy: false, sell: false };
-        return { buy: plusDICurr! > minusDICurr!, sell: minusDICurr! > plusDICurr! };
-      }
-
-      // Default DI_CROSS mode
+      // DI_CROSS mode: DI crossover when ADX confirms trend
       const isTrending = adxCurr! > trendLevel;
       if (!isTrending) return { buy: false, sell: false };
 
-      // DI crossover as directional signal
       if (
         plusDIPrev !== undefined &&
         minusDIPrev !== undefined &&

@@ -47,15 +47,10 @@ import type {
   GridPyramidNodeData,
   MultiLevelTPNodeData,
   EMACrossoverEntryData,
-  RangeBreakoutEntryData,
-  RSIReversalEntryData,
   TrendPullbackEntryData,
-  MACDCrossoverEntryData,
   DivergenceEntryData,
-  BollingerBandEntryData,
   FibonacciEntryData,
   PivotPointEntryData,
-  ADXTrendEntryData,
 } from "@/types/builder";
 
 import {
@@ -109,15 +104,10 @@ import {
 } from "./trade-mgmt-fields";
 import {
   EMACrossoverEntryFields,
-  RangeBreakoutEntryFields,
-  RSIReversalEntryFields,
   TrendPullbackEntryFields,
-  MACDCrossoverEntryFields,
   DivergenceEntryFields,
-  BollingerBandEntryFields,
   FibonacciEntryFields,
   PivotPointEntryFields,
-  ADXTrendEntryFields,
 } from "./entry-strategy-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
 import { OptimizationVisibleContext } from "./shared";
@@ -423,32 +413,16 @@ function NodeFields({
     switch (data.entryType) {
       case "ema-crossover":
         return <EMACrossoverEntryFields data={data as EMACrossoverEntryData} onChange={onChange} />;
-      case "range-breakout":
-        return (
-          <RangeBreakoutEntryFields data={data as RangeBreakoutEntryData} onChange={onChange} />
-        );
-      case "rsi-reversal":
-        return <RSIReversalEntryFields data={data as RSIReversalEntryData} onChange={onChange} />;
       case "trend-pullback":
         return (
           <TrendPullbackEntryFields data={data as TrendPullbackEntryData} onChange={onChange} />
         );
-      case "macd-crossover":
-        return (
-          <MACDCrossoverEntryFields data={data as MACDCrossoverEntryData} onChange={onChange} />
-        );
       case "divergence":
         return <DivergenceEntryFields data={data as DivergenceEntryData} onChange={onChange} />;
-      case "bollinger-band-entry":
-        return (
-          <BollingerBandEntryFields data={data as BollingerBandEntryData} onChange={onChange} />
-        );
       case "fibonacci-entry":
         return <FibonacciEntryFields data={data as FibonacciEntryData} onChange={onChange} />;
       case "pivot-point-entry":
         return <PivotPointEntryFields data={data as PivotPointEntryData} onChange={onChange} />;
-      case "adx-trend-entry":
-        return <ADXTrendEntryFields data={data as ADXTrendEntryData} onChange={onChange} />;
     }
   }
 

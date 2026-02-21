@@ -206,13 +206,13 @@ export default function RangeBreakoutTemplatePage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white mb-3">
-                2. Add the Range Breakout entry strategy block
+                2. Add the Range Breakout block
               </h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Drag a Range Breakout entry strategy block onto the canvas. Set the range method to
+                Drag a Range Breakout price action block onto the canvas. Set the range method to
                 &ldquo;Custom Time&rdquo; with start hour 00:00 and end hour 08:00 (Asian session).
-                Set the breakout buffer to 2 pips and entry mode to &ldquo;Candle Close&rdquo; for
-                confirmed breakouts.
+                Connect it to Buy and Sell condition nodes, then add Stop Loss and Take Profit
+                nodes. Set the breakout buffer to 2 pips for confirmed breakouts.
               </p>
             </div>
             <div>

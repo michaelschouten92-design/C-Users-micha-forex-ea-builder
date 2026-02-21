@@ -48,29 +48,13 @@ const migrations: Migration[] = [
 
           const entryType = d.entryType as string;
 
-          // EMA Crossover, Range Breakout, MACD Crossover: htfTrendFilter/htfTimeframe/htfEma
-          if (
-            (entryType === "ema-crossover" ||
-              entryType === "range-breakout" ||
-              entryType === "macd-crossover") &&
-            d.htfTrendFilter === true &&
-            !d.mtfConfirmation
-          ) {
+          // EMA Crossover: htfTrendFilter/htfTimeframe/htfEma
+          if (entryType === "ema-crossover" && d.htfTrendFilter === true && !d.mtfConfirmation) {
             d.mtfConfirmation = {
               enabled: true,
               timeframe: d.htfTimeframe ?? "H4",
               method: "ema",
               emaPeriod: d.htfEma ?? 200,
-            };
-          }
-
-          // RSI Reversal: trendFilter/trendEma (same-TF EMA, map to MTF with entry TF)
-          if (entryType === "rsi-reversal" && d.trendFilter === true && !d.mtfConfirmation) {
-            d.mtfConfirmation = {
-              enabled: true,
-              timeframe: (d.timeframe as string) ?? "H1",
-              method: "ema",
-              emaPeriod: d.trendEma ?? 200,
             };
           }
 

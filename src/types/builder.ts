@@ -667,52 +667,6 @@ export interface EMACrossoverEntryData extends BaseNodeData, BaseEntryStrategyFi
   minEmaSeparation?: number; // pips, 0 = disabled
 }
 
-// 2) Range Breakout — breakout of recent range
-export type BreakoutEntryMode = "CANDLE_CLOSE" | "CURRENT_PRICE";
-
-export interface RangeBreakoutEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "range-breakout";
-  // Basic
-  rangePeriod: number;
-  rangeMethod: "CANDLES" | "CUSTOM_TIME";
-  rangeTimeframe: Timeframe;
-  breakoutEntry: BreakoutEntryMode;
-  breakoutTimeframe: Timeframe;
-  customStartHour: number;
-  customStartMinute: number;
-  customEndHour: number;
-  customEndMinute: number;
-  useServerTime: boolean;
-  bufferPips: number;
-  // Advanced toggles
-  cancelOpposite: boolean;
-  closeAtTime: boolean;
-  closeAtHour: number;
-  closeAtMinute: number;
-  htfTrendFilter: boolean;
-  htfTimeframe: Timeframe;
-  htfEma: number;
-  minRangePips: number;
-  maxRangePips: number;
-  volumeConfirmation?: boolean;
-  volumeConfirmationPeriod?: number;
-}
-
-// 3) RSI Reversal — mean reversion
-export interface RSIReversalEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "rsi-reversal";
-  // Basic
-  rsiPeriod: number;
-  oversoldLevel: number;
-  overboughtLevel: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-  // Advanced toggles
-  trendFilter: boolean;
-  trendEma: number;
-}
-
 // 4) Trend Pullback — EMA trend + RSI dip entry
 export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyFields {
   category: "entrystrategy";
@@ -728,22 +682,6 @@ export interface TrendPullbackEntryData extends BaseNodeData, BaseEntryStrategyF
   adxPeriod: number;
   adxThreshold: number;
   appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW" | "MEDIAN" | "TYPICAL" | "WEIGHTED";
-}
-
-// 5) MACD Crossover — momentum / trend shift
-export interface MACDCrossoverEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "macd-crossover";
-  // Basic
-  macdFast: number;
-  macdSlow: number;
-  macdSignal: number;
-  appliedPrice?: "CLOSE" | "OPEN" | "HIGH" | "LOW";
-  macdSignalType?: "SIGNAL_CROSS" | "ZERO_CROSS" | "HISTOGRAM_SIGN";
-  // Advanced toggles
-  htfTrendFilter: boolean;
-  htfTimeframe: Timeframe;
-  htfEma: number;
 }
 
 // 6) RSI/MACD Divergence — reversal on indicator/price divergence
@@ -764,19 +702,6 @@ export interface DivergenceEntryData extends BaseNodeData, BaseEntryStrategyFiel
   // Divergence detection
   lookbackBars: number; // Bars to scan for swing points (default 20)
   minSwingBars: number; // Min bars between two swings (default 5)
-}
-
-// 7) Bollinger Band Entry — band touch / squeeze breakout / mean reversion
-export type BollingerBandSignalMode = "BAND_TOUCH" | "SQUEEZE_BREAKOUT" | "MEAN_REVERSION";
-
-export interface BollingerBandEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "bollinger-band-entry";
-  bbPeriod: number; // default 20
-  bbDeviation: number; // default 2.0
-  signalMode_bb: BollingerBandSignalMode; // default "BAND_TOUCH"
-  kcPeriod: number; // default 20 (for squeeze detection)
-  kcMultiplier: number; // default 1.5
 }
 
 // 8) Fibonacci Retracement Entry — bounce or break at fib levels
@@ -807,30 +732,12 @@ export interface PivotPointEntryData extends BaseNodeData, BaseEntryStrategyFiel
   targetLevel: PivotTargetLevel; // default "PIVOT"
 }
 
-// 10) ADX Trend Strength Entry — DI cross / ADX rising / trend start
-export type ADXTrendEntryMode = "DI_CROSS" | "ADX_RISING" | "TREND_START";
-
-export interface ADXTrendEntryData extends BaseNodeData, BaseEntryStrategyFields {
-  category: "entrystrategy";
-  entryType: "adx-trend-entry";
-  adxPeriod: number; // default 14
-  adxThreshold: number; // default 25
-  adxEntryMode: ADXTrendEntryMode; // default "DI_CROSS"
-  maFilter: boolean; // use MA to confirm direction
-  maPeriod: number; // default 50
-}
-
 export type EntryStrategyNodeData =
   | EMACrossoverEntryData
-  | RangeBreakoutEntryData
-  | RSIReversalEntryData
   | TrendPullbackEntryData
-  | MACDCrossoverEntryData
   | DivergenceEntryData
-  | BollingerBandEntryData
   | FibonacciEntryData
-  | PivotPointEntryData
-  | ADXTrendEntryData;
+  | PivotPointEntryData;
 
 // ============================================
 // VIRTUAL NODE METADATA (used by generators on decomposed entry strategy nodes)
@@ -847,30 +754,15 @@ export interface VirtualNodeMetadata {
   // Filter roles
   _filterRole?: "htf-trend" | "rsi-confirm" | "adx-trend-strength";
 
-  // Range Breakout
-  _cancelOpposite?: boolean;
-  _closeAtTime?: boolean;
-  _closeAtHour?: number;
-  _closeAtMinute?: number;
-  _useServerTime?: boolean;
-  _volumeConfirmation?: boolean;
-  _volumeConfirmationPeriod?: number;
-
   // Trend Pullback
   _requireEmaBuffer?: boolean;
   _pullbackMaxDistance?: number;
-
-  // MACD signal type
-  _macdSignalType?: "SIGNAL_CROSS" | "ZERO_CROSS" | "HISTOGRAM_SIGN";
 
   // Divergence
   _divergenceMode?: boolean;
   _divergenceLookback?: number;
   _divergenceMinSwing?: number;
   _copyBarsOverride?: number;
-
-  // Bollinger Band entry mode
-  _bbEntryMode?: "BAND_TOUCH" | "MEAN_REVERSION";
 
   // Fibonacci entry
   _fibEntryMode?: "BOUNCE" | "BREAK";
@@ -882,9 +774,6 @@ export interface VirtualNodeMetadata {
   _pivotTimeframe?: "DAILY" | "WEEKLY" | "MONTHLY";
   _pivotEntryMode?: "BOUNCE" | "BREAKOUT";
   _pivotTargetLevel?: "PIVOT" | "S1" | "S2" | "S3" | "R1" | "R2" | "R3";
-
-  // ADX entry mode
-  _adxEntryMode?: "DI_CROSS" | "ADX_RISING" | "TREND_START";
 
   // Close on opposite
   _closeOnOpposite?: boolean;
@@ -938,15 +827,10 @@ export type BuilderNodeType =
   | "partial-close"
   | "lock-profit"
   | "ema-crossover-entry"
-  | "range-breakout-entry"
-  | "rsi-reversal-entry"
   | "trend-pullback-entry"
-  | "macd-crossover-entry"
   | "divergence-entry"
-  | "bollinger-band-entry"
   | "fibonacci-entry"
   | "pivot-point-entry"
-  | "adx-trend-entry"
   | "max-spread"
   | "volatility-filter"
   | "friday-close"
@@ -1538,45 +1422,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   },
   // Entry Strategies (composite blocks) — ordered by UX appeal
   {
-    type: "range-breakout-entry",
-    label: "Range Breakout",
-    category: "entrystrategy",
-    description: "Breakout of recent price range",
-    defaultData: {
-      label: "Range Breakout",
-      category: "entrystrategy",
-      entryType: "range-breakout",
-      direction: "BOTH",
-      timeframe: "H1",
-      rangePeriod: 20,
-      rangeMethod: "CUSTOM_TIME",
-      rangeTimeframe: "H1",
-      breakoutEntry: "CANDLE_CLOSE",
-      breakoutTimeframe: "H1",
-      customStartHour: 0,
-      customStartMinute: 0,
-      customEndHour: 8,
-      customEndMinute: 0,
-      useServerTime: true,
-      bufferPips: 2,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-      cancelOpposite: true,
-      closeAtTime: false,
-      closeAtHour: 17,
-      closeAtMinute: 0,
-      minRangePips: 0,
-      maxRangePips: 0,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
-    } as RangeBreakoutEntryData,
-  },
-  {
     type: "ema-crossover-entry",
     label: "EMA Crossover",
     category: "entrystrategy",
@@ -1633,58 +1478,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     } as TrendPullbackEntryData,
   },
   {
-    type: "rsi-reversal-entry",
-    label: "RSI Reversal",
-    category: "entrystrategy",
-    description: "Mean reversion at RSI extremes",
-    defaultData: {
-      label: "RSI Reversal",
-      category: "entrystrategy",
-      entryType: "rsi-reversal",
-      direction: "BOTH",
-      timeframe: "H1",
-      rsiPeriod: 14,
-      oversoldLevel: 30,
-      overboughtLevel: 70,
-      appliedPrice: "CLOSE",
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.2,
-      tpRMultiple: 1.5,
-      trendFilter: false,
-      trendEma: 200,
-    } as RSIReversalEntryData,
-  },
-  {
-    type: "macd-crossover-entry",
-    label: "MACD Crossover",
-    category: "entrystrategy",
-    description: "Momentum shift on MACD signal cross",
-    defaultData: {
-      label: "MACD Crossover",
-      category: "entrystrategy",
-      entryType: "macd-crossover",
-      direction: "BOTH",
-      timeframe: "H1",
-      macdFast: 12,
-      macdSlow: 26,
-      macdSignal: 9,
-      macdSignalType: "SIGNAL_CROSS",
-      appliedPrice: "CLOSE",
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
-    } as MACDCrossoverEntryData,
-  },
-  {
     type: "divergence-entry",
     label: "RSI/MACD Divergence",
     category: "entrystrategy",
@@ -1710,30 +1503,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
     } as DivergenceEntryData,
-  },
-  {
-    type: "bollinger-band-entry",
-    label: "Bollinger Band",
-    category: "entrystrategy",
-    description: "Trade band touches, squeeze breakouts, or mean reversion",
-    defaultData: {
-      label: "Bollinger Band",
-      category: "entrystrategy",
-      entryType: "bollinger-band-entry",
-      direction: "BOTH",
-      timeframe: "H1",
-      bbPeriod: 20,
-      bbDeviation: 2.0,
-      signalMode_bb: "BAND_TOUCH",
-      kcPeriod: 20,
-      kcMultiplier: 1.5,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-    } as BollingerBandEntryData,
   },
   {
     type: "fibonacci-entry",
@@ -1781,30 +1550,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       slAtrMultiplier: 1.5,
       tpRMultiple: 2,
     } as PivotPointEntryData,
-  },
-  {
-    type: "adx-trend-entry",
-    label: "ADX Trend Strength",
-    category: "entrystrategy",
-    description: "Enter on DI crossover or ADX strength signals",
-    defaultData: {
-      label: "ADX Trend Strength",
-      category: "entrystrategy",
-      entryType: "adx-trend-entry",
-      direction: "BOTH",
-      timeframe: "H1",
-      adxPeriod: 14,
-      adxThreshold: 25,
-      adxEntryMode: "DI_CROSS",
-      maFilter: false,
-      maPeriod: 50,
-      riskPercent: 1,
-      slMethod: "ATR",
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple: 2,
-    } as ADXTrendEntryData,
   },
   // Trading (manual building blocks)
   {

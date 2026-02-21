@@ -227,17 +227,11 @@ export function NodeToolbar({
               {isExpanded && (
                 <div className="mt-2 space-y-1 pl-1">
                   {templates.map((template, index) => {
-                    const isBeginner =
-                      template.type === "ema-crossover-entry" ||
-                      template.type === "rsi-reversal-entry" ||
-                      template.type === "range-breakout-entry" ||
-                      template.type === "macd-crossover-entry";
+                    const isBeginner = template.type === "ema-crossover-entry";
                     const isIntermediate =
                       template.type === "trend-pullback-entry" ||
                       template.type === "divergence-entry" ||
-                      template.type === "bollinger-band-entry" ||
-                      template.type === "pivot-point-entry" ||
-                      template.type === "adx-trend-entry";
+                      template.type === "pivot-point-entry";
                     const isAdvanced = template.type === "fibonacci-entry";
                     return (
                       <div

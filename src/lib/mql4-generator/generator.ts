@@ -8,15 +8,10 @@ import type {
   BuilderNodeData,
   VirtualNodeMetadata,
   EMACrossoverEntryData,
-  RangeBreakoutEntryData,
-  RSIReversalEntryData,
   TrendPullbackEntryData,
-  MACDCrossoverEntryData,
   DivergenceEntryData,
-  BollingerBandEntryData,
   FibonacciEntryData,
   PivotPointEntryData,
-  ADXTrendEntryData,
   EntryStrategyNodeData,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
@@ -221,111 +216,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         })
       );
     }
-  } else if (d.entryType === "range-breakout") {
-    const rb = d as RangeBreakoutEntryData;
-    const rangeMethod = rb.rangeMethod ?? "CANDLES";
-    const rangeTimeframe = rb.rangeTimeframe ?? "H1";
-    virtualNodes.push(
-      vNode("rb", "range-breakout", {
-        label: "Range Breakout",
-        category: "priceaction",
-        priceActionType: "range-breakout",
-        timeframe: rangeTimeframe,
-        rangeType: rangeMethod === "CUSTOM_TIME" ? "TIME_WINDOW" : "PREVIOUS_CANDLES",
-        lookbackCandles: rb.rangePeriod,
-        rangeSession: "CUSTOM",
-        sessionStartHour: rb.customStartHour ?? 0,
-        sessionStartMinute: rb.customStartMinute ?? 0,
-        sessionEndHour: rb.customEndHour ?? 8,
-        sessionEndMinute: rb.customEndMinute ?? 0,
-        breakoutDirection: "BOTH",
-        entryMode:
-          (rb.breakoutEntry ?? "CANDLE_CLOSE") === "CURRENT_PRICE" ? "IMMEDIATE" : "ON_CLOSE",
-        breakoutTimeframe: rb.breakoutTimeframe ?? rangeTimeframe,
-        bufferPips: rb.bufferPips ?? 2,
-        minRangePips: rb.minRangePips ?? 0,
-        maxRangePips: rb.maxRangePips ?? 0,
-        useServerTime: rb.useServerTime ?? true,
-        _cancelOpposite: rb.cancelOpposite ?? true,
-        _closeAtTime: rb.closeAtTime ?? false,
-        _closeAtHour: rb.closeAtHour ?? 17,
-        _closeAtMinute: rb.closeAtMinute ?? 0,
-        _useServerTime: rb.useServerTime ?? true,
-        _volumeConfirmation: rb.volumeConfirmation ?? false,
-        _volumeConfirmationPeriod: rb.volumeConfirmationPeriod ?? 20,
-        optimizableFields: mapOpt(
-          ["rangePeriod", "lookbackCandles"],
-          ["bufferPips", "bufferPips"],
-          ["minRangePips", "minRangePips"],
-          ["maxRangePips", "maxRangePips"],
-          ["rangeTimeframe", "timeframe"],
-          ["breakoutTimeframe", "breakoutTimeframe"],
-          ["customStartHour", "sessionStartHour"],
-          ["customStartHour", "sessionStartMinute"],
-          ["customEndHour", "sessionEndHour"],
-          ["customEndHour", "sessionEndMinute"]
-        ),
-      })
-    );
-    // Legacy HTF trend filter (fallback for pre-migration data)
-    if (rb.htfTrendFilter && !d.mtfConfirmation?.enabled) {
-      const htfEma = rb.htfEma ?? 200;
-      const htfTimeframe = rb.htfTimeframe ?? "H4";
-      virtualNodes.push(
-        vNode("htf-ema", "moving-average", {
-          label: `HTF EMA(${htfEma})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: htfTimeframe,
-          period: htfEma,
-          method: "EMA",
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
-  } else if (d.entryType === "rsi-reversal") {
-    const rsi = d as RSIReversalEntryData;
-    const rsiAppliedPrice = rsi.appliedPrice ?? "CLOSE";
-    virtualNodes.push(
-      vNode("rsi", "rsi", {
-        label: `RSI(${rsi.rsiPeriod})`,
-        category: "indicator",
-        indicatorType: "rsi",
-        timeframe: rsi.timeframe ?? "H1",
-        period: rsi.rsiPeriod,
-        appliedPrice: rsiAppliedPrice,
-        overboughtLevel: rsi.overboughtLevel,
-        oversoldLevel: rsi.oversoldLevel,
-        signalMode: "candle_close",
-        optimizableFields: mapOpt(
-          ["rsiPeriod", "period"],
-          ["overboughtLevel", "overboughtLevel"],
-          ["oversoldLevel", "oversoldLevel"],
-          ["timeframe", "timeframe"]
-        ),
-      })
-    );
-    // Legacy trend filter (fallback for pre-migration data)
-    if (rsi.trendFilter && !d.mtfConfirmation?.enabled) {
-      virtualNodes.push(
-        vNode("trend-ema", "moving-average", {
-          label: `Trend EMA(${rsi.trendEma})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: rsi.timeframe ?? "H1",
-          period: rsi.trendEma,
-          method: "EMA",
-          appliedPrice: rsiAppliedPrice,
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["trendEma", "period"], ["timeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
   } else if (d.entryType === "trend-pullback") {
     const tp = d as TrendPullbackEntryData;
     const tpTf = tp.timeframe ?? "H1";
@@ -389,47 +279,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         })
       );
     }
-  } else if (d.entryType === "macd-crossover") {
-    const macd = d as MACDCrossoverEntryData;
-    const macdAppliedPrice = macd.appliedPrice ?? "CLOSE";
-    virtualNodes.push(
-      vNode("macd", "macd", {
-        label: `MACD(${macd.macdFast},${macd.macdSlow},${macd.macdSignal})`,
-        category: "indicator",
-        indicatorType: "macd",
-        timeframe: macd.timeframe ?? "H1",
-        fastPeriod: macd.macdFast,
-        slowPeriod: macd.macdSlow,
-        signalPeriod: macd.macdSignal,
-        appliedPrice: macdAppliedPrice,
-        signalMode: "candle_close",
-        _macdSignalType: macd.macdSignalType ?? "SIGNAL_CROSS",
-        optimizableFields: mapOpt(
-          ["macdFast", "fastPeriod"],
-          ["macdSlow", "slowPeriod"],
-          ["macdSignal", "signalPeriod"],
-          ["timeframe", "timeframe"]
-        ),
-      })
-    );
-    // Legacy HTF trend filter (fallback for pre-migration data)
-    if (macd.htfTrendFilter && !d.mtfConfirmation?.enabled) {
-      virtualNodes.push(
-        vNode("htf-ema", "moving-average", {
-          label: `HTF EMA(${macd.htfEma})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: macd.htfTimeframe ?? "H4",
-          period: macd.htfEma,
-          method: "EMA",
-          appliedPrice: macdAppliedPrice,
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["htfEma", "period"], ["htfTimeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
   } else if (d.entryType === "divergence") {
     const div = d as DivergenceEntryData;
     const divTf = div.timeframe ?? "H1";
@@ -484,55 +333,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
             ["minSwingBars", "_divergenceMinSwing"],
             ["timeframe", "timeframe"]
           ),
-        })
-      );
-    }
-  } else if (d.entryType === "bollinger-band-entry") {
-    const bb = d as BollingerBandEntryData;
-    const bbTf = bb.timeframe ?? "H1";
-    const bbSignalMode = bb.signalMode_bb ?? "BAND_TOUCH";
-
-    if (bbSignalMode === "SQUEEZE_BREAKOUT") {
-      // Use BB Squeeze indicator node for squeeze breakout mode
-      virtualNodes.push(
-        vNode("bb-squeeze", "bb-squeeze", {
-          label: `BB Squeeze(${bb.bbPeriod})`,
-          category: "indicator",
-          indicatorType: "bb-squeeze",
-          timeframe: bbTf,
-          bbPeriod: bb.bbPeriod ?? 20,
-          bbDeviation: bb.bbDeviation ?? 2.0,
-          kcPeriod: bb.kcPeriod ?? 20,
-          kcMultiplier: bb.kcMultiplier ?? 1.5,
-          signalMode: "candle_close",
-          optimizableFields: mapOpt(
-            ["bbPeriod", "bbPeriod"],
-            ["bbDeviation", "bbDeviation"],
-            ["kcPeriod", "kcPeriod"],
-            ["kcMultiplier", "kcMultiplier"],
-            ["timeframe", "timeframe"]
-          ),
-        })
-      );
-    } else {
-      // Use Bollinger Bands indicator for BAND_TOUCH and MEAN_REVERSION
-      virtualNodes.push(
-        vNode("bb", "bollinger-bands", {
-          label: `BB(${bb.bbPeriod}, ${bb.bbDeviation})`,
-          category: "indicator",
-          indicatorType: "bollinger-bands",
-          timeframe: bbTf,
-          period: bb.bbPeriod ?? 20,
-          deviation: bb.bbDeviation ?? 2.0,
-          appliedPrice: "CLOSE",
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(
-            ["bbPeriod", "period"],
-            ["bbDeviation", "deviation"],
-            ["timeframe", "timeframe"]
-          ),
-          _bbEntryMode: bbSignalMode,
         })
       );
     }
@@ -602,46 +402,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         _entryStrategyId: baseId,
       })
     );
-  } else if (d.entryType === "adx-trend-entry") {
-    const adx = d as ADXTrendEntryData;
-    const adxTf = adx.timeframe ?? "H1";
-    virtualNodes.push(
-      vNode("adx", "adx", {
-        label: `ADX(${adx.adxPeriod})`,
-        category: "indicator",
-        indicatorType: "adx",
-        timeframe: adxTf,
-        period: adx.adxPeriod ?? 14,
-        trendLevel: adx.adxThreshold ?? 25,
-        signalMode: "candle_close",
-        optimizableFields: mapOpt(
-          ["adxPeriod", "period"],
-          ["adxThreshold", "trendLevel"],
-          ["timeframe", "timeframe"]
-        ),
-        _adxEntryMode: adx.adxEntryMode ?? "DI_CROSS",
-        _entryStrategyType: "adx-trend-entry",
-        _entryStrategyId: baseId,
-      })
-    );
-    // MA direction filter
-    if (adx.maFilter) {
-      virtualNodes.push(
-        vNode("adx-ma-filter", "moving-average", {
-          label: `MA Filter(${adx.maPeriod ?? 50})`,
-          category: "indicator",
-          indicatorType: "moving-average",
-          timeframe: adxTf,
-          period: adx.maPeriod ?? 50,
-          method: "EMA",
-          appliedPrice: "CLOSE",
-          signalMode: "candle_close",
-          shift: 0,
-          optimizableFields: mapOpt(["maPeriod", "period"], ["timeframe", "timeframe"]),
-          _filterRole: "htf-trend",
-        })
-      );
-    }
   }
 
   // Unified MTF confirmation (takes precedence over legacy per-strategy HTF fields)
@@ -939,15 +699,10 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
 
   const entryTypeNames: Record<string, string> = {
     "ema-crossover": "EMA Crossover",
-    "range-breakout": "Range Breakout",
-    "rsi-reversal": "RSI Reversal",
     "trend-pullback": "Trend Pullback",
-    "macd-crossover": "MACD Crossover",
     divergence: "RSI/MACD Divergence",
-    "bollinger-band-entry": "Bollinger Band",
     "fibonacci-entry": "Fibonacci Retracement",
     "pivot-point-entry": "Pivot Point",
-    "adx-trend-entry": "ADX Trend Strength",
   };
 
   for (const node of nodes) {

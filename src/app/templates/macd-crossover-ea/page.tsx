@@ -9,12 +9,12 @@ import { Footer } from "@/components/marketing/footer";
 export const metadata: Metadata = {
   title: "MACD Crossover EA Template | Free MT5 & MT4 Momentum Strategy",
   description:
-    "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line cross, zero line cross, or histogram mode with ATR stops. Build without coding.",
+    "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line crossover with ATR stops. Build without coding.",
   alternates: { canonical: "/templates/macd-crossover-ea" },
   openGraph: {
     title: "MACD Crossover EA Template | Free MT5 & MT4 Momentum Strategy",
     description:
-      "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line cross, zero line cross, or histogram mode with ATR stops. Build without coding.",
+      "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line crossover with ATR stops. Build without coding.",
     url: "/templates/macd-crossover-ea",
   },
 };
@@ -27,8 +27,8 @@ const breadcrumbs = [
 
 const faqQuestions = [
   {
-    q: "What is the difference between Signal Cross, Zero Cross, and Histogram modes?",
-    a: "Signal Cross enters when the MACD line crosses the signal line — this is the most common and earliest signal. Zero Cross enters when the MACD line crosses above or below zero, confirming a stronger trend shift but entering later. Histogram Sign Change enters when the histogram flips from negative to positive (or vice versa), which is essentially the same as Signal Cross but viewed differently. Start with Signal Cross for the most balanced approach.",
+    q: "How does the MACD signal line crossover work?",
+    a: "Signal line crossover enters when the MACD line crosses the signal line — this is the most common and earliest MACD signal. When the MACD line crosses above the signal line, it indicates bullish momentum. When it crosses below, it indicates bearish momentum. This is the standard approach used by most professional traders.",
   },
   {
     q: "Should I use the standard 12/26/9 MACD settings?",
@@ -52,7 +52,6 @@ const parameters = [
   { name: "Fast EMA Period", value: "12", type: "Indicator" },
   { name: "Slow EMA Period", value: "26", type: "Indicator" },
   { name: "Signal Period", value: "9", type: "Indicator" },
-  { name: "Signal Mode", value: "Signal Cross", type: "Entry logic" },
   { name: "Stop Loss", value: "1.5x ATR(14)", type: "ATR-based" },
   { name: "Take Profit", value: "2:1 R:R", type: "Risk-reward" },
   { name: "HTF Trend Filter", value: "200 EMA on H4 (optional)", type: "Filter" },
@@ -83,10 +82,10 @@ export default function MACDCrossoverTemplatePage() {
           <p className="text-lg text-[#94A3B8] leading-relaxed">
             The MACD (Moving Average Convergence Divergence) Crossover is one of the most trusted
             momentum strategies in trading. This free EA template uses the standard 12/26/9 MACD
-            with three signal modes — signal line cross, zero line cross, and histogram — combined
-            with ATR-based risk management and an optional higher-timeframe trend filter. Best for
-            EURUSD, GBPUSD, and XAUUSD on H1 to H4 timeframes. Build it in AlgoStudio without coding
-            and export a production-ready MQL5 (or MQL4) Expert Advisor in minutes.
+            with signal line crossover detection, ATR-based risk management, and an optional
+            higher-timeframe trend filter. Best for EURUSD, GBPUSD, and XAUUSD on H1 to H4
+            timeframes. Build it in AlgoStudio without coding and export a production-ready MQL5 (or
+            MQL4) Expert Advisor in minutes.
           </p>
         </header>
 
@@ -145,13 +144,10 @@ export default function MACDCrossoverTemplatePage() {
           </div>
           <div className="space-y-4 text-[#94A3B8] leading-relaxed">
             <p>
-              The template supports three distinct entry modes.{" "}
-              <strong className="text-white">Signal Cross</strong> is the default and most
-              responsive — it enters when the MACD line crosses the signal line.{" "}
-              <strong className="text-white">Zero Cross</strong> waits for the MACD line to cross
-              zero, confirming a stronger shift but entering later.{" "}
-              <strong className="text-white">Histogram Sign Change</strong> enters when the
-              histogram changes sign, which signals a change in the rate of momentum.
+              The template uses <strong className="text-white">signal line crossover</strong>{" "}
+              detection — it enters when the MACD line crosses the signal line. This is the most
+              common and most reliable MACD entry method, providing early momentum signals without
+              the lag of waiting for a zero-line cross.
             </p>
             <p>
               The optional higher-timeframe trend filter (200 EMA on H4) ensures you only take MACD
@@ -210,12 +206,13 @@ export default function MACDCrossoverTemplatePage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white mb-3">
-                2. Add the MACD Crossover entry strategy block
+                2. Add the MACD indicator block
               </h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Drag a MACD Crossover entry strategy block onto the canvas. Keep the standard
-                12/26/9 settings. Select your preferred signal mode — Signal Cross is recommended
-                for beginners. The block handles all the crossover detection logic automatically.
+                Drag a MACD indicator block onto the canvas and keep the standard 12/26/9 settings.
+                Connect it to Buy and Sell condition nodes, then add Stop Loss and Take Profit
+                nodes. The MACD uses signal line crossover detection — buy when the MACD line
+                crosses above the signal line, sell when it crosses below.
               </p>
             </div>
             <div>
@@ -235,9 +232,9 @@ export default function MACDCrossoverTemplatePage() {
               </h3>
               <p className="text-[#94A3B8] leading-relaxed">
                 Click Export to generate a .mq5 file. Load it into MetaTrader 5 and backtest on
-                EURUSD H1 with at least 2 years of historical data. Try all three signal modes to
-                see which works best for your pair. Optimize the MACD periods cautiously — the
-                standard 12/26/9 is hard to beat. Demo trade for 1-3 months before going live.
+                EURUSD H1 with at least 2 years of historical data. Optimize the MACD periods
+                cautiously — the standard 12/26/9 is hard to beat. Demo trade for 1-3 months before
+                going live.
               </p>
             </div>
           </div>
@@ -248,14 +245,12 @@ export default function MACDCrossoverTemplatePage() {
           <h2 className="text-2xl font-bold text-white mb-6">Optimization Tips</h2>
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Compare all three signal modes
-              </h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Use the HTF trend filter</h3>
               <p className="text-[#94A3B8] leading-relaxed">
-                Before optimizing indicator periods, test all three signal modes (Signal Cross, Zero
-                Cross, Histogram) on your target pair and timeframe. The difference between modes is
-                often more significant than fine-tuning the MACD periods. Signal Cross is most
-                responsive, Zero Cross is most conservative.
+                Adding a 200 EMA on H4 as a trend filter significantly reduces false signals. Only
+                take buy signals when price is above the EMA and sell signals when below. This
+                prevents most whipsaw losses during consolidation periods and keeps you trading in
+                the direction of the dominant trend.
               </p>
             </div>
             <div>

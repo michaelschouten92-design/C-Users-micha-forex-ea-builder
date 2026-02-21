@@ -76,6 +76,99 @@ function parseRsiPeriod(lower: string): number {
   return 14;
 }
 
+/**
+ * Add standalone trading nodes (buy, sell, SL, TP) and wire them to an indicator node.
+ * Returns the array of node IDs added so the caller can chain further edges.
+ */
+function addStandaloneTradingNodes(
+  nodes: BuilderNode[],
+  edges: BuilderEdge[],
+  indicatorNodeId: string,
+  nodeIndex: { value: number },
+  yStart: number
+): void {
+  const idx = () => nodeIndex.value++;
+
+  const buyId = `ai_buy_${idx()}`;
+  const sellId = `ai_sell_${idx()}`;
+  const slId = `ai_sl_${idx()}`;
+  const tpId = `ai_tp_${idx()}`;
+
+  nodes.push(
+    {
+      id: buyId,
+      type: "place-buy" as BuilderNode["type"],
+      position: { x: 100, y: yStart },
+      data: {
+        label: "Place Buy",
+        category: "trading",
+        tradingType: "place-buy",
+        method: "RISK_PERCENT",
+        fixedLot: 0.1,
+        riskPercent: 1,
+        minLot: 0.01,
+        maxLot: 10,
+        orderType: "MARKET",
+        pendingOffset: 10,
+      } as BuilderNode["data"],
+    },
+    {
+      id: sellId,
+      type: "place-sell" as BuilderNode["type"],
+      position: { x: 500, y: yStart },
+      data: {
+        label: "Place Sell",
+        category: "trading",
+        tradingType: "place-sell",
+        method: "RISK_PERCENT",
+        fixedLot: 0.1,
+        riskPercent: 1,
+        minLot: 0.01,
+        maxLot: 10,
+        orderType: "MARKET",
+        pendingOffset: 10,
+      } as BuilderNode["data"],
+    },
+    {
+      id: slId,
+      type: "stop-loss" as BuilderNode["type"],
+      position: { x: 300, y: yStart + 180 },
+      data: {
+        label: "Stop Loss",
+        category: "riskmanagement",
+        tradingType: "stop-loss",
+        method: "ATR_BASED",
+        fixedPips: 50,
+        atrMultiplier: 1.5,
+        atrPeriod: 14,
+      } as BuilderNode["data"],
+    },
+    {
+      id: tpId,
+      type: "take-profit" as BuilderNode["type"],
+      position: { x: 300, y: yStart + 360 },
+      data: {
+        label: "Take Profit",
+        category: "riskmanagement",
+        tradingType: "take-profit",
+        method: "RISK_REWARD",
+        fixedPips: 100,
+        riskRewardRatio: 2,
+        atrMultiplier: 3,
+        atrPeriod: 14,
+      } as BuilderNode["data"],
+    }
+  );
+
+  edges.push(
+    { id: `e_${indicatorNodeId}_${buyId}`, source: indicatorNodeId, target: buyId },
+    { id: `e_${indicatorNodeId}_${sellId}`, source: indicatorNodeId, target: sellId },
+    { id: `e_${buyId}_${slId}`, source: buyId, target: slId },
+    { id: `e_${sellId}_${slId}`, source: sellId, target: slId },
+    { id: `e_${slId}_${tpId}`, source: slId, target: tpId }
+  );
+}
+
 /** Generate a BuildJsonSchema from a natural-language strategy description. */
 export function generateStrategy(description: string): BuildJsonSchema {
   const lower = description.toLowerCase();
@@ -87,8 +180,11 @@ export function generateStrategy(description: string): BuildJsonSchema {
   const X_CENTER = 300;
   const Y_STEP = 180;
 
+  const nodeCounter = { value: 0 };
+
   function addNode(id: string, type: string, data: Record<string, unknown>): string {
     const nodeId = `ai_${id}_${nodeIndex++}`;
+    nodeCounter.value = nodeIndex;
     nodes.push({
       id: nodeId,
       type: type as BuilderNode["type"],
@@ -164,8 +260,6 @@ export function generateStrategy(description: string): BuildJsonSchema {
   const { timeframe } = parseTimeframe(lower);
 
   // --- Detect entry strategy type ---
-  // Use entry strategy composite nodes (same as strategy-presets) for best codegen compatibility.
-
   const usesEma =
     lower.includes("ema") || lower.includes("moving average") || lower.includes("ma crossover");
   const usesRsiReversal =
@@ -181,17 +275,17 @@ export function generateStrategy(description: string): BuildJsonSchema {
     lower.includes("pullback") || lower.includes("pull back") || lower.includes("dip buy");
 
   // Determine SL method and TP multiplier
-  const usesAtrStop = lower.includes("atr");
-  const slMethod = usesAtrStop ? "ATR" : "PIPS";
+  const slMethod = lower.includes("atr") ? "ATR" : "PIPS";
   const tpRMultiple = 2;
   const riskPercent = 1;
 
-  let entryNodeId: string | null = null;
+  let lastNodeId: string;
 
   if (usesEma && !usesBreakout) {
+    // EMA Crossover — entry strategy node (kept)
     const periods = parsePeriods(lower);
     const hasRsiFilter = lower.includes("rsi") && !usesRsiReversal;
-    entryNodeId = addNode("entry", "ema-crossover-entry", {
+    lastNodeId = addNode("entry", "ema-crossover-entry", {
       label: "EMA Crossover",
       category: "entrystrategy",
       entryType: "ema-crossover",
@@ -214,9 +308,11 @@ export function generateStrategy(description: string): BuildJsonSchema {
       rsiShortMin: 40,
       minEmaSeparation: 0,
     });
+    addEdge(timingNodeId, lastNodeId);
   } else if (usesDivergence) {
+    // Divergence — entry strategy node (kept)
     const indicator = usesMacd ? "MACD" : "RSI";
-    entryNodeId = addNode("entry", "divergence-entry", {
+    lastNodeId = addNode("entry", "divergence-entry", {
       label: `${indicator} Divergence`,
       category: "entrystrategy",
       entryType: "divergence",
@@ -237,50 +333,44 @@ export function generateStrategy(description: string): BuildJsonSchema {
       slAtrMultiplier: 1.5,
       tpRMultiple,
     });
+    addEdge(timingNodeId, lastNodeId);
   } else if (usesMacd) {
-    entryNodeId = addNode("entry", "macd-crossover-entry", {
-      label: "MACD Crossover",
-      category: "entrystrategy",
-      entryType: "macd-crossover",
-      direction: "BOTH",
+    // MACD — standalone indicator + trading nodes
+    const indNodeId = addNode("ind", "macd", {
+      label: "MACD(12,26,9)",
+      category: "indicator",
+      indicatorType: "macd",
       timeframe,
-      macdFast: 12,
-      macdSlow: 26,
-      macdSignal: 9,
-      macdSignalType: "SIGNAL_CROSS",
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
       appliedPrice: "CLOSE",
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
+      signalMode: "candle_close",
     });
+    addEdge(timingNodeId, indNodeId);
+    addStandaloneTradingNodes(nodes, edges, indNodeId, nodeCounter, yPosition);
+    yPosition += Y_STEP * 3;
+    lastNodeId = indNodeId;
   } else if (usesRsiReversal) {
-    entryNodeId = addNode("entry", "rsi-reversal-entry", {
-      label: "RSI Reversal",
-      category: "entrystrategy",
-      entryType: "rsi-reversal",
-      direction: "BOTH",
+    // RSI Reversal — standalone indicator + trading nodes
+    const indNodeId = addNode("ind", "rsi", {
+      label: `RSI(${parseRsiPeriod(lower)})`,
+      category: "indicator",
+      indicatorType: "rsi",
       timeframe,
-      rsiPeriod: parseRsiPeriod(lower),
-      oversoldLevel: 30,
-      overboughtLevel: 70,
+      period: parseRsiPeriod(lower),
       appliedPrice: "CLOSE",
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.2,
-      tpRMultiple: 1.5,
-      trendFilter: false,
-      trendEma: 200,
+      signalMode: "candle_close",
+      overboughtLevel: 70,
+      oversoldLevel: 30,
     });
+    addEdge(timingNodeId, indNodeId);
+    addStandaloneTradingNodes(nodes, edges, indNodeId, nodeCounter, yPosition);
+    yPosition += Y_STEP * 3;
+    lastNodeId = indNodeId;
   } else if (usesTrendPullback) {
-    entryNodeId = addNode("entry", "trend-pullback-entry", {
+    // Trend Pullback — entry strategy node (kept)
+    lastNodeId = addNode("entry", "trend-pullback-entry", {
       label: "Trend Pullback",
       category: "entrystrategy",
       entryType: "trend-pullback",
@@ -301,43 +391,34 @@ export function generateStrategy(description: string): BuildJsonSchema {
       adxPeriod: 14,
       adxThreshold: 25,
     });
+    addEdge(timingNodeId, lastNodeId);
   } else if (usesBreakout) {
-    entryNodeId = addNode("entry", "range-breakout-entry", {
+    // Range Breakout — standalone price action + trading nodes
+    const indNodeId = addNode("ind", "range-breakout", {
       label: "Range Breakout",
-      category: "entrystrategy",
-      entryType: "range-breakout",
-      direction: "BOTH",
+      category: "priceaction",
+      priceActionType: "range-breakout",
       timeframe,
-      rangePeriod: 20,
-      rangeMethod: "CUSTOM_TIME",
-      rangeTimeframe: timeframe,
-      breakoutEntry: "CANDLE_CLOSE",
-      breakoutTimeframe: timeframe,
-      customStartHour: 0,
-      customStartMinute: 0,
-      customEndHour: 8,
-      customEndMinute: 0,
-      useServerTime: true,
+      rangeType: "SESSION",
+      lookbackCandles: 20,
+      rangeSession: "ASIAN",
+      sessionStartHour: 0,
+      sessionStartMinute: 0,
+      sessionEndHour: 8,
+      sessionEndMinute: 0,
+      breakoutDirection: "BOTH",
+      entryMode: "ON_CLOSE",
       bufferPips: 2,
-      riskPercent,
-      slMethod,
-      slFixedPips: 50,
-      slPercent: 1,
-      slAtrMultiplier: 1.5,
-      tpRMultiple,
-      cancelOpposite: true,
-      closeAtTime: false,
-      closeAtHour: 17,
-      closeAtMinute: 0,
       minRangePips: 0,
       maxRangePips: 0,
-      htfTrendFilter: false,
-      htfTimeframe: "H4",
-      htfEma: 200,
     });
+    addEdge(timingNodeId, indNodeId);
+    addStandaloneTradingNodes(nodes, edges, indNodeId, nodeCounter, yPosition);
+    yPosition += Y_STEP * 3;
+    lastNodeId = indNodeId;
   } else {
-    // Default: EMA crossover
-    entryNodeId = addNode("entry", "ema-crossover-entry", {
+    // Default: EMA crossover entry strategy
+    lastNodeId = addNode("entry", "ema-crossover-entry", {
       label: "EMA Crossover",
       category: "entrystrategy",
       entryType: "ema-crossover",
@@ -360,10 +441,8 @@ export function generateStrategy(description: string): BuildJsonSchema {
       rsiShortMin: 40,
       minEmaSeparation: 0,
     });
+    addEdge(timingNodeId, lastNodeId);
   }
-
-  // --- Connect timing to entry ---
-  addEdge(timingNodeId, entryNodeId);
 
   // --- Optional: add trailing stop if mentioned ---
   if (lower.includes("trailing")) {
@@ -371,14 +450,14 @@ export function generateStrategy(description: string): BuildJsonSchema {
       label: "Trailing Stop",
       category: "trademanagement",
       managementType: "trailing-stop",
-      method: usesAtrStop ? "ATR_BASED" : "FIXED_PIPS",
+      method: lower.includes("atr") ? "ATR_BASED" : "FIXED_PIPS",
       trailPips: 15,
       trailAtrMultiplier: 1,
       trailAtrPeriod: 14,
       trailPercent: 50,
       startAfterPips: 10,
     });
-    addEdge(entryNodeId, trailNodeId);
+    addEdge(lastNodeId, trailNodeId);
   }
 
   // --- Optional: add breakeven stop if mentioned ---
@@ -394,7 +473,7 @@ export function generateStrategy(description: string): BuildJsonSchema {
       triggerAtrPeriod: 14,
       lockPips: 5,
     });
-    addEdge(entryNodeId, beNodeId);
+    addEdge(lastNodeId, beNodeId);
   }
 
   // --- Optional: add max spread filter ---
@@ -479,7 +558,7 @@ export function describeStrategy(description: string): string {
   } else if (usesTrendPullback) {
     parts.push("Entry: Trend pullback (EMA 200 trend + RSI dip)");
   } else if (usesBreakout) {
-    parts.push("Entry: Range breakout of recent price range");
+    parts.push("Entry: Range breakout of session price range");
   } else {
     parts.push("Entry: EMA(50/200) crossover (default)");
   }
@@ -489,9 +568,9 @@ export function describeStrategy(description: string): string {
   if (lower.includes("atr")) {
     parts.push("Stop loss: ATR-based (1.5x ATR)");
   } else {
-    parts.push("Stop loss: 50 pips fixed");
+    parts.push("Stop loss: ATR-based (1.5x ATR)");
   }
-  parts.push("Take profit: 2R risk-reward");
+  parts.push("Take profit: 2:1 risk-reward");
 
   // Extras
   if (lower.includes("trailing")) {

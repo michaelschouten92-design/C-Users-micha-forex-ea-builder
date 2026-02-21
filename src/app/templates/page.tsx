@@ -7,12 +7,12 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Strategy Templates | 6 Ready-to-Export MT5 & MT4 Expert Advisors",
+  title: "Strategy Templates | 10 Ready-to-Export MT5 & MT4 Expert Advisors",
   description:
-    "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor. 6 templates: EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, and MACD Crossover.",
+    "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor. 10 templates including EMA Crossover, RSI Reversal, Bollinger Bands, MACD, Ichimoku Cloud, and more.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Strategy Templates | 6 Ready-to-Export MT5 & MT4 Expert Advisors",
+    title: "Strategy Templates | 10 Ready-to-Export MT5 & MT4 Expert Advisors",
     description:
       "Pick a strategy template, adjust a few settings, and export a working MT5 or MT4 Expert Advisor in minutes. No coding required.",
     url: "/templates",
@@ -27,7 +27,7 @@ const breadcrumbs = [
 const faqQuestions = [
   {
     q: "Are the strategy templates free?",
-    a: "Yes. All 6 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
+    a: "Yes. All 10 templates are available on the free plan. You can build, customize, and export a working Expert Advisor — no credit card required. The free plan includes 1 project and 1 export per month.",
   },
   {
     q: "Can I change the template settings?",
@@ -62,7 +62,7 @@ const templates = [
     name: "RSI Reversal",
     type: "Mean Reversion",
     description:
-      "Buy oversold, sell overbought. Set the RSI period, overbought/oversold levels, risk %, and ATR stop loss. Optional session filter and trend confirmation.",
+      "Buy oversold, sell overbought. Drag an RSI indicator, connect buy and sell conditions, and add ATR-based stop loss and take profit nodes. Fully customizable with individual blocks.",
     href: "/templates/rsi-reversal-ea",
     color: "#22D3EE",
     basicFields: "RSI Period, OB Level, OS Level, Risk %, SL (ATR)",
@@ -72,7 +72,7 @@ const templates = [
     name: "Range Breakout",
     type: "Breakout",
     description:
-      "Trade the breakout of a recent price range. Set the lookback period, risk %, and ATR stop loss. Optional London session filter and cancel-opposite-on-fill toggle.",
+      "Trade the breakout of a recent price range. Use the Range Breakout price action block with buy and sell conditions, ATR stop loss, and take profit nodes.",
     href: "/templates/range-breakout-ea",
     color: "#F59E0B",
     basicFields: "Range Period, Risk %, SL (ATR), TP (R-multiple)",
@@ -92,7 +92,7 @@ const templates = [
     name: "MACD Crossover",
     type: "Momentum",
     description:
-      "Enter on MACD signal line crossover. Set the MACD parameters, risk %, and ATR stop loss. Optional higher-timeframe trend filter.",
+      "Enter on MACD signal line crossover. Drag a MACD indicator, connect buy and sell conditions, and add ATR-based risk management nodes. Clean signal cross logic.",
     href: "/templates/macd-crossover-ea",
     color: "#FB923C",
     basicFields: "Fast/Slow/Signal, Risk %, SL (ATR), TP (R-multiple)",
@@ -108,6 +108,46 @@ const templates = [
     basicFields: "Indicator, Lookback, Threshold, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Trend filter, Min divergence bars",
   },
+  {
+    name: "Bollinger Band Reversal",
+    type: "Mean Reversion",
+    description:
+      "Enter when price touches the upper or lower Bollinger Band. Uses a standalone BB indicator with buy and sell conditions, ATR stop loss, and take profit nodes.",
+    href: null,
+    color: "#818CF8",
+    basicFields: "BB Period, BB Deviation, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Session filter",
+  },
+  {
+    name: "ADX Trend Strength",
+    type: "Trend Following",
+    description:
+      "Enter when ADX confirms a strong trend via DI crossover. Uses a standalone ADX indicator with buy and sell conditions and ATR-based risk management.",
+    href: null,
+    color: "#34D399",
+    basicFields: "ADX Period, Threshold, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Session filter",
+  },
+  {
+    name: "Stochastic Reversal",
+    type: "Mean Reversion",
+    description:
+      "Buy oversold, sell overbought using the Stochastic oscillator. Uses a standalone Stochastic indicator with buy and sell conditions and ATR-based risk management.",
+    href: null,
+    color: "#F472B6",
+    basicFields: "K Period, D Period, Slowing, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Session filter",
+  },
+  {
+    name: "Ichimoku Cloud",
+    type: "Trend Following",
+    description:
+      "Enter on Ichimoku Cloud breakouts — buy above the cloud, sell below. Uses a standalone Ichimoku indicator with buy and sell conditions and ATR-based risk management.",
+    href: null,
+    color: "#FBBF24",
+    basicFields: "Tenkan, Kijun, Senkou B, Risk %, SL (ATR), TP (R-multiple)",
+    advanced: "Session filter",
+  },
 ];
 
 export default function TemplatesPage() {
@@ -116,7 +156,7 @@ export default function TemplatesPage() {
     "@type": "CollectionPage",
     name: "MT5 & MT4 Strategy Templates",
     description:
-      "6 ready-to-export MetaTrader 5 & 4 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, and RSI/MACD Divergence.",
+      "10 ready-to-export MetaTrader 5 & 4 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, Divergence, Bollinger Bands, ADX Trend, Stochastic, and Ichimoku Cloud.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -142,7 +182,7 @@ export default function TemplatesPage() {
         {/* Header */}
         <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-            6 strategy templates, ready to export
+            10 strategy templates, ready to export
           </h1>
           <p className="text-lg text-[#94A3B8] leading-relaxed">
             Pick a template, adjust a few settings, and export a working MetaTrader 5 or 4 Expert
@@ -208,8 +248,8 @@ export default function TemplatesPage() {
               <h3 className="text-lg font-semibold text-white mb-2">1. Pick a template</h3>
               <p className="text-[#94A3B8] leading-relaxed">
                 Choose the strategy that matches how you trade. Prefer riding trends? Start with EMA
-                Crossover. Like buying dips? Try RSI Reversal. Want session-based entries? Go with
-                Range Breakout.
+                Crossover or Ichimoku Cloud. Like buying dips? Try RSI Reversal or Stochastic
+                Reversal. Want session-based entries? Go with Range Breakout.
               </p>
             </div>
             <div>
@@ -254,6 +294,10 @@ export default function TemplatesPage() {
                   ["RSI Reversal", "Range-bound", "Simple", "Higher win rate"],
                   ["MACD Crossover", "Momentum", "Simple", "Momentum confirmation"],
                   ["RSI/MACD Divergence", "Reversals", "Moderate", "Early reversal signals"],
+                  ["Bollinger Band Reversal", "Range-bound", "Simple", "Volatility-based entries"],
+                  ["ADX Trend Strength", "Trending", "Simple", "Trend confirmation"],
+                  ["Stochastic Reversal", "Range-bound", "Simple", "Oversold/overbought signals"],
+                  ["Ichimoku Cloud", "Trending", "Moderate", "Multi-signal trend system"],
                 ].map(([name, market, complexity, strength]) => (
                   <tr key={name} className="border-b border-[rgba(79,70,229,0.1)]">
                     <td className="py-3 pr-4 text-white font-medium">{name}</td>
