@@ -19,6 +19,7 @@ export const VolatilityFilterNode = memo(function VolatilityFilterNode({
       category="timing"
       label={data.label}
       icon={NodeIcons.timing}
+      showGlobalBadge
     >
       <div className="text-xs text-zinc-400">
         <div>

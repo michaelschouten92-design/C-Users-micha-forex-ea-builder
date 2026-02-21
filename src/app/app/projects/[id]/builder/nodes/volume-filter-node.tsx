@@ -21,6 +21,7 @@ export const VolumeFilterNode = memo(function VolumeFilterNode({ id, data, selec
       category="timing"
       label={data.label}
       icon={NodeIcons.timing}
+      showGlobalBadge
     >
       <div className="text-xs text-zinc-400">
         <div>

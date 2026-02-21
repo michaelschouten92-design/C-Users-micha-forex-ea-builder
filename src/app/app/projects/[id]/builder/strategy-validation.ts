@@ -1,5 +1,17 @@
 import type { Node, Edge } from "@xyflow/react";
-import type { BuilderNodeData, BuildJsonSettings } from "@/types/builder";
+import type { BuilderNodeData, BuildJsonSettings, Timeframe } from "@/types/builder";
+
+const TIMEFRAME_MINUTES: Record<Timeframe, number> = {
+  M1: 1,
+  M5: 5,
+  M15: 15,
+  M30: 30,
+  H1: 60,
+  H4: 240,
+  D1: 1440,
+  W1: 10080,
+  MN1: 43200,
+};
 
 export interface ValidationIssue {
   type: "error" | "warning";
@@ -25,7 +37,7 @@ export interface ValidationResult {
 
 export function validateStrategy(
   nodes: Node<BuilderNodeData>[],
-  _edges: Edge[] = [],
+  edges: Edge[] = [],
   settings?: BuildJsonSettings
 ): ValidationResult {
   const issues: ValidationIssue[] = [];
@@ -262,6 +274,106 @@ export function validateStrategy(
           field: periodField,
         });
       }
+    }
+  }
+
+  // --- Fix 3: Timeframe conflict detection (SL ATR timeframe vs entry timeframe)
+  for (const n of nodes) {
+    const d = n.data as Record<string, unknown>;
+    if (!("entryType" in d)) continue;
+    const label = (d.label as string) ?? n.type ?? "Entry Strategy";
+    const entryTf = (d.timeframe as Timeframe) ?? "H1";
+    const slAtrTf = d.slAtrTimeframe as Timeframe | undefined;
+
+    if (slAtrTf && d.slMethod === "ATR") {
+      const entryMinutes = TIMEFRAME_MINUTES[entryTf] ?? 60;
+      const slMinutes = TIMEFRAME_MINUTES[slAtrTf] ?? 60;
+      const ratio = slMinutes / entryMinutes;
+      if (ratio > 4) {
+        issues.push({
+          type: "warning",
+          message: `"${label}": SL ATR timeframe (${slAtrTf}) is ${ratio}x larger than entry timeframe (${entryTf}). This typically causes oversized stops. Consider using ${entryTf} or one step up.`,
+          nodeType: n.type,
+          nodeId: n.id,
+          nodeLabel: label,
+          field: "slAtrTimeframe",
+        });
+      }
+    }
+  }
+
+  // --- Fix 5a: Trade management without entry strategy
+  const hasTradeManagement = nodes.some(
+    (n) => "managementType" in n.data || "tradeManagementType" in n.data
+  );
+  if (hasTradeManagement && !hasEntryStrategy) {
+    issues.push({
+      type: "warning",
+      message:
+        "Trade management blocks have no effect without an Entry Strategy. Add an entry strategy first.",
+    });
+  }
+
+  // --- Fix 5b: Disconnected indicator/priceaction nodes (not connected to anything)
+  if (edges.length > 0) {
+    const connectedNodeIds = new Set<string>();
+    for (const edge of edges) {
+      connectedNodeIds.add(edge.source);
+      connectedNodeIds.add(edge.target);
+    }
+    for (const n of nodes) {
+      const d = n.data as Record<string, unknown>;
+      const isIndicator = "indicatorType" in d;
+      const isPriceAction = "priceActionType" in d;
+      if ((isIndicator || isPriceAction) && !connectedNodeIds.has(n.id)) {
+        const label = (d.label as string) ?? n.type ?? "Node";
+        issues.push({
+          type: "warning",
+          message: `"${label}" is not connected to anything and will be ignored during code generation. Wire it to an entry or remove it.`,
+          nodeType: n.type,
+          nodeId: n.id,
+          nodeLabel: label,
+        });
+      }
+    }
+  }
+
+  // --- Fix 5c: Disconnected clusters (BFS islands)
+  if (nodes.length > 1 && edges.length > 0) {
+    // Build undirected adjacency
+    const adj = new Map<string, Set<string>>();
+    for (const n of nodes) {
+      adj.set(n.id, new Set());
+    }
+    for (const edge of edges) {
+      adj.get(edge.source)?.add(edge.target);
+      adj.get(edge.target)?.add(edge.source);
+    }
+
+    // BFS from the first node
+    const visited = new Set<string>();
+    const queue = [nodes[0].id];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const neighbors = adj.get(current);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) queue.push(neighbor);
+        }
+      }
+    }
+
+    // Check for nodes not in the main cluster (exclude isolated nodes, already warned above)
+    const disconnectedCluster = nodes.filter(
+      (n) => !visited.has(n.id) && edges.some((e) => e.source === n.id || e.target === n.id)
+    );
+    if (disconnectedCluster.length > 0) {
+      issues.push({
+        type: "warning",
+        message: `Your strategy has ${disconnectedCluster.length} block(s) in a separate disconnected group. Connect them to the main strategy or remove them.`,
+      });
     }
   }
 

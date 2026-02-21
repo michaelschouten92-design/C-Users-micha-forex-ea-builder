@@ -1,5 +1,5 @@
 import type { Node, Edge, Connection } from "@xyflow/react";
-import type { BuilderNodeData } from "@/types/builder";
+import type { BuilderNodeData, NodeCategory } from "@/types/builder";
 
 /**
  * Connection validation rules for the EA Builder
@@ -64,7 +64,23 @@ export function validateConnection(
     };
   }
 
-  // Rule 4: Prevent circular connections
+  // Rule 4: Category-based semantic connection rules
+  const sourceCategory = (sourceNode.data as BuilderNodeData).category;
+  const targetCategory = (targetNode.data as BuilderNodeData).category;
+
+  if (sourceCategory && targetCategory) {
+    const allowedTargets = ALLOWED_TARGETS[sourceCategory];
+    if (allowedTargets && !allowedTargets.has(targetCategory)) {
+      const sourceCatLabel = CATEGORY_LABELS[sourceCategory] ?? sourceCategory;
+      const targetCatLabel = CATEGORY_LABELS[targetCategory] ?? targetCategory;
+      return {
+        isValid: false,
+        reason: `Cannot connect ${sourceCatLabel} → ${targetCatLabel}. This connection doesn't make sense for strategy logic.`,
+      };
+    }
+  }
+
+  // Rule 5: Prevent circular connections
   if (wouldCreateCycle(source!, target!, edges)) {
     return {
       isValid: false,
@@ -75,6 +91,32 @@ export function validateConnection(
   // All checks passed
   return { isValid: true };
 }
+
+/**
+ * Allowed target categories for each source category.
+ * If a source category is not listed, it can connect to anything (no restriction).
+ */
+const ALLOWED_TARGETS: Partial<Record<NodeCategory, Set<NodeCategory>>> = {
+  timing: new Set(["indicator", "priceaction", "trading", "entrystrategy"]),
+  indicator: new Set(["trading", "indicator", "entry", "entrystrategy"]),
+  priceaction: new Set(["trading", "entry", "entrystrategy"]),
+  entrystrategy: new Set(["trademanagement"]),
+  entry: new Set(["riskmanagement", "trademanagement"]),
+  trading: new Set(["riskmanagement", "trademanagement"]),
+  riskmanagement: new Set([]), // output-only
+  trademanagement: new Set([]), // output-only
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  timing: "Filter/Timing",
+  indicator: "Indicator",
+  priceaction: "Price Action",
+  entrystrategy: "Entry Strategy",
+  entry: "Entry",
+  trading: "Trade Execution",
+  riskmanagement: "Risk Management",
+  trademanagement: "Trade Management",
+};
 
 /**
  * Check if adding an edge from source to target would create a cycle

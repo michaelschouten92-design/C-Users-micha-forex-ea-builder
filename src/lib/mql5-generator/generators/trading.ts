@@ -746,6 +746,224 @@ export function generateEntryLogic(
       if ("indicatorType" in indData) {
         switch (indData.indicatorType) {
           case "moving-average": {
+            // --- Fix 7c: Fibonacci entry (virtual MA node with _entryStrategyType) ---
+            if (
+              "_entryStrategyType" in indData &&
+              indData._entryStrategyType === "fibonacci-entry"
+            ) {
+              const fibMode = (
+                "_fibEntryMode" in indData ? indData._fibEntryMode : "BOUNCE"
+              ) as string;
+              const fibLevel = Number("_fibLevel" in indData ? indData._fibLevel : 0.618);
+              const fibLookback = Number("_fibLookback" in indData ? indData._fibLookback : 100);
+
+              code.inputs.push(
+                createInput(
+                  indNode,
+                  "_fibLevel",
+                  `InpFib${indIndex}Level`,
+                  "double",
+                  fibLevel,
+                  "Fibonacci Level (0.236-0.786)",
+                  `Fibonacci ${indIndex + 1}`
+                ),
+                createInput(
+                  indNode,
+                  "_fibLookback",
+                  `InpFib${indIndex}Lookback`,
+                  "int",
+                  fibLookback,
+                  "Bars to look back for swing high/low",
+                  `Fibonacci ${indIndex + 1}`
+                )
+              );
+
+              code.onTick.push(
+                `// --- Fibonacci Retracement Entry (Indicator ${indIndex + 1}) ---`
+              );
+              code.onTick.push(`double fib${indIndex}High[], fib${indIndex}Low[];`);
+              code.onTick.push(`ArraySetAsSeries(fib${indIndex}High, true);`);
+              code.onTick.push(`ArraySetAsSeries(fib${indIndex}Low, true);`);
+              code.onTick.push(
+                `CopyHigh(_Symbol, PERIOD_CURRENT, 0, InpFib${indIndex}Lookback, fib${indIndex}High);`
+              );
+              code.onTick.push(
+                `CopyLow(_Symbol, PERIOD_CURRENT, 0, InpFib${indIndex}Lookback, fib${indIndex}Low);`
+              );
+              code.onTick.push(
+                `int fib${indIndex}HighIdx = ArrayMaximum(fib${indIndex}High, 0, InpFib${indIndex}Lookback);`
+              );
+              code.onTick.push(
+                `int fib${indIndex}LowIdx = ArrayMinimum(fib${indIndex}Low, 0, InpFib${indIndex}Lookback);`
+              );
+              code.onTick.push(
+                `double fib${indIndex}SwHigh = fib${indIndex}High[fib${indIndex}HighIdx];`
+              );
+              code.onTick.push(
+                `double fib${indIndex}SwLow = fib${indIndex}Low[fib${indIndex}LowIdx];`
+              );
+              code.onTick.push(
+                `double fib${indIndex}Range = fib${indIndex}SwHigh - fib${indIndex}SwLow;`
+              );
+              code.onTick.push(
+                `double fib${indIndex}BuyLvl = fib${indIndex}SwLow + fib${indIndex}Range * (1.0 - InpFib${indIndex}Level);`
+              );
+              code.onTick.push(
+                `double fib${indIndex}SellLvl = fib${indIndex}SwHigh - fib${indIndex}Range * (1.0 - InpFib${indIndex}Level);`
+              );
+
+              if (fibMode === "BREAK") {
+                buyConditions.push(
+                  `(fib${indIndex}Range > 0 && DoubleLE(iClose(_Symbol, PERIOD_CURRENT, ${2 + s}), fib${indIndex}BuyLvl) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}BuyLvl))`
+                );
+                sellConditions.push(
+                  `(fib${indIndex}Range > 0 && DoubleGE(iClose(_Symbol, PERIOD_CURRENT, ${2 + s}), fib${indIndex}SellLvl) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}SellLvl))`
+                );
+              } else {
+                // BOUNCE (default): price touches fib level and bounces
+                buyConditions.push(
+                  `(fib${indIndex}Range > 0 && DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}BuyLvl) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}BuyLvl))`
+                );
+                sellConditions.push(
+                  `(fib${indIndex}Range > 0 && DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}SellLvl) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), fib${indIndex}SellLvl))`
+                );
+              }
+              break;
+            }
+
+            // --- Fix 7d: Pivot Point entry (virtual MA node with _entryStrategyType) ---
+            if (
+              "_entryStrategyType" in indData &&
+              indData._entryStrategyType === "pivot-point-entry"
+            ) {
+              const pivotType = (
+                "_pivotType" in indData ? indData._pivotType : "CLASSIC"
+              ) as string;
+              const pivotTf = (
+                "_pivotTimeframe" in indData ? indData._pivotTimeframe : "DAILY"
+              ) as string;
+              const pivotEntryMode = (
+                "_pivotEntryMode" in indData ? indData._pivotEntryMode : "BOUNCE"
+              ) as string;
+              const pivotTarget = (
+                "_pivotTargetLevel" in indData ? indData._pivotTargetLevel : "PIVOT"
+              ) as string;
+
+              const tfMql: Record<string, string> = {
+                DAILY: "PERIOD_D1",
+                WEEKLY: "PERIOD_W1",
+                MONTHLY: "PERIOD_MN1",
+              };
+              const ppTf = tfMql[pivotTf] ?? "PERIOD_D1";
+
+              code.onTick.push(`// --- Pivot Point Entry (Indicator ${indIndex + 1}) ---`);
+              code.onTick.push(`double pp${indIndex}H = iHigh(_Symbol, ${ppTf}, 1);`);
+              code.onTick.push(`double pp${indIndex}L = iLow(_Symbol, ${ppTf}, 1);`);
+              code.onTick.push(`double pp${indIndex}C = iClose(_Symbol, ${ppTf}, 1);`);
+
+              if (pivotType === "WOODIE") {
+                code.onTick.push(
+                  `double pp${indIndex}Pivot = (pp${indIndex}H + pp${indIndex}L + 2.0 * pp${indIndex}C) / 4.0;`
+                );
+              } else {
+                code.onTick.push(
+                  `double pp${indIndex}Pivot = (pp${indIndex}H + pp${indIndex}L + pp${indIndex}C) / 3.0;`
+                );
+              }
+
+              if (pivotType === "CAMARILLA") {
+                code.onTick.push(`double pp${indIndex}Rng = pp${indIndex}H - pp${indIndex}L;`);
+                code.onTick.push(
+                  `double pp${indIndex}R1 = pp${indIndex}C + pp${indIndex}Rng * 1.1 / 12.0;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S1 = pp${indIndex}C - pp${indIndex}Rng * 1.1 / 12.0;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R2 = pp${indIndex}C + pp${indIndex}Rng * 1.1 / 6.0;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S2 = pp${indIndex}C - pp${indIndex}Rng * 1.1 / 6.0;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R3 = pp${indIndex}C + pp${indIndex}Rng * 1.1 / 4.0;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S3 = pp${indIndex}C - pp${indIndex}Rng * 1.1 / 4.0;`
+                );
+              } else if (pivotType === "FIBONACCI") {
+                code.onTick.push(`double pp${indIndex}Rng = pp${indIndex}H - pp${indIndex}L;`);
+                code.onTick.push(
+                  `double pp${indIndex}R1 = pp${indIndex}Pivot + 0.382 * pp${indIndex}Rng;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S1 = pp${indIndex}Pivot - 0.382 * pp${indIndex}Rng;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R2 = pp${indIndex}Pivot + 0.618 * pp${indIndex}Rng;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S2 = pp${indIndex}Pivot - 0.618 * pp${indIndex}Rng;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R3 = pp${indIndex}Pivot + 1.000 * pp${indIndex}Rng;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S3 = pp${indIndex}Pivot - 1.000 * pp${indIndex}Rng;`
+                );
+              } else {
+                // CLASSIC or WOODIE (same S/R formula)
+                code.onTick.push(
+                  `double pp${indIndex}R1 = 2.0 * pp${indIndex}Pivot - pp${indIndex}L;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S1 = 2.0 * pp${indIndex}Pivot - pp${indIndex}H;`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R2 = pp${indIndex}Pivot + (pp${indIndex}H - pp${indIndex}L);`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S2 = pp${indIndex}Pivot - (pp${indIndex}H - pp${indIndex}L);`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}R3 = 2.0 * pp${indIndex}Pivot + (pp${indIndex}H - 2.0 * pp${indIndex}L);`
+                );
+                code.onTick.push(
+                  `double pp${indIndex}S3 = 2.0 * pp${indIndex}Pivot - (2.0 * pp${indIndex}H - pp${indIndex}L);`
+                );
+              }
+
+              const ppLevelMap: Record<string, string> = {
+                PIVOT: `pp${indIndex}Pivot`,
+                S1: `pp${indIndex}S1`,
+                S2: `pp${indIndex}S2`,
+                S3: `pp${indIndex}S3`,
+                R1: `pp${indIndex}R1`,
+                R2: `pp${indIndex}R2`,
+                R3: `pp${indIndex}R3`,
+              };
+              const targetVar = ppLevelMap[pivotTarget] ?? `pp${indIndex}Pivot`;
+
+              if (pivotEntryMode === "BREAKOUT") {
+                buyConditions.push(
+                  `(DoubleLE(iClose(_Symbol, PERIOD_CURRENT, ${2 + s}), ${targetVar}) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}))`
+                );
+                sellConditions.push(
+                  `(DoubleGE(iClose(_Symbol, PERIOD_CURRENT, ${2 + s}), ${targetVar}) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}))`
+                );
+              } else {
+                // BOUNCE (default): price touches level and bounces
+                buyConditions.push(
+                  `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}))`
+                );
+                sellConditions.push(
+                  `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${targetVar}))`
+                );
+              }
+              break;
+            }
+
+            // Regular moving average logic
             const requireBuffer = "_requireEmaBuffer" in indData && indData._requireEmaBuffer;
             if (requireBuffer) {
               code.inputs.push(
@@ -821,14 +1039,29 @@ export function generateEntryLogic(
             break;
           }
 
-          case "bollinger-bands":
-            buyConditions.push(
-              `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
-            );
-            sellConditions.push(
-              `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
-            );
+          case "bollinger-bands": {
+            const bbEntryMode = (
+              "_bbEntryMode" in indData ? indData._bbEntryMode : "BAND_TOUCH"
+            ) as string;
+            if (bbEntryMode === "MEAN_REVERSION") {
+              // MEAN_REVERSION: price was outside band, crosses back inside
+              buyConditions.push(
+                `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${2 + s}), ${varPrefix}LowerBuffer[${2 + s}]) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
+              );
+              sellConditions.push(
+                `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${2 + s}), ${varPrefix}UpperBuffer[${2 + s}]) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
+              );
+            } else {
+              // BAND_TOUCH (default): price touches lower band (buy) / upper band (sell)
+              buyConditions.push(
+                `(DoubleLE(iLow(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}LowerBuffer[${1 + s}]))`
+              );
+              sellConditions.push(
+                `(DoubleGE(iHigh(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}UpperBuffer[${1 + s}]))`
+              );
+            }
             break;
+          }
 
           case "atr":
             // ATR is non-directional (volatility filter) - rising ATR confirms both buy and sell
@@ -840,14 +1073,31 @@ export function generateEntryLogic(
             );
             break;
 
-          case "adx":
-            buyConditions.push(
-              `(DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}PlusDIBuffer[${0 + s}], ${varPrefix}MinusDIBuffer[${0 + s}]))`
-            );
-            sellConditions.push(
-              `(DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel) && DoubleGT(${varPrefix}MinusDIBuffer[${0 + s}], ${varPrefix}PlusDIBuffer[${0 + s}]))`
-            );
+          case "adx": {
+            const adxEntryMode = (
+              "_adxEntryMode" in indData ? indData._adxEntryMode : "DI_CROSS"
+            ) as string;
+            const diPlusBuy = `DoubleGT(${varPrefix}PlusDIBuffer[${0 + s}], ${varPrefix}MinusDIBuffer[${0 + s}])`;
+            const diPlusSell = `DoubleGT(${varPrefix}MinusDIBuffer[${0 + s}], ${varPrefix}PlusDIBuffer[${0 + s}])`;
+            const adxAbove = `DoubleGT(${varPrefix}MainBuffer[${0 + s}], InpADX${indIndex}TrendLevel)`;
+
+            if (adxEntryMode === "ADX_RISING") {
+              // ADX rising AND above threshold + DI direction
+              const adxRising = `DoubleGT(${varPrefix}MainBuffer[${0 + s}], ${varPrefix}MainBuffer[${1 + s}])`;
+              buyConditions.push(`(${adxAbove} && ${adxRising} && ${diPlusBuy})`);
+              sellConditions.push(`(${adxAbove} && ${adxRising} && ${diPlusSell})`);
+            } else if (adxEntryMode === "TREND_START") {
+              // ADX crosses above threshold from below + DI direction
+              const adxWasBelow = `DoubleLE(${varPrefix}MainBuffer[${1 + s}], InpADX${indIndex}TrendLevel)`;
+              buyConditions.push(`(${adxWasBelow} && ${adxAbove} && ${diPlusBuy})`);
+              sellConditions.push(`(${adxWasBelow} && ${adxAbove} && ${diPlusSell})`);
+            } else {
+              // DI_CROSS (default): +DI > -DI (buy), -DI > +DI (sell) with ADX above threshold
+              buyConditions.push(`(${adxAbove} && ${diPlusBuy})`);
+              sellConditions.push(`(${adxAbove} && ${diPlusSell})`);
+            }
             break;
+          }
 
           case "stochastic":
             // Buy: %K crosses up from oversold zone

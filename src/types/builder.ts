@@ -832,6 +832,67 @@ export type EntryStrategyNodeData =
   | PivotPointEntryData
   | ADXTrendEntryData;
 
+// ============================================
+// VIRTUAL NODE METADATA (used by generators on decomposed entry strategy nodes)
+// ============================================
+
+/** Metadata fields attached to virtual nodes via `_prefixed` keys during entry strategy decomposition. */
+export interface VirtualNodeMetadata {
+  // EMA Crossover
+  _entryStrategyType?: string;
+  _entryStrategyId?: string;
+  _role?: "fast" | "slow";
+  _minEmaSeparation?: number;
+
+  // Filter roles
+  _filterRole?: "htf-trend" | "rsi-confirm" | "adx-trend-strength";
+
+  // Range Breakout
+  _cancelOpposite?: boolean;
+  _closeAtTime?: boolean;
+  _closeAtHour?: number;
+  _closeAtMinute?: number;
+  _useServerTime?: boolean;
+  _volumeConfirmation?: boolean;
+  _volumeConfirmationPeriod?: number;
+
+  // Trend Pullback
+  _requireEmaBuffer?: boolean;
+  _pullbackMaxDistance?: number;
+
+  // MACD signal type
+  _macdSignalType?: "SIGNAL_CROSS" | "ZERO_CROSS" | "HISTOGRAM_SIGN";
+
+  // Divergence
+  _divergenceMode?: boolean;
+  _divergenceLookback?: number;
+  _divergenceMinSwing?: number;
+  _copyBarsOverride?: number;
+
+  // Bollinger Band entry mode
+  _bbEntryMode?: "BAND_TOUCH" | "MEAN_REVERSION";
+
+  // Fibonacci entry
+  _fibEntryMode?: "BOUNCE" | "BREAK";
+  _fibLevel?: number;
+  _fibLookback?: number;
+
+  // Pivot Point entry
+  _pivotType?: "CLASSIC" | "FIBONACCI" | "CAMARILLA" | "WOODIE";
+  _pivotTimeframe?: "DAILY" | "WEEKLY" | "MONTHLY";
+  _pivotEntryMode?: "BOUNCE" | "BREAKOUT";
+  _pivotTargetLevel?: "PIVOT" | "S1" | "S2" | "S3" | "R1" | "R2" | "R3";
+
+  // ADX entry mode
+  _adxEntryMode?: "DI_CROSS" | "ADX_RISING" | "TREND_START";
+
+  // Close on opposite
+  _closeOnOpposite?: boolean;
+
+  // Multiple TP R-multiple trigger
+  _rMultipleTrigger?: number;
+}
+
 // Union of all node data types
 export type BuilderNodeData =
   | TimingNodeData
@@ -1319,7 +1380,8 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     type: "vwap",
     label: "VWAP",
     category: "indicator",
-    description: "Volume Weighted Average Price — institutional fair value benchmark",
+    description:
+      "Volume Weighted Average Price (uses tick volume — not true exchange volume on forex)",
     defaultData: {
       label: "VWAP",
       category: "indicator",

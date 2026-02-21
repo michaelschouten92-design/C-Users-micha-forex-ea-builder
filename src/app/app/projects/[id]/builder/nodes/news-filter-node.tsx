@@ -20,6 +20,7 @@ export const NewsFilterNode = memo(function NewsFilterNode({ id, data, selected 
       category="timing"
       label={data.label}
       icon={NodeIcons.timing}
+      showGlobalBadge
     >
       <div className="text-xs text-zinc-400">
         ±{data.hoursBefore}/{data.hoursAfter}h | {impacts.join(", ") || "None"}

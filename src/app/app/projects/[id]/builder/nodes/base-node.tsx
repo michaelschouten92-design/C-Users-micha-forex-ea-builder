@@ -14,6 +14,7 @@ interface BaseNodeProps {
   children?: React.ReactNode;
   inputHandles?: number;
   outputHandles?: number;
+  showGlobalBadge?: boolean;
 }
 
 const categoryStyles: Record<
@@ -79,6 +80,7 @@ export const BaseNode = memo(function BaseNode({
   children: _children,
   inputHandles = 1,
   outputHandles = 1,
+  showGlobalBadge = false,
 }: BaseNodeProps) {
   const styles = categoryStyles[category];
   const { deleteElements } = useReactFlow();
@@ -287,6 +289,26 @@ export const BaseNode = memo(function BaseNode({
           title="Drag to connect to another block"
           className="!w-3 !h-3 !bg-[#4F46E5] !border-2 !border-[#0F172A] hover:!bg-[#22D3EE] transition-colors duration-200"
         />
+      )}
+
+      {/* Global badge for filter nodes */}
+      {showGlobalBadge && (
+        <div
+          className="absolute -bottom-2.5 -right-2 z-10 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-white bg-[#4F46E5] shadow-lg"
+          title="This filter applies globally to all trades, regardless of wiring"
+        >
+          <svg
+            className="w-2.5 h-2.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+          </svg>
+          <span>GLOBAL</span>
+        </div>
       )}
     </div>
   );

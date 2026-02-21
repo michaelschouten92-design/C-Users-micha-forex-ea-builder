@@ -15,6 +15,7 @@ export const MaxSpreadNode = memo(function MaxSpreadNode({ id, data, selected }:
       category="timing"
       label={data.label}
       icon={NodeIcons.timing}
+      showGlobalBadge
     >
       <div className="text-xs text-zinc-400">Max: {data.maxSpreadPips} pips</div>
     </BaseNode>

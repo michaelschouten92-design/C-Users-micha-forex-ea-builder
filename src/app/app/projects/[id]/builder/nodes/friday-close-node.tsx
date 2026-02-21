@@ -17,6 +17,7 @@ export const FridayCloseNode = memo(function FridayCloseNode({ id, data, selecte
       category="timing"
       label={data.label}
       icon={NodeIcons.timing}
+      showGlobalBadge
     >
       <div className="text-xs text-zinc-400">
         Friday {h}:{m}

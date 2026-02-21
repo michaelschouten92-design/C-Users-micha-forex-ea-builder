@@ -6,6 +6,7 @@ import type {
   BuilderNodeType,
   BuilderEdge,
   BuilderNodeData,
+  VirtualNodeMetadata,
   EMACrossoverEntryData,
   RangeBreakoutEntryData,
   RSIReversalEntryData,
@@ -110,11 +111,11 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   const virtualNodes: BuilderNode[] = [];
   const virtualEdges: BuilderEdge[] = [];
 
-  // Helper to create a virtual node
+  // Helper to create a virtual node with typed metadata
   const vNode = (
     suffix: string,
     type: BuilderNodeType,
-    data: Record<string, unknown>
+    data: Partial<BuilderNodeData> & VirtualNodeMetadata & Record<string, unknown>
   ): BuilderNode => ({
     id: `${baseId}__${suffix}`,
     type,
