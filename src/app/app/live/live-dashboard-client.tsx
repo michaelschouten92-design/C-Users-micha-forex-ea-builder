@@ -626,15 +626,19 @@ function EACard({
   ea,
   statusChanged,
   onTogglePause,
+  onDelete,
 }: {
   ea: EAInstanceData;
   statusChanged: boolean;
   onTogglePause: (instanceId: string, paused: boolean) => void;
+  onDelete: (instanceId: string) => void;
 }) {
   const [showTradeLog, setShowTradeLog] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
   const [showHealth, setShowHealth] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const winRate = calculateWinRate(ea.trades);
   const profitFactor = calculateProfitFactor(ea.trades);
   const maxDrawdown = calculateMaxDrawdown(ea.heartbeats);
@@ -644,6 +648,11 @@ function EACard({
     setPauseLoading(true);
     onTogglePause(ea.id, !ea.paused);
     setPauseLoading(false);
+  }
+
+  async function handleDelete(): Promise<void> {
+    setDeleteLoading(true);
+    onDelete(ea.id);
   }
 
   return (
@@ -868,7 +877,52 @@ function EACard({
         <span className="text-xs text-[#7C8DB0]">
           Last heartbeat: {formatRelativeTime(ea.lastHeartbeat)}
         </span>
+
+        {/* Delete button */}
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(239,68,68,0.2)] text-[#7C8DB0] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-all duration-200"
+          title="Delete this EA instance"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+          Delete
+        </button>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className="mt-3 p-4 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
+          <p className="text-sm text-[#EF4444] font-medium mb-1">
+            Delete &ldquo;{ea.eaName}&rdquo;?
+          </p>
+          <p className="text-xs text-[#7C8DB0] mb-3">
+            This will remove the EA instance and all its data from your dashboard. This action
+            cannot be undone.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-[#EF4444] hover:bg-[#DC2626] transition-all duration-200 disabled:opacity-50"
+            >
+              {deleteLoading ? "Deleting..." : "Yes, delete"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error display */}
       {ea.lastError && ea.status === "ERROR" && (
@@ -1391,6 +1445,20 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     }
   }
 
+  async function handleDelete(instanceId: string): Promise<void> {
+    const ea = eaInstances.find((e) => e.id === instanceId);
+    const res = await fetch(`/api/live/${instanceId}`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      setEaInstances((prev) => prev.filter((e) => e.id !== instanceId));
+      showSuccess(`${ea?.eaName ?? "EA"} deleted`);
+    } else {
+      showError("Failed to delete EA", "Please try again.");
+    }
+  }
+
   async function handleSaveGlobalDrawdown(): Promise<void> {
     const threshold = parseFloat(globalDrawdownThreshold);
     if (isNaN(threshold) || threshold <= 0 || threshold > 100) {
@@ -1808,6 +1876,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
               ea={ea}
               statusChanged={changedIds.has(ea.id)}
               onTogglePause={handleTogglePause}
+              onDelete={handleDelete}
             />
           ))}
         </div>
