@@ -98,7 +98,7 @@ export default async function DashboardPage() {
                 href="/app/live"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
-                Live EAs
+                Track Record
               </Link>
               <Link
                 href="/app/ai-generator"

@@ -110,7 +110,7 @@ export default async function LiveEADashboardPage() {
                 href="/app/live"
                 className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
               >
-                Live EAs
+                Track Record
               </Link>
               <Link
                 href="/app/settings"
@@ -137,7 +137,7 @@ export default async function LiveEADashboardPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Live EAs" }]} />
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Track Record" }]} />
         {/* Webhook Setup Guide */}
         <div className="mb-6">
           <WebhookSetupGuide />

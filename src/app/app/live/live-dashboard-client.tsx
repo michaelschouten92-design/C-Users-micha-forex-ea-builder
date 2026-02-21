@@ -1429,7 +1429,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
       {/* Controls bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">Live EAs</h2>
+          <h2 className="text-2xl font-bold text-white">Track Record</h2>
           <span className="text-sm text-[#7C8DB0]">
             {eaInstances.length} instance{eaInstances.length !== 1 ? "s" : ""}
           </span>
