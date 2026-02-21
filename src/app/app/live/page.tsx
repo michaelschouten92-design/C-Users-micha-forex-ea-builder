@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
-import { WebhookSetupGuide } from "@/components/builder/webhook-setup-guide";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 
@@ -138,10 +137,6 @@ export default async function LiveEADashboardPage() {
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Track Record" }]} />
-        {/* Webhook Setup Guide */}
-        <div className="mb-6">
-          <WebhookSetupGuide />
-        </div>
 
         <LiveDashboardClient initialData={serializedInstances} />
 
