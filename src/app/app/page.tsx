@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         versions: {
           orderBy: { versionNo: "desc" },
           take: 1,
-          select: { buildJson: true },
+          select: { versionNo: true },
         },
         tags: {
           select: { tag: true },

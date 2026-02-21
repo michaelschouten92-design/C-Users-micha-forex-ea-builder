@@ -17,7 +17,7 @@ type Project = {
   _count: {
     versions: number;
   };
-  versions?: { buildJson: unknown }[];
+  versions?: { versionNo: number }[];
   tags?: { tag: string }[];
 };
 

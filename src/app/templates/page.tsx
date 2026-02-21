@@ -113,7 +113,7 @@ const templates = [
     type: "Mean Reversion",
     description:
       "Enter when price touches the upper or lower Bollinger Band. Uses a standalone BB indicator with buy and sell conditions, ATR stop loss, and take profit nodes.",
-    href: null,
+    href: "/templates/bollinger-band-reversal-ea",
     color: "#818CF8",
     basicFields: "BB Period, BB Deviation, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Session filter",
@@ -123,7 +123,7 @@ const templates = [
     type: "Trend Following",
     description:
       "Enter when ADX confirms a strong trend via DI crossover. Uses a standalone ADX indicator with buy and sell conditions and ATR-based risk management.",
-    href: null,
+    href: "/templates/adx-trend-strength-ea",
     color: "#34D399",
     basicFields: "ADX Period, Threshold, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Session filter",
@@ -133,7 +133,7 @@ const templates = [
     type: "Mean Reversion",
     description:
       "Buy oversold, sell overbought using the Stochastic oscillator. Uses a standalone Stochastic indicator with buy and sell conditions and ATR-based risk management.",
-    href: null,
+    href: "/templates/stochastic-reversal-ea",
     color: "#F472B6",
     basicFields: "K Period, D Period, Slowing, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Session filter",
@@ -143,7 +143,7 @@ const templates = [
     type: "Trend Following",
     description:
       "Enter on Ichimoku Cloud breakouts — buy above the cloud, sell below. Uses a standalone Ichimoku indicator with buy and sell conditions and ATR-based risk management.",
-    href: null,
+    href: "/templates/ichimoku-cloud-ea",
     color: "#FBBF24",
     basicFields: "Tenkan, Kijun, Senkou B, Risk %, SL (ATR), TP (R-multiple)",
     advanced: "Session filter",

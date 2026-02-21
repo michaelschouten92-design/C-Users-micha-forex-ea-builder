@@ -25,6 +25,19 @@ interface RoadmapItem {
 
 const SHIPPED: RoadmapItem[] = [
   {
+    title: "AI Strategy Generator",
+    description:
+      "Describe a strategy in plain English and get auto-generated node layouts. Rule-based MVP live now.",
+    tag: "AI",
+    shipped: "Q1 2026",
+  },
+  {
+    title: "Multi-Pair Strategies",
+    description: "Run a single strategy across multiple currency pairs with correlation filtering.",
+    tag: "Trading",
+    shipped: "Q1 2026",
+  },
+  {
     title: "Multi-Level Take Profit",
     description: "Three staged TP levels with automatic SL management after each level is hit.",
     tag: "Trade Management",
@@ -62,27 +75,11 @@ const SHIPPED: RoadmapItem[] = [
 
 const IN_PROGRESS: RoadmapItem[] = [
   {
-    title: "AI Strategy Generator",
-    description:
-      "Describe a strategy in plain English and get auto-generated node layouts. Rule-based MVP live now.",
-    tag: "AI",
-    timeline: "Q1 2026",
-  },
-  {
-    title: "Multi-Pair Strategies",
-    description: "Run a single strategy across multiple currency pairs with correlation filtering.",
-    tag: "Trading",
-    timeline: "Q1 2026",
-  },
-  {
     title: "Cloud Backtesting",
     description: "Run backtests directly from AlgoStudio without needing MetaTrader installed.",
     tag: "Infrastructure",
     timeline: "Q2 2026",
   },
-];
-
-const PLANNED: RoadmapItem[] = [
   {
     title: "Advanced Optimization",
     description:
@@ -90,6 +87,9 @@ const PLANNED: RoadmapItem[] = [
     tag: "Analytics",
     timeline: "Q2 2026",
   },
+];
+
+const PLANNED: RoadmapItem[] = [
   {
     title: "Broker API Integration",
     description: "Connect to brokers directly for live deployment without manual file copying.",
