@@ -661,9 +661,9 @@ export function ExportButton({
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setShowPreview(true)}
-                        aria-label="Preview exported code"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
+                        onClick={downloadFile}
+                        aria-label="Download exported file"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all duration-200"
                       >
                         <svg
                           className="w-4 h-4"
@@ -675,10 +675,10 @@ export function ExportButton({
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                           />
                         </svg>
-                        Preview Code
+                        Download
                       </button>
                       <button
                         onClick={copyToClipboard}
@@ -699,26 +699,6 @@ export function ExportButton({
                           />
                         </svg>
                         {copied ? "Copied!" : "Copy"}
-                      </button>
-                      <button
-                        onClick={downloadFile}
-                        aria-label="Download exported file"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#10B981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all duration-200"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                          />
-                        </svg>
-                        Download
                       </button>
                     </div>
                   </div>
