@@ -414,6 +414,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         where: {
           projectId: id,
           userId: session.user.id,
+          deletedAt: null,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -428,6 +429,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         where: {
           projectId: id,
           userId: session.user.id,
+          deletedAt: null,
         },
       }),
     ]);

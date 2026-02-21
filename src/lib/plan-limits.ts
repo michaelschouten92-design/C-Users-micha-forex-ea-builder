@@ -95,6 +95,7 @@ export async function checkExportLimit(userId: string): Promise<{
     where: {
       userId,
       createdAt: { gte: startOfMonth },
+      deletedAt: null,
     },
   });
 

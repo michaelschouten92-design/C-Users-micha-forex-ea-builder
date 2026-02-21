@@ -201,10 +201,18 @@ export function ExportButton({
   async function fetchHistory() {
     setHistoryLoading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/export?limit=5`);
+      const res = await fetch(`/api/projects/${projectId}/export?pageSize=5`);
       if (res.ok) {
         const data = await res.json();
-        setHistoryItems(Array.isArray(data) ? data : (data.items ?? []));
+        const raw = Array.isArray(data) ? data : (data.data ?? []);
+        setHistoryItems(
+          raw.map((item: Record<string, unknown>) => ({
+            id: item.id,
+            outputName: item.outputName,
+            versionNo: (item.buildVersion as { versionNo?: number } | null)?.versionNo ?? 0,
+            createdAt: item.createdAt,
+          }))
+        );
       }
     } catch {
       // Silently fail for history fetch
@@ -351,7 +359,10 @@ export function ExportButton({
                         : "Export Successful"}
               </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setShowUpgradePrompt(false);
+                }}
                 className="text-[#7C8DB0] hover:text-white p-1 transition-colors duration-200"
                 aria-label="Close export modal"
               >
