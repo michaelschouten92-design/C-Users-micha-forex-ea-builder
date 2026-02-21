@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   generateAdminOtp,
   verifyAdminOtp,
+  signOtpCookie,
   OTP_COOKIE_NAME,
   OTP_COOKIE_MAX_AGE,
 } from "@/lib/admin-otp";
@@ -136,9 +137,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      // Set verified cookie (httpOnly, 1 hour)
+      // Set verified cookie with HMAC binding to user session (httpOnly, 1 hour)
       const response = NextResponse.json({ success: true, verified: true });
-      response.cookies.set(OTP_COOKIE_NAME, "1", {
+      response.cookies.set(OTP_COOKIE_NAME, signOtpCookie(session.user.id), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

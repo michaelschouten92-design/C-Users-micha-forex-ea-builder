@@ -16,7 +16,7 @@ import {
   formatRateLimitError,
 } from "./rate-limit";
 import { logAuditEvent } from "./audit";
-import { OTP_COOKIE_NAME } from "./admin-otp";
+import { OTP_COOKIE_NAME, verifyOtpCookie } from "./admin-otp";
 
 interface AdminCheckResult {
   authorized: true;
@@ -87,9 +87,10 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
   }
 
   // Require OTP verification (cookie set by /api/admin/otp verify action)
+  // Cookie contains HMAC-signed value bound to this user's session ID
   const cookieStore = await cookies();
   const otpCookie = cookieStore.get(OTP_COOKIE_NAME);
-  if (!otpCookie?.value) {
+  if (!otpCookie?.value || !verifyOtpCookie(otpCookie.value, session.user.id)) {
     return {
       authorized: false,
       response: NextResponse.json(

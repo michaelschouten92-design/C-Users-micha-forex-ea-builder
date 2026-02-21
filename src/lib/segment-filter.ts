@@ -88,6 +88,8 @@ export async function getUserEmailsBySegment(segmentId: string): Promise<string[
 /**
  * Get all user emails that match the given filters
  */
+const MAX_SEGMENT_USERS = 10000; // Safety cap to prevent OOM on large user bases
+
 export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<string[]> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
 
@@ -100,6 +102,8 @@ export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<s
           select: { tier: true, status: true, currentPeriodEnd: true },
         },
       },
+      take: MAX_SEGMENT_USERS,
+      orderBy: { createdAt: "desc" },
     }),
     // Activity counts for the activity filter
     filters.activityFilter && filters.activityFilter !== "ALL"

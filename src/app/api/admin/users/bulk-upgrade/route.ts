@@ -64,22 +64,29 @@ export async function POST(request: Request) {
     let updated = 0;
     const failed: string[] = [];
 
-    // Fetch all users in parallel (chunked to avoid overwhelming DB)
+    // Process in chunks, batch-fetching users to avoid N+1 queries
     const CHUNK_SIZE = 50;
     for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
       const chunk = emails.slice(i, i + CHUNK_SIZE);
+
+      // Batch fetch all users in this chunk at once
+      const users = await prisma.user.findMany({
+        where: { email: { in: chunk } },
+        select: { id: true, email: true, subscription: { select: { tier: true } } },
+      });
+
+      const userMap = new Map(users.map((u) => [u.email, u]));
+
+      // Mark emails not found in DB as failed
+      for (const email of chunk) {
+        if (!userMap.has(email)) {
+          failed.push(email);
+        }
+      }
+
+      // Update found users in parallel
       const results = await Promise.allSettled(
-        chunk.map(async (email) => {
-          const user = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true, subscription: { select: { tier: true } } },
-          });
-
-          if (!user) {
-            failed.push(email);
-            return;
-          }
-
+        users.map(async (user) => {
           const previousTier = user.subscription?.tier ?? "FREE";
 
           await prisma.subscription.upsert({
@@ -105,7 +112,7 @@ export async function POST(request: Request) {
       // Collect failures from rejected promises
       for (let j = 0; j < results.length; j++) {
         if (results[j].status === "rejected") {
-          failed.push(chunk[j]);
+          failed.push(users[j].email);
         }
       }
     }

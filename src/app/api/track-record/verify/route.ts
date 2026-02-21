@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Verify the instance exists and is not deleted
     const instance = await prisma.liveEAInstance.findFirst({
       where: { id: instanceId, deletedAt: null },
-      select: { id: true, eaName: true, mode: true },
+      select: { id: true },
     });
 
     if (!instance) {
@@ -131,8 +131,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       instanceId,
-      eaName: instance.eaName,
-      mode: instance.mode,
       chain: {
         valid: chainResult.valid,
         length: chainResult.chainLength,

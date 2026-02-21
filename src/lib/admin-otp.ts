@@ -1,12 +1,59 @@
 import { prisma } from "./prisma";
 import { logger } from "./logger";
-import { randomInt, createHash } from "crypto";
+import { randomInt, createHash, createHmac } from "crypto";
 import { checkRateLimit, adminOtpVerifyRateLimiter } from "./rate-limit";
 
 const log = logger.child({ module: "admin-otp" });
 const OTP_EXPIRY_MINUTES = 10;
 const OTP_COOKIE_NAME = "admin_otp_verified";
 const OTP_COOKIE_MAX_AGE = 60 * 60; // 1 hour
+
+/**
+ * Create a signed OTP cookie value bound to the user's ID.
+ * Format: userId:timestamp:hmac
+ */
+export function signOtpCookie(userId: string): string {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const secret = process.env.AUTH_SECRET || "dev-secret";
+  const data = `${userId}:${timestamp}`;
+  const hmac = createHmac("sha256", secret).update(data).digest("hex");
+  return `${data}:${hmac}`;
+}
+
+/**
+ * Verify a signed OTP cookie value matches the expected user ID.
+ */
+export function verifyOtpCookie(cookieValue: string, userId: string): boolean {
+  const parts = cookieValue.split(":");
+  if (parts.length !== 3) return false;
+
+  const [cookieUserId, timestampStr, providedHmac] = parts;
+  if (cookieUserId !== userId) return false;
+
+  const timestamp = parseInt(timestampStr, 10);
+  if (isNaN(timestamp)) return false;
+
+  // Check cookie hasn't expired (use same maxAge as the cookie itself)
+  const now = Math.floor(Date.now() / 1000);
+  if (now - timestamp > OTP_COOKIE_MAX_AGE) return false;
+
+  // Verify HMAC
+  const secret = process.env.AUTH_SECRET || "dev-secret";
+  const data = `${cookieUserId}:${timestampStr}`;
+  const expectedHmac = createHmac("sha256", secret).update(data).digest("hex");
+
+  // Timing-safe comparison
+  if (providedHmac.length !== expectedHmac.length) return false;
+  const a = Buffer.from(providedHmac, "hex");
+  const b = Buffer.from(expectedHmac, "hex");
+  if (a.length !== b.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  return result === 0;
+}
 
 /**
  * Generate a 6-digit OTP code for an admin user.

@@ -71,7 +71,11 @@ export async function POST(request: Request) {
     let emails: string[] = [];
 
     if (targetType === "all") {
-      const users = await prisma.user.findMany({ select: { email: true } });
+      const users = await prisma.user.findMany({
+        select: { email: true },
+        take: 10000, // Safety cap to prevent OOM
+        orderBy: { createdAt: "desc" },
+      });
       emails = users.map((u) => u.email);
     } else if (targetType === "segment" && segmentId) {
       emails = await getUserEmailsBySegment(segmentId);

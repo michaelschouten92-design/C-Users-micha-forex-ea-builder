@@ -83,6 +83,9 @@ const envSchema = z.object({
   TURNSTILE_SECRET_KEY: z.string().optional(),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
 
+  // App URL (optional — used for telemetry base URL in exported EAs)
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+
   // Stripe trial period (optional, days)
   STRIPE_TRIAL_DAYS: z.coerce.number().int().min(0).max(90).optional(),
 
@@ -251,6 +254,7 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
 // Parse and validate environment variables

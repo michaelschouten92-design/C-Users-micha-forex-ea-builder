@@ -102,16 +102,24 @@ export async function checkDrawdownAlerts(
     },
   });
 
-  for (const config of configs) {
+  // Find the lowest exceeded threshold to build the alert message.
+  // triggerAlert already handles all matching configs internally,
+  // so we only need to call it once (not per config).
+  const lowestExceeded = configs.reduce<number | null>((lowest, config) => {
     if (config.threshold !== null && drawdown >= config.threshold) {
-      await triggerAlert({
-        userId,
-        instanceId,
-        eaName,
-        alertType: "DRAWDOWN",
-        message: `Drawdown of ${drawdown.toFixed(2)}% exceeded your threshold of ${config.threshold}%`,
-      });
+      return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
     }
+    return lowest;
+  }, null);
+
+  if (lowestExceeded !== null) {
+    await triggerAlert({
+      userId,
+      instanceId,
+      eaName,
+      alertType: "DRAWDOWN",
+      message: `Drawdown of ${drawdown.toFixed(2)}% exceeded your threshold of ${lowestExceeded}%`,
+    });
   }
 }
 
