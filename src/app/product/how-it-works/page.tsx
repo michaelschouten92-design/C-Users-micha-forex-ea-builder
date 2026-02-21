@@ -95,7 +95,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 2,
         name: "Customize and export",
-        text: "Set your risk parameters, stop loss, and take profit. Export clean MQL5 or MQL4 source code. The code is yours to modify, optimize, and deploy.",
+        text: "Set your risk parameters, stop loss, and take profit. Export clean MQL5 source code. The code is yours to modify, optimize, and deploy.",
       },
       {
         "@type": "HowToStep",
@@ -183,8 +183,8 @@ export default function HowItWorksPage() {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Customize and export</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
-                  Set your risk parameters, stop loss, and take profit. Export clean MQL5 or MQL4
-                  source code. The code is yours to modify, optimize, and deploy.
+                  Set your risk parameters, stop loss, and take profit. Export clean MQL5 source
+                  code. The code is yours to modify, optimize, and deploy.
                 </p>
                 <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                   <h3 className="text-sm font-semibold text-white mb-4">Typical settings</h3>

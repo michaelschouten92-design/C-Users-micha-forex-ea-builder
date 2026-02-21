@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "RSI/MACD Divergence EA Template | Free MT5 & MT4 Reversal Strategy",
+  title: "RSI/MACD Divergence EA Template | Free MT5 Reversal Strategy",
   description:
-    "Free RSI/MACD Divergence Expert Advisor template for MetaTrader 5 & 4. Detect price-indicator divergence for reversal entries with ATR stops and swing point detection. Build without coding.",
+    "Free RSI/MACD Divergence Expert Advisor template for MetaTrader 5. Detect price-indicator divergence for reversal entries with ATR stops and swing point detection. Build without coding.",
   alternates: { canonical: "/templates/rsi-macd-divergence-ea" },
   openGraph: {
-    title: "RSI/MACD Divergence EA Template | Free MT5 & MT4 Reversal Strategy",
+    title: "RSI/MACD Divergence EA Template | Free MT5 Reversal Strategy",
     description:
-      "Free RSI/MACD Divergence Expert Advisor template for MetaTrader 5 & 4. Detect price-indicator divergence for reversal entries with ATR stops and swing point detection. Build without coding.",
+      "Free RSI/MACD Divergence Expert Advisor template for MetaTrader 5. Detect price-indicator divergence for reversal entries with ATR stops and swing point detection. Build without coding.",
     url: "/templates/rsi-macd-divergence-ea",
   },
 };
@@ -85,8 +85,8 @@ export default function RSIMACDDivergenceTemplatePage() {
             signals in technical analysis. This free EA template automatically detects bullish and
             bearish divergence using either RSI or MACD, with configurable swing point detection and
             ATR-based risk management. Best for EURUSD, GBPUSD, and USDJPY on H4 to D1 timeframes.
-            Build it in AlgoStudio without coding and export a production-ready MQL5 (or MQL4)
-            Expert Advisor in minutes.
+            Build it in AlgoStudio without coding and export a production-ready MQL5 Expert Advisor
+            in minutes.
           </p>
         </header>
 

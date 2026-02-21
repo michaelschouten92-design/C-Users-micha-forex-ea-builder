@@ -33,11 +33,11 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-semibold text-white mb-3">2. Description of Service</h2>
             <p>
               AlgoStudio is a visual no-code builder that allows you to design Expert Advisors (EAs)
-              for MetaTrader 5 and MetaTrader 4. The platform offers:
+              for MetaTrader 5. The platform offers:
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>A visual interface for building trading strategies</li>
-              <li>Export of strategies to MQL5 and MQL4 code</li>
+              <li>Export of strategies to MQL5 code</li>
               <li>Version control for strategy designs</li>
               <li>Multiple subscription tiers (Free, Pro, Elite)</li>
             </ul>
@@ -68,7 +68,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-semibold text-white mb-3">5. Intellectual Property</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>You retain full ownership of the strategies you create</li>
-              <li>The exported MQL5/MQL4 code is yours and you may use it freely</li>
+              <li>The exported MQL5 code is yours and you may use it freely</li>
               <li>The AlgoStudio platform, logo, and interface are our property</li>
               <li>You may not reverse-engineer or copy the platform</li>
             </ul>

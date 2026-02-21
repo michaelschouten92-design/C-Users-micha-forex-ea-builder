@@ -32,7 +32,7 @@ const faqItems = [
   },
   {
     q: "Do I need coding experience?",
-    a: "No. AlgoStudio is a no-code platform. Pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 or .mq4 file. No MQL5, Python, or programming knowledge required.",
+    a: "No. AlgoStudio is a no-code platform. Pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 file. No MQL5, Python, or programming knowledge required.",
     category: "General" as const,
   },
   {
@@ -78,17 +78,17 @@ const faqItems = [
   // Technical
   {
     q: "What file format does AlgoStudio export?",
-    a: "AlgoStudio exports standard .mq5 files for MetaTrader 5, and .mq4 files for MetaTrader 4 (Pro and Elite plans). Clean, well-commented source code with no external dependencies or proprietary formats. The code is yours.",
+    a: "AlgoStudio exports standard .mq5 files for MetaTrader 5. Clean, well-commented source code with no external dependencies or proprietary formats. The code is yours.",
     category: "Technical" as const,
   },
   {
     q: "Which brokers are supported?",
-    a: "The exported EA runs on any broker that supports MetaTrader 5 or MetaTrader 4. Compatible with prop firms like FTMO, E8 Markets, and FundingPips. The output uses standard MQL functions — no broker-specific code.",
+    a: "The exported EA runs on any broker that supports MetaTrader 5. Compatible with prop firms like FTMO, E8 Markets, and FundingPips. The output uses standard MQL5 functions — no broker-specific code.",
     category: "Technical" as const,
   },
   {
     q: "Can I edit the exported code?",
-    a: "Yes. You get clean, well-commented MQL5/MQL4 source code that you can open and modify in MetaEditor or any text editor. The code is yours to customize, optimize, or extend.",
+    a: "Yes. You get clean, well-commented MQL5 source code that you can open and modify in MetaEditor or any text editor. The code is yours to customize, optimize, or extend.",
     category: "Technical" as const,
   },
 
@@ -100,7 +100,7 @@ const faqItems = [
   },
   {
     q: "What's included in Pro?",
-    a: "Unlimited projects and exports. MQL5 + MQL4 export. Monte Carlo simulation, walk-forward analysis, Strategy Identity, and Verified Track Record. Everything you need to build and validate strategies.",
+    a: "Unlimited projects and exports. Monte Carlo simulation, walk-forward analysis, Strategy Identity, and Verified Track Record. Everything you need to build and validate strategies.",
     category: "Pricing" as const,
   },
   {

@@ -12,7 +12,7 @@
  *    Submitted by the EA alongside regular trade events.
  *
  * 2. BrokerHistoryDigest — periodic hash of the broker's exported history
- *    Created by exporting the account history from MT4/MT5 and hashing it.
+ *    Created by exporting the account history from MT5 and hashing it.
  *
  * 3. Verification procedure — how a third party reproduces the digest
  *
@@ -25,11 +25,6 @@
  * 2. Select date range matching the digest period
  * 3. Right-click → "Report" → Save as CSV (or HTML)
  * 4. The exported file is the canonical broker record
- *
- * For MT4:
- * 1. Open Terminal → Account History tab
- * 2. Right-click → "All History" or select custom range
- * 3. Right-click → "Save as Report (CSV)"
  *
  * Digest computation:
  * 1. Read file as UTF-8

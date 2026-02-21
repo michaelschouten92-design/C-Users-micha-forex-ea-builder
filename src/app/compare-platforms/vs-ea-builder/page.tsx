@@ -33,7 +33,7 @@ const faqItems = [
   },
   {
     q: "Does EA Builder support MT5?",
-    a: "EA Builder primarily targets MT4 with MQL4 output. MT5 support varies by version. AlgoStudio focuses on MQL5 as the primary output format, with MQL4 available on Pro and Elite plans.",
+    a: "EA Builder primarily targets MT4 with MQL4 output. MT5 support varies by version. AlgoStudio focuses on MQL5 as the output format, producing clean, well-commented source code.",
   },
 ];
 
@@ -93,7 +93,7 @@ export default function VsEaBuilderPage() {
                       "Moderate — learn the block system",
                     ],
                     ["MQL5 output", "Clean, commented source code", "Auto-generated code"],
-                    ["MQL4 output", "Pro and Elite plans", "Primary focus"],
+                    ["MQL4 output", "Not supported", "Primary focus"],
                     ["Strategy templates", "6 pre-built templates with defaults", "Blank canvas"],
                     [
                       "Risk management",

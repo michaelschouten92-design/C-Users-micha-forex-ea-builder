@@ -133,7 +133,7 @@ export interface BrokerHistoryDigestPayload {
   firstTicket: string;
   /** Last ticket in the exported range */
   lastTicket: string;
-  /** Export format: "MT5_HTML" | "MT5_CSV" | "MT4_HTML" | "CUSTOM_CSV" */
+  /** Export format: "MT5_HTML" | "MT5_CSV" | "CUSTOM_CSV" */
   exportFormat: string;
 }
 

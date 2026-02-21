@@ -776,7 +776,7 @@ export const createVersionSchema = z.object({
 
 export const exportRequestSchema = z.object({
   versionId: z.string().cuid().optional(),
-  exportType: z.enum(["MQ5", "MQ4"]).default("MQ5"),
+  exportType: z.literal("MQ5").default("MQ5"),
   magicNumber: z.number().int().min(1).max(2147483647).optional(),
 });
 

@@ -13,7 +13,6 @@ interface StrategyBuilderProps {
     buildJson: BuildJsonSchema;
   } | null;
   canExportMQL5?: boolean;
-  canExportMQL4?: boolean;
   tier?: string;
 }
 
@@ -21,7 +20,6 @@ export function StrategyBuilder({
   projectId,
   latestVersion,
   canExportMQL5 = false,
-  canExportMQL4 = false,
   tier,
 }: StrategyBuilderProps) {
   return (
@@ -31,7 +29,6 @@ export function StrategyBuilder({
           projectId={projectId}
           initialData={latestVersion?.buildJson ?? null}
           canExportMQL5={canExportMQL5}
-          canExportMQL4={canExportMQL4}
           userTier={tier}
         />
       </ReactFlowProvider>

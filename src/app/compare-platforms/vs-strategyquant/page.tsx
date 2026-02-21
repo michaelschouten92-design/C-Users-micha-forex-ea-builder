@@ -97,7 +97,7 @@ export default function VsStrategyQuantPage() {
                     ["Monte Carlo simulation", "Not included", "Built-in"],
                     ["Portfolio building", "Not included", "Built-in"],
                     ["MQL5 output", "Clean, commented source", "Generated code"],
-                    ["MQL4 output", "Pro and Elite plans", "Yes"],
+                    ["MQL4 output", "Not supported", "Yes"],
                     ["Risk management", "Built-in templates", "Advanced custom rules"],
                     ["Custom indicators", "Via MQL5 editing", "Built-in editor"],
                     ["Web-based", "Yes", "Desktop application"],

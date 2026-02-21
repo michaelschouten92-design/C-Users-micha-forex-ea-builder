@@ -23,7 +23,6 @@ function parseDate(str: string): number | null {
   // ISO 8601: 2024-01-15T08:30:00
   // Standard: 2024-01-15 08:30:00
   // MT5: 2024.01.15 08:30:00
-  // MT4: 2024.01.15,08:30
   // US: 01/15/2024 08:30:00
   // EU: 15/01/2024 08:30:00
   // Unix timestamp (seconds)

@@ -93,7 +93,6 @@ export default function ComparePlatformsPage() {
                     ["Time to first EA", "< 5 min", "30-60 min", "1-3 hours", "30-60 min"],
                     ["Coding required", "None", "Minimal", "Optional", "None"],
                     ["MQL5 output", "Clean source", "Basic source", "Generated", "Generated"],
-                    ["MQL4 support", "Pro+", "Yes", "Yes", "Yes"],
                     ["Built-in risk mgmt", "Yes", "Basic", "Advanced", "Manual"],
                     ["Free tier", "Yes", "Limited free", "No", "Yes"],
                     ["Built-in backtesting", "Via MT5", "No", "Yes", "No"],

@@ -42,7 +42,7 @@ export default function PricingPage() {
     },
     {
       q: "Does this work with any MT5 broker?",
-      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, E8 Markets, FundingPips, and others. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
+      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker \u2014 forex, indices, commodities. Compatible with prop firms like FTMO, E8 Markets, FundingPips, and others.",
     },
     {
       q: "What is the Strategy Health Monitor?",
@@ -153,7 +153,7 @@ export default function PricingPage() {
                     ["Strategy templates", "All 6", "All 6", "All 6"],
                     ["Active projects", "1", "Unlimited", "Unlimited"],
                     ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
-                    ["MQL4 export (MetaTrader 4)", false, true, true],
+                    ["MQL5 export (MetaTrader 5)", true, true, true],
                     ["Clean, commented source code", true, true, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (
@@ -493,7 +493,7 @@ export default function PricingPage() {
               {
                 title: "Prop firm compatible",
                 description:
-                  "Standard MQL5/MQL4 output. Works with FTMO, E8 Markets, FundingPips, and more.",
+                  "Standard MQL5 output. Works with FTMO, E8 Markets, FundingPips, and more.",
                 icon: (
                   <path
                     strokeLinecap="round"

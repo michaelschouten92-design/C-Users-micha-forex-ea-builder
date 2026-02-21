@@ -86,7 +86,6 @@ export const PLANS = {
       maxProjects: 1,
       maxExportsPerMonth: 3,
       canExportMQL5: true,
-      canExportMQL4: false,
     },
     prices: null,
   },
@@ -95,15 +94,14 @@ export const PLANS = {
     tier: "PRO" as const,
     features: [
       "Unlimited projects",
-      "Unlimited MQL5 + MQL4 exports",
-      "MQL5 & MQL4 source code export",
+      "Unlimited MQL5 exports",
+      "MQL5 source code export",
       "Priority support",
     ],
     limits: {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
-      canExportMQL4: true,
     },
     prices: priceConfig.pro,
   },
@@ -112,7 +110,7 @@ export const PLANS = {
     tier: "ELITE" as const,
     features: [
       "Everything in Pro",
-      "MQL5 & MQL4 exports",
+      "Unlimited MQL5 exports",
       "Priority feature requests",
       "1-on-1 strategy review session",
       "Direct developer support",
@@ -122,7 +120,6 @@ export const PLANS = {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
-      canExportMQL4: true,
     },
     prices: priceConfig.elite,
   },
@@ -151,7 +148,6 @@ interface PlanLimits {
   maxProjects: number;
   maxExportsPerMonth: number;
   canExportMQL5: boolean;
-  canExportMQL4: boolean;
 }
 
 // In-memory cache for plan limits (60s TTL)
@@ -180,7 +176,6 @@ export async function getEffectiveLimits(tier: PlanTier): Promise<PlanLimits> {
         maxProjects: c.maxProjects,
         maxExportsPerMonth: c.maxExportsPerMonth,
         canExportMQL5: c.canExportMQL5,
-        canExportMQL4: c.canExportMQL4,
       });
     }
     limitsCache = { data: map, expiresAt: now + 60_000 };

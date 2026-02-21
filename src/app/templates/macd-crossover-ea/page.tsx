@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "MACD Crossover EA Template | Free MT5 & MT4 Momentum Strategy",
+  title: "MACD Crossover EA Template | Free MT5 Momentum Strategy",
   description:
-    "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line crossover with ATR stops. Build without coding.",
+    "Free MACD Crossover Expert Advisor template for MetaTrader 5. Signal line crossover with ATR stops. Build without coding.",
   alternates: { canonical: "/templates/macd-crossover-ea" },
   openGraph: {
-    title: "MACD Crossover EA Template | Free MT5 & MT4 Momentum Strategy",
+    title: "MACD Crossover EA Template | Free MT5 Momentum Strategy",
     description:
-      "Free MACD Crossover Expert Advisor template for MetaTrader 5 & 4. Signal line crossover with ATR stops. Build without coding.",
+      "Free MACD Crossover Expert Advisor template for MetaTrader 5. Signal line crossover with ATR stops. Build without coding.",
     url: "/templates/macd-crossover-ea",
   },
 };
@@ -84,8 +84,8 @@ export default function MACDCrossoverTemplatePage() {
             momentum strategies in trading. This free EA template uses the standard 12/26/9 MACD
             with signal line crossover detection, ATR-based risk management, and an optional
             higher-timeframe trend filter. Best for EURUSD, GBPUSD, and XAUUSD on H1 to H4
-            timeframes. Build it in AlgoStudio without coding and export a production-ready MQL5 (or
-            MQL4) Expert Advisor in minutes.
+            timeframes. Build it in AlgoStudio without coding and export a production-ready MQL5
+            Expert Advisor in minutes.
           </p>
         </header>
 

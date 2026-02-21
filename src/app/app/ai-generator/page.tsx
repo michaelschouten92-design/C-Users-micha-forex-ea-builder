@@ -440,7 +440,7 @@ export default function AIGeneratorPage() {
             <h3 className="text-sm font-medium text-white mb-1">Ready-to-Export</h3>
             <p className="text-xs text-[#7C8DB0]">
               Generated strategies use entry strategy nodes with built-in risk management. Export to
-              MQL5/MQL4 immediately.
+              MQL5 immediately.
             </p>
           </div>
           <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-4">

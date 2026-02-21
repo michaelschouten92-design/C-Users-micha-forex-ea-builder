@@ -3,7 +3,6 @@ import { randomBytes, createHash } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { generateMQL4Code } from "@/lib/mql4-generator";
 import { checkExportLimit, getCachedTier } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/plans";
 import {
@@ -93,25 +92,13 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    const { versionId, exportType, magicNumber } = validation.data;
+    const { versionId, magicNumber } = validation.data;
 
-    // Single tier lookup — reused for MQL4 check, export limits, and transaction
+    // Single tier lookup — reused for export limits and transaction
     const tier = await getCachedTier(session.user.id);
 
-    // Check MQL4 tier restriction — only PRO and ELITE users can export MQL4
-    if (exportType === "MQ4" && !PLANS[tier].limits.canExportMQL4) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.EXPORT_LIMIT,
-          "MQL4 export requires Pro or Elite",
-          "MQL4 export is available for Pro and Elite subscribers. Upgrade your plan to unlock MetaTrader 4 exports."
-        ),
-        { status: 403, headers: rateLimitHeaders }
-      );
-    }
-
     // Audit the export request
-    await audit.exportRequest(session.user.id, id, exportType);
+    await audit.exportRequest(session.user.id, id, "MQ5");
 
     // Check export limits (plan-based monthly limits) — pre-check outside transaction
     // for fast rejection. The authoritative check happens atomically inside the
@@ -195,19 +182,18 @@ export async function POST(request: NextRequest, { params }: Props) {
     const telemetryApiKey = randomBytes(32).toString("hex");
     const telemetryApiKeyHash = createHash("sha256").update(telemetryApiKey).digest("hex");
 
-    // Generate code based on export type (pass telemetry API key)
-    const isMQL4 = exportType === "MQ4";
+    // Generate MQL5 code (pass telemetry API key)
     const telemetryBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
-    const generatedCode = isMQL4
-      ? generateMQL4Code(buildJson, project.name, project.description ?? undefined, {
-          apiKey: telemetryApiKey,
-          baseUrl: `${telemetryBaseUrl}/api/telemetry`,
-        })
-      : generateMQL5Code(buildJson, project.name, project.description ?? undefined, {
-          apiKey: telemetryApiKey,
-          baseUrl: `${telemetryBaseUrl}/api/telemetry`,
-        });
-    const fileExtension = isMQL4 ? ".mq4" : ".mq5";
+    const generatedCode = generateMQL5Code(
+      buildJson,
+      project.name,
+      project.description ?? undefined,
+      {
+        apiKey: telemetryApiKey,
+        baseUrl: `${telemetryBaseUrl}/api/telemetry`,
+      }
+    );
+    const fileExtension = ".mq5";
 
     // Atomically check limit + create export job + LiveEAInstance inside a transaction
     const maxExports = PLANS[tier].limits.maxExportsPerMonth;
@@ -227,7 +213,7 @@ export async function POST(request: NextRequest, { params }: Props) {
           userId: session.user.id,
           projectId: project.id,
           buildVersionId: version.id,
-          exportType: exportType || "MQ5",
+          exportType: "MQ5",
           status: "DONE",
           outputName: `${sanitizeFileName(project.name)}${fileExtension}`,
         },
@@ -291,7 +277,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         fileName: exportJob.outputName,
         code: generatedCode,
         versionNo: version.versionNo,
-        exportType: isMQL4 ? "MQ4" : "MQ5",
+        exportType: "MQ5",
         telemetryApiKey,
       },
       { headers: rateLimitHeaders }
@@ -385,21 +371,13 @@ export async function GET(request: NextRequest, { params }: Props) {
         telemetryConfig = { apiKey: newApiKey, baseUrl: `${telemetryBaseUrl}/api/telemetry` };
       }
 
-      // Regenerate code from the saved buildJson using the original export type
-      const redownloadCode =
-        exportJob.exportType === "MQ4"
-          ? generateMQL4Code(
-              buildJson,
-              exportJob.project.name,
-              exportJob.project.description ?? undefined,
-              telemetryConfig
-            )
-          : generateMQL5Code(
-              buildJson,
-              exportJob.project.name,
-              exportJob.project.description ?? undefined,
-              telemetryConfig
-            );
+      // Regenerate MQL5 code from the saved buildJson
+      const redownloadCode = generateMQL5Code(
+        buildJson,
+        exportJob.project.name,
+        exportJob.project.description ?? undefined,
+        telemetryConfig
+      );
 
       return NextResponse.json({
         fileName: exportJob.outputName,

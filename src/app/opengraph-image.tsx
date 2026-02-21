@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio - No-Code MT5 & MT4 Expert Advisor Builder";
+export const alt = "AlgoStudio - No-Code MT5 Expert Advisor Builder";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -72,7 +72,7 @@ export default function OGImage() {
             fontWeight: 600,
           }}
         >
-          No-Code MT5 & MT4 Expert Advisor Builder
+          No-Code MT5 Expert Advisor Builder
         </div>
         <div
           style={{
@@ -81,7 +81,7 @@ export default function OGImage() {
             marginTop: "16px",
           }}
         >
-          {["Visual Builder", "One-Click Export", "MQL5 & MQL4 Code"].map((text) => (
+          {["Visual Builder", "One-Click Export", "MQL5 Code"].map((text) => (
             <div
               key={text}
               style={{

@@ -444,8 +444,8 @@ export async function sendContactFormEmail(
 const PLAN_WELCOME_FEATURES: Record<string, string[]> = {
   PRO: [
     "Unlimited projects",
-    "Unlimited MQL5 + MQL4 exports",
-    "MQL5 & MQL4 source code export",
+    "Unlimited MQL5 exports",
+    "MQL5 source code export",
     "Priority support",
   ],
   ELITE: [

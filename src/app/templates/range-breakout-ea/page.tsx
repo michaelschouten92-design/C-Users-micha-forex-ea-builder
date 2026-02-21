@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Range Breakout EA Template | Free MT5 & MT4 Session Breakout Strategy",
+  title: "Range Breakout EA Template | Free MT5 Session Breakout Strategy",
   description:
-    "Free Range Breakout Expert Advisor template for MetaTrader 5 & 4. Trade session or time-based range breakouts with ATR stops and volume confirmation. Build without coding.",
+    "Free Range Breakout Expert Advisor template for MetaTrader 5. Trade session or time-based range breakouts with ATR stops and volume confirmation. Build without coding.",
   alternates: { canonical: "/templates/range-breakout-ea" },
   openGraph: {
-    title: "Range Breakout EA Template | Free MT5 & MT4 Session Breakout Strategy",
+    title: "Range Breakout EA Template | Free MT5 Session Breakout Strategy",
     description:
-      "Free Range Breakout Expert Advisor template for MetaTrader 5 & 4. Trade session or time-based range breakouts with ATR stops and volume confirmation. Build without coding.",
+      "Free Range Breakout Expert Advisor template for MetaTrader 5. Trade session or time-based range breakouts with ATR stops and volume confirmation. Build without coding.",
     url: "/templates/range-breakout-ea",
   },
 };
@@ -85,8 +85,8 @@ export default function RangeBreakoutTemplatePage() {
             Asian session consolidation broken at the London or New York open. This free EA template
             uses customizable time-based ranges with a breakout buffer, ATR-based risk management,
             and optional volume confirmation. Best for GBPUSD, EURUSD, and USDJPY on H1 to H4
-            timeframes. Build it in AlgoStudio without coding and export a production-ready MQL5 (or
-            MQL4) Expert Advisor in minutes.
+            timeframes. Build it in AlgoStudio without coding and export a production-ready MQL5
+            Expert Advisor in minutes.
           </p>
         </header>
 

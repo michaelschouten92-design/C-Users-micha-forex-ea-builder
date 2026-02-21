@@ -223,7 +223,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Unlimited projects & exports",
-              "MQL5 + MQL4 code export",
+              "MQL5 code export",
               "Full backtesting + Monte Carlo",
               "Strategy Identity & versioning",
               "Verified Track Record",

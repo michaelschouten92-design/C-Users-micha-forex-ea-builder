@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 type UpsellBannerProps = {
-  variant: "export-limit" | "mql4-locked" | "trade-management";
+  variant: "export-limit" | "trade-management";
   exportsUsed?: number;
   exportLimit?: number;
 };
@@ -26,13 +26,6 @@ function getVariantConfig(
         message: `You've used ${exportsUsed ?? 0} of ${exportLimit ?? 3} exports this month. Upgrade for unlimited exports.`,
         cta: "Upgrade to Pro",
         storageKey: "upsell-dismissed-export-limit",
-      };
-    case "mql4-locked":
-      return {
-        message:
-          "MQL4 export is available on Pro and Elite plans. Upgrade to build for MetaTrader 4.",
-        cta: "Unlock MQL4",
-        storageKey: "upsell-dismissed-mql4",
       };
     case "trade-management":
       return {

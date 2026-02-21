@@ -6,12 +6,12 @@ import { Footer } from "@/components/marketing/footer";
 export const metadata: Metadata = {
   title: "Roadmap — AlgoStudio",
   description:
-    "See what we're building next. AlgoStudio roadmap with recently shipped features, current priorities, and future plans for the MT5/MT4 EA builder.",
+    "See what we're building next. AlgoStudio roadmap with recently shipped features, current priorities, and future plans for the MT5 EA builder.",
   alternates: { canonical: "/roadmap" },
   openGraph: {
     title: "AlgoStudio Roadmap — See What's Coming",
     description:
-      "From cloud backtesting to broker integrations. See every feature we're building for the visual MT5/MT4 EA builder.",
+      "From cloud backtesting to broker integrations. See every feature we're building for the visual MT5 EA builder.",
   },
 };
 
@@ -24,13 +24,6 @@ interface RoadmapItem {
 }
 
 const SHIPPED: RoadmapItem[] = [
-  {
-    title: "MQL4 Export",
-    description:
-      "Export strategies as MQL4 code for MetaTrader 4 compatibility (Pro and Elite plans).",
-    tag: "Code Gen",
-    shipped: "Q4 2025",
-  },
   {
     title: "Multi-Level Take Profit",
     description: "Three staged TP levels with automatic SL management after each level is hit.",

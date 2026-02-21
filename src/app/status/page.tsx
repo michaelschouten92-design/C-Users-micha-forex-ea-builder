@@ -29,7 +29,7 @@ const SERVICES: Service[] = [
   },
   {
     name: "Code Generation Engine",
-    description: "MQL5 and MQL4 code generation and export",
+    description: "MQL5 code generation and export",
     status: "operational",
   },
   {

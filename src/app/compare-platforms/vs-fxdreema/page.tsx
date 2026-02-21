@@ -8,7 +8,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "AlgoStudio vs FXDreema — Detailed Comparison",
   description:
-    "Compare AlgoStudio and FXDreema for building MT5 and MT4 Expert Advisors. Feature comparison, pricing, usability, and which platform fits your needs.",
+    "Compare AlgoStudio and FXDreema for building MT5 Expert Advisors. Feature comparison, pricing, usability, and which platform fits your needs.",
   alternates: { canonical: "/compare-platforms/vs-fxdreema" },
 };
 
@@ -90,7 +90,7 @@ export default function VsFxdreemaPage() {
                     ["Learning curve", "Minimal", "Moderate — learn flowchart system"],
                     ["Starting point", "Working strategy template", "Blank flowchart"],
                     ["MQL5 output", "Clean, commented source", "Generated from flowchart"],
-                    ["MQL4 output", "Pro and Elite plans", "Yes"],
+                    ["MQL4 output", "Not supported", "Yes"],
                     ["Strategy flexibility", "Template-based", "Unlimited flowchart logic"],
                     [
                       "Risk management",
@@ -139,7 +139,7 @@ export default function VsFxdreemaPage() {
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-[#22D3EE] flex-shrink-0">&#10003;</span>
-                    MQL4 export on Pro+
+                    MQL5 export on all plans
                   </li>
                 </ul>
               </div>

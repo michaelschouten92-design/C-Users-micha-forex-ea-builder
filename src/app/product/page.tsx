@@ -23,8 +23,8 @@ const pipelineSteps = [
     label: "Build",
     title: "Strategy Construction",
     description:
-      "No-code visual builder with proven templates. Customize risk parameters. Export clean MQL5 or MQL4. From idea to executable strategy in minutes.",
-    features: ["6 strategy templates", "Visual drag-and-drop builder", "Clean MQL5/MQL4 export"],
+      "No-code visual builder with proven templates. Customize risk parameters. Export clean MQL5. From idea to executable strategy in minutes.",
+    features: ["6 strategy templates", "Visual drag-and-drop builder", "Clean MQL5 export"],
   },
   {
     step: "02",
@@ -49,7 +49,7 @@ const platformModules = [
     color: "#A78BFA",
     title: "Strategy Builder",
     description:
-      "No-code visual builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 or MQL4 source code that you own.",
+      "No-code visual builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own.",
     href: "/product/how-it-works",
   },
   {

@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Trend Pullback EA Template | Free MT5 & MT4 EMA + RSI Dip Strategy",
+  title: "Trend Pullback EA Template | Free MT5 EMA + RSI Dip Strategy",
   description:
-    "Free Trend Pullback Expert Advisor template for MetaTrader 5 & 4. Enter on RSI dips in EMA-confirmed trends with ATR stops and ADX filter. Build without coding.",
+    "Free Trend Pullback Expert Advisor template for MetaTrader 5. Enter on RSI dips in EMA-confirmed trends with ATR stops and ADX filter. Build without coding.",
   alternates: { canonical: "/templates/trend-pullback-ea" },
   openGraph: {
-    title: "Trend Pullback EA Template | Free MT5 & MT4 EMA + RSI Dip Strategy",
+    title: "Trend Pullback EA Template | Free MT5 EMA + RSI Dip Strategy",
     description:
-      "Free Trend Pullback Expert Advisor template for MetaTrader 5 & 4. Enter on RSI dips in EMA-confirmed trends with ATR stops and ADX filter. Build without coding.",
+      "Free Trend Pullback Expert Advisor template for MetaTrader 5. Enter on RSI dips in EMA-confirmed trends with ATR stops and ADX filter. Build without coding.",
     url: "/templates/trend-pullback-ea",
   },
 };
@@ -86,7 +86,7 @@ export default function TrendPullbackTemplatePage() {
             for better entry prices. This free EA template includes ATR-based risk management, an
             optional ADX trend strength filter, and a max-distance-from-EMA safety check. Best for
             EURUSD, GBPUSD, and AUDUSD on H1 to D1 timeframes. Build it in AlgoStudio without coding
-            and export a production-ready MQL5 (or MQL4) Expert Advisor in minutes.
+            and export a production-ready MQL5 Expert Advisor in minutes.
           </p>
         </header>
 

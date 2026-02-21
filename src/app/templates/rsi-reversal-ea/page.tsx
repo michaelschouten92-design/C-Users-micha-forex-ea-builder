@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "RSI Reversal EA Template | Free MT5 & MT4 Mean Reversion Strategy",
+  title: "RSI Reversal EA Template | Free MT5 Mean Reversion Strategy",
   description:
-    "Free RSI Reversal Expert Advisor template for MetaTrader 5 & 4. Buy oversold, sell overbought with RSI 14, ATR stops, and optional trend filter. Build without coding.",
+    "Free RSI Reversal Expert Advisor template for MetaTrader 5. Buy oversold, sell overbought with RSI 14, ATR stops, and optional trend filter. Build without coding.",
   alternates: { canonical: "/templates/rsi-reversal-ea" },
   openGraph: {
-    title: "RSI Reversal EA Template | Free MT5 & MT4 Mean Reversion Strategy",
+    title: "RSI Reversal EA Template | Free MT5 Mean Reversion Strategy",
     description:
-      "Free RSI Reversal Expert Advisor template for MetaTrader 5 & 4. Buy oversold, sell overbought with RSI 14, ATR stops, and optional trend filter. Build without coding.",
+      "Free RSI Reversal Expert Advisor template for MetaTrader 5. Buy oversold, sell overbought with RSI 14, ATR stops, and optional trend filter. Build without coding.",
     url: "/templates/rsi-reversal-ea",
   },
 };
@@ -85,7 +85,7 @@ export default function RSIReversalTemplatePage() {
             standard 70/30 levels, ATR-based risk management, and an optional 200 EMA trend filter.
             Best for ranging markets on EURUSD, GBPUSD, and AUDNZD across M15 to H1 timeframes.
             Build it in AlgoStudio without coding, customize the parameters, and export a
-            production-ready MQL5 (or MQL4) Expert Advisor in minutes.
+            production-ready MQL5 Expert Advisor in minutes.
           </p>
         </header>
 

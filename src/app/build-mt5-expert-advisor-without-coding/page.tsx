@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "Build an MT5 Expert Advisor Without Coding | AlgoStudio",
   description:
-    "Build a MetaTrader 5 Expert Advisor without writing code. Pick a strategy template, adjust a few settings, and export clean MQL5 & MQL4. No programming experience needed.",
+    "Build a MetaTrader 5 Expert Advisor without writing code. Pick a strategy template, adjust a few settings, and export clean MQL5. No programming experience needed.",
   alternates: { canonical: "/build-mt5-expert-advisor-without-coding" },
 };
 
@@ -21,15 +21,15 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "Can I really build an EA without coding?",
-    a: "Yes. AlgoStudio uses strategy templates with pre-built logic. You adjust the key settings and export a fully functional .mq5 (or .mq4) Expert Advisor. No MQL5 knowledge required.",
+    a: "Yes. AlgoStudio uses strategy templates with pre-built logic. You adjust the key settings and export a fully functional .mq5 Expert Advisor. No MQL5 knowledge required.",
   },
   {
     q: "What does 'no coding required' actually mean?",
-    a: "It means you never write or see code while building your EA. You choose a strategy, set parameters like risk % and stop loss, and AlgoStudio generates the MQL5 (or MQL4) code for you.",
+    a: "It means you never write or see code while building your EA. You choose a strategy, set parameters like risk % and stop loss, and AlgoStudio generates the MQL5 code for you.",
   },
   {
     q: "Is the output real MQL5 code?",
-    a: "Yes. AlgoStudio exports standard .mq5 (or .mq4) source code that compiles in MetaEditor and runs on any MetaTrader broker. It's not a proprietary format.",
+    a: "Yes. AlgoStudio exports standard .mq5 source code that compiles in MetaEditor and runs on any MetaTrader broker. It's not a proprietary format.",
   },
   {
     q: "What strategies can I build without coding?",
@@ -68,9 +68,9 @@ export default function BuildWithoutCodingPage() {
               Build an MT5 Expert Advisor without coding
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              You don&apos;t need to learn MQL5 or MQL4 to automate your trading strategy.
-              AlgoStudio lets you build a real MetaTrader 5 Expert Advisor using templates — no
-              programming required.
+              You don&apos;t need to learn MQL5 to automate your trading strategy. AlgoStudio lets
+              you build a real MetaTrader 5 Expert Advisor using templates — no programming
+              required.
             </p>
             <Link
               href="/login?mode=register"
@@ -93,8 +93,7 @@ export default function BuildWithoutCodingPage() {
               <p>
                 Instead of learning syntax, debugging compile errors, and writing hundreds of lines
                 of code, you pick a proven strategy template and adjust a few settings. AlgoStudio
-                generates clean, well-commented MQL5 (or MQL4) code that compiles and runs
-                immediately.
+                generates clean, well-commented MQL5 code that compiles and runs immediately.
               </p>
             </div>
           </section>
@@ -127,10 +126,10 @@ export default function BuildWithoutCodingPage() {
                 <div className="w-10 h-10 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold">
                   3
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Export MQL5/MQL4</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Export MQL5</h3>
                 <p className="text-sm text-[#94A3B8]">
-                  Download clean .mq5 or .mq4 code. Load it into MetaTrader 5, backtest, and go live
-                  when ready.
+                  Download clean .mq5 code. Load it into MetaTrader 5, backtest, and go live when
+                  ready.
                 </p>
               </div>
             </div>
@@ -191,8 +190,8 @@ export default function BuildWithoutCodingPage() {
             <div className="grid md:grid-cols-2 gap-6">
               {[
                 {
-                  title: "Standard .mq5 or .mq4 file",
-                  desc: "A real MetaTrader Expert Advisor source file. Compiles in MetaEditor, runs on any MetaTrader broker.",
+                  title: "Standard .mq5 file",
+                  desc: "A real MetaTrader 5 Expert Advisor source file. Compiles in MetaEditor, runs on any MetaTrader 5 broker.",
                 },
                 {
                   title: "Built-in risk management",
@@ -200,7 +199,7 @@ export default function BuildWithoutCodingPage() {
                 },
                 {
                   title: "Clean, readable code",
-                  desc: "Well-commented MQL5 or MQL4 source code. Understand what it does, modify it if you want.",
+                  desc: "Well-commented MQL5 source code. Understand what it does, modify it if you want.",
                 },
                 {
                   title: "No dependencies",
@@ -224,7 +223,7 @@ export default function BuildWithoutCodingPage() {
 
       <CTASection
         title="Build your first EA — no coding required"
-        description="Pick a template and export clean MQL5/MQL4 code in minutes. Free to start."
+        description="Pick a template and export clean MQL5 code in minutes. Free to start."
       />
 
       <Footer />

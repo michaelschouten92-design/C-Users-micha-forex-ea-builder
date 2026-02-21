@@ -842,8 +842,8 @@ export function CustomIndicatorFields({
         className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
-        Generates an iCustom() call in MQL5/MQL4. Parameters are passed in order to the indicator.
-        Values are parsed as numbers when possible, otherwise passed as strings.
+        Generates an iCustom() call in MQL5. Parameters are passed in order to the indicator. Values
+        are parsed as numbers when possible, otherwise passed as strings.
       </div>
     </>
   );

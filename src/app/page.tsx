@@ -43,7 +43,7 @@ export default async function Home() {
       offerCount: 3,
     },
     featureList: [
-      "No-code strategy builder for MT5 and MT4",
+      "No-code strategy builder for MT5",
       "Monte Carlo simulation",
       "Verified Track Record with immutable hash chain",
       "Strategy Identity and versioning",
@@ -59,7 +59,7 @@ export default async function Home() {
     },
     {
       q: "Do I need coding experience?",
-      a: "No. AlgoStudio is a no-code platform. You pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 or .mq4 file. No MQL5, Python, or any other programming knowledge required.",
+      a: "No. AlgoStudio is a no-code platform. You pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 file. No MQL5, Python, or any other programming knowledge required.",
     },
     {
       q: "What is a Verified Track Record?",
@@ -71,7 +71,7 @@ export default async function Home() {
     },
     {
       q: "Does this work with any MT5 broker?",
-      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker. Compatible with prop firms like FTMO, E8 Markets, and FundingPips. Pro and Elite subscribers can also export MQL4 code for MetaTrader 4 brokers.",
+      a: "Yes. You export standard MQL5 source code that works with any MetaTrader 5 broker. Compatible with prop firms like FTMO, E8 Markets, and FundingPips.",
     },
     {
       q: "Does AlgoStudio guarantee profits?",
@@ -224,8 +224,8 @@ export default async function Home() {
                   Strategy Construction
                 </p>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Pick a proven strategy template. Customize risk parameters. Export clean MQL5 or
-                  MQL4 code. No coding required — go from idea to executable strategy in minutes.
+                  Pick a proven strategy template. Customize risk parameters. Export clean MQL5
+                  code. No coding required — go from idea to executable strategy in minutes.
                 </p>
                 <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
                   <ul className="space-y-1.5 text-xs text-[#64748B]">
@@ -389,7 +389,7 @@ export default async function Home() {
               {
                 title: "Strategy Builder",
                 description:
-                  "No-code visual builder with 6 proven templates. Customize risk parameters, export clean MQL5 or MQL4 source code. From idea to executable strategy in minutes.",
+                  "No-code visual builder with 6 proven templates. Customize risk parameters, export clean MQL5 source code. From idea to executable strategy in minutes.",
                 accent: "#A78BFA",
               },
               {
@@ -638,7 +638,7 @@ export default async function Home() {
                 step: "2",
                 title: "Customize and export",
                 description:
-                  "Set your risk parameters, stop loss, and take profit. Export clean MQL5 or MQL4 source code that you own and can modify.",
+                  "Set your risk parameters, stop loss, and take profit. Export clean MQL5 source code that you own and can modify.",
               },
               {
                 step: "3",

@@ -1,7 +1,7 @@
 /**
  * Canonical JSON serialization and SHA-256 hashing for the track record hash chain.
  *
- * Rules (must match MQL5/MQL4 implementation exactly):
+ * Rules (must match MQL5 implementation exactly):
  * 1. Fields sorted alphabetically by key name
  * 2. Numbers: 8 decimal places for prices, 2 for lots/profit/swap/commission, 0 for integers
  * 3. Strings: UTF-8, no trailing whitespace

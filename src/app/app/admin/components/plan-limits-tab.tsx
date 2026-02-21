@@ -10,7 +10,6 @@ interface PlanLimitConfig {
   maxProjects: number;
   maxExportsPerMonth: number;
   canExportMQL5: boolean;
-  canExportMQL4: boolean;
   updatedAt: string;
 }
 
@@ -66,7 +65,6 @@ export function PlanLimitsTab() {
         maxProjects: edit.maxProjects ?? config.maxProjects,
         maxExportsPerMonth: edit.maxExportsPerMonth ?? config.maxExportsPerMonth,
         canExportMQL5: edit.canExportMQL5 ?? config.canExportMQL5,
-        canExportMQL4: edit.canExportMQL4 ?? config.canExportMQL4,
       });
       showSuccess("Saved", `${tier} limits updated`);
       setEdits((prev) => {
@@ -134,15 +132,6 @@ export function PlanLimitsTab() {
                       className="accent-[#4F46E5]"
                     />
                     MQL5
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(getEditValue(tier, "canExportMQL4") as boolean) ?? false}
-                      onChange={(e) => setEditValue(tier, "canExportMQL4", e.target.checked)}
-                      className="accent-[#4F46E5]"
-                    />
-                    MQL4
                   </label>
                 </div>
                 <button

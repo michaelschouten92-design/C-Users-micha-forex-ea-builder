@@ -9,7 +9,7 @@ const STEPS = [
   {
     title: "Welcome to the Strategy Builder",
     description:
-      "Build a trading bot without writing code. Drag blocks, tweak settings, and export clean MQL5 (or MQL4).",
+      "Build a trading bot without writing code. Drag blocks, tweak settings, and export clean MQL5.",
     icon: (
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>

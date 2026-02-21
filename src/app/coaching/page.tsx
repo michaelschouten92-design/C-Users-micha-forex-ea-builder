@@ -9,7 +9,7 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "1-on-1 Coaching — AlgoStudio",
   description:
-    "Book a private 60-minute coaching session. Get expert strategy review, build guidance, and trading fundamentals for MT5 & MT4 bot builders.",
+    "Book a private 60-minute coaching session. Get expert strategy review, build guidance, and trading fundamentals for MT5 bot builders.",
   alternates: { canonical: "/coaching" },
   openGraph: {
     title: "1-on-1 Expert Coaching — AlgoStudio",
@@ -26,7 +26,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "What topics can we cover?",
-    a: "Anything related to algorithmic trading and MT5 & MT4 bot building. That includes strategy review and optimization, hands-on build guidance in AlgoStudio, and trading fundamentals like risk management, backtesting, and MT5 setup.",
+    a: "Anything related to algorithmic trading and MT5 bot building. That includes strategy review and optimization, hands-on build guidance in AlgoStudio, and trading fundamentals like risk management, backtesting, and MT5 setup.",
   },
   {
     q: "How does the session work?",
@@ -46,7 +46,7 @@ const faqItems = [
   },
   {
     q: "Do I need to be an AlgoStudio user?",
-    a: "No. Coaching sessions are open to anyone interested in MT5/MT4 algorithmic trading. That said, if you're using AlgoStudio, we can make the session much more hands-on by working directly in the platform together.",
+    a: "No. Coaching sessions are open to anyone interested in MT5 algorithmic trading. That said, if you're using AlgoStudio, we can make the session much more hands-on by working directly in the platform together.",
   },
 ];
 
@@ -71,7 +71,7 @@ export default function CoachingPage() {
           {/* ================================================================ */}
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              1-on-1 Expert Coaching for MT5 & MT4 Bot Builders
+              1-on-1 Expert Coaching for MT5 Bot Builders
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
               Get personalized guidance on strategy optimization, hands-on build help, and

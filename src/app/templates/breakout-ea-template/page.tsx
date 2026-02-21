@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5 & MT4",
+  title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5",
   description:
-    "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build a production-ready MQL5 Expert Advisor (MQL4 available on Pro/Elite). No coding required.",
+    "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build a production-ready MQL5 Expert Advisor. No coding required.",
   alternates: { canonical: "/templates/breakout-ea-template" },
   openGraph: {
-    title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5 & MT4",
+    title: "Breakout EA Template | Free Asian Range Breakout Strategy for MT5",
     description:
-      "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build a production-ready MQL5 Expert Advisor (MQL4 available on Pro/Elite). No coding required.",
+      "Free breakout Expert Advisor template for MetaTrader 5. Trade the Asian session range breakout at the London open with ATR stops and 1.5:1 R:R. Build a production-ready MQL5 Expert Advisor. No coding required.",
     url: "/templates/breakout-ea-template",
   },
 };
@@ -85,7 +85,7 @@ export default function BreakoutEATemplatePage() {
             well-documented patterns in forex. This free EA template identifies the overnight
             consolidation range, waits for price to break out when European traders enter the
             market, and enters with ATR-based risk management. Build it in AlgoStudio without coding
-            and export a production-ready MQL5 (or MQL4) Expert Advisor.
+            and export a production-ready MQL5 Expert Advisor.
           </p>
         </header>
 

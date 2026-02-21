@@ -16,7 +16,6 @@ const planLimitSchema = z.object({
   maxProjects: z.number().int().min(0).max(999999),
   maxExportsPerMonth: z.number().int().min(0).max(999999),
   canExportMQL5: z.boolean(),
-  canExportMQL4: z.boolean(),
 });
 
 // GET /api/admin/plan-limits - Return plan limit configs (auto-seed from PLANS if empty)
@@ -40,7 +39,6 @@ export async function GET() {
             ? 999999
             : PLANS[tier].limits.maxExportsPerMonth,
         canExportMQL5: PLANS[tier].limits.canExportMQL5,
-        canExportMQL4: PLANS[tier].limits.canExportMQL4,
         updatedBy: adminCheck.session.user.id,
       }));
 
@@ -85,7 +83,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const { tier, maxProjects, maxExportsPerMonth, canExportMQL5, canExportMQL4 } = validation.data;
+    const { tier, maxProjects, maxExportsPerMonth, canExportMQL5 } = validation.data;
 
     const config = await prisma.planLimitConfig.upsert({
       where: { tier },
@@ -93,7 +91,6 @@ export async function PUT(request: Request) {
         maxProjects,
         maxExportsPerMonth,
         canExportMQL5,
-        canExportMQL4,
         updatedBy: adminCheck.session.user.id,
       },
       create: {
@@ -101,7 +98,6 @@ export async function PUT(request: Request) {
         maxProjects,
         maxExportsPerMonth,
         canExportMQL5,
-        canExportMQL4,
         updatedBy: adminCheck.session.user.id,
       },
     });
@@ -111,7 +107,7 @@ export async function PUT(request: Request) {
       userId: adminCheck.session.user.id,
       eventType: "admin.plan_limits_update",
       resourceType: "plan_limit",
-      metadata: { tier, maxProjects, maxExportsPerMonth, canExportMQL5, canExportMQL4 },
+      metadata: { tier, maxProjects, maxExportsPerMonth, canExportMQL5 },
     }).catch(() => {});
 
     return NextResponse.json(config);
