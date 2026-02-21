@@ -45,6 +45,12 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.suspended) {
+    return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+      status: 403,
+    });
+  }
+
   // Require verified email before allowing exports
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -203,7 +209,7 @@ export async function POST(request: NextRequest, { params }: Props) {
 
     const exportJob = await prisma.$transaction(async (tx) => {
       const currentCount = await tx.exportJob.count({
-        where: { userId: session.user.id, createdAt: { gte: startOfMonth } },
+        where: { userId: session.user.id, createdAt: { gte: startOfMonth }, deletedAt: null },
       });
       if (currentCount >= maxExports) {
         return null;

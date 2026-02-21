@@ -47,6 +47,7 @@ export default async function DashboardPage() {
       where: {
         userId: session.user.id,
         createdAt: { gte: startOfMonth },
+        deletedAt: null,
       },
     }),
     prisma.user.findUnique({

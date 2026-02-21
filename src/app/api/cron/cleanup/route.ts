@@ -169,7 +169,7 @@ async function handleCleanup(request: NextRequest) {
           where: { id: sub.id },
           data: {
             tier: "FREE",
-            status: "canceled",
+            status: "cancelled",
             stripeSubId: null,
           },
         });

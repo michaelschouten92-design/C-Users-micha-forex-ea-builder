@@ -105,7 +105,7 @@ async function handleAdminReport(request: NextRequest) {
     today.setUTCHours(0, 0, 0, 0);
 
     const totalPaidSubs = (tierMap.PRO || 0) + (tierMap.ELITE || 0);
-    const cancelledCount = await prisma.subscription.count({ where: { status: "canceled" } });
+    const cancelledCount = await prisma.subscription.count({ where: { status: "cancelled" } });
     const totalSubCount = await prisma.subscription.count();
     const churnRate = totalSubCount > 0 ? cancelledCount / totalSubCount : 0;
 

@@ -78,6 +78,12 @@ export async function POST(request: Request) {
       return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
+    if (session.user.suspended) {
+      return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+        status: 403,
+      });
+    }
+
     // Rate limit
     const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
     if (!rateLimitResult.success) {
