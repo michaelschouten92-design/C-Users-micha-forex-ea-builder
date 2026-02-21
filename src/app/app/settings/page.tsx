@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { getCsrfHeaders } from "@/lib/api-client";
@@ -145,7 +145,7 @@ function LeaderboardOptInSection() {
   const [initialized, setInitialized] = useState(false);
 
   // Fetch current opt-in status
-  useState(() => {
+  useEffect(() => {
     fetch("/api/account/webhook")
       .then((res) => res.json())
       .then((data) => {
@@ -157,7 +157,7 @@ function LeaderboardOptInSection() {
       .catch(() => {
         setInitialized(true);
       });
-  });
+  }, []);
 
   async function handleToggle() {
     setLoading(true);
@@ -353,8 +353,10 @@ function DataExportSection() {
       a.download = `algostudio-data-export-${new Date().toISOString().split("T")[0]}.json`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 150);
       showSuccess("Data exported successfully");
     } catch {
       showError("Something went wrong");

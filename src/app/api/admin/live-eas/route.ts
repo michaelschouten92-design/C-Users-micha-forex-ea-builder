@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   );
   const skip = (page - 1) * pageSize;
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { deletedAt: null };
 
   if (status && ["ONLINE", "OFFLINE", "ERROR"].includes(status)) {
     where.status = status;

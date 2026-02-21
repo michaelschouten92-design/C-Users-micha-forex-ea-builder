@@ -113,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // If instanceId is specified, verify the user owns it
   if (instanceId) {
     const instance = await prisma.liveEAInstance.findFirst({
-      where: { id: instanceId, userId: session.user.id },
+      where: { id: instanceId, userId: session.user.id, deletedAt: null },
     });
     if (!instance) {
       return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Instance not found"), {

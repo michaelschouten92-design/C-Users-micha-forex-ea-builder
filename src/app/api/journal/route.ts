@@ -156,7 +156,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Verify instance ownership if provided
     if (data.instanceId) {
       const instance = await prisma.liveEAInstance.findFirst({
-        where: { id: data.instanceId, userId: session.user.id },
+        where: { id: data.instanceId, userId: session.user.id, deletedAt: null },
       });
       if (!instance) {
         return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "EA instance not found"), {

@@ -14,14 +14,14 @@ export async function GET() {
     const [tradeAgg, instances] = await Promise.all([
       // Aggregate trade stats across all EAs
       prisma.eATrade.aggregate({
-        where: { closeTime: { not: null } },
+        where: { closeTime: { not: null }, instance: { deletedAt: null } },
         _count: true,
         _sum: { profit: true },
         _avg: { profit: true },
       }),
       // Get instances with trade stats for top/bottom ranking
       prisma.liveEAInstance.findMany({
-        where: { totalTrades: { gt: 0 } },
+        where: { totalTrades: { gt: 0 }, deletedAt: null },
         select: {
           id: true,
           eaName: true,
@@ -83,7 +83,7 @@ export async function GET() {
 
     // Overall win rate
     const allWins = await prisma.eATrade.count({
-      where: { closeTime: { not: null }, profit: { gt: 0 } },
+      where: { closeTime: { not: null }, profit: { gt: 0 }, instance: { deletedAt: null } },
     });
     const overallWinRate = totalClosedTrades > 0 ? (allWins / totalClosedTrades) * 100 : 0;
 

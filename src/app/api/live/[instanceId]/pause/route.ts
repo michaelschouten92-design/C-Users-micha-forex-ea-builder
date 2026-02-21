@@ -35,7 +35,7 @@ export async function PUT(
 
   // Verify the user owns this instance
   const instance = await prisma.liveEAInstance.findFirst({
-    where: { id: instanceId, userId: session.user.id },
+    where: { id: instanceId, userId: session.user.id, deletedAt: null },
     select: { id: true },
   });
 

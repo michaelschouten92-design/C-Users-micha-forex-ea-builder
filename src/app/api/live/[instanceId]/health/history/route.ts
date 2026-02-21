@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   // Verify ownership
   const instance = await prisma.liveEAInstance.findFirst({
-    where: { id: instanceId, userId: session.user.id },
+    where: { id: instanceId, userId: session.user.id, deletedAt: null },
     select: { id: true },
   });
 

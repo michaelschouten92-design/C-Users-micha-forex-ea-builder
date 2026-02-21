@@ -15,6 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const trades = await prisma.eATrade.findMany({
       where: { instanceId: id },
       orderBy: { openTime: "desc" },
+      take: 100_000,
     });
 
     // Build CSV

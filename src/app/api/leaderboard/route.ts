@@ -59,6 +59,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       where: {
         user: { leaderboardOptIn: true },
         status: { not: "OFFLINE" },
+        deletedAt: null,
       },
       include: {
         trades: {

@@ -116,34 +116,37 @@ export async function POST(request: Request) {
     const { name, description } = validation.data;
 
     // Use transaction to atomically check limit and create project
-    const result = await prisma.$transaction(async (tx) => {
-      // Read tier directly from DB inside transaction to prevent race conditions
-      const [subscription, projectCount] = await Promise.all([
-        tx.subscription.findUnique({
-          where: { userId: session.user.id },
-          select: { tier: true, status: true, currentPeriodEnd: true },
-        }),
-        tx.project.count({ where: { userId: session.user.id, deletedAt: null } }),
-      ]);
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Read tier directly from DB inside transaction to prevent race conditions
+        const [subscription, projectCount] = await Promise.all([
+          tx.subscription.findUnique({
+            where: { userId: session.user.id },
+            select: { tier: true, status: true, currentPeriodEnd: true },
+          }),
+          tx.project.count({ where: { userId: session.user.id, deletedAt: null } }),
+        ]);
 
-      const tier = resolveTier(subscription);
+        const tier = resolveTier(subscription);
 
-      const max = PLANS[tier].limits.maxProjects;
+        const max = PLANS[tier].limits.maxProjects;
 
-      if (projectCount >= max) {
-        return { error: true as const, max: max === Infinity ? -1 : max };
-      }
+        if (projectCount >= max) {
+          return { error: true as const, max: max === Infinity ? -1 : max };
+        }
 
-      const project = await tx.project.create({
-        data: {
-          name,
-          description,
-          userId: session.user.id,
-        },
-      });
+        const project = await tx.project.create({
+          data: {
+            name,
+            description,
+            userId: session.user.id,
+          },
+        });
 
-      return { error: false as const, project };
-    });
+        return { error: false as const, project };
+      },
+      { isolationLevel: "Serializable" }
+    );
 
     if (result.error) {
       return NextResponse.json(
