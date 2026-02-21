@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    const { versionId, exportType, magicNumber, paperMode } = validation.data;
+    const { versionId, exportType, magicNumber } = validation.data;
 
     // Single tier lookup — reused for MQL4 check, export limits, and transaction
     const tier = await getCachedTier(session.user.id);
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest, { params }: Props) {
           userId: session.user.id,
           apiKeyHash: telemetryApiKeyHash,
           eaName: project.name,
-          mode: paperMode ? "PAPER" : "LIVE",
+          mode: "LIVE",
           strategyVersionId: strategyVersion.id,
         },
       });
