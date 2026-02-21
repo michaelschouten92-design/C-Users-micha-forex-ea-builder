@@ -32,6 +32,12 @@ function RegisterFormInner({
 
   const redirectTo = searchParams.get("redirect") || "/app";
 
+  // Read referral code from cookie (set by middleware on ?ref= visits)
+  const referralCode =
+    typeof document !== "undefined"
+      ? document.cookie.match(/referral_code=([^;]+)/)?.[1] || ""
+      : "";
+
   const renderCaptcha = useCallback(() => {
     if (!captchaSiteKey || !captchaContainerRef.current) return;
     if (typeof window === "undefined" || !(window as unknown as Record<string, unknown>).turnstile)
@@ -81,6 +87,7 @@ function RegisterFormInner({
       password,
       isRegistration: "true",
       captchaToken: captchaToken || "",
+      referralCode,
       redirect: false,
     });
 

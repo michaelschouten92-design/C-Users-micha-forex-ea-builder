@@ -92,6 +92,7 @@ providers.push(
       password: { label: "Password", type: "password" },
       isRegistration: { label: "Is Registration", type: "text" },
       captchaToken: { label: "Captcha Token", type: "text" },
+      referralCode: { label: "Referral Code", type: "text" },
     },
     async authorize(credentials, request) {
       if (!credentials?.email || !credentials?.password) {
@@ -161,6 +162,20 @@ providers.push(
             .slice(0, 8)
             .toUpperCase();
 
+          // Validate referral code from the referring user
+          let validatedReferredBy: string | undefined;
+          const incomingReferralCode = (credentials.referralCode as string) || "";
+          if (incomingReferralCode) {
+            const referrer = await prisma.user.findFirst({
+              where: { referralCode: incomingReferralCode },
+              select: { email: true, referralCode: true },
+            });
+            // Only accept if code exists and is not a self-referral
+            if (referrer && referrer.email !== email) {
+              validatedReferredBy = referrer.referralCode!;
+            }
+          }
+
           const user = await prisma.user.create({
             data: {
               email,
@@ -168,6 +183,7 @@ providers.push(
               passwordHash,
               passwordChangedAt: new Date(),
               referralCode,
+              referredBy: validatedReferredBy,
               subscription: {
                 create: {
                   tier: "FREE",
@@ -310,6 +326,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               .slice(0, 8)
               .toUpperCase();
 
+            // Read referral code from cookie (set by middleware)
+            let oauthReferredBy: string | undefined;
+            try {
+              const { cookies: getCookies } = await import("next/headers");
+              const cookieStore = await getCookies();
+              const refCookie = cookieStore.get("referral_code")?.value;
+              if (refCookie) {
+                const referrer = await prisma.user.findFirst({
+                  where: { referralCode: refCookie },
+                  select: { email: true, referralCode: true },
+                });
+                if (referrer && referrer.email !== normalizedEmail) {
+                  oauthReferredBy = referrer.referralCode!;
+                }
+              }
+            } catch {
+              // Cookie reading may fail in edge cases — continue without referral
+            }
+
             // Create new user (OAuth users are pre-verified)
             existingUser = await prisma.user.create({
               data: {
@@ -318,6 +353,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 emailVerified: true,
                 emailVerifiedAt: new Date(),
                 referralCode: oauthReferralCode,
+                referredBy: oauthReferredBy,
                 subscription: {
                   create: {
                     tier: "FREE",

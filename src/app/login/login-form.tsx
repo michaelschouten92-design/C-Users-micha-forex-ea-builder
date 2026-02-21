@@ -22,6 +22,12 @@ function LoginFormInner({
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
+
+  // Read referral code from cookie (set by middleware on ?ref= visits)
+  const referralCode =
+    typeof document !== "undefined"
+      ? document.cookie.match(/referral_code=([^;]+)/)?.[1] || ""
+      : "";
   const banner = useMemo<{ type: "success" | "error"; message: string } | null>(() => {
     if (searchParams.get("verified") === "true")
       return { type: "success", message: "Email verified successfully! You can now sign in." };
@@ -95,6 +101,7 @@ function LoginFormInner({
       password,
       isRegistration: isRegistration.toString(),
       captchaToken: captchaToken || "",
+      referralCode: isRegistration ? referralCode : "",
       redirect: false,
     });
 

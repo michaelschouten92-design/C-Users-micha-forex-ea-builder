@@ -69,6 +69,20 @@ export function middleware(request: NextRequest) {
   });
   response.headers.set("x-request-id", requestId);
 
+  // ============================================
+  // REFERRAL TRACKING
+  // ============================================
+  const refCode = request.nextUrl.searchParams.get("ref");
+  if (refCode) {
+    response.cookies.set("referral_code", refCode, {
+      maxAge: 30 * 86400, // 30 days
+      path: "/",
+      httpOnly: false, // Readable by client-side JS to pass in signIn()
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
+
   return createCsrfResponse(response, request);
 }
 
