@@ -165,8 +165,10 @@ export function ExportButton({
     a.download = result.fileName;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 150);
   }
 
   const [copied, setCopied] = useState(false);
@@ -238,8 +240,10 @@ export function ExportButton({
         a.download = data.fileName;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 150);
       }
     } catch {
       showError("Failed to re-download. Please try again.");

@@ -92,7 +92,7 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: [
-              "default-src 'self'",
+              "default-src 'self' blob:",
               // unsafe-inline required by Next.js for hydration scripts; unsafe-eval for dev HMR only
               `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://js.stripe.com https://plausible.io https://challenges.cloudflare.com`,
               "style-src 'self' 'unsafe-inline'",

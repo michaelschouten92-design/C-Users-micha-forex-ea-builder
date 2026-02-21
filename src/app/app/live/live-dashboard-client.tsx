@@ -314,8 +314,10 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
     a.download = `${eaName.replace(/[^a-zA-Z0-9]/g, "_")}_trades.csv`;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 150);
   }
 
   return (
@@ -491,7 +493,7 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
         a.href = url;
         a.download = `track-record-${eaName.replace(/[^a-zA-Z0-9]/g, "_")}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 150);
         showSuccess("Track record exported");
       } else {
         showError("Export failed", "Could not generate track record export.");
