@@ -4,7 +4,6 @@ import { SelectField, NumberField, TimeField } from "../components/form-fields";
 import type {
   TradingSessionNodeData,
   TradingSession,
-  AlwaysNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   VolumeFilterNodeData,
@@ -121,23 +120,6 @@ export function TradingSessionFields({
         </div>
       )}
     </>
-  );
-}
-
-export function AlwaysFields({
-  data: _data,
-  onChange: _onChange,
-}: {
-  data: AlwaysNodeData;
-  onChange: (updates: Partial<AlwaysNodeData>) => void;
-}) {
-  return (
-    <div
-      className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
-      role="note"
-    >
-      Trading is enabled at all times. No time restrictions apply.
-    </div>
   );
 }
 

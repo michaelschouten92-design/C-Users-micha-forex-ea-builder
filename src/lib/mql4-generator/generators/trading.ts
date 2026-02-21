@@ -5,6 +5,8 @@ import type {
   PlaceSellNodeData,
   StopLossNodeData,
   TakeProfitNodeData,
+  EmbeddedStopLossFields,
+  EmbeddedTakeProfitFields,
   TimeExitNodeData,
   GridPyramidNodeData,
   ConditionNodeData,
@@ -522,6 +524,61 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
       break;
     }
   }
+}
+
+// Generate SL code from embedded fields in a buy/sell node
+export function generateStopLossFromBuySell(
+  data: EmbeddedStopLossFields,
+  indicatorNodes: BuilderNode[],
+  edges: BuilderEdge[],
+  code: GeneratedCode,
+  priceActionNodes: BuilderNode[] = []
+): void {
+  // Create a virtual SL node from embedded fields and delegate to existing codegen
+  const virtualNode: BuilderNode = {
+    id: "__embedded_sl",
+    type: "stop-loss" as BuilderNode["type"],
+    position: { x: 0, y: 0 },
+    data: {
+      label: "Stop Loss",
+      category: "riskmanagement",
+      tradingType: "stop-loss",
+      method: data.slMethod,
+      fixedPips: data.slFixedPips,
+      slPercent: data.slPercent,
+      atrMultiplier: data.slAtrMultiplier,
+      atrPeriod: data.slAtrPeriod,
+      atrTimeframe: data.slAtrTimeframe,
+      indicatorNodeId: data.slIndicatorNodeId,
+    } as BuilderNode["data"],
+  };
+  generateStopLossCode(virtualNode, indicatorNodes, edges, code, priceActionNodes);
+}
+
+// Generate TP code from embedded fields in a buy/sell node
+export function generateTakeProfitFromBuySell(
+  data: EmbeddedTakeProfitFields,
+  code: GeneratedCode
+): void {
+  // Create a virtual TP node from embedded fields and delegate to existing codegen
+  const virtualNode: BuilderNode = {
+    id: "__embedded_tp",
+    type: "take-profit" as BuilderNode["type"],
+    position: { x: 0, y: 0 },
+    data: {
+      label: "Take Profit",
+      category: "riskmanagement",
+      tradingType: "take-profit",
+      method: data.tpMethod,
+      fixedPips: data.tpFixedPips,
+      riskRewardRatio: data.tpRiskRewardRatio,
+      atrMultiplier: data.tpAtrMultiplier,
+      atrPeriod: data.tpAtrPeriod,
+      multipleTPEnabled: data.tpMultipleTPEnabled,
+      tpLevels: data.tpLevels,
+    } as BuilderNode["data"],
+  };
+  generateTakeProfitCode(virtualNode, code);
 }
 
 export function generateEntryLogic(

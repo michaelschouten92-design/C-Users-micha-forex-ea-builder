@@ -8,7 +8,6 @@ import { buildNaturalLanguageSummary } from "../strategy-summary";
 import type {
   BuilderNodeData,
   TradingSessionNodeData,
-  AlwaysNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   VolumeFilterNodeData,
@@ -29,8 +28,6 @@ import type {
   MarketStructureNodeData,
   PlaceBuyNodeData,
   PlaceSellNodeData,
-  StopLossNodeData,
-  TakeProfitNodeData,
   CloseConditionNodeData,
   BreakevenStopNodeData,
   TrailingStopNodeData,
@@ -55,7 +52,6 @@ import type {
 
 import {
   TradingSessionFields,
-  AlwaysFields,
   MaxSpreadFields,
   VolatilityFilterFields,
   VolumeFilterFields,
@@ -89,8 +85,6 @@ import {
 import {
   PlaceBuyFields,
   PlaceSellFields,
-  StopLossFields,
-  TakeProfitFields,
   CloseConditionFields,
   TimeExitFields,
   GridPyramidFields,
@@ -431,8 +425,6 @@ function NodeFields({
     switch (data.timingType) {
       case "trading-session":
         return <TradingSessionFields data={data as TradingSessionNodeData} onChange={onChange} />;
-      case "always":
-        return <AlwaysFields data={data as AlwaysNodeData} onChange={onChange} />;
       case "custom-times":
         // Backwards compat: legacy custom-times nodes render with TradingSessionFields
         return (
@@ -525,10 +517,6 @@ function NodeFields({
         return <PlaceBuyFields data={data as PlaceBuyNodeData} onChange={onChange} />;
       case "place-sell":
         return <PlaceSellFields data={data as PlaceSellNodeData} onChange={onChange} />;
-      case "stop-loss":
-        return <StopLossFields data={data as StopLossNodeData} onChange={onChange} />;
-      case "take-profit":
-        return <TakeProfitFields data={data as TakeProfitNodeData} onChange={onChange} />;
       case "close-condition":
         return <CloseConditionFields data={data as CloseConditionNodeData} onChange={onChange} />;
       case "time-exit":

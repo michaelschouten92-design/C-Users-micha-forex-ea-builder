@@ -27,10 +27,7 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
     const d = n.data;
 
     // --- Timing ---
-    if (n.type === "always") {
-      timingLines.push("Trade at all times (24/5)");
-      hasTimingNode = true;
-    } else if (n.type === "trading-session" && "session" in d) {
+    if (n.type === "trading-session" && "session" in d) {
       hasTimingNode = true;
       if (d.session === "CUSTOM") {
         const sh = "customStartHour" in d ? String(d.customStartHour).padStart(2, "0") : "08";
@@ -207,48 +204,52 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
       }
     }
 
-    // --- Direction (place-buy / place-sell) ---
-    if (n.type === "place-buy") {
-      hasBuy = true;
+    // --- Direction (place-buy / place-sell) + embedded SL/TP ---
+    if (n.type === "place-buy" || n.type === "place-sell") {
+      if (n.type === "place-buy") hasBuy = true;
+      if (n.type === "place-sell") hasSell = true;
       if (!sizingSource) sizingSource = n;
-    } else if (n.type === "place-sell") {
-      hasSell = true;
-      if (!sizingSource) sizingSource = n;
-    }
 
-    // --- Stop loss ---
-    if (n.type === "stop-loss" && "method" in d) {
-      switch (d.method) {
-        case "FIXED_PIPS":
-          stopLossLines.push(`Stop loss at ${"fixedPips" in d ? d.fixedPips : 50} pips`);
-          break;
-        case "ATR_BASED":
-          stopLossLines.push(
-            `ATR-based stop loss (${"atrMultiplier" in d ? d.atrMultiplier : 1.5}x)`
-          );
-          break;
-        case "INDICATOR":
-          stopLossLines.push("Indicator-based stop loss");
-          break;
+      // Extract embedded SL from the buy/sell node
+      if ("slMethod" in d && stopLossLines.length === 0) {
+        switch (d.slMethod) {
+          case "FIXED_PIPS":
+            stopLossLines.push(`Stop loss at ${"slFixedPips" in d ? d.slFixedPips : 50} pips`);
+            break;
+          case "ATR_BASED":
+            stopLossLines.push(
+              `ATR-based stop loss (${"slAtrMultiplier" in d ? d.slAtrMultiplier : 1.5}x)`
+            );
+            break;
+          case "PERCENT":
+            stopLossLines.push(`Stop loss at ${"slPercent" in d ? d.slPercent : 1}%`);
+            break;
+          case "INDICATOR":
+            stopLossLines.push("Indicator-based stop loss");
+            break;
+          case "RANGE_OPPOSITE":
+            stopLossLines.push("Stop loss at range opposite");
+            break;
+        }
       }
-    }
 
-    // --- Take profit ---
-    if (n.type === "take-profit" && "method" in d) {
-      switch (d.method) {
-        case "FIXED_PIPS":
-          takeProfitLines.push(`Take profit at ${"fixedPips" in d ? d.fixedPips : 100} pips`);
-          break;
-        case "RISK_REWARD":
-          takeProfitLines.push(
-            `Close at ${"riskRewardRatio" in d ? d.riskRewardRatio : 2}:1 reward-to-risk`
-          );
-          break;
-        case "ATR_BASED":
-          takeProfitLines.push(
-            `ATR-based take profit (${"atrMultiplier" in d ? d.atrMultiplier : 3}x)`
-          );
-          break;
+      // Extract embedded TP from the buy/sell node
+      if ("tpMethod" in d && takeProfitLines.length === 0) {
+        switch (d.tpMethod) {
+          case "FIXED_PIPS":
+            takeProfitLines.push(`Take profit at ${"tpFixedPips" in d ? d.tpFixedPips : 100} pips`);
+            break;
+          case "RISK_REWARD":
+            takeProfitLines.push(
+              `Close at ${"tpRiskRewardRatio" in d ? d.tpRiskRewardRatio : 2}:1 reward-to-risk`
+            );
+            break;
+          case "ATR_BASED":
+            takeProfitLines.push(
+              `ATR-based take profit (${"tpAtrMultiplier" in d ? d.tpAtrMultiplier : 3}x)`
+            );
+            break;
+        }
       }
     }
 
@@ -291,7 +292,7 @@ export function buildNaturalLanguageSummary(nodes: BuilderNode[]): string[] {
   const lines: string[] = [];
 
   if (!hasTimingNode && nodes.length > 0) {
-    lines.push("Trade at all times (no timing filter)");
+    lines.push("Trade at all times (24/5)");
   }
   lines.push(...timingLines);
   lines.push(...entryLines);

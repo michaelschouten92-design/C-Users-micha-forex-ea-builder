@@ -36,7 +36,7 @@ function timingNode(y = 0) {
   };
 }
 
-// Shared buy/sell/sl/tp nodes for standalone presets
+// Shared buy/sell nodes for standalone presets (SL/TP embedded)
 function tradingNodes() {
   return [
     {
@@ -54,6 +54,16 @@ function tradingNodes() {
         maxLot: 10,
         orderType: "MARKET" as const,
         pendingOffset: 10,
+        slMethod: "ATR_BASED" as const,
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        slAtrPeriod: 14,
+        tpMethod: "RISK_REWARD" as const,
+        tpFixedPips: 100,
+        tpRiskRewardRatio: 2,
+        tpAtrMultiplier: 3,
+        tpAtrPeriod: 14,
       },
     },
     {
@@ -71,49 +81,27 @@ function tradingNodes() {
         maxLot: 10,
         orderType: "MARKET" as const,
         pendingOffset: 10,
-      },
-    },
-    {
-      id: "sl1",
-      type: "stop-loss",
-      position: { x: 300, y: 540 },
-      data: {
-        label: "Stop Loss",
-        category: "riskmanagement" as const,
-        tradingType: "stop-loss" as const,
-        method: "ATR_BASED" as const,
-        fixedPips: 50,
-        atrMultiplier: 1.5,
-        atrPeriod: 14,
-      },
-    },
-    {
-      id: "tp1",
-      type: "take-profit",
-      position: { x: 300, y: 720 },
-      data: {
-        label: "Take Profit",
-        category: "riskmanagement" as const,
-        tradingType: "take-profit" as const,
-        method: "RISK_REWARD" as const,
-        fixedPips: 100,
-        riskRewardRatio: 2,
-        atrMultiplier: 3,
-        atrPeriod: 14,
+        slMethod: "ATR_BASED" as const,
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        slAtrPeriod: 14,
+        tpMethod: "RISK_REWARD" as const,
+        tpFixedPips: 100,
+        tpRiskRewardRatio: 2,
+        tpAtrMultiplier: 3,
+        tpAtrPeriod: 14,
       },
     },
   ];
 }
 
-// Shared edges for standalone presets: timing→ind, ind→buy, ind→sell, buy→sl, sell→sl, sl→tp
+// Shared edges for standalone presets: timing→ind, ind→buy, ind→sell
 function standaloneEdges() {
   return [
     { id: "e1", source: "timing1", target: "ind1" },
     { id: "e2", source: "ind1", target: "buy1" },
     { id: "e3", source: "ind1", target: "sell1" },
-    { id: "e4", source: "buy1", target: "sl1" },
-    { id: "e5", source: "sell1", target: "sl1" },
-    { id: "e6", source: "sl1", target: "tp1" },
   ];
 }
 
@@ -126,7 +114,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Session range breakout with stop loss and take profit. Uses London session timing, ATR-based stop, 2:1 reward-to-risk.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -172,7 +160,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Classic trend following. EMA(50)/EMA(200) crossover with 1% risk, ATR×1.5 stop, 2R take profit.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -221,7 +209,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "EMA(200) trend + RSI pullback entry. Enters on RSI dip below 40 in uptrend (above 60 in downtrend). 1% risk, ATR×1.5 stop.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -269,7 +257,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Mean reversion at RSI extremes. Buys when RSI crosses up from 30, sells when RSI crosses down from 70. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -308,7 +296,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "MACD(12,26,9) signal line crossover. Momentum / trend shift strategy. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -347,7 +335,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Reversal on price/indicator divergence. RSI(14) with 20-bar lookback for swing detection. 1% risk, ATR×1.5 stop, 2R take profit.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -395,7 +383,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Band touch reversal strategy. Buys at lower band, sells at upper band. BB(20,2) on H1. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -434,7 +422,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Trend strength entry using ADX(14) DI+/DI- crossover when ADX > 25. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -471,7 +459,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Stochastic oscillator reversal at oversold/overbought zones. K(14)/D(3) with 80/20 levels. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {
@@ -513,7 +501,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       "Ichimoku Tenkan(9)/Kijun(26) crossover + cloud filter. 1% risk, ATR stop, 2:1 R:R.",
     tier: "FREE",
     buildJson: {
-      version: "1.0",
+      version: "1.3",
       nodes: [
         timingNode(),
         {

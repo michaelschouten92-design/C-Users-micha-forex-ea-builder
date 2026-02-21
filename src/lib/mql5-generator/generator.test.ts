@@ -25,7 +25,7 @@ function makeBuild(nodes: BuilderNode[], edges: BuilderEdge[] = []): BuildJsonSc
   }
 
   return {
-    version: "1.0",
+    version: "1.3",
     nodes,
     edges,
     viewport: { x: 0, y: 0, zoom: 1 },
@@ -735,15 +735,6 @@ describe("generateMQL5Code", () => {
 
     it("generates Stop Loss with fixed pips", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "FIXED_PIPS",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -752,6 +743,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "FIXED_PIPS",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 2,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -761,24 +762,6 @@ describe("generateMQL5Code", () => {
 
     it("generates Take Profit with risk:reward ratio", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "FIXED_PIPS",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
-        makeNode("tp1", "take-profit", {
-          category: "trading",
-          tradingType: "take-profit",
-          method: "RISK_REWARD",
-          fixedPips: 100,
-          riskRewardRatio: 2,
-          atrMultiplier: 3,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -787,6 +770,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "FIXED_PIPS",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "RISK_REWARD",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 3,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -796,15 +789,6 @@ describe("generateMQL5Code", () => {
 
     it("generates Stop Loss with ATR-based method", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "ATR_BASED",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -813,6 +797,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "ATR_BASED",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 2,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1431,24 +1425,6 @@ describe("generateMQL5Code", () => {
   describe("ATR TP without ATR SL", () => {
     it("generates tpAtrHandle when SL is not ATR-based", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "FIXED_PIPS",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
-        makeNode("tp1", "take-profit", {
-          category: "trading",
-          tradingType: "take-profit",
-          method: "ATR_BASED",
-          fixedPips: 100,
-          riskRewardRatio: 2,
-          atrMultiplier: 3,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -1457,6 +1433,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "FIXED_PIPS",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "ATR_BASED",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 3,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1468,24 +1454,6 @@ describe("generateMQL5Code", () => {
 
     it("reuses atrBuffer when SL is also ATR-based", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "ATR_BASED",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
-        makeNode("tp1", "take-profit", {
-          category: "trading",
-          tradingType: "take-profit",
-          method: "ATR_BASED",
-          fixedPips: 100,
-          riskRewardRatio: 2,
-          atrMultiplier: 3,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -1494,6 +1462,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "ATR_BASED",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "ATR_BASED",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 3,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -1543,10 +1521,9 @@ describe("generateMQL5Code", () => {
   // ============================================
 
   describe("indicator-based SL reversed edge", () => {
-    it("resolves indicator when SL is source and indicator is target", () => {
+    it("resolves indicator when SL references indicator by ID", () => {
       const build = makeBuild(
         [
-          makeNode("t1", "always", { category: "timing", timingType: "always" }),
           makeNode("bb1", "bollinger-bands", {
             category: "indicator",
             indicatorType: "bollinger-bands",
@@ -1556,14 +1533,6 @@ describe("generateMQL5Code", () => {
             appliedPrice: "CLOSE",
             shift: 0,
           }),
-          makeNode("sl1", "stop-loss", {
-            category: "trading",
-            tradingType: "stop-loss",
-            method: "INDICATOR",
-            fixedPips: 50,
-            atrMultiplier: 1.5,
-            atrPeriod: 14,
-          }),
           makeNode("b1", "place-buy", {
             category: "trading",
             tradingType: "place-buy",
@@ -1572,15 +1541,20 @@ describe("generateMQL5Code", () => {
             riskPercent: 2,
             minLot: 0.01,
             maxLot: 100,
+            slMethod: "INDICATOR",
+            slFixedPips: 50,
+            slPercent: 1,
+            slAtrMultiplier: 1.5,
+            slAtrPeriod: 14,
+            slIndicatorNodeId: "bb1",
+            tpMethod: "FIXED_PIPS",
+            tpFixedPips: 100,
+            tpRiskRewardRatio: 2,
+            tpAtrMultiplier: 2,
+            tpAtrPeriod: 14,
           }),
         ],
-        [
-          { id: "e1", source: "t1", target: "bb1" },
-          { id: "e2", source: "bb1", target: "b1" },
-          // Reversed edge: SL -> indicator
-          { id: "e3", source: "sl1", target: "bb1" },
-          { id: "e4", source: "t1", target: "sl1" },
-        ]
+        [{ id: "e1", source: "bb1", target: "b1" }]
       );
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("Indicator-based SL using Bollinger Bands");
@@ -2680,7 +2654,7 @@ describe("generateMQL5Code", () => {
       for (const preset of STRATEGY_PRESETS) {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();
-        expect(preset.buildJson.version).toBe("1.0");
+        expect(preset.buildJson.version).toBe("1.3");
         expect(preset.buildJson.nodes.length).toBeGreaterThan(0);
         expect(preset.buildJson.edges.length).toBeGreaterThan(0);
         // Should not throw
@@ -2812,7 +2786,6 @@ describe("generateMQL5Code", () => {
 
     it("uses 10 * _pipFactor instead of 100 for RANGE_OPPOSITE SL floor", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
         makeNode("rb1", "range-breakout", {
           category: "priceaction",
           priceActionType: "range-breakout",
@@ -2830,14 +2803,6 @@ describe("generateMQL5Code", () => {
           minRangePips: 10,
           maxRangePips: 0,
         }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "RANGE_OPPOSITE",
-          fixedPips: 50,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -2846,6 +2811,16 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          slMethod: "RANGE_OPPOSITE",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 2,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -2855,25 +2830,6 @@ describe("generateMQL5Code", () => {
 
     it("recalculates lot size for BuyStop with PERCENT SL", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "PERCENT",
-          fixedPips: 50,
-          slPercent: 1,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
-        makeNode("tp1", "take-profit", {
-          category: "trading",
-          tradingType: "take-profit",
-          method: "FIXED_PIPS",
-          fixedPips: 100,
-          riskRewardRatio: 2,
-          atrMultiplier: 3,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -2884,6 +2840,16 @@ describe("generateMQL5Code", () => {
           maxLot: 100,
           orderType: "STOP",
           pendingOffset: 15,
+          slMethod: "PERCENT",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 3,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -2895,25 +2861,6 @@ describe("generateMQL5Code", () => {
 
     it("recalculates lot size for SellLimit with PERCENT SL", () => {
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "PERCENT",
-          fixedPips: 50,
-          slPercent: 1,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
-        makeNode("tp1", "take-profit", {
-          category: "trading",
-          tradingType: "take-profit",
-          method: "FIXED_PIPS",
-          fixedPips: 100,
-          riskRewardRatio: 2,
-          atrMultiplier: 3,
-          atrPeriod: 14,
-        }),
         makeNode("s1", "place-sell", {
           category: "trading",
           tradingType: "place-sell",
@@ -2924,6 +2871,16 @@ describe("generateMQL5Code", () => {
           maxLot: 100,
           orderType: "LIMIT",
           pendingOffset: 20,
+          slMethod: "PERCENT",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 3,
+          tpAtrPeriod: 14,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");
@@ -3449,17 +3406,19 @@ describe("generateMQL5Code", () => {
 
   describe("PERCENT SL directional pricing", () => {
     it("generates slSellPips using BID for sell direction", () => {
+      const slTpFields = {
+        slMethod: "PERCENT",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        slAtrPeriod: 14,
+        tpMethod: "FIXED_PIPS",
+        tpFixedPips: 100,
+        tpRiskRewardRatio: 2,
+        tpAtrMultiplier: 2,
+        tpAtrPeriod: 14,
+      };
       const build = makeBuild([
-        makeNode("t1", "always", { category: "timing", timingType: "always" }),
-        makeNode("sl1", "stop-loss", {
-          category: "trading",
-          tradingType: "stop-loss",
-          method: "PERCENT",
-          fixedPips: 50,
-          slPercent: 1,
-          atrMultiplier: 1.5,
-          atrPeriod: 14,
-        }),
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
@@ -3468,6 +3427,7 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          ...slTpFields,
         }),
         makeNode("s1", "place-sell", {
           category: "trading",
@@ -3477,6 +3437,7 @@ describe("generateMQL5Code", () => {
           riskPercent: 2,
           minLot: 0.01,
           maxLot: 100,
+          ...slTpFields,
         }),
       ]);
       const code = generateMQL5Code(build, "Test");

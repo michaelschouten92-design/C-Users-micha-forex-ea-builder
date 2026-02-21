@@ -5,6 +5,24 @@ import type { NodeProps } from "@xyflow/react";
 import type { PlaceBuyNodeData, PlaceSellNodeData } from "@/types/builder";
 import { BaseNode } from "./base-node";
 
+function formatSL(data: Record<string, unknown>): string {
+  const method = data.slMethod as string;
+  if (method === "FIXED_PIPS") return `${data.slFixedPips} pips`;
+  if (method === "ATR_BASED") return `${data.slAtrMultiplier}x ATR(${data.slAtrPeriod})`;
+  if (method === "PERCENT") return `${data.slPercent}%`;
+  if (method === "INDICATOR") return "Indicator";
+  if (method === "RANGE_OPPOSITE") return "Range opposite";
+  return "\u2014";
+}
+
+function formatTP(data: Record<string, unknown>): string {
+  const method = data.tpMethod as string;
+  if (method === "FIXED_PIPS") return `${data.tpFixedPips} pips`;
+  if (method === "RISK_REWARD") return `${data.tpRiskRewardRatio}R`;
+  if (method === "ATR_BASED") return `${data.tpAtrMultiplier}x ATR(${data.tpAtrPeriod})`;
+  return "\u2014";
+}
+
 const methodLabels = {
   FIXED_LOT: "Fixed Lot",
   RISK_PERCENT: "Risk %",
@@ -69,6 +87,18 @@ export const PlaceBuyNode = memo(function PlaceBuyNode({ id, data, selected }: P
             {data.minLot} - {data.maxLot}
           </span>
         </div>
+        <div className="flex justify-between">
+          <span className="text-zinc-500">SL:</span>
+          <span className="font-medium">
+            {formatSL(data as unknown as Record<string, unknown>)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-zinc-500">TP:</span>
+          <span className="font-medium">
+            {formatTP(data as unknown as Record<string, unknown>)}
+          </span>
+        </div>
       </div>
     </BaseNode>
   );
@@ -127,6 +157,18 @@ export const PlaceSellNode = memo(function PlaceSellNode({ id, data, selected }:
           <span className="text-zinc-500">Range:</span>
           <span className="font-medium">
             {data.minLot} - {data.maxLot}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-zinc-500">SL:</span>
+          <span className="font-medium">
+            {formatSL(data as unknown as Record<string, unknown>)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-zinc-500">TP:</span>
+          <span className="font-medium">
+            {formatTP(data as unknown as Record<string, unknown>)}
           </span>
         </div>
       </div>

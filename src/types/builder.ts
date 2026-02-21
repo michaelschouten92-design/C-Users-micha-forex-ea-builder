@@ -124,7 +124,6 @@ export interface VolumeFilterNodeData extends BaseNodeData {
 
 export type TimingNodeData =
   | TradingSessionNodeData
-  | AlwaysNodeData
   | CustomTimesNodeData
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
@@ -440,12 +439,35 @@ interface PositionSizingFields {
   pendingOffset?: number;
 }
 
-export interface PlaceBuyNodeData extends BaseNodeData, PositionSizingFields {
+// Embedded SL/TP fields (merged into PlaceBuy/PlaceSell nodes)
+export interface EmbeddedStopLossFields {
+  slMethod: StopLossMethod;
+  slFixedPips: number;
+  slPercent: number;
+  slAtrMultiplier: number;
+  slAtrPeriod: number;
+  slAtrTimeframe?: Timeframe;
+  slIndicatorNodeId?: string;
+}
+
+export interface EmbeddedTakeProfitFields {
+  tpMethod: TakeProfitMethod;
+  tpFixedPips: number;
+  tpRiskRewardRatio: number;
+  tpAtrMultiplier: number;
+  tpAtrPeriod: number;
+  tpMultipleTPEnabled?: boolean;
+  tpLevels?: TPLevel[];
+}
+
+export interface PlaceBuyNodeData
+  extends BaseNodeData, PositionSizingFields, EmbeddedStopLossFields, EmbeddedTakeProfitFields {
   category: "entry" | "trading";
   tradingType: "place-buy";
 }
 
-export interface PlaceSellNodeData extends BaseNodeData, PositionSizingFields {
+export interface PlaceSellNodeData
+  extends BaseNodeData, PositionSizingFields, EmbeddedStopLossFields, EmbeddedTakeProfitFields {
   category: "entry" | "trading";
   tradingType: "place-sell";
 }
@@ -797,7 +819,6 @@ export type BuilderNodeData =
 
 export type BuilderNodeType =
   | "trading-session"
-  | "always"
   | "custom-times"
   | "moving-average"
   | "rsi"
@@ -818,8 +839,6 @@ export type BuilderNodeType =
   | "market-structure"
   | "place-buy"
   | "place-sell"
-  | "stop-loss"
-  | "take-profit"
   | "close-condition"
   | "time-exit"
   | "breakeven-stop"
@@ -840,7 +859,10 @@ export type BuilderNodeType =
   | "grid-pyramid"
   | "multi-level-tp"
   | "bb-squeeze"
-  | "volume-filter";
+  | "volume-filter"
+  | "stop-loss"
+  | "take-profit"
+  | "always";
 
 export type BuilderNode = Node<BuilderNodeData, BuilderNodeType>;
 export type BuilderEdge = Edge;
@@ -933,7 +955,7 @@ export interface BuildJsonMetadata {
 }
 
 export interface BuildJsonSchema {
-  version: "1.0" | "1.1" | "1.2";
+  version: "1.0" | "1.1" | "1.2" | "1.3";
   nodes: BuilderNode[];
   edges: BuilderEdge[];
   viewport: Viewport;
@@ -1092,17 +1114,6 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       lowImpact: false,
       closePositions: false,
     } as NewsFilterNodeData,
-  },
-  {
-    type: "always",
-    label: "Always Active",
-    category: "timing",
-    description: "No time restriction — trade 24/5",
-    defaultData: {
-      label: "Always Active",
-      category: "timing",
-      timingType: "always",
-    } as AlwaysNodeData,
   },
   // Indicators
   {
@@ -1568,6 +1579,16 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       maxLot: 10,
       orderType: "MARKET",
       pendingOffset: 0,
+      slMethod: "FIXED_PIPS",
+      slFixedPips: 50,
+      slPercent: 1,
+      slAtrMultiplier: 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "FIXED_PIPS",
+      tpFixedPips: 100,
+      tpRiskRewardRatio: 2,
+      tpAtrMultiplier: 2,
+      tpAtrPeriod: 14,
     } as PlaceBuyNodeData,
   },
   {
@@ -1586,39 +1607,17 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       maxLot: 10,
       orderType: "MARKET",
       pendingOffset: 0,
-    } as PlaceSellNodeData,
-  },
-  {
-    type: "stop-loss",
-    label: "Stop Loss",
-    category: "trading",
-    description: "Set stop loss by fixed pips, ATR, or percentage",
-    defaultData: {
-      label: "Stop Loss",
-      category: "trading",
-      tradingType: "stop-loss",
-      method: "FIXED_PIPS",
-      fixedPips: 50,
+      slMethod: "FIXED_PIPS",
+      slFixedPips: 50,
       slPercent: 1,
-      atrMultiplier: 1.5,
-      atrPeriod: 14,
-    } as StopLossNodeData,
-  },
-  {
-    type: "take-profit",
-    label: "Take Profit",
-    category: "trading",
-    description: "Set take profit by fixed pips, risk:reward, or ATR",
-    defaultData: {
-      label: "Take Profit",
-      category: "trading",
-      tradingType: "take-profit",
-      method: "FIXED_PIPS",
-      fixedPips: 100,
-      riskRewardRatio: 2,
-      atrMultiplier: 2,
-      atrPeriod: 14,
-    } as TakeProfitNodeData,
+      slAtrMultiplier: 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "FIXED_PIPS",
+      tpFixedPips: 100,
+      tpRiskRewardRatio: 2,
+      tpAtrMultiplier: 2,
+      tpAtrPeriod: 14,
+    } as PlaceSellNodeData,
   },
   {
     type: "close-condition",

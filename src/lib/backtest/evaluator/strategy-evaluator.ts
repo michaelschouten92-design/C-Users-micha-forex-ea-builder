@@ -13,6 +13,8 @@ import type {
   ConditionNodeData,
   PlaceBuyNodeData,
   PlaceSellNodeData,
+  EmbeddedStopLossFields,
+  EmbeddedTakeProfitFields,
   StopLossNodeData,
   TakeProfitNodeData,
   TrailingStopNodeData,
@@ -174,35 +176,22 @@ export function parseStrategy(buildJson: BuildJsonSchema, bars: OHLCVBar[]): Par
   // Parse trading nodes
   const buyNodes = findNodesByType<PlaceBuyNodeData>(nodes, "place-buy");
   const sellNodes = findNodesByType<PlaceSellNodeData>(nodes, "place-sell");
-  const slNodes = findNodesByType<StopLossNodeData>(nodes, "stop-loss");
-  const tpNodes = findNodesByType<TakeProfitNodeData>(nodes, "take-profit");
   const trailingNodes = findNodesByType<TrailingStopNodeData>(nodes, "trailing-stop");
   const beNodes = findNodesByType<BreakevenStopNodeData>(nodes, "breakeven-stop");
   const pcNodes = findNodesByType<PartialCloseNodeData>(nodes, "partial-close");
   const timeExitNodes = findNodesByType<TimeExitNodeData>(nodes, "time-exit");
 
-  // Find connected SL/TP for buy and sell nodes
-  const buyTradeConfig = buildTradeConfig(
-    (buyNodes[0]?.data as PlaceBuyNodeData) ?? null,
-    slNodes,
-    tpNodes,
-    trailingNodes,
-    beNodes,
-    pcNodes,
-    timeExitNodes,
-    buyNodes[0]?.id,
-    edges
-  );
+  // Extract SL/TP from the buy/sell node's embedded fields
+  const buyData = (buyNodes[0]?.data as PlaceBuyNodeData) ?? null;
+  const sellData = (sellNodes[0]?.data as PlaceSellNodeData) ?? null;
+
+  const buyTradeConfig = buildTradeConfig(buyData, trailingNodes, beNodes, pcNodes, timeExitNodes);
   const sellTradeConfig = buildTradeConfig(
-    (sellNodes[0]?.data as PlaceSellNodeData) ?? null,
-    slNodes,
-    tpNodes,
+    sellData,
     trailingNodes,
     beNodes,
     pcNodes,
-    timeExitNodes,
-    sellNodes[0]?.id,
-    edges
+    timeExitNodes
   );
 
   return {
@@ -672,23 +661,55 @@ function findNodesByTypeFromConfigs(
   return indicators.filter((i) => i.type === type);
 }
 
+/**
+ * Map embedded SL fields from a buy/sell node to the StopLossNodeData shape
+ * consumed by the trade simulator.
+ */
+function extractStopLoss(fields: EmbeddedStopLossFields): StopLossNodeData {
+  return {
+    label: "Stop Loss",
+    category: "riskmanagement",
+    tradingType: "stop-loss",
+    method: fields.slMethod,
+    fixedPips: fields.slFixedPips,
+    slPercent: fields.slPercent,
+    atrMultiplier: fields.slAtrMultiplier,
+    atrPeriod: fields.slAtrPeriod,
+    atrTimeframe: fields.slAtrTimeframe,
+    indicatorNodeId: fields.slIndicatorNodeId,
+  };
+}
+
+/**
+ * Map embedded TP fields from a buy/sell node to the TakeProfitNodeData shape
+ * consumed by the trade simulator.
+ */
+function extractTakeProfit(fields: EmbeddedTakeProfitFields): TakeProfitNodeData {
+  return {
+    label: "Take Profit",
+    category: "riskmanagement",
+    tradingType: "take-profit",
+    method: fields.tpMethod,
+    fixedPips: fields.tpFixedPips,
+    riskRewardRatio: fields.tpRiskRewardRatio,
+    atrMultiplier: fields.tpAtrMultiplier,
+    atrPeriod: fields.tpAtrPeriod,
+    multipleTPEnabled: fields.tpMultipleTPEnabled,
+    tpLevels: fields.tpLevels,
+  };
+}
+
 function buildTradeConfig(
   sizing: PlaceBuyNodeData | PlaceSellNodeData | null,
-  slNodes: BuilderNode[],
-  tpNodes: BuilderNode[],
   trailingNodes: BuilderNode[],
   beNodes: BuilderNode[],
   pcNodes: BuilderNode[],
-  timeExitNodes: BuilderNode[],
-  _tradingNodeId: string | undefined,
-  _edges: BuilderEdge[]
+  timeExitNodes: BuilderNode[]
 ): TradeConfig {
-  // For simplicity, use the first found node of each type.
-  // A more sophisticated version would trace edges from the trading node.
   return {
     sizing,
-    stopLoss: (slNodes[0]?.data as StopLossNodeData) ?? null,
-    takeProfit: (tpNodes[0]?.data as TakeProfitNodeData) ?? null,
+    stopLoss: sizing ? extractStopLoss(sizing) : null,
+    takeProfit: sizing ? extractTakeProfit(sizing) : null,
     trailingStop: (trailingNodes[0]?.data as TrailingStopNodeData) ?? null,
     breakevenStop: (beNodes[0]?.data as BreakevenStopNodeData) ?? null,
     partialClose: (pcNodes[0]?.data as PartialCloseNodeData) ?? null,

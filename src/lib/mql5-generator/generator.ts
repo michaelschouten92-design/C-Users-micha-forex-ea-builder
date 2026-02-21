@@ -13,6 +13,10 @@ import type {
   FibonacciEntryData,
   PivotPointEntryData,
   EntryStrategyNodeData,
+  PlaceBuyNodeData,
+  EmbeddedStopLossFields,
+  EmbeddedTakeProfitFields,
+  StopLossMethod,
   VolatilityFilterNodeData,
   FridayCloseFilterNodeData,
   NewsFilterNodeData,
@@ -42,6 +46,8 @@ import {
   generatePlaceSellCode,
   generateStopLossCode,
   generateTakeProfitCode,
+  generateStopLossFromBuySell,
+  generateTakeProfitFromBuySell,
   generateEntryLogic,
   generateTimeExitCode,
   generateGridPyramidCode,
@@ -439,6 +445,15 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
 
   // Create buy + sell nodes based on direction setting
   const direction = d.direction ?? "BOTH";
+  const rawSlMethod = d.slMethod ?? "ATR";
+  const embeddedSlMethod: StopLossMethod =
+    rawSlMethod === "RANGE_OPPOSITE"
+      ? "RANGE_OPPOSITE"
+      : rawSlMethod === "PIPS"
+        ? "FIXED_PIPS"
+        : rawSlMethod === "PERCENT"
+          ? "PERCENT"
+          : "ATR_BASED";
   const sizingData = {
     method: "RISK_PERCENT" as const,
     fixedLot: 0.1,
@@ -446,6 +461,19 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     minLot: 0.01,
     maxLot: 100,
     optimizableFields: mapOpt(["riskPercent", "riskPercent"]),
+    // Embedded SL fields
+    slMethod: embeddedSlMethod,
+    slFixedPips: d.slFixedPips ?? 50,
+    slPercent: d.slPercent ?? 1,
+    slAtrMultiplier: d.slAtrMultiplier,
+    slAtrPeriod: d.slAtrPeriod ?? 14,
+    slAtrTimeframe: d.slAtrTimeframe,
+    // Embedded TP fields
+    tpMethod: "RISK_REWARD" as const,
+    tpFixedPips: 100,
+    tpRiskRewardRatio: d.tpRMultiple,
+    tpAtrMultiplier: 3,
+    tpAtrPeriod: 14,
   };
 
   if (direction === "BUY" || direction === "BOTH") {
@@ -471,41 +499,9 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   }
 
-  // Create SL node
-  const rawSlMethod = d.slMethod ?? "ATR";
-  const slNodeMethod =
-    rawSlMethod === "RANGE_OPPOSITE"
-      ? "RANGE_OPPOSITE"
-      : rawSlMethod === "PIPS"
-        ? "FIXED_PIPS"
-        : rawSlMethod === "PERCENT"
-          ? "PERCENT"
-          : "ATR_BASED";
-  virtualNodes.push(
-    vNode("sl", "stop-loss", {
-      label: "Stop Loss",
-      category: "riskmanagement",
-      tradingType: "stop-loss",
-      method: slNodeMethod,
-      fixedPips: d.slFixedPips ?? 50,
-      slPercent: d.slPercent ?? 1,
-      atrMultiplier: d.slAtrMultiplier,
-      atrPeriod: d.slAtrPeriod ?? 14,
-      atrTimeframe: d.slAtrTimeframe,
-      optimizableFields: mapOpt(
-        ["slFixedPips", "fixedPips"],
-        ["slPercent", "slPercent"],
-        ["slAtrMultiplier", "atrMultiplier"],
-        ["slAtrPeriod", "atrPeriod"],
-        ["slAtrTimeframe", "atrTimeframe"]
-      ),
-    })
-  );
-
-  // Create TP node(s) — single TP or multiple TP levels
+  // Multiple TP: create partial-close node for TP1
   const mtp = d.multipleTP;
   if (mtp?.enabled) {
-    // TP1: partial close at tp1RMultiple × SL distance, closing tp1Percent% of position
     virtualNodes.push(
       vNode("partial-tp1", "partial-close", {
         label: "TP1 Partial Close",
@@ -519,34 +515,15 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
         _rMultipleTrigger: mtp.tp1RMultiple,
       })
     );
-    // TP2: standard TP at tp2RMultiple for the remainder
-    virtualNodes.push(
-      vNode("tp", "take-profit", {
-        label: "Take Profit (TP2)",
-        category: "riskmanagement",
-        tradingType: "take-profit",
-        method: "RISK_REWARD",
-        fixedPips: 100,
-        riskRewardRatio: mtp.tp2RMultiple,
-        atrMultiplier: 3,
-        atrPeriod: 14,
-        optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
-      })
-    );
-  } else {
-    virtualNodes.push(
-      vNode("tp", "take-profit", {
-        label: "Take Profit",
-        category: "riskmanagement",
-        tradingType: "take-profit",
-        method: "RISK_REWARD",
-        fixedPips: 100,
-        riskRewardRatio: d.tpRMultiple,
-        atrMultiplier: 3,
-        atrPeriod: 14,
-        optimizableFields: mapOpt(["tpRMultiple", "riskRewardRatio"]),
-      })
-    );
+    // Override TP ratio in buy/sell nodes to use TP2
+    for (const vn of virtualNodes) {
+      if (
+        "tradingType" in vn.data &&
+        (vn.data.tradingType === "place-buy" || vn.data.tradingType === "place-sell")
+      ) {
+        (vn.data as Record<string, unknown>).tpRiskRewardRatio = mtp.tp2RMultiple;
+      }
+    }
   }
 
   // Create trailing stop node if enabled
@@ -567,7 +544,7 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     );
   }
 
-  // Create edges: indicators → buy/sell → sl/tp
+  // Create edges: indicators → buy/sell, buy/sell → partial-tp/trailing
   const indicatorIds = virtualNodes
     .filter((n) => "indicatorType" in n.data || "priceActionType" in n.data)
     .map((n) => n.id);
@@ -590,10 +567,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
   }
 
   if (direction === "BUY" || direction === "BOTH") {
-    virtualEdges.push(
-      { id: `${baseId}__e-buy-sl`, source: `${baseId}__buy`, target: `${baseId}__sl` },
-      { id: `${baseId}__e-buy-tp`, source: `${baseId}__buy`, target: `${baseId}__tp` }
-    );
     if (mtp?.enabled) {
       virtualEdges.push({
         id: `${baseId}__e-buy-ptp1`,
@@ -610,10 +583,6 @@ function expandEntryStrategy(node: BuilderNode): { nodes: BuilderNode[]; edges: 
     }
   }
   if (direction === "SELL" || direction === "BOTH") {
-    virtualEdges.push(
-      { id: `${baseId}__e-sell-sl`, source: `${baseId}__sell`, target: `${baseId}__sl` },
-      { id: `${baseId}__e-sell-tp`, source: `${baseId}__sell`, target: `${baseId}__tp` }
-    );
     if (mtp?.enabled) {
       virtualEdges.push({
         id: `${baseId}__e-sell-ptp1`,
@@ -761,9 +730,12 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
       } else {
         lines.push(`Session: ${session}`);
       }
-    } else if (node.type === "always") {
-      lines.push("Session: 24/5");
     }
+  }
+
+  // Default: no timing node = 24/5
+  if (!nodes.some((n) => n.type === "trading-session" || n.type === "custom-times")) {
+    lines.push("Session: 24/5");
   }
 
   // Max spread filter
@@ -881,7 +853,6 @@ export function generateMQL5Code(
   // Get all nodes that are connected to the strategy (starting from timing nodes)
   const connectedNodeIds = getConnectedNodeIds(processedBuildJson.nodes, processedBuildJson.edges, [
     "trading-session",
-    "always",
     "custom-times",
   ]);
 
@@ -925,8 +896,6 @@ export function generateMQL5Code(
   const indicatorNodes: BuilderNode[] = [];
   const placeBuyNodes: BuilderNode[] = [];
   const placeSellNodes: BuilderNode[] = [];
-  const stopLossNodes: BuilderNode[] = [];
-  const takeProfitNodes: BuilderNode[] = [];
   const timingNodes: BuilderNode[] = [];
   const tradeManagementNodes: BuilderNode[] = [];
   const priceActionNodes: BuilderNode[] = [];
@@ -947,12 +916,7 @@ export function generateMQL5Code(
     }
 
     // Timing nodes (always included regardless of connection)
-    if (
-      nodeType === "trading-session" ||
-      nodeType === "always" ||
-      nodeType === "custom-times" ||
-      "timingType" in data
-    ) {
+    if (nodeType === "trading-session" || nodeType === "custom-times" || "timingType" in data) {
       timingNodes.push(n);
       continue;
     }
@@ -985,16 +949,6 @@ export function generateMQL5Code(
     ) {
       placeSellNodes.push(n);
     } else if (
-      nodeType === "stop-loss" ||
-      ("tradingType" in data && data.tradingType === "stop-loss")
-    ) {
-      stopLossNodes.push(n);
-    } else if (
-      nodeType === "take-profit" ||
-      ("tradingType" in data && data.tradingType === "take-profit")
-    ) {
-      takeProfitNodes.push(n);
-    } else if (
       nodeType === "close-condition" ||
       ("tradingType" in data && data.tradingType === "close-condition")
     ) {
@@ -1010,6 +964,8 @@ export function generateMQL5Code(
   // Generate timing code (supports multiple timing nodes OR'd together)
   if (timingNodes.length > 0) {
     generateMultipleTimingCode(timingNodes, code);
+  } else {
+    code.onTick.push("bool isTradingTime = true;");
   }
 
   // Generate spread filter code from max-spread nodes (optimizable input)
@@ -1439,8 +1395,6 @@ export function generateMQL5Code(
   // Track which trading components are connected
   const hasBuy = placeBuyNodes.length > 0;
   const hasSell = placeSellNodes.length > 0;
-  const hasStopLoss = stopLossNodes.length > 0;
-  const hasTakeProfit = takeProfitNodes.length > 0;
 
   // Add equity/balance toggle (always needed because CalculateLotSize references it)
   code.inputs.push({
@@ -1453,24 +1407,25 @@ export function generateMQL5Code(
   });
 
   // Generate SL/TP code FIRST (so hasDirectionalSL is set before lot sizing)
-  if (hasStopLoss) {
-    generateStopLossCode(
-      stopLossNodes[0],
+  const slTpSource = placeBuyNodes[0] ?? placeSellNodes[0];
+  if (slTpSource) {
+    const slTpData = slTpSource.data as PlaceBuyNodeData;
+    generateStopLossFromBuySell(
+      slTpData,
       indicatorNodes,
       processedBuildJson.edges,
       code,
       priceActionNodes
     );
-  } else if (hasBuy || hasSell) {
-    // No SL node connected but we have trade entries - use 0 (no stop loss)
-    code.onTick.push("double slPips = 0; // No Stop Loss connected");
+  } else {
+    code.onTick.push("double slPips = 0;");
   }
 
-  if (hasTakeProfit) {
-    generateTakeProfitCode(takeProfitNodes[0], code);
-  } else if (hasBuy || hasSell) {
-    // No TP node connected but we have trade entries - use 0 (no take profit)
-    code.onTick.push("double tpPips = 0; // No Take Profit connected");
+  if (slTpSource) {
+    const tpData = slTpSource.data as PlaceBuyNodeData;
+    generateTakeProfitFromBuySell(tpData, code);
+  } else {
+    code.onTick.push("double tpPips = 0;");
   }
 
   // Determine if range breakout is the sole entry mechanism (lot sizing handled by pending orders)

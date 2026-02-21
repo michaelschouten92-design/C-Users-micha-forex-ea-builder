@@ -77,8 +77,7 @@ function parseRsiPeriod(lower: string): number {
 }
 
 /**
- * Add standalone trading nodes (buy, sell, SL, TP) and wire them to an indicator node.
- * Returns the array of node IDs added so the caller can chain further edges.
+ * Add standalone trading nodes (buy, sell with embedded SL/TP) and wire them to an indicator node.
  */
 function addStandaloneTradingNodes(
   nodes: BuilderNode[],
@@ -91,8 +90,6 @@ function addStandaloneTradingNodes(
 
   const buyId = `ai_buy_${idx()}`;
   const sellId = `ai_sell_${idx()}`;
-  const slId = `ai_sl_${idx()}`;
-  const tpId = `ai_tp_${idx()}`;
 
   nodes.push(
     {
@@ -110,6 +107,16 @@ function addStandaloneTradingNodes(
         maxLot: 10,
         orderType: "MARKET",
         pendingOffset: 10,
+        slMethod: "ATR_BASED",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        slAtrPeriod: 14,
+        tpMethod: "RISK_REWARD",
+        tpFixedPips: 100,
+        tpRiskRewardRatio: 2,
+        tpAtrMultiplier: 3,
+        tpAtrPeriod: 14,
       } as BuilderNode["data"],
     },
     {
@@ -127,45 +134,23 @@ function addStandaloneTradingNodes(
         maxLot: 10,
         orderType: "MARKET",
         pendingOffset: 10,
-      } as BuilderNode["data"],
-    },
-    {
-      id: slId,
-      type: "stop-loss" as BuilderNode["type"],
-      position: { x: 300, y: yStart + 180 },
-      data: {
-        label: "Stop Loss",
-        category: "riskmanagement",
-        tradingType: "stop-loss",
-        method: "ATR_BASED",
-        fixedPips: 50,
-        atrMultiplier: 1.5,
-        atrPeriod: 14,
-      } as BuilderNode["data"],
-    },
-    {
-      id: tpId,
-      type: "take-profit" as BuilderNode["type"],
-      position: { x: 300, y: yStart + 360 },
-      data: {
-        label: "Take Profit",
-        category: "riskmanagement",
-        tradingType: "take-profit",
-        method: "RISK_REWARD",
-        fixedPips: 100,
-        riskRewardRatio: 2,
-        atrMultiplier: 3,
-        atrPeriod: 14,
+        slMethod: "ATR_BASED",
+        slFixedPips: 50,
+        slPercent: 1,
+        slAtrMultiplier: 1.5,
+        slAtrPeriod: 14,
+        tpMethod: "RISK_REWARD",
+        tpFixedPips: 100,
+        tpRiskRewardRatio: 2,
+        tpAtrMultiplier: 3,
+        tpAtrPeriod: 14,
       } as BuilderNode["data"],
     }
   );
 
   edges.push(
     { id: `e_${indicatorNodeId}_${buyId}`, source: indicatorNodeId, target: buyId },
-    { id: `e_${indicatorNodeId}_${sellId}`, source: indicatorNodeId, target: sellId },
-    { id: `e_${buyId}_${slId}`, source: buyId, target: slId },
-    { id: `e_${sellId}_${slId}`, source: sellId, target: slId },
-    { id: `e_${slId}_${tpId}`, source: slId, target: tpId }
+    { id: `e_${indicatorNodeId}_${sellId}`, source: indicatorNodeId, target: sellId }
   );
 }
 
@@ -491,7 +476,7 @@ export function generateStrategy(description: string): BuildJsonSchema {
   const now = new Date().toISOString();
 
   return {
-    version: "1.2",
+    version: "1.3",
     nodes,
     edges,
     viewport: { x: 0, y: 0, zoom: 0.8 },

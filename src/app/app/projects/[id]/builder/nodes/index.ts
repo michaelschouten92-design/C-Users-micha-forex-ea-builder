@@ -2,7 +2,6 @@
 import type { NodeTypes } from "@xyflow/react";
 
 import { TradingTimesNode } from "./trading-times-node";
-import { AlwaysNode } from "./always-node";
 import { MaxSpreadNode } from "./max-spread-node";
 import { VolatilityFilterNode } from "./volatility-filter-node";
 import { FridayCloseNode } from "./friday-close-node";
@@ -29,8 +28,7 @@ import { OrderBlockNode } from "./priceaction/order-block-node";
 import { FairValueGapNode } from "./priceaction/fair-value-gap-node";
 import { MarketStructureNode } from "./priceaction/market-structure-node";
 import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
-import { StopLossNode } from "./stop-loss-node";
-import { TakeProfitNode } from "./take-profit-node";
+
 import { CloseConditionNode } from "./close-condition-node";
 import { TimeExitNode } from "./trading/time-exit-node";
 import { GridPyramidNode } from "./trading/grid-pyramid-node";
@@ -48,7 +46,6 @@ import { DivergenceEntryNode } from "./entry-strategies/divergence-entry-node";
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
-  always: AlwaysNode,
   "max-spread": MaxSpreadNode,
   "volatility-filter": VolatilityFilterNode,
   "volume-filter": VolumeFilterNodeComponent,
@@ -77,8 +74,6 @@ export const nodeTypes: NodeTypes = {
   "market-structure": MarketStructureNode,
   "place-buy": PlaceBuyNode,
   "place-sell": PlaceSellNode,
-  "stop-loss": StopLossNode,
-  "take-profit": TakeProfitNode,
   "close-condition": CloseConditionNode,
   "time-exit": TimeExitNode,
   "grid-pyramid": GridPyramidNode,
@@ -95,7 +90,6 @@ export const nodeTypes: NodeTypes = {
 // Re-export individual nodes for direct imports
 export {
   TradingTimesNode,
-  AlwaysNode,
   MaxSpreadNode,
   VolatilityFilterNode,
   VolumeFilterNodeComponent as VolumeFilterNode,
@@ -123,8 +117,6 @@ export {
   MarketStructureNode,
   PlaceBuyNode,
   PlaceSellNode,
-  StopLossNode,
-  TakeProfitNode,
   CloseConditionNode,
   TimeExitNode,
   GridPyramidNode,

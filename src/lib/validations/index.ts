@@ -367,8 +367,41 @@ const positionSizingFieldsSchema = z.object({
   pendingOffset: z.number().min(0).max(10000).default(10),
 });
 
+const embeddedStopLossSchema = z.object({
+  slMethod: z.enum(["FIXED_PIPS", "ATR_BASED", "PERCENT", "INDICATOR", "RANGE_OPPOSITE"]),
+  slFixedPips: z.number().min(1).max(10000),
+  slPercent: z.number().min(0.01).max(50),
+  slAtrMultiplier: z.number().min(0.1).max(100),
+  slAtrPeriod: z.number().int().min(1).max(1000),
+  slAtrTimeframe: z.enum(["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"]).optional(),
+  slIndicatorNodeId: z.string().optional(),
+});
+
+const embeddedTakeProfitSchema = z.object({
+  tpMethod: z.enum(["FIXED_PIPS", "RISK_REWARD", "ATR_BASED"]),
+  tpFixedPips: z.number().min(1).max(10000),
+  tpRiskRewardRatio: z.number().min(0.1).max(100),
+  tpAtrMultiplier: z.number().min(0.1).max(100),
+  tpAtrPeriod: z.number().int().min(1).max(1000),
+  tpMultipleTPEnabled: z.boolean().optional(),
+  tpLevels: z
+    .array(
+      z.object({
+        method: z.enum(["FIXED_PIPS", "RISK_REWARD", "ATR_BASED"]),
+        fixedPips: z.number(),
+        riskRewardRatio: z.number(),
+        atrMultiplier: z.number(),
+        atrPeriod: z.number(),
+        closePercent: z.number(),
+      })
+    )
+    .optional(),
+});
+
 const placeBuyNodeDataSchema = baseNodeDataSchema
   .merge(positionSizingFieldsSchema)
+  .merge(embeddedStopLossSchema)
+  .merge(embeddedTakeProfitSchema)
   .extend({
     category: z.enum(["entry", "trading"]),
     tradingType: z.literal("place-buy"),
@@ -377,6 +410,8 @@ const placeBuyNodeDataSchema = baseNodeDataSchema
 
 const placeSellNodeDataSchema = baseNodeDataSchema
   .merge(positionSizingFieldsSchema)
+  .merge(embeddedStopLossSchema)
+  .merge(embeddedTakeProfitSchema)
   .extend({
     category: z.enum(["entry", "trading"]),
     tradingType: z.literal("place-sell"),
