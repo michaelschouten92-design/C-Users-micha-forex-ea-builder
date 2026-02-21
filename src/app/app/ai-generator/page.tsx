@@ -127,12 +127,6 @@ export default function AIGeneratorPage() {
                 Dashboard
               </Link>
               <Link
-                href="/app/community"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-              >
-                Marketplace
-              </Link>
-              <Link
                 href="/app/settings"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >

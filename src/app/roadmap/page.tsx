@@ -59,13 +59,6 @@ const SHIPPED: RoadmapItem[] = [
     shipped: "Q2 2025",
   },
   {
-    title: "Community Marketplace",
-    description:
-      "Share and discover strategies built by other traders. Rate, download, and customize.",
-    tag: "Platform",
-    shipped: "Q2 2025",
-  },
-  {
     title: "Grid / Pyramid Entry",
     description:
       "Place orders at regular intervals or add to winning positions with configurable lot multipliers.",
