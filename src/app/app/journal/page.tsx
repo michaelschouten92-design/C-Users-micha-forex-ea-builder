@@ -435,12 +435,6 @@ export default function JournalPage() {
                 Dashboard
               </Link>
               <Link
-                href="/app/backtest"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-              >
-                Backtest
-              </Link>
-              <Link
                 href="/app/live"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
@@ -600,15 +594,8 @@ export default function JournalPage() {
             </svg>
             <p className="text-[#94A3B8] text-lg font-medium">No journal entries yet</p>
             <p className="text-[#7C8DB0] text-sm mt-1">
-              Run a backtest and click &ldquo;Add to Journal&rdquo; to start tracking your
-              strategies.
+              Journal entries will appear here once you start tracking your strategies.
             </p>
-            <Link
-              href="/app/backtest"
-              className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200"
-            >
-              Go to Backtest
-            </Link>
           </div>
         ) : (
           <div className="space-y-4">

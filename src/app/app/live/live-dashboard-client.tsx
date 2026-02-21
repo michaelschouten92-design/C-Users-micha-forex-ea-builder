@@ -1720,39 +1720,9 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
                   d="M9 5l7 7-7 7"
                 />
               </svg>
-              <Link
-                href="/app/backtest"
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
-              >
-                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
-                  <svg
-                    className="w-2.5 h-2.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-                Test
-              </Link>
-              <svg
-                className="w-3 h-3 text-[#4F46E5]/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
               <span className="flex items-center gap-1 px-2 py-1 rounded bg-[#4F46E5]/20 text-[10px] font-semibold text-[#A78BFA]">
                 <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
-                  3
+                  2
                 </span>
                 Deploy
               </span>
@@ -1774,7 +1744,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
                 className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
               >
                 <span className="w-4 h-4 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
-                  4
+                  3
                 </span>
                 Monitor
               </Link>
@@ -1783,7 +1753,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
               href="/app/journal"
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-[#22D3EE] border border-[#22D3EE]/30 rounded-lg hover:bg-[#22D3EE]/10 transition-all duration-200"
             >
-              Compare with Backtest
+              Trade Journal
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"

@@ -122,9 +122,6 @@ export default function SettingsPage() {
             </Link>
           </div>
 
-          {/* Default Backtest Settings */}
-          <DefaultBacktestSection />
-
           {/* Leaderboard Opt-in */}
           <LeaderboardOptInSection />
 
@@ -410,122 +407,6 @@ function DataExportSection() {
             Export My Data
           </>
         )}
-      </button>
-    </div>
-  );
-}
-
-const BROKER_PRESET_OPTIONS = [
-  { value: "custom", label: "Custom (Manual Entry)" },
-  { value: "oanda", label: "OANDA" },
-  { value: "icmarkets", label: "IC Markets Raw" },
-  { value: "pepperstone", label: "Pepperstone Razor" },
-  { value: "ftmo", label: "FTMO Challenge" },
-  { value: "genericecn", label: "Generic ECN" },
-];
-
-function DefaultBacktestSection() {
-  const [initialBalance, setInitialBalance] = useState("10000");
-  const [spread, setSpread] = useState("10");
-  const [commission, setCommission] = useState("3.5");
-  const [brokerPreset, setBrokerPreset] = useState("custom");
-  const [saved, setSaved] = useState(false);
-
-  // Load defaults from localStorage on mount
-  useState(() => {
-    try {
-      const stored = localStorage.getItem("algostudio_backtest_defaults");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.initialBalance) setInitialBalance(parsed.initialBalance);
-        if (parsed.spread) setSpread(parsed.spread);
-        if (parsed.commission) setCommission(parsed.commission);
-        if (parsed.brokerPreset) setBrokerPreset(parsed.brokerPreset);
-      }
-    } catch {
-      // ignore
-    }
-  });
-
-  function handleSave() {
-    const defaults = { initialBalance, spread, commission, brokerPreset };
-    localStorage.setItem("algostudio_backtest_defaults", JSON.stringify(defaults));
-    setSaved(true);
-    showSuccess("Default backtest settings saved");
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-      <h2 className="text-lg font-semibold text-white mb-2">Default Backtest Settings</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
-        Set your preferred default values that will auto-fill when you open the backtest form. These
-        are stored locally in your browser.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Default Initial Balance (USD)
-          </label>
-          <input
-            type="number"
-            min="100"
-            step="100"
-            value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Default Broker Preset
-          </label>
-          <select
-            value={brokerPreset}
-            onChange={(e) => setBrokerPreset(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-          >
-            {BROKER_PRESET_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Default Spread (points)
-          </label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={spread}
-            onChange={(e) => setSpread(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">
-            Default Commission ($/lot/side)
-          </label>
-          <input
-            type="number"
-            min="0"
-            step="0.5"
-            value={commission}
-            onChange={(e) => setCommission(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-          />
-        </div>
-      </div>
-
-      <button
-        onClick={handleSave}
-        className="mt-4 px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200"
-      >
-        {saved ? "Saved!" : "Save Defaults"}
       </button>
     </div>
   );

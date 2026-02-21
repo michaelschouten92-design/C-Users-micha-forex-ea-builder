@@ -293,22 +293,6 @@ export default function AIGeneratorPage() {
                 )}
               </button>
 
-              {/* Backtest This Strategy button */}
-              <Link
-                href="/app/backtest"
-                className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#6366F1] transition-all duration-200"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                Backtest This Strategy
-              </Link>
-
               {result.remaining !== null && (
                 <p className="text-xs text-[#7C8DB0] mt-3 text-center">
                   {result.remaining} generation{result.remaining !== 1 ? "s" : ""} remaining today

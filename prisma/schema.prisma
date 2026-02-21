@@ -90,7 +90,6 @@ model User {
   liveEAs        LiveEAInstance[]
   alertRules     EAAlertRule[]
   alertConfigs   EAAlertConfig[]
-  backtestResults BacktestResult[]
   templateRatings TemplateRating[]
   tradeJournals  TradeJournal[]
 
@@ -135,7 +134,6 @@ model Project {
   versions        BuildVersion[]
   exports         ExportJob[]
   tags            ProjectTag[]
-  backtestResults BacktestResult[]
   shares            ProjectShare[]
   tradeJournals     TradeJournal[]
   strategyIdentity  StrategyIdentity?
@@ -511,26 +509,6 @@ model EAAlert {
 }
 
 // ============================================
-// BACKTEST RESULTS
-// ============================================
-
-model BacktestResult {
-  id        String   @id @default(cuid())
-  projectId String
-  userId    String
-  results   Json
-  fileName  String
-  createdAt DateTime @default(now())
-
-  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  backtestBaselines  BacktestBaseline[]
-
-  @@index([userId, createdAt])
-  @@index([projectId, createdAt])
-}
-
-// ============================================
 // TEMPLATE RATINGS
 // ============================================
 
@@ -713,7 +691,7 @@ model StrategyVersion {
 model BacktestBaseline {
   id                   String   @id @default(cuid())
   strategyVersionId    String   @unique
-  backtestResultId     String
+  backtestResultId     String?
   totalTrades          Int
   winRate              Float
   profitFactor         Float
@@ -727,7 +705,6 @@ model BacktestBaseline {
   createdAt            DateTime @default(now())
 
   strategyVersion StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Cascade)
-  backtestResult  BacktestResult  @relation(fields: [backtestResultId], references: [id])
 
   @@index([backtestResultId])
 }
