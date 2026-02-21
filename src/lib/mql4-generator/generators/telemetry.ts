@@ -19,7 +19,7 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
     {
       name: "InpTelemetryKey",
       type: "string",
-      value: `"${config.apiKey}"`,
+      value: config.apiKey,
       comment: "Telemetry API Key",
       isOptimizable: false,
       group: "Telemetry",
@@ -27,7 +27,7 @@ export function generateTelemetryCode(code: GeneratedCode, config: TelemetryConf
     {
       name: "InpTelemetryURL",
       type: "string",
-      value: `"${config.baseUrl}"`,
+      value: config.baseUrl,
       comment: "Telemetry Server",
       isOptimizable: false,
       group: "Telemetry",

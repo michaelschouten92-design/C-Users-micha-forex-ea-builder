@@ -20,7 +20,7 @@ import type {
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
-import { createInput } from "./shared";
+import { createInput, sanitizeMQL4String } from "./shared";
 
 export function generateIndicatorCode(node: BuilderNode, index: number, code: GeneratedCode): void {
   const data = node.data;
@@ -777,7 +777,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const obv = data as OBVNodeData;
         const group = `OBV ${index + 1}`;
         const signalPeriod = obv.signalPeriod ?? 20;
-        const copyBars = Math.max(signalPeriod + 2, obv.signalMode === "candle_close" ? 4 : 3);
+        const baseBars = obv.signalMode === "candle_close" ? 4 : 3;
+        const copyBars = baseBars + signalPeriod;
 
         code.inputs.push(
           createInput(
@@ -1021,7 +1022,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const ci = data as CustomIndicatorNodeData;
         const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
         const group = `Custom Indicator ${index + 1}`;
-        const safeName = (ci.indicatorName || "CustomIndicator").replace(/[^a-zA-Z0-9_]/g, "_");
+        const safeName = sanitizeMQL4String(ci.indicatorName || "CustomIndicator");
         const bufferIdx = ci.bufferIndex ?? 0;
 
         // Build iCustom parameter list with type-aware casting

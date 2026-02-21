@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
@@ -15,6 +16,7 @@ import {
   formatRateLimitError,
 } from "./rate-limit";
 import { logAuditEvent } from "./audit";
+import { OTP_COOKIE_NAME } from "./admin-otp";
 
 interface AdminCheckResult {
   authorized: true;
@@ -81,6 +83,19 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
       response: NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Admin email must be verified"), {
         status: 403,
       }),
+    };
+  }
+
+  // Require OTP verification (cookie set by /api/admin/otp verify action)
+  const cookieStore = await cookies();
+  const otpCookie = cookieStore.get(OTP_COOKIE_NAME);
+  if (!otpCookie?.value) {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        apiError(ErrorCode.FORBIDDEN, "Admin OTP verification required"),
+        { status: 403 }
+      ),
     };
   }
 

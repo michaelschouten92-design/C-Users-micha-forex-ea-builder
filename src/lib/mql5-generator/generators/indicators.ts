@@ -16,7 +16,7 @@ import type {
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
-import { createInput } from "./shared";
+import { createInput, sanitizeMQL5String } from "./shared";
 
 // Helper to add handle validation after creation.
 // Note: MQL5 calls OnDeinit even when OnInit returns INIT_FAILED,
@@ -780,7 +780,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const ci = data as CustomIndicatorNodeData;
         const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
         const group = `Custom Indicator ${index + 1}`;
-        const safeName = (ci.indicatorName || "CustomIndicator").replace(/[^a-zA-Z0-9_]/g, "_");
+        const safeName = sanitizeMQL5String(ci.indicatorName || "CustomIndicator");
         const bufferIdx = ci.bufferIndex ?? 0;
 
         // Build iCustom parameter list with type-aware casting
@@ -888,7 +888,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         // We need enough bars for SMA calculation on OBV
-        const obvCopyBars = Math.max(copyBars, signalPeriod + 2);
+        const obvCopyBars = copyBars + signalPeriod;
         addCopyBuffer(`${varPrefix}Handle`, 0, obvCopyBars, `${varPrefix}Buffer`, code);
         // Calculate SMA signal line from OBV values
         code.onTick.push(`// OBV Signal line (SMA of OBV)`);

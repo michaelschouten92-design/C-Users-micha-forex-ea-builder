@@ -109,7 +109,7 @@ model Subscription {
 
   // Future-proof Stripe fields
   stripeCustomerId   String?  @unique
-  stripeSubId        String?
+  stripeSubId        String?  @unique
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   manualPeriodEnd    DateTime?  // Admin-granted extension override
@@ -118,7 +118,6 @@ model Subscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([stripeCustomerId])
-  @@index([stripeSubId])
 }
 
 model Project {
@@ -467,6 +466,7 @@ model EAAlertConfig {
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   instance LiveEAInstance?  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, instanceId, alertType, channel])
   @@index([userId, enabled])
   @@index([alertType, enabled])
   @@index([instanceId])

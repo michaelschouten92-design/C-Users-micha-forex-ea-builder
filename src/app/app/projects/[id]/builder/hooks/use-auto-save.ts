@@ -202,7 +202,7 @@ export function useAutoSave({
         // If an autosave was requested while we were busy, retry now
         if (pendingAutoSaveRef.current) {
           pendingAutoSaveRef.current = false;
-          setTimeout(() => saveToServer(true), 500);
+          setTimeout(() => saveToServerRef.current(true), 500);
         }
       }
     },

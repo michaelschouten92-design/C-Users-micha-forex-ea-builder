@@ -116,16 +116,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const { name, description, notes } = validation.data;
     const rawTags = body.tags;
 
-    const project = await prisma.project.update({
-      where: { id, userId: session.user.id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(description !== undefined && { description }),
-        ...(notes !== undefined && { notes }),
-      },
-    });
-
-    // Sync tags if provided
+    // Sync tags if provided — wrap in transaction for atomicity
     if (Array.isArray(rawTags)) {
       const tagRegex = /^[a-z0-9\-_ ]+$/;
       const tags = rawTags
@@ -134,14 +125,38 @@ export async function PATCH(request: Request, { params }: Params) {
         .filter((t) => t.length > 0 && tagRegex.test(t))
         .slice(0, 5);
 
-      await prisma.projectTag.deleteMany({ where: { projectId: id } });
-      if (tags.length > 0) {
-        await prisma.projectTag.createMany({
-          data: tags.map((tag) => ({ projectId: id, tag })),
-          skipDuplicates: true,
+      const project = await prisma.$transaction(async (tx) => {
+        const updated = await tx.project.update({
+          where: { id, userId: session.user.id },
+          data: {
+            ...(name !== undefined && { name }),
+            ...(description !== undefined && { description }),
+            ...(notes !== undefined && { notes }),
+          },
         });
-      }
+
+        await tx.projectTag.deleteMany({ where: { projectId: id } });
+        if (tags.length > 0) {
+          await tx.projectTag.createMany({
+            data: tags.map((tag) => ({ projectId: id, tag })),
+            skipDuplicates: true,
+          });
+        }
+
+        return updated;
+      });
+
+      return NextResponse.json(project);
     }
+
+    const project = await prisma.project.update({
+      where: { id, userId: session.user.id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(description !== undefined && { description }),
+        ...(notes !== undefined && { notes }),
+      },
+    });
 
     return NextResponse.json(project);
   } catch (error) {

@@ -13,7 +13,7 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
   code.inputs.push({
     name: "InpTrackRecordURL",
     type: "string",
-    value: `"${config.baseUrl.replace("/api/telemetry", "/api/track-record")}"`,
+    value: config.baseUrl.replace("/api/telemetry", "/api/track-record"),
     comment: "Track Record Server",
     isOptimizable: false,
     group: "TrackRecord",
@@ -246,6 +246,12 @@ void TrackRecordLoadState()
 
 void TrackRecordRecoverFromServer()
 {
+   if(StringLen(g_trInstanceId) == 0)
+   {
+      Print("TrackRecord: Cannot recover — no instance ID available.");
+      return;
+   }
+
    string url = InpTrackRecordURL + "/state/" + g_trInstanceId;
    string headers = "Content-Type: application/json\\r\\nX-EA-Key: " + InpTelemetryKey;
 

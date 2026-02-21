@@ -380,6 +380,15 @@ export const telemetryRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for AI strategy generation (free-tier daily limit)
+ * Limits: 5 generations per 24 hours per user
+ */
+export const aiDailyGenerationLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+/**
  * Rate limiter for public verification endpoints
  * Limits: 5 requests per minute per IP
  */

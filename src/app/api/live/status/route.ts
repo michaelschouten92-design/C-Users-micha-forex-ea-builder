@@ -17,6 +17,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const eaInstances = await prisma.liveEAInstance.findMany({
       where: {
         userId: session.user.id,
+        deletedAt: null,
         ...(modeFilter === "LIVE" || modeFilter === "PAPER" ? { mode: modeFilter } : {}),
       },
       orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         trades: {
           where: { closeTime: { not: null } },
           select: { profit: true, closeTime: true },
+          take: 500,
+          orderBy: { closeTime: "desc" },
         },
         heartbeats: {
           orderBy: { createdAt: "desc" },

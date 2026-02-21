@@ -88,6 +88,12 @@ const envSchema = z.object({
 
   // Field-level encryption salt (recommended for production — generate with: openssl rand -hex 32)
   ENCRYPTION_SALT: z.string().min(16).optional(),
+
+  // Track Record signing key (required in production — generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  TRACK_RECORD_SIGNING_KEY: z.string().min(64).optional(),
+
+  // Track Record HMAC secret (required in production — generate with: openssl rand -hex 32)
+  TRACK_RECORD_SECRET: z.string().min(16).optional(),
 });
 
 // Refinements for conditional requirements
@@ -213,6 +219,30 @@ const refinedEnvSchema = envSchema
         "ENCRYPTION_SALT is required in production for field-level encryption — generate with: openssl rand -hex 32",
       path: ["ENCRYPTION_SALT"],
     }
+  )
+  .refine(
+    (data) => {
+      // In production, TRACK_RECORD_SIGNING_KEY is required for report signing
+      if (data.NODE_ENV === "production" && !data.TRACK_RECORD_SIGNING_KEY) return false;
+      return true;
+    },
+    {
+      message:
+        "TRACK_RECORD_SIGNING_KEY is required in production — generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+      path: ["TRACK_RECORD_SIGNING_KEY"],
+    }
+  )
+  .refine(
+    (data) => {
+      // In production, TRACK_RECORD_SECRET is required for checkpoint HMAC
+      if (data.NODE_ENV === "production" && !data.TRACK_RECORD_SECRET) return false;
+      return true;
+    },
+    {
+      message:
+        "TRACK_RECORD_SECRET is required in production for checkpoint HMAC — generate with: openssl rand -hex 32",
+      path: ["TRACK_RECORD_SECRET"],
+    }
   );
 
 // Client-safe schema (only NEXT_PUBLIC_* variables)
@@ -275,6 +305,8 @@ function validateEnv() {
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: undefined,
       STRIPE_TRIAL_DAYS: undefined,
       ENCRYPTION_SALT: undefined,
+      TRACK_RECORD_SIGNING_KEY: undefined,
+      TRACK_RECORD_SECRET: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -336,6 +368,8 @@ function validateEnv() {
           ? Number(process.env.STRIPE_TRIAL_DAYS)
           : undefined,
         ENCRYPTION_SALT: process.env.ENCRYPTION_SALT,
+        TRACK_RECORD_SIGNING_KEY: process.env.TRACK_RECORD_SIGNING_KEY,
+        TRACK_RECORD_SECRET: process.env.TRACK_RECORD_SECRET,
       } as z.infer<typeof refinedEnvSchema>;
     }
 

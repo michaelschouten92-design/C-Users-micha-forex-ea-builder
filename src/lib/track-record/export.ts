@@ -35,10 +35,11 @@ export async function generateVerifiedExport(instanceId: string): Promise<Verifi
 
   const state = stateFromDb(dbState);
 
-  // Load all events
+  // Load events (capped to prevent memory exhaustion)
   const events = await prisma.trackRecordEvent.findMany({
     where: { instanceId },
     orderBy: { seqNo: "asc" },
+    take: 100000,
   });
 
   // Verify chain integrity

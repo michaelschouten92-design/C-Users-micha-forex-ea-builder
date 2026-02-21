@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { isPrivateUrl } from "@/app/api/account/webhook/route";
 
 const WEBHOOK_TEST_TIMEOUT_MS = 10000;
 
@@ -35,6 +36,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (parsedUrl.protocol !== "https:") {
     return NextResponse.json({ error: "Webhook URL must use HTTPS" }, { status: 400 });
+  }
+
+  if (isPrivateUrl(webhookUrl)) {
+    return NextResponse.json(
+      { error: "Webhook URL must not point to a private or internal address" },
+      { status: 400 }
+    );
   }
 
   // Send test payload
