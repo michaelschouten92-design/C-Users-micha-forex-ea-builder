@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
+import { getCsrfHeaders } from "@/lib/api-client";
 import { HealthBadge } from "@/components/app/health-detail-panel";
 import { HealthDetailPanel } from "@/components/app/health-detail-panel";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
@@ -1149,7 +1150,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
 
     const res = await fetch("/api/live/alerts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify(body),
     });
 
@@ -1177,7 +1178,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
   async function handleToggleAlert(alertId: string, enabled: boolean): Promise<void> {
     const res = await fetch("/api/live/alerts", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify({ id: alertId, enabled }),
     });
     if (res.ok) {
@@ -1188,7 +1189,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
   async function handleDeleteAlert(alertId: string): Promise<void> {
     const res = await fetch("/api/live/alerts", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify({ id: alertId }),
     });
     if (res.ok) {
@@ -1496,7 +1497,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
   async function handleTogglePause(instanceId: string, paused: boolean): Promise<void> {
     const res = await fetch(`/api/live/${instanceId}/pause`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify({ paused }),
     });
 
@@ -1514,6 +1515,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     const ea = eaInstances.find((e) => e.id === instanceId);
     const res = await fetch(`/api/live/${instanceId}`, {
       method: "DELETE",
+      headers: getCsrfHeaders(),
     });
 
     if (res.ok) {
@@ -1534,7 +1536,7 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     // Create or update a global drawdown alert (no instanceId)
     const res = await fetch("/api/live/alerts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify({
         alertType: "DRAWDOWN",
         threshold,
