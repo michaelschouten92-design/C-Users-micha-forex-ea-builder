@@ -97,7 +97,6 @@ model User {
   webhookUrl       String?  // User-defined webhook URL for trade notifications
   telegramBotToken String?  // Encrypted Telegram Bot API token
   telegramChatId   String?  // Telegram chat ID for alerts
-  leaderboardOptIn Boolean  @default(false)
   onboardingDay1SentAt DateTime?
   onboardingDay3SentAt DateTime?
   /// Encrypted with AES-256-GCM

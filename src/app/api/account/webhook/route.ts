@@ -96,7 +96,6 @@ const webhookUpdateSchema = z.object({
       },
       { message: "Webhook URL must not point to a private or internal address" }
     ),
-  leaderboardOptIn: z.boolean().optional(),
   telegramBotToken: z
     .string()
     .max(256, "Bot token too long")
@@ -125,12 +124,11 @@ export async function GET(): Promise<NextResponse> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { webhookUrl: true, leaderboardOptIn: true, telegramChatId: true },
+    select: { webhookUrl: true, telegramChatId: true },
   });
 
   return NextResponse.json({
     webhookUrl: user?.webhookUrl ?? null,
-    leaderboardOptIn: user?.leaderboardOptIn ?? false,
     telegramChatId: user?.telegramChatId ?? null,
   });
 }
@@ -162,15 +160,11 @@ async function handleUpdate(request: NextRequest): Promise<NextResponse> {
 
     const updateData: {
       webhookUrl?: string | null;
-      leaderboardOptIn?: boolean;
       telegramBotToken?: string | null;
       telegramChatId?: string | null;
     } = {};
     if (parsed.data.webhookUrl !== undefined) {
       updateData.webhookUrl = parsed.data.webhookUrl ?? null;
-    }
-    if (parsed.data.leaderboardOptIn !== undefined) {
-      updateData.leaderboardOptIn = parsed.data.leaderboardOptIn;
     }
     if (parsed.data.telegramBotToken !== undefined) {
       // Encrypt the bot token before storing in the database
@@ -184,13 +178,12 @@ async function handleUpdate(request: NextRequest): Promise<NextResponse> {
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { webhookUrl: true, leaderboardOptIn: true, telegramChatId: true },
+      select: { webhookUrl: true, telegramChatId: true },
     });
 
     return NextResponse.json({
       success: true,
       webhookUrl: updated.webhookUrl,
-      leaderboardOptIn: updated.leaderboardOptIn,
       telegramChatId: updated.telegramChatId,
     });
   } catch {
