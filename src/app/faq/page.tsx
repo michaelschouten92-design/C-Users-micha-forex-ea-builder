@@ -95,7 +95,7 @@ const faqItems = [
   // Pricing
   {
     q: "What do I get with the free plan?",
-    a: "Full access to the strategy builder and all templates. 1 project and 3 MQL5 exports per month. Monte Carlo risk calculator and AI strategy generator included. No credit card required.",
+    a: "Full access to the strategy builder and all templates. 1 project and 3 MQL5 exports per month. Monte Carlo risk calculator and backtest health scoring included. No credit card required.",
     category: "Pricing" as const,
   },
   {

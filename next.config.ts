@@ -13,17 +13,17 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/no-code-mt5-ea-builder",
-        destination: "/build-mt5-expert-advisor-without-coding",
+        destination: "/product",
         permanent: true,
       },
       {
         source: "/no-code-ea-builder",
-        destination: "/build-mt5-expert-advisor-without-coding",
+        destination: "/product",
         permanent: true,
       },
       {
         source: "/visual-strategy-builder",
-        destination: "/visual-trading-bot-builder",
+        destination: "/product",
         permanent: true,
       },
       {
@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
       {
         // Cache public marketing pages (homepage, pricing, templates, product, blog, etc.)
         source:
-          "/(|pricing|templates|templates/:slug*|product|product/:slug*|blog|blog/:slug*|about|faq|contact|coaching|privacy|terms|compare/:slug*|trading-strategy-templates-mt5|visual-trading-bot-builder|build-mt5-expert-advisor-without-coding)",
+          "/(|pricing|templates|templates/:slug*|product|product/:slug*|blog|blog/:slug*|about|faq|contact|privacy|terms|compare/:slug*|trading-strategy-templates-mt5)",
         headers: [
           {
             key: "Cache-Control",

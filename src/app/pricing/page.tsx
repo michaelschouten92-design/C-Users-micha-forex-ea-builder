@@ -187,7 +187,7 @@ export default function PricingPage() {
                 {(
                   [
                     ["Monte Carlo risk calculator", true, true, true],
-                    ["AI strategy generator", true, true, true],
+                    ["Backtest health scoring", true, true, true],
                     ["Strategy journal", true, true, true],
                   ] as [string, string | boolean, string | boolean, string | boolean][]
                 ).map(([feature, free, pro, elite]) => (
