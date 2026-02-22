@@ -19,7 +19,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
-import { checkBodySize } from "@/lib/validations";
+import { safeReadJson } from "@/lib/validations";
 
 const log = logger.child({ route: "/api/admin/otp" });
 
@@ -66,13 +66,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Reject oversized requests
-  const bodySizeError = checkBodySize(request, 1024); // 1KB max for OTP requests
-  if (bodySizeError) return bodySizeError;
+  // Reject oversized requests and parse JSON
+  const result = await safeReadJson(request, 1024); // 1KB max for OTP requests
+  if ("error" in result) return result.error;
+  const body = result.data as Record<string, unknown>;
 
   try {
-    const body = await request.json();
-
     if (body.action === "request") {
       // Stricter rate limit specifically for OTP generation (3 per 15 min)
       const otpRateResult = await checkRateLimit(
@@ -142,7 +141,7 @@ export async function POST(request: NextRequest) {
       response.cookies.set(OTP_COOKIE_NAME, signOtpCookie(session.user.id), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         path: "/",
         maxAge: OTP_COOKIE_MAX_AGE,
       });

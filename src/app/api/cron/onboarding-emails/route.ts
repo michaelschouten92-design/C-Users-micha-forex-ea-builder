@@ -40,6 +40,7 @@ async function handleOnboardingEmails(request: NextRequest) {
 
     // Day 1: Users created 24-48h ago who haven't created any projects
     // Use 25h start to prevent overlap on cron retries within 1h
+    // Filter out users who already received the day 1 email (idempotency)
     const day1Start = new Date(now.getTime() - 48 * 60 * 60 * 1000);
     const day1End = new Date(now.getTime() - 25 * 60 * 60 * 1000);
 
@@ -47,6 +48,7 @@ async function handleOnboardingEmails(request: NextRequest) {
       where: {
         createdAt: { gte: day1Start, lt: day1End },
         projects: { none: {} },
+        onboardingDay1SentAt: null,
       },
       select: { id: true, email: true },
       take: 500, // Cap to prevent OOM on large user bases
@@ -59,7 +61,13 @@ async function handleOnboardingEmails(request: NextRequest) {
     for (let i = 0; i < day1Users.length; i += BATCH_SIZE) {
       const batch = day1Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
-        batch.map((user) => sendOnboardingDay1Email(user.email, appUrl))
+        batch.map(async (user) => {
+          await sendOnboardingDay1Email(user.email, appUrl);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { onboardingDay1SentAt: now },
+          });
+        })
       );
       for (const r of results) {
         if (r.status === "fulfilled") day1Sent++;
@@ -69,6 +77,7 @@ async function handleOnboardingEmails(request: NextRequest) {
 
     // Day 3: Users created 72-96h ago who haven't exported
     // Use 73h start to prevent overlap on cron retries within 1h
+    // Filter out users who already received the day 3 email (idempotency)
     const day3Start = new Date(now.getTime() - 96 * 60 * 60 * 1000);
     const day3End = new Date(now.getTime() - 73 * 60 * 60 * 1000);
 
@@ -76,6 +85,7 @@ async function handleOnboardingEmails(request: NextRequest) {
       where: {
         createdAt: { gte: day3Start, lt: day3End },
         exports: { none: {} },
+        onboardingDay3SentAt: null,
       },
       select: { id: true, email: true },
       take: 500, // Cap to prevent OOM on large user bases
@@ -86,7 +96,13 @@ async function handleOnboardingEmails(request: NextRequest) {
     for (let i = 0; i < day3Users.length; i += BATCH_SIZE) {
       const batch = day3Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
-        batch.map((user) => sendOnboardingDay3Email(user.email, pricingUrl))
+        batch.map(async (user) => {
+          await sendOnboardingDay3Email(user.email, pricingUrl);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { onboardingDay3SentAt: now },
+          });
+        })
       );
       for (const r of results) {
         if (r.status === "fulfilled") day3Sent++;

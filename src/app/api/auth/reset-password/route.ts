@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   resetPasswordSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
@@ -23,11 +23,12 @@ export async function POST(request: Request) {
   // Validate request
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
-    const body = await request.json();
     const validation = resetPasswordSchema.safeParse(body);
 
     if (!validation.success) {

@@ -55,7 +55,16 @@ export async function authenticateTelemetry(
     };
   }
 
-  // Rate limit by API key hash (avoid storing plaintext key)
+  // Verify key first, then rate limit (prevents DoS on arbitrary key hashes)
+  const instance = await verifyTelemetryApiKey(apiKey);
+  if (!instance) {
+    return {
+      success: false,
+      response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }),
+    };
+  }
+
+  // Rate limit by API key hash (only for valid keys)
   const keyHash = hashApiKey(apiKey);
   const rateLimitResult = await checkRateLimit(telemetryRateLimiter, `telemetry:${keyHash}`);
 
@@ -63,14 +72,6 @@ export async function authenticateTelemetry(
     return {
       success: false,
       response: NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 }),
-    };
-  }
-
-  const instance = await verifyTelemetryApiKey(apiKey);
-  if (!instance) {
-    return {
-      success: false,
-      response: NextResponse.json({ error: "Invalid API key" }, { status: 401 }),
     };
   }
 

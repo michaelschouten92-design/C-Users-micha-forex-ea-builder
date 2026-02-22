@@ -6,7 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import { PLANS } from "@/lib/plans";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 import type { PlanTier } from "@prisma/client";
 
 const TIERS: PlanTier[] = ["FREE", "PRO", "ELITE"];
@@ -68,10 +68,10 @@ export async function PUT(request: Request) {
 
     const contentTypeError = checkContentType(request as Parameters<typeof checkContentType>[0]);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request as Parameters<typeof checkBodySize>[0]);
-    if (sizeError) return sizeError;
 
-    const body = await request.json();
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
     const validation = planLimitSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(

@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     {
       status: allUp ? "healthy" : dbUp ? "degraded" : "unhealthy",
       services,
-      ...(dbError && { dbError }),
+      ...(dbError && { dbError: "Database connection error" }),
       timestamp: new Date().toISOString(),
     },
     { status: dbUp ? 200 : 503 }

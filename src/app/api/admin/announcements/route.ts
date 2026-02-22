@@ -4,7 +4,7 @@ import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 
 // GET /api/admin/announcements - List all announcements (admin)
 export async function GET() {
@@ -41,15 +41,10 @@ export async function POST(request: Request) {
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
 
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON body"), {
-        status: 400,
-      });
-    }
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
 
     const validation = createSchema.safeParse(body);
     if (!validation.success) {
@@ -102,15 +97,10 @@ export async function PATCH(request: Request) {
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
 
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON body"), {
-        status: 400,
-      });
-    }
+    const patchResult = await safeReadJson(request);
+    if ("error" in patchResult) return patchResult.error;
+    const body = patchResult.data;
 
     const validation = updateSchema.safeParse(body);
     if (!validation.success) {

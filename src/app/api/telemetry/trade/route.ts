@@ -64,68 +64,41 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Fire webhook notification (fire-and-forget)
-    fireTradeWebhook(auth.instanceId, { symbol, type, profit, openPrice, closePrice }).catch(
-      () => {}
-    );
+    // Fetch instance once for both webhook and alerts (avoids N+1)
+    const instance = await prisma.liveEAInstance.findUnique({
+      where: { id: auth.instanceId },
+      select: { eaName: true, user: { select: { webhookUrl: true } } },
+    });
 
-    // Check user-configured new trade alerts (fire-and-forget)
-    fireNewTradeAlerts(auth.instanceId, auth.userId, { symbol, type, profit }).catch(() => {});
+    if (instance) {
+      // Fire webhook notification (fire-and-forget)
+      if (instance.user.webhookUrl) {
+        fireWebhook(instance.user.webhookUrl, {
+          event: "trade",
+          data: {
+            eaName: instance.eaName,
+            symbol,
+            type,
+            profit,
+            openPrice,
+            closePrice: closePrice ?? null,
+          },
+        }).catch(() => {});
+      }
+
+      // Check user-configured new trade alerts (fire-and-forget)
+      checkNewTradeAlerts(
+        auth.userId,
+        auth.instanceId,
+        instance.eaName,
+        symbol,
+        type,
+        profit
+      ).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-}
-
-async function fireTradeWebhook(
-  instanceId: string,
-  trade: {
-    symbol: string;
-    type: string;
-    profit: number;
-    openPrice: number;
-    closePrice: number | null | undefined;
-  }
-): Promise<void> {
-  const instance = await prisma.liveEAInstance.findUnique({
-    where: { id: instanceId },
-    select: { eaName: true, user: { select: { webhookUrl: true } } },
-  });
-
-  if (!instance?.user.webhookUrl) return;
-
-  await fireWebhook(instance.user.webhookUrl, {
-    event: "trade",
-    data: {
-      eaName: instance.eaName,
-      symbol: trade.symbol,
-      type: trade.type,
-      profit: trade.profit,
-      openPrice: trade.openPrice,
-      closePrice: trade.closePrice ?? null,
-    },
-  });
-}
-
-async function fireNewTradeAlerts(
-  instanceId: string,
-  userId: string,
-  trade: { symbol: string; type: string; profit: number }
-): Promise<void> {
-  const instance = await prisma.liveEAInstance.findUnique({
-    where: { id: instanceId },
-    select: { eaName: true },
-  });
-
-  if (!instance) return;
-
-  await checkNewTradeAlerts(
-    userId,
-    instanceId,
-    instance.eaName,
-    trade.symbol,
-    trade.type,
-    trade.profit
-  );
 }

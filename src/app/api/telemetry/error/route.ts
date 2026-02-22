@@ -25,29 +25,31 @@ export async function POST(request: NextRequest) {
 
     const { errorCode, message, context } = parsed.data;
 
-    // Insert error record
-    await prisma.eAError.create({
-      data: {
-        instanceId: auth.instanceId,
-        errorCode,
-        message,
-        context: context ?? null,
-      },
-    });
+    // Atomic: create error record + read instance + update status in a single transaction
+    const instance = await prisma.$transaction(async (tx) => {
+      await tx.eAError.create({
+        data: {
+          instanceId: auth.instanceId,
+          errorCode,
+          message,
+          context: context ?? null,
+        },
+      });
 
-    // Check previous status before updating to ERROR
-    const instance = await prisma.liveEAInstance.findUnique({
-      where: { id: auth.instanceId },
-      select: { status: true, eaName: true, user: { select: { email: true, webhookUrl: true } } },
-    });
+      const inst = await tx.liveEAInstance.findUnique({
+        where: { id: auth.instanceId },
+        select: { status: true, eaName: true, user: { select: { email: true, webhookUrl: true } } },
+      });
 
-    // Update instance with last error and set status to ERROR
-    await prisma.liveEAInstance.update({
-      where: { id: auth.instanceId },
-      data: {
-        lastError: message.substring(0, 500),
-        status: "ERROR",
-      },
+      await tx.liveEAInstance.update({
+        where: { id: auth.instanceId },
+        data: {
+          lastError: message.substring(0, 500),
+          status: "ERROR",
+        },
+      });
+
+      return inst;
     });
 
     // Send email alert if status changed to ERROR (was previously ONLINE or OFFLINE)

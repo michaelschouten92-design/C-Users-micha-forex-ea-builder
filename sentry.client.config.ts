@@ -37,6 +37,8 @@ Sentry.init({
     Sentry.replayIntegration({
       // Mask all input fields
       maskAllInputs: true,
+      // Mask all text to prevent PII leakage
+      maskAllText: true,
       // Block all media
       blockAllMedia: true,
     }),

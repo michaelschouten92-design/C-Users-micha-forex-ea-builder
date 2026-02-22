@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { TrackRecordEventType } from "@/lib/track-record/types";
@@ -209,7 +210,10 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message.includes("P2034")) {
       return NextResponse.json({ error: "Transaction conflict, please retry" }, { status: 409 });
     }
-    console.error("Track record ingest error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Track record ingest error"
+    );
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

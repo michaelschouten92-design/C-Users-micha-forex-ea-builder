@@ -79,7 +79,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4. File size check
+    // 4. MIME type validation (before reading file content)
+    const mimeType = file.type;
+    if (mimeType && !mimeType.startsWith("text/") && mimeType !== "application/octet-stream") {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "Invalid file type. Please upload an HTML file."),
+        { status: 400 }
+      );
+    }
+
+    // 5. File size check
     if (file.size > BACKTEST_MAX_FILE_SIZE) {
       return NextResponse.json(
         apiError(
@@ -90,7 +99,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Validate projectId ownership if provided (before expensive parse)
+    // 6. Validate projectId ownership if provided (before expensive parse)
     if (projectId) {
       const project = await prisma.project.findFirst({
         where: { id: projectId, userId: session.user.id, deletedAt: null },
@@ -103,10 +112,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // 6. Read file content
+    // 7. Read file content
     const html = await file.text();
 
-    // 7. Structural validation
+    // 8. Structural validation
     const structureCheck = isLikelyMT5Report(html);
     if (!structureCheck.valid) {
       return NextResponse.json(
@@ -115,7 +124,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 8. Content hash for deduplication (scoped per user)
+    // 9. Content hash for deduplication (scoped per user)
     const contentHash = createHash("sha256").update(html).digest("hex");
 
     const existingUpload = await prisma.backtestUpload.findUnique({
@@ -130,7 +139,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. Parse the report
+    // 10. Parse the report
     let parsed;
     try {
       parsed = parseMT5Report(html);
@@ -145,14 +154,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 10. Compute health score
+    // 11. Compute health score
     const healthResult = computeHealthScore(parsed.metrics);
 
-    // 11. Sanitize HTML before storage and sanitize filename
+    // 12. Sanitize HTML before storage and sanitize filename
     const sanitizedHtml = sanitizeHtmlForStorage(html);
     const safeName = sanitizeFileName(file.name);
 
-    // 12. Store in transaction
+    // 13. Store in transaction
     const result = await prisma.$transaction(async (tx) => {
       const upload = await tx.backtestUpload.create({
         data: {
@@ -196,7 +205,7 @@ export async function POST(request: Request) {
       return { upload, run };
     });
 
-    // 13. Return result
+    // 14. Return result
     return NextResponse.json(
       {
         uploadId: result.upload.id,

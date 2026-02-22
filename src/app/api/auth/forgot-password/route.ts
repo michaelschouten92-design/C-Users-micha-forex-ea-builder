@@ -4,26 +4,44 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import {
   forgotPasswordSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { env } from "@/lib/env";
 import { normalizeEmail } from "@/lib/auth";
-import { passwordResetRateLimiter, checkRateLimit, createRateLimitHeaders } from "@/lib/rate-limit";
+import {
+  passwordResetRateLimiter,
+  loginIpRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
   const log = createApiLogger("/api/auth/forgot-password", "POST");
 
+  // Rate limit by IP (prevents credential stuffing and enumeration)
+  const ip = getClientIp(request);
+  const ipRl = await checkRateLimit(loginIpRateLimiter, `forgot-pwd-ip:${ip}`);
+  if (!ipRl.success) {
+    return NextResponse.json(
+      { message: "If an account with this email exists, a reset link has been sent." },
+      { status: 200, headers: createRateLimitHeaders(ipRl) }
+    );
+  }
+
   // Validate request
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
-    const body = await request.json();
     const validation = forgotPasswordSchema.safeParse(body);
 
     if (!validation.success) {

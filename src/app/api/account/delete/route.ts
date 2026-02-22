@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendAccountDeletedEmail } from "@/lib/email";
-import { checkBodySize, checkContentType } from "@/lib/validations";
+import { safeReadJson, checkContentType } from "@/lib/validations";
 import {
   gdprDeleteRateLimiter,
   checkRateLimit,
@@ -37,12 +37,12 @@ export async function DELETE(request: Request) {
 
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data as Record<string, unknown>;
 
   try {
-    const body = await request.json();
-
     if (body?.confirm !== "DELETE") {
       return NextResponse.json(
         { error: 'Confirmation required. Send { confirm: "DELETE" } to proceed.' },

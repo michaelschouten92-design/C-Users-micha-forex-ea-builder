@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import {
   buildBrokerDigestPayload,
@@ -69,7 +70,10 @@ export async function POST(request: NextRequest) {
       chainEvent: { seqNo: chainEvent.seqNo, eventHash: chainEvent.eventHash },
     });
   } catch (error) {
-    console.error("Broker evidence error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Broker evidence error"
+    );
     return NextResponse.json({ error: "Failed to process broker evidence" }, { status: 500 });
   }
 }
@@ -144,7 +148,10 @@ export async function GET(request: NextRequest) {
       corroboration: analysis,
     });
   } catch (error) {
-    console.error("Broker evidence analysis error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Broker evidence analysis error"
+    );
     return NextResponse.json({ error: "Failed to analyze broker corroboration" }, { status: 500 });
   }
 }

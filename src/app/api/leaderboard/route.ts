@@ -2,6 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  publicApiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 // In-memory cache for leaderboard results
 let cachedData: { data: LeaderboardEntry[]; updatedAt: string } | null = null;
@@ -31,6 +38,16 @@ function getTimeframeDate(timeframe: Timeframe): Date | null {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Rate limit by IP
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(publicApiRateLimiter, `leaderboard:${ip}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
+  }
+
   try {
     const url = new URL(request.url);
     const timeframeParam = url.searchParams.get("timeframe") ?? "30d";

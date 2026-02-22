@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
 import { sendAdminDailyReportEmail } from "@/lib/email";
+import { TIER_MRR_PRICES } from "@/lib/plans";
 
 const log = logger.child({ route: "/api/cron/admin-report" });
 
@@ -78,8 +79,7 @@ async function handleAdminReport(request: NextRequest) {
       },
       select: { tier: true },
     });
-    const TIER_PRICES: Record<string, number> = { PRO: 39, ELITE: 79 };
-    const mrr = paidSubs.reduce((sum, s) => sum + (TIER_PRICES[s.tier] || 0), 0);
+    const mrr = paidSubs.reduce((sum, s) => sum + (TIER_MRR_PRICES[s.tier] || 0), 0);
 
     const tierMap: Record<string, number> = {};
     for (const tc of tierCounts) {

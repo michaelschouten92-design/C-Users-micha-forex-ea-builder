@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -60,7 +61,10 @@ export async function GET(request: NextRequest, { params }: Props) {
       },
     });
   } catch (error) {
-    console.error("Track record report error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Track record report error"
+    );
     return NextResponse.json({ error: "Failed to generate proof bundle" }, { status: 500 });
   }
 }

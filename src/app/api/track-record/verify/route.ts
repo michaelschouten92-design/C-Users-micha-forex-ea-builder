@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { verifyChain, type StoredEvent } from "@/lib/track-record/chain-verifier";
 import { verifyCheckpointHmac } from "@/lib/track-record/checkpoint";
@@ -147,7 +148,10 @@ export async function GET(request: NextRequest) {
       verified: chainResult.valid && (checkpointCount === 0 || checkpointVerified),
     });
   } catch (error) {
-    console.error("Track record verify error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Track record verify error"
+    );
     return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }

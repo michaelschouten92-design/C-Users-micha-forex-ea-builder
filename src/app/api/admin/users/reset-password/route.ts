@@ -15,7 +15,7 @@ import {
   formatRateLimitError,
   createRateLimitHeaders,
 } from "@/lib/rate-limit";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 
 const resetSchema = z.object({
   email: z.string().email(),
@@ -29,8 +29,10 @@ export async function POST(request: Request) {
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
+
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
 
     const rl = await checkRateLimit(
       adminMutationRateLimiter,
@@ -41,13 +43,6 @@ export async function POST(request: Request) {
         { error: formatRateLimitError(rl) },
         { status: 429, headers: createRateLimitHeaders(rl) }
       );
-    }
-
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON body"), {
-        status: 400,
-      });
     }
 
     const validation = resetSchema.safeParse(body);

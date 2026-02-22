@@ -7,7 +7,8 @@ import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { audit } from "@/lib/audit";
 import { checkAdmin } from "@/lib/admin";
 import { syncDiscordRoleForUser } from "@/lib/discord";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
+import { features } from "@/lib/env";
 import {
   adminMutationRateLimiter,
   checkRateLimit,
@@ -28,8 +29,10 @@ export async function POST(request: Request) {
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
+
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
 
     const rl = await checkRateLimit(
       adminMutationRateLimiter,
@@ -40,13 +43,6 @@ export async function POST(request: Request) {
         { error: formatRateLimitError(rl) },
         { status: 429, headers: createRateLimitHeaders(rl) }
       );
-    }
-
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON body"), {
-        status: 400,
-      });
     }
 
     const validation = upgradeSchema.safeParse(body);
@@ -74,8 +70,27 @@ export async function POST(request: Request) {
     }
 
     const previousTier = user.subscription?.tier ?? "FREE";
+    const existingStripeSubId = user.subscription?.stripeSubId;
+    const existingStripeCustomerId = user.subscription?.stripeCustomerId;
 
-    // Upsert subscription: set tier, status active, clear Stripe fields (manual grant)
+    // Cancel existing Stripe subscription before clearing (prevents orphaned billing)
+    if (existingStripeSubId && features.stripe) {
+      try {
+        const { getStripe } = await import("@/lib/stripe");
+        await getStripe().subscriptions.cancel(existingStripeSubId);
+        logger.info(
+          { stripeSubId: existingStripeSubId, email },
+          "Cancelled Stripe subscription before admin tier change"
+        );
+      } catch (err) {
+        logger.warn(
+          { err, stripeSubId: existingStripeSubId },
+          "Failed to cancel Stripe subscription (may already be cancelled)"
+        );
+      }
+    }
+
+    // Upsert subscription: set tier, status active, clear Stripe sub but preserve customerId
     await prisma.subscription.upsert({
       where: { userId: user.id },
       create: {
@@ -86,7 +101,7 @@ export async function POST(request: Request) {
       update: {
         tier,
         status: "active",
-        stripeCustomerId: null,
+        stripeCustomerId: existingStripeCustomerId ?? null, // Preserve customer relationship
         stripeSubId: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { generateVerifiedExport } from "@/lib/track-record/export";
 
@@ -29,8 +30,9 @@ export async function GET(request: NextRequest, { params }: Props) {
   try {
     const record = await generateVerifiedExport(instanceId);
 
-    // Return as downloadable JSON
-    const fileName = `track-record-${instance.eaName.replace(/[^a-zA-Z0-9]/g, "_")}.json`;
+    // Return as downloadable JSON (filename max 64 chars to prevent header injection)
+    const sanitizedName = instance.eaName.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 40);
+    const fileName = `track-record-${sanitizedName}.json`;
 
     return new NextResponse(JSON.stringify(record, null, 2), {
       headers: {
@@ -39,7 +41,10 @@ export async function GET(request: NextRequest, { params }: Props) {
       },
     });
   } catch (error) {
-    console.error("Track record export error:", error);
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Track record export error"
+    );
     return NextResponse.json({ error: "Failed to generate track record export" }, { status: 500 });
   }
 }

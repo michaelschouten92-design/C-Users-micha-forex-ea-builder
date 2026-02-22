@@ -23,6 +23,12 @@ function getEncryptionKey(): Buffer {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET not configured for encryption");
   const salt = process.env.ENCRYPTION_SALT || PBKDF2_FALLBACK_SALT;
+  if (!process.env.ENCRYPTION_SALT) {
+    // Log once at startup — fallback salt is less secure
+    console.warn(
+      "[crypto] ENCRYPTION_SALT not configured — using fallback salt. Set ENCRYPTION_SALT in env for production."
+    );
+  }
   cachedKey = pbkdf2Sync(secret, salt, PBKDF2_ITERATIONS, 32, "sha256");
   return cachedKey;
 }

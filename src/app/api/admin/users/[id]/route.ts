@@ -7,7 +7,7 @@ import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
 import { encrypt, decrypt, isEncrypted } from "@/lib/crypto";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 
 // GET /api/admin/users/[id] - Detailed user info with full history
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -103,8 +103,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
+
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
 
     const { id } = await params;
 
@@ -115,8 +117,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         status: 400,
       });
     }
-
-    const body = await request.json();
     const bodyValidation = z.object({ adminNotes: z.string().max(10000) }).safeParse(body);
     if (!bodyValidation.success) {
       return NextResponse.json(

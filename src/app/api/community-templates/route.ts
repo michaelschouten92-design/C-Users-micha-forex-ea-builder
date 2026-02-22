@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  publicApiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 /**
  * Mask an email address for public display.
@@ -13,6 +20,16 @@ function maskEmail(email: string): string {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Rate limit by IP
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(publicApiRateLimiter, `community-templates:${ip}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
+  }
+
   const url = new URL(request.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  publicApiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -7,6 +14,16 @@ type Props = {
 
 // GET /api/track-record/shared/[token] — public, return shared proof bundle
 export async function GET(request: NextRequest, { params }: Props) {
+  // Rate limit by IP
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(publicApiRateLimiter, `shared-proof:${ip}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
+  }
+
   const { token } = await params;
 
   const shared = await prisma.sharedProofBundle.findUnique({

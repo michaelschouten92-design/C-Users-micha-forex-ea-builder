@@ -149,6 +149,12 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "invoice.marked_uncollectible": {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoiceUncollectible(invoice);
+        break;
+      }
+
       case "charge.dispute.created": {
         const dispute = event.data.object as Stripe.Dispute;
         log.error(
@@ -605,6 +611,37 @@ async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
   if (userId) {
     invalidateSubscriptionCache(userId);
     log.info({ userId, customerId }, "Subscription paused");
+  }
+}
+
+async function handleInvoiceUncollectible(invoice: Stripe.Invoice) {
+  const customerId = getStringId(invoice.customer);
+  if (!customerId) return;
+
+  // Mark subscription as unpaid when invoice is abandoned
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+      SELECT id, "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
+
+    if (!rows.length) return null;
+
+    await tx.subscription.update({
+      where: { id: rows[0].id },
+      data: { status: "unpaid" },
+    });
+
+    return rows[0].userId;
+  });
+
+  if (userId) {
+    invalidateSubscriptionCache(userId);
+    log.warn(
+      { userId, customerId, invoiceId: invoice.id },
+      "Invoice marked uncollectible — subscription set to unpaid"
+    );
   }
 }
 

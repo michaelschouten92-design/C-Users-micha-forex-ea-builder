@@ -128,6 +128,15 @@ export const PLANS = {
 export type PlanTier = keyof typeof PLANS;
 export type Plan = (typeof PLANS)[PlanTier];
 
+/**
+ * Monthly MRR prices per tier (in EUR, for revenue calculations).
+ * Single source of truth — used by admin stats and cron reports.
+ */
+export const TIER_MRR_PRICES: Record<string, number> = {
+  PRO: 39,
+  ELITE: 79,
+};
+
 export function getPlan(tier: PlanTier): Plan {
   return PLANS[tier];
 }

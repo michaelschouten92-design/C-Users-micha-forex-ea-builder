@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   updateProjectSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { NextResponse } from "next/server";
@@ -87,10 +87,10 @@ export async function PATCH(request: Request, { params }: Params) {
     // Validate request
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
 
-    const body = await request.json();
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
     const validation = updateProjectSchema.safeParse(body);
 
     if (!validation.success) {
@@ -114,7 +114,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const { name, description, notes } = validation.data;
-    const rawTags = body.tags;
+    const rawTags = (body as Record<string, unknown>).tags;
 
     // Sync tags if provided — wrap in transaction for atomicity
     if (Array.isArray(rawTags)) {

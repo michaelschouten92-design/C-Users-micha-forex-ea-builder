@@ -37,6 +37,5 @@ function createPrismaClient() {
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Cache unconditionally to prevent connection pool exhaustion across hot reloads
+globalForPrisma.prisma = prisma;

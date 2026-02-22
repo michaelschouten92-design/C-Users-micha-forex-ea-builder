@@ -3,11 +3,7 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
-
-const TIER_PRICES: Record<string, number> = {
-  PRO: 39,
-  ELITE: 79,
-};
+import { TIER_MRR_PRICES } from "@/lib/plans";
 
 // GET /api/admin/stats - Aggregated dashboard statistics
 export async function GET() {
@@ -79,7 +75,7 @@ export async function GET() {
 
     // Calculate MRR
     const mrr = paidSubscriptions.reduce((sum, sub) => {
-      return sum + (TIER_PRICES[sub.tier] || 0);
+      return sum + (TIER_MRR_PRICES[sub.tier] || 0);
     }, 0);
 
     // Format tier counts

@@ -1,27 +1,35 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { auth } from "@/lib/auth";
 import { matchesSegmentFilters } from "@/lib/segment-filter";
+import {
+  publicApiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 // GET /api/announcements - Public: active, non-expired announcements
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Rate limit by IP
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(publicApiRateLimiter, `announcements:${ip}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
+  }
+
   try {
     const now = new Date();
 
-    // Auto-activate scheduled announcements whose time has come
-    await prisma.announcement.updateMany({
-      where: {
-        scheduledAt: { lte: now },
-        active: false,
-      },
-      data: { active: true },
-    });
-
     const announcements = await prisma.announcement.findMany({
       where: {
-        active: true,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        OR: [{ active: true }, { active: false, scheduledAt: { lte: now } }],
+        AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }],
       },
       orderBy: { createdAt: "desc" },
       select: {
@@ -77,6 +85,14 @@ export async function GET() {
         return true; // If we can't parse filters, show it
       }
     });
+
+    // Fire-and-forget: activate scheduled announcements for future consumers (idempotent)
+    prisma.announcement
+      .updateMany({
+        where: { scheduledAt: { lte: now }, active: false },
+        data: { active: true },
+      })
+      .catch(() => {});
 
     return NextResponse.json({
       data: filtered.map(({ segment, segmentId, ...rest }) => rest),

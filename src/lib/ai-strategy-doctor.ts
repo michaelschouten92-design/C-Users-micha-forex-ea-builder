@@ -117,12 +117,15 @@ export async function analyzeStrategy(
 
   const userMessage = buildUserMessage(input, dealSample);
 
-  const response = await anthropic.messages.create({
-    model: AI_ANALYSIS_MODEL,
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  const response = await anthropic.messages.create(
+    {
+      model: AI_ANALYSIS_MODEL,
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    },
+    { timeout: 45000 }
+  );
 
   // Extract text from response
   const textBlocks = response.content.filter((b) => b.type === "text");

@@ -133,8 +133,10 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
  * Helper to extract audit context from a request
  */
 export function getAuditContext(request: Request): { ipAddress: string; userAgent: string } {
+  // Prefer x-real-ip (set by Vercel) over x-forwarded-for (can be multi-hop)
+  const realIp = request.headers.get("x-real-ip");
   const forwarded = request.headers.get("x-forwarded-for");
-  const ipAddress = forwarded?.split(",")[0]?.trim() || "unknown";
+  const ipAddress = realIp?.trim() || forwarded?.split(",")[0]?.trim() || "unknown";
   const userAgent = request.headers.get("user-agent") || "unknown";
 
   return { ipAddress, userAgent };

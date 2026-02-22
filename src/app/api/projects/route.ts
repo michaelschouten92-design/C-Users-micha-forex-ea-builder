@@ -5,7 +5,7 @@ import { PLANS } from "@/lib/plans";
 import {
   createProjectSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { NextResponse } from "next/server";
@@ -96,10 +96,10 @@ export async function POST(request: Request) {
     // Validate request
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
 
-    const body = await request.json();
+    const readResult = await safeReadJson(request);
+    if ("error" in readResult) return readResult.error;
+    const body = readResult.data;
     const validation = createProjectSchema.safeParse(body);
 
     if (!validation.success) {

@@ -6,7 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 
 const segmentFiltersSchema = z
   .object({
@@ -51,10 +51,10 @@ export async function POST(request: Request) {
 
     const contentTypeError = checkContentType(request);
     if (contentTypeError) return contentTypeError;
-    const sizeError = checkBodySize(request);
-    if (sizeError) return sizeError;
 
-    const body = await request.json();
+    const result = await safeReadJson(request);
+    if ("error" in result) return result.error;
+    const body = result.data;
     const validation = createSegmentSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(

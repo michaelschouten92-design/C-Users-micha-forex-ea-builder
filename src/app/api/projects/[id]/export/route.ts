@@ -9,7 +9,7 @@ import {
   exportRequestSchema,
   buildJsonSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -85,11 +85,12 @@ export async function POST(request: NextRequest, { params }: Props) {
   // Validate request
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
-    const body = await request.json();
     const validation = exportRequestSchema.safeParse(body);
 
     if (!validation.success) {

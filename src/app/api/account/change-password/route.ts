@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 import {
   changePasswordRateLimiter,
   checkRateLimit,
@@ -31,8 +31,10 @@ export async function POST(request: NextRequest) {
 
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
     // Rate limit
@@ -46,8 +48,6 @@ export async function POST(request: NextRequest) {
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
       );
     }
-
-    const body = await request.json();
     const parsed = schema.safeParse(body);
 
     if (!parsed.success) {

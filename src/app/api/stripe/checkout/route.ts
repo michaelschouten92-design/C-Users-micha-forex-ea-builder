@@ -8,7 +8,7 @@ import { PLANS } from "@/lib/plans";
 import {
   checkoutRequestSchema,
   formatZodErrors,
-  checkBodySize,
+  safeReadJson,
   checkContentType,
 } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
@@ -46,11 +46,12 @@ export async function POST(request: NextRequest) {
   // Validate request
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
-    const body = await request.json();
     const validation = checkoutRequestSchema.safeParse(body);
 
     if (!validation.success) {
@@ -133,9 +134,13 @@ export async function POST(request: NextRequest) {
         limit: 1,
       });
 
-      if (existingCustomers.data.length > 0) {
+      if (
+        existingCustomers.data.length > 0 &&
+        existingCustomers.data[0].metadata?.userId === user.id
+      ) {
         stripeCustomerId = existingCustomers.data[0].id;
       } else {
+        // No matching customer found, or metadata userId doesn't match — create a new one
         const customer = await getStripe().customers.create({
           email: user.email,
           metadata: {

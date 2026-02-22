@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { sanitizeText } from "@/lib/sanitize";
-import { checkContentType, checkBodySize } from "@/lib/validations";
+import { checkContentType, safeReadJson } from "@/lib/validations";
 import {
   contactFormRateLimiter,
   checkRateLimit,
@@ -36,11 +36,12 @@ export async function POST(request: NextRequest) {
 
   const contentTypeError = checkContentType(request);
   if (contentTypeError) return contentTypeError;
-  const sizeError = checkBodySize(request);
-  if (sizeError) return sizeError;
+
+  const result = await safeReadJson(request);
+  if ("error" in result) return result.error;
+  const body = result.data;
 
   try {
-    const body = await request.json();
     const validation = contactSchema.safeParse(body);
     if (!validation.success) {
       const firstError = validation.error.errors[0]?.message || "Validation failed";
