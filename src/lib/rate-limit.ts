@@ -499,5 +499,29 @@ export function getClientIp(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
+/**
+ * Rate limiters for walk-forward analysis (tiered by plan)
+ * PRO: 20 analyses per 24 hours
+ * ELITE: 100 analyses per 24 hours
+ */
+export const walkForwardProRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+export const walkForwardEliteRateLimiter = createRateLimiter({
+  limit: 100,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+/**
+ * Rate limiter for AI strategy optimization (Elite only)
+ * Limits: 20 optimizations per 24 hours per user
+ */
+export const aiOptimizationEliteRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

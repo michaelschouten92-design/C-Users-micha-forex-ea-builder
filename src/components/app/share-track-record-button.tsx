@@ -14,6 +14,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
   const [loading, setLoading] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -157,6 +158,34 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
+              {/* Embed Code */}
+              <div className="pt-2 border-t border-[rgba(79,70,229,0.15)]">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1.5">
+                  Embed Widget
+                </p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`<iframe src="${shareUrl?.replace("/verify/", "/embed/")}" width="320" height="200" frameborder="0" style="border-radius:12px;"></iframe>`}
+                    className="w-full px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[10px] text-[#CBD5E1] font-mono truncate"
+                  />
+                  <button
+                    onClick={() => {
+                      const embedUrl = shareUrl?.replace("/verify/", "/embed/") ?? "";
+                      const code = `<iframe src="${embedUrl}" width="320" height="200" frameborder="0" style="border-radius:12px;"></iframe>`;
+                      navigator.clipboard.writeText(code);
+                      setEmbedCopied(true);
+                      showSuccess("Embed code copied");
+                      setTimeout(() => setEmbedCopied(false), 2000);
+                    }}
+                    className="absolute right-1 top-1 px-2 py-1 bg-[#4F46E5] text-white text-[10px] font-medium rounded hover:bg-[#6366F1] transition-colors"
+                  >
+                    {embedCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={handleRevokeLink}
                 disabled={revoking}

@@ -37,6 +37,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       });
     }
 
+    // Fetch user subscription tier
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    });
+    const tier = subscription?.tier ?? "FREE";
+
     return NextResponse.json({
       id: run.id,
       uploadId: run.upload.id,
@@ -77,8 +83,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             weaknesses: run.aiAnalysis.weaknesses,
             model: run.aiAnalysis.model,
             createdAt: run.aiAnalysis.createdAt,
+            optimizations: run.aiAnalysis.optimizations ?? null,
           }
         : null,
+      walkForwardResult: run.walkForwardResult ?? null,
+      tier,
+      optimizations: run.aiAnalysis?.optimizations ?? null,
     });
   } catch (error) {
     logger.error({ error }, "Failed to get backtest");

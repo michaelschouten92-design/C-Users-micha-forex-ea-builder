@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
-import { checkDrawdownAlerts, checkOfflineAlerts } from "@/lib/alerts";
+import {
+  checkDrawdownAlerts,
+  checkOfflineAlerts,
+  checkDailyLossAlerts,
+  checkWeeklyLossAlerts,
+  checkEquityTargetAlerts,
+} from "@/lib/alerts";
 import { z } from "zod";
 
 // NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
@@ -159,5 +165,12 @@ async function processHeartbeatSideEffects(
   // Check user-configured drawdown alerts (EAAlertConfig system)
   if (data.drawdown > 0) {
     checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch(() => {});
+  }
+
+  // Check daily/weekly loss alerts and equity target alerts
+  checkDailyLossAlerts(userId, instanceId, prev.eaName).catch(() => {});
+  checkWeeklyLossAlerts(userId, instanceId, prev.eaName).catch(() => {});
+  if (data.equity > 0) {
+    checkEquityTargetAlerts(userId, instanceId, prev.eaName, data.equity).catch(() => {});
   }
 }

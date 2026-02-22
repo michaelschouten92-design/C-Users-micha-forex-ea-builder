@@ -120,6 +120,7 @@ model User {
   tradeJournals      TradeJournal[]
   sharedProofBundles SharedProofBundle[]
   backtestUploads    BacktestUpload[]
+  pushSubscriptions  PushSubscription[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -853,6 +854,7 @@ model BacktestRun {
   healthScore     Int                    // 0-100
   healthStatus    BacktestHealthStatus
 
+  walkForwardResult Json?       // Walk-forward analysis results
   trades          Json         // ParsedDeal[]
   scoreBreakdown  Json?        // Per-metric scores
   parseWarnings    Json?
@@ -876,10 +878,29 @@ model AIAnalysis {
   backtestRunId String   @unique
   analysis      String   @db.Text     // AI-generated analysis text
   weaknesses    Json?                 // Structured weakness list
+  optimizations Json?                 // AI parameter optimization suggestions
   model         String               // e.g. "claude-sonnet-4-6"
   createdAt     DateTime @default(now())
 
   backtestRun   BacktestRun @relation(fields: [backtestRunId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+}
+
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

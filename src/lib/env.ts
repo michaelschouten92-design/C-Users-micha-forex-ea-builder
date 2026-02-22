@@ -97,6 +97,11 @@ const envSchema = z.object({
 
   // Track Record HMAC secret (required in production — generate with: openssl rand -hex 32)
   TRACK_RECORD_SECRET: z.string().min(16).optional(),
+
+  // Web Push VAPID keys (optional — required for browser push notifications)
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 });
 
 // Refinements for conditional requirements
@@ -311,6 +316,9 @@ function validateEnv() {
       ENCRYPTION_SALT: undefined,
       TRACK_RECORD_SIGNING_KEY: undefined,
       TRACK_RECORD_SECRET: undefined,
+      VAPID_PUBLIC_KEY: undefined,
+      VAPID_PRIVATE_KEY: undefined,
+      VAPID_SUBJECT: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -374,6 +382,9 @@ function validateEnv() {
         ENCRYPTION_SALT: process.env.ENCRYPTION_SALT,
         TRACK_RECORD_SIGNING_KEY: process.env.TRACK_RECORD_SIGNING_KEY,
         TRACK_RECORD_SECRET: process.env.TRACK_RECORD_SECRET,
+        VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+        VAPID_SUBJECT: process.env.VAPID_SUBJECT,
       } as z.infer<typeof refinedEnvSchema>;
     }
 
@@ -435,4 +446,12 @@ export const features = {
   stripe: isServer && Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_SECRET_KEY !== ""),
   email: isServer && Boolean(env.RESEND_API_KEY && env.RESEND_API_KEY !== ""),
   captcha: isServer && Boolean(env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SECRET_KEY !== ""),
+  webPush:
+    isServer &&
+    Boolean(
+      env.VAPID_PUBLIC_KEY &&
+      env.VAPID_PUBLIC_KEY !== "" &&
+      env.VAPID_PRIVATE_KEY &&
+      env.VAPID_PRIVATE_KEY !== ""
+    ),
 } as const;

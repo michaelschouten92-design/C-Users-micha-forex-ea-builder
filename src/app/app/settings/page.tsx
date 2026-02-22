@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
+import { PushNotificationToggle } from "@/components/app/push-notification-toggle";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
@@ -120,6 +121,16 @@ export default function SettingsPage() {
               </svg>
               Manage Subscription
             </Link>
+          </div>
+
+          {/* Push Notifications */}
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-2">Push Notifications</h2>
+            <p className="text-sm text-[#94A3B8] mb-4">
+              Receive browser push notifications for alerts (drawdown, offline, new trades, errors).
+              Works even when AlgoStudio is not open.
+            </p>
+            <PushNotificationToggle />
           </div>
 
           {/* Leaderboard Opt-in */}

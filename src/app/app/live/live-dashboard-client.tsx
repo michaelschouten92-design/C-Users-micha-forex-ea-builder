@@ -7,6 +7,7 @@ import { getCsrfHeaders } from "@/lib/api-client";
 import { HealthBadge } from "@/components/app/health-detail-panel";
 import { HealthDetailPanel } from "@/components/app/health-detail-panel";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
+import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 
 // ============================================
 // TYPES
@@ -66,21 +67,14 @@ interface LiveDashboardClientProps {
   initialData: EAInstanceData[];
 }
 
-type RefreshInterval = 5000 | 10000 | 30000 | 60000;
-
-const INTERVAL_LABELS: Record<RefreshInterval, string> = {
-  5000: "5s",
-  10000: "10s",
-  30000: "30s",
-  60000: "60s",
-};
-
 const ALERT_TYPE_LABELS: Record<string, string> = {
   DRAWDOWN: "Drawdown Threshold",
   OFFLINE: "EA Offline",
   NEW_TRADE: "New Trade",
   ERROR: "EA Error",
   DAILY_LOSS: "Daily Loss Limit",
+  WEEKLY_LOSS: "Weekly Loss Limit",
+  EQUITY_TARGET: "Equity Target",
 };
 
 // ============================================
@@ -1022,40 +1016,54 @@ function computeTimeLabel(lastUpdated: Date | null): string {
   return `${seconds}s ago`;
 }
 
+const CONNECTION_STATUS_CONFIG: Record<
+  ConnectionStatus,
+  { color: string; label: string; ping: boolean }
+> = {
+  connecting: { color: "#F59E0B", label: "Connecting", ping: false },
+  connected: { color: "#10B981", label: "Live", ping: true },
+  "fallback-polling": { color: "#3B82F6", label: "Polling", ping: false },
+  disconnected: { color: "#EF4444", label: "Disconnected", ping: false },
+};
+
 function ConnectionIndicator({
-  autoRefresh,
+  connectionStatus,
   lastUpdated,
 }: {
-  autoRefresh: boolean;
+  connectionStatus: ConnectionStatus;
   lastUpdated: Date | null;
 }) {
   const [timeSinceUpdate, setTimeSinceUpdate] = useState(() => computeTimeLabel(lastUpdated));
 
   useEffect(() => {
-    if (!autoRefresh || !lastUpdated) return;
+    if (!lastUpdated) return;
 
     const interval = setInterval(() => {
       setTimeSinceUpdate(computeTimeLabel(lastUpdated));
     }, 1000);
     return () => clearInterval(interval);
-  }, [autoRefresh, lastUpdated]);
+  }, [lastUpdated]);
+
+  const config = CONNECTION_STATUS_CONFIG[connectionStatus];
 
   return (
     <div className="flex items-center gap-2 text-xs text-[#7C8DB0]">
-      {autoRefresh ? (
-        <>
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#10B981]" />
-          </span>
-          <span>Live - Updated {timeSinceUpdate}</span>
-        </>
-      ) : (
-        <>
-          <span className="h-2.5 w-2.5 rounded-full bg-[#64748B]" />
-          <span>Auto-refresh paused</span>
-        </>
-      )}
+      <span className="relative flex h-2.5 w-2.5">
+        {config.ping && (
+          <span
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            style={{ backgroundColor: config.color }}
+          />
+        )}
+        <span
+          className="relative inline-flex rounded-full h-2.5 w-2.5"
+          style={{ backgroundColor: config.color }}
+        />
+      </span>
+      <span>
+        {config.label}
+        {lastUpdated ? ` · ${timeSinceUpdate}` : ""}
+      </span>
     </div>
   );
 }
@@ -1129,10 +1137,10 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
       body.instanceId = newInstanceId;
     }
 
-    if (newAlertType === "DRAWDOWN" || newAlertType === "DAILY_LOSS") {
+    if (["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"].includes(newAlertType)) {
       const threshold = parseFloat(newThreshold);
       if (isNaN(threshold) || threshold <= 0) {
-        showError("Invalid threshold", "Please enter a valid percentage value.");
+        showError("Invalid threshold", "Please enter a valid threshold value.");
         setSaving(false);
         return;
       }
@@ -1198,7 +1206,9 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
     }
   }
 
-  const needsThreshold = newAlertType === "DRAWDOWN" || newAlertType === "DAILY_LOSS";
+  const needsThreshold = ["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"].includes(
+    newAlertType
+  );
   const needsWebhook = newChannel === "WEBHOOK";
 
   return (
@@ -1238,6 +1248,8 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
                 <option value="NEW_TRADE">New Trade</option>
                 <option value="ERROR">EA Error</option>
                 <option value="DAILY_LOSS">Daily Loss Limit</option>
+                <option value="WEEKLY_LOSS">Weekly Loss Limit</option>
+                <option value="EQUITY_TARGET">Equity Target</option>
               </select>
             </div>
 
@@ -1291,6 +1303,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
               >
                 <option value="EMAIL">Email</option>
                 <option value="WEBHOOK">Webhook</option>
+                <option value="BROWSER_PUSH">Browser Push</option>
               </select>
             </div>
 
@@ -1414,15 +1427,16 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
 
 export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
   const [eaInstances, setEaInstances] = useState<EAInstanceData[]>(initialData);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [interval, setInterval_] = useState<RefreshInterval>(10000);
   const [soundAlerts, setSoundAlerts] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
+  const soundAlertsRef = useRef(soundAlerts);
+  useEffect(() => {
+    soundAlertsRef.current = soundAlerts;
+  }, [soundAlerts]);
 
   // Initialize previous data
   useEffect(() => {
@@ -1431,68 +1445,92 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     previousDataRef.current = map;
   }, [initialData]);
 
+  // Process incoming data (shared by SSE and polling)
+  const processUpdate = useCallback((newInstances: EAInstanceData[]) => {
+    const changed = new Set<string>();
+    const previousMap = previousDataRef.current;
+
+    for (const ea of newInstances) {
+      const prev = previousMap.get(ea.id);
+      if (!prev) {
+        changed.add(ea.id);
+        continue;
+      }
+
+      if (prev.status !== ea.status) {
+        changed.add(ea.id);
+        if (soundAlertsRef.current) {
+          showInfo(
+            `${ea.eaName} is now ${ea.status}`,
+            `Status changed from ${prev.status} to ${ea.status}`
+          );
+        }
+      }
+
+      if (ea.totalTrades > prev.totalTrades && soundAlertsRef.current) {
+        showInfo(`New trade on ${ea.eaName}`, `Total trades: ${ea.totalTrades}`);
+      }
+    }
+
+    const newMap = new Map<string, EAInstanceData>();
+    newInstances.forEach((ea) => newMap.set(ea.id, ea));
+    previousDataRef.current = newMap;
+
+    setEaInstances(newInstances);
+    setChangedIds(changed);
+
+    if (changed.size > 0) {
+      setTimeout(() => setChangedIds(new Set()), 2000);
+    }
+  }, []);
+
+  // SSE live stream with polling fallback
+  const { status: connectionStatus, lastUpdated } = useLiveStream({
+    onInit: (data) => {
+      processUpdate(data as EAInstanceData[]);
+    },
+    onHeartbeat: (data) => {
+      const hb = data as { instanceId: string; equity: number; balance: number; status: string };
+      setEaInstances((prev) =>
+        prev.map((ea) =>
+          ea.id === hb.instanceId
+            ? {
+                ...ea,
+                equity: hb.equity,
+                balance: hb.balance,
+                status: hb.status as EAInstanceData["status"],
+              }
+            : ea
+        )
+      );
+    },
+    onTrade: (data) => {
+      const trade = data as { instanceId: string; profit: number };
+      if (soundAlertsRef.current) {
+        const ea = previousDataRef.current.get(trade.instanceId);
+        showInfo(`New trade on ${ea?.eaName ?? "EA"}`, `P/L: $${trade.profit.toFixed(2)}`);
+      }
+    },
+    onError: () => {
+      // SSE error events handled internally
+    },
+    pollingInterval: 10000,
+    pollingUrl: "/api/live/status",
+    onPollingData: (data) => {
+      processUpdate(data as EAInstanceData[]);
+    },
+  });
+
   const fetchUpdate = useCallback(async () => {
     try {
       const res = await fetch("/api/live/status");
       if (!res.ok) return;
-
       const data = await res.json();
-      const newInstances: EAInstanceData[] = data.data;
-
-      // Detect changes
-      const changed = new Set<string>();
-      const previousMap = previousDataRef.current;
-
-      for (const ea of newInstances) {
-        const prev = previousMap.get(ea.id);
-        if (!prev) {
-          changed.add(ea.id);
-          continue;
-        }
-
-        // Check for status change
-        if (prev.status !== ea.status) {
-          changed.add(ea.id);
-
-          if (soundAlerts) {
-            showInfo(
-              `${ea.eaName} is now ${ea.status}`,
-              `Status changed from ${prev.status} to ${ea.status}`
-            );
-          }
-        }
-
-        // Check for new trades
-        if (ea.totalTrades > prev.totalTrades && soundAlerts) {
-          showInfo(`New trade on ${ea.eaName}`, `Total trades: ${ea.totalTrades}`);
-        }
-      }
-
-      // Update refs
-      const newMap = new Map<string, EAInstanceData>();
-      newInstances.forEach((ea) => newMap.set(ea.id, ea));
-      previousDataRef.current = newMap;
-
-      setEaInstances(newInstances);
-      setLastUpdated(new Date());
-      setChangedIds(changed);
-
-      // Clear highlights after animation
-      if (changed.size > 0) {
-        setTimeout(() => setChangedIds(new Set()), 2000);
-      }
+      processUpdate(data.data as EAInstanceData[]);
     } catch {
-      // Silent fail for polling
+      // Silent fail
     }
-  }, [soundAlerts]);
-
-  // Polling effect
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const id = window.setInterval(fetchUpdate, interval);
-    return () => window.clearInterval(id);
-  }, [autoRefresh, interval, fetchUpdate]);
+  }, [processUpdate]);
 
   async function handleTogglePause(instanceId: string, paused: boolean): Promise<void> {
     const res = await fetch(`/api/live/${instanceId}/pause`, {
@@ -1590,43 +1628,8 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
             ))}
           </div>
 
-          {/* Connection indicator */}
-          <ConnectionIndicator autoRefresh={autoRefresh} lastUpdated={lastUpdated} />
-
-          {/* Auto-refresh toggle */}
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-              autoRefresh
-                ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-                : "bg-[#0A0118] text-[#7C8DB0] border-[rgba(79,70,229,0.2)] hover:text-white"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            {autoRefresh ? "Auto" : "Paused"}
-          </button>
-
-          {/* Interval selector */}
-          {autoRefresh && (
-            <select
-              value={interval}
-              onChange={(e) => setInterval_(Number(e.target.value) as RefreshInterval)}
-              className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-2 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
-            >
-              {Object.entries(INTERVAL_LABELS).map(([val, label]) => (
-                <option key={val} value={val}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          )}
+          {/* Connection status indicator */}
+          <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
 
           {/* Sound toggle */}
           <button

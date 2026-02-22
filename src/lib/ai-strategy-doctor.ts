@@ -225,6 +225,167 @@ function buildUserMessage(input: StrategyAnalysisInput, deals: ParsedDeal[]): st
   return parts.join("\n");
 }
 
+// ============================================
+// AI Strategy Optimizer
+// ============================================
+
+export interface ParameterOptimization {
+  parameter: string;
+  currentValue: string;
+  suggestedValue: string;
+  expectedImpact: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  reasoning: string;
+}
+
+interface OptimizeStrategyInput {
+  eaName: string | null;
+  symbol: string;
+  timeframe: string;
+  initialDeposit: number;
+  metrics: ParsedMetrics;
+  deals: ParsedDeal[];
+  weaknesses: Array<{
+    category: string;
+    severity: string;
+    description: string;
+    recommendation: string;
+  }>;
+}
+
+const OPTIMIZER_SYSTEM_PROMPT = `You are an expert quantitative trading strategy optimizer. Your job is to suggest concrete parameter changes for an MT5 Expert Advisor based on its backtest performance data and identified weaknesses.
+
+You will receive:
+1. Strategy metrics (profit factor, drawdown, win rate, etc.)
+2. A sample of trades
+3. Previously identified weaknesses
+
+Your task is to suggest specific, actionable parameter optimizations.
+
+## Output Format
+Return ONLY a JSON array of parameter optimization objects:
+\`\`\`json
+[
+  {
+    "parameter": "Stop Loss (pips)",
+    "currentValue": "50",
+    "suggestedValue": "35",
+    "expectedImpact": "Reduce max drawdown by ~15%",
+    "confidence": "HIGH",
+    "reasoning": "Current SL is too wide given the strategy's average winning trade size..."
+  }
+]
+\`\`\`
+
+## Rules
+- Suggest 3-7 optimizations
+- Be specific with parameter names and values
+- Base suggestions on actual data, not generic advice
+- Confidence: HIGH = very likely to help, MEDIUM = probable improvement, LOW = worth testing
+- If you can infer parameters from trade patterns (e.g., SL/TP from price gaps, timeframe from trade frequency), suggest those
+- Include risk management parameters (lot size, max positions, SL, TP)
+- Include timing parameters if relevant (session filters, day-of-week)
+- Focus on the most impactful changes first`;
+
+/**
+ * Generate parameter optimization suggestions using Claude AI.
+ */
+export async function optimizeStrategy(
+  input: OptimizeStrategyInput
+): Promise<ParameterOptimization[]> {
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
+    throw new Error("AI optimization is not available — ANTHROPIC_API_KEY not configured");
+  }
+
+  const m = input.metrics;
+  const eaName = input.eaName ? sanitizeForPrompt(input.eaName) : "Unknown EA";
+
+  const parts: string[] = [
+    `<strategy_data>`,
+    `<metadata>`,
+    `  EA: ${eaName}`,
+    `  Symbol: ${sanitizeForPrompt(input.symbol)}`,
+    `  Timeframe: ${sanitizeForPrompt(input.timeframe)}`,
+    `  Initial Deposit: $${input.initialDeposit}`,
+    `</metadata>`,
+    `<metrics>`,
+    `  Profit Factor: ${m.profitFactor.toFixed(2)}`,
+    `  Max Drawdown: ${m.maxDrawdownPct.toFixed(2)}%`,
+    `  Win Rate: ${m.winRate.toFixed(1)}%`,
+    `  Total Trades: ${m.totalTrades}`,
+    `  Expected Payoff: $${m.expectedPayoff.toFixed(2)}`,
+    `  Net Profit: $${m.totalNetProfit.toFixed(2)}`,
+  ];
+  if (m.sharpeRatio != null) parts.push(`  Sharpe Ratio: ${m.sharpeRatio.toFixed(2)}`);
+  if (m.recoveryFactor != null) parts.push(`  Recovery Factor: ${m.recoveryFactor.toFixed(2)}`);
+  parts.push(`</metrics>`);
+
+  if (input.weaknesses.length > 0) {
+    parts.push(`<identified_weaknesses>`);
+    for (const w of input.weaknesses) {
+      parts.push(`  [${w.severity}] ${w.category}: ${w.description}`);
+    }
+    parts.push(`</identified_weaknesses>`);
+  }
+
+  if (input.deals.length > 0) {
+    parts.push(`<trade_sample count="${input.deals.length}">`);
+    parts.push(`ticket | type | volume | profit`);
+    for (const d of input.deals.slice(0, 50)) {
+      if (d.type === "balance") continue;
+      parts.push(`${d.ticket} | ${d.type} | ${d.volume} | ${d.profit.toFixed(2)}`);
+    }
+    parts.push(`</trade_sample>`);
+  }
+
+  parts.push(`</strategy_data>`);
+  parts.push("", "Suggest concrete parameter optimizations based on this data.");
+
+  const response = await anthropic.messages.create(
+    {
+      model: AI_ANALYSIS_MODEL,
+      max_tokens: 2048,
+      system: OPTIMIZER_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: parts.join("\n") }],
+    },
+    { timeout: 45000 }
+  );
+
+  const textBlocks = response.content.filter((b) => b.type === "text");
+  const fullText = textBlocks.map((b) => b.text).join("\n");
+
+  return extractOptimizations(fullText);
+}
+
+function extractOptimizations(text: string): ParameterOptimization[] {
+  try {
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    const jsonStr = jsonMatch ? jsonMatch[1] : text;
+    const parsed = JSON.parse(jsonStr);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(
+        (o: Record<string, unknown>) =>
+          o.parameter && o.currentValue && o.suggestedValue && o.expectedImpact
+      )
+      .map((o: Record<string, unknown>) => ({
+        parameter: String(o.parameter),
+        currentValue: String(o.currentValue),
+        suggestedValue: String(o.suggestedValue),
+        expectedImpact: String(o.expectedImpact),
+        confidence: (["HIGH", "MEDIUM", "LOW"].includes(String(o.confidence))
+          ? String(o.confidence)
+          : "MEDIUM") as ParameterOptimization["confidence"],
+        reasoning: String(o.reasoning || ""),
+      }));
+  } catch {
+    logger.warn("Failed to parse AI optimizations JSON");
+    return [];
+  }
+}
+
 function extractWeaknesses(text: string): StrategyWeakness[] {
   try {
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);

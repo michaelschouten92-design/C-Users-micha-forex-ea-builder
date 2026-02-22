@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
 import { sendTelegramAlert } from "@/lib/telegram";
+import { sendPushNotification } from "@/lib/push";
 import { decrypt, isEncrypted } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 
@@ -66,6 +67,13 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         instanceId,
         message,
         triggeredAt: now.toISOString(),
+      }).catch(() => {});
+    } else if (config.channel === "BROWSER_PUSH") {
+      sendPushNotification(userId, {
+        title: `AlgoStudio: ${alertType}`,
+        body: `${eaName} — ${message}`,
+        url: "/app/live",
+        tag: `${alertType}-${instanceId}`,
       }).catch(() => {});
     } else if (config.channel === "TELEGRAM") {
       const rawToken = config.user.telegramBotToken;
@@ -177,4 +185,149 @@ export async function checkErrorAlerts(
     alertType: "ERROR",
     message: `EA error: ${errorMessage}`,
   });
+}
+
+/**
+ * Check daily loss alerts.
+ * Calculates today's P&L from closed trades and triggers if threshold exceeded.
+ */
+export async function checkDailyLossAlerts(
+  userId: string,
+  instanceId: string,
+  eaName: string
+): Promise<void> {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const todayTrades = await prisma.eATrade.findMany({
+    where: {
+      instanceId,
+      closeTime: { gte: startOfDay },
+    },
+    select: { profit: true },
+  });
+
+  if (todayTrades.length === 0) return;
+
+  const dailyPnl = todayTrades.reduce((sum, t) => sum + t.profit, 0);
+  if (dailyPnl >= 0) return;
+
+  const dailyLossPct = Math.abs(dailyPnl); // Simplified: use absolute value
+
+  const configs = await prisma.eAAlertConfig.findMany({
+    where: {
+      userId,
+      alertType: "DAILY_LOSS",
+      enabled: true,
+      OR: [{ instanceId: null }, { instanceId }],
+    },
+  });
+
+  const lowestExceeded = configs.reduce<number | null>((lowest, config) => {
+    if (config.threshold !== null && dailyLossPct >= config.threshold) {
+      return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
+    }
+    return lowest;
+  }, null);
+
+  if (lowestExceeded !== null) {
+    await triggerAlert({
+      userId,
+      instanceId,
+      eaName,
+      alertType: "DAILY_LOSS",
+      message: `Daily loss of $${dailyLossPct.toFixed(2)} exceeded your threshold of $${lowestExceeded}`,
+    });
+  }
+}
+
+/**
+ * Check weekly loss alerts.
+ */
+export async function checkWeeklyLossAlerts(
+  userId: string,
+  instanceId: string,
+  eaName: string
+): Promise<void> {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const weekTrades = await prisma.eATrade.findMany({
+    where: {
+      instanceId,
+      closeTime: { gte: startOfWeek },
+    },
+    select: { profit: true },
+  });
+
+  if (weekTrades.length === 0) return;
+
+  const weeklyPnl = weekTrades.reduce((sum, t) => sum + t.profit, 0);
+  if (weeklyPnl >= 0) return;
+
+  const weeklyLoss = Math.abs(weeklyPnl);
+
+  const configs = await prisma.eAAlertConfig.findMany({
+    where: {
+      userId,
+      alertType: "WEEKLY_LOSS",
+      enabled: true,
+      OR: [{ instanceId: null }, { instanceId }],
+    },
+  });
+
+  const lowestExceeded = configs.reduce<number | null>((lowest, config) => {
+    if (config.threshold !== null && weeklyLoss >= config.threshold) {
+      return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
+    }
+    return lowest;
+  }, null);
+
+  if (lowestExceeded !== null) {
+    await triggerAlert({
+      userId,
+      instanceId,
+      eaName,
+      alertType: "WEEKLY_LOSS",
+      message: `Weekly loss of $${weeklyLoss.toFixed(2)} exceeded your threshold of $${lowestExceeded}`,
+    });
+  }
+}
+
+/**
+ * Check equity target alerts (positive target reached).
+ */
+export async function checkEquityTargetAlerts(
+  userId: string,
+  instanceId: string,
+  eaName: string,
+  equity: number
+): Promise<void> {
+  const configs = await prisma.eAAlertConfig.findMany({
+    where: {
+      userId,
+      alertType: "EQUITY_TARGET",
+      enabled: true,
+      OR: [{ instanceId: null }, { instanceId }],
+    },
+  });
+
+  const lowestReached = configs.reduce<number | null>((lowest, config) => {
+    if (config.threshold !== null && equity >= config.threshold) {
+      return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
+    }
+    return lowest;
+  }, null);
+
+  if (lowestReached !== null) {
+    await triggerAlert({
+      userId,
+      instanceId,
+      eaName,
+      alertType: "EQUITY_TARGET",
+      message: `Equity target of $${lowestReached.toLocaleString()} reached! Current equity: $${equity.toFixed(2)}`,
+    });
+  }
 }

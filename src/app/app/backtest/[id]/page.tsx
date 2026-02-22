@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { WalkForwardResults } from "./walk-forward-results";
+import { OptimizationResults } from "./optimization-results";
+import type { WalkForwardResult } from "@/lib/backtest-parser/walk-forward";
+import type { ParameterOptimization } from "@/lib/ai-strategy-doctor";
 
 // ============================================
 // Types
@@ -61,6 +65,9 @@ interface BacktestDetail {
   detectedLocale: string | null;
   dealCount: number;
   aiAnalysis: AIAnalysisData | null;
+  walkForwardResult: WalkForwardResult | null;
+  tier: string;
+  optimizations: ParameterOptimization[] | null;
 }
 
 // ============================================
@@ -462,6 +469,21 @@ export default function BacktestDetailPage() {
 
           {/* AI Strategy Doctor */}
           <AIStrategyDoctor analysis={aiAnalysis} analyzing={analyzing} onAnalyze={handleAnalyze} />
+
+          {/* AI Strategy Optimizer */}
+          <OptimizationResults
+            backtestId={id}
+            existingOptimizations={data.optimizations}
+            hasAiAnalysis={!!aiAnalysis}
+            tier={data.tier ?? "FREE"}
+          />
+
+          {/* Walk-Forward Analysis */}
+          <WalkForwardResults
+            backtestId={id}
+            existingResult={data.walkForwardResult}
+            tier={data.tier ?? "FREE"}
+          />
 
           {/* Parse Warnings */}
           {data.parseWarnings.length > 0 && (
