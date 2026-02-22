@@ -378,7 +378,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: updateData }) {
       if (user) {
         token.id = user.id;
         token.iat = Math.floor(Date.now() / 1000);
@@ -390,6 +390,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               data: { lastLoginAt: new Date() },
             })
             .catch(() => {});
+        }
+      }
+
+      // Handle session updates (impersonation start/stop)
+      if (trigger === "update" && updateData) {
+        const data = updateData as Record<string, unknown>;
+
+        // Start impersonation
+        if (data.impersonate && typeof data.impersonate === "object") {
+          const imp = data.impersonate as { userId: string; email: string };
+          token.impersonatorId = token.id as string;
+          token.impersonatingEmail = imp.email;
+          token.id = imp.userId;
+        }
+
+        // Stop impersonation
+        if (data.stopImpersonation && token.impersonatorId) {
+          token.id = token.impersonatorId;
+          delete token.impersonatorId;
+          delete token.impersonatingEmail;
         }
       }
 
@@ -432,6 +452,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (token.emailVerified) {
         session.user.emailVerified = new Date();
+      }
+      if (token.impersonatorId) {
+        session.user.impersonatorId = token.impersonatorId as string;
+        session.user.impersonatingEmail = token.impersonatingEmail as string;
       }
       return session;
     },
