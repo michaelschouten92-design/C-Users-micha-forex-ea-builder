@@ -154,42 +154,56 @@ export async function analyzeStrategy(
 // Helpers
 // ============================================
 
+/** Sanitize a string for safe inclusion in the prompt — strip XML-like tags to prevent injection. */
+function sanitizeForPrompt(value: string): string {
+  return value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function buildUserMessage(input: StrategyAnalysisInput, deals: ParsedDeal[]): string {
   const m = input.metrics;
+  const eaName = sanitizeForPrompt(input.eaName || "Unknown EA");
+  const symbol = sanitizeForPrompt(input.symbol);
+  const timeframe = sanitizeForPrompt(input.timeframe);
+  const period = sanitizeForPrompt(input.period);
 
   const parts: string[] = [
-    `## Strategy: ${input.eaName || "Unknown EA"}`,
-    `- Symbol: ${input.symbol}`,
-    `- Timeframe: ${input.timeframe}`,
-    `- Period: ${input.period}`,
-    `- Initial Deposit: $${input.initialDeposit.toLocaleString()}`,
-    `- Health Score: ${input.healthScore}/100 (${input.healthStatus})`,
+    "<strategy_data>",
+    `<metadata>`,
+    `  <ea_name>${eaName}</ea_name>`,
+    `  <symbol>${symbol}</symbol>`,
+    `  <timeframe>${timeframe}</timeframe>`,
+    `  <period>${period}</period>`,
+    `  <initial_deposit>${input.initialDeposit}</initial_deposit>`,
+    `  <health_score>${input.healthScore}/100 (${input.healthStatus})</health_score>`,
+    `</metadata>`,
     "",
-    "## Key Metrics",
-    `- Total Net Profit: $${m.totalNetProfit.toFixed(2)}`,
-    `- Profit Factor: ${m.profitFactor.toFixed(2)}`,
-    `- Max Drawdown: ${m.maxDrawdownPct.toFixed(2)}%${m.maxDrawdownAbs != null ? ` ($${m.maxDrawdownAbs.toFixed(2)})` : ""}`,
-    `- Expected Payoff: $${m.expectedPayoff.toFixed(2)}`,
-    `- Total Trades: ${m.totalTrades}`,
-    `- Win Rate: ${m.winRate.toFixed(1)}%`,
+    `<metrics>`,
+    `  Total Net Profit: $${m.totalNetProfit.toFixed(2)}`,
+    `  Profit Factor: ${m.profitFactor.toFixed(2)}`,
+    `  Max Drawdown: ${m.maxDrawdownPct.toFixed(2)}%${m.maxDrawdownAbs != null ? ` ($${m.maxDrawdownAbs.toFixed(2)})` : ""}`,
+    `  Expected Payoff: $${m.expectedPayoff.toFixed(2)}`,
+    `  Total Trades: ${m.totalTrades}`,
+    `  Win Rate: ${m.winRate.toFixed(1)}%`,
   ];
 
-  if (m.sharpeRatio != null) parts.push(`- Sharpe Ratio: ${m.sharpeRatio.toFixed(2)}`);
-  if (m.recoveryFactor != null) parts.push(`- Recovery Factor: ${m.recoveryFactor.toFixed(2)}`);
-  if (m.longWinRate != null) parts.push(`- Long Win Rate: ${m.longWinRate.toFixed(1)}%`);
-  if (m.shortWinRate != null) parts.push(`- Short Win Rate: ${m.shortWinRate.toFixed(1)}%`);
-  if (m.grossProfit != null) parts.push(`- Gross Profit: $${m.grossProfit.toFixed(2)}`);
-  if (m.grossLoss != null) parts.push(`- Gross Loss: $${m.grossLoss.toFixed(2)}`);
+  if (m.sharpeRatio != null) parts.push(`  Sharpe Ratio: ${m.sharpeRatio.toFixed(2)}`);
+  if (m.recoveryFactor != null) parts.push(`  Recovery Factor: ${m.recoveryFactor.toFixed(2)}`);
+  if (m.longWinRate != null) parts.push(`  Long Win Rate: ${m.longWinRate.toFixed(1)}%`);
+  if (m.shortWinRate != null) parts.push(`  Short Win Rate: ${m.shortWinRate.toFixed(1)}%`);
+  if (m.grossProfit != null) parts.push(`  Gross Profit: $${m.grossProfit.toFixed(2)}`);
+  if (m.grossLoss != null) parts.push(`  Gross Loss: $${m.grossLoss.toFixed(2)}`);
   if (m.largestProfitTrade != null)
-    parts.push(`- Largest Profit Trade: $${m.largestProfitTrade.toFixed(2)}`);
+    parts.push(`  Largest Profit Trade: $${m.largestProfitTrade.toFixed(2)}`);
   if (m.largestLossTrade != null)
-    parts.push(`- Largest Loss Trade: $${m.largestLossTrade.toFixed(2)}`);
-  if (m.maxConsecutiveWins != null) parts.push(`- Max Consecutive Wins: ${m.maxConsecutiveWins}`);
+    parts.push(`  Largest Loss Trade: $${m.largestLossTrade.toFixed(2)}`);
+  if (m.maxConsecutiveWins != null) parts.push(`  Max Consecutive Wins: ${m.maxConsecutiveWins}`);
   if (m.maxConsecutiveLosses != null)
-    parts.push(`- Max Consecutive Losses: ${m.maxConsecutiveLosses}`);
+    parts.push(`  Max Consecutive Losses: ${m.maxConsecutiveLosses}`);
+
+  parts.push(`</metrics>`);
 
   if (deals.length > 0) {
-    parts.push("", `## Trade Sample (${deals.length} of ${input.deals.length} deals)`);
+    parts.push("", `<trades count="${deals.length}" total="${input.deals.length}">`);
     parts.push("ticket | time | type | volume | price | profit");
     parts.push("--- | --- | --- | --- | --- | ---");
 
@@ -199,9 +213,11 @@ function buildUserMessage(input: StrategyAnalysisInput, deals: ParsedDeal[]): st
         `${d.ticket} | ${d.openTime} | ${d.type} | ${d.volume} | ${d.price} | ${d.profit.toFixed(2)}`
       );
     }
+    parts.push("</trades>");
   }
 
-  parts.push("", "Please analyze this strategy thoroughly.");
+  parts.push("</strategy_data>");
+  parts.push("", "Please analyze this strategy thoroughly based on the data above.");
 
   return parts.join("\n");
 }

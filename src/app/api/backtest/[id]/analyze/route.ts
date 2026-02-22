@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -72,7 +73,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     // 4. Check if analysis already exists
     if (run.aiAnalysis) {
       return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "Analysis already exists for this backtest"),
+        apiError(ErrorCode.ANALYSIS_EXISTS, "Analysis already exists for this backtest"),
         { status: 409 }
       );
     }
@@ -112,7 +113,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
       if (message.includes("ANTHROPIC_API_KEY")) {
         return NextResponse.json(
-          apiError(ErrorCode.INTERNAL_ERROR, "AI analysis is currently unavailable"),
+          apiError(ErrorCode.AI_UNAVAILABLE, "AI analysis is currently unavailable"),
           { status: 503 }
         );
       }
@@ -123,15 +124,26 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       );
     }
 
-    // 7. Store result
-    const aiAnalysis = await prisma.aIAnalysis.create({
-      data: {
-        backtestRunId: id,
-        analysis: result.analysis,
-        weaknesses: JSON.parse(JSON.stringify(result.weaknesses)),
-        model: result.model,
-      },
-    });
+    // 7. Store result (handle race condition with P2002)
+    let aiAnalysis;
+    try {
+      aiAnalysis = await prisma.aIAnalysis.create({
+        data: {
+          backtestRunId: id,
+          analysis: result.analysis,
+          weaknesses: JSON.parse(JSON.stringify(result.weaknesses)),
+          model: result.model,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        return NextResponse.json(
+          apiError(ErrorCode.ANALYSIS_EXISTS, "Analysis already exists for this backtest"),
+          { status: 409 }
+        );
+      }
+      throw err;
+    }
 
     // 8. Return
     return NextResponse.json(

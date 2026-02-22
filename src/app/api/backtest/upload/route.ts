@@ -1,10 +1,14 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { getCachedTier } from "@/lib/plan-limits";
 import {
-  backtestUploadRateLimiter,
+  backtestUploadFreeRateLimiter,
+  backtestUploadProRateLimiter,
+  backtestUploadEliteRateLimiter,
   checkRateLimit,
   createRateLimitHeaders,
   formatRateLimitError,
@@ -12,6 +16,32 @@ import {
 import { parseMT5Report, computeHealthScore } from "@/lib/backtest-parser";
 import { BACKTEST_MAX_FILE_SIZE, isLikelyMT5Report } from "@/lib/validations/backtest";
 import { createHash } from "crypto";
+
+// Select the right rate limiter based on plan tier
+function getUploadRateLimiterForTier(tier: string) {
+  switch (tier) {
+    case "ELITE":
+      return backtestUploadEliteRateLimiter;
+    case "PRO":
+      return backtestUploadProRateLimiter;
+    default:
+      return backtestUploadFreeRateLimiter;
+  }
+}
+
+/** Strip script tags, event handlers, and other XSS vectors from HTML before storage */
+function sanitizeHtmlForStorage(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/javascript\s*:/gi, "removed:");
+}
+
+/** Sanitize a client-provided filename */
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^\w.\-\s()]/g, "_").slice(0, 255);
+}
 
 // POST /api/backtest/upload — Upload and parse an MT5 backtest HTML report
 export async function POST(request: Request) {
@@ -27,8 +57,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Rate limit
-    const rateLimitResult = await checkRateLimit(backtestUploadRateLimiter, session.user.id);
+    // 2. Tier-based rate limit
+    const tier = await getCachedTier(session.user.id);
+    const rateLimiter = getUploadRateLimiterForTier(tier);
+    const rateLimitResult = await checkRateLimit(rateLimiter, `backtest-upload:${session.user.id}`);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rateLimitResult)),
@@ -58,10 +90,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Read file content
+    // 5. Validate projectId ownership if provided (before expensive parse)
+    if (projectId) {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, userId: session.user.id, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) {
+        return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), {
+          status: 404,
+        });
+      }
+    }
+
+    // 6. Read file content
     const html = await file.text();
 
-    // 6. Structural validation
+    // 7. Structural validation
     const structureCheck = isLikelyMT5Report(html);
     if (!structureCheck.valid) {
       return NextResponse.json(
@@ -70,26 +115,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // 7. Content hash for deduplication
+    // 8. Content hash for deduplication (scoped per user)
     const contentHash = createHash("sha256").update(html).digest("hex");
 
     const existingUpload = await prisma.backtestUpload.findUnique({
-      where: { contentHash },
+      where: { userId_contentHash: { userId: session.user.id, contentHash } },
       select: { id: true, runs: { select: { id: true } } },
     });
 
     if (existingUpload) {
       return NextResponse.json(
-        apiError(
-          ErrorCode.DUPLICATE_UPLOAD,
-          "This report has already been uploaded",
-          existingUpload.runs[0]?.id ? `Existing analysis: ${existingUpload.runs[0].id}` : undefined
-        ),
+        apiError(ErrorCode.DUPLICATE_UPLOAD, "This report has already been uploaded"),
         { status: 409 }
       );
     }
 
-    // 8. Parse the report
+    // 9. Parse the report
     let parsed;
     try {
       parsed = parseMT5Report(html);
@@ -104,31 +145,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. Compute health score
+    // 10. Compute health score
     const healthResult = computeHealthScore(parsed.metrics);
 
-    // 10. Validate projectId ownership if provided
-    if (projectId) {
-      const project = await prisma.project.findFirst({
-        where: { id: projectId, userId: session.user.id, deletedAt: null },
-        select: { id: true },
-      });
-      if (!project) {
-        return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), {
-          status: 404,
-        });
-      }
-    }
+    // 11. Sanitize HTML before storage and sanitize filename
+    const sanitizedHtml = sanitizeHtmlForStorage(html);
+    const safeName = sanitizeFileName(file.name);
 
-    // 11. Store in transaction
+    // 12. Store in transaction
     const result = await prisma.$transaction(async (tx) => {
       const upload = await tx.backtestUpload.create({
         data: {
           userId: session.user.id,
           projectId: projectId || null,
           contentHash,
-          originalHtml: html,
-          fileName: file.name,
+          originalHtml: sanitizedHtml,
+          fileName: safeName,
           fileSize: file.size,
         },
       });
@@ -164,7 +196,7 @@ export async function POST(request: Request) {
       return { upload, run };
     });
 
-    // 12. Return result
+    // 13. Return result
     return NextResponse.json(
       {
         uploadId: result.upload.id,
@@ -181,6 +213,13 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    // Handle race condition: concurrent upload of same file by same user
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json(
+        apiError(ErrorCode.DUPLICATE_UPLOAD, "This report has already been uploaded"),
+        { status: 409 }
+      );
+    }
     logger.error({ error }, "Failed to upload backtest");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
       status: 500,

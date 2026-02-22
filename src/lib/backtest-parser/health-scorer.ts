@@ -47,7 +47,7 @@ function interpolate(value: number, breakpoints: [number, number][]): number {
  */
 function scoreMetric(metricName: string, value: number, config: ScoreWeight): HealthScoreBreakdown {
   const rawScore = interpolate(value, config.breakpoints);
-  const maxScore = config.breakpoints[config.breakpoints.length - 1]?.[1] ?? 100;
+  const maxScore = Math.max(...config.breakpoints.map((bp) => bp[1]));
 
   return {
     metric: metricName,
@@ -80,7 +80,7 @@ export function computeHealthScore(metrics: ParsedMetrics): HealthScoreResult {
 
   for (const [metricName, config] of Object.entries(SCORE_WEIGHTS)) {
     const value = metricValues[metricName];
-    if (value === undefined) continue;
+    if (value === undefined || isNaN(value)) continue;
 
     // Skip metrics with null/unavailable data — redistribute weight
     const isAvailable =

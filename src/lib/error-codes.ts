@@ -36,6 +36,10 @@ export const ErrorCode = {
   // Backtest
   DUPLICATE_UPLOAD: "DUPLICATE_UPLOAD",
   PARSE_FAILED: "PARSE_FAILED",
+  ANALYSIS_EXISTS: "ANALYSIS_EXISTS",
+
+  // Service availability
+  AI_UNAVAILABLE: "AI_UNAVAILABLE",
 
   // Generic
   INTERNAL_ERROR: "INTERNAL_ERROR",

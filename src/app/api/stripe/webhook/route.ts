@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, type SubscriptionStatus } from "@prisma/client";
 import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
@@ -219,8 +219,8 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const customerId = getStringId(session.customer);
   const period = getSubscriptionPeriod(stripeSubscription);
 
-  // Map Stripe status to our status (same mapping as handleSubscriptionUpdate)
-  const statusMap: Record<string, string> = {
+  // Map Stripe status to our SubscriptionStatus enum
+  const statusMap: Record<string, SubscriptionStatus> = {
     active: "active",
     canceled: "cancelled",
     incomplete: "incomplete",
@@ -230,7 +230,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     trialing: "trialing",
     unpaid: "unpaid",
   };
-  const mappedStatus = statusMap[stripeSubscription.status] || stripeSubscription.status;
+  const mappedStatus: SubscriptionStatus = statusMap[stripeSubscription.status] ?? "active";
 
   // Use transaction with row-level locking to prevent race conditions with concurrent webhooks
   const previousTier = await prisma.$transaction(async (tx) => {
@@ -317,8 +317,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Map Stripe status to our status
-  const statusMap: Record<Stripe.Subscription.Status, string> = {
+  // Map Stripe status to our SubscriptionStatus enum
+  const statusMap: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
     active: "active",
     canceled: "cancelled",
     incomplete: "incomplete",
@@ -353,7 +353,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
       data: {
         tier,
         stripeSubId: subscription.id,
-        status: statusMap[subscription.status] || subscription.status,
+        status: statusMap[subscription.status] ?? "active",
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
         hadPaidPlan: true,

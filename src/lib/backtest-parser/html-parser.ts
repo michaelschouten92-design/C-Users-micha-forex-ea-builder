@@ -210,7 +210,13 @@ function collectNumberSamples(root: HTMLElement): string[] {
   for (const cell of cells) {
     const text = cell.text.trim();
     // Look for numeric-looking values (contains digits and potential separators)
-    if (/^-?\d[\d\s.,]*\d?(%?)$/.test(text) && text.length >= 3) {
+    // Exclude date-like strings (YYYY.MM.DD, DD.MM.YYYY, etc.) that confuse locale detection
+    if (
+      /^-?\d[\d\s.,]*\d?(%?)$/.test(text) &&
+      text.length >= 3 &&
+      !/^\d{4}\.\d{2}\.\d{2}/.test(text) &&
+      !/^\d{2}\.\d{2}\.\d{4}/.test(text)
+    ) {
       samples.push(text);
       if (samples.length >= 20) break; // Enough samples
     }
@@ -264,7 +270,8 @@ function extractMetrics(
         const metricKey = lookupMetricKey(label);
         if (!metricKey) continue;
 
-        const numValue = parseLocalizedNumber(valueText, locale);
+        const rawValue = parseLocalizedNumber(valueText, locale);
+        const numValue = isNaN(rawValue) ? 0 : rawValue;
 
         switch (metricKey) {
           case "totalNetProfit":
@@ -459,9 +466,9 @@ function extractDeals(
       const time = timeIdx >= 0 ? cellTexts[timeIdx] : "";
       const typeText = typeIdx >= 0 ? cellTexts[typeIdx].toLowerCase() : "";
       const direction = directionIdx >= 0 ? cellTexts[directionIdx].toLowerCase() : "";
-      const volume = volumeIdx >= 0 ? parseLocalizedNumber(cellTexts[volumeIdx], locale) : 0;
-      const price = priceIdx >= 0 ? parseLocalizedNumber(cellTexts[priceIdx], locale) : 0;
-      const profit = profitIdx >= 0 ? parseLocalizedNumber(cellTexts[profitIdx], locale) : 0;
+      const volume = volumeIdx >= 0 ? parseLocalizedNumber(cellTexts[volumeIdx], locale) || 0 : 0;
+      const price = priceIdx >= 0 ? parseLocalizedNumber(cellTexts[priceIdx], locale) || 0 : 0;
+      const profit = profitIdx >= 0 ? parseLocalizedNumber(cellTexts[profitIdx], locale) || 0 : 0;
       const comment = commentIdx >= 0 ? cellTexts[commentIdx] : undefined;
 
       // Determine deal type

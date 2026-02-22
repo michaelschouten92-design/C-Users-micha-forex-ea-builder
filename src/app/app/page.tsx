@@ -312,8 +312,10 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-[#64748b]">Profit</span>
-                      <p className={ea.totalProfit >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}>
-                        ${ea.totalProfit.toFixed(2)}
+                      <p
+                        className={(ea.totalProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}
+                      >
+                        ${(ea.totalProfit ?? 0).toFixed(2)}
                       </p>
                     </div>
                     <div>
@@ -359,7 +361,7 @@ export default async function DashboardPage() {
               {recentBacktests.slice(0, 6).map((bt) => (
                 <Link
                   key={bt.id}
-                  href={`/app/backtest`}
+                  href={`/app/backtest/${bt.id}`}
                   className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 hover:border-[rgba(79,70,229,0.3)] transition-colors"
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -393,17 +395,21 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-[#64748b]">Profit</span>
-                      <p className={bt.totalNetProfit >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}>
-                        ${bt.totalNetProfit.toFixed(2)}
+                      <p
+                        className={
+                          (bt.totalNetProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"
+                        }
+                      >
+                        ${(bt.totalNetProfit ?? 0).toFixed(2)}
                       </p>
                     </div>
                     <div>
                       <span className="text-[#64748b]">Win Rate</span>
-                      <p className="text-[#CBD5E1]">{bt.winRate.toFixed(1)}%</p>
+                      <p className="text-[#CBD5E1]">{(bt.winRate ?? 0).toFixed(1)}%</p>
                     </div>
                     <div>
                       <span className="text-[#64748b]">PF</span>
-                      <p className="text-[#CBD5E1]">{bt.profitFactor.toFixed(2)}</p>
+                      <p className="text-[#CBD5E1]">{(bt.profitFactor ?? 0).toFixed(2)}</p>
                     </div>
                   </div>
                 </Link>

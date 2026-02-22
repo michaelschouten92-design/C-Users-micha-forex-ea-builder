@@ -221,7 +221,7 @@ export function lookupMetricKey(label: string): MetricKey | null {
 
   // Fuzzy: check if any known label is a substring of the input
   for (const [knownLabel, key] of Object.entries(LABEL_MAP)) {
-    if (normalized.includes(knownLabel) || knownLabel.includes(normalized)) {
+    if (normalized.includes(knownLabel)) {
       return key;
     }
   }

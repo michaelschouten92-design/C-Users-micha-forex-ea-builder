@@ -389,12 +389,24 @@ export const aiDailyGenerationLimiter = createRateLimiter({
 });
 
 /**
- * Rate limiter for backtest uploads
- * Limits: 10 uploads per hour per user
+ * Rate limiters for backtest uploads (tiered by plan)
+ * FREE: 5 uploads per 24 hours
+ * PRO: 30 uploads per 24 hours
+ * ELITE: 100 uploads per 24 hours
  */
-export const backtestUploadRateLimiter = createRateLimiter({
-  limit: 10,
-  windowMs: 60 * 60 * 1000, // 1 hour
+export const backtestUploadFreeRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+export const backtestUploadProRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+export const backtestUploadEliteRateLimiter = createRateLimiter({
+  limit: 100,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
 });
 
 /**

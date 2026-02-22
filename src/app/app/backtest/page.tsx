@@ -77,7 +77,11 @@ interface BacktestListItem {
 // Fetcher
 // ============================================
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
+    return r.json();
+  });
 
 // ============================================
 // Health status styling

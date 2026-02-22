@@ -52,6 +52,29 @@ enum HealthStatus {
   INSUFFICIENT_DATA
 }
 
+enum BacktestHealthStatus {
+  ROBUST
+  MODERATE
+  WEAK
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  cancelled
+  incomplete
+  incomplete_expired
+  expired
+  unpaid
+  paused
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -64,7 +87,7 @@ model User {
   passwordChangedAt DateTime? // Set on password change/reset for session invalidation
   emailVerified   Boolean   @default(false)
   emailVerifiedAt    DateTime?
-  role               String    @default("USER") // USER or ADMIN
+  role               UserRole  @default(USER)
   discordId          String?   @unique
   discordAccessToken  String?   // Encrypted with AES-256-GCM
   discordRefreshToken String?   // Encrypted with AES-256-GCM
@@ -104,7 +127,7 @@ model Subscription {
   id     String   @id @default(cuid())
   userId String   @unique
   tier   PlanTier @default(FREE)
-  status String   @default("active")
+  status SubscriptionStatus @default(active)
 
   hadPaidPlan Boolean  @default(false) // Set true on first paid subscription, never reset
 
@@ -789,7 +812,7 @@ model BacktestUpload {
   id            String   @id @default(cuid())
   userId        String
   projectId     String?
-  contentHash   String   @unique       // SHA-256 dedup
+  contentHash   String                 // SHA-256 dedup (unique per user)
   originalHtml  String   @db.Text      // Full HTML for re-parsing
   fileName      String
   fileSize      Int
@@ -799,6 +822,7 @@ model BacktestUpload {
   project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   runs     BacktestRun[]
 
+  @@unique([userId, contentHash])
   @@index([userId, createdAt])
   @@index([projectId])
 }
@@ -825,8 +849,8 @@ model BacktestRun {
   longWinRate     Float?
   shortWinRate    Float?
 
-  healthScore     Int          // 0-100
-  healthStatus    String       // ROBUST, MODERATE, WEAK
+  healthScore     Int                    // 0-100
+  healthStatus    BacktestHealthStatus
 
   trades          Json         // ParsedDeal[]
   scoreBreakdown  Json?        // Per-metric scores
@@ -838,7 +862,12 @@ model BacktestRun {
   aiAnalysis      AIAnalysis?
   createdAt       DateTime       @default(now())
 
+  // NOTE: Financial fields (totalNetProfit, initialDeposit, etc.) use Float (IEEE 754 double precision).
+  // For the value ranges in backtest metrics (<$1M, 2 decimal places), precision loss is negligible (~$0.0000001).
+  // A full Decimal migration would require touching every consumer. Acceptable trade-off for now.
+
   @@index([uploadId])
+  @@index([createdAt])
 }
 
 model AIAnalysis {
@@ -850,4 +879,6 @@ model AIAnalysis {
   createdAt     DateTime @default(now())
 
   backtestRun   BacktestRun @relation(fields: [backtestRunId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
 }

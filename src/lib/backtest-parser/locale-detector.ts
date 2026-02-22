@@ -95,6 +95,5 @@ export function parseLocalizedNumber(value: string, locale: NumberLocale | null)
       break;
   }
 
-  const result = parseFloat(cleaned);
-  return isNaN(result) ? 0 : result;
+  return parseFloat(cleaned);
 }

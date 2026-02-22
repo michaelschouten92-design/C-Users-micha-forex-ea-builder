@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { PLANS, type PlanTier } from "./plans";
+import { PLANS, type PlanTier, getEffectiveLimits } from "./plans";
 
 // ============================================
 // SUBSCRIPTION TIER CACHE (15 second TTL)
@@ -23,13 +23,17 @@ export function resolveTier(
     tier: string;
     status: string;
     currentPeriodEnd: Date | null;
+    manualPeriodEnd?: Date | null;
   } | null
 ): PlanTier {
   let tier = (subscription?.tier ?? "FREE") as PlanTier;
   if (tier !== "FREE") {
     const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-    if (!isActive || isExpired) {
+    const now = new Date();
+    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < now;
+    // Admin-granted extension overrides Stripe expiry
+    const hasManualExtension = subscription?.manualPeriodEnd && subscription.manualPeriodEnd > now;
+    if (!isActive || (isExpired && !hasManualExtension)) {
       tier = "FREE";
     }
   }
@@ -44,7 +48,7 @@ export async function getCachedTier(userId: string): Promise<PlanTier> {
 
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
-    select: { tier: true, status: true, currentPeriodEnd: true },
+    select: { tier: true, status: true, currentPeriodEnd: true, manualPeriodEnd: true },
   });
 
   const tier = resolveTier(subscription);
@@ -67,8 +71,8 @@ export async function checkProjectLimit(userId: string): Promise<{
     prisma.project.count({ where: { userId, deletedAt: null } }),
   ]);
 
-  const plan = PLANS[tier];
-  const max = plan.limits.maxProjects;
+  const limits = await getEffectiveLimits(tier);
+  const max = limits.maxProjects;
 
   return {
     allowed: projectCount < max,
@@ -83,8 +87,8 @@ export async function checkExportLimit(userId: string): Promise<{
   max: number;
 }> {
   const tier = await getCachedTier(userId);
-  const plan = PLANS[tier];
-  const max = plan.limits.maxExportsPerMonth;
+  const limits = await getEffectiveLimits(tier);
+  const max = limits.maxExportsPerMonth;
 
   // Count exports this month (use UTC for consistent month boundaries)
   const startOfMonth = new Date();
@@ -108,16 +112,17 @@ export async function checkExportLimit(userId: string): Promise<{
 
 export async function canExportMQL5(userId: string): Promise<boolean> {
   const tier = await getCachedTier(userId);
-  return PLANS[tier].limits.canExportMQL5;
+  const limits = await getEffectiveLimits(tier);
+  return limits.canExportMQL5;
 }
 
 /** Fetch all export-related permissions in a single cached tier lookup */
 export async function getExportPermissions(userId: string) {
   const tier = await getCachedTier(userId);
-  const plan = PLANS[tier];
+  const limits = await getEffectiveLimits(tier);
   return {
     tier,
-    canExportMQL5: plan.limits.canExportMQL5,
+    canExportMQL5: limits.canExportMQL5,
   };
 }
 
@@ -127,11 +132,12 @@ export async function getUserPlanLimits(userId: string) {
     prisma.subscription.findUnique({ where: { userId } }),
   ]);
   const plan = PLANS[tier];
+  const limits = await getEffectiveLimits(tier);
 
   return {
     tier, // Always reflects actual active tier (expired/cancelled → FREE)
     plan: plan.name,
-    limits: plan.limits,
+    limits,
     subscription: subscription ?? null,
   };
 }
