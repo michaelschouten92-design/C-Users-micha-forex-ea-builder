@@ -63,7 +63,7 @@ export default async function Home() {
     },
     {
       q: "What is a Verified Track Record?",
-      a: "Every trade your EA makes is recorded in a tamper-resistant hash chain — similar to how blockchain works. This creates cryptographically verified performance history that proves your results are real. No manipulation, no cherry-picking.",
+      a: "Every trade your EA makes is automatically recorded in a cryptographic hash chain with multi-level verification: L1 (ledger integrity via hash chain replay), L2 (broker corroboration by cross-referencing broker data), and L3 (external notarization). Risk-adjusted metrics like Sharpe, Sortino, and Calmar ratios are computed automatically. You can share proof bundles that anyone can independently verify — no account needed. No manipulation, no cherry-picking.",
     },
     {
       q: "What is the Strategy Health Monitor?",
@@ -156,7 +156,7 @@ export default async function Home() {
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Immutable track record
+              Verified Track Record in every EA
             </div>
             <div className="flex items-center gap-2">
               <svg
@@ -406,7 +406,7 @@ export default async function Home() {
               {
                 title: "Verified Track Record",
                 description:
-                  "Every trade is recorded in a tamper-resistant hash chain. Cryptographically verified performance that can be independently audited. Proof, not promises.",
+                  "Built into every EA — automatic, zero-config. SHA-256 hash chain with multi-level verification, broker corroboration, risk-adjusted metrics (Sharpe, Sortino, Calmar), and shareable proof bundles anyone can independently audit.",
                 accent: "#10B981",
               },
               {
@@ -484,7 +484,7 @@ export default async function Home() {
             </div>
 
             <div className="px-6 py-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                 <div>
                   <p className="text-xs text-[#64748B] mb-1">Win Rate</p>
                   <p className="text-lg font-semibold text-white">62.4%</p>
@@ -494,36 +494,59 @@ export default async function Home() {
                   <p className="text-lg font-semibold text-white">1.87</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#64748B] mb-1">Max Drawdown</p>
-                  <p className="text-lg font-semibold text-white">8.2%</p>
+                  <p className="text-xs text-[#64748B] mb-1">Sharpe Ratio</p>
+                  <p className="text-lg font-semibold text-white">1.42</p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#64748B] mb-1">Sortino Ratio</p>
+                  <p className="text-lg font-semibold text-white">2.18</p>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-3 bg-[#1A0626]/50 border-t border-[rgba(79,70,229,0.1)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <svg
-                  className="w-3.5 h-3.5 text-[#22D3EE]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
-                <span className="text-xs text-[#64748B]">Chain verified &middot; 847 events</span>
+            <div className="px-6 py-3 bg-[#1A0626]/50 border-t border-[rgba(79,70,229,0.1)]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-3.5 h-3.5 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                    />
+                  </svg>
+                  <span className="text-xs text-[#64748B]">Chain verified &middot; 847 events</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                  <span className="text-xs text-[#10B981] font-medium">Broker Verified</span>
+                </div>
               </div>
-              <span className="text-xs text-[#64748B]">v3 &middot; 142 days live</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#64748B]">v3 &middot; 142 days live</span>
+                <span className="text-xs text-[#94A3B8]">
+                  Share &amp; verify &mdash; anyone can independently audit
+                </span>
+              </div>
             </div>
           </div>
 
-          <p className="text-center text-xs text-[#64748B] mt-4">
-            Example visualization. Actual data from your strategies.
-          </p>
+          <div className="text-center mt-4">
+            <p className="text-xs text-[#64748B] mb-2">
+              Example visualization. Actual data from your strategies.
+            </p>
+            <Link
+              href="/product/track-record"
+              className="text-sm font-medium text-[#A78BFA] hover:underline"
+            >
+              Learn more about Verified Track Record &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 

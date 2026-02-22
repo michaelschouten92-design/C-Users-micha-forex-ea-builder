@@ -43,8 +43,13 @@ const pipelineSteps = [
     label: "Monitor",
     title: "Performance Protection",
     description:
-      "Deploy with a verified identity. Monitor live performance against your baseline. Get alerts when your edge begins to degrade.",
-    features: ["Verified Track Record", "Strategy Health Monitor", "Edge degradation alerts"],
+      "Deploy with a verified identity and multi-level verification. Monitor live performance against your baseline. Share proof bundles for independent audit.",
+    features: [
+      "Verified Track Record",
+      "Strategy Health Monitor",
+      "Edge degradation alerts",
+      "Proof bundles & sharing",
+    ],
   },
 ];
 
@@ -74,7 +79,7 @@ const platformModules = [
     color: "#10B981",
     title: "Verified Track Record",
     description:
-      "Every trade recorded in a tamper-resistant hash chain. Cryptographically verified performance that can be independently audited. Proof, not promises.",
+      "Built into every EA. Multi-level verification (L1 hash chain, L2 broker corroboration, L3 notarization), risk-adjusted metrics (Sharpe, Sortino, Calmar), and shareable proof bundles anyone can independently verify.",
     href: "/product/track-record",
   },
   {
