@@ -93,6 +93,7 @@ model User {
   templateRatings TemplateRating[]
   tradeJournals      TradeJournal[]
   sharedProofBundles SharedProofBundle[]
+  backtestUploads    BacktestUpload[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -138,6 +139,7 @@ model Project {
   shares            ProjectShare[]
   tradeJournals     TradeJournal[]
   strategyIdentity  StrategyIdentity?
+  backtestUploads   BacktestUpload[]
 
   @@index([userId, deletedAt, updatedAt])
   @@index([deletedAt])
@@ -777,4 +779,75 @@ model SharedProofBundle {
 
   @@index([token])
   @@index([instanceId])
+}
+
+// ============================================
+// BACKTEST UPLOAD & ANALYSIS
+// ============================================
+
+model BacktestUpload {
+  id            String   @id @default(cuid())
+  userId        String
+  projectId     String?
+  contentHash   String   @unique       // SHA-256 dedup
+  originalHtml  String   @db.Text      // Full HTML for re-parsing
+  fileName      String
+  fileSize      Int
+  createdAt     DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  runs     BacktestRun[]
+
+  @@index([userId, createdAt])
+  @@index([projectId])
+}
+
+model BacktestRun {
+  id              String   @id @default(cuid())
+  uploadId        String   @unique
+
+  eaName          String?
+  symbol          String
+  timeframe       String
+  period          String
+  initialDeposit  Float
+
+  totalNetProfit  Float
+  profitFactor    Float
+  maxDrawdownPct  Float
+  maxDrawdownAbs  Float?
+  sharpeRatio     Float?
+  recoveryFactor  Float?
+  expectedPayoff  Float
+  totalTrades     Int
+  winRate         Float
+  longWinRate     Float?
+  shortWinRate    Float?
+
+  healthScore     Int          // 0-100
+  healthStatus    String       // ROBUST, MODERATE, WEAK
+
+  trades          Json         // ParsedDeal[]
+  scoreBreakdown  Json?        // Per-metric scores
+  parseWarnings    Json?
+  detectedLocale   String?
+  validationResult Json?        // Monte Carlo validation results
+
+  upload          BacktestUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  aiAnalysis      AIAnalysis?
+  createdAt       DateTime       @default(now())
+
+  @@index([uploadId])
+}
+
+model AIAnalysis {
+  id            String   @id @default(cuid())
+  backtestRunId String   @unique
+  analysis      String   @db.Text     // AI-generated analysis text
+  weaknesses    Json?                 // Structured weakness list
+  model         String               // e.g. "claude-sonnet-4-6"
+  createdAt     DateTime @default(now())
+
+  backtestRun   BacktestRun @relation(fields: [backtestRunId], references: [id], onDelete: Cascade)
 }

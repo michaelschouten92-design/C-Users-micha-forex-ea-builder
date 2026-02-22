@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Platform — Strategy Validation for Algorithmic Traders | AlgoStudio",
+  title: "Platform — Strategy Intelligence for Algorithmic Traders | AlgoStudio",
   description:
-    "Build, validate, and monitor automated trading strategies. Monte Carlo risk analysis, verified track records, strategy health monitoring, and no-code EA building.",
+    "Upload backtests, get instant health scores, AI analysis, and Monte Carlo validation. Monitor live strategies with verified track records and edge degradation alerts.",
   alternates: { canonical: "/product" },
 };
 
@@ -20,22 +20,26 @@ const breadcrumbs = [
 const pipelineSteps = [
   {
     step: "01",
-    label: "Build",
-    title: "Strategy Construction",
+    label: "Upload",
+    title: "Backtest Analysis",
     description:
-      "No-code visual builder with proven templates. Customize risk parameters. Export clean MQL5. From idea to executable strategy in minutes.",
-    features: ["6 strategy templates", "Visual drag-and-drop builder", "Clean MQL5 export"],
+      "Upload your MT5 Strategy Tester HTML report. AlgoStudio parses every metric and trade, scores your strategy 0-100, and identifies strengths and weaknesses instantly.",
+    features: [
+      "Instant health score (0-100)",
+      "7-dimension scoring",
+      "Multi-language reports (EN, DE, ES, RU, FR, PT)",
+    ],
   },
   {
     step: "02",
-    label: "Verify",
+    label: "Validate",
     title: "Strategy Validation",
     description:
-      "Export to MT5 Strategy Tester. Run Monte Carlo simulations to stress-test your edge. Analyze risk profiles before going live.",
+      "AI Strategy Doctor analyzes weaknesses and overfitting signals. One-click Monte Carlo runs 1,000 simulations to stress-test your edge before going live.",
     features: [
-      "MT5 Strategy Tester export",
-      "Monte Carlo risk calculator",
-      "Optimization-ready parameters",
+      "AI-powered weakness analysis",
+      "Monte Carlo survival probability",
+      "Overfitting & market dependency detection",
     ],
   },
   {
@@ -55,25 +59,25 @@ const pipelineSteps = [
 
 const platformModules = [
   {
-    color: "#A78BFA",
-    title: "Strategy Builder",
+    color: "#22D3EE",
+    title: "Backtest Health Check",
     description:
-      "No-code visual builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own.",
-    href: "/product/how-it-works",
+      "Upload your MT5 HTML report. Get an instant 0-100 health score across 7 weighted dimensions: profit factor, drawdown, trade count, expected payoff, win rate, Sharpe, and recovery factor.",
+    href: "/app/backtest",
   },
   {
-    color: "#22D3EE",
-    title: "Monte Carlo Risk Calculator",
+    color: "#A78BFA",
+    title: "AI Strategy Doctor",
     description:
-      "Run 1,000 randomized simulations. See the probability distribution of outcomes \u2014 not just the best case, but the realistic range of what to expect.",
-    href: "/product/monte-carlo",
+      "AI-powered analysis of your full trade history. Identifies weaknesses, overfitting signals, market dependency risks, and live trading readiness with actionable recommendations.",
+    href: "/app/backtest",
   },
   {
     color: "#F59E0B",
-    title: "AI Strategy Generator",
+    title: "Monte Carlo Risk Calculator",
     description:
-      "Describe your trading idea in plain language. The AI generates a complete strategy configuration that you can fine-tune in the visual builder.",
-    href: "/product/how-it-works",
+      "Run 1,000 randomized simulations. See survival probability and the realistic range of outcomes — not just the best case, but what to actually expect in live trading.",
+    href: "/product/monte-carlo",
   },
   {
     color: "#10B981",
@@ -84,10 +88,10 @@ const platformModules = [
   },
   {
     color: "#EC4899",
-    title: "Strategy Identity",
+    title: "Strategy Builder",
     description:
-      "Each strategy gets a permanent AS-xxxx ID and version history. Track exactly what's deployed, what changed, and when. Full auditability.",
-    href: "/product/strategy-identity",
+      "No-code visual builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own. From idea to executable strategy in minutes.",
+    href: "/product/how-it-works",
   },
   {
     color: "#EF4444",
@@ -100,14 +104,14 @@ const platformModules = [
 
 const differentiators = [
   {
-    title: "Validation, not just building",
+    title: "Intelligence, not just building",
     description:
-      "Most EA tools give you a builder and stop. AlgoStudio validates your strategy with Monte Carlo risk analysis, verifies performance with immutable records, and monitors health in production.",
+      "Most EA tools give you a builder and stop. AlgoStudio scores your backtest, analyzes weaknesses with AI, validates with Monte Carlo, and monitors health in production.",
   },
   {
-    title: "Simplicity with depth",
+    title: "Upload and know in seconds",
     description:
-      "Start with a working template. Export in minutes. When you're ready, unlock verified track records and health monitoring. Power when you need it, simplicity by default.",
+      "No complex setup. No manual data entry. Upload your MT5 report and get instant results — health score, AI analysis, and validation. Power when you need it, simplicity by default.",
   },
   {
     title: "Proof over promises",
@@ -133,19 +137,19 @@ export default function ProductPage() {
           {/* Hero */}
           <section className="text-center mb-24">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              The complete strategy validation platform
+              The complete strategy intelligence platform
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              Most trading tools stop at building. AlgoStudio goes further — validation,
-              verification, and monitoring. Know if your strategy actually works before you risk
-              capital.
+              Upload your MT5 backtest and instantly know if your strategy works. AI-powered
+              analysis, Monte Carlo validation, verified track records, and live monitoring —
+              everything you need to trade with confidence.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/login?mode=register"
+                href="/login?mode=register&redirect=/app/backtest"
                 className="w-full sm:w-auto bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
               >
-                Start Validating — Free
+                Upload Backtest — Free
               </Link>
               <Link
                 href="/product/how-it-works"
@@ -158,9 +162,11 @@ export default function ProductPage() {
 
           {/* Validation Pipeline */}
           <section className="mb-24">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">Validation Pipeline</h2>
+            <h2 className="text-3xl font-bold text-white mb-4 text-center">
+              Strategy Intelligence Pipeline
+            </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
-              Build &rarr; Verify &rarr; Monitor
+              Upload &rarr; Validate &rarr; Monitor
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               {pipelineSteps.map((step) => (
@@ -195,7 +201,7 @@ export default function ProductPage() {
           <section className="mb-24">
             <h2 className="text-3xl font-bold text-white mb-4 text-center">Platform Modules</h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
-              Six integrated modules that take your strategy from idea to monitored deployment.
+              Six integrated modules that take your strategy from backtest to monitored deployment.
             </p>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {platformModules.map((mod) => (
@@ -244,8 +250,8 @@ export default function ProductPage() {
       </main>
 
       <CTASection
-        title="Start validating your strategy"
-        description="Build, verify, and monitor your trading strategy with objective data. Free — no credit card required."
+        title="Upload your first backtest"
+        description="Get an instant health score, AI analysis, and Monte Carlo validation. Free — no credit card required."
       />
 
       <Footer />

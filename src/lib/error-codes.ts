@@ -33,6 +33,10 @@ export const ErrorCode = {
   // Password reset
   INVALID_RESET_TOKEN: "INVALID_RESET_TOKEN",
 
+  // Backtest
+  DUPLICATE_UPLOAD: "DUPLICATE_UPLOAD",
+  PARSE_FAILED: "PARSE_FAILED",
+
   // Generic
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;

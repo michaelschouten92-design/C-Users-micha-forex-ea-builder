@@ -142,7 +142,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "1 active project",
               "3 MQL5 exports per month",
               "Monte Carlo risk calculator",
-              "AI strategy generator",
+              "Backtest health scoring",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -161,10 +161,10 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <p className="mt-4 text-xs text-[#64748B]">No credit card required.</p>
 
           <Link
-            href="/login?mode=register"
+            href="/login?mode=register&redirect=/app/backtest"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Start Building Free
+            Upload Backtest — Free
           </Link>
         </div>
 

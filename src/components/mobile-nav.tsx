@@ -101,11 +101,11 @@ export function MobileNav() {
               Sign in
             </Link>
             <Link
-              href="/login?mode=register"
+              href="/login?mode=register&redirect=/app/backtest"
               onClick={() => setIsOpen(false)}
               className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors text-center"
             >
-              Start Free
+              Upload Backtest
             </Link>
           </div>
         </>

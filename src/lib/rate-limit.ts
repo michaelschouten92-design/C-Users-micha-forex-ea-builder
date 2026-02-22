@@ -389,6 +389,36 @@ export const aiDailyGenerationLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for backtest uploads
+ * Limits: 10 uploads per hour per user
+ */
+export const backtestUploadRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
+ * Rate limiters for AI backtest analysis (tiered by plan)
+ * FREE: 5 analyses per 24 hours
+ * PRO: 20 analyses per 24 hours
+ * ELITE: 100 analyses per 24 hours (effectively unlimited)
+ */
+export const aiAnalysisFreeRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+export const aiAnalysisProRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+export const aiAnalysisEliteRateLimiter = createRateLimiter({
+  limit: 100,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+});
+
+/**
  * Rate limiter for public verification endpoints
  * Limits: 5 requests per minute per IP
  */

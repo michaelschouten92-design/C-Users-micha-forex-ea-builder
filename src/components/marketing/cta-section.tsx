@@ -10,8 +10,8 @@ interface CTASectionProps {
 export function CTASection({
   title,
   description,
-  ctaText = "Start Validating — Free",
-  ctaHref = "/login?mode=register",
+  ctaText = "Upload Backtest — Free",
+  ctaHref = "/login?mode=register&redirect=/app/backtest",
 }: CTASectionProps) {
   return (
     <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">
