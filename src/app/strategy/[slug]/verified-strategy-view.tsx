@@ -53,11 +53,33 @@ interface StrategyPageData {
     lastCheckpoint: { hmac: string; at: string } | null;
   } | null;
   equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
+  metrics: {
+    sharpeRatio: number;
+    sortinoRatio: number;
+    calmarRatio: number;
+    profitFactor: number;
+  } | null;
+  drawdownDuration: number;
+  brokerVerification: {
+    evidenceCount: number;
+    matchedCount: number;
+    mismatchedCount: number;
+  } | null;
   settings: {
     showEquityCurve: boolean;
     showTradeLog: boolean;
     showHealthStatus: boolean;
   };
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds <= 0) return "---";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  if (days > 0) return `${days}d ${hours}h`;
+  const mins = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }
 
 const HEALTH_COLORS: Record<string, { color: string; label: string }> = {
@@ -173,16 +195,21 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
     );
   }
 
-  const { strategy, instance, trackRecord, health, chain, equityCurve, settings } = data;
+  const {
+    strategy,
+    instance,
+    trackRecord,
+    health,
+    chain,
+    equityCurve,
+    metrics,
+    drawdownDuration,
+    brokerVerification,
+    settings,
+  } = data;
   const winRate =
     trackRecord && trackRecord.totalTrades > 0
       ? ((trackRecord.winCount / trackRecord.totalTrades) * 100).toFixed(1)
-      : "---";
-  const profitFactor =
-    trackRecord && trackRecord.winCount > 0 && trackRecord.lossCount > 0
-      ? trackRecord.totalProfit > 0
-        ? "---"
-        : "---" // Simplified — PF needs gross profit/loss
       : "---";
 
   const chainVerified = chain && chain.length > 0;
@@ -244,6 +271,27 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
               </span>
             )}
 
+            {/* Broker Verified badge */}
+            {brokerVerification && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${
+                  brokerVerification.mismatchedCount === 0
+                    ? "bg-[#10B981]/10 border-[#10B981]/20 text-[#10B981]"
+                    : "bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]"
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                {brokerVerification.mismatchedCount === 0 ? "Broker Verified" : "Broker Mismatch"}
+              </span>
+            )}
+
             {instance && (
               <span className="text-xs text-[#7C8DB0]">
                 {instance.symbol} {instance.timeframe}{" "}
@@ -296,6 +344,72 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
               value={new Date(instance.createdAt).toLocaleDateString()}
               sub={instance.mode === "PAPER" ? "Paper Mode" : "Live Mode"}
             />
+          </div>
+        )}
+
+        {/* Risk Metrics */}
+        {metrics && (metrics.sharpeRatio !== 0 || metrics.sortinoRatio !== 0) && (
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
+            <h3 className="text-sm font-medium text-white mb-3">Risk Metrics</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                  Sharpe Ratio
+                </p>
+                <p className="text-sm font-medium text-white">{metrics.sharpeRatio.toFixed(2)}</p>
+              </div>
+              <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                  Sortino Ratio
+                </p>
+                <p className="text-sm font-medium text-white">{metrics.sortinoRatio.toFixed(2)}</p>
+              </div>
+              <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                  Calmar Ratio
+                </p>
+                <p className="text-sm font-medium text-white">{metrics.calmarRatio.toFixed(2)}</p>
+              </div>
+              <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                  Profit Factor
+                </p>
+                <p className="text-sm font-medium text-white">
+                  {metrics.profitFactor === Infinity ? "∞" : metrics.profitFactor.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                  Max DD Duration
+                </p>
+                <p className="text-sm font-medium text-white">{formatDuration(drawdownDuration)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Broker Verification Detail */}
+        {brokerVerification && (
+          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
+            <h3 className="text-sm font-medium text-white mb-3">Broker Verification</h3>
+            <div className="grid grid-cols-3 gap-4 text-xs">
+              <div>
+                <p className="text-[#7C8DB0]">Evidence Count</p>
+                <p className="text-white font-medium">{brokerVerification.evidenceCount}</p>
+              </div>
+              <div>
+                <p className="text-[#7C8DB0]">Matched</p>
+                <p className="text-[#10B981] font-medium">{brokerVerification.matchedCount}</p>
+              </div>
+              <div>
+                <p className="text-[#7C8DB0]">Mismatches</p>
+                <p
+                  className={`font-medium ${brokerVerification.mismatchedCount > 0 ? "text-[#F59E0B]" : "text-[#10B981]"}`}
+                >
+                  {brokerVerification.mismatchedCount}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

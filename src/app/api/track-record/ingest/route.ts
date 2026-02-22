@@ -54,6 +54,21 @@ export async function POST(request: NextRequest) {
 
   const { eventType, seqNo, prevHash, eventHash, timestamp, payload } = validation.data;
 
+  // Timestamp bounds validation (before entering transaction)
+  const nowSec = Math.floor(Date.now() / 1000);
+  const ONE_YEAR_SEC = 365 * 24 * 60 * 60;
+
+  if (timestamp > nowSec + 60) {
+    return NextResponse.json(
+      { error: "Timestamp is in the future (max clock skew: 60s)" },
+      { status: 400 }
+    );
+  }
+
+  if (timestamp < nowSec - ONE_YEAR_SEC) {
+    return NextResponse.json({ error: "Timestamp is older than 1 year" }, { status: 400 });
+  }
+
   try {
     // All state reads + writes inside one interactive transaction to prevent races.
     // Serializable isolation ensures no concurrent reader sees stale state.
@@ -68,6 +83,22 @@ export async function POST(request: NextRequest) {
           dbState = await tx.trackRecordState.create({
             data: { instanceId },
           });
+        }
+
+        // Validate timestamp against instance creation date
+        const instance = await tx.liveEAInstance.findUnique({
+          where: { id: instanceId },
+          select: { createdAt: true },
+        });
+        if (instance) {
+          const instanceCreatedSec = Math.floor(instance.createdAt.getTime() / 1000);
+          const ONE_DAY_SEC = 24 * 60 * 60;
+          if (timestamp < instanceCreatedSec - ONE_DAY_SEC) {
+            return {
+              status: 400 as const,
+              body: { error: "Timestamp is before instance creation date (minus 1 day tolerance)" },
+            };
+          }
         }
 
         // Idempotency check: if EA resends same seqNo, check if eventHash matches

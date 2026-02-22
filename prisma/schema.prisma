@@ -91,7 +91,8 @@ model User {
   alertRules     EAAlertRule[]
   alertConfigs   EAAlertConfig[]
   templateRatings TemplateRating[]
-  tradeJournals  TradeJournal[]
+  tradeJournals      TradeJournal[]
+  sharedProofBundles SharedProofBundle[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -341,6 +342,7 @@ model LiveEAInstance {
   trackRecordCheckpoints TrackRecordCheckpoint[]
   trackRecordState       TrackRecordState?
   healthSnapshots        HealthSnapshot[]
+  sharedProofBundles     SharedProofBundle[]
 
   @@index([userId, status])
   @@index([status, lastHeartbeat])
@@ -754,4 +756,25 @@ model VerifiedStrategyPage {
   strategyIdentity StrategyIdentity @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
 
   @@index([slug])
+}
+
+// ============================================
+// SHARED PROOF BUNDLES
+// ============================================
+
+model SharedProofBundle {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  instanceId  String
+  userId      String
+  bundleJson  Json
+  expiresAt   DateTime?
+  accessCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([instanceId])
 }
