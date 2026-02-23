@@ -41,8 +41,8 @@ export default function AboutPage() {
             </p>
 
             <p>
-              That&apos;s why AlgoStudio isn&apos;t an EA builder. It&apos;s a strategy validation
-              platform.
+              That&apos;s why AlgoStudio isn&apos;t just an EA builder. It&apos;s a complete
+              strategy intelligence platform.
             </p>
 
             <p>

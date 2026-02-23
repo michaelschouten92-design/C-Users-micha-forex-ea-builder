@@ -26,6 +26,14 @@ export function Footer() {
               </li>
               <li>
                 <Link
+                  href="/product/how-it-works"
+                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                >
+                  EA Builder
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/templates"
                   className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
                 >
@@ -142,7 +150,7 @@ export function Footer() {
         <div className="pt-8 border-t border-[rgba(79,70,229,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-white">AlgoStudio</span>
-            <span className="text-xs text-[#64748B]">Strategy Intelligence Platform</span>
+            <span className="text-xs text-[#64748B]">EA Builder &amp; Strategy Intelligence</span>
           </div>
           <span className="text-sm text-[#64748B]">
             &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.

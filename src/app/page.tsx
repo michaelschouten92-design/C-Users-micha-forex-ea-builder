@@ -8,14 +8,14 @@ import { Footer } from "@/components/marketing/footer";
 import { PricingSection } from "@/components/marketing/pricing-section";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio — Strategy Intelligence Platform for Algorithmic Traders",
+  title: "AlgoStudio — EA Builder & Strategy Intelligence for Algorithmic Traders",
   description:
-    "Upload your MT5 backtest and instantly know if your strategy is robust. Health scoring, AI analysis, Monte Carlo validation, and live monitoring — all in one platform.",
+    "Build MT5 Expert Advisors and instantly know if they work. No-code EA builder with health scoring, AI analysis, Monte Carlo validation, and live monitoring — all in one platform.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "AlgoStudio — Know If Your Strategy Actually Works",
+    title: "AlgoStudio — Build EAs & Know If They Actually Work",
     description:
-      "Upload your MT5 backtest report. Get an instant health score, AI-powered analysis, and one-click Monte Carlo validation.",
+      "No-code EA builder with instant backtest health scoring, AI-powered analysis, and one-click Monte Carlo validation. Build, validate, and monitor your trading strategies.",
   },
 };
 
@@ -31,7 +31,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "Strategy Intelligence Platform for algorithmic traders. Upload backtests, get health scores, AI analysis, and live monitoring.",
+      "No-code EA builder and strategy intelligence platform for algorithmic traders. Build Expert Advisors, upload backtests, get health scores, AI analysis, and live monitoring.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -117,7 +117,7 @@ export default async function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)] rounded-full px-4 py-1.5 mb-6">
             <span className="text-xs text-[#A78BFA] font-medium">
-              Strategy Intelligence Platform
+              EA Builder &amp; Strategy Intelligence
             </span>
           </div>
 
@@ -747,10 +747,10 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs text-[#22D3EE] font-medium tracking-wider uppercase mb-3">
-              Also Included
+              Built-in EA Builder
             </p>
             <h2 className="text-3xl font-bold text-white mb-4">
-              Need to build a strategy? We&apos;ve got that too.
+              Build your EA. Then prove it works.
             </h2>
             <p className="text-[#94A3B8] max-w-2xl mx-auto">
               A visual interface that makes strategy building intuitive. No wiring, no logic gates,
