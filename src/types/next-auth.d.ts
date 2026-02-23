@@ -20,5 +20,6 @@ declare module "next-auth/jwt" {
     emailVerified?: boolean;
     impersonatorId?: string;
     impersonatingEmail?: string;
+    impersonationStartedAt?: number;
   }
 }

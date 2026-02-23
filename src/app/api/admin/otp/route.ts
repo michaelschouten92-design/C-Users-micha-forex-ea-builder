@@ -107,7 +107,8 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // In development without email, log the code
-        log.info({ code }, "Admin OTP code (dev mode — no email configured)");
+        log.info("Admin OTP generated (dev mode — no email configured, check console)");
+        console.log(`[DEV] Admin OTP code: ${code}`);
       }
 
       return NextResponse.json({ success: true });

@@ -67,18 +67,17 @@ export async function getDiscordUser(accessToken: string): Promise<DiscordUser> 
 }
 
 /**
- * Decrypt an access token if it's encrypted, otherwise return as-is.
- * Supports both encrypted (new) and plaintext (legacy) tokens.
+ * Decrypt an access token. All stored tokens must be encrypted.
  */
 function decryptToken(token: string): string {
-  if (isEncrypted(token)) {
-    const decrypted = decrypt(token);
-    if (!decrypted) {
-      throw new Error("Failed to decrypt Discord access token");
-    }
-    return decrypted;
+  if (!isEncrypted(token)) {
+    throw new Error("Discord token is not encrypted — refusing to use plaintext token");
   }
-  return token;
+  const decrypted = decrypt(token);
+  if (!decrypted) {
+    throw new Error("Failed to decrypt Discord access token");
+  }
+  return decrypted;
 }
 
 /**
@@ -141,7 +140,7 @@ export async function addToGuild(
 ): Promise<void> {
   if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return;
 
-  const plainToken = decryptToken(accessToken);
+  const plainToken = isEncrypted(accessToken) ? decryptToken(accessToken) : accessToken;
 
   const res = await fetch(
     `${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,

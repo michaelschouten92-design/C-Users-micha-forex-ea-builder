@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Set up env before importing
 beforeEach(() => {
   vi.stubEnv("AUTH_SECRET", "test-secret-that-is-at-least-32-characters-long");
+  vi.stubEnv("ENCRYPTION_SALT", "test-encryption-salt-value");
 });
 
 describe("crypto", () => {

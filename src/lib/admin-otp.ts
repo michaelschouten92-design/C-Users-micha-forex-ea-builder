@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { logger } from "./logger";
 import { randomInt, createHash, createHmac } from "crypto";
 import { checkRateLimit, adminOtpVerifyRateLimiter } from "./rate-limit";
+import { timingSafeEqual } from "@/lib/csrf";
 
 const log = logger.child({ module: "admin-otp" });
 const OTP_EXPIRY_MINUTES = 10;
@@ -93,7 +94,12 @@ export async function verifyAdminOtp(email: string, code: string): Promise<boole
   // Rate limit verification attempts to prevent brute-force on 6-digit codes
   const rateLimitResult = await checkRateLimit(adminOtpVerifyRateLimiter, `otp-verify:${email}`);
   if (!rateLimitResult.success) {
-    log.warn({ email: email.substring(0, 3) + "***" }, "OTP verification rate limited");
+    // Invalidate the OTP so the attacker cannot retry after the rate limit window resets
+    await prisma.adminOtp.deleteMany({ where: { email } });
+    log.warn(
+      { email: email.substring(0, 3) + "***" },
+      "OTP verification rate limited — OTP invalidated"
+    );
     return false;
   }
 
@@ -102,12 +108,11 @@ export async function verifyAdminOtp(email: string, code: string): Promise<boole
   const otp = await prisma.adminOtp.findFirst({
     where: {
       email,
-      code: hashedCode,
       expiresAt: { gte: new Date() },
     },
   });
 
-  if (!otp) {
+  if (!otp || !timingSafeEqual(hashedCode, otp.code)) {
     log.warn({ email: email.substring(0, 3) + "***" }, "Admin OTP verification failed");
     return false;
   }

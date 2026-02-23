@@ -9,24 +9,22 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const PBKDF2_ITERATIONS = 100_000;
-const PBKDF2_FALLBACK_SALT = "algostudio-field-encryption-v1";
-
 let cachedKey: Buffer | null = null;
 
 /**
  * Derive a 256-bit key from AUTH_SECRET using PBKDF2.
- * Uses ENCRYPTION_SALT env var (recommended) or falls back to a static salt for backwards compatibility.
+ * Requires ENCRYPTION_SALT env var — no fallback to prevent use of a predictable salt.
  * The key is cached in memory to avoid repeated derivation.
  */
 function getEncryptionKey(): Buffer {
   if (cachedKey) return cachedKey;
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET not configured for encryption");
-  const salt = process.env.ENCRYPTION_SALT || PBKDF2_FALLBACK_SALT;
-  if (!process.env.ENCRYPTION_SALT) {
-    // Log once at startup — fallback salt is less secure
-    console.warn(
-      "[crypto] ENCRYPTION_SALT not configured — using fallback salt. Set ENCRYPTION_SALT in env for production."
+  const salt = process.env.ENCRYPTION_SALT;
+  if (!salt) {
+    throw new Error(
+      "ENCRYPTION_SALT environment variable is required. " +
+        "Generate a random value (e.g., openssl rand -hex 32) and set it in your environment."
     );
   }
   cachedKey = pbkdf2Sync(secret, salt, PBKDF2_ITERATIONS, 32, "sha256");

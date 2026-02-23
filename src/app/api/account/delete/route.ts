@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendAccountDeletedEmail } from "@/lib/email";
 import { safeReadJson, checkContentType } from "@/lib/validations";
+import { validateCsrfToken } from "@/lib/csrf";
 import {
   gdprDeleteRateLimiter,
   checkRateLimit,
@@ -16,7 +17,14 @@ import {
  * Permanently deletes the user account and all associated data.
  * Requires confirmation via request body: { confirm: "DELETE" }
  */
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
+  if (!validateCsrfToken(request)) {
+    return NextResponse.json(
+      { error: "Your session has expired. Please refresh the page and try again." },
+      { status: 403 }
+    );
+  }
+
   const session = await auth();
 
   if (!session?.user?.id) {

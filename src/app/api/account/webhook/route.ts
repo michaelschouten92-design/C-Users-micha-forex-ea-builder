@@ -54,11 +54,20 @@ export function isPrivateUrl(url: string): boolean {
     if (
       ipv6 === "::1" ||
       ipv6 === "::0" ||
+      ipv6 === "::" ||
       ipv6.startsWith("fc") ||
       ipv6.startsWith("fd") ||
-      ipv6.startsWith("fe80")
+      ipv6.startsWith("fe80") ||
+      ipv6.startsWith("0000:0000:0000:0000:0000:0000:") ||
+      ipv6.startsWith("0:0:0:0:0:0:")
     ) {
       return true;
+    }
+
+    // Detect IPv6-mapped IPv4 (::ffff:x.x.x.x) and check the embedded IPv4
+    const mappedMatch = ipv6.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (mappedMatch) {
+      return isPrivateUrl(`http://${mappedMatch[1]}/`);
     }
   }
 

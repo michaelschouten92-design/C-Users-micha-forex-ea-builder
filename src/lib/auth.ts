@@ -587,11 +587,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (trigger === "update" && updateData) {
         const data = updateData as Record<string, unknown>;
 
-        // Start impersonation
+        // Start impersonation (capped at 1 hour)
         if (data.impersonate && typeof data.impersonate === "object") {
           const imp = data.impersonate as { userId: string; email: string };
           token.impersonatorId = token.id as string;
           token.impersonatingEmail = imp.email;
+          token.impersonationStartedAt = Math.floor(Date.now() / 1000);
           token.id = imp.userId;
         }
 
@@ -600,6 +601,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.id = token.impersonatorId;
           delete token.impersonatorId;
           delete token.impersonatingEmail;
+          delete token.impersonationStartedAt;
+        }
+      }
+
+      // Auto-expire impersonation after 1 hour
+      if (token.impersonatorId && token.impersonationStartedAt) {
+        const IMPERSONATION_MAX_AGE = 60 * 60; // 1 hour in seconds
+        const elapsed = Math.floor(Date.now() / 1000) - (token.impersonationStartedAt as number);
+        if (elapsed > IMPERSONATION_MAX_AGE) {
+          authLog.info(
+            { impersonatorId: token.impersonatorId, impersonatingEmail: token.impersonatingEmail },
+            "Impersonation session expired after 1 hour"
+          );
+          token.id = token.impersonatorId;
+          delete token.impersonatorId;
+          delete token.impersonatingEmail;
+          delete token.impersonationStartedAt;
         }
       }
 
@@ -620,6 +638,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               // Password was changed after this token was issued — destroy session
               return null as unknown as typeof token;
             }
+          }
+          // Destroy session if user is suspended
+          if (dbUser?.suspended) {
+            return null as unknown as typeof token;
           }
           // Store role, suspended, and emailVerified status in token
           if (dbUser) {
