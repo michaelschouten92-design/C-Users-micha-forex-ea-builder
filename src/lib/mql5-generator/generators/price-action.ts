@@ -606,6 +606,24 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
               );
               code.onTick.push(`   ${varPrefix}SellSignal = true;`);
               break;
+
+            case "HARAMI_BULLISH":
+              code.onTick.push(
+                `// Bullish Harami: small bullish candle 1 contained within bearish candle 2`
+              );
+              code.onTick.push(
+                `if(${varPrefix}C2 < ${varPrefix}O2 && ${varPrefix}Body2 >= ${varPrefix}MinBody && ${varPrefix}C1 > ${varPrefix}O1 && ${varPrefix}O1 >= ${varPrefix}C2 && ${varPrefix}C1 <= ${varPrefix}O2) ${varPrefix}BuySignal = true;`
+              );
+              break;
+
+            case "HARAMI_BEARISH":
+              code.onTick.push(
+                `// Bearish Harami: small bearish candle 1 contained within bullish candle 2`
+              );
+              code.onTick.push(
+                `if(${varPrefix}C2 > ${varPrefix}O2 && ${varPrefix}Body2 >= ${varPrefix}MinBody && ${varPrefix}C1 < ${varPrefix}O1 && ${varPrefix}O1 <= ${varPrefix}C2 && ${varPrefix}C1 >= ${varPrefix}O2) ${varPrefix}SellSignal = true;`
+              );
+              break;
           }
         }
 

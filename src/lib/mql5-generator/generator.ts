@@ -294,6 +294,8 @@ export function generateMQL5Code(
   const timeExitNodes: BuilderNode[] = [];
   const gridPyramidNodes: BuilderNode[] = [];
   const maxSpreadNodes: BuilderNode[] = [];
+  const stopLossNodes: BuilderNode[] = [];
+  const takeProfitNodes: BuilderNode[] = [];
 
   for (const n of buildJson.nodes) {
     const nodeType = n.type as string;
@@ -344,6 +346,16 @@ export function generateMQL5Code(
       ("tradingType" in data && data.tradingType === "close-condition")
     ) {
       closeConditionNodes.push(n);
+    } else if (
+      nodeType === "stop-loss" ||
+      ("tradingType" in data && data.tradingType === "stop-loss")
+    ) {
+      stopLossNodes.push(n);
+    } else if (
+      nodeType === "take-profit" ||
+      ("tradingType" in data && data.tradingType === "take-profit")
+    ) {
+      takeProfitNodes.push(n);
     } else if (
       nodeType === "time-exit" ||
       ("tradingType" in data && data.tradingType === "time-exit")
@@ -817,9 +829,12 @@ export function generateMQL5Code(
     group: "Risk Management",
   });
 
-  // Generate SL/TP code FIRST (so hasDirectionalSL is set before lot sizing)
+  // Generate SL/TP code FIRST (so hasDirectionalSL is set before lot sizing).
+  // Standalone SL/TP nodes take priority over embedded fields in buy/sell nodes.
   const slTpSource = placeBuyNodes[0] ?? placeSellNodes[0];
-  if (slTpSource) {
+  if (stopLossNodes.length > 0) {
+    generateStopLossCode(stopLossNodes[0], indicatorNodes, buildJson.edges, code, priceActionNodes);
+  } else if (slTpSource) {
     const slTpData = slTpSource.data as PlaceBuyNodeData;
     generateStopLossFromBuySell(
       slTpData,
@@ -833,7 +848,9 @@ export function generateMQL5Code(
     code.onTick.push("double slPips = 0;");
   }
 
-  if (slTpSource) {
+  if (takeProfitNodes.length > 0) {
+    generateTakeProfitCode(takeProfitNodes[0], code);
+  } else if (slTpSource) {
     const tpData = slTpSource.data as PlaceBuyNodeData;
     generateTakeProfitFromBuySell(tpData, code, slTpSource);
   } else {

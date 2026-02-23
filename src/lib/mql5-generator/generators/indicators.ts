@@ -16,7 +16,7 @@ import type {
 } from "@/types/builder";
 import type { GeneratedCode } from "../types";
 import { MA_METHOD_MAP, APPLIED_PRICE_MAP, getTimeframeEnum } from "../types";
-import { createInput, sanitizeMQL5String } from "./shared";
+import { createInput, sanitizeMQL5String, sanitizeName } from "./shared";
 
 // Helper to add handle validation after creation.
 // Note: MQL5 calls OnDeinit even when OnInit returns INIT_FAILED,
@@ -791,33 +791,79 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const safeName = sanitizeMQL5String(ci.indicatorName || "CustomIndicator");
         const bufferIdx = ci.bufferIndex ?? 0;
 
-        // Build iCustom parameter list with type-aware casting
-        const paramValues = (ci.params ?? []).map((p) => {
+        // Create input variables for each custom indicator parameter so they
+        // become individually optimizable in the MT5 strategy tester
+        const paramInputNames: string[] = [];
+        for (let pi = 0; pi < (ci.params ?? []).length; pi++) {
+          const p = ci.params[pi];
           const paramType = p.type ?? undefined;
+          const safeParamName = sanitizeName(p.name || `Param${pi}`);
+          const inputName = `InpCustom${index}P${pi}`;
+          const comment = `${safeName} ${safeParamName}`;
+
           if (paramType === "int") {
             const intVal = parseInt(p.value, 10);
-            return isNaN(intVal) ? "0" : `(int)${intVal}`;
-          }
-          if (paramType === "double") {
+            code.inputs.push(
+              createInput(
+                node,
+                `params.${pi}`,
+                inputName,
+                "int",
+                isNaN(intVal) ? 0 : intVal,
+                comment,
+                group
+              )
+            );
+            paramInputNames.push(inputName);
+          } else if (paramType === "double") {
             const dblVal = parseFloat(p.value);
-            return isNaN(dblVal) ? "0.0" : `(double)${dblVal}`;
-          }
-          if (paramType === "bool") {
+            code.inputs.push(
+              createInput(
+                node,
+                `params.${pi}`,
+                inputName,
+                "double",
+                isNaN(dblVal) ? 0.0 : dblVal,
+                comment,
+                group
+              )
+            );
+            paramInputNames.push(inputName);
+          } else if (paramType === "bool") {
             const lower = p.value.toLowerCase();
-            return lower === "true" || lower === "1" ? "true" : "false";
+            const boolVal = lower === "true" || lower === "1";
+            code.inputs.push(
+              createInput(node, `params.${pi}`, inputName, "bool", boolVal, comment, group)
+            );
+            paramInputNames.push(inputName);
+          } else if (paramType === "string") {
+            code.inputs.push(
+              createInput(node, `params.${pi}`, inputName, "string", p.value, comment, group)
+            );
+            paramInputNames.push(inputName);
+          } else if (paramType === "color") {
+            // Color has no dedicated OptimizableInput type; use string
+            const colorVal = p.value.trim() || "clrNONE";
+            code.inputs.push(
+              createInput(node, `params.${pi}`, inputName, "string", colorVal, comment, group)
+            );
+            paramInputNames.push(inputName);
+          } else {
+            // No type hint: auto-detect numeric vs string
+            const num = Number(p.value);
+            if (!isNaN(num) && p.value.trim() !== "") {
+              code.inputs.push(
+                createInput(node, `params.${pi}`, inputName, "double", num, comment, group)
+              );
+            } else {
+              code.inputs.push(
+                createInput(node, `params.${pi}`, inputName, "string", p.value, comment, group)
+              );
+            }
+            paramInputNames.push(inputName);
           }
-          if (paramType === "string") {
-            return `"${sanitizeMQL5String(p.value)}"`;
-          }
-          if (paramType === "color") {
-            return p.value.trim() || "clrNONE";
-          }
-          // No type hint: auto-detect
-          const num = Number(p.value);
-          if (!isNaN(num) && p.value.trim() !== "") return String(num);
-          return `"${sanitizeMQL5String(p.value)}"`;
-        });
-        const paramList = paramValues.length > 0 ? ", " + paramValues.join(", ") : "";
+        }
+        const paramList = paramInputNames.length > 0 ? ", " + paramInputNames.join(", ") : "";
 
         code.inputs.push(
           createInput(
@@ -922,6 +968,22 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const resetPeriod = vwap.resetPeriod ?? "daily";
         const group = `VWAP ${index + 1}`;
 
+        // Map resetPeriod string to integer for optimizable input (0=daily, 1=weekly, 2=monthly)
+        let resetPeriodInt = 0;
+        if (resetPeriod === "weekly") resetPeriodInt = 1;
+        else if (resetPeriod === "monthly") resetPeriodInt = 2;
+
+        code.inputs.push(
+          createInput(
+            node,
+            "resetPeriod",
+            `InpVWAP${index}ResetPeriod`,
+            "int",
+            resetPeriodInt,
+            `VWAP ${index + 1} Reset Period (0=Daily, 1=Weekly, 2=Monthly)`,
+            group
+          )
+        );
         code.inputs.push(
           createInput(
             node,
@@ -939,16 +1001,14 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}SumVol = 0;`);
         code.globalVariables.push(`datetime ${varPrefix}ResetTime = 0;`);
 
-        // Determine reset timeframe
-        let resetTf = "PERIOD_D1";
-        if (resetPeriod === "weekly") resetTf = "PERIOD_W1";
-        else if (resetPeriod === "monthly") resetTf = "PERIOD_MN1";
-
-        // Calculate VWAP manually in OnTick
-        code.onTick.push(`// VWAP calculation (${resetPeriod} reset)`);
+        // Calculate VWAP manually in OnTick with runtime-selectable reset period
+        code.onTick.push(`// VWAP calculation (reset period: 0=daily, 1=weekly, 2=monthly)`);
         code.onTick.push(`{`);
         code.onTick.push(`   ENUM_TIMEFRAMES vwapTf = (ENUM_TIMEFRAMES)InpVWAP${index}Timeframe;`);
-        code.onTick.push(`   datetime barTime = iTime(_Symbol, ${resetTf}, 0);`);
+        code.onTick.push(
+          `   ENUM_TIMEFRAMES resetTf = (InpVWAP${index}ResetPeriod == 2) ? PERIOD_MN1 : (InpVWAP${index}ResetPeriod == 1) ? PERIOD_W1 : PERIOD_D1;`
+        );
+        code.onTick.push(`   datetime barTime = iTime(_Symbol, resetTf, 0);`);
         code.onTick.push(`   if(barTime != ${varPrefix}ResetTime)`);
         code.onTick.push(`   {`);
         code.onTick.push(`      ${varPrefix}SumVP = 0;`);

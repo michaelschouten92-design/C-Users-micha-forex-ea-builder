@@ -136,14 +136,78 @@ export function generateCloseConditionCode(
           );
           break;
 
-        case "ichimoku":
-          // Close buy on bearish crossover (Tenkan crosses below Kijun)
+        case "ichimoku": {
+          const ichiMode =
+            ("ichimokuMode" in indData ? indData.ichimokuMode : "TENKAN_KIJUN_CROSS") ??
+            "TENKAN_KIJUN_CROSS";
+
+          // Tenkan/Kijun cross reversal conditions
+          const tkCloseBuy = `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`;
+          const tkCloseSell = `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`;
+
+          // Price vs cloud conditions: exit buy when price below cloud, exit sell when price above cloud
+          const cloudCloseBuy = `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
+          const cloudCloseSell = `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanABuffer[${0 + s}]) && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}SpanBBuffer[${0 + s}]))`;
+
+          if (ichiMode === "TENKAN_KIJUN_CROSS") {
+            // Close buy on bearish crossover (Tenkan crosses below Kijun)
+            closeBuyConditions.push(tkCloseBuy);
+            // Close sell on bullish crossover (Tenkan crosses above Kijun)
+            closeSellConditions.push(tkCloseSell);
+          } else if (ichiMode === "PRICE_CLOUD") {
+            // Close buy when price drops below cloud
+            closeBuyConditions.push(cloudCloseBuy);
+            // Close sell when price rises above cloud
+            closeSellConditions.push(cloudCloseSell);
+          } else {
+            // FULL: close on TK cross reversal OR price exits cloud
+            closeBuyConditions.push(`(${tkCloseBuy} || ${cloudCloseBuy})`);
+            closeSellConditions.push(`(${tkCloseSell} || ${cloudCloseSell})`);
+          }
+          break;
+        }
+
+        case "obv":
+          // Close buy when OBV crosses below its signal MA (momentum fading)
           closeBuyConditions.push(
-            `(DoubleGE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleLT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`
+            `(DoubleGE(${varPrefix}Buffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
           );
-          // Close sell on bullish crossover (Tenkan crosses above Kijun)
+          // Close sell when OBV crosses above its signal MA (downward momentum fading)
           closeSellConditions.push(
-            `(DoubleLE(${varPrefix}TenkanBuffer[${1 + s}], ${varPrefix}KijunBuffer[${1 + s}]) && DoubleGT(${varPrefix}TenkanBuffer[${0 + s}], ${varPrefix}KijunBuffer[${0 + s}]))`
+            `(DoubleLE(${varPrefix}Buffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+          );
+          break;
+
+        case "vwap":
+          // Close buy when price crosses below VWAP
+          closeBuyConditions.push(
+            `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+          );
+          // Close sell when price crosses above VWAP
+          closeSellConditions.push(
+            `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+          );
+          break;
+
+        case "bb-squeeze":
+          // Close buy when squeeze fires with bearish momentum (price below BB middle)
+          closeBuyConditions.push(
+            `(${varPrefix}WasSqueeze && !${varPrefix}InSqueeze && DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}BBMiddle[${0 + s}]))`
+          );
+          // Close sell when squeeze fires with bullish momentum (price above BB middle)
+          closeSellConditions.push(
+            `(${varPrefix}WasSqueeze && !${varPrefix}InSqueeze && DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}BBMiddle[${0 + s}]))`
+          );
+          break;
+
+        case "custom-indicator":
+          // Close buy when buffer value is falling (current < previous)
+          closeBuyConditions.push(
+            `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+          );
+          // Close sell when buffer value is rising (current > previous)
+          closeSellConditions.push(
+            `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
           );
           break;
       }
