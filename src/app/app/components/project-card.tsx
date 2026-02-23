@@ -201,7 +201,7 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
           <div
             role="menu"
-            className="absolute right-4 mt-[-60px] bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]"
+            className="absolute right-4 bottom-full mb-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]"
           >
             <button
               role="menuitem"
@@ -315,6 +315,8 @@ export function ProjectCard({ project }: { project: Project }) {
       {/* Duplicate Confirmation Modal */}
       {showDuplicateConfirm && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowDuplicateConfirm(false)}
         >
@@ -376,6 +378,8 @@ export function ProjectCard({ project }: { project: Project }) {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowDeleteConfirm(false)}
         >

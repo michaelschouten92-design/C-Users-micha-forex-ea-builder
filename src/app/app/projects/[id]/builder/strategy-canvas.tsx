@@ -1161,6 +1161,20 @@ export function StrategyCanvas({
         {/* Mobile properties panel - slide up from bottom */}
         {selectedNode && (
           <div className="md:hidden fixed inset-x-0 bottom-12 z-30 max-h-[60vh] bg-[#1A0626] border-t border-[rgba(79,70,229,0.3)] rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.5)] overflow-y-auto">
+            <button
+              onClick={() => setNodes((nds) => nds.map((n) => ({ ...n, selected: false })))}
+              className="absolute top-2 right-2 z-40 p-1.5 rounded-full bg-[rgba(79,70,229,0.2)] text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.4)] transition-colors"
+              aria-label="Close properties panel"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
             <PanelErrorBoundary>
               <PropertiesPanel
                 selectedNode={selectedNode as Node<BuilderNodeData> | null}

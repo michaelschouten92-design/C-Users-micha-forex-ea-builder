@@ -477,12 +477,23 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       {/* Results */}
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-[#7C8DB0]">
-          <p className="text-sm">No projects match &ldquo;{search}&rdquo;</p>
+          <p className="text-sm">
+            {search.trim() && selectedTags.size > 0 ? (
+              <>No projects match &ldquo;{search}&rdquo; and the selected tags</>
+            ) : selectedTags.size > 0 ? (
+              "No projects match the selected tags"
+            ) : (
+              <>No projects match &ldquo;{search}&rdquo;</>
+            )}
+          </p>
           <button
-            onClick={() => setSearch("")}
+            onClick={() => {
+              setSearch("");
+              setSelectedTags(new Set());
+            }}
             className="mt-2 text-xs text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
           >
-            Clear search
+            Clear all filters
           </button>
         </div>
       ) : (

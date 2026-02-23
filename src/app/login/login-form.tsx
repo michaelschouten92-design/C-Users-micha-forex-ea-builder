@@ -9,9 +9,11 @@ import Link from "next/link";
 function LoginFormInner({
   hasGoogle,
   captchaSiteKey,
+  referralCode,
 }: {
   hasGoogle: boolean;
   captchaSiteKey: string | null;
+  referralCode: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,11 +25,6 @@ function LoginFormInner({
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
 
-  // Read referral code from cookie (set by middleware on ?ref= visits)
-  const referralCode =
-    typeof document !== "undefined"
-      ? document.cookie.match(/referral_code=([^;]+)/)?.[1] || ""
-      : "";
   const banner = useMemo<{ type: "success" | "error"; message: string } | null>(() => {
     if (searchParams.get("verified") === "true")
       return { type: "success", message: "Email verified successfully! You can now sign in." };
@@ -51,7 +48,7 @@ function LoginFormInner({
   const captchaContainerRef = useRef<HTMLDivElement>(null);
 
   const renderCaptcha = useCallback(() => {
-    if (!captchaSiteKey || !isRegistration || !captchaContainerRef.current) return;
+    if (!captchaSiteKey || !captchaContainerRef.current) return;
     if (typeof window === "undefined" || !(window as unknown as Record<string, unknown>).turnstile)
       return;
 
@@ -73,7 +70,7 @@ function LoginFormInner({
       "expired-callback": () => setCaptchaToken(null),
       theme: "dark",
     });
-  }, [captchaSiteKey, isRegistration]);
+  }, [captchaSiteKey]);
 
   useEffect(() => {
     renderCaptcha();
@@ -84,8 +81,21 @@ function LoginFormInner({
     setError("");
 
     // Client-side validation
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password)
+    ) {
+      setError(
+        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number"
+      );
       return;
     }
 
@@ -109,7 +119,7 @@ function LoginFormInner({
 
     if (result?.error) {
       const ERROR_MESSAGES: Record<string, string> = {
-        account_exists: "An account with this email already exists. Please sign in instead.",
+        account_exists: "Unable to create account. Please try signing in instead.",
         invalid_credentials: "Invalid email or password.",
         password_too_short: "Password must be at least 8 characters.",
         rate_limited: "Too many attempts. Please try again later.",
@@ -281,7 +291,7 @@ function LoginFormInner({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-                placeholder="Minimum 8 characters"
+                placeholder="Min 8 chars, upper, lower & digit"
               />
               <button
                 type="button"
@@ -318,7 +328,8 @@ function LoginFormInner({
             </div>
             {isRegistration && (
               <p className="text-xs text-[#94A3B8] mt-1">
-                Must be at least 8 characters. Free plan: 1 project, 1 export/month.
+                Must be at least 8 characters with an uppercase letter, a lowercase letter, and a
+                number. Free plan: 1 project, 1 export/month.
               </p>
             )}
           </div>
@@ -342,8 +353,8 @@ function LoginFormInner({
             </div>
           )}
 
-          {/* Turnstile CAPTCHA for registration */}
-          {isRegistration && captchaSiteKey && (
+          {/* Turnstile CAPTCHA */}
+          {captchaSiteKey && (
             <>
               <Script
                 src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
@@ -397,9 +408,11 @@ function LoginFormInner({
 export function LoginForm({
   hasGoogle,
   captchaSiteKey,
+  referralCode,
 }: {
   hasGoogle: boolean;
   captchaSiteKey: string | null;
+  referralCode: string;
 }) {
   return (
     <div id="main-content" className="min-h-screen flex items-center justify-center">
@@ -413,7 +426,11 @@ export function LoginForm({
           </div>
         }
       >
-        <LoginFormInner hasGoogle={hasGoogle} captchaSiteKey={captchaSiteKey} />
+        <LoginFormInner
+          hasGoogle={hasGoogle}
+          captchaSiteKey={captchaSiteKey}
+          referralCode={referralCode}
+        />
       </Suspense>
     </div>
   );

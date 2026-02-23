@@ -99,8 +99,8 @@ export default async function DashboardPage() {
   const insights = generateDailyInsights(liveEAs, recentBacktests, projects.length);
   const portfolio = getPortfolioStatus(liveEAs, recentBacktests);
 
-  // Greeting based on time
-  const hour = new Date().getUTCHours();
+  // Greeting based on server local time
+  const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (

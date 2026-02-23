@@ -77,7 +77,7 @@ export function middleware(request: NextRequest) {
     response.cookies.set("referral_code", refCode, {
       maxAge: 30 * 86400, // 30 days
       path: "/",
-      httpOnly: false, // Readable by client-side JS to pass in signIn()
+      httpOnly: true, // Secure: not accessible to client-side JS; read server-side via cookies()
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });

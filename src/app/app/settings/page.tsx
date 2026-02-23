@@ -47,7 +47,26 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-2xl w-full px-4 sm:px-6 space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 animate-pulse"
+            >
+              <div className="h-5 bg-[#1E293B] rounded w-1/3 mb-4" />
+              <div className="h-4 bg-[#1E293B] rounded w-2/3 mb-3" />
+              <div className="h-10 bg-[#1E293B] rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

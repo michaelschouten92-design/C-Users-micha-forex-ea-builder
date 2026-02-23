@@ -715,6 +715,27 @@ export function VersionControls({
         </div>
       )}
 
+      {/* Version not found message */}
+      {!diff && diffVersions && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6 text-center"
+          >
+            <p className="text-sm text-[#94A3B8] mb-4">
+              Version not found. One or both selected versions may have been deleted.
+            </p>
+            <button
+              onClick={() => setDiffVersions(null)}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Version Diff Modal */}
       {diff && diffVersions && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">

@@ -24,16 +24,28 @@ interface ReferralData {
 }
 
 export function ReferralsSection() {
-  const { data, isLoading } = useSWR<ReferralData>("/api/referrals", fetcher);
+  const { data, isLoading, error } = useSWR<ReferralData>("/api/referrals", fetcher);
   const [copied, setCopied] = useState(false);
 
   const referralLink = data?.referralCode ? `https://algostudio.io/?ref=${data.referralCode}` : "";
 
   async function handleCopy() {
     if (!referralLink) return;
-    await navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select text from a temporary input for manual copy
+      const input = document.createElement("input");
+      input.value = referralLink;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   function handleShareTwitter() {
@@ -65,6 +77,17 @@ export function ReferralsSection() {
         <div className="h-5 bg-[#1E293B] rounded w-1/3 mb-4" />
         <div className="h-4 bg-[#1E293B] rounded w-2/3 mb-3" />
         <div className="h-10 bg-[#1E293B] rounded w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-[#1A0626] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-2">Referral Program</h2>
+        <p className="text-sm text-[#EF4444]">
+          Failed to load referral data. Please try again later.
+        </p>
       </div>
     );
   }

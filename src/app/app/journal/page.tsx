@@ -574,8 +574,9 @@ export default function JournalPage() {
 
         {/* Journal Table */}
         {loading ? (
-          <div className="flex items-center justify-center h-48">
+          <div className="flex flex-col items-center justify-center h-48 gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4F46E5]" />
+            <p className="text-sm text-[#7C8DB0]">Loading...</p>
           </div>
         ) : entries.length === 0 ? (
           <div className="text-center py-16">

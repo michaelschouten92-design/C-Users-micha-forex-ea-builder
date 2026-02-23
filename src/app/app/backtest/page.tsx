@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { toast } from "sonner";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 // ============================================
 // Types
@@ -138,6 +139,7 @@ export default function BacktestPage() {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisData | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: listData, mutate } = useSWR<{
     data: BacktestListItem[];
@@ -168,6 +170,7 @@ export default function BacktestPage() {
 
         const res = await fetch("/api/backtest/upload", {
           method: "POST",
+          headers: { ...getCsrfHeaders() },
           body: formData,
         });
 
@@ -217,8 +220,12 @@ export default function BacktestPage() {
   const handleDelete = async (runId: string) => {
     if (!confirm("Delete this backtest analysis?")) return;
 
+    setDeletingId(runId);
     try {
-      const res = await fetch(`/api/backtest/${runId}`, { method: "DELETE" });
+      const res = await fetch(`/api/backtest/${runId}`, {
+        method: "DELETE",
+        headers: { ...getCsrfHeaders() },
+      });
       if (res.ok) {
         toast.success("Backtest deleted");
         mutate();
@@ -231,6 +238,8 @@ export default function BacktestPage() {
       }
     } catch {
       toast.error("Failed to delete");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -241,6 +250,7 @@ export default function BacktestPage() {
     try {
       const res = await fetch(`/api/backtest/${result.runId}/analyze`, {
         method: "POST",
+        headers: { ...getCsrfHeaders() },
       });
 
       const data = await res.json();
@@ -591,9 +601,31 @@ export default function BacktestPage() {
                     {item.runId && (
                       <button
                         onClick={() => handleDelete(item.runId!)}
-                        className="text-xs text-[#7C8DB0] hover:text-[#EF4444] transition-colors"
+                        disabled={deletingId === item.runId}
+                        className="text-xs text-[#7C8DB0] hover:text-[#EF4444] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Delete
+                        {deletingId === item.runId ? (
+                          <span className="flex items-center gap-1">
+                            <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            Deleting...
+                          </span>
+                        ) : (
+                          "Delete"
+                        )}
                       </button>
                     )}
                   </div>

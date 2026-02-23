@@ -17,15 +17,20 @@ export function DiscordSection() {
   const [status, setStatus] = useState<DiscordStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [unlinking, setUnlinking] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch("/api/discord/status")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data: DiscordStatus) => {
         setStatus(data);
         setLoading(false);
       })
       .catch(() => {
+        setFetchError(true);
         setLoading(false);
       });
   }, []);
@@ -90,6 +95,14 @@ export function DiscordSection() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="bg-[#1A0626] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
+        <p className="text-sm text-[#EF4444]">Failed to load Discord status</p>
+      </div>
+    );
+  }
+
   // Hide section entirely if Discord is not enabled
   if (!status?.enabled) {
     return null;
@@ -110,7 +123,9 @@ export function DiscordSection() {
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
             <span className="text-sm text-[#94A3B8]">Discord connected</span>
             {status.discordId && (
-              <span className="text-xs text-[#7C8DB0]">({status.discordId})</span>
+              <span className="text-xs text-[#7C8DB0] truncate max-w-[200px] inline-block align-bottom">
+                ({status.discordId})
+              </span>
             )}
           </div>
 

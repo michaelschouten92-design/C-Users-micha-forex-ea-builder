@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
 export function EmailVerificationBanner() {
   const [sending, setSending] = useState(false);
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("emailVerificationDismissed") === "true";
+  const [cooldown, setCooldown] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Read localStorage after mount to avoid SSR hydration mismatch
+  useEffect(() => {
+    if (localStorage.getItem("emailVerificationDismissed") === "true") {
+      setDismissed(true);
     }
-    return false;
-  });
+  }, []);
 
   if (dismissed) return null;
 
   async function handleResend() {
+    if (cooldown > 0) return;
     setSending(true);
     try {
       const res = await fetch("/api/auth/resend-verification", {
@@ -24,6 +28,16 @@ export function EmailVerificationBanner() {
       });
       if (res.ok) {
         showSuccess("Verification email sent! Check your inbox.");
+        setCooldown(60);
+        const interval = setInterval(() => {
+          setCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       } else {
         const data = await res.json();
         showError(data.error || "Failed to send verification email");
@@ -58,10 +72,10 @@ export function EmailVerificationBanner() {
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={handleResend}
-          disabled={sending}
+          disabled={sending || cooldown > 0}
           className="text-xs text-[#FBBF24] hover:text-white border border-[rgba(251,191,36,0.3)] px-3 py-1.5 rounded-lg hover:bg-[rgba(251,191,36,0.1)] disabled:opacity-50 transition-all"
         >
-          {sending ? "Sending..." : "Resend"}
+          {sending ? "Sending..." : cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"}
         </button>
         <button
           onClick={() => {

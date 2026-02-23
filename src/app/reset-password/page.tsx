@@ -9,7 +9,13 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const tokenRef = useRef(searchParams.get("token"));
 
-  // Strip token from URL to prevent leakage via browser history / referrer
+  // Strip token from URL to prevent leakage via browser history / referrer.
+  // KNOWN LIMITATION (H5): The token is briefly visible in the URL bar between
+  // initial page load and this replaceState call. This is an inherent limitation
+  // of token-in-URL password reset flows. The risk is mitigated because:
+  // 1. replaceState runs immediately on mount (single render cycle)
+  // 2. The token is short-lived and single-use on the server
+  // 3. Referrer-Policy headers should prevent leakage to third parties
   useEffect(() => {
     if (tokenRef.current && window.location.search.includes("token=")) {
       window.history.replaceState({}, "", window.location.pathname);
@@ -28,8 +34,15 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password)
+    ) {
+      setError(
+        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number"
+      );
       return;
     }
 
@@ -118,9 +131,11 @@ function ResetPasswordForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
-          placeholder="Minimum 8 characters"
+          placeholder="Min 8 chars, upper, lower & digit"
         />
-        <p className="text-[10px] text-[#64748B] mt-1">Must be at least 8 characters</p>
+        <p className="text-[10px] text-[#64748B] mt-1">
+          Must be at least 8 characters with an uppercase letter, a lowercase letter, and a number
+        </p>
       </div>
 
       <div>
@@ -154,7 +169,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div className="max-w-md w-full space-y-8 p-4 sm:p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div>
           <h2 className="text-center text-3xl font-bold text-white">Set New Password</h2>
           <p className="mt-2 text-center text-sm text-[#94A3B8]">Enter your new password below</p>

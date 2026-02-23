@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { showError } from "@/lib/toast";
 
 export function PushNotificationToggle() {
   const [supported, setSupported] = useState(false);
@@ -81,7 +82,7 @@ export function PushNotificationToggle() {
         setSubscribed(true);
       }
     } catch {
-      // Silently fail
+      showError("Failed to update push notification settings");
     } finally {
       setLoading(false);
     }
