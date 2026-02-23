@@ -1,5 +1,7 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Discord from "next-auth/providers/discord";
+import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
@@ -18,6 +20,8 @@ import {
 } from "./email";
 import { verifyCaptcha } from "./turnstile";
 import { randomBytes, createHash } from "crypto";
+import { encrypt } from "./crypto";
+import { onboardDiscordUser } from "./discord";
 import { logger } from "./logger";
 import type { Provider } from "next-auth/providers";
 
@@ -79,6 +83,29 @@ if (features.googleAuth) {
     Google({
       clientId: env.AUTH_GOOGLE_ID!,
       clientSecret: env.AUTH_GOOGLE_SECRET!,
+    })
+  );
+}
+
+// Only add Discord if credentials are configured
+if (features.discordAuth) {
+  providers.push(
+    Discord({
+      clientId: env.DISCORD_CLIENT_ID!,
+      clientSecret: env.DISCORD_CLIENT_SECRET!,
+      authorization: {
+        params: { scope: "identify email guilds.join" },
+      },
+    })
+  );
+}
+
+// Only add GitHub if credentials are configured
+if (features.githubAuth) {
+  providers.push(
+    GitHub({
+      clientId: env.AUTH_GITHUB_ID!,
+      clientSecret: env.AUTH_GITHUB_SECRET!,
     })
   );
 }
@@ -379,6 +406,179 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         // Store the database user ID for the jwt callback
+        user.id = existingUser.id;
+      }
+
+      // Handle Discord OAuth sign-in: create or link user, join guild, sync roles
+      if (account?.provider === "discord") {
+        if (!user.email) {
+          authLog.error({ provider: account.provider }, "OAuth sign-in rejected: no email");
+          return false;
+        }
+
+        const normalizedEmail = normalizeEmail(user.email);
+        const authProviderId = `${account.provider}_${account.providerAccountId}`;
+
+        let existingUser = await prisma.user.findUnique({
+          where: { authProviderId },
+        });
+
+        if (!existingUser) {
+          existingUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          });
+
+          if (existingUser) {
+            authLog.warn(
+              { email: normalizedEmail.substring(0, 3) + "***", provider: account.provider },
+              "OAuth sign-in rejected: email already linked to another account"
+            );
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
+            return false;
+          } else {
+            const oauthReferralCode = randomBytes(6)
+              .toString("base64url")
+              .replace(/[^a-zA-Z0-9]/g, "")
+              .slice(0, 8)
+              .toUpperCase();
+
+            let oauthReferredBy: string | undefined;
+            try {
+              const { cookies: getCookies } = await import("next/headers");
+              const cookieStore = await getCookies();
+              const refCookie = cookieStore.get("referral_code")?.value;
+              if (refCookie) {
+                const referrer = await prisma.user.findFirst({
+                  where: { referralCode: refCookie },
+                  select: { email: true, referralCode: true },
+                });
+                if (referrer && referrer.email !== normalizedEmail) {
+                  oauthReferredBy = referrer.referralCode!;
+                }
+              }
+            } catch {
+              // Cookie reading may fail in edge cases — continue without referral
+            }
+
+            existingUser = await prisma.user.create({
+              data: {
+                email: normalizedEmail,
+                authProviderId,
+                emailVerified: true,
+                emailVerifiedAt: new Date(),
+                discordId: account.providerAccountId,
+                discordAccessToken: account.access_token ? encrypt(account.access_token) : null,
+                discordRefreshToken: account.refresh_token ? encrypt(account.refresh_token) : null,
+                referralCode: oauthReferralCode,
+                referredBy: oauthReferredBy,
+                subscription: {
+                  create: {
+                    tier: "FREE",
+                  },
+                },
+              },
+            });
+
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
+            sendNewUserNotificationEmail(user.email, "discord").catch(() => {});
+          }
+        } else {
+          // Existing user — update Discord tokens and ID
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              discordId: account.providerAccountId,
+              discordAccessToken: account.access_token ? encrypt(account.access_token) : undefined,
+              discordRefreshToken: account.refresh_token
+                ? encrypt(account.refresh_token)
+                : undefined,
+            },
+          });
+        }
+
+        // Run Discord onboarding (guild join + role sync) in the background
+        const discordAccessToken = account.access_token;
+        if (discordAccessToken) {
+          onboardDiscordUser(existingUser.id, account.providerAccountId, discordAccessToken).catch(
+            () => {}
+          );
+        }
+
+        user.id = existingUser.id;
+      }
+
+      // Handle GitHub OAuth sign-in: create or link user
+      if (account?.provider === "github") {
+        if (!user.email) {
+          authLog.error({ provider: account.provider }, "OAuth sign-in rejected: no email");
+          return false;
+        }
+
+        const normalizedEmail = normalizeEmail(user.email);
+        const authProviderId = `${account.provider}_${account.providerAccountId}`;
+
+        let existingUser = await prisma.user.findUnique({
+          where: { authProviderId },
+        });
+
+        if (!existingUser) {
+          existingUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          });
+
+          if (existingUser) {
+            authLog.warn(
+              { email: normalizedEmail.substring(0, 3) + "***", provider: account.provider },
+              "OAuth sign-in rejected: email already linked to another account"
+            );
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
+            return false;
+          } else {
+            const oauthReferralCode = randomBytes(6)
+              .toString("base64url")
+              .replace(/[^a-zA-Z0-9]/g, "")
+              .slice(0, 8)
+              .toUpperCase();
+
+            let oauthReferredBy: string | undefined;
+            try {
+              const { cookies: getCookies } = await import("next/headers");
+              const cookieStore = await getCookies();
+              const refCookie = cookieStore.get("referral_code")?.value;
+              if (refCookie) {
+                const referrer = await prisma.user.findFirst({
+                  where: { referralCode: refCookie },
+                  select: { email: true, referralCode: true },
+                });
+                if (referrer && referrer.email !== normalizedEmail) {
+                  oauthReferredBy = referrer.referralCode!;
+                }
+              }
+            } catch {
+              // Cookie reading may fail in edge cases — continue without referral
+            }
+
+            existingUser = await prisma.user.create({
+              data: {
+                email: normalizedEmail,
+                authProviderId,
+                emailVerified: true,
+                emailVerifiedAt: new Date(),
+                referralCode: oauthReferralCode,
+                referredBy: oauthReferredBy,
+                subscription: {
+                  create: {
+                    tier: "FREE",
+                  },
+                },
+              },
+            });
+
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
+            sendNewUserNotificationEmail(user.email, "github").catch(() => {});
+          }
+        }
+
         user.id = existingUser.id;
       }
 

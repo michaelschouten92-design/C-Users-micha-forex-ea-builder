@@ -8,6 +8,8 @@ import { buildNaturalLanguageSummary } from "../strategy-summary";
 import type {
   BuilderNodeData,
   TradingSessionNodeData,
+  AlwaysNodeData,
+  CustomTimesNodeData,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   VolumeFilterNodeData,
@@ -49,6 +51,8 @@ import type {
 
 import {
   TradingSessionFields,
+  AlwaysFields,
+  CustomTimesFields,
   MaxSpreadFields,
   VolatilityFilterFields,
   VolumeFilterFields,
@@ -398,14 +402,10 @@ function NodeFields({
     switch (data.timingType) {
       case "trading-session":
         return <TradingSessionFields data={data as TradingSessionNodeData} onChange={onChange} />;
+      case "always":
+        return <AlwaysFields data={data as AlwaysNodeData} onChange={onChange} />;
       case "custom-times":
-        // Backwards compat: legacy custom-times nodes render with TradingSessionFields
-        return (
-          <TradingSessionFields
-            data={data as unknown as TradingSessionNodeData}
-            onChange={onChange}
-          />
-        );
+        return <CustomTimesFields data={data as CustomTimesNodeData} onChange={onChange} />;
     }
   }
 

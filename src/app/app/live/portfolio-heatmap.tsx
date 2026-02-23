@@ -1,7 +1,19 @@
 "use client";
 
+import useSWR from "swr";
+import { fetcher } from "@/lib/swr";
+
 // ============================================
-// STATIC FOREX CORRELATION DATA
+// TYPES
+// ============================================
+
+interface CorrelationApiResponse {
+  matrix: number[][];
+  labels: string[];
+}
+
+// ============================================
+// STATIC FOREX CORRELATION DATA (fallback)
 // ============================================
 
 const FOREX_CORRELATIONS: Record<string, Record<string, number>> = {
@@ -140,10 +152,10 @@ const FOREX_CORRELATIONS: Record<string, Record<string, number>> = {
 };
 
 // ============================================
-// HELPER
+// HELPERS
 // ============================================
 
-function getCorrelation(sym1: string, sym2: string): number | null {
+function getStaticCorrelation(sym1: string, sym2: string): number | null {
   if (sym1 === sym2) return 1.0;
   const normalized1 = sym1.toUpperCase().replace(/[^A-Z]/g, "");
   const normalized2 = sym2.toUpperCase().replace(/[^A-Z]/g, "");
@@ -158,7 +170,6 @@ function correlationColor(value: number | null): string {
 
   const absVal = Math.abs(value);
 
-  // High correlation (absolute) = red/orange, low = green
   if (absVal >= 0.8) return "rgba(239,68,68,0.5)";
   if (absVal >= 0.6) return "rgba(245,158,11,0.4)";
   if (absVal >= 0.4) return "rgba(251,191,36,0.3)";
@@ -179,19 +190,28 @@ function correlationTextColor(value: number | null): string {
   return "#10B981";
 }
 
-// ============================================
-// COMPONENT
-// ============================================
-
-interface PortfolioHeatmapProps {
-  symbols: string[];
-  /** Optional: per-instance trade profit arrays keyed by symbol for live correlation calculation */
-  tradeDataBySymbol?: Record<string, number[]>;
+/**
+ * Build a lookup map from the API's matrix and labels so we can
+ * retrieve correlation by EA name pair in O(1).
+ */
+function buildApiCorrelationMap(
+  matrix: number[][],
+  labels: string[]
+): Record<string, Record<string, number>> {
+  const map: Record<string, Record<string, number>> = {};
+  for (let i = 0; i < labels.length; i++) {
+    const label = labels[i];
+    map[label] = {};
+    for (let j = 0; j < labels.length; j++) {
+      map[label][labels[j]] = matrix[i][j];
+    }
+  }
+  return map;
 }
 
 function computeLiveCorrelation(profits1: number[], profits2: number[]): number | null {
   const n = Math.min(profits1.length, profits2.length);
-  if (n < 10) return null; // Need sufficient data
+  if (n < 10) return null;
 
   const arr1 = profits1.slice(0, n);
   const arr2 = profits2.slice(0, n);
@@ -216,17 +236,48 @@ function computeLiveCorrelation(profits1: number[], profits2: number[]): number 
   return cov / denom;
 }
 
+// ============================================
+// COMPONENT
+// ============================================
+
+interface PortfolioHeatmapProps {
+  symbols: string[];
+  /** Optional: per-instance trade profit arrays keyed by symbol for live correlation calculation */
+  tradeDataBySymbol?: Record<string, number[]>;
+}
+
 export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatmapProps) {
   const uniqueSymbols = [...new Set(symbols.map((s) => s.toUpperCase().replace(/[^A-Z]/g, "")))];
 
+  // Fetch live correlation data from the API
+  const { data: apiData, isLoading: apiLoading } = useSWR<CorrelationApiResponse>(
+    uniqueSymbols.length >= 2 ? "/api/live/correlation" : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
+
   if (uniqueSymbols.length < 2) return null;
 
-  const hasLiveData = tradeDataBySymbol && Object.keys(tradeDataBySymbol).length >= 2;
+  const hasApiData = apiData != null && apiData.labels.length >= 2 && apiData.matrix.length >= 2;
+  const apiCorrelationMap = hasApiData
+    ? buildApiCorrelationMap(apiData.matrix, apiData.labels)
+    : null;
+  const hasTradeData = tradeDataBySymbol != null && Object.keys(tradeDataBySymbol).length >= 2;
+
   const cellSize = Math.max(48, Math.min(72, 500 / uniqueSymbols.length));
 
-  // Determine correlation source
+  // Priority: API live data > tradeDataBySymbol prop > static fallback
   function getEffectiveCorrelation(sym1: string, sym2: string): number | null {
-    if (hasLiveData && tradeDataBySymbol) {
+    if (sym1 === sym2) return 1.0;
+
+    // 1. Try API correlation data (equity-return based, computed server-side)
+    if (apiCorrelationMap) {
+      const value = apiCorrelationMap[sym1]?.[sym2];
+      if (value !== undefined) return value;
+    }
+
+    // 2. Try client-side trade P&L correlation
+    if (hasTradeData && tradeDataBySymbol) {
       const data1 = tradeDataBySymbol[sym1];
       const data2 = tradeDataBySymbol[sym2];
       if (data1 && data2) {
@@ -234,29 +285,62 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
         if (liveCorr !== null) return liveCorr;
       }
     }
-    return getCorrelation(sym1, sym2);
+
+    // 3. Static historical averages
+    return getStaticCorrelation(sym1, sym2);
+  }
+
+  function renderDataSourceMessage(): React.ReactNode {
+    if (apiLoading) {
+      return <p className="text-xs text-[#7C8DB0] mb-4">Loading live correlation data...</p>;
+    }
+
+    if (hasApiData) {
+      return (
+        <p className="text-xs text-[#10B981] mb-4">
+          Correlations calculated from your live EA equity curves. Pairs not covered by live data
+          fall back to historical averages.
+        </p>
+      );
+    }
+
+    if (hasTradeData) {
+      return (
+        <p className="text-xs text-[#10B981] mb-4">
+          Correlations calculated from your actual trade P&L data where available, with historical
+          averages as fallback.
+        </p>
+      );
+    }
+
+    return (
+      <div className="mb-4">
+        <p className="text-xs text-[#7C8DB0] mb-1">
+          Correlations are approximate, based on historical averages for major forex pairs.
+        </p>
+        <p className="text-xs text-[#F59E0B]">
+          For live correlation data, connect your MT5 terminal or accumulate trade history across
+          multiple symbols. You can also use MT5&apos;s built-in correlation indicator for real-time
+          values.
+        </p>
+      </div>
+    );
+  }
+
+  function renderFootnote(): string {
+    if (hasApiData) {
+      return "Values are computed from your live EA equity return series. Pairs without sufficient heartbeat data use historical averages.";
+    }
+    if (hasTradeData) {
+      return "Values from your trade data are shown where sufficient history exists (10+ trades per pair). Others use historical averages.";
+    }
+    return "Note: These are static historical averages. Actual correlations vary with market conditions.";
   }
 
   return (
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
       <h3 className="text-lg font-semibold text-white mb-1">Portfolio Correlation</h3>
-      {hasLiveData ? (
-        <p className="text-xs text-[#10B981] mb-4">
-          Correlations calculated from your actual trade P&L data where available, with historical
-          averages as fallback.
-        </p>
-      ) : (
-        <div className="mb-4">
-          <p className="text-xs text-[#7C8DB0] mb-1">
-            Correlations are approximate, based on historical averages for major forex pairs.
-          </p>
-          <p className="text-xs text-[#F59E0B]">
-            For live correlation data, connect your MT5 terminal or accumulate trade history across
-            multiple symbols. You can also use MT5&apos;s built-in correlation indicator for
-            real-time values.
-          </p>
-        </div>
-      )}
+      {renderDataSourceMessage()}
 
       <div className="overflow-x-auto">
         <div className="inline-block">
@@ -347,10 +431,7 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
       </div>
 
       <p className="text-[10px] text-[#64748B] mt-2">
-        {hasLiveData
-          ? "Values from your trade data are shown where sufficient history exists (10+ trades per pair). Others use historical averages."
-          : "Note: These are static historical averages. Actual correlations vary with market conditions."}{" "}
-        High absolute correlation means overlapping risk exposure.
+        {renderFootnote()} High absolute correlation means overlapping risk exposure.
       </p>
     </div>
   );

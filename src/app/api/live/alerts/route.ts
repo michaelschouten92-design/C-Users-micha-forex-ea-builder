@@ -6,8 +6,16 @@ import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-const ALERT_TYPES = ["DRAWDOWN", "OFFLINE", "DAILY_LOSS", "NEW_TRADE", "ERROR"] as const;
-const CHANNELS = ["EMAIL", "WEBHOOK"] as const;
+const ALERT_TYPES = [
+  "DRAWDOWN",
+  "OFFLINE",
+  "DAILY_LOSS",
+  "NEW_TRADE",
+  "ERROR",
+  "WEEKLY_LOSS",
+  "EQUITY_TARGET",
+] as const;
+const CHANNELS = ["EMAIL", "WEBHOOK", "BROWSER_PUSH", "TELEGRAM"] as const;
 
 const createAlertSchema = z.object({
   instanceId: z.string().optional().nullable(),
@@ -125,7 +133,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // Validate threshold is required and must be > 0 for threshold-based alert types
-  const THRESHOLD_REQUIRED_TYPES = ["DRAWDOWN", "DAILY_LOSS"] as const;
+  const THRESHOLD_REQUIRED_TYPES = [
+    "DRAWDOWN",
+    "DAILY_LOSS",
+    "WEEKLY_LOSS",
+    "EQUITY_TARGET",
+  ] as const;
   if (
     (THRESHOLD_REQUIRED_TYPES as readonly string[]).includes(alertType) &&
     (threshold === null || threshold === undefined || threshold <= 0)
@@ -215,7 +228,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   const effectiveAlertType = updates.alertType ?? existing.alertType;
   const effectiveThreshold =
     updates.threshold !== undefined ? updates.threshold : existing.threshold;
-  const THRESHOLD_REQUIRED_UPDATE = ["DRAWDOWN", "DAILY_LOSS"];
+  const THRESHOLD_REQUIRED_UPDATE = ["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"];
   if (
     THRESHOLD_REQUIRED_UPDATE.includes(effectiveAlertType) &&
     (effectiveThreshold === null || effectiveThreshold === undefined || effectiveThreshold <= 0)

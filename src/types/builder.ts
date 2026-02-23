@@ -123,6 +123,7 @@ export interface VolumeFilterNodeData extends BaseNodeData {
 
 export type TimingNodeData =
   | TradingSessionNodeData
+  | AlwaysNodeData
   | CustomTimesNodeData
   | MaxSpreadNodeData
   | VolatilityFilterNodeData
@@ -830,6 +831,17 @@ export interface NodeTemplate {
 export const NODE_TEMPLATES: NodeTemplate[] = [
   // Timing (When to trade)
   {
+    type: "always",
+    label: "Always",
+    category: "timing",
+    description: "Trade at all times with no time restrictions",
+    defaultData: {
+      label: "Always",
+      category: "timing",
+      timingType: "always",
+    } as AlwaysNodeData,
+  },
+  {
     type: "trading-session",
     label: "Trading Sessions",
     category: "timing",
@@ -849,6 +861,29 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
         sunday: false,
       },
     } as TradingSessionNodeData,
+  },
+  {
+    type: "custom-times",
+    label: "Custom Times",
+    category: "timing",
+    description: "Define custom trading time slots and active days",
+    defaultData: {
+      label: "Custom Times",
+      category: "timing",
+      timingType: "custom-times",
+      days: {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false,
+      },
+      timeSlots: [{ startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
+      useServerTime: true,
+      closeOnSessionEnd: false,
+    } as CustomTimesNodeData,
   },
   {
     type: "max-spread",

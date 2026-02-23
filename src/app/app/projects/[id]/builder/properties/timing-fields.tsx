@@ -4,6 +4,9 @@ import { SelectField, NumberField, TimeField } from "../components/form-fields";
 import type {
   TradingSessionNodeData,
   TradingSession,
+  AlwaysNodeData,
+  CustomTimesNodeData,
+  TimeSlot,
   MaxSpreadNodeData,
   VolatilityFilterNodeData,
   VolumeFilterNodeData,
@@ -120,6 +123,165 @@ export function TradingSessionFields({
           clock.
         </div>
       )}
+    </>
+  );
+}
+
+export function AlwaysFields({
+  data,
+  onChange,
+}: {
+  data: AlwaysNodeData;
+  onChange: (updates: Partial<AlwaysNodeData>) => void;
+}) {
+  void onChange; // nothing to configure
+  void data;
+  return (
+    <div
+      className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+      role="note"
+    >
+      This node enables trading at all times with no time filter. The EA will evaluate entry
+      conditions on every tick regardless of the time of day or day of the week.
+    </div>
+  );
+}
+
+export function CustomTimesFields({
+  data,
+  onChange,
+}: {
+  data: CustomTimesNodeData;
+  onChange: (updates: Partial<CustomTimesNodeData>) => void;
+}) {
+  const timeSlots = data.timeSlots ?? [];
+
+  function handleSlotChange(index: number, field: keyof TimeSlot, value: number): void {
+    const updated = timeSlots.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot));
+    onChange({ timeSlots: updated });
+  }
+
+  function handleAddSlot(): void {
+    onChange({
+      timeSlots: [...timeSlots, { startHour: 8, startMinute: 0, endHour: 17, endMinute: 0 }],
+    });
+  }
+
+  function handleRemoveSlot(index: number): void {
+    onChange({ timeSlots: timeSlots.filter((_, i) => i !== index) });
+  }
+
+  return (
+    <>
+      <div className="space-y-3">
+        <span className="text-xs font-medium text-[#CBD5E1]">Time Slots</span>
+        {timeSlots.map((slot, index) => (
+          <div
+            key={index}
+            className="bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg p-3 space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-medium text-[#7C8DB0]">Slot {index + 1}</span>
+              {timeSlots.length > 1 && (
+                <button
+                  onClick={() => handleRemoveSlot(index)}
+                  className="text-[#EF4444] hover:text-[#F87171] p-0.5 rounded transition-colors"
+                  aria-label={`Remove time slot ${index + 1}`}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="flex items-end gap-2">
+              <TimeField
+                label="Start"
+                hour={slot.startHour}
+                minute={slot.startMinute}
+                onHourChange={(h) => handleSlotChange(index, "startHour", h)}
+                onMinuteChange={(m) => handleSlotChange(index, "startMinute", m)}
+              />
+              <span className="text-[#7C8DB0] text-xs pb-2">to</span>
+              <TimeField
+                label="End"
+                hour={slot.endHour}
+                minute={slot.endMinute}
+                onHourChange={(h) => handleSlotChange(index, "endHour", h)}
+                onMinuteChange={(m) => handleSlotChange(index, "endMinute", m)}
+              />
+            </div>
+          </div>
+        ))}
+        <button
+          onClick={handleAddSlot}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-[#22D3EE] bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] rounded-lg hover:bg-[rgba(34,211,238,0.15)] transition-colors"
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
+          </svg>
+          Add Time Slot
+        </button>
+      </div>
+      <TradingDaysCheckboxes
+        days={
+          data.days ?? {
+            monday: true,
+            tuesday: true,
+            wednesday: true,
+            thursday: true,
+            friday: true,
+            saturday: false,
+            sunday: false,
+          }
+        }
+        onChange={(days) => onChange({ days })}
+      />
+      <div className="mt-2 space-y-2">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.closeOnSessionEnd ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ closeOnSessionEnd: e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Close trades outside time slots
+        </label>
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!(data.useServerTime ?? true)}
+            onChange={(e) => {
+              e.stopPropagation();
+              onChange({ useServerTime: !e.target.checked });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#22D3EE] focus:ring-[#22D3EE]"
+          />
+          Use GMT time
+        </label>
+      </div>
     </>
   );
 }
