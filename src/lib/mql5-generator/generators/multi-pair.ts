@@ -157,7 +157,12 @@ function transformOnInit(code: GeneratedCode, handleNames: string[]): void {
   );
   result.push("      // Shift remaining symbols down to fill the gap");
   result.push("      for(int j = i; j < g_symbolCount - 1; j++)");
+  result.push("      {");
   result.push("         g_symbols[j] = g_symbols[j + 1];");
+  for (const h of handleNames) {
+    result.push(`         g_${h}[j] = g_${h}[j + 1];`);
+  }
+  result.push("      }");
   result.push("      g_symbolCount--;");
   result.push("   }");
   result.push("}");
@@ -204,6 +209,9 @@ function transformOnTick(code: GeneratedCode, handleNames: string[]): void {
 
     return t;
   });
+
+  // Compute symPipFactor per-symbol inside the OnTick for-loop
+  code.onTick.unshift("int symPipFactor = (symDigits == 3 || symDigits == 5) ? 10 : 1;");
 }
 
 /**
@@ -360,6 +368,50 @@ export function transformCodeForMultiPair(
 
   // 4. Transform OnTick (symbol references + function calls)
   transformOnTick(code, handleNames);
+
+  // 4b. Inject correlation filter check into OnTick (before entry logic)
+  if (settings.correlationFilter) {
+    const entryIdx = code.onTick.findIndex((l) => l.includes("Execute Entry"));
+    if (entryIdx >= 0) {
+      code.onTick.splice(
+        entryIdx,
+        0,
+        "//--- Correlation filter: skip if correlated with open positions",
+        "if(IsCorrelatedWithOpenPositions(tradeSym)) continue;"
+      );
+    }
+  }
+
+  // 4c. Transform ManageOpenPositions for multi-pair via global management context
+  code.globalVariables.push('string g_mgmtSym = "";');
+  code.globalVariables.push("double g_mgmtPoint = 0;");
+  code.globalVariables.push("int g_mgmtPipFactor = 0;");
+
+  code.onTick = code.onTick.map((line) => {
+    return line.replace(
+      /\bManageOpenPositions\(\)/g,
+      "{ g_mgmtSym = tradeSym; g_mgmtPoint = symPoint; g_mgmtPipFactor = symPipFactor; ManageOpenPositions(); }"
+    );
+  });
+
+  code.helperFunctions = code.helperFunctions.map((fn) => {
+    if (
+      !fn.includes("ManageOpenPositions") &&
+      !fn.includes("CheckBreakeven") &&
+      !fn.includes("CheckTrailing") &&
+      !fn.includes("CheckPartialClose") &&
+      !fn.includes("CheckLockProfit") &&
+      !fn.includes("CheckMultiLevelTP") &&
+      !fn.includes("SafePositionModify")
+    ) {
+      return fn;
+    }
+    let t = fn;
+    t = t.replace(/_Symbol/g, "g_mgmtSym");
+    t = t.replace(/\b_Point\b/g, "g_mgmtPoint");
+    t = t.replace(/\b_pipFactor\b/g, "g_mgmtPipFactor");
+    return t;
+  });
 
   // 5. Transform OnDeinit (handle release → per-symbol loop)
   transformOnDeinit(code, handleNames);

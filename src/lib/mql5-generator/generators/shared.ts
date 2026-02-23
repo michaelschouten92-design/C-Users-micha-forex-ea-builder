@@ -42,10 +42,18 @@ export function createInput(
   group?: string,
   alwaysVisible?: boolean
 ): OptimizableInput {
+  // Coerce undefined/null/NaN to safe defaults to prevent invalid MQL5 like `input int X = NaN;`
+  let safeValue: number | string | boolean = value;
+  if (safeValue === undefined || safeValue === null) {
+    safeValue = type === "string" ? "" : type === "bool" ? false : 0;
+  }
+  if (typeof safeValue === "number" && isNaN(safeValue)) {
+    safeValue = 0;
+  }
   return {
     name,
     type,
-    value,
+    value: safeValue,
     comment,
     isOptimizable: isFieldOptimizable(node, fieldName),
     group,

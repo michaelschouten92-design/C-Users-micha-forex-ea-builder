@@ -190,18 +190,6 @@ export function generatePriceActionCode(
 //+------------------------------------------------------------------+
 void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHour, int endMin, double &high, double &low, bool useGMT = false)
 {
-   // Cache: only recalculate when the daily bar changes (new session day)
-   static datetime lastSessionCalc = 0;
-   static double cachedHigh = 0;
-   static double cachedLow = 0;
-   datetime sessionDate = iTime(_Symbol, PERIOD_D1, 0);
-   if(sessionDate == lastSessionCalc && cachedHigh > 0)
-   {
-      high = cachedHigh;
-      low = cachedLow;
-      return;
-   }
-
    high = 0;
    low = DBL_MAX;
 
@@ -253,11 +241,6 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
 
    high = iHigh(_Symbol, tf, highestBar);
    low = iLow(_Symbol, tf, lowestBar);
-
-   // Update cache
-   cachedHigh = high;
-   cachedLow = low;
-   lastSessionCalc = sessionDate;
 }`);
           }
 
@@ -1011,7 +994,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`double ${varPrefix}Ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);`);
         code.onTick.push(`// Scan for bullish FVG: candle[i+2].high < candle[i].low`);
         code.onTick.push(
-          `for(int i = 0; i < InpFVG${index}MaxAge && !${varPrefix}BuySignal; i++) {`
+          `for(int i = 1; i < InpFVG${index}MaxAge && !${varPrefix}BuySignal; i++) {`
         );
         code.onTick.push(`   double highTwo = iHigh(_Symbol, ${fvgTf}, i + 2);`);
         code.onTick.push(`   double lowZero = iLow(_Symbol, ${fvgTf}, i);`);
@@ -1031,7 +1014,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`}`);
         code.onTick.push(`// Scan for bearish FVG: candle[i+2].low > candle[i].high`);
         code.onTick.push(
-          `for(int i = 0; i < InpFVG${index}MaxAge && !${varPrefix}SellSignal; i++) {`
+          `for(int i = 1; i < InpFVG${index}MaxAge && !${varPrefix}SellSignal; i++) {`
         );
         code.onTick.push(`   double lowTwo = iLow(_Symbol, ${fvgTf}, i + 2);`);
         code.onTick.push(`   double highZero = iHigh(_Symbol, ${fvgTf}, i);`);

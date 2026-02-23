@@ -206,6 +206,8 @@ function generateBreakevenStopCode(
     "//+------------------------------------------------------------------+",
     "void CheckBreakevenStop(ulong ticket, double openPrice, double currentSL, double positionProfit, long posType, double point)",
     "{",
+    "   if(point <= 0) return;",
+    "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
     "   double lockPoints = InpBELockPips * _pipFactor;",
     "",
     "   bool triggerReached = false;",
@@ -241,13 +243,13 @@ function generateBreakevenStopCode(
     "   {",
     "      if(posType == POSITION_TYPE_BUY)",
     "      {",
-    "         double newBE = openPrice + lockPoints * point;",
+    "         double newBE = NormalizeDouble(openPrice + lockPoints * point, digits);",
     "         if(currentSL < newBE)",
     "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
     "      }",
     "      else if(posType == POSITION_TYPE_SELL)",
     "      {",
-    "         double newBE = openPrice - lockPoints * point;",
+    "         double newBE = NormalizeDouble(openPrice - lockPoints * point, digits);",
     "         if(currentSL > newBE || currentSL == 0)",
     "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
     "      }",
@@ -354,6 +356,8 @@ function generateTrailingStopCode(
     "//+------------------------------------------------------------------+",
     "void CheckTrailingStop(ulong ticket, double openPrice, double currentSL, long posType, double point)",
     "{",
+    "   if(point <= 0) return;",
+    "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
     "   double startPoints = InpTrailStartPips * _pipFactor;",
   ];
 
@@ -380,7 +384,7 @@ function generateTrailingStopCode(
     "      double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);",
     "      if(bid >= openPrice + startPoints * point)",
     "      {",
-    "         double newSL = bid - trailPoints * point;",
+    "         double newSL = NormalizeDouble(bid - trailPoints * point, digits);",
     "         if(newSL > currentSL)",
     "         {",
     "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
@@ -392,7 +396,7 @@ function generateTrailingStopCode(
     "      double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);",
     "      if(ask <= openPrice - startPoints * point)",
     "      {",
-    "         double newSL = ask + trailPoints * point;",
+    "         double newSL = NormalizeDouble(ask + trailPoints * point, digits);",
     "         if(newSL < currentSL || currentSL == 0)",
     "         {",
     "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
@@ -528,7 +532,7 @@ void CleanPartialClosedTickets()
     "//+------------------------------------------------------------------+",
     "//| Check partial close for a single position                        |",
     "//+------------------------------------------------------------------+",
-    "void CheckPartialClose(ulong ticket, double openPrice, double volume, long posType, double point)",
+    `void CheckPartialClose${pcSuffix}(ulong ticket, double openPrice, double volume, long posType, double point)`,
     "{",
     "   bool profitReached = false;",
   ];
@@ -567,7 +571,7 @@ void CleanPartialClosedTickets()
     "   {",
     "      double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
     "      double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
-    "      double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;",
+    `      double closeVolume = MathFloor(volume * InpPartialClosePercent${pcSuffix} / 100.0 / pcLotStep) * pcLotStep;`,
     "      // Ensure remaining position meets minimum lot requirement",
     "      if(volume - closeVolume < pcMinLot) closeVolume = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
     "      if(closeVolume >= pcMinLot)",
@@ -590,18 +594,21 @@ void CleanPartialClosedTickets()
 
   if (data.moveSLToBreakeven) {
     fnLines.push(
-      "         // Move SL to breakeven after partial close",
-      "         if(posType == POSITION_TYPE_BUY)",
-      "            SafePositionModify(trade, ticket, openPrice, cachedTP);",
-      "         else",
-      "            SafePositionModify(trade, ticket, openPrice, cachedTP);"
+      "         // Move SL to breakeven after partial close (only if current SL is worse)",
+      "         double curSLpc = PositionGetDouble(POSITION_SL);",
+      "         if(posType == POSITION_TYPE_BUY && curSLpc < openPrice)",
+      "            SafePositionModify(trade, ticket, NormalizeDouble(openPrice, (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS)), cachedTP);",
+      "         else if(posType == POSITION_TYPE_SELL && (curSLpc > openPrice || curSLpc == 0))",
+      "            SafePositionModify(trade, ticket, NormalizeDouble(openPrice, (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS)), cachedTP);"
     );
   }
 
   fnLines.push("      }", "   }", "}");
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push("CheckPartialClose(ticket, openPrice, volume, posType, point);");
+  code._managementCalls!.push(
+    `CheckPartialClose${pcSuffix}(ticket, openPrice, volume, posType, point);`
+  );
 }
 
 function generateLockProfitCode(
@@ -654,6 +661,8 @@ function generateLockProfitCode(
     "//+------------------------------------------------------------------+",
     "void CheckLockProfit(ulong ticket, double openPrice, double currentSL, long posType, double point)",
     "{",
+    "   if(point <= 0) return;",
+    "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
     "   double checkPoints = InpLockCheckInterval * _pipFactor;",
     "",
     "   if(posType == POSITION_TYPE_BUY)",
@@ -673,7 +682,7 @@ function generateLockProfitCode(
   }
 
   fnLines.push(
-    "         double newSL = openPrice + lockPoints * point;",
+    "         double newSL = NormalizeDouble(openPrice + lockPoints * point, digits);",
     "         // Guard: SL must stay below bid to avoid immediate stop-out",
     "         if(newSL > currentSL && newSL < bid)",
     "         {",
@@ -698,7 +707,7 @@ function generateLockProfitCode(
   }
 
   fnLines.push(
-    "         double newSL = openPrice - lockPoints * point;",
+    "         double newSL = NormalizeDouble(openPrice - lockPoints * point, digits);",
     "         // Guard: SL must stay above ask to avoid immediate stop-out",
     "         if((newSL < currentSL || currentSL == 0) && newSL > ask)",
     "         {",
@@ -788,11 +797,15 @@ function generateMultiLevelTPCode(
   );
 
   // Track TP state per position: 0=no TP hit, 1=TP1 hit, 2=TP2 hit, 3=TP3 hit
-  code.globalVariables.push("struct SMLTPState { ulong ticket; int level; };");
-  code.globalVariables.push("SMLTPState g_mltpStates[];");
-  code.globalVariables.push("int g_mltpCount = 0;");
+  if (!code.globalVariables.some((v) => v.includes("SMLTPState"))) {
+    code.globalVariables.push("struct SMLTPState { ulong ticket; int level; };");
+    code.globalVariables.push("SMLTPState g_mltpStates[];");
+    code.globalVariables.push("int g_mltpCount = 0;");
+  }
 
-  code.helperFunctions.push(`//+------------------------------------------------------------------+
+  if (!code.helperFunctions.some((f) => f.includes("GetMLTPLevel"))) {
+    code.helperFunctions
+      .push(`//+------------------------------------------------------------------+
 //| Get Multi-Level TP state for a ticket                            |
 //+------------------------------------------------------------------+
 int GetMLTPLevel(ulong ticket)
@@ -835,6 +848,7 @@ void CleanMLTPStates()
       }
    }
 }`);
+  }
 
   // Throttle CleanMLTPStates: only every 100 ticks
   code._managementPreLoop!.push(
@@ -853,6 +867,7 @@ void CleanMLTPStates()
     "//+------------------------------------------------------------------+",
     "void CheckMultiLevelTP(ulong ticket, double openPrice, double volume, long posType, double point)",
     "{",
+    "   if(point <= 0) return;",
     "   int tpLevel = GetMLTPLevel(ticket);",
     "",
     "   double profitPoints = 0;",
@@ -879,17 +894,11 @@ void CleanMLTPStates()
     "         SetMLTPLevel(ticket, 1);",
   ];
 
-  if (data.moveSLAfterTP1 === "BREAKEVEN") {
+  if (data.moveSLAfterTP1 === "BREAKEVEN" || data.moveSLAfterTP1 === "TRAIL") {
     fnLines.push(
       "         // Move SL to breakeven after TP1",
       "         if(PositionSelectByTicket(ticket))",
-      "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
-    );
-  } else if (data.moveSLAfterTP1 === "TRAIL") {
-    fnLines.push(
-      "         // Move SL to breakeven and let trailing stop take over",
-      "         if(PositionSelectByTicket(ticket))",
-      "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
+      "            SafePositionModify(trade, ticket, NormalizeDouble(openPrice, (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS)), PositionGetDouble(POSITION_TP));"
     );
   }
 
@@ -901,7 +910,8 @@ void CleanMLTPStates()
     "   // TP Level 2",
     "   if(tpLevel == 1 && profitPoints >= tp2Points)",
     "   {",
-    "      double closeVol = MathFloor(volume * InpMLTP2Percent / (InpMLTP2Percent + InpMLTP3Percent) / pcLotStep) * pcLotStep;",
+    "      double tp2Denom = InpMLTP2Percent + InpMLTP3Percent;",
+    "      double closeVol = (tp2Denom > 0) ? MathFloor(volume * InpMLTP2Percent / tp2Denom / pcLotStep) * pcLotStep : 0;",
     "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
     "      if(closeVol >= pcMinLot)",
     "      {",

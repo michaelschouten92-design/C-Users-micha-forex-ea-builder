@@ -302,12 +302,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}HistogramBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
-        // Compute histogram (main - signal) for bars 0 and 1 only
+        // Compute histogram (main - signal) for all copied bars (candle_close mode accesses [2])
+        code.onTick.push(`for(int _mh${index}=0; _mh${index}<${copyBars}; _mh${index}++)`);
         code.onTick.push(
-          `${varPrefix}HistogramBuffer[0] = ${varPrefix}MainBuffer[0] - ${varPrefix}SignalBuffer[0];`
-        );
-        code.onTick.push(
-          `${varPrefix}HistogramBuffer[1] = ${varPrefix}MainBuffer[1] - ${varPrefix}SignalBuffer[1];`
+          `   ${varPrefix}HistogramBuffer[_mh${index}] = ${varPrefix}MainBuffer[_mh${index}] - ${varPrefix}SignalBuffer[_mh${index}];`
         );
         code.maxIndicatorPeriod = Math.max(
           code.maxIndicatorPeriod,
@@ -382,8 +380,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}UpperBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}MiddleBuffer[];`);
         code.globalVariables.push(`double ${varPrefix}LowerBuffer[];`);
+        // Validate BB period: minimum 2
         code.onInit.push(
-          `${varPrefix}Handle = iBands(_Symbol, (ENUM_TIMEFRAMES)InpBB${index}Timeframe, InpBB${index}Period, InpBB${index}Shift, InpBB${index}Deviation, InpBB${index}Price);`
+          `if(InpBB${index}Period < 2) Print("WARNING: BB ${index + 1} period (", InpBB${index}Period, ") is < 2. Clamping to 2.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iBands(_Symbol, (ENUM_TIMEFRAMES)InpBB${index}Timeframe, MathMax(2, InpBB${index}Period), InpBB${index}Shift, InpBB${index}Deviation, InpBB${index}Price);`
         );
         addHandleValidation(varPrefix, `BB ${index + 1}`, code);
         code.onDeinit.push(
@@ -609,8 +611,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`); // %K line
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`); // %D line
+        // Validate Stochastic periods: minimum 1
         code.onInit.push(
-          `${varPrefix}Handle = iStochastic(_Symbol, (ENUM_TIMEFRAMES)InpStoch${index}Timeframe, InpStoch${index}KPeriod, InpStoch${index}DPeriod, InpStoch${index}Slowing, InpStoch${index}MAMethod, InpStoch${index}PriceField);`
+          `if(InpStoch${index}KPeriod < 1 || InpStoch${index}DPeriod < 1 || InpStoch${index}Slowing < 1) Print("WARNING: Stochastic ${index + 1} periods must be >= 1. Clamping.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iStochastic(_Symbol, (ENUM_TIMEFRAMES)InpStoch${index}Timeframe, MathMax(1, InpStoch${index}KPeriod), MathMax(1, InpStoch${index}DPeriod), MathMax(1, InpStoch${index}Slowing), InpStoch${index}MAMethod, InpStoch${index}PriceField);`
         );
         addHandleValidation(varPrefix, `Stochastic ${index + 1}`, code);
         code.onDeinit.push(
@@ -792,8 +798,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
         const group = `Custom Indicator ${index + 1}`;
         const safeName = sanitizeMQL5String(ci.indicatorName || "CustomIndicator");
-        // MT5 supports up to 8 buffers per indicator (indices 0-7). Clamp to valid range.
-        const bufferIdx = Math.min(Math.max(0, ci.bufferIndex ?? 0), 7);
+        // MT5 custom indicators can have up to 512 buffers (indices 0-511).
+        const bufferIdx = Math.min(Math.max(0, ci.bufferIndex ?? 0), 511);
 
         // Create input variables for each custom indicator parameter so they
         // become individually optimizable in the MT5 strategy tester
@@ -893,9 +899,9 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
-        // Validate buffer index at runtime (MT5 supports buffers 0-7)
+        // Validate buffer index at runtime (MT5 supports buffers 0-511)
         code.onInit.push(
-          `if(InpCustom${index}Buffer < 0 || InpCustom${index}Buffer > 7) Print("WARNING: ${safeName} buffer index (", InpCustom${index}Buffer, ") is out of range 0-7. Clamping.");`
+          `if(InpCustom${index}Buffer < 0 || InpCustom${index}Buffer > 511) Print("WARNING: ${safeName} buffer index (", InpCustom${index}Buffer, ") is out of range 0-511. Clamping.");`
         );
         code.onInit.push(
           `${varPrefix}Handle = iCustom(_Symbol, (ENUM_TIMEFRAMES)InpCustom${index}Timeframe, "${safeName}"${paramList});`
@@ -907,7 +913,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
         // Use runtime-clamped buffer index so the user's input is respected but bounded
         code.onTick.push(
-          `if(CopyBuffer(${varPrefix}Handle, MathMin(MathMax(0, InpCustom${index}Buffer), 7), 0, ${copyBars}, ${varPrefix}Buffer) < ${copyBars}) return;`
+          `if(CopyBuffer(${varPrefix}Handle, MathMin(MathMax(0, InpCustom${index}Buffer), 511), 0, ${copyBars}, ${varPrefix}Buffer) < ${copyBars}) return;`
         );
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
         break;
@@ -944,6 +950,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
         code.globalVariables.push(`double ${varPrefix}SignalBuffer[];`);
+        // Validate OBV signal period: minimum 1
+        code.onInit.push(
+          `if(InpOBV${index}SignalPeriod < 1) { Print("ERROR: OBV ${index + 1} signal period must be >= 1"); return(INIT_FAILED); }`
+        );
         code.onInit.push(
           `${varPrefix}Handle = iOBV(_Symbol, (ENUM_TIMEFRAMES)InpOBV${index}Timeframe, VOLUME_TICK);`
         );
@@ -952,13 +962,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        // We need enough bars for SMA calculation on OBV
-        const obvCopyBars = copyBars + signalPeriod;
-        addCopyBuffer(`${varPrefix}Handle`, 0, obvCopyBars, `${varPrefix}Buffer`, code);
+        // Pre-allocate signal buffer and set series mode once in OnInit
+        code.onInit.push(`ArrayResize(${varPrefix}SignalBuffer, ${copyBars});`);
+        code.onInit.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
+        // Use runtime input for CopyBuffer count so optimized signal periods work
+        code.onTick.push(
+          `if(CopyBuffer(${varPrefix}Handle, 0, 0, ${copyBars} + InpOBV${index}SignalPeriod, ${varPrefix}Buffer) < ${copyBars} + InpOBV${index}SignalPeriod) return;`
+        );
         // Calculate SMA signal line from OBV values
         code.onTick.push(`// OBV Signal line (SMA of OBV)`);
-        code.onTick.push(`ArrayResize(${varPrefix}SignalBuffer, ${copyBars});`);
-        code.onTick.push(`ArraySetAsSeries(${varPrefix}SignalBuffer, true);`);
         code.onTick.push(`for(int _ob${index}=0; _ob${index}<${copyBars}; _ob${index}++)`);
         code.onTick.push(`{`);
         code.onTick.push(`   double sum = 0;`);
@@ -1011,6 +1023,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}SumVP = 0;`);
         code.globalVariables.push(`double ${varPrefix}SumVol = 0;`);
         code.globalVariables.push(`datetime ${varPrefix}ResetTime = 0;`);
+        code.globalVariables.push(`datetime ${varPrefix}LastBarTime = 0;`);
+        code.globalVariables.push(`double ${varPrefix}LastBarVol = 0;`);
 
         // Calculate VWAP manually in OnTick with runtime-selectable reset period
         code.onTick.push(`// VWAP calculation (reset period: 0=daily, 1=weekly, 2=monthly)`);
@@ -1025,13 +1039,31 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onTick.push(`      ${varPrefix}SumVP = 0;`);
         code.onTick.push(`      ${varPrefix}SumVol = 0;`);
         code.onTick.push(`      ${varPrefix}ResetTime = barTime;`);
+        code.onTick.push(`      ${varPrefix}LastBarTime = 0;`);
+        code.onTick.push(`      ${varPrefix}LastBarVol = 0;`);
         code.onTick.push(`   }`);
         code.onTick.push(
           `   double tp = (iHigh(_Symbol, vwapTf, 0) + iLow(_Symbol, vwapTf, 0) + iClose(_Symbol, vwapTf, 0)) / 3.0;`
         );
         code.onTick.push(`   double vol = (double)iVolume(_Symbol, vwapTf, 0);`);
-        code.onTick.push(`   ${varPrefix}SumVP += tp * vol;`);
-        code.onTick.push(`   ${varPrefix}SumVol += vol;`);
+        code.onTick.push(`   datetime curBarTime = iTime(_Symbol, vwapTf, 0);`);
+        code.onTick.push(`   if(curBarTime != ${varPrefix}LastBarTime)`);
+        code.onTick.push(`   {`);
+        code.onTick.push(`      ${varPrefix}SumVP += tp * vol;`);
+        code.onTick.push(`      ${varPrefix}SumVol += vol;`);
+        code.onTick.push(`      ${varPrefix}LastBarTime = curBarTime;`);
+        code.onTick.push(`      ${varPrefix}LastBarVol = vol;`);
+        code.onTick.push(`   }`);
+        code.onTick.push(`   else`);
+        code.onTick.push(`   {`);
+        code.onTick.push(`      double deltaVol = vol - ${varPrefix}LastBarVol;`);
+        code.onTick.push(`      if(deltaVol > 0)`);
+        code.onTick.push(`      {`);
+        code.onTick.push(`         ${varPrefix}SumVP += tp * deltaVol;`);
+        code.onTick.push(`         ${varPrefix}SumVol += deltaVol;`);
+        code.onTick.push(`         ${varPrefix}LastBarVol = vol;`);
+        code.onTick.push(`      }`);
+        code.onTick.push(`   }`);
         code.onTick.push(
           `   ${varPrefix}Value = (${varPrefix}SumVol > 0) ? ${varPrefix}SumVP / ${varPrefix}SumVol : tp;`
         );
@@ -1159,22 +1191,22 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
 
         // Calculate squeeze state: BB inside KC
         code.onTick.push(`//--- BB Squeeze ${index + 1}: detect squeeze and breakout`);
-        code.onTick.push(`${varPrefix}WasSqueeze = ${varPrefix}InSqueeze;`);
         code.onTick.push(`{`);
+        code.onTick.push(`   double kcMult${index} = MathMax(1.0, InpBBS${index}KCMult);`);
         code.onTick.push(
-          `   double kcUpper1 = ${varPrefix}KCEMABuffer[1] + InpBBS${index}KCMult * ${varPrefix}ATRBuffer[1];`
+          `   double kcUpper1 = ${varPrefix}KCEMABuffer[1] + kcMult${index} * ${varPrefix}ATRBuffer[1];`
         );
         code.onTick.push(
-          `   double kcLower1 = ${varPrefix}KCEMABuffer[1] - InpBBS${index}KCMult * ${varPrefix}ATRBuffer[1];`
+          `   double kcLower1 = ${varPrefix}KCEMABuffer[1] - kcMult${index} * ${varPrefix}ATRBuffer[1];`
         );
         code.onTick.push(
           `   bool prevSqueeze = ${varPrefix}BBUpper[1] < kcUpper1 && ${varPrefix}BBLower[1] > kcLower1;`
         );
         code.onTick.push(
-          `   double kcUpper0 = ${varPrefix}KCEMABuffer[0] + InpBBS${index}KCMult * ${varPrefix}ATRBuffer[0];`
+          `   double kcUpper0 = ${varPrefix}KCEMABuffer[0] + kcMult${index} * ${varPrefix}ATRBuffer[0];`
         );
         code.onTick.push(
-          `   double kcLower0 = ${varPrefix}KCEMABuffer[0] - InpBBS${index}KCMult * ${varPrefix}ATRBuffer[0];`
+          `   double kcLower0 = ${varPrefix}KCEMABuffer[0] - kcMult${index} * ${varPrefix}ATRBuffer[0];`
         );
         code.onTick.push(
           `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[0] < kcUpper0 && ${varPrefix}BBLower[0] > kcLower0;`

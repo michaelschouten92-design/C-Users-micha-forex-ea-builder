@@ -26,6 +26,7 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
     "bool     g_trEnabled = false;",
     "bool     g_trSessionStartSent = false;",
     'string   g_trInstanceId = "";',
+    'string   g_trSymbol = "";',
     "int      g_trPrevPositionCount = 0;",
     "datetime g_trLastSnapshot = 0;",
     "int      g_trSnapshotInterval = 300;",
@@ -52,6 +53,7 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
   code.onTick.push("//--- Track Record event detection");
   code.onTick.push("if(g_trEnabled)");
   code.onTick.push("{");
+  code.onTick.push("   g_trSymbol = _Symbol;");
   code.onTick.push("   TrackRecordDetectTradeEvents();");
   code.onTick.push("   if(TimeCurrent() - g_trLastSnapshot >= g_trSnapshotInterval)");
   code.onTick.push("   {");
@@ -309,7 +311,7 @@ void TrackRecordDetectTradeEvents()
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0) continue;
       if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
-      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+      if(PositionGetString(POSITION_SYMBOL) != g_trSymbol) continue;
 
       int sz = ArraySize(currentTickets);
       ArrayResize(currentTickets, sz + 1);
@@ -354,7 +356,8 @@ void TrackRecordDetectTradeEvents()
       }
       if(!found)
       {
-         // New position opened
+         // New position opened — re-select to ensure correct position context
+         PositionSelectByTicket((ulong)currentTickets[i]);
          string dir = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? "BUY" : "SELL";
          TrackRecordSendTradeOpen(currentTickets[i],
             PositionGetString(POSITION_SYMBOL), dir,
@@ -452,6 +455,7 @@ void TrackRecordSendSessionStart()
 
    // Build JSON body for HTTP POST
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"SESSION_START\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -500,6 +504,7 @@ void TrackRecordSendSessionEnd(int reason)
    string hash = TrackRecordComputeHash("SESSION_END", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"SESSION_END\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -536,7 +541,7 @@ void TrackRecordSendSnapshot()
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber
-         && PositionGetString(POSITION_SYMBOL) == _Symbol)
+         && PositionGetString(POSITION_SYMBOL) == g_trSymbol)
          openCount++;
    }
 
@@ -550,6 +555,7 @@ void TrackRecordSendSnapshot()
    string hash = TrackRecordComputeHash("SNAPSHOT", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"SNAPSHOT\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -589,6 +595,7 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
    string hash = TrackRecordComputeHash("TRADE_OPEN", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"TRADE_OPEN\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -629,6 +636,7 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
    string hash = TrackRecordComputeHash("TRADE_CLOSE", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"TRADE_CLOSE\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -667,6 +675,7 @@ void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
    string hash = TrackRecordComputeHash("TRADE_MODIFY", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"TRADE_MODIFY\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","
@@ -696,7 +705,7 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
    // Get close details from history
    double closePrice = 0;
    double profit = 0;
-   HistorySelect(TimeCurrent() - 60, TimeCurrent());
+   HistorySelect(TimeCurrent() - 300, TimeCurrent());
    for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
    {
       ulong dTicket = HistoryDealGetTicket(i);
@@ -719,6 +728,7 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
    string hash = TrackRecordComputeHash("PARTIAL_CLOSE", nextSeq, g_trLastHash, ts, payload);
 
    string json = "{"
+      + "\\"eaInstanceId\\":\\"" + g_trInstanceId + "\\","
       + "\\"eventType\\":\\"PARTIAL_CLOSE\\","
       + "\\"seqNo\\":" + IntegerToString(nextSeq) + ","
       + "\\"prevHash\\":\\"" + g_trLastHash + "\\","

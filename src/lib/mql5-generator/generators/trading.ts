@@ -309,7 +309,18 @@ function generateRangeOppositeSL(priceActionNodes: BuilderNode[], code: Generate
   );
 
   if (rbIndex < 0) {
-    throw new Error("RANGE_OPPOSITE stop loss requires a Range Breakout entry strategy");
+    // Graceful fallback: use fixed pips SL when no range breakout node exists
+    code.inputs.push({
+      name: "InpStopLoss",
+      type: "double",
+      value: 50,
+      comment: "Stop Loss (pips) - Range Breakout required for RANGE_OPPOSITE",
+      isOptimizable: false,
+    });
+    code.onTick.push(
+      "double slPips = InpStopLoss * _pipFactor; // Fallback: no Range Breakout node"
+    );
+    return;
   }
 
   const prefix = `pa${rbIndex}`;
@@ -439,7 +450,9 @@ function generateIndicatorBasedSL(
         code.onTick.push("// Indicator-based SL using ADX (scaled by trend strength)");
         code.onTick.push(`double adxValue = ${varPrefix}MainBuffer[0];`);
         code.onTick.push("// Stronger trend = tighter SL, weaker trend = wider SL");
-        code.onTick.push("double slMultiplier = 2.0 - (adxValue / 100.0); // Range: 1.0 to 2.0");
+        code.onTick.push(
+          "double slMultiplier = MathMax(0.5, 2.0 - (adxValue / 100.0)); // Range: ~0.5 to 2.0"
+        );
         code.onTick.push("double slPips = InpADXSLBase * slMultiplier * _pipFactor;");
         break;
 
@@ -944,6 +957,7 @@ export function generateEntryLogic(
 
   // Compute rangeBreakoutOnly early — set to true after condition loop if applicable
   let rangeBreakoutOnly = false;
+  let hasFilterConditions = false;
 
   if (!hasConditions) {
     // No conditions at all — buyCondition/sellCondition not needed
@@ -1695,7 +1709,10 @@ export function generateEntryLogic(
       }
     }
 
-    if (!rangeBreakoutOnly) {
+    // Even in range-breakout-only mode, declare conditions if filters exist
+    hasFilterConditions =
+      buyConditions.some((c) => c !== "false") || sellConditions.some((c) => c !== "false");
+    if (!rangeBreakoutOnly || hasFilterConditions) {
       const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
       if (hasBuyNode) {
         code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
@@ -2016,18 +2033,20 @@ export function generateEntryLogic(
     }
     code.onTick.push("");
 
-    // Place pending orders
+    // Place pending orders (with filter condition check when filters are present)
     if (hasBuyNode) {
+      const buyFilterGuard = hasFilterConditions ? "buyCondition && " : "";
       code.onTick.push(
-        `   if(trade.BuyStop(pendBuyLot, buyStopPrice, _Symbol, pendBuySL, pendBuyTP, ORDER_TIME_GTC, 0, "${comment}"))`
+        `   if(${buyFilterGuard}trade.BuyStop(pendBuyLot, buyStopPrice, _Symbol, pendBuySL, pendBuyTP, ORDER_TIME_GTC, 0, "${comment}"))`
       );
       code.onTick.push(
         `      Print("Range Buy Stop at ", buyStopPrice, " SL:", pendBuySL, " TP:", pendBuyTP, " Lot:", pendBuyLot);`
       );
     }
     if (hasSellNode) {
+      const sellFilterGuard = hasFilterConditions ? "sellCondition && " : "";
       code.onTick.push(
-        `   if(trade.SellStop(pendSellLot, sellStopPrice, _Symbol, pendSellSL, pendSellTP, ORDER_TIME_GTC, 0, "${comment}"))`
+        `   if(${sellFilterGuard}trade.SellStop(pendSellLot, sellStopPrice, _Symbol, pendSellSL, pendSellTP, ORDER_TIME_GTC, 0, "${comment}"))`
       );
       code.onTick.push(
         `      Print("Range Sell Stop at ", sellStopPrice, " SL:", pendSellSL, " TP:", pendSellTP, " Lot:", pendSellLot);`
@@ -2294,6 +2313,18 @@ export function generateGridPyramidCode(
     )
   );
 
+  code.inputs.push(
+    createInput(
+      node,
+      "gridBaseLot",
+      "InpGridBaseLot",
+      "double",
+      data.gridBaseLot ?? 0.01,
+      "Grid Base Lot Size",
+      group
+    )
+  );
+
   code.globalVariables.push("double gridBasePrice = 0;");
   code.globalVariables.push("datetime gridLastBarTime = 0; // Bar-based throttle for grid/pyramid");
 
@@ -2342,11 +2373,16 @@ export function generateGridPyramidCode(
     code.onTick.push("   if(gridBasePrice > 0 && gridOpenCount < InpMaxGridLevels && gridNewBar)");
     code.onTick.push("   {");
     code.onTick.push("      // Check if price is at a grid level not already occupied");
-    code.onTick.push("      double lotSize = InpBuyLotSize;");
+    code.onTick.push("      double lotSize = InpGridBaseLot;");
     code.onTick.push("      if(InpGridLotMultiplier != 1.0)");
+    code.onTick.push("      {");
+    code.onTick.push("         double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);");
+    code.onTick.push("         lotSize = lotSize * MathPow(InpGridLotMultiplier, gridOpenCount);");
+    code.onTick.push("         if(lotStep > 0) lotSize = MathFloor(lotSize / lotStep) * lotStep;");
     code.onTick.push(
-      "         lotSize = NormalizeDouble(lotSize * MathPow(InpGridLotMultiplier, gridOpenCount), 2);"
+      "         lotSize = MathMax(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN), MathMin(SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX), lotSize));"
     );
+    code.onTick.push("      }");
     code.onTick.push("");
     code.onTick.push("      // Check each level to find one that matches current price");
     code.onTick.push("      for(int lvl = 1; lvl <= InpMaxGridLevels; lvl++)");
@@ -2455,7 +2491,9 @@ export function generateGridPyramidCode(
       code.onTick.push(
         `               if(trade.Buy(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
       );
-      code.onTick.push("               { gridLastBarTime = pyramidBarTime; pyramidCount++; }");
+      code.onTick.push(
+        "               { gridLastBarTime = pyramidBarTime; pyramidCount++; break; }"
+      );
       code.onTick.push("            }");
       code.onTick.push("         }");
     }
@@ -2470,7 +2508,9 @@ export function generateGridPyramidCode(
       code.onTick.push(
         `               if(trade.Sell(nextLotSize, _Symbol, 0, 0, 0, "${comment} Pyramid"))`
       );
-      code.onTick.push("               { gridLastBarTime = pyramidBarTime; pyramidCount++; }");
+      code.onTick.push(
+        "               { gridLastBarTime = pyramidBarTime; pyramidCount++; break; }"
+      );
       code.onTick.push("            }");
       code.onTick.push("         }");
     }

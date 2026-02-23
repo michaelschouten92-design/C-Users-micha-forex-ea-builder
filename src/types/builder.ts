@@ -537,6 +537,7 @@ export interface GridPyramidNodeData extends BaseNodeData {
   gridSpacing: number; // pips between levels, default 20
   maxGridLevels: number; // maximum grid levels, default 5
   lotMultiplier: number; // lot multiplier for martingale/anti-martingale, default 1.0
+  gridBaseLot?: number; // base lot size for grid orders, default 0.01
   direction: "BUY_ONLY" | "SELL_ONLY" | "BOTH";
 }
 
