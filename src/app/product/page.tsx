@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Platform — Strategy Intelligence for Algorithmic Traders | AlgoStudio",
+  title: "Platform — EA Builder & Strategy Intelligence | AlgoStudio",
   description:
-    "Upload backtests, get instant health scores, AI analysis, and Monte Carlo validation. Monitor live strategies with verified track records and edge degradation alerts.",
+    "Build Expert Advisors and validate them with data. No-code EA builder, instant health scores, AI analysis, Monte Carlo validation, verified track records, and live monitoring.",
   alternates: { canonical: "/product" },
 };
 
@@ -88,9 +88,9 @@ const platformModules = [
   },
   {
     color: "#EC4899",
-    title: "Strategy Builder",
+    title: "EA Builder",
     description:
-      "No-code visual builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own. From idea to executable strategy in minutes.",
+      "No-code visual EA builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own. From idea to working Expert Advisor in minutes.",
     href: "/product/how-it-works",
   },
   {
@@ -104,9 +104,9 @@ const platformModules = [
 
 const differentiators = [
   {
-    title: "Intelligence, not just building",
+    title: "Build and validate in one place",
     description:
-      "Most EA tools give you a builder and stop. AlgoStudio scores your backtest, analyzes weaknesses with AI, validates with Monte Carlo, and monitors health in production.",
+      "Most EA tools give you a builder and stop. AlgoStudio goes further — it scores your backtest, analyzes weaknesses with AI, validates with Monte Carlo, and monitors health in production.",
   },
   {
     title: "Upload and know in seconds",
@@ -137,12 +137,12 @@ export default function ProductPage() {
           {/* Hero */}
           <section className="text-center mb-24">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              The complete strategy intelligence platform
+              Build EAs. Then prove they work.
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              Upload your MT5 backtest and instantly know if your strategy works. AI-powered
-              analysis, Monte Carlo validation, verified track records, and live monitoring —
-              everything you need to trade with confidence.
+              No-code EA builder with built-in validation. Build your Expert Advisor, upload your
+              backtest, get AI-powered analysis and Monte Carlo validation, then monitor live
+              performance — everything in one platform.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -166,7 +166,7 @@ export default function ProductPage() {
               Strategy Intelligence Pipeline
             </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
-              Upload &rarr; Validate &rarr; Monitor
+              Build &rarr; Upload &rarr; Validate &rarr; Monitor
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               {pipelineSteps.map((step) => (
@@ -250,8 +250,8 @@ export default function ProductPage() {
       </main>
 
       <CTASection
-        title="Upload your first backtest"
-        description="Get an instant health score, AI analysis, and Monte Carlo validation. Free — no credit card required."
+        title="Build your first EA"
+        description="From template to validated Expert Advisor in minutes. Health scoring, AI analysis, and Monte Carlo validation included. Free — no credit card required."
       />
 
       <Footer />

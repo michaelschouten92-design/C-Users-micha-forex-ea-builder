@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "How It Works — Strategy Validation in 4 Steps | AlgoStudio",
+  title: "How It Works — Build an EA & Validate It in 4 Steps | AlgoStudio",
   description:
-    "From trading idea to validated, monitored strategy in 4 steps. Build with templates, test in MT5, verify with immutable track records, and monitor health in production.",
+    "From trading idea to validated Expert Advisor in 4 steps. Build with the no-code EA builder, test in MT5, verify with immutable track records, and monitor health in production.",
   alternates: { canonical: "/product/how-it-works" },
 };
 
@@ -80,9 +80,8 @@ export default function HowItWorksPage() {
   const howToJsonLd = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "How to Validate a Trading Strategy with AlgoStudio",
-    description:
-      "From trading idea to validated, monitored strategy in 4 steps. No coding required.",
+    name: "How to Build and Validate an Expert Advisor with AlgoStudio",
+    description: "From trading idea to validated, monitored EA in 4 steps. No coding required.",
     totalTime: "PT15M",
     step: [
       {
@@ -132,10 +131,10 @@ export default function HowItWorksPage() {
           {/* Hero */}
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              From trading idea to validated strategy in 4 steps
+              From trading idea to validated EA in 4 steps
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
-              No coding at any step. AlgoStudio guides you from strategy construction through
+              No coding at any step. AlgoStudio guides you from building your Expert Advisor through
               validation, verification, and live monitoring.
             </p>
           </section>
@@ -181,10 +180,10 @@ export default function HowItWorksPage() {
                 2
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Customize and export</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Customize and export your EA</h2>
                 <p className="text-[#94A3B8] mb-6 leading-relaxed">
                   Set your risk parameters, stop loss, and take profit. Export clean MQL5 source
-                  code. The code is yours to modify, optimize, and deploy.
+                  code for your Expert Advisor. The code is yours to modify, optimize, and deploy.
                 </p>
                 <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
                   <h3 className="text-sm font-semibold text-white mb-4">Typical settings</h3>
@@ -287,9 +286,9 @@ export default function HowItWorksPage() {
       </main>
 
       <CTASection
-        title="Ready to validate your strategy?"
-        description="Build, verify, and monitor with objective data. Free — no credit card required."
-        ctaText="Start Validating — Free"
+        title="Ready to build your first EA?"
+        description="From template to validated Expert Advisor in minutes. Build, verify, and monitor — all free to start."
+        ctaText="Start Building — Free"
       />
 
       <Footer />
