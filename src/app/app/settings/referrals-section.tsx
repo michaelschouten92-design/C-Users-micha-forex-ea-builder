@@ -27,7 +27,9 @@ export function ReferralsSection() {
   const { data, isLoading, error } = useSWR<ReferralData>("/api/referrals", fetcher);
   const [copied, setCopied] = useState(false);
 
-  const referralLink = data?.referralCode ? `https://algostudio.io/?ref=${data.referralCode}` : "";
+  const referralLink = data?.referralCode
+    ? `${process.env.NEXT_PUBLIC_APP_URL || "https://algostudio.io"}/?ref=${data.referralCode}`
+    : "";
 
   async function handleCopy() {
     if (!referralLink) return;

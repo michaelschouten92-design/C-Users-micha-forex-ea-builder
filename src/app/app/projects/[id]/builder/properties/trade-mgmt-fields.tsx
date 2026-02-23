@@ -1,16 +1,23 @@
 "use client";
 
 import { SelectField, NumberField } from "../components/form-fields";
+import { TIMEFRAME_OPTIONS } from "./constants";
 import type {
   BreakevenStopNodeData,
   TrailingStopNodeData,
   PartialCloseNodeData,
   LockProfitNodeData,
   MultiLevelTPNodeData,
+  StopLossNodeData,
+  TakeProfitNodeData,
   BreakevenTrigger,
   TrailingStopMethod,
+  StopLossMethod,
+  TakeProfitMethod,
   LockProfitMethod,
   MoveSLAfterTP,
+  Timeframe,
+  TPLevel,
 } from "@/types/builder";
 import { OptimizableFieldCheckbox, FieldWarning } from "./shared";
 
@@ -474,6 +481,359 @@ export function MultiLevelTPFields({
       >
         Closes portions of your position at three different profit levels. Secures partial profits
         while letting the remainder run to higher targets.
+      </div>
+    </>
+  );
+}
+
+export function StopLossFields({
+  data,
+  onChange,
+}: {
+  data: StopLossNodeData;
+  onChange: (updates: Partial<StopLossNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Method"
+        value={data.method}
+        options={[
+          { value: "FIXED_PIPS", label: "Fixed Pips" },
+          { value: "ATR_BASED", label: "ATR-Based" },
+          { value: "PERCENT", label: "Percentage" },
+          { value: "INDICATOR", label: "From Indicator" },
+        ]}
+        onChange={(v) => onChange({ method: v as StopLossMethod })}
+        tooltip="How the stop loss distance is calculated. Fixed Pips is the simplest option."
+      />
+      {data.method === "FIXED_PIPS" && (
+        <div>
+          <NumberField
+            label="Stop Loss (pips)"
+            value={data.fixedPips}
+            min={1}
+            max={10000}
+            onChange={(v) => onChange({ fixedPips: v })}
+            tooltip="Distance in pips from entry price to stop loss"
+          />
+          <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
+        </div>
+      )}
+      {data.method === "ATR_BASED" && (
+        <>
+          <div>
+            <NumberField
+              label="ATR Period"
+              value={data.atrPeriod}
+              min={1}
+              max={500}
+              onChange={(v) => onChange({ atrPeriod: v })}
+              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
+            />
+            <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
+          </div>
+          <div>
+            <NumberField
+              label="ATR Multiplier"
+              value={data.atrMultiplier}
+              min={0.1}
+              max={10}
+              step={0.1}
+              onChange={(v) => onChange({ atrMultiplier: v })}
+              tooltip="Stop loss distance as a multiple of ATR (e.g. 1.5 = 1.5x the average candle range)"
+            />
+            <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
+          </div>
+          <SelectField
+            label="ATR Timeframe"
+            value={data.atrTimeframe ?? "H1"}
+            options={TIMEFRAME_OPTIONS}
+            onChange={(v) => onChange({ atrTimeframe: v as Timeframe })}
+            tooltip="Timeframe used for ATR calculation"
+          />
+        </>
+      )}
+      {data.method === "PERCENT" && (
+        <div>
+          <NumberField
+            label="Stop Loss %"
+            value={data.slPercent}
+            min={0.01}
+            max={100}
+            step={0.01}
+            onChange={(v) => onChange({ slPercent: v })}
+            tooltip="Stop loss as a percentage of the entry price"
+          />
+          <OptimizableFieldCheckbox fieldName="slPercent" data={data} onChange={onChange} />
+        </div>
+      )}
+      {data.method === "INDICATOR" && (
+        <div
+          className="text-xs text-[#22D3EE] bg-[rgba(34,211,238,0.05)] border border-[rgba(34,211,238,0.15)] p-3 rounded-lg"
+          role="note"
+        >
+          Connect an indicator node to this stop loss to use its value as the SL level.
+        </div>
+      )}
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Sets the maximum loss per trade. The stop loss is placed below (buy) or above (sell) your
+        entry price.
+      </div>
+    </>
+  );
+}
+
+export function TakeProfitFields({
+  data,
+  onChange,
+}: {
+  data: TakeProfitNodeData;
+  onChange: (updates: Partial<TakeProfitNodeData>) => void;
+}) {
+  return (
+    <>
+      <SelectField
+        label="Method"
+        value={data.method}
+        options={[
+          { value: "FIXED_PIPS", label: "Fixed Pips" },
+          { value: "RISK_REWARD", label: "Risk:Reward Ratio" },
+          { value: "ATR_BASED", label: "ATR-Based" },
+        ]}
+        onChange={(v) => onChange({ method: v as TakeProfitMethod })}
+        tooltip="How the take profit distance is calculated. Fixed Pips is the simplest option."
+      />
+      {data.method === "FIXED_PIPS" && (
+        <div>
+          <NumberField
+            label="Take Profit (pips)"
+            value={data.fixedPips}
+            min={1}
+            max={10000}
+            onChange={(v) => onChange({ fixedPips: v })}
+            tooltip="Distance in pips from entry price to take profit"
+          />
+          <OptimizableFieldCheckbox fieldName="fixedPips" data={data} onChange={onChange} />
+        </div>
+      )}
+      {data.method === "RISK_REWARD" && (
+        <div>
+          <NumberField
+            label="Risk:Reward Ratio"
+            value={data.riskRewardRatio}
+            min={0.1}
+            max={50}
+            step={0.1}
+            onChange={(v) => onChange({ riskRewardRatio: v })}
+            tooltip="Take profit as a multiple of your stop loss distance (e.g. 2 = TP is 2x the SL distance)"
+          />
+          <OptimizableFieldCheckbox fieldName="riskRewardRatio" data={data} onChange={onChange} />
+        </div>
+      )}
+      {data.method === "ATR_BASED" && (
+        <>
+          <div>
+            <NumberField
+              label="ATR Period"
+              value={data.atrPeriod}
+              min={1}
+              max={500}
+              onChange={(v) => onChange({ atrPeriod: v })}
+              tooltip="Number of candles used to calculate average price movement. 14 is the standard setting."
+            />
+            <OptimizableFieldCheckbox fieldName="atrPeriod" data={data} onChange={onChange} />
+          </div>
+          <div>
+            <NumberField
+              label="ATR Multiplier"
+              value={data.atrMultiplier}
+              min={0.1}
+              max={10}
+              step={0.1}
+              onChange={(v) => onChange({ atrMultiplier: v })}
+              tooltip="Take profit distance as a multiple of ATR (e.g. 2 = 2x the average candle range)"
+            />
+            <OptimizableFieldCheckbox fieldName="atrMultiplier" data={data} onChange={onChange} />
+          </div>
+        </>
+      )}
+      <div className="mt-3">
+        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.multipleTPEnabled ?? false}
+            onChange={(e) => {
+              e.stopPropagation();
+              const enabled = e.target.checked;
+              const updates: Partial<TakeProfitNodeData> = { multipleTPEnabled: enabled };
+              if (enabled && (!data.tpLevels || data.tpLevels.length === 0)) {
+                updates.tpLevels = [
+                  {
+                    method: data.method,
+                    fixedPips: data.fixedPips,
+                    riskRewardRatio: data.riskRewardRatio,
+                    atrMultiplier: data.atrMultiplier,
+                    atrPeriod: data.atrPeriod,
+                    closePercent: 50,
+                  },
+                  {
+                    method: data.method,
+                    fixedPips: Math.round(data.fixedPips * 1.5),
+                    riskRewardRatio: data.riskRewardRatio * 1.5,
+                    atrMultiplier: data.atrMultiplier * 1.5,
+                    atrPeriod: data.atrPeriod,
+                    closePercent: 50,
+                  },
+                ];
+              }
+              onChange(updates);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#A855F7] focus:ring-[#A855F7]"
+          />
+          Enable multiple TP levels
+        </label>
+      </div>
+      {data.multipleTPEnabled && data.tpLevels && data.tpLevels.length > 0 && (
+        <>
+          {data.tpLevels.map((level: TPLevel, i: number) => (
+            <div key={i} className="border border-[rgba(79,70,229,0.2)] rounded-lg p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[#CBD5E1]">TP Level {i + 1}</p>
+                {data.tpLevels!.length > 1 && (
+                  <button
+                    onClick={() => {
+                      const newLevels = data.tpLevels!.filter((_, idx) => idx !== i);
+                      onChange({ tpLevels: newLevels });
+                    }}
+                    className="text-[10px] text-[#EF4444] hover:text-[#F87171] transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <SelectField
+                label="Method"
+                value={level.method}
+                options={[
+                  { value: "FIXED_PIPS", label: "Fixed Pips" },
+                  { value: "RISK_REWARD", label: "Risk:Reward" },
+                  { value: "ATR_BASED", label: "ATR-Based" },
+                ]}
+                onChange={(v) => {
+                  const newLevels = [...data.tpLevels!];
+                  newLevels[i] = { ...newLevels[i], method: v as TakeProfitMethod };
+                  onChange({ tpLevels: newLevels });
+                }}
+              />
+              {level.method === "FIXED_PIPS" && (
+                <NumberField
+                  label="Pips"
+                  value={level.fixedPips}
+                  min={1}
+                  max={10000}
+                  onChange={(v) => {
+                    const newLevels = [...data.tpLevels!];
+                    newLevels[i] = { ...newLevels[i], fixedPips: v };
+                    onChange({ tpLevels: newLevels });
+                  }}
+                />
+              )}
+              {level.method === "RISK_REWARD" && (
+                <NumberField
+                  label="R:R Ratio"
+                  value={level.riskRewardRatio}
+                  min={0.1}
+                  max={50}
+                  step={0.1}
+                  onChange={(v) => {
+                    const newLevels = [...data.tpLevels!];
+                    newLevels[i] = { ...newLevels[i], riskRewardRatio: v };
+                    onChange({ tpLevels: newLevels });
+                  }}
+                />
+              )}
+              {level.method === "ATR_BASED" && (
+                <>
+                  <NumberField
+                    label="ATR Period"
+                    value={level.atrPeriod}
+                    min={1}
+                    max={500}
+                    onChange={(v) => {
+                      const newLevels = [...data.tpLevels!];
+                      newLevels[i] = { ...newLevels[i], atrPeriod: v };
+                      onChange({ tpLevels: newLevels });
+                    }}
+                  />
+                  <NumberField
+                    label="ATR Multiplier"
+                    value={level.atrMultiplier}
+                    min={0.1}
+                    max={10}
+                    step={0.1}
+                    onChange={(v) => {
+                      const newLevels = [...data.tpLevels!];
+                      newLevels[i] = { ...newLevels[i], atrMultiplier: v };
+                      onChange({ tpLevels: newLevels });
+                    }}
+                  />
+                </>
+              )}
+              <NumberField
+                label="Close %"
+                value={level.closePercent}
+                min={1}
+                max={100}
+                onChange={(v) => {
+                  const newLevels = [...data.tpLevels!];
+                  newLevels[i] = { ...newLevels[i], closePercent: v };
+                  onChange({ tpLevels: newLevels });
+                }}
+                tooltip="Percentage of remaining position to close at this TP level"
+              />
+            </div>
+          ))}
+          <button
+            onClick={() => {
+              const lastLevel = data.tpLevels![data.tpLevels!.length - 1];
+              const newLevel: TPLevel = {
+                method: lastLevel.method,
+                fixedPips: Math.round(lastLevel.fixedPips * 1.5),
+                riskRewardRatio: lastLevel.riskRewardRatio * 1.5,
+                atrMultiplier: lastLevel.atrMultiplier * 1.5,
+                atrPeriod: lastLevel.atrPeriod,
+                closePercent: 50,
+              };
+              onChange({ tpLevels: [...data.tpLevels!, newLevel] });
+            }}
+            className="w-full py-1.5 text-xs text-[#A78BFA] border border-dashed border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+          >
+            + Add TP Level
+          </button>
+          {(() => {
+            const totalPercent = data.tpLevels!.reduce((sum, l) => sum + l.closePercent, 0);
+            if (totalPercent !== 100) {
+              return (
+                <FieldWarning
+                  message={`Close percentages add up to ${totalPercent}% (should be 100%)`}
+                />
+              );
+            }
+            return null;
+          })()}
+        </>
+      )}
+      <div
+        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        role="note"
+      >
+        Sets the profit target for the trade. The take profit is placed above (buy) or below (sell)
+        your entry price.
       </div>
     </>
   );

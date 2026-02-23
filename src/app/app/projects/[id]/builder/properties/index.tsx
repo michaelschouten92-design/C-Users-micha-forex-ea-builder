@@ -43,6 +43,8 @@ import type {
   TimeExitNodeData,
   GridPyramidNodeData,
   MultiLevelTPNodeData,
+  StopLossNodeData,
+  TakeProfitNodeData,
 } from "@/types/builder";
 
 import {
@@ -90,6 +92,8 @@ import {
   PartialCloseFields,
   LockProfitFields,
   MultiLevelTPFields,
+  StopLossFields,
+  TakeProfitFields,
 } from "./trade-mgmt-fields";
 import { StrategySettingsPanel } from "../strategy-settings-panel";
 import { OptimizationVisibleContext } from "./shared";
@@ -492,6 +496,10 @@ function NodeFields({
         return <TimeExitFields data={data as TimeExitNodeData} onChange={onChange} />;
       case "grid-pyramid":
         return <GridPyramidFields data={data as GridPyramidNodeData} onChange={onChange} />;
+      case "stop-loss":
+        return <StopLossFields data={data as StopLossNodeData} onChange={onChange} />;
+      case "take-profit":
+        return <TakeProfitFields data={data as TakeProfitNodeData} onChange={onChange} />;
     }
   }
 

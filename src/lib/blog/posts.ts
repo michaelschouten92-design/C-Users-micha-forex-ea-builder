@@ -669,7 +669,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/">no-code EA builders</a> like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
 
-      <p>New to automated trading? Read our complete <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>. For an even deeper dive into the pros and cons of each approach, see our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">detailed manual vs automated trading pros and cons</a>.</p>
+      <p>New to automated trading? Read our complete <a href="/blog/what-is-an-expert-advisor">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>. For an even deeper dive into the pros and cons of each approach, see our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">detailed manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
@@ -1583,7 +1583,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The barrier to automated trading has never been lower. With <a href="/">no-code EA builders</a>, you can build, backtest, and deploy strategies in minutes.</p>
 
-      <p>Ready to explore? Start with our <a href="/automated-trading-for-beginners">beginner's guide to automated trading</a>, or jump straight to building with our <a href="/templates">free EA templates</a>. For a quicker overview of the key differences, see our <a href="/blog/automated-trading-vs-manual-trading">automated trading vs manual trading comparison</a>. And if you decide to automate, follow our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> to build your first EA in minutes.</p>
+      <p>Ready to explore? Start with our <a href="/blog/what-is-an-expert-advisor">beginner's guide to automated trading</a>, or jump straight to building with our <a href="/templates">free EA templates</a>. For a quicker overview of the key differences, see our <a href="/blog/automated-trading-vs-manual-trading">automated trading vs manual trading comparison</a>. And if you decide to automate, follow our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> to build your first EA in minutes.</p>
     `,
   },
   {
@@ -2572,7 +2572,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><a href="/templates/moving-average-crossover-ea">EMA Crossover</a>: trend-following with fast/slow EMA</li>
         <li><a href="/templates/rsi-ea-template">RSI Reversal</a>: mean-reversion with RSI oversold/overbought</li>
         <li><a href="/templates/breakout-ea-template">Breakout</a>: range breakout with pending orders</li>
-        <li><a href="/templates/bollinger-bands-ea">Bollinger Bands</a>: volatility-based entries</li>
+        <li><a href="/templates/bollinger-band-reversal-ea">Bollinger Bands</a>: volatility-based entries</li>
       </ul>
       <p>Templates save significant time and come with proven parameter ranges. You customize them by adjusting periods, levels, and risk settings rather than building from zero.</p>
 

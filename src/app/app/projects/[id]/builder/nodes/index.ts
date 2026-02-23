@@ -28,6 +28,8 @@ import { OrderBlockNode } from "./priceaction/order-block-node";
 import { FairValueGapNode } from "./priceaction/fair-value-gap-node";
 import { MarketStructureNode } from "./priceaction/market-structure-node";
 import { PlaceBuyNode, PlaceSellNode } from "./position-sizing-node";
+import { StopLossNode } from "./stop-loss-node";
+import { TakeProfitNode } from "./take-profit-node";
 
 import { CloseConditionNode } from "./close-condition-node";
 import { TimeExitNode } from "./trading/time-exit-node";
@@ -72,6 +74,8 @@ export const nodeTypes: NodeTypes = {
   "market-structure": MarketStructureNode,
   "place-buy": PlaceBuyNode,
   "place-sell": PlaceSellNode,
+  "stop-loss": StopLossNode,
+  "take-profit": TakeProfitNode,
   "close-condition": CloseConditionNode,
   "time-exit": TimeExitNode,
   "grid-pyramid": GridPyramidNode,
@@ -112,6 +116,8 @@ export {
   MarketStructureNode,
   PlaceBuyNode,
   PlaceSellNode,
+  StopLossNode,
+  TakeProfitNode,
   CloseConditionNode,
   TimeExitNode,
   GridPyramidNode,
