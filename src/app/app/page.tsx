@@ -140,7 +140,7 @@ export default async function DashboardPage() {
               </span>
               <NotificationCenter />
               <Link
-                href="/app"
+                href={projects.length > 0 ? `/app/projects/${projects[0].id}/builder` : "/app"}
                 className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
               >
                 EA Builder
