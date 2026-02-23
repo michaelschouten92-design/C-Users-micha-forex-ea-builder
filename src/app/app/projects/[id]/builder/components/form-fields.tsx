@@ -8,7 +8,7 @@ function Tooltip({ text }: { text: string }) {
       <span className="w-3.5 h-3.5 inline-flex items-center justify-center rounded-full border border-[#7C8DB0] text-[#7C8DB0] text-[9px] font-bold cursor-help hover:border-[#22D3EE] hover:text-[#22D3EE] transition-colors duration-200">
         ?
       </span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] text-[10px] rounded-lg shadow-lg whitespace-normal w-48 text-center pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] text-[10px] rounded-lg shadow-lg whitespace-normal max-w-[min(12rem,calc(100vw-2rem))] text-center pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50">
         {text}
       </span>
     </span>

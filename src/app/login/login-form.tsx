@@ -21,6 +21,11 @@ function LoginFormInner({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [isRegistration, setIsRegistration] = useState(searchParams.get("mode") === "register");
@@ -79,12 +84,13 @@ function LoginFormInner({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
 
-    // Client-side validation
+    // Client-side validation with field-level errors
+    const errors: { email?: string; password?: string; confirmPassword?: string } = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
-      return;
+      errors.email = "Please enter a valid email address";
     }
 
     if (
@@ -93,14 +99,16 @@ function LoginFormInner({
       !/[a-z]/.test(password) ||
       !/[0-9]/.test(password)
     ) {
-      setError(
-        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number"
-      );
-      return;
+      errors.password =
+        "Must be at least 8 characters with an uppercase letter, lowercase letter, and a number";
     }
 
     if (isRegistration && password !== confirmPassword) {
-      setError("Passwords do not match");
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -191,7 +199,7 @@ function LoginFormInner({
                   />
                 </svg>
               )}
-              Continue with Google
+              {oauthLoading === "google" ? "Connecting..." : "Continue with Google"}
             </button>
           </div>
 
@@ -254,7 +262,7 @@ function LoginFormInner({
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[#CBD5E1]">
-              Email
+              Email<span className="text-red-400 ml-0.5">*</span>
             </label>
             <input
               id="email"
@@ -264,16 +272,26 @@ function LoginFormInner({
               autoFocus
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.email ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
               placeholder="you@email.com"
             />
+            {fieldErrors.email && (
+              <p id="email-error" className="mt-1 text-xs text-[#EF4444]">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
           <div>
             <div className="flex items-center justify-between">
               <label htmlFor="password" className="block text-sm font-medium text-[#CBD5E1]">
-                Password
+                Password<span className="text-red-400 ml-0.5">*</span>
               </label>
               {!isRegistration && (
                 <Link href="/forgot-password" className="text-sm text-[#22D3EE] hover:underline">
@@ -289,8 +307,13 @@ function LoginFormInner({
                 required
                 autoComplete={isRegistration ? "new-password" : "current-password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                className={`mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.password ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
                 placeholder="Min 8 chars, upper, lower & digit"
               />
               <button
@@ -326,7 +349,12 @@ function LoginFormInner({
                 )}
               </button>
             </div>
-            {isRegistration && (
+            {fieldErrors.password && (
+              <p id="password-error" className="mt-1 text-xs text-[#EF4444]">
+                {fieldErrors.password}
+              </p>
+            )}
+            {isRegistration && !fieldErrors.password && (
               <p className="text-xs text-[#94A3B8] mt-1">
                 Must be at least 8 characters with an uppercase letter, a lowercase letter, and a
                 number. Free plan: 1 project, 1 export/month.
@@ -337,7 +365,7 @@ function LoginFormInner({
           {isRegistration && (
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#CBD5E1]">
-                Confirm Password
+                Confirm Password<span className="text-red-400 ml-0.5">*</span>
               </label>
               <input
                 id="confirmPassword"
@@ -346,10 +374,22 @@ function LoginFormInner({
                 required
                 autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.confirmPassword}
+                aria-describedby={
+                  fieldErrors.confirmPassword ? "confirm-password-error" : undefined
+                }
+                className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.confirmPassword ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
                 placeholder="Repeat your password"
               />
+              {fieldErrors.confirmPassword && (
+                <p id="confirm-password-error" className="mt-1 text-xs text-[#EF4444]">
+                  {fieldErrors.confirmPassword}
+                </p>
+              )}
             </div>
           )}
 
@@ -379,6 +419,15 @@ function LoginFormInner({
               : "Sign In"}
         </button>
       </form>
+
+      {!isRegistration && (
+        <p className="text-sm text-center text-[#94A3B8]">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-[#22D3EE] hover:underline font-medium">
+            Sign up for free
+          </Link>
+        </p>
+      )}
 
       {isRegistration && (
         <p className="text-xs text-center text-[#64748B]">

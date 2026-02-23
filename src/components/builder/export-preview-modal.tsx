@@ -21,11 +21,22 @@ export function ExportPreviewModal({
   const [matchIndex, setMatchIndex] = useState(0);
   const codeRef = useRef<HTMLPreElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Close on Escape, open search on Ctrl+F
+  // Close on Escape, open search on Ctrl+F, focus trap
   useEffect(() => {
     if (!isOpen) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
+
+    // Focus the modal on open
+    setTimeout(() => {
+      const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus();
+    }, 50);
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === "Escape") {
@@ -41,12 +52,36 @@ export function ExportPreviewModal({
         setSearchOpen(true);
         setTimeout(() => searchInputRef.current?.focus(), 50);
       }
+
+      // Focus trap: keep Tab cycling within the modal
+      if (e.key === "Tab" && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
     };
   }, [isOpen, searchOpen, onClose]);
 
@@ -135,6 +170,7 @@ export function ExportPreviewModal({
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label="Code preview"

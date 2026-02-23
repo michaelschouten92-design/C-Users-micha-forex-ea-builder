@@ -127,196 +127,201 @@ export default function PricingPage() {
           <p className="text-[#94A3B8] text-center text-sm mb-8">
             See exactly what&apos;s included in each plan
           </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[rgba(79,70,229,0.2)]">
-                  <th className="text-left py-3 px-4 text-[#64748B] font-medium">Feature</th>
-                  <th className="text-center py-3 px-4 text-[#22D3EE] font-medium">Free</th>
-                  <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Pro</th>
-                  <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Elite</th>
-                </tr>
-              </thead>
-              <tbody className="text-[#94A3B8]">
-                {/* Builder & Export */}
-                <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                  <td
-                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider"
-                    colSpan={4}
-                  >
-                    Builder &amp; Export
-                  </td>
-                </tr>
-                {(
-                  [
-                    ["Visual strategy builder", true, true, true],
-                    ["Strategy templates", "All 6", "All 6", "All 6"],
-                    ["Active projects", "1", "Unlimited", "Unlimited"],
-                    ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
-                    ["MQL5 export (MetaTrader 5)", true, true, true],
-                    ["Clean, commented source code", true, true, true],
-                  ] as [string, string | boolean, string | boolean, string | boolean][]
-                ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                    {[free, pro, elite].map((val, i) => (
-                      <td key={i} className="py-3 px-4 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                          ) : (
-                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                          )
-                        ) : (
-                          <span className="text-[#CBD5E1]">{val}</span>
-                        )}
-                      </td>
-                    ))}
+          <div className="relative">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[rgba(79,70,229,0.2)]">
+                    <th className="text-left py-3 px-4 text-[#64748B] font-medium">Feature</th>
+                    <th className="text-center py-3 px-4 text-[#22D3EE] font-medium">Free</th>
+                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Pro</th>
+                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Elite</th>
                   </tr>
-                ))}
+                </thead>
+                <tbody className="text-[#94A3B8]">
+                  {/* Builder & Export */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider"
+                      colSpan={4}
+                    >
+                      Builder &amp; Export
+                    </td>
+                  </tr>
+                  {(
+                    [
+                      ["Visual strategy builder", true, true, true],
+                      ["Strategy templates", "All 6", "All 6", "All 6"],
+                      ["Active projects", "1", "Unlimited", "Unlimited"],
+                      ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
+                      ["MQL5 export (MetaTrader 5)", true, true, true],
+                      ["Clean, commented source code", true, true, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
 
-                {/* Tools & Analysis */}
-                <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                  <td
-                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
-                    colSpan={4}
-                  >
-                    Tools &amp; Analysis
-                  </td>
-                </tr>
-                {(
-                  [
-                    ["Monte Carlo risk calculator", true, true, true],
-                    ["Backtest health scoring", true, true, true],
-                    ["Strategy journal", true, true, true],
-                  ] as [string, string | boolean, string | boolean, string | boolean][]
-                ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                    {[free, pro, elite].map((val, i) => (
-                      <td key={i} className="py-3 px-4 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                          ) : (
-                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                          )
-                        ) : (
-                          <span className="text-[#CBD5E1]">{val}</span>
-                        )}
-                      </td>
-                    ))}
+                  {/* Tools & Analysis */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                      colSpan={4}
+                    >
+                      Tools &amp; Analysis
+                    </td>
                   </tr>
-                ))}
+                  {(
+                    [
+                      ["Monte Carlo risk calculator", true, true, true],
+                      ["Backtest health scoring", true, true, true],
+                      ["Strategy journal", true, true, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
 
-                {/* Verification & Tracking */}
-                <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                  <td
-                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
-                    colSpan={4}
-                  >
-                    Verification &amp; Tracking
-                  </td>
-                </tr>
-                {(
-                  [
-                    ["Strategy Identity (AS-xxxx)", false, true, true],
-                    ["Strategy versioning", false, true, true],
-                    ["Verified Track Record", false, true, true],
-                    ["Tamper-resistant hash chain", false, true, true],
-                    ["Public Verified Strategy Page", false, false, true],
-                  ] as [string, string | boolean, string | boolean, string | boolean][]
-                ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                    {[free, pro, elite].map((val, i) => (
-                      <td key={i} className="py-3 px-4 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                          ) : (
-                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                          )
-                        ) : (
-                          <span className="text-[#CBD5E1]">{val}</span>
-                        )}
-                      </td>
-                    ))}
+                  {/* Verification & Tracking */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                      colSpan={4}
+                    >
+                      Verification &amp; Tracking
+                    </td>
                   </tr>
-                ))}
+                  {(
+                    [
+                      ["Strategy Identity (AS-xxxx)", false, true, true],
+                      ["Strategy versioning", false, true, true],
+                      ["Verified Track Record", false, true, true],
+                      ["Tamper-resistant hash chain", false, true, true],
+                      ["Public Verified Strategy Page", false, false, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
 
-                {/* Live Monitoring & Protection */}
-                <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                  <td
-                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
-                    colSpan={4}
-                  >
-                    Live Monitoring &amp; Protection
-                  </td>
-                </tr>
-                {(
-                  [
-                    ["Live EA monitoring dashboard", false, true, true],
-                    ["Strategy Health Monitor", false, false, true],
-                    ["Edge degradation alerts", false, false, true],
-                    ["Advanced drawdown monitoring", false, false, true],
-                    ["Multi-strategy portfolio view", false, false, true],
-                  ] as [string, string | boolean, string | boolean, string | boolean][]
-                ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                    {[free, pro, elite].map((val, i) => (
-                      <td key={i} className="py-3 px-4 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                          ) : (
-                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                          )
-                        ) : (
-                          <span className="text-[#CBD5E1]">{val}</span>
-                        )}
-                      </td>
-                    ))}
+                  {/* Live Monitoring & Protection */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                      colSpan={4}
+                    >
+                      Live Monitoring &amp; Protection
+                    </td>
                   </tr>
-                ))}
+                  {(
+                    [
+                      ["Live EA monitoring dashboard", false, true, true],
+                      ["Strategy Health Monitor", false, false, true],
+                      ["Edge degradation alerts", false, false, true],
+                      ["Advanced drawdown monitoring", false, false, true],
+                      ["Multi-strategy portfolio view", false, false, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
 
-                {/* Support & Access */}
-                <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                  <td
-                    className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
-                    colSpan={4}
-                  >
-                    Support &amp; Access
-                  </td>
-                </tr>
-                {(
-                  [
-                    ["Priority support", false, true, true],
-                    ["Priority feature requests", false, false, true],
-                    ["1-on-1 strategy review session", false, false, true],
-                    ["Direct developer support", false, false, true],
-                  ] as [string, string | boolean, string | boolean, string | boolean][]
-                ).map(([feature, free, pro, elite]) => (
-                  <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                    <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                    {[free, pro, elite].map((val, i) => (
-                      <td key={i} className="py-3 px-4 text-center">
-                        {typeof val === "boolean" ? (
-                          val ? (
-                            <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                          ) : (
-                            <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                          )
-                        ) : (
-                          <span className="text-[#CBD5E1]">{val}</span>
-                        )}
-                      </td>
-                    ))}
+                  {/* Support & Access */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                      colSpan={4}
+                    >
+                      Support &amp; Access
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  {(
+                    [
+                      ["Priority support", false, true, true],
+                      ["Priority feature requests", false, false, true],
+                      ["1-on-1 strategy review session", false, false, true],
+                      ["Direct developer support", false, false, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-[#64748B] text-center mt-2 sm:hidden">
+              Scroll sideways to see all plans &rarr;
+            </p>
           </div>
         </div>
 
@@ -605,13 +610,13 @@ export default function PricingPage() {
             </Link>
           </p>
           <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg max-w-xl mx-auto">
-            <p className="text-xs text-amber-300/90 leading-relaxed">
+            <p className="text-xs text-amber-200 leading-relaxed">
               <strong>Risk Warning:</strong> Trading in financial markets involves substantial risk
               of loss and is not suitable for every investor. Past performance does not guarantee
               future results. Always test strategies on a demo account first. AlgoStudio is a tool
               for building and testing automated trading strategies — it does not provide financial
               advice or guarantee profits. See our{" "}
-              <Link href="/terms" className="underline hover:text-amber-200">
+              <Link href="/terms" className="underline hover:text-amber-100">
                 Terms of Service
               </Link>{" "}
               for full details.

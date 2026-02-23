@@ -263,7 +263,7 @@ export const BaseNode = memo(function BaseNode({
           type="target"
           position={Position.Top}
           title="Drag to connect to another block"
-          className="!w-3 !h-3 !bg-[#4F46E5] !border-2 !border-[#0F172A] hover:!bg-[#22D3EE] transition-colors duration-200"
+          className="!w-4 !h-4 !bg-[#4F46E5] !border-2 !border-[#0F172A] !rounded-full hover:!bg-[#22D3EE] hover:!shadow-[0_0_8px_rgba(34,211,238,0.5)] transition-all duration-200"
         />
       )}
 
@@ -281,7 +281,7 @@ export const BaseNode = memo(function BaseNode({
           type="source"
           position={Position.Bottom}
           title="Drag to connect to another block"
-          className="!w-3 !h-3 !bg-[#4F46E5] !border-2 !border-[#0F172A] hover:!bg-[#22D3EE] transition-colors duration-200"
+          className="!w-4 !h-4 !bg-[#4F46E5] !border-2 !border-[#0F172A] !rounded-full hover:!bg-[#22D3EE] hover:!shadow-[0_0_8px_rgba(34,211,238,0.5)] transition-all duration-200"
         />
       )}
 

@@ -73,9 +73,10 @@ export function validateConnection(
     if (allowedTargets && !allowedTargets.has(targetCategory)) {
       const sourceCatLabel = CATEGORY_LABELS[sourceCategory] ?? sourceCategory;
       const targetCatLabel = CATEGORY_LABELS[targetCategory] ?? targetCategory;
+      const guidance = getConnectionGuidance(sourceCategory, targetCategory);
       return {
         isValid: false,
-        reason: `Cannot connect ${sourceCatLabel} → ${targetCatLabel}. This connection doesn't make sense for strategy logic.`,
+        reason: `Cannot connect ${sourceCatLabel} → ${targetCatLabel}. ${guidance}`,
       };
     }
   }
@@ -115,6 +116,45 @@ const CATEGORY_LABELS: Record<string, string> = {
   riskmanagement: "Risk Management",
   trademanagement: "Trade Management",
 };
+
+/**
+ * Returns a helpful guidance message for invalid connection attempts
+ * based on the source and target node categories.
+ */
+function getConnectionGuidance(source: NodeCategory, target: NodeCategory): string {
+  // Output-only blocks used as source to something unexpected
+  if (source === "riskmanagement" || source === "trademanagement") {
+    return "Risk Management and Trade Management blocks are output blocks. They receive connections but don't send them.";
+  }
+
+  // Indicator connecting to trade management / risk management directly
+  if (source === "indicator" && (target === "riskmanagement" || target === "trademanagement")) {
+    return "Indicators should connect to Entry or Trade Execution blocks, not directly to Risk/Trade Management.";
+  }
+
+  // Price action connecting to risk/trade management directly
+  if (source === "priceaction" && (target === "riskmanagement" || target === "trademanagement")) {
+    return "Price Action blocks should connect to Entry or Trade Execution blocks first.";
+  }
+
+  // Timing connecting directly to entry/risk/trade management
+  if (
+    source === "timing" &&
+    (target === "entry" || target === "riskmanagement" || target === "trademanagement")
+  ) {
+    return "Filter/Timing blocks should connect to Indicator, Price Action, or Trade Execution blocks.";
+  }
+
+  // Entry or trading connecting to indicators/price action (backwards flow)
+  if (
+    (source === "entry" || source === "trading") &&
+    (target === "indicator" || target === "priceaction" || target === "timing")
+  ) {
+    return "This would create a backwards flow. Entry and Trade Execution blocks should connect forward to Risk Management or Trade Management.";
+  }
+
+  return "This connection doesn't make sense for the strategy logic. Check the expected flow: Timing/Indicators → Entry/Trading → Risk/Trade Management.";
+}
 
 /**
  * Check if adding an edge from source to target would create a cycle

@@ -615,12 +615,21 @@ export default function JournalPage() {
               return (
                 <div
                   key={entry.id}
-                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6"
+                  className={`rounded-xl p-6 transition-all duration-200 ${
+                    isEditing
+                      ? "bg-[#1A0626]/80 border-2 border-[#4F46E5] shadow-[0_0_16px_rgba(79,70,229,0.2)]"
+                      : "bg-[#1A0626] border border-[rgba(79,70,229,0.2)]"
+                  }`}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-white font-semibold">{entry.project.name}</h3>
+                      {isEditing && (
+                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/30">
+                          Editing
+                        </span>
+                      )}
                       <span
                         className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${getStatusBadgeClass(entry.status)}`}
                       >

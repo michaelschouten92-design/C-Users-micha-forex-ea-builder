@@ -7,6 +7,7 @@ import { ProjectList } from "./components/project-list";
 import { SubscriptionPanel } from "./components/subscription-panel";
 import { EmailVerificationBanner } from "./components/email-verification-banner";
 import { NotificationCenter } from "@/components/app/notification-center";
+import { MobileNavMenu } from "./components/mobile-nav-menu";
 import { generateDailyInsights, getPortfolioStatus } from "@/lib/daily-insights";
 
 export default async function DashboardPage() {
@@ -141,13 +142,13 @@ export default async function DashboardPage() {
               <NotificationCenter />
               <Link
                 href={projects.length > 0 ? `/app/projects/${projects[0].id}` : "/app"}
-                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
+                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200 hidden sm:inline"
               >
                 EA Builder
               </Link>
               <Link
                 href="/app/live"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
               >
                 Track Record
               </Link>
@@ -159,7 +160,7 @@ export default async function DashboardPage() {
               </Link>
               <Link
                 href="/app/settings"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
               >
                 Settings
               </Link>
@@ -168,6 +169,7 @@ export default async function DashboardPage() {
                   "use server";
                   await signOut({ redirectTo: "/login" });
                 }}
+                className="hidden sm:block"
               >
                 <button
                   type="submit"
@@ -176,6 +178,7 @@ export default async function DashboardPage() {
                   Sign Out
                 </button>
               </form>
+              <MobileNavMenu firstProjectId={projects.length > 0 ? projects[0].id : null} />
             </div>
           </div>
         </div>

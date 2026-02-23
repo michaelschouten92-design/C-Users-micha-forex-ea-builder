@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { PushNotificationToggle } from "@/components/app/push-notification-toggle";
@@ -102,14 +102,16 @@ export default function SettingsPage() {
           {/* Email */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
-            <div className="flex items-center flex-wrap">
-              <p className="text-[#94A3B8] text-sm break-all">
-                {session?.user?.email || "Loading..."}
-              </p>
-              {session?.user?.email && <CopyButton text={session.user.email} />}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 flex-wrap">
+              <div className="flex items-center min-w-0">
+                <p className="text-[#94A3B8] text-sm break-all">
+                  {session?.user?.email || "Loading..."}
+                </p>
+                {session?.user?.email && <CopyButton text={session.user.email} />}
+              </div>
               {session?.user && (
                 <span
-                  className={`ml-3 text-xs px-2 py-0.5 rounded-full font-medium ${
+                  className={`sm:ml-3 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${
                     session.user.emailVerified
                       ? "bg-[rgba(16,185,129,0.15)] text-[#10B981]"
                       : "bg-[rgba(245,158,11,0.15)] text-[#F59E0B]"
@@ -129,7 +131,7 @@ export default function SettingsPage() {
             </p>
             <Link
               href="/app"
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -170,12 +172,32 @@ export default function SettingsPage() {
   );
 }
 
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+  if (password.length === 0) return { score: 0, label: "", color: "" };
+
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (password.length >= 16) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 2) return { score: 1, label: "Weak", color: "#EF4444" };
+  if (score <= 4) return { score: 2, label: "Fair", color: "#F59E0B" };
+  if (score <= 5) return { score: 3, label: "Good", color: "#FBBF24" };
+  return { score: 4, label: "Strong", color: "#10B981" };
+}
+
 function ChangePasswordSection() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
+
+  const passwordStrength = useMemo(() => getPasswordStrength(newPassword), [newPassword]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -248,6 +270,25 @@ function ChangePasswordSection() {
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
             placeholder="Minimum 8 characters"
           />
+          {newPassword.length > 0 && (
+            <div className="mt-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map((level) => (
+                  <div
+                    key={level}
+                    className="h-1.5 flex-1 rounded-full transition-colors duration-200"
+                    style={{
+                      backgroundColor:
+                        level <= passwordStrength.score ? passwordStrength.color : "#1E293B",
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-xs mt-1" style={{ color: passwordStrength.color }}>
+                {passwordStrength.label}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <label
@@ -277,7 +318,7 @@ function ChangePasswordSection() {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {loading ? "Saving..." : "Change Password"}
         </button>
@@ -330,7 +371,7 @@ function DataExportSection() {
       <button
         onClick={handleExport}
         disabled={exporting}
-        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
       >
         {exporting ? (
           <>
@@ -371,18 +412,23 @@ function DataExportSection() {
 
 function DeleteAccountSection() {
   const [confirmText, setConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleDelete() {
     if (confirmText.toUpperCase() !== "DELETE") return;
+    if (deletePassword.length === 0) {
+      showError("Please enter your current password");
+      return;
+    }
 
     setLoading(true);
     try {
       const res = await fetch("/api/account/delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ confirm: "DELETE" }),
+        body: JSON.stringify({ confirm: "DELETE", password: deletePassword }),
       });
 
       if (!res.ok) {
@@ -408,36 +454,85 @@ function DeleteAccountSection() {
       {!showConfirm ? (
         <button
           onClick={() => setShowConfirm(true)}
-          className="px-6 py-2.5 text-sm font-medium text-[#EF4444] border border-[rgba(239,68,68,0.3)] rounded-lg hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#EF4444] border border-[rgba(239,68,68,0.3)] rounded-lg hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200"
         >
           Delete Account
         </button>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-[#EF4444]">
-            Type <strong>DELETE</strong> to confirm:
-          </p>
-          <input
-            type="text"
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(239,68,68,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:border-transparent transition-all duration-200"
-            placeholder="Type DELETE"
-          />
-          <div className="flex gap-3">
+        <div className="space-y-4">
+          {/* Consequences warning */}
+          <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-lg p-4">
+            <p className="text-sm font-medium text-[#EF4444] mb-2">This will permanently delete:</p>
+            <ul className="space-y-1.5 text-sm text-[#FCA5A5]">
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
+                All your projects and strategy builds
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
+                All exported Expert Advisors (EAs)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
+                Journal entries and track record data
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
+                Account settings and subscription
+              </li>
+            </ul>
+          </div>
+
+          {/* Step 1: Password confirmation */}
+          <div>
+            <label
+              htmlFor="deleteAccountPassword"
+              className="block text-sm font-medium text-[#CBD5E1] mb-1"
+            >
+              Enter your current password
+            </label>
+            <input
+              id="deleteAccountPassword"
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(239,68,68,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:border-transparent transition-all duration-200"
+              placeholder="Current password"
+              autoComplete="current-password"
+            />
+          </div>
+
+          {/* Step 2: Type DELETE */}
+          <div>
+            <p className="text-sm text-[#EF4444] mb-1">
+              Type <strong>DELETE</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(239,68,68,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:border-transparent transition-all duration-200"
+              placeholder="Type DELETE"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleDelete}
-              disabled={confirmText.toUpperCase() !== "DELETE" || loading}
-              className="px-6 py-2.5 text-sm font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              disabled={
+                confirmText.toUpperCase() !== "DELETE" || deletePassword.length === 0 || loading
+              }
+              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {loading ? "Deleting..." : "Confirm Delete"}
+              {loading ? "Deleting..." : "Permanently Delete Account"}
             </button>
             <button
               onClick={() => {
                 setShowConfirm(false);
                 setConfirmText("");
+                setDeletePassword("");
               }}
-              className="px-6 py-2.5 text-sm font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
+              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
             >
               Cancel
             </button>

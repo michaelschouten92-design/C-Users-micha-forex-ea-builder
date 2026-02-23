@@ -136,16 +136,40 @@ export function NotificationCenter() {
     }
   }, [isOpen]);
 
-  // Close on Escape key
+  // Close on Escape key + arrow key navigation
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        return;
+      }
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const container = dropdownRef.current?.querySelector("[data-notification-list]");
+        if (!container) return;
+        const items = Array.from(
+          container.querySelectorAll<HTMLElement>("[data-notification-item]")
+        );
+        if (items.length === 0) return;
+
+        const currentIndex = items.findIndex(
+          (item) => item === document.activeElement || item.contains(document.activeElement as Node)
+        );
+        let nextIndex: number;
+        if (e.key === "ArrowDown") {
+          nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        } else {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        }
+        items[nextIndex]?.focus();
+      }
     }
 
-    if (isOpen) {
-      window.addEventListener("keydown", handleKey);
-      return () => window.removeEventListener("keydown", handleKey);
-    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
   async function handleAcknowledge(id: string) {
@@ -239,7 +263,7 @@ export function NotificationCenter() {
           </div>
 
           {/* Notification List */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto" data-notification-list>
             {notifications.length === 0 ? (
               <div className="p-6 text-center">
                 <svg
@@ -264,7 +288,9 @@ export function NotificationCenter() {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors ${
+                  data-notification-item
+                  tabIndex={0}
+                  className={`p-3 border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors focus:outline-none focus:bg-[rgba(79,70,229,0.1)] ${
                     !notification.acknowledged ? "bg-[rgba(79,70,229,0.08)]" : ""
                   }`}
                 >

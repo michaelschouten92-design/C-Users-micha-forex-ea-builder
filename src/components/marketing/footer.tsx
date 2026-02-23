@@ -11,7 +11,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/product"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Platform Overview
                 </Link>
@@ -19,7 +19,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/product/track-record"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Verified Track Record
                 </Link>
@@ -27,7 +27,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/product/how-it-works"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   EA Builder
                 </Link>
@@ -35,7 +35,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/templates"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Strategy Templates
                 </Link>
@@ -43,7 +43,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/pricing"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Pricing
                 </Link>
@@ -51,7 +51,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/roadmap"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Roadmap
                 </Link>
@@ -59,7 +59,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/status"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   System Status
                 </Link>
@@ -72,7 +72,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/blog"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Blog
                 </Link>
@@ -80,7 +80,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/prop-firms"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Prop Firms
                 </Link>
@@ -88,7 +88,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/compare-platforms"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Compare Platforms
                 </Link>
@@ -101,7 +101,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/privacy"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -109,7 +109,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Terms of Service
                 </Link>
@@ -122,7 +122,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/contact"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   Contact
                 </Link>
@@ -130,7 +130,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/faq"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   FAQ
                 </Link>
@@ -138,7 +138,7 @@ export function Footer() {
               <li>
                 <a
                   href="mailto:support@algo-studio.com"
-                  className="text-sm text-[#64748B] hover:text-[#94A3B8] transition-colors"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
                   support@algo-studio.com
                 </a>

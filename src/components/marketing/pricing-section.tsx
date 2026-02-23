@@ -176,7 +176,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
-            <h3 className="text-xl font-semibold text-white">Pro</h3>
+            <h3 className="text-xl font-semibold text-white">
+              <span className="sr-only">Most popular plan - </span>Pro
+            </h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
             Build &amp; Run

@@ -648,41 +648,69 @@ export function StrategyCanvas({
       </a>
       <WelcomeModal forceOpen={showHelp} onClose={() => setShowHelp(false)} />
 
-      {/* Mobile: read-only strategy summary */}
+      {/* Mobile: read-only strategy overview */}
       <div className="sm:hidden flex-1 overflow-y-auto p-4">
-        <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg
-              className="w-4 h-4 text-[#A78BFA]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            <span className="text-xs text-[#A78BFA] font-medium">
-              Editing requires a desktop or tablet
-            </span>
+        <div className="bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.2)] rounded-xl p-5 mb-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-[rgba(79,70,229,0.15)] flex items-center justify-center flex-shrink-0">
+              <svg
+                className="w-5 h-5 text-[#A78BFA]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Desktop or Tablet Required</h3>
+              <p className="text-xs text-[#A78BFA]">
+                The visual strategy builder needs a larger screen
+              </p>
+            </div>
           </div>
-          <p className="text-[10px] text-[#7C8DB0]">
-            You can view your strategy summary below. To add, remove, or configure blocks, open this
+          <p className="text-xs text-[#7C8DB0] leading-relaxed">
+            The drag-and-drop builder requires a desktop or tablet in landscape mode. You can review
+            your strategy overview below, but to add, remove, or configure blocks, please open this
             project on a larger screen.
           </p>
         </div>
 
         {nodes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#7C8DB0] text-sm">No blocks added yet.</p>
-            <p className="text-[#7C8DB0] text-xs mt-1">Open on desktop to start building.</p>
+          <div className="text-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-[rgba(79,70,229,0.1)] flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-7 h-7 text-[#4F46E5]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
+            </div>
+            <p className="text-[#CBD5E1] text-sm font-medium">No blocks added yet</p>
+            <p className="text-[#7C8DB0] text-xs mt-1.5 max-w-[240px] mx-auto">
+              Open this project on a desktop or tablet to start building your strategy.
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-white">Strategy Blocks ({nodes.length})</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Strategy Overview</h3>
+              <span className="text-xs text-[#7C8DB0] bg-[#1E293B] px-2.5 py-1 rounded-full">
+                {nodes.length} block{nodes.length !== 1 ? "s" : ""}
+              </span>
+            </div>
             {nodes.map((node) => {
               const data = node.data as BuilderNodeData;
               const categoryColors: Record<string, string> = {
@@ -690,29 +718,93 @@ export function StrategyCanvas({
                 trademanagement: "#A78BFA",
                 indicator: "#22D3EE",
                 trading: "#3B82F6",
+                priceaction: "#F472B6",
+                riskmanagement: "#34D399",
+              };
+              const categoryLabels: Record<string, string> = {
+                timing: "Timing",
+                trademanagement: "Trade Management",
+                indicator: "Indicator",
+                trading: "Trading",
+                priceaction: "Price Action",
+                riskmanagement: "Risk Management",
               };
               const color = categoryColors[data.category] || "#64748B";
+              const categoryLabel = categoryLabels[data.category] || data.category;
+
+              // Extract displayable settings from node data
+              const settingEntries: Array<{ key: string; value: string }> = [];
+              for (const [key, value] of Object.entries(data)) {
+                if (
+                  ["label", "category", "description", "icon", "handles"].includes(key) ||
+                  value === undefined ||
+                  value === null ||
+                  value === ""
+                ) {
+                  continue;
+                }
+                if (typeof value === "boolean") {
+                  settingEntries.push({ key, value: value ? "Yes" : "No" });
+                } else if (typeof value === "number" || typeof value === "string") {
+                  settingEntries.push({ key, value: String(value) });
+                }
+              }
+
               return (
                 <div
                   key={node.id}
-                  className="bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded-lg p-3"
+                  className="bg-[#1E293B] border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-3 p-3.5 border-b border-[rgba(79,70,229,0.1)]">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: color }}
                     />
-                    <span className="text-sm font-medium text-white">{data.label}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-white block truncate">
+                        {data.label}
+                      </span>
+                      <span
+                        className="text-[10px] uppercase tracking-wider font-medium"
+                        style={{ color }}
+                      >
+                        {categoryLabel}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-[#7C8DB0] uppercase tracking-wider">
-                    {data.category
-                      .replace("trademanagement", "Trade Management")
-                      .replace("priceaction", "Price Action")
-                      .replace("riskmanagement", "Risk Management")}
-                  </p>
+                  {settingEntries.length > 0 && (
+                    <div className="px-3.5 py-2.5 space-y-1.5">
+                      {settingEntries.slice(0, 6).map(({ key, value }) => (
+                        <div key={key} className="flex items-center justify-between text-xs">
+                          <span className="text-[#7C8DB0] capitalize">
+                            {key.replace(/([A-Z])/g, " $1").trim()}
+                          </span>
+                          <span className="text-[#CBD5E1] font-mono text-[11px] truncate max-w-[50%] text-right">
+                            {value}
+                          </span>
+                        </div>
+                      ))}
+                      {settingEntries.length > 6 && (
+                        <p className="text-[10px] text-[#7C8DB0] pt-0.5">
+                          +{settingEntries.length - 6} more setting
+                          {settingEntries.length - 6 !== 1 ? "s" : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
+
+            {/* Connection summary */}
+            {edges.length > 0 && (
+              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.1)] rounded-xl p-3.5">
+                <p className="text-xs text-[#7C8DB0]">
+                  <span className="text-[#A78BFA] font-medium">{edges.length}</span> connection
+                  {edges.length !== 1 ? "s" : ""} between blocks
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -885,171 +977,174 @@ export function StrategyCanvas({
             </span>
           </div>
 
-          {/* Autosave error banner */}
-          {autoSaveStatus === "error" && (
-            <div
-              role="alert"
-              aria-live="assertive"
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]"
-            >
-              <svg
-                className="w-5 h-5 flex-shrink-0 text-[#FCA5A5]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          {/* Toast stack container — toasts stack vertically and don't overlap */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col gap-2 items-center pointer-events-none">
+            {/* Autosave error banner */}
+            {autoSaveStatus === "error" && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="pointer-events-auto bg-[#7F1D1D] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-3 border border-red-500/30 max-w-[90vw]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <span className="text-sm font-medium">
-                Autosave failed — your changes are not saved
-              </span>
-              <button
-                onClick={() => saveToServer(false)}
-                className="px-3 py-1 text-xs font-semibold bg-white/15 hover:bg-white/25 rounded-md transition-colors flex-shrink-0"
-              >
-                Retry
-              </button>
-            </div>
-          )}
+                <svg
+                  className="w-5 h-5 flex-shrink-0 text-[#FCA5A5]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <span className="text-sm font-medium">
+                  Autosave failed — your changes are not saved
+                </span>
+                <button
+                  onClick={() => saveToServer(false)}
+                  className="px-3 py-1 text-xs font-semibold bg-white/15 hover:bg-white/25 rounded-md transition-colors flex-shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
 
-          {/* Offline warning banner */}
-          {!isOnline && (
-            <div
-              role="status"
-              aria-live="polite"
-              className={`absolute ${autoSaveStatus === "error" ? "top-16" : "top-4"} left-1/2 -translate-x-1/2 z-20 bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw] transition-all duration-200`}
-            >
-              <svg
-                className="w-5 h-5 flex-shrink-0 text-[#FCD34D]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Offline warning banner */}
+            {!isOnline && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="pointer-events-auto bg-[#78350F] text-white px-4 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(245,158,11,0.4)] flex items-center gap-3 border border-amber-500/30 max-w-[90vw] transition-all duration-200"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M18.364 5.636a9 9 0 010 12.728m-2.829-2.829a5 5 0 000-7.07m-4.243 4.243a1 1 0 010-1.414"
-                />
-              </svg>
-              <span className="text-sm font-medium">
-                You are offline — changes won&apos;t be saved until you reconnect
-              </span>
-            </div>
-          )}
+                <svg
+                  className="w-5 h-5 flex-shrink-0 text-[#FCD34D]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 5.636a9 9 0 010 12.728m-2.829-2.829a5 5 0 000-7.07m-4.243 4.243a1 1 0 010-1.414"
+                  />
+                </svg>
+                <span className="text-sm font-medium">
+                  You are offline — changes won&apos;t be saved until you reconnect
+                </span>
+              </div>
+            )}
 
-          {/* Connection error toast */}
-          {connectionError && (
-            <div
-              role="alert"
-              onClick={dismissConnectionError}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
-            >
-              <svg
-                className="w-5 h-5 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Connection error toast */}
+            {connectionError && (
+              <div
+                role="alert"
+                onClick={dismissConnectionError}
+                className="pointer-events-auto bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium">{connectionError}</span>
-              <svg
-                className="w-4 h-4 flex-shrink-0 opacity-60"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </div>
-          )}
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="text-sm font-medium">{connectionError}</span>
+                <svg
+                  className="w-4 h-4 flex-shrink-0 opacity-60"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+            )}
 
-          {/* Drop error toast (entry strategy duplicate / node limit) */}
-          {dropError && (
-            <div
-              role="alert"
-              onClick={() => setDropError(null)}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
-            >
-              <svg
-                className="w-5 h-5 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Drop error toast (entry strategy duplicate / node limit) */}
+            {dropError && (
+              <div
+                role="alert"
+                onClick={() => setDropError(null)}
+                className="pointer-events-auto bg-[#DC2626] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(220,38,38,0.4)] flex items-center gap-2 border border-red-400/30 max-w-[90vw] cursor-pointer hover:bg-[#B91C1C] transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium">{dropError}</span>
-            </div>
-          )}
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="text-sm font-medium">{dropError}</span>
+              </div>
+            )}
 
-          {/* Delete undo hint toast */}
-          {deleteHint && !dropError && !connectionError && (
-            <div
-              role="status"
-              onClick={() => setDeleteHint(null)}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#1E293B] text-[#CBD5E1] px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex items-center gap-2 border border-[rgba(79,70,229,0.3)] max-w-[90vw] cursor-pointer"
-            >
-              <svg
-                className="w-4 h-4 flex-shrink-0 text-[#94A3B8]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Delete undo hint toast */}
+            {deleteHint && (
+              <div
+                role="status"
+                onClick={() => setDeleteHint(null)}
+                className="pointer-events-auto bg-[#1E293B] text-[#CBD5E1] px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex items-center gap-2 border border-[rgba(79,70,229,0.3)] max-w-[90vw] cursor-pointer"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              <span className="text-sm">{deleteHint}</span>
-            </div>
-          )}
+                <svg
+                  className="w-4 h-4 flex-shrink-0 text-[#94A3B8]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                <span className="text-sm">{deleteHint}</span>
+              </div>
+            )}
 
-          {/* Drop success toast */}
-          {dropSuccess && (
-            <div
-              role="status"
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#065F46] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(16,185,129,0.4)] flex items-center gap-2 border border-emerald-500/30 max-w-[90vw]"
-            >
-              <svg
-                className="w-5 h-5 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {/* Drop success toast */}
+            {dropSuccess && (
+              <div
+                role="status"
+                className="pointer-events-auto bg-[#065F46] text-white px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(16,185,129,0.4)] flex items-center gap-2 border border-emerald-500/30 max-w-[90vw]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span className="text-sm font-medium">{dropSuccess}</span>
-            </div>
-          )}
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-sm font-medium">{dropSuccess}</span>
+              </div>
+            )}
+          </div>
 
           {/* Validation Status - top right overlay */}
           <div className="absolute top-4 right-4 z-10">

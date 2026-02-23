@@ -23,10 +23,16 @@ function RegisterFormInner({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaWidgetId = useRef<string | null>(null);
   const captchaContainerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +78,14 @@ function RegisterFormInner({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
+
+    // Client-side validation with field-level errors
+    const errors: { email?: string; password?: string; confirmPassword?: string } = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      errors.email = "Please enter a valid email address";
+    }
 
     if (
       password.length < 8 ||
@@ -79,14 +93,16 @@ function RegisterFormInner({
       !/[a-z]/.test(password) ||
       !/[0-9]/.test(password)
     ) {
-      setError(
-        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number"
-      );
-      return;
+      errors.password =
+        "Must be at least 8 characters with an uppercase letter, lowercase letter, and a number";
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -207,7 +223,7 @@ function RegisterFormInner({
                   />
                 </svg>
               )}
-              Continue with Google
+              {oauthLoading === "google" ? "Connecting..." : "Continue with Google"}
             </button>
           </div>
 
@@ -235,7 +251,7 @@ function RegisterFormInner({
         <div className="space-y-4">
           <div>
             <label htmlFor="reg-email" className="block text-sm font-medium text-[#CBD5E1]">
-              Email
+              Email<span className="text-red-400 ml-0.5">*</span>
             </label>
             <input
               id="reg-email"
@@ -245,15 +261,25 @@ function RegisterFormInner({
               autoFocus
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? "reg-email-error" : undefined}
+              className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.email ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
               placeholder="you@email.com"
             />
+            {fieldErrors.email && (
+              <p id="reg-email-error" className="mt-1 text-xs text-[#EF4444]">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="reg-password" className="block text-sm font-medium text-[#CBD5E1]">
-              Password
+              Password<span className="text-red-400 ml-0.5">*</span>
             </label>
             <p className="text-xs text-[#94A3B8] mt-1 mb-1">
               Must be at least 8 characters with an uppercase letter, a lowercase letter, and a
@@ -267,8 +293,15 @@ function RegisterFormInner({
                 required
                 autoComplete="new-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full px-4 py-3 pr-10 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "reg-password-error" : undefined}
+                className={`block w-full px-4 py-3 pr-10 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.password ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
                 placeholder="Min 8 chars, upper, lower & digit"
               />
               <button
@@ -304,6 +337,57 @@ function RegisterFormInner({
                 )}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p id="reg-password-error" className="mt-1 text-xs text-[#EF4444]">
+                {fieldErrors.password}
+              </p>
+            )}
+            {/* Real-time password requirements checklist */}
+            {!fieldErrors.password && (passwordFocused || password.length > 0) && (
+              <ul className="mt-2 space-y-1 text-xs">
+                {[
+                  { label: "At least 8 characters", met: password.length >= 8 },
+                  { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
+                  { label: "Contains lowercase letter", met: /[a-z]/.test(password) },
+                  { label: "Contains a digit", met: /[0-9]/.test(password) },
+                ].map((req) => (
+                  <li key={req.label} className="flex items-center gap-1.5">
+                    {req.met ? (
+                      <svg
+                        className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-3.5 h-3.5 text-[#64748B] flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    )}
+                    <span className={req.met ? "text-[#10B981]" : "text-[#64748B]"}>
+                      {req.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <p className="text-xs text-[#94A3B8] mt-1">Free plan: 1 project, 1 export/month.</p>
           </div>
 
@@ -312,7 +396,7 @@ function RegisterFormInner({
               htmlFor="reg-confirmPassword"
               className="block text-sm font-medium text-[#CBD5E1]"
             >
-              Confirm Password
+              Confirm Password<span className="text-red-400 ml-0.5">*</span>
             </label>
             <div className="relative">
               <input
@@ -322,8 +406,15 @@ function RegisterFormInner({
                 required
                 autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }}
+                aria-invalid={!!fieldErrors.confirmPassword}
+                aria-describedby={
+                  fieldErrors.confirmPassword ? "reg-confirm-password-error" : undefined
+                }
+                className={`mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.confirmPassword ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
                 placeholder="Repeat your password"
               />
               <button
@@ -359,6 +450,53 @@ function RegisterFormInner({
                 )}
               </button>
             </div>
+            {fieldErrors.confirmPassword && (
+              <p id="reg-confirm-password-error" className="mt-1 text-xs text-[#EF4444]">
+                {fieldErrors.confirmPassword}
+              </p>
+            )}
+            {/* Real-time confirm password match feedback */}
+            {!fieldErrors.confirmPassword && confirmPassword.length > 0 && (
+              <p
+                className={`text-xs mt-1 flex items-center gap-1 ${password === confirmPassword ? "text-[#10B981]" : "text-[#EF4444]"}`}
+              >
+                {password === confirmPassword ? (
+                  <>
+                    <svg
+                      className="w-3.5 h-3.5 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Passwords match
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-3.5 h-3.5 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                    Passwords don&apos;t match
+                  </>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Turnstile CAPTCHA */}

@@ -103,14 +103,15 @@ export function ValidationStatus({ validation, onFocusNode }: ValidationStatusPr
           </svg>
         )}
       </button>
-      {/* Inline first issue hint (without requiring click) */}
+      {/* Issue count summary when collapsed */}
       {!showDetails && validation.issues.length > 0 && (
-        <p
-          className={`text-[10px] mt-1 max-w-[200px] truncate ${
-            errorCount > 0 ? "text-[#FCA5A5]" : "text-[#FCD34D]"
-          }`}
-        >
-          {validation.issues[0].message}
+        <p className="text-[10px] mt-1 text-[#94A3B8]">
+          {[
+            errorCount > 0 ? `${errorCount} error${errorCount > 1 ? "s" : ""}` : "",
+            warningCount > 0 ? `${warningCount} warning${warningCount > 1 ? "s" : ""}` : "",
+          ]
+            .filter(Boolean)
+            .join(", ")}
         </p>
       )}
 

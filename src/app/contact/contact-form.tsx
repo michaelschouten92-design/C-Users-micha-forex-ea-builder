@@ -89,7 +89,7 @@ export function ContactForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="contact-name" className="block text-sm font-medium text-[#CBD5E1] mb-1">
-              Name *
+              Name<span className="text-red-400 ml-0.5">*</span>
             </label>
             <input
               id="contact-name"
@@ -106,7 +106,7 @@ export function ContactForm() {
               htmlFor="contact-email"
               className="block text-sm font-medium text-[#CBD5E1] mb-1"
             >
-              Email *
+              Email<span className="text-red-400 ml-0.5">*</span>
             </label>
             <input
               id="contact-email"
@@ -140,7 +140,7 @@ export function ContactForm() {
             htmlFor="contact-message"
             className="block text-sm font-medium text-[#CBD5E1] mb-1"
           >
-            Message *
+            Message<span className="text-red-400 ml-0.5">*</span>
           </label>
           <textarea
             id="contact-message"

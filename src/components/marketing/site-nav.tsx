@@ -10,7 +10,10 @@ export function SiteNav() {
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href="/" className="text-xl font-bold text-white">
+          <Link
+            href="/"
+            className="text-xl font-bold text-white rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+          >
             AlgoStudio
           </Link>
           <span className="text-[10px] text-[#64748B] font-medium tracking-wider uppercase border border-[rgba(79,70,229,0.3)] rounded px-1.5 py-0.5 hidden sm:inline">
@@ -20,25 +23,31 @@ export function SiteNav() {
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/product"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >
             Platform
           </Link>
           <Link
             href="/pricing"
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >
             Pricing
           </Link>
-          <Link href="/about" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+          <Link
+            href="/about"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+          >
             About
           </Link>
-          <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+          <Link
+            href="/login"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+          >
             Sign in
           </Link>
           <Link
             href="/login?mode=register&redirect=/app/backtest"
-            className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
+            className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >
             Upload Backtest
           </Link>
