@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCachedTier } from "@/lib/plan-limits";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier === "FREE") {
+    return NextResponse.json(
+      { error: "Live EA monitoring requires a Pro or Elite subscription" },
+      { status: 403 }
+    );
   }
 
   const ninetyDaysAgo = new Date();

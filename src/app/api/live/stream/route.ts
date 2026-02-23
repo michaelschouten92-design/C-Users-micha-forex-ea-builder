@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCachedTier } from "@/lib/plan-limits";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,6 +9,11 @@ export async function GET(request: Request): Promise<Response> {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier === "FREE") {
+    return new Response("Live EA monitoring requires a Pro or Elite subscription", { status: 403 });
   }
 
   const userId = session.user.id;

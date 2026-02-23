@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { getCachedTier } from "@/lib/plan-limits";
 import { NextRequest, NextResponse } from "next/server";
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -13,6 +14,14 @@ export async function GET(
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+  }
+
+  const tier = await getCachedTier(session.user.id);
+  if (tier === "FREE") {
+    return NextResponse.json(
+      apiError(ErrorCode.PLAN_REQUIRED, "Live EA monitoring requires a Pro or Elite subscription"),
+      { status: 403 }
+    );
   }
 
   const { instanceId } = await params;
