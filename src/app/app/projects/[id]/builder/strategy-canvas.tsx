@@ -688,7 +688,7 @@ export function StrategyCanvas({
                 timing: "#F59E0B",
                 trademanagement: "#A78BFA",
                 indicator: "#22D3EE",
-                trading: "#10B981",
+                trading: "#3B82F6",
               };
               const color = categoryColors[data.category] || "#64748B";
               return (

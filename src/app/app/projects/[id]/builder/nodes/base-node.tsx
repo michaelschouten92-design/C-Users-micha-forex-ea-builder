@@ -46,10 +46,10 @@ const categoryStyles: Record<
     glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
   },
   trading: {
-    bg: "bg-[rgba(16,185,129,0.08)]",
-    border: "border-[rgba(16,185,129,0.3)]",
-    header: "bg-gradient-to-r from-[#059669] to-[#10B981]",
-    glow: "shadow-[0_0_16px_rgba(16,185,129,0.25)]",
+    bg: "bg-[rgba(59,130,246,0.08)]",
+    border: "border-[rgba(59,130,246,0.3)]",
+    header: "bg-gradient-to-r from-[#2563EB] to-[#3B82F6]",
+    glow: "shadow-[0_0_16px_rgba(59,130,246,0.25)]",
   },
   riskmanagement: {
     bg: "bg-[rgba(225,29,72,0.08)]",

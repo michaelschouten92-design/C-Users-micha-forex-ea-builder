@@ -405,7 +405,7 @@ export function VersionControls({
                   >
                     <span className="font-medium">Version {version.versionNo}</span>
                     <span className="text-[#7C8DB0] text-xs">
-                      {new Date(version.createdAt).toLocaleDateString("en-US", {
+                      {new Date(version.createdAt).toLocaleDateString(undefined, {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
@@ -569,7 +569,7 @@ export function VersionControls({
       <div className="flex items-center gap-2 md:gap-4 text-sm">
         {/* Save status */}
         {autoSaveStatus === "saving" ? (
-          <span className="flex items-center gap-1.5 text-[#94A3B8]">
+          <span className="flex items-center gap-1.5 text-[#94A3B8]" title="Autosaving...">
             <svg className="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
@@ -585,10 +585,10 @@ export function VersionControls({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="hidden md:inline">Autosaving...</span>
+            <span className="hidden sm:inline">Saving...</span>
           </span>
         ) : autoSaveStatus === "saved" ? (
-          <span className="flex items-center gap-1.5 text-[#22D3EE]">
+          <span className="flex items-center gap-1.5 text-[#22D3EE]" title="All changes saved">
             <svg
               className="w-4 h-4 flex-shrink-0"
               fill="none"
@@ -602,10 +602,10 @@ export function VersionControls({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <span className="hidden md:inline">Autosaved</span>
+            <span className="hidden sm:inline">Saved</span>
           </span>
         ) : autoSaveStatus === "error" ? (
-          <span className="flex items-center gap-1.5 text-[#F87171]">
+          <span className="flex items-center gap-1.5 text-[#F87171]" title="Autosave failed">
             <svg
               className="w-4 h-4 flex-shrink-0"
               fill="none"
@@ -619,15 +619,18 @@ export function VersionControls({
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="hidden md:inline">Autosave failed</span>
+            <span className="hidden sm:inline">Save failed</span>
           </span>
         ) : hasUnsavedChanges ? (
-          <span className="flex items-center gap-1.5 text-[#A78BFA]">
+          <span className="flex items-center gap-1.5 text-[#A78BFA]" title="Unsaved changes">
             <span className="w-2 h-2 rounded-full bg-[#A78BFA] animate-pulse flex-shrink-0"></span>
-            <span className="hidden md:inline">Unsaved changes</span>
+            <span className="hidden sm:inline">Unsaved</span>
           </span>
         ) : versions.length > 0 ? (
-          <span className="flex items-center gap-1.5 text-[#22D3EE]">
+          <span
+            className="flex items-center gap-1.5 text-[#22D3EE]"
+            title={`Saved (v${latestVersion})`}
+          >
             <svg
               className="w-4 h-4 flex-shrink-0"
               fill="none"

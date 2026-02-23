@@ -3,7 +3,7 @@
 import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { RangeBreakoutNodeData } from "@/types/builder";
-import { BaseNode } from "../base-node";
+import { BaseNode, NodeIcons } from "../base-node";
 
 type Props = NodeProps & { data: RangeBreakoutNodeData };
 
@@ -46,17 +46,7 @@ export const RangeBreakoutNode = memo(function RangeBreakoutNode({ id, data, sel
       selected={selected}
       category="priceaction"
       label={data.label}
-      icon={
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M3 12h4l3-9 4 18 3-9h4" />
-        </svg>
-      }
+      icon={NodeIcons.priceaction}
     >
       <div className="space-y-1">
         <div className="flex justify-between">

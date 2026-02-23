@@ -126,15 +126,13 @@ export function ExportButton({
     setResult(null);
     setShowModal(true);
 
-    // Simulate progress steps while waiting for API
-    const stepTimer1 = setTimeout(() => setExportStep(1), 800);
-    const stepTimer2 = setTimeout(() => setExportStep(2), 2500);
-    stepTimersRef.current = [stepTimer1, stepTimer2];
-
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
       exportAbortRef.current = { controller, timeout };
+
+      // Step 1: Validating
+      setExportStep(0);
 
       const res = await fetch(`/api/projects/${projectId}/export`, {
         method: "POST",
@@ -148,8 +146,9 @@ export function ExportButton({
 
       clearTimeout(timeout);
       exportAbortRef.current = null;
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
+
+      // Step 2: Processing response
+      setExportStep(1);
 
       const data = await res.json().catch(() => ({ error: "Export failed" }));
 
@@ -158,6 +157,8 @@ export function ExportButton({
         return;
       }
 
+      // Step 3: Done
+      setExportStep(2);
       setResult(data);
       setShowHistory(true);
       fetchHistory();
@@ -166,8 +167,6 @@ export function ExportButton({
         localStorage.setItem("algostudio-has-exported", "1");
       } catch {}
     } catch (err) {
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
       const message =
         err instanceof DOMException && err.name === "AbortError"
           ? "Export timed out. Please try again."
@@ -818,7 +817,10 @@ export function ExportButton({
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <span className="text-[#7C8DB0]">v{item.versionNo}</span>
                                 <span className="text-[#7C8DB0]">
-                                  {new Date(item.createdAt).toLocaleDateString()}
+                                  {new Date(item.createdAt).toLocaleDateString(undefined, {
+                                    day: "numeric",
+                                    month: "short",
+                                  })}
                                 </span>
                                 <button
                                   onClick={() => handleRedownload(item.id)}

@@ -90,7 +90,7 @@ export default async function ProjectPage({ params }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm text-[#64748B]">
-              {/* Workflow Stepper */}
+              {/* Workflow Stepper - full on md+, compact on mobile */}
               <div className="hidden md:flex items-center gap-1 mr-2">
                 <span className="flex items-center gap-1 px-2 py-1 rounded bg-[#4F46E5]/20 text-[#A78BFA] text-[10px] font-semibold">
                   <span className="w-3.5 h-3.5 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
@@ -142,6 +142,20 @@ export default async function ProjectPage({ params }: Props) {
                   </span>
                   Monitor
                 </Link>
+              </div>
+              {/* Mobile stepper - dots only */}
+              <div className="flex md:hidden items-center gap-1.5 mr-2">
+                <span className="w-2 h-2 rounded-full bg-[#4F46E5]" title="Build (current)" />
+                <Link
+                  href="/app/live"
+                  className="w-2 h-2 rounded-full bg-[#7C8DB0]/40 hover:bg-[#A78BFA] transition-colors"
+                  title="Deploy"
+                />
+                <Link
+                  href="/app/journal"
+                  className="w-2 h-2 rounded-full bg-[#7C8DB0]/40 hover:bg-[#A78BFA] transition-colors"
+                  title="Monitor"
+                />
               </div>
               <span className="hidden md:inline text-[rgba(79,70,229,0.4)]">|</span>
               <span className="flex items-center gap-1.5">

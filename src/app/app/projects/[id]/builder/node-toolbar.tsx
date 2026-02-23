@@ -40,10 +40,10 @@ const CATEGORY_STYLES: Record<
     border: "border-[#69F0AE]/30",
   },
   trading: {
-    gradient: "bg-gradient-to-r from-[#00C853] to-[#69F0AE]",
-    shadow: "shadow-[0_2px_8px_rgba(0,200,83,0.3)]",
-    hoverShadow: "hover:shadow-[0_4px_16px_rgba(0,200,83,0.4)]",
-    border: "border-[#69F0AE]/30",
+    gradient: "bg-gradient-to-r from-[#2563EB] to-[#3B82F6]",
+    shadow: "shadow-[0_2px_8px_rgba(59,130,246,0.3)]",
+    hoverShadow: "hover:shadow-[0_4px_16px_rgba(59,130,246,0.4)]",
+    border: "border-[#3B82F6]/30",
   },
   riskmanagement: {
     gradient: "bg-gradient-to-r from-[#E11D48] to-[#FB7185]",
@@ -64,7 +64,7 @@ const BLOCK_COLORS: Record<NodeCategory, string> = {
   indicator: "text-[#00B8D9]",
   priceaction: "text-[#F59E0B]",
   entry: "text-[#00C853]",
-  trading: "text-[#00C853]",
+  trading: "text-[#3B82F6]",
   riskmanagement: "text-[#FB7185]",
   trademanagement: "text-[#A855F7]",
 };
@@ -109,7 +109,7 @@ export function NodeToolbar({
 
   return (
     <div
-      className="w-[230px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
+      className="w-[260px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
