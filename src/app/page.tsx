@@ -128,9 +128,9 @@ export default async function Home() {
           </h1>
 
           <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-            Upload your MT5 backtest and instantly know if your strategy is robust, tradable, and
-            ready for live markets. Health scoring, AI analysis, and Monte Carlo validation — in
-            seconds.
+            Build your Expert Advisor with our no-code EA builder, then instantly validate if your
+            strategy is robust, tradable, and ready for live markets. Health scoring, AI analysis,
+            and Monte Carlo validation — in seconds.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-10 text-sm text-[#CBD5E1]">
