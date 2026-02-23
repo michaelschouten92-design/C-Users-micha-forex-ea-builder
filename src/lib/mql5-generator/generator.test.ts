@@ -688,6 +688,208 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("pa0BOS_Bull");
       expect(code).not.toContain("Break of Structure");
     });
+
+    // --- Condition integration tests (verify signals are wired into entry logic) ---
+
+    it("wires Order Block signals into buyCondition/sellCondition", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ob1", "order-block", {
+          category: "priceaction",
+          priceActionType: "order-block",
+          timeframe: "H1",
+          lookbackPeriod: 50,
+          minBlockSize: 10,
+          maxBlockAge: 100,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
+      expect(code).toMatch(/sellCondition\s*=.*pa0SellSignal/);
+    });
+
+    it("wires Fair Value Gap signals into buyCondition/sellCondition", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("fvg1", "fair-value-gap", {
+          category: "priceaction",
+          priceActionType: "fair-value-gap",
+          timeframe: "H1",
+          minGapSize: 5,
+          maxGapAge: 50,
+          fillPercentage: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
+      expect(code).toMatch(/sellCondition\s*=.*pa0SellSignal/);
+    });
+
+    it("wires Market Structure signals into buyCondition/sellCondition", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ms1", "market-structure", {
+          category: "priceaction",
+          priceActionType: "market-structure",
+          timeframe: "H1",
+          swingStrength: 5,
+          detectBOS: false,
+          detectChoCh: false,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
+      expect(code).toMatch(/sellCondition\s*=.*pa0SellSignal/);
+    });
+
+    it("wires Candlestick Pattern signals into buyCondition/sellCondition", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("cp1", "candlestick-pattern", {
+          category: "priceaction",
+          priceActionType: "candlestick-pattern",
+          timeframe: "H1",
+          patterns: ["ENGULFING_BULLISH"],
+          minBodySize: 5,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
+      expect(code).toMatch(/sellCondition\s*=.*pa0SellSignal/);
+    });
+
+    it("wires Support/Resistance signals into buyCondition/sellCondition", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("sr1", "support-resistance", {
+          category: "priceaction",
+          priceActionType: "support-resistance",
+          timeframe: "H1",
+          lookbackPeriod: 100,
+          touchCount: 3,
+          zoneSize: 10,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/buyCondition\s*=.*pa0NearSupport/);
+      expect(code).toMatch(/sellCondition\s*=.*pa0NearResistance/);
+    });
+
+    it("wires Range Breakout via pending orders (not buyCondition)", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "PREVIOUS_CANDLES",
+          lookbackCandles: 20,
+          rangeSession: "ASIAN",
+          sessionStartHour: 0,
+          sessionStartMinute: 0,
+          sessionEndHour: 8,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "IMMEDIATE",
+          bufferPips: 2,
+          minRangePips: 10,
+          maxRangePips: 0,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Range breakout uses pending orders, not buyCondition
+      expect(code).toContain("pa0BreakoutUp");
+      expect(code).toContain("pa0BreakoutDown");
+    });
+
+    it("combines multiple price action types into entry conditions", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ob1", "order-block", {
+          category: "priceaction",
+          priceActionType: "order-block",
+          timeframe: "H1",
+          lookbackPeriod: 50,
+          minBlockSize: 10,
+          maxBlockAge: 100,
+        }),
+        makeNode("fvg1", "fair-value-gap", {
+          category: "priceaction",
+          priceActionType: "fair-value-gap",
+          timeframe: "H1",
+          minGapSize: 5,
+          maxGapAge: 50,
+          fillPercentage: 50,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Both should be wired into conditions
+      expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
+      expect(code).toMatch(/buyCondition\s*=.*pa1BuySignal/);
+    });
   });
 
   // ============================================
@@ -3793,6 +3995,35 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("Sell grid");
       expect(code).toContain("Pyramid");
     });
+
+    it("normalizes pyramid lot size using SYMBOL_VOLUME_STEP", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("gp1", "grid-pyramid", {
+          category: "trading",
+          tradingType: "grid-pyramid",
+          gridMode: "PYRAMID",
+          gridSpacing: 30,
+          maxGridLevels: 3,
+          lotMultiplier: 1.5,
+          direction: "BOTH",
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Should use SYMBOL_VOLUME_STEP for proper normalization
+      expect(code).toContain("SYMBOL_VOLUME_STEP");
+      expect(code).toContain("SYMBOL_VOLUME_MAX");
+      expect(code).toContain("MathFloor(nextLotSize / lotStep)");
+    });
   });
 
   describe("Multi-Level TP node", () => {
@@ -4207,6 +4438,50 @@ describe("generateMQL5Code", () => {
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("42");
       expect(code).toContain('"some_text"');
+    });
+
+    it("sanitizes string params to prevent MQL5 injection", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ci1", "custom-indicator", {
+          category: "indicator",
+          indicatorType: "custom-indicator",
+          timeframe: "H1",
+          indicatorName: "Safe\\Indicator",
+          bufferIndex: 0,
+          signalMode: "every_tick",
+          params: [
+            { name: "inject", value: 'evil"); Print("hacked', type: "string" },
+            { name: "backslash", value: "path\\to\\file", type: "string" },
+          ],
+        }),
+        makeNode("buy1", "place-buy", {
+          category: "entry",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          minLot: 0.01,
+          maxLot: 10,
+        }),
+        makeNode("sl1", "stop-loss", {
+          category: "riskmanagement",
+          tradingType: "stop-loss",
+          method: "FIXED_PIPS",
+          fixedPips: 50,
+        }),
+        makeNode("tp1", "take-profit", {
+          category: "riskmanagement",
+          tradingType: "take-profit",
+          method: "FIXED_PIPS",
+          fixedPips: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // Quotes should be escaped, preventing injection
+      expect(code).not.toContain('evil"); Print("hacked');
+      expect(code).toContain('evil\\"); Print(\\"hacked');
+      // Backslashes should be escaped
+      expect(code).toContain("path\\\\to\\\\file");
     });
   });
 

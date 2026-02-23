@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { buildJsonSchema } from "@/lib/validations";
 
 const createTemplateSchema = z.object({
   name: z
@@ -28,7 +29,7 @@ const createTemplateSchema = z.object({
       const trimmed = val.trim();
       return trimmed || null;
     }),
-  buildJson: z.record(z.unknown()),
+  buildJson: buildJsonSchema,
 });
 
 // GET /api/templates - List user's own templates

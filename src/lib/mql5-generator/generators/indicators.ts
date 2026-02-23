@@ -799,7 +799,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             return lower === "true" || lower === "1" ? "true" : "false";
           }
           if (paramType === "string") {
-            return `"${p.value.replace(/"/g, '\\"')}"`;
+            return `"${sanitizeMQL5String(p.value)}"`;
           }
           if (paramType === "color") {
             return p.value.trim() || "clrNONE";
@@ -807,7 +807,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           // No type hint: auto-detect
           const num = Number(p.value);
           if (!isNaN(num) && p.value.trim() !== "") return String(num);
-          return `"${p.value.replace(/"/g, '\\"')}"`;
+          return `"${sanitizeMQL5String(p.value)}"`;
         });
         const paramList = paramValues.length > 0 ? ", " + paramValues.join(", ") : "";
 

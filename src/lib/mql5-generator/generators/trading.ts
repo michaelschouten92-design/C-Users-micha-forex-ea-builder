@@ -1331,6 +1331,24 @@ export function generateEntryLogic(
             sellConditions.push(`(${varPrefix}NearResistance)`);
             break;
           }
+
+          case "order-block": {
+            buyConditions.push(`(${varPrefix}BuySignal)`);
+            sellConditions.push(`(${varPrefix}SellSignal)`);
+            break;
+          }
+
+          case "fair-value-gap": {
+            buyConditions.push(`(${varPrefix}BuySignal)`);
+            sellConditions.push(`(${varPrefix}SellSignal)`);
+            break;
+          }
+
+          case "market-structure": {
+            buyConditions.push(`(${varPrefix}BuySignal)`);
+            sellConditions.push(`(${varPrefix}SellSignal)`);
+            break;
+          }
         }
       }
     });
@@ -2094,11 +2112,14 @@ export function generateGridPyramidCode(
     code.onTick.push("         // Re-check count inside loop (may have just added)");
     code.onTick.push("         if(pyramidCount >= InpMaxGridLevels) break;");
     code.onTick.push("");
-    code.onTick.push(
-      "         double nextLotSize = NormalizeDouble(volume * InpGridLotMultiplier, 2);"
-    );
+    code.onTick.push("         double nextLotSize = volume * InpGridLotMultiplier;");
     code.onTick.push("         double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
-    code.onTick.push("         if(nextLotSize < minLot) nextLotSize = minLot;");
+    code.onTick.push("         double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);");
+    code.onTick.push("         double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);");
+    code.onTick.push(
+      "         if(lotStep > 0) nextLotSize = MathFloor(nextLotSize / lotStep) * lotStep;"
+    );
+    code.onTick.push("         nextLotSize = MathMax(minLot, MathMin(maxLot, nextLotSize));");
 
     if (data.direction === "BUY_ONLY" || data.direction === "BOTH") {
       code.onTick.push("");

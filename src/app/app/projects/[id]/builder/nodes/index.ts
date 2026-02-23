@@ -39,6 +39,7 @@ import {
   LockProfitNode,
   MultiLevelTPNode,
 } from "./trademanagement";
+import { AlwaysNode } from "./always-node";
 // Register all custom node types
 export const nodeTypes: NodeTypes = {
   "trading-session": TradingTimesNode,
@@ -48,6 +49,7 @@ export const nodeTypes: NodeTypes = {
   "friday-close": FridayCloseNode,
   "news-filter": NewsFilterNode,
   "custom-times": TradingTimesNode, // backwards compat: legacy custom-times nodes render as TradingTimesNode
+  always: AlwaysNode,
   "moving-average": MovingAverageNode,
   rsi: RSINode,
   macd: MACDNode,
@@ -118,4 +120,5 @@ export {
   PartialCloseNode,
   LockProfitNode,
   MultiLevelTPNode,
+  AlwaysNode,
 };

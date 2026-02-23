@@ -476,6 +476,22 @@ function validateBuildJson(buildJson: BuildJsonSchema): string[] {
     );
   }
 
+  // Validate multi-pair symbol names if enabled
+  const multiPair = buildJson.settings?.multiPair;
+  if (multiPair?.enabled && multiPair.symbols?.length > 0) {
+    const symbolPattern = /^[A-Za-z0-9._]{1,20}$/;
+    for (const sym of multiPair.symbols) {
+      if (sym.length > 0 && !symbolPattern.test(sym)) {
+        errors.push(
+          `Invalid symbol name "${sym}". Symbols must be 1-20 characters and contain only letters, numbers, dots, and underscores.`
+        );
+      }
+    }
+    if (multiPair.symbols.filter((s) => s.length > 0).length === 0) {
+      errors.push("Multi-pair mode is enabled but no symbols are specified.");
+    }
+  }
+
   return errors;
 }
 
