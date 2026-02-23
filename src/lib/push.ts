@@ -44,24 +44,36 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
 
   const jsonPayload = JSON.stringify(payload);
 
-  for (const sub of subscriptions) {
-    try {
-      await webPush.sendNotification(
+  const results = await Promise.allSettled(
+    subscriptions.map((sub) =>
+      webPush.sendNotification(
         {
           endpoint: sub.endpoint,
           keys: { p256dh: sub.p256dh, auth: sub.auth },
         },
         jsonPayload
-      );
-    } catch (err: unknown) {
-      const statusCode = (err as { statusCode?: number }).statusCode;
-      // 410 Gone or 404 Not Found — subscription expired, remove it
+      )
+    )
+  );
+
+  // Collect expired/gone subscriptions for batch removal
+  const expiredIds: string[] = [];
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const statusCode = (result.reason as { statusCode?: number }).statusCode;
       if (statusCode === 410 || statusCode === 404) {
-        await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
-        log.info({ subscriptionId: sub.id }, "Removed expired push subscription");
+        expiredIds.push(subscriptions[i].id);
+        log.info({ subscriptionId: subscriptions[i].id }, "Removed expired push subscription");
       } else {
-        log.warn({ error: err, subscriptionId: sub.id }, "Failed to send push notification");
+        log.warn(
+          { error: result.reason, subscriptionId: subscriptions[i].id },
+          "Failed to send push notification"
+        );
       }
     }
+  });
+
+  if (expiredIds.length > 0) {
+    await prisma.pushSubscription.deleteMany({ where: { id: { in: expiredIds } } }).catch(() => {});
   }
 }

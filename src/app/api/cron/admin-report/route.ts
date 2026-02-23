@@ -70,16 +70,17 @@ async function handleAdminReport(request: NextRequest) {
       prisma.liveEAInstance.count({ where: { status: "ONLINE" } }),
     ]);
 
-    // Calculate MRR
-    const paidSubs = await prisma.subscription.findMany({
+    // Calculate MRR using database aggregation instead of loading all rows
+    const mrrResult = await prisma.subscription.groupBy({
+      by: ["tier"],
       where: {
         status: { in: ["active", "trialing"] },
         tier: { not: "FREE" },
         stripeSubId: { not: null },
       },
-      select: { tier: true },
+      _count: true,
     });
-    const mrr = paidSubs.reduce((sum, s) => sum + (TIER_MRR_PRICES[s.tier] || 0), 0);
+    const mrr = mrrResult.reduce((sum, g) => sum + g._count * (TIER_MRR_PRICES[g.tier] || 0), 0);
 
     const tierMap: Record<string, number> = {};
     for (const tc of tierCounts) {

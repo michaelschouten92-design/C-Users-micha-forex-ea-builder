@@ -302,9 +302,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.onInit.push(`ArraySetAsSeries(${varPrefix}HistogramBuffer, true);`);
         addCopyBuffer(`${varPrefix}Handle`, 0, copyBars, `${varPrefix}MainBuffer`, code);
         addCopyBuffer(`${varPrefix}Handle`, 1, copyBars, `${varPrefix}SignalBuffer`, code);
-        // Compute histogram (main - signal) after buffers are filled
+        // Compute histogram (main - signal) for bars 0 and 1 only
         code.onTick.push(
-          `for(int _h${index}=0; _h${index}<${copyBars}; _h${index}++) ${varPrefix}HistogramBuffer[_h${index}] = ${varPrefix}MainBuffer[_h${index}] - ${varPrefix}SignalBuffer[_h${index}];`
+          `${varPrefix}HistogramBuffer[0] = ${varPrefix}MainBuffer[0] - ${varPrefix}SignalBuffer[0];`
+        );
+        code.onTick.push(
+          `${varPrefix}HistogramBuffer[1] = ${varPrefix}MainBuffer[1] - ${varPrefix}SignalBuffer[1];`
         );
         code.maxIndicatorPeriod = Math.max(
           code.maxIndicatorPeriod,

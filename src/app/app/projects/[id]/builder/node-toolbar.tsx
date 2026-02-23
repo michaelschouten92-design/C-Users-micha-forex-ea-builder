@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   NODE_TEMPLATES,
   getCategoryLabel,
@@ -107,6 +107,22 @@ export function NodeToolbar({
     });
   };
 
+  // Memoize search filtering so it only recomputes when search changes
+  const templatesByCategory = useMemo(() => {
+    const searchLower = search.toLowerCase().trim();
+    const result: Record<NodeCategory, NodeTemplate[]> = {} as Record<NodeCategory, NodeTemplate[]>;
+    for (const category of CATEGORIES) {
+      result[category] = NODE_TEMPLATES.filter(
+        (t) =>
+          t.category === category &&
+          (!searchLower ||
+            t.label.toLowerCase().includes(searchLower) ||
+            (t.description ?? "").toLowerCase().includes(searchLower))
+      );
+    }
+    return result;
+  }, [search]);
+
   return (
     <div
       className="w-[260px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
@@ -166,13 +182,7 @@ export function NodeToolbar({
       <div className="p-2 space-y-2 flex-1 overflow-y-auto">
         {CATEGORIES.map((category) => {
           const searchLower = search.toLowerCase().trim();
-          const templates = NODE_TEMPLATES.filter(
-            (t) =>
-              t.category === category &&
-              (!searchLower ||
-                t.label.toLowerCase().includes(searchLower) ||
-                (t.description ?? "").toLowerCase().includes(searchLower))
-          );
+          const templates = templatesByCategory[category];
           if (searchLower && templates.length === 0) return null;
           const isExpanded = searchLower ? true : expandedCategories.has(category);
           const styles = CATEGORY_STYLES[category];

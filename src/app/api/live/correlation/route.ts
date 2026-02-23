@@ -19,10 +19,12 @@ export async function GET() {
 
   const instances = await prisma.liveEAInstance.findMany({
     where: { userId: session.user.id, deletedAt: null },
+    take: 10,
+    orderBy: { updatedAt: "desc" },
     include: {
       heartbeats: {
         orderBy: { createdAt: "asc" },
-        take: 200,
+        take: 100,
         select: { equity: true, createdAt: true },
       },
     },

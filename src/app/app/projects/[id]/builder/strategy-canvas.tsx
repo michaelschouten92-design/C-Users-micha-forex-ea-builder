@@ -397,12 +397,13 @@ export function StrategyCanvas({
   // Selected node for properties panel
   const selectedNode = nodes.find((n) => n.selected) ?? null;
 
-  // Validate strategy (memoized, deferred to avoid blocking interactions during drag)
-  const validationEager = useMemo(
-    () => validateStrategy(nodes as Node<BuilderNodeData>[], edges, settings),
-    [nodes, edges, settings]
+  // Validate strategy (deferred inputs avoid blocking interactions during drag)
+  const deferredNodes = useDeferredValue(nodes);
+  const deferredEdges = useDeferredValue(edges);
+  const validation = useMemo(
+    () => validateStrategy(deferredNodes as Node<BuilderNodeData>[], deferredEdges, settings),
+    [deferredNodes, deferredEdges, settings]
   );
-  const validation = useDeferredValue(validationEager);
 
   // Handle drag start from toolbar
   const onDragStart = useCallback((event: React.DragEvent, template: NodeTemplate) => {

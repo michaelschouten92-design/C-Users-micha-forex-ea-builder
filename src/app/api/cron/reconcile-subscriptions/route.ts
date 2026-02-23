@@ -88,8 +88,8 @@ async function handleReconcile(request: NextRequest) {
     let mismatches = 0;
     let errors = 0;
 
-    // Process in batches of 10
-    const BATCH_SIZE = 10;
+    // Process in batches of 25 (balanced between speed and Stripe rate limits)
+    const BATCH_SIZE = 25;
     for (let i = 0; i < subscriptions.length; i += BATCH_SIZE) {
       if (isTimedOut()) break;
 

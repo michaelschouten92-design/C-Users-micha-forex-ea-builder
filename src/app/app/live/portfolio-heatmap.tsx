@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 
@@ -247,7 +248,10 @@ interface PortfolioHeatmapProps {
 }
 
 export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatmapProps) {
-  const uniqueSymbols = [...new Set(symbols.map((s) => s.toUpperCase().replace(/[^A-Z]/g, "")))];
+  const uniqueSymbols = useMemo(
+    () => [...new Set(symbols.map((s) => s.toUpperCase().replace(/[^A-Z]/g, "")))],
+    [symbols]
+  );
 
   // Fetch live correlation data from the API
   const { data: apiData, isLoading: apiLoading } = useSWR<CorrelationApiResponse>(
@@ -256,8 +260,6 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   );
 
-  if (uniqueSymbols.length < 2) return null;
-
   const hasApiData =
     apiData != null && apiData?.labels?.length >= 2 && apiData?.matrix?.length >= 2;
   const apiCorrelationMap = hasApiData
@@ -265,31 +267,45 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
     : null;
   const hasTradeData = tradeDataBySymbol != null && Object.keys(tradeDataBySymbol).length >= 2;
 
-  const cellSize = Math.max(48, Math.min(72, 500 / uniqueSymbols.length));
+  // Build the full correlation matrix once (memoized)
+  const correlationMatrix = useMemo(() => {
+    const matrix: Record<string, Record<string, number | null>> = {};
 
-  // Priority: API live data > tradeDataBySymbol prop > static fallback
-  function getEffectiveCorrelation(sym1: string, sym2: string): number | null {
-    if (sym1 === sym2) return 1.0;
+    function getEffectiveCorrelation(sym1: string, sym2: string): number | null {
+      if (sym1 === sym2) return 1.0;
 
-    // 1. Try API correlation data (equity-return based, computed server-side)
-    if (apiCorrelationMap) {
-      const value = apiCorrelationMap[sym1]?.[sym2];
-      if (value !== undefined) return value;
+      // 1. Try API correlation data (equity-return based, computed server-side)
+      if (apiCorrelationMap) {
+        const value = apiCorrelationMap[sym1]?.[sym2];
+        if (value !== undefined) return value;
+      }
+
+      // 2. Try client-side trade P&L correlation
+      if (hasTradeData && tradeDataBySymbol) {
+        const data1 = tradeDataBySymbol[sym1];
+        const data2 = tradeDataBySymbol[sym2];
+        if (data1 && data2) {
+          const liveCorr = computeLiveCorrelation(data1, data2);
+          if (liveCorr !== null) return liveCorr;
+        }
+      }
+
+      // 3. Static historical averages
+      return getStaticCorrelation(sym1, sym2);
     }
 
-    // 2. Try client-side trade P&L correlation
-    if (hasTradeData && tradeDataBySymbol) {
-      const data1 = tradeDataBySymbol[sym1];
-      const data2 = tradeDataBySymbol[sym2];
-      if (data1 && data2) {
-        const liveCorr = computeLiveCorrelation(data1, data2);
-        if (liveCorr !== null) return liveCorr;
+    for (const sym1 of uniqueSymbols) {
+      matrix[sym1] = {};
+      for (const sym2 of uniqueSymbols) {
+        matrix[sym1][sym2] = getEffectiveCorrelation(sym1, sym2);
       }
     }
+    return matrix;
+  }, [uniqueSymbols, apiCorrelationMap, hasTradeData, tradeDataBySymbol]);
 
-    // 3. Static historical averages
-    return getStaticCorrelation(sym1, sym2);
-  }
+  if (uniqueSymbols.length < 2) return null;
+
+  const cellSize = Math.max(48, Math.min(72, 500 / uniqueSymbols.length));
 
   function renderDataSourceMessage(): React.ReactNode {
     if (apiLoading) {
@@ -368,7 +384,7 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
                 {rowSym}
               </div>
               {uniqueSymbols.map((colSym) => {
-                const corr = getEffectiveCorrelation(rowSym, colSym);
+                const corr = correlationMatrix[rowSym]?.[colSym] ?? null;
                 const bg = correlationColor(corr);
                 const textColor = correlationTextColor(corr);
 

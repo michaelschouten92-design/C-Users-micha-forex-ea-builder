@@ -1433,10 +1433,18 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
+  const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const soundAlertsRef = useRef(soundAlerts);
   useEffect(() => {
     soundAlertsRef.current = soundAlerts;
   }, [soundAlerts]);
+
+  // Clean up changed-ids highlight timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (changedTimeoutRef.current) clearTimeout(changedTimeoutRef.current);
+    };
+  }, []);
 
   // Initialize previous data
   useEffect(() => {
@@ -1480,7 +1488,8 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
     setChangedIds(changed);
 
     if (changed.size > 0) {
-      setTimeout(() => setChangedIds(new Set()), 2000);
+      if (changedTimeoutRef.current) clearTimeout(changedTimeoutRef.current);
+      changedTimeoutRef.current = setTimeout(() => setChangedIds(new Set()), 2000);
     }
   }, []);
 

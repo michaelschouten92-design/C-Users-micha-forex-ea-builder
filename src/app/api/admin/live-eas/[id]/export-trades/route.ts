@@ -5,17 +5,21 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 
 // GET /api/admin/live-eas/[id]/export-trades - Export trade history as CSV
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "10000"), 10_000);
 
     const trades = await prisma.eATrade.findMany({
       where: { instanceId: id },
       orderBy: { openTime: "desc" },
-      take: 100_000,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     // Build CSV

@@ -186,10 +186,22 @@ export function generatePriceActionCode(
           if (!code.helperFunctions.some((f) => f.includes("GetSessionRange"))) {
             code.helperFunctions.push(`
 //+------------------------------------------------------------------+
-//| Get high/low for a specific time range                            |
+//| Get high/low for a specific time range (cached per day)           |
 //+------------------------------------------------------------------+
 void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHour, int endMin, double &high, double &low, bool useGMT = false)
 {
+   // Cache: only recalculate when the daily bar changes (new session day)
+   static datetime lastSessionCalc = 0;
+   static double cachedHigh = 0;
+   static double cachedLow = 0;
+   datetime sessionDate = iTime(_Symbol, PERIOD_D1, 0);
+   if(sessionDate == lastSessionCalc && cachedHigh > 0)
+   {
+      high = cachedHigh;
+      low = cachedLow;
+      return;
+   }
+
    high = 0;
    low = DBL_MAX;
 
@@ -241,6 +253,11 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
 
    high = iHigh(_Symbol, tf, highestBar);
    low = iLow(_Symbol, tf, lowestBar);
+
+   // Update cache
+   cachedHigh = high;
+   cachedLow = low;
+   lastSessionCalc = sessionDate;
 }`);
           }
 
@@ -381,29 +398,38 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
         }
         code.onTick.push(`if(${varPrefix}NewRange) ${varPrefix}RangeDay = ${varPrefix}Today;`);
 
-        // Visual range lines on chart
-        code.onTick.push(`if(${varPrefix}Valid && isNewBar) {`);
+        // Visual range lines on chart (throttled to every 60 seconds)
+        code.onTick.push(`{`);
+        code.onTick.push(`   static datetime ${varPrefix}LastObjUpdate = 0;`);
         code.onTick.push(
-          `   ObjectDelete(0, "Range${index}_High"); ObjectDelete(0, "Range${index}_Low");`
+          `   if(${varPrefix}Valid && TimeCurrent() - ${varPrefix}LastObjUpdate >= 60)`
+        );
+        code.onTick.push(`   {`);
+        code.onTick.push(
+          `      ObjectDelete(0, "Range${index}_High"); ObjectDelete(0, "Range${index}_Low");`
         );
         code.onTick.push(
-          `   ObjectCreate(0, "Range${index}_High", OBJ_HLINE, 0, 0, ${varPrefix}High);`
+          `      ObjectCreate(0, "Range${index}_High", OBJ_HLINE, 0, 0, ${varPrefix}High);`
         );
         code.onTick.push(
-          `   ObjectSetInteger(0, "Range${index}_High", OBJPROP_COLOR, clrDodgerBlue);`
+          `      ObjectSetInteger(0, "Range${index}_High", OBJPROP_COLOR, clrDodgerBlue);`
         );
         code.onTick.push(
-          `   ObjectSetInteger(0, "Range${index}_High", OBJPROP_STYLE, STYLE_DASH);`
+          `      ObjectSetInteger(0, "Range${index}_High", OBJPROP_STYLE, STYLE_DASH);`
         );
-        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_High", OBJPROP_WIDTH, 2);`);
+        code.onTick.push(`      ObjectSetInteger(0, "Range${index}_High", OBJPROP_WIDTH, 2);`);
         code.onTick.push(
-          `   ObjectCreate(0, "Range${index}_Low", OBJ_HLINE, 0, 0, ${varPrefix}Low);`
+          `      ObjectCreate(0, "Range${index}_Low", OBJ_HLINE, 0, 0, ${varPrefix}Low);`
         );
         code.onTick.push(
-          `   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_COLOR, clrOrangeRed);`
+          `      ObjectSetInteger(0, "Range${index}_Low", OBJPROP_COLOR, clrOrangeRed);`
         );
-        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_STYLE, STYLE_DASH);`);
-        code.onTick.push(`   ObjectSetInteger(0, "Range${index}_Low", OBJPROP_WIDTH, 2);`);
+        code.onTick.push(
+          `      ObjectSetInteger(0, "Range${index}_Low", OBJPROP_STYLE, STYLE_DASH);`
+        );
+        code.onTick.push(`      ObjectSetInteger(0, "Range${index}_Low", OBJPROP_WIDTH, 2);`);
+        code.onTick.push(`      ${varPrefix}LastObjUpdate = TimeCurrent();`);
+        code.onTick.push(`   }`);
         code.onTick.push(`}`);
 
         // Clean up chart objects on deinit

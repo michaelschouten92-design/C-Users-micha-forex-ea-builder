@@ -90,6 +90,10 @@ export interface GeneratedCode {
   tpMethod?: string;
   /** Tracks the max indicator period to calculate minimum bars needed in OnTick */
   maxIndicatorPeriod: number;
+  /** Per-position management function calls for the consolidated ManageOpenPositions loop */
+  _managementCalls?: string[];
+  /** Pre-loop code for trade management (e.g. CopyBuffer calls) */
+  _managementPreLoop?: string[];
 }
 
 export type MAMethod = "SMA" | "EMA" | "SMMA" | "LWMA";

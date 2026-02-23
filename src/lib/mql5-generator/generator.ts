@@ -41,7 +41,10 @@ import {
   generateTimeExitCode,
   generateGridPyramidCode,
 } from "./generators/trading";
-import { generateTradeManagementCode } from "./generators/trade-management";
+import {
+  generateTradeManagementCode,
+  finalizeTradeManagement,
+} from "./generators/trade-management";
 import { generateCloseConditionCode } from "./generators/close-conditions";
 import { generateTelemetryCode, type TelemetryConfig } from "./generators/telemetry";
 import { transformCodeForMultiPair } from "./generators/multi-pair";
@@ -787,12 +790,22 @@ export function generateMQL5Code(
     code.onTick.push(
       `   long curVol = iVolume(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, 1);`
     );
-    code.onTick.push(`   double sumVol = 0;`);
-    code.onTick.push(`   for(int v = 2; v <= InpVolFilterPeriod + 1; v++)`);
+    // Cache volume average, recalculate only on new bar
+    code.onTick.push(`   static datetime lastVolCalcTime = 0;`);
     code.onTick.push(
-      `      sumVol += (double)iVolume(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, v);`
+      `   if(iTime(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, 0) != lastVolCalcTime)`
     );
-    code.onTick.push(`   volFilterAvg = sumVol / InpVolFilterPeriod;`);
+    code.onTick.push(`   {`);
+    code.onTick.push(`      double sumVol = 0;`);
+    code.onTick.push(`      for(int v = 2; v <= InpVolFilterPeriod + 1; v++)`);
+    code.onTick.push(
+      `         sumVol += (double)iVolume(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, v);`
+    );
+    code.onTick.push(`      volFilterAvg = sumVol / InpVolFilterPeriod;`);
+    code.onTick.push(
+      `      lastVolCalcTime = iTime(_Symbol, (ENUM_TIMEFRAMES)InpVolFilterTimeframe, 0);`
+    );
+    code.onTick.push(`   }`);
 
     if (volMode === "ABOVE_AVERAGE") {
       code.onTick.push(`   if(curVol < (long)(volFilterAvg * InpVolFilterMult)) return;`);
@@ -977,6 +990,8 @@ export function generateMQL5Code(
   tradeManagementNodes.forEach((node) => {
     generateTradeManagementCode(node, code);
   });
+  // Finalize: generate consolidated ManageOpenPositions() with single position loop
+  finalizeTradeManagement(code);
 
   // Generate grid/pyramid code
   gridPyramidNodes.forEach((node) => {

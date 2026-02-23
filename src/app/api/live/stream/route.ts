@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<Response> {
         const instances = await prisma.liveEAInstance.findMany({
           where: { userId, deletedAt: null },
           include: {
-            heartbeats: { orderBy: { createdAt: "desc" }, take: 50 },
+            heartbeats: { orderBy: { createdAt: "desc" }, take: 20 },
             trades: { orderBy: { createdAt: "desc" }, take: 20 },
           },
         });

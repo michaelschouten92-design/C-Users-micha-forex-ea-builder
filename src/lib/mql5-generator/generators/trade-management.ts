@@ -37,8 +37,9 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
     );
   }
 
-  code.onTick.push("");
-  code.onTick.push("//--- Trade Management");
+  // Initialize tracking arrays for consolidated position loop
+  if (!code._managementCalls) code._managementCalls = [];
+  if (!code._managementPreLoop) code._managementPreLoop = [];
 
   switch (managementType) {
     case "breakeven-stop":
@@ -57,6 +58,65 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
       generateMultiLevelTPCode(node, data as MultiLevelTPNodeData, code);
       break;
   }
+}
+
+/**
+ * Generate the consolidated ManageOpenPositions() function that iterates
+ * positions once and applies all active management rules.
+ * Called after all management nodes have been processed.
+ */
+export function finalizeTradeManagement(code: GeneratedCode): void {
+  const calls = code._managementCalls;
+  if (!calls || calls.length === 0) return;
+
+  // Add pre-loop code to onTick (CopyBuffer calls, etc.)
+  const preLoop = code._managementPreLoop ?? [];
+
+  code.onTick.push("");
+  code.onTick.push("//--- Trade Management");
+  code.onTick.push("ManageOpenPositions();");
+
+  // Build the consolidated ManageOpenPositions function
+  const lines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Iterate positions once and apply all management rules            |",
+    "//+------------------------------------------------------------------+",
+    "void ManageOpenPositions()",
+    "{",
+  ];
+
+  // Pre-loop setup (CopyBuffer calls, throttled cleanup, etc.)
+  for (const line of preLoop) {
+    lines.push(`   ${line}`);
+  }
+  if (preLoop.length > 0) lines.push("");
+
+  lines.push(
+    "   for(int i = PositionsTotal() - 1; i >= 0; i--)",
+    "   {",
+    "      ulong ticket = PositionGetTicket(i);",
+    "      if(!PositionSelectByTicket(ticket)) continue;",
+    "      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;",
+    "      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;",
+    "",
+    "      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);",
+    "      double currentSL = PositionGetDouble(POSITION_SL);",
+    "      double currentTP = PositionGetDouble(POSITION_TP);",
+    "      double positionProfit = PositionGetDouble(POSITION_PROFIT);",
+    "      double volume = PositionGetDouble(POSITION_VOLUME);",
+    "      long posType = PositionGetInteger(POSITION_TYPE);",
+    "      double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);",
+    ""
+  );
+
+  // Call each per-position management function
+  for (const call of calls) {
+    lines.push(`      ${call}`);
+  }
+
+  lines.push("   }", "}");
+
+  code.helperFunctions.push(lines.join("\n"));
 }
 
 function generateBreakevenStopCode(
@@ -134,85 +194,71 @@ function generateBreakevenStopCode(
     )
   );
 
-  code.onTick.push("// Breakeven Stop Management");
-
+  // Pre-loop: CopyBuffer for ATR if needed
   if (data.trigger === "ATR") {
-    code.onTick.push("if(CopyBuffer(beATRHandle, 0, 0, 1, beATRBuffer) < 1) return;");
+    code._managementPreLoop!.push("if(CopyBuffer(beATRHandle, 0, 0, 1, beATRBuffer) < 1) return;");
   }
 
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(PositionSelectByTicket(ticket))");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("      {");
-  code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-  code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
-  code.onTick.push("         double positionProfit = PositionGetDouble(POSITION_PROFIT);");
-  code.onTick.push("         double positionVolume = PositionGetDouble(POSITION_VOLUME);");
-  code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
-  code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double lockPoints = InpBELockPips * _pipFactor;");
-  code.onTick.push("");
-  code.onTick.push("         bool triggerReached = false;");
+  // Build per-position helper function
+  const fnLines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Check breakeven stop for a single position                       |",
+    "//+------------------------------------------------------------------+",
+    "void CheckBreakevenStop(ulong ticket, double openPrice, double currentSL, double positionProfit, long posType, double point)",
+    "{",
+    "   double lockPoints = InpBELockPips * _pipFactor;",
+    "",
+    "   bool triggerReached = false;",
+  ];
 
   if (data.trigger === "PIPS") {
-    code.onTick.push("         double triggerPoints = InpBETriggerPips * _pipFactor;");
-    code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push(
-      "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);"
-    );
-    code.onTick.push("         else if(posType == POSITION_TYPE_SELL)");
-    code.onTick.push(
-      "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point);"
+    fnLines.push(
+      "   double triggerPoints = InpBETriggerPips * _pipFactor;",
+      "   if(posType == POSITION_TYPE_BUY)",
+      "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);",
+      "   else if(posType == POSITION_TYPE_SELL)",
+      "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point);"
     );
   } else if (data.trigger === "PERCENTAGE") {
-    code.onTick.push("         // Trigger when unrealised profit reaches X% of account balance");
-    code.onTick.push("         double beBalance = AccountInfoDouble(ACCOUNT_BALANCE);");
-    code.onTick.push(
-      "         double profitPercent = (beBalance > 0) ? (positionProfit / beBalance) * 100.0 : 0;"
+    fnLines.push(
+      "   double beBalance = AccountInfoDouble(ACCOUNT_BALANCE);",
+      "   double profitPercent = (beBalance > 0) ? (positionProfit / beBalance) * 100.0 : 0;",
+      "   triggerReached = (profitPercent >= InpBETriggerPercent);"
     );
-    code.onTick.push("         triggerReached = (profitPercent >= InpBETriggerPercent);");
   } else if (data.trigger === "ATR") {
-    code.onTick.push(
-      "         double triggerPoints = (beATRBuffer[0] / point) * InpBEATRMultiplier;"
-    );
-    code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push(
-      "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);"
-    );
-    code.onTick.push("         else if(posType == POSITION_TYPE_SELL)");
-    code.onTick.push(
-      "            triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point);"
+    fnLines.push(
+      "   double triggerPoints = (beATRBuffer[0] / point) * InpBEATRMultiplier;",
+      "   if(posType == POSITION_TYPE_BUY)",
+      "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);",
+      "   else if(posType == POSITION_TYPE_SELL)",
+      "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point);"
     );
   }
 
-  code.onTick.push("");
-  code.onTick.push("         if(triggerReached)");
-  code.onTick.push("         {");
-  code.onTick.push("            if(posType == POSITION_TYPE_BUY)");
-  code.onTick.push("            {");
-  code.onTick.push("               double newBE = openPrice + lockPoints * point;");
-  code.onTick.push("               if(currentSL < newBE)");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));"
+  fnLines.push(
+    "",
+    "   if(triggerReached)",
+    "   {",
+    "      if(posType == POSITION_TYPE_BUY)",
+    "      {",
+    "         double newBE = openPrice + lockPoints * point;",
+    "         if(currentSL < newBE)",
+    "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
+    "      }",
+    "      else if(posType == POSITION_TYPE_SELL)",
+    "      {",
+    "         double newBE = openPrice - lockPoints * point;",
+    "         if(currentSL > newBE || currentSL == 0)",
+    "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
+    "      }",
+    "   }",
+    "}"
   );
-  code.onTick.push("            }");
-  code.onTick.push("            else if(posType == POSITION_TYPE_SELL)");
-  code.onTick.push("            {");
-  code.onTick.push("               double newBE = openPrice - lockPoints * point;");
-  code.onTick.push("               if(currentSL > newBE || currentSL == 0)");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));"
+
+  code.helperFunctions.push(fnLines.join("\n"));
+  code._managementCalls!.push(
+    "CheckBreakevenStop(ticket, openPrice, currentSL, positionProfit, posType, point);"
   );
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("      }");
-  code.onTick.push("   }");
-  code.onTick.push("}");
 }
 
 function generateTrailingStopCode(
@@ -294,83 +340,70 @@ function generateTrailingStopCode(
     )
   );
 
-  code.onTick.push("// Trailing Stop Management");
-
+  // Pre-loop: CopyBuffer for ATR if needed
   if (data.method === "ATR_BASED") {
-    code.onTick.push("if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;");
+    code._managementPreLoop!.push(
+      "if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;"
+    );
   }
 
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(PositionSelectByTicket(ticket))");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("      {");
-  code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-  code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
-  code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
-  code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double startPoints = InpTrailStartPips * _pipFactor;");
+  // Build per-position helper function
+  const fnLines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Check trailing stop for a single position                        |",
+    "//+------------------------------------------------------------------+",
+    "void CheckTrailingStop(ulong ticket, double openPrice, double currentSL, long posType, double point)",
+    "{",
+    "   double startPoints = InpTrailStartPips * _pipFactor;",
+  ];
 
-  // Calculate trailPoints based on method
   if (data.method === "ATR_BASED") {
-    code.onTick.push(
-      "         double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;"
-    );
+    fnLines.push("   double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;");
   } else if (data.method === "PERCENTAGE") {
-    // Trail by percentage of current profit in points
-    code.onTick.push("         double currentProfitPoints = 0;");
-    code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push(
-      "            currentProfitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;"
-    );
-    code.onTick.push("         else");
-    code.onTick.push(
-      "            currentProfitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;"
-    );
-    code.onTick.push(
-      "         double trailPoints = MathMax(currentProfitPoints * (InpTrailPercent / 100.0), _pipFactor);"
+    fnLines.push(
+      "   double currentProfitPoints = 0;",
+      "   if(posType == POSITION_TYPE_BUY)",
+      "      currentProfitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;",
+      "   else",
+      "      currentProfitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;",
+      "   double trailPoints = MathMax(currentProfitPoints * (InpTrailPercent / 100.0), _pipFactor);"
     );
   } else {
     // FIXED_PIPS
-    code.onTick.push("         double trailPoints = InpTrailPips * _pipFactor;");
+    fnLines.push("   double trailPoints = InpTrailPips * _pipFactor;");
   }
 
-  code.onTick.push("");
-  code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
-  code.onTick.push("         {");
-  code.onTick.push("            double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
-  code.onTick.push("            if(bid >= openPrice + startPoints * point)");
-  code.onTick.push("            {");
-  code.onTick.push("               double newSL = bid - trailPoints * point;");
-  code.onTick.push("               if(newSL > currentSL)");
-  code.onTick.push("               {");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
+  fnLines.push(
+    "",
+    "   if(posType == POSITION_TYPE_BUY)",
+    "   {",
+    "      double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);",
+    "      if(bid >= openPrice + startPoints * point)",
+    "      {",
+    "         double newSL = bid - trailPoints * point;",
+    "         if(newSL > currentSL)",
+    "         {",
+    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "         }",
+    "      }",
+    "   }",
+    "   else if(posType == POSITION_TYPE_SELL)",
+    "   {",
+    "      double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);",
+    "      if(ask <= openPrice - startPoints * point)",
+    "      {",
+    "         double newSL = ask + trailPoints * point;",
+    "         if(newSL < currentSL || currentSL == 0)",
+    "         {",
+    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "         }",
+    "      }",
+    "   }",
+    "}"
   );
-  code.onTick.push("               }");
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("         else if(posType == POSITION_TYPE_SELL)");
-  code.onTick.push("         {");
-  code.onTick.push("            double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);");
-  code.onTick.push("            if(ask <= openPrice - startPoints * point)");
-  code.onTick.push("            {");
-  code.onTick.push("               double newSL = ask + trailPoints * point;");
-  code.onTick.push("               if(newSL < currentSL || currentSL == 0)");
-  code.onTick.push("               {");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
-  );
-  code.onTick.push("               }");
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("      }");
-  code.onTick.push("   }");
-  code.onTick.push("}");
+
+  code.helperFunctions.push(fnLines.join("\n"));
+  code._managementCalls!.push("CheckTrailingStop(ticket, openPrice, currentSL, posType, point);");
 }
 
 function generatePartialCloseCode(
@@ -478,107 +511,97 @@ void CleanPartialClosedTickets()
       }
    }
 }`);
+
+    // Throttle CleanPartialClosedTickets: only every 100 ticks (P7)
+    code._managementPreLoop!.push(
+      "static int _cleanTickCounter = 0;",
+      "if(++_cleanTickCounter >= 100)",
+      "{",
+      "   CleanPartialClosedTickets();",
+      "   _cleanTickCounter = 0;",
+      "}"
+    );
   }
 
-  code.onTick.push("// Partial Close Management");
-  code.onTick.push("CleanPartialClosedTickets();");
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(PositionSelectByTicket(ticket))");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("      {");
-  code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-  code.onTick.push("         double volume = PositionGetDouble(POSITION_VOLUME);");
-  code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
-  code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         bool profitReached = false;");
+  // Build per-position helper function
+  const fnLines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Check partial close for a single position                        |",
+    "//+------------------------------------------------------------------+",
+    "void CheckPartialClose(ulong ticket, double openPrice, double volume, long posType, double point)",
+    "{",
+    "   bool profitReached = false;",
+  ];
+
   if (rMultipleTrigger && rMultipleTrigger > 0) {
-    // R-multiple trigger: compare profit in points to SL distance × R-multiple
-    code.onTick.push("         double openSL = PositionGetDouble(POSITION_SL);");
-    code.onTick.push(
-      "         if(openSL == 0) continue; // R-multiple trigger requires a defined SL"
+    fnLines.push(
+      "   double openSL = PositionGetDouble(POSITION_SL);",
+      "   if(openSL == 0) return; // R-multiple trigger requires a defined SL",
+      "   double slDistPoints = MathAbs(openPrice - openSL) / point;",
+      "   double triggerPoints = slDistPoints * InpTP1RMultiple;",
+      "   if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point)",
+      "      profitReached = true;",
+      "   if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)",
+      "      profitReached = true;"
     );
-    code.onTick.push("         double slDistPoints = MathAbs(openPrice - openSL) / point;");
-    code.onTick.push("         double triggerPoints = slDistPoints * InpTP1RMultiple;");
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point)"
-    );
-    code.onTick.push("            profitReached = true;");
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)"
-    );
-    code.onTick.push("            profitReached = true;");
   } else if (triggerMethod === "PERCENT") {
-    // Profit-based: trigger when position profit as % of balance reaches threshold
-    code.onTick.push("         double posProfit = PositionGetDouble(POSITION_PROFIT);");
-    code.onTick.push("         double balance = AccountInfoDouble(ACCOUNT_BALANCE);");
-    code.onTick.push(
-      "         if(balance > 0 && (posProfit / balance) * 100.0 >= InpPartialCloseTriggerPercent)"
+    fnLines.push(
+      "   double posProfit = PositionGetDouble(POSITION_PROFIT);",
+      "   double balance = AccountInfoDouble(ACCOUNT_BALANCE);",
+      "   if(balance > 0 && (posProfit / balance) * 100.0 >= InpPartialCloseTriggerPercent)",
+      "      profitReached = true;"
     );
-    code.onTick.push("            profitReached = true;");
   } else {
-    code.onTick.push(
-      "         double triggerPrice = InpPartialCloseTriggerPips * _pipFactor * point;"
+    fnLines.push(
+      "   double triggerPrice = InpPartialCloseTriggerPips * _pipFactor * point;",
+      "   if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)",
+      "      profitReached = true;",
+      "   if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)",
+      "      profitReached = true;"
     );
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)"
-    );
-    code.onTick.push("            profitReached = true;");
-    code.onTick.push(
-      "         if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)"
-    );
-    code.onTick.push("            profitReached = true;");
   }
-  code.onTick.push("");
-  code.onTick.push("         if(profitReached && !IsPartialClosed(ticket))");
-  code.onTick.push("         {");
-  code.onTick.push(
-    "            double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
-    "            double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
-    "            double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;",
-    "            // Ensure remaining position meets minimum lot requirement",
-    "            if(volume - closeVolume < pcMinLot) closeVolume = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
+
+  fnLines.push(
+    "",
+    "   if(profitReached && !IsPartialClosed(ticket))",
+    "   {",
+    "      double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
+    "      double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
+    "      double closeVolume = MathFloor(volume * InpPartialClosePercent / 100.0 / pcLotStep) * pcLotStep;",
+    "      // Ensure remaining position meets minimum lot requirement",
+    "      if(volume - closeVolume < pcMinLot) closeVolume = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
+    "      if(closeVolume >= pcMinLot)",
+    "      {",
+    "         double cachedTP = PositionGetDouble(POSITION_TP);",
+    "         trade.PositionClosePartial(ticket, closeVolume);",
+    "         // Re-select position after partial close (ticket may change on hedging brokers)",
+    "         if(!PositionSelectByTicket(ticket))",
+    "         {",
+    "            // Ticket changed - find the remaining position by magic + symbol",
+    "            for(int pc=PositionsTotal()-1; pc>=0; pc--)",
+    "            {",
+    "               ulong pcTk = PositionGetTicket(pc);",
+    "               if(pcTk > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)",
+    "               { ticket = pcTk; break; }",
+    "            }",
+    "         }",
+    "         MarkPartialClosed(ticket);"
   );
-  code.onTick.push("            if(closeVolume >= pcMinLot)");
-  code.onTick.push("            {");
-  code.onTick.push("               double cachedTP = PositionGetDouble(POSITION_TP);");
-  code.onTick.push("               trade.PositionClosePartial(ticket, closeVolume);");
-  code.onTick.push(
-    "               // Re-select position after partial close (ticket may change on hedging brokers)"
-  );
-  code.onTick.push("               if(!PositionSelectByTicket(ticket))");
-  code.onTick.push("               {");
-  code.onTick.push(
-    "                  // Ticket changed — find the remaining position by magic + symbol"
-  );
-  code.onTick.push("                  for(int pc=PositionsTotal()-1; pc>=0; pc--)");
-  code.onTick.push("                  {");
-  code.onTick.push("                     ulong pcTk = PositionGetTicket(pc);");
-  code.onTick.push(
-    "                     if(pcTk > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("                     { ticket = pcTk; break; }");
-  code.onTick.push("                  }");
-  code.onTick.push("               }");
-  code.onTick.push("               MarkPartialClosed(ticket);");
 
   if (data.moveSLToBreakeven) {
-    code.onTick.push("               // Move SL to breakeven after partial close");
-    code.onTick.push("               if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push("                  SafePositionModify(trade, ticket, openPrice, cachedTP);");
-    code.onTick.push("               else");
-    code.onTick.push("                  SafePositionModify(trade, ticket, openPrice, cachedTP);");
+    fnLines.push(
+      "         // Move SL to breakeven after partial close",
+      "         if(posType == POSITION_TYPE_BUY)",
+      "            SafePositionModify(trade, ticket, openPrice, cachedTP);",
+      "         else",
+      "            SafePositionModify(trade, ticket, openPrice, cachedTP);"
+    );
   }
 
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("      }");
-  code.onTick.push("   }");
-  code.onTick.push("}");
+  fnLines.push("      }", "   }", "}");
+
+  code.helperFunctions.push(fnLines.join("\n"));
+  code._managementCalls!.push("CheckPartialClose(ticket, openPrice, volume, posType, point);");
 }
 
 function generateLockProfitCode(
@@ -624,75 +647,70 @@ function generateLockProfitCode(
     )
   );
 
-  code.onTick.push("// Lock Profit Management");
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(PositionSelectByTicket(ticket))");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber && PositionGetString(POSITION_SYMBOL) == _Symbol)"
-  );
-  code.onTick.push("      {");
-  code.onTick.push("         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-  code.onTick.push("         double currentSL = PositionGetDouble(POSITION_SL);");
-  code.onTick.push("         long posType = PositionGetInteger(POSITION_TYPE);");
-  code.onTick.push("         double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("         double checkPoints = InpLockCheckInterval * _pipFactor;");
-  code.onTick.push("");
-  code.onTick.push("         if(posType == POSITION_TYPE_BUY)");
-  code.onTick.push("         {");
-  code.onTick.push("            double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
-  code.onTick.push("            double currentProfitPoints = (bid - openPrice) / point;");
-  code.onTick.push("            if(currentProfitPoints > checkPoints)");
-  code.onTick.push("            {");
+  // Build per-position helper function
+  const fnLines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Check lock profit for a single position                          |",
+    "//+------------------------------------------------------------------+",
+    "void CheckLockProfit(ulong ticket, double openPrice, double currentSL, long posType, double point)",
+    "{",
+    "   double checkPoints = InpLockCheckInterval * _pipFactor;",
+    "",
+    "   if(posType == POSITION_TYPE_BUY)",
+    "   {",
+    "      double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);",
+    "      double currentProfitPoints = (bid - openPrice) / point;",
+    "      if(currentProfitPoints > checkPoints)",
+    "      {",
+  ];
 
   if (data.method === "PERCENTAGE") {
-    code.onTick.push(
-      "               double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
+    fnLines.push(
+      "         double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
     );
   } else {
-    code.onTick.push("               double lockPoints = InpLockProfitPips * _pipFactor;");
+    fnLines.push("         double lockPoints = InpLockProfitPips * _pipFactor;");
   }
 
-  code.onTick.push("               double newSL = openPrice + lockPoints * point;");
-  code.onTick.push("               // Guard: SL must stay below bid to avoid immediate stop-out");
-  code.onTick.push("               if(newSL > currentSL && newSL < bid)");
-  code.onTick.push("               {");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
+  fnLines.push(
+    "         double newSL = openPrice + lockPoints * point;",
+    "         // Guard: SL must stay below bid to avoid immediate stop-out",
+    "         if(newSL > currentSL && newSL < bid)",
+    "         {",
+    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "         }",
+    "      }",
+    "   }",
+    "   else if(posType == POSITION_TYPE_SELL)",
+    "   {",
+    "      double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);",
+    "      double currentProfitPoints = (openPrice - ask) / point;",
+    "      if(currentProfitPoints > checkPoints)",
+    "      {"
   );
-  code.onTick.push("               }");
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("         else if(posType == POSITION_TYPE_SELL)");
-  code.onTick.push("         {");
-  code.onTick.push("            double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);");
-  code.onTick.push("            double currentProfitPoints = (openPrice - ask) / point;");
-  code.onTick.push("            if(currentProfitPoints > checkPoints)");
-  code.onTick.push("            {");
 
   if (data.method === "PERCENTAGE") {
-    code.onTick.push(
-      "               double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
+    fnLines.push(
+      "         double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
     );
   } else {
-    code.onTick.push("               double lockPoints = InpLockProfitPips * _pipFactor;");
+    fnLines.push("         double lockPoints = InpLockProfitPips * _pipFactor;");
   }
 
-  code.onTick.push("               double newSL = openPrice - lockPoints * point;");
-  code.onTick.push("               // Guard: SL must stay above ask to avoid immediate stop-out");
-  code.onTick.push("               if((newSL < currentSL || currentSL == 0) && newSL > ask)");
-  code.onTick.push("               {");
-  code.onTick.push(
-    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
+  fnLines.push(
+    "         double newSL = openPrice - lockPoints * point;",
+    "         // Guard: SL must stay above ask to avoid immediate stop-out",
+    "         if((newSL < currentSL || currentSL == 0) && newSL > ask)",
+    "         {",
+    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "         }",
+    "      }",
+    "   }",
+    "}"
   );
-  code.onTick.push("               }");
-  code.onTick.push("            }");
-  code.onTick.push("         }");
-  code.onTick.push("      }");
-  code.onTick.push("   }");
-  code.onTick.push("}");
+
+  code.helperFunctions.push(fnLines.join("\n"));
+  code._managementCalls!.push("CheckLockProfit(ticket, openPrice, currentSL, posType, point);");
 }
 
 function generateMultiLevelTPCode(
@@ -818,100 +836,90 @@ void CleanMLTPStates()
    }
 }`);
 
-  code.onTick.push("// Multi-Level TP Management");
-  code.onTick.push("CleanMLTPStates();");
-  code.onTick.push("for(int i = PositionsTotal() - 1; i >= 0; i--)");
-  code.onTick.push("{");
-  code.onTick.push("   ulong ticket = PositionGetTicket(i);");
-  code.onTick.push("   if(!PositionSelectByTicket(ticket)) continue;");
-  code.onTick.push(
-    "   if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber || PositionGetString(POSITION_SYMBOL) != _Symbol) continue;"
+  // Throttle CleanMLTPStates: only every 100 ticks
+  code._managementPreLoop!.push(
+    "static int _cleanMLTPCounter = 0;",
+    "if(++_cleanMLTPCounter >= 100)",
+    "{",
+    "   CleanMLTPStates();",
+    "   _cleanMLTPCounter = 0;",
+    "}"
   );
-  code.onTick.push("");
-  code.onTick.push("   double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);");
-  code.onTick.push("   double volume = PositionGetDouble(POSITION_VOLUME);");
-  code.onTick.push("   long posType = PositionGetInteger(POSITION_TYPE);");
-  code.onTick.push("   double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
-  code.onTick.push("   int tpLevel = GetMLTPLevel(ticket);");
-  code.onTick.push("");
-  code.onTick.push("   double profitPoints = 0;");
-  code.onTick.push("   if(posType == POSITION_TYPE_BUY)");
-  code.onTick.push(
-    "      profitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;"
-  );
-  code.onTick.push("   else if(posType == POSITION_TYPE_SELL)");
-  code.onTick.push(
-    "      profitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;"
-  );
-  code.onTick.push("");
-  code.onTick.push("   double tp1Points = InpMLTP1Pips * _pipFactor;");
-  code.onTick.push("   double tp2Points = InpMLTP2Pips * _pipFactor;");
-  code.onTick.push("   double tp3Points = InpMLTP3Pips * _pipFactor;");
-  code.onTick.push("");
-  code.onTick.push("   double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);");
-  code.onTick.push("   double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
-  code.onTick.push("");
 
-  // TP1 check
-  code.onTick.push("   // TP Level 1");
-  code.onTick.push("   if(tpLevel < 1 && profitPoints >= tp1Points)");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      double closeVol = MathFloor(volume * InpMLTP1Percent / 100.0 / pcLotStep) * pcLotStep;"
-  );
-  code.onTick.push(
-    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
-  );
-  code.onTick.push("      if(closeVol >= pcMinLot)");
-  code.onTick.push("      {");
-  code.onTick.push("         trade.PositionClosePartial(ticket, closeVol);");
-  code.onTick.push("         SetMLTPLevel(ticket, 1);");
+  // Build per-position helper function
+  const fnLines: string[] = [
+    "//+------------------------------------------------------------------+",
+    "//| Check multi-level TP for a single position                       |",
+    "//+------------------------------------------------------------------+",
+    "void CheckMultiLevelTP(ulong ticket, double openPrice, double volume, long posType, double point)",
+    "{",
+    "   int tpLevel = GetMLTPLevel(ticket);",
+    "",
+    "   double profitPoints = 0;",
+    "   if(posType == POSITION_TYPE_BUY)",
+    "      profitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;",
+    "   else if(posType == POSITION_TYPE_SELL)",
+    "      profitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;",
+    "",
+    "   double tp1Points = InpMLTP1Pips * _pipFactor;",
+    "   double tp2Points = InpMLTP2Pips * _pipFactor;",
+    "   double tp3Points = InpMLTP3Pips * _pipFactor;",
+    "",
+    "   double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
+    "   double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
+    "",
+    "   // TP Level 1",
+    "   if(tpLevel < 1 && profitPoints >= tp1Points)",
+    "   {",
+    "      double closeVol = MathFloor(volume * InpMLTP1Percent / 100.0 / pcLotStep) * pcLotStep;",
+    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
+    "      if(closeVol >= pcMinLot)",
+    "      {",
+    "         trade.PositionClosePartial(ticket, closeVol);",
+    "         SetMLTPLevel(ticket, 1);",
+  ];
 
-  // After TP1: move SL based on moveSLAfterTP1
   if (data.moveSLAfterTP1 === "BREAKEVEN") {
-    code.onTick.push("         // Move SL to breakeven after TP1");
-    code.onTick.push("         if(PositionSelectByTicket(ticket))");
-    code.onTick.push(
+    fnLines.push(
+      "         // Move SL to breakeven after TP1",
+      "         if(PositionSelectByTicket(ticket))",
       "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
     );
   } else if (data.moveSLAfterTP1 === "TRAIL") {
-    code.onTick.push("         // Move SL to breakeven and let trailing stop take over");
-    code.onTick.push("         if(PositionSelectByTicket(ticket))");
-    code.onTick.push(
+    fnLines.push(
+      "         // Move SL to breakeven and let trailing stop take over",
+      "         if(PositionSelectByTicket(ticket))",
       "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
     );
   }
 
-  code.onTick.push("      }");
-  code.onTick.push("      continue;");
-  code.onTick.push("   }");
-  code.onTick.push("");
-
-  // TP2 check
-  code.onTick.push("   // TP Level 2");
-  code.onTick.push("   if(tpLevel == 1 && profitPoints >= tp2Points)");
-  code.onTick.push("   {");
-  code.onTick.push(
-    "      double closeVol = MathFloor(volume * InpMLTP2Percent / (InpMLTP2Percent + InpMLTP3Percent) / pcLotStep) * pcLotStep;"
+  fnLines.push(
+    "      }",
+    "      return;",
+    "   }",
+    "",
+    "   // TP Level 2",
+    "   if(tpLevel == 1 && profitPoints >= tp2Points)",
+    "   {",
+    "      double closeVol = MathFloor(volume * InpMLTP2Percent / (InpMLTP2Percent + InpMLTP3Percent) / pcLotStep) * pcLotStep;",
+    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
+    "      if(closeVol >= pcMinLot)",
+    "      {",
+    "         trade.PositionClosePartial(ticket, closeVol);",
+    "         SetMLTPLevel(ticket, 2);",
+    "      }",
+    "      return;",
+    "   }",
+    "",
+    "   // TP Level 3: close remaining position",
+    "   if(tpLevel == 2 && profitPoints >= tp3Points)",
+    "   {",
+    "      trade.PositionClose(ticket);",
+    "      SetMLTPLevel(ticket, 3);",
+    "   }",
+    "}"
   );
-  code.onTick.push(
-    "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;"
-  );
-  code.onTick.push("      if(closeVol >= pcMinLot)");
-  code.onTick.push("      {");
-  code.onTick.push("         trade.PositionClosePartial(ticket, closeVol);");
-  code.onTick.push("         SetMLTPLevel(ticket, 2);");
-  code.onTick.push("      }");
-  code.onTick.push("      continue;");
-  code.onTick.push("   }");
-  code.onTick.push("");
 
-  // TP3 check: close remaining
-  code.onTick.push("   // TP Level 3: close remaining position");
-  code.onTick.push("   if(tpLevel == 2 && profitPoints >= tp3Points)");
-  code.onTick.push("   {");
-  code.onTick.push("      trade.PositionClose(ticket);");
-  code.onTick.push("      SetMLTPLevel(ticket, 3);");
-  code.onTick.push("   }");
-  code.onTick.push("}");
+  code.helperFunctions.push(fnLines.join("\n"));
+  code._managementCalls!.push("CheckMultiLevelTP(ticket, openPrice, volume, posType, point);");
 }

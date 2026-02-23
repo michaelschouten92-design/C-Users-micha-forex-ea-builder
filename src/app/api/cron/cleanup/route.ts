@@ -74,50 +74,36 @@ async function handleCleanup(request: NextRequest) {
       return totalDeleted;
     }
 
-    // Permanently delete soft-deleted projects older than 30 days
-    // (cascades to versions and exports via Prisma onDelete: Cascade)
-    const deletedProjects = await batchDelete(prisma.project, { deletedAt: { lt: thirtyDaysAgo } });
+    // Batch 1: Independent deletions (can run in parallel)
+    const [
+      deletedProjects,
+      deletedTokens,
+      deletedVerificationTokens,
+      deletedAdminOtps,
+      deletedWebhookEvents,
+      deletedAuditLogs,
+    ] = await Promise.all([
+      batchDelete(prisma.project, { deletedAt: { lt: thirtyDaysAgo } }),
+      batchDelete(prisma.passwordResetToken, { expiresAt: { lt: new Date() } }),
+      batchDelete(prisma.emailVerificationToken, { expiresAt: { lt: new Date() } }),
+      batchDelete(prisma.adminOtp, { expiresAt: { lt: new Date() } }),
+      batchDelete(prisma.webhookEvent, { processedAt: { lt: ninetyDaysAgo } }),
+      batchDelete(prisma.auditLog, { createdAt: { lt: oneYearAgo } }),
+    ]);
 
-    // Clean up expired tokens
-    const deletedTokens = await batchDelete(prisma.passwordResetToken, {
-      expiresAt: { lt: new Date() },
-    });
-    const deletedVerificationTokens = await batchDelete(prisma.emailVerificationToken, {
-      expiresAt: { lt: new Date() },
-    });
-    const deletedAdminOtps = await batchDelete(prisma.adminOtp, {
-      expiresAt: { lt: new Date() },
-    });
-
-    // Clean up old webhook events (>90 days)
-    const deletedWebhookEvents = await batchDelete(prisma.webhookEvent, {
-      processedAt: { lt: ninetyDaysAgo },
-    });
-
-    // Clean up old audit logs (>365 days)
-    const deletedAuditLogs = await batchDelete(prisma.auditLog, {
-      createdAt: { lt: oneYearAgo },
-    });
-
-    // Clean up old EA heartbeats (>30 days)
-    const deletedHeartbeats = await batchDelete(prisma.eAHeartbeat, {
-      createdAt: { lt: thirtyDaysAgo },
-    });
-
-    // Clean up old EA errors (>30 days)
-    const deletedEAErrors = await batchDelete(prisma.eAError, {
-      createdAt: { lt: thirtyDaysAgo },
-    });
-
-    // Mark EA instances as OFFLINE if no heartbeat for >15 minutes
+    // Batch 2: EA-related operations (can run in parallel)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    const staleInstances = await prisma.liveEAInstance.updateMany({
-      where: {
-        status: { in: ["ONLINE", "ERROR"] },
-        lastHeartbeat: { lt: fifteenMinutesAgo },
-      },
-      data: { status: "OFFLINE" },
-    });
+    const [deletedHeartbeats, deletedEAErrors, staleInstances] = await Promise.all([
+      batchDelete(prisma.eAHeartbeat, { createdAt: { lt: thirtyDaysAgo } }),
+      batchDelete(prisma.eAError, { createdAt: { lt: thirtyDaysAgo } }),
+      prisma.liveEAInstance.updateMany({
+        where: {
+          status: { in: ["ONLINE", "ERROR"] },
+          lastHeartbeat: { lt: fifteenMinutesAgo },
+        },
+        data: { status: "OFFLINE" },
+      }),
+    ]);
 
     // NOTE: Legacy EAAlertRule/EAAlert evaluation has been removed.
     // Alert processing now uses only the EAAlertConfig system (via @/lib/alerts),
@@ -150,28 +136,37 @@ async function handleCleanup(request: NextRequest) {
         },
       });
 
-      for (const sub of renewalCandidates) {
+      const validCandidates = renewalCandidates.filter(
+        (sub) => sub.user.email && sub.stripeCustomerId
+      );
+
+      for (let i = 0; i < validCandidates.length; i += 5) {
         if (isTimedOut()) break;
-        if (!sub.user.email || !sub.stripeCustomerId) continue;
-        try {
-          // Get upcoming invoice amount from Stripe
-          const upcomingInvoice = await getStripe().invoices.createPreview({
-            customer: sub.stripeCustomerId,
-          });
-          // Create billing portal session for manage link
-          const portalSession = await getStripe().billingPortal.sessions.create({
-            customer: sub.stripeCustomerId,
-            return_url: `${env.AUTH_URL}/app`,
-          });
-          await sendRenewalReminderEmail(
-            sub.user.email,
-            sub.tier,
-            upcomingInvoice.amount_due,
-            portalSession.url
-          );
-          renewalRemindersSent++;
-        } catch (err) {
-          log.warn({ err, customerId: sub.stripeCustomerId }, "Failed to send renewal reminder");
+        const batch = validCandidates.slice(i, i + 5);
+        const results = await Promise.allSettled(
+          batch.map(async (sub) => {
+            const upcomingInvoice = await getStripe().invoices.createPreview({
+              customer: sub.stripeCustomerId!,
+            });
+            const portalSession = await getStripe().billingPortal.sessions.create({
+              customer: sub.stripeCustomerId!,
+              return_url: `${env.AUTH_URL}/app`,
+            });
+            await sendRenewalReminderEmail(
+              sub.user.email,
+              sub.tier,
+              upcomingInvoice.amount_due,
+              portalSession.url
+            );
+          })
+        );
+
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            renewalRemindersSent++;
+          } else {
+            log.warn({ err: result.reason }, "Failed to send renewal reminder");
+          }
         }
       }
     }
