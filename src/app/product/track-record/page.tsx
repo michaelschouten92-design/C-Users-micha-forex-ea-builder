@@ -7,9 +7,9 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Verified Track Record — Cryptographic Performance Proof Built Into Every EA | AlgoStudio",
+  title: "Verified Track Record — Cryptographic Proof Built Into Every EA You Build | AlgoStudio",
   description:
-    "Every trade cryptographically sealed with SHA-256 hash chains, HMAC checkpoints, and Ed25519 signatures. Multi-level verification, risk-adjusted metrics, broker corroboration, and shareable proof bundles. Built into every EA — automatic, zero-config.",
+    "Every trade cryptographically sealed with SHA-256 hash chains, HMAC checkpoints, and Ed25519 signatures. Built into every EA you build with AlgoStudio — automatic, zero-config. Multi-level verification, risk-adjusted metrics, and shareable proof bundles.",
   alternates: { canonical: "/product/track-record" },
 };
 
@@ -575,8 +575,8 @@ export default function TrackRecordPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Start building your verified track record"
-        description="Every trade cryptographically sealed. Multi-level verification. Risk-adjusted metrics. Shareable proof bundles. Built into every EA — start with a free account."
+        title="Build your EA with built-in proof"
+        description="Every trade cryptographically sealed. Multi-level verification. Risk-adjusted metrics. Shareable proof bundles. Built into every EA you create — start with a free account."
       />
 
       <Footer />

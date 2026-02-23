@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio vs Competitors — Platform Comparisons",
+  title: "AlgoStudio EA Builder vs Competitors — Platform Comparisons",
   description:
-    "Compare AlgoStudio with EA Builder, StrategyQuant, FXDreema, and other EA building platforms. Honest feature, pricing, and usability comparisons.",
+    "Compare AlgoStudio's no-code EA builder with EA Builder, StrategyQuant, FXDreema, and other platforms. Honest feature, pricing, and usability comparisons.",
   alternates: { canonical: "/compare-platforms" },
 };
 
@@ -185,8 +185,8 @@ export default function ComparePlatformsPage() {
       </main>
 
       <CTASection
-        title="See the difference for yourself"
-        description="Pick a template and export your first EA in minutes. No credit card required."
+        title="Build your first EA and see the difference"
+        description="Pick a template, export a working Expert Advisor in minutes, and validate it with data. No credit card required."
       />
 
       <Footer />

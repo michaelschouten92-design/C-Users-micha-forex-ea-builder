@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Strategy Templates | 10 Ready-to-Export MT5 Expert Advisors",
+  title: "EA Builder Templates | 10 Ready-to-Export MT5 Expert Advisors",
   description:
-    "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor. 10 templates including EMA Crossover, RSI Reversal, Bollinger Bands, MACD, Ichimoku Cloud, and more.",
+    "Build your EA from a proven template. Pick a strategy, adjust a few settings, and export a working MT5 Expert Advisor. 10 templates including EMA Crossover, RSI Reversal, Bollinger Bands, MACD, Ichimoku Cloud, and more.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Strategy Templates | 10 Ready-to-Export MT5 Expert Advisors",
+    title: "EA Builder Templates | 10 Ready-to-Export MT5 Expert Advisors",
     description:
-      "Pick a strategy template, adjust a few settings, and export a working MT5 Expert Advisor in minutes. No coding required.",
+      "Build your EA from a proven template. Adjust a few settings and export a working MT5 Expert Advisor in minutes. No coding required.",
     url: "/templates",
   },
 };
@@ -154,9 +154,9 @@ export default function TemplatesPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "MT5 Strategy Templates",
+    name: "MT5 EA Builder Templates",
     description:
-      "10 ready-to-export MetaTrader 5 Expert Advisor templates. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, Divergence, Bollinger Bands, ADX Trend, Stochastic, and Ichimoku Cloud.",
+      "10 ready-to-export MetaTrader 5 Expert Advisor templates for the AlgoStudio EA builder. EMA Crossover, RSI Reversal, Range Breakout, Trend Pullback, MACD Crossover, Divergence, Bollinger Bands, ADX Trend, Stochastic, and Ichimoku Cloud.",
     url: `${process.env.AUTH_URL || "https://algo-studio.com"}/templates`,
   };
 
@@ -326,8 +326,8 @@ export default function TemplatesPage() {
       </article>
 
       <CTASection
-        title="Start building. Export your first bot today."
-        description="Pick a template, adjust a few settings, and export clean MQL5 code to MetaTrader 5."
+        title="Start building your EA today"
+        description="Pick a template, adjust a few settings, and export a working Expert Advisor to MetaTrader 5."
       />
 
       <Footer />

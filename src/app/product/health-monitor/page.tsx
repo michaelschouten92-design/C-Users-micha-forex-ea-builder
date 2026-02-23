@@ -7,9 +7,9 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Strategy Health Monitor — Detect Edge Degradation Early | AlgoStudio",
+  title: "Strategy Health Monitor — Protect Your EAs From Edge Degradation | AlgoStudio",
   description:
-    "Continuously compare live performance against your baseline. 5 metrics tracked. Alerts when your edge degrades, drawdowns exceed norms, or returns drift.",
+    "Continuously monitor your EAs' live performance against baseline. 5 metrics tracked. Alerts when your edge degrades, drawdowns exceed norms, or returns drift.",
   alternates: { canonical: "/product/health-monitor" },
 };
 
@@ -213,8 +213,8 @@ export default function HealthMonitorPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Monitor your strategy's health"
-        description="Detect edge degradation early. 5 metrics continuously compared against your baseline. Start with a free account and upgrade when you go live."
+        title="Build your EA, then protect it"
+        description="Detect edge degradation early. 5 metrics continuously compared against your baseline. Build your EA for free and upgrade to Health Monitor when you go live."
       />
 
       <Footer />
