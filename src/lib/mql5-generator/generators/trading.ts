@@ -939,9 +939,11 @@ export function generateEntryLogic(
 
   const hasConditions = indicatorNodes.length > 0 || priceActionNodes.length > 0;
 
+  // Compute rangeBreakoutOnly early — set to true after condition loop if applicable
+  let rangeBreakoutOnly = false;
+
   if (!hasConditions) {
-    code.onTick.push("bool buyCondition = false;");
-    code.onTick.push("bool sellCondition = false;");
+    // No conditions at all — buyCondition/sellCondition not needed
   } else {
     // Generate conditions based on all indicators and price action
     const buyConditions: string[] = [];
@@ -1635,6 +1637,17 @@ export function generateEntryLogic(
     if (buyConditions.length === 0) buyConditions.push("false");
     if (sellConditions.length === 0) sellConditions.push("false");
 
+    // Determine if range breakout is the sole entry mechanism (no market order entries needed)
+    rangeBreakoutOnly =
+      rangeBreakoutPAIndex >= 0 &&
+      indicatorNodes.filter((n) => {
+        const d = n.data as Record<string, unknown>;
+        return !d._filterRole;
+      }).length === 0 &&
+      priceActionNodes.every(
+        (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
+      );
+
     // Fix 10: Warn when direction is BOTH but only one side has real conditions
     const buyIsAlwaysFalse = buyConditions.length === 1 && buyConditions[0] === "false";
     const sellIsAlwaysFalse = sellConditions.length === 1 && sellConditions[0] === "false";
@@ -1656,21 +1669,16 @@ export function generateEntryLogic(
       }
     }
 
-    const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
-    code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
-    code.onTick.push(`bool sellCondition = ${sellConditions.join(joiner)};`);
+    if (!rangeBreakoutOnly) {
+      const joiner = ctx.conditionMode === "OR" ? " || " : " && ";
+      if (hasBuyNode) {
+        code.onTick.push(`bool buyCondition = ${buyConditions.join(joiner)};`);
+      }
+      if (hasSellNode) {
+        code.onTick.push(`bool sellCondition = ${sellConditions.join(joiner)};`);
+      }
+    }
   }
-
-  // When range breakout is the only signal source, skip the market entry block
-  const rangeBreakoutOnly =
-    rangeBreakoutPAIndex >= 0 &&
-    indicatorNodes.filter((n) => {
-      const d = n.data as Record<string, unknown>;
-      return !d._filterRole;
-    }).length === 0 &&
-    priceActionNodes.every(
-      (n) => "priceActionType" in n.data && n.data.priceActionType === "range-breakout"
-    );
 
   // Detect signal mode: if any signal indicator uses candle_close, use isNewBar for signal evaluation
   const useCandleClose = indicatorNodes.some((n) => {
@@ -1678,8 +1686,10 @@ export function generateEntryLogic(
     return d.signalMode === "candle_close";
   });
 
-  // One-trade-per-bar protection (reuse currentBarTime declared in OnTick template)
-  code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
+  // One-trade-per-bar protection — only needed for market order entries
+  if (!rangeBreakoutOnly) {
+    code.globalVariables.push("datetime lastEntryBar = 0; // Prevent multiple entries per bar");
+  }
   code.onTick.push("");
 
   if (useCandleClose) {
@@ -1695,8 +1705,10 @@ export function generateEntryLogic(
     code.onTick.push("//--- Signal Mode: every_tick -- evaluate on every tick, enter once per bar");
   }
 
-  code.onTick.push("//--- One-trade-per-bar check");
-  code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
+  if (!rangeBreakoutOnly) {
+    code.onTick.push("//--- One-trade-per-bar check");
+    code.onTick.push("bool newBar = (currentBarTime != lastEntryBar);");
+  }
 
   // Daily trade limit logic
   const hasDaily = ctx.maxTradesPerDay > 0;
@@ -1846,6 +1858,13 @@ export function generateEntryLogic(
     const pi = rangeBreakoutPAIndex;
     const comment = sanitizeMQL5String(ctx.comment);
     const hasRR = code.inputs.some((i) => i.name === "InpRiskReward");
+
+    // When range breakout uses R:R TP, tpPips is unused (TP calculated from pending SL distance).
+    // Remove the unused tpPips declaration to prevent MQL5 compiler warnings.
+    if (rangeBreakoutOnly && hasRR) {
+      const tpPipsIdx = code.onTick.findIndex((l) => l.startsWith("double tpPips = "));
+      if (tpPipsIdx >= 0) code.onTick.splice(tpPipsIdx, 1);
+    }
 
     // Volume confirmation filter for range breakout
     const rbPAData = priceActionNodes[rangeBreakoutPAIndex].data as Record<string, unknown>;
