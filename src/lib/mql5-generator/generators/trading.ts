@@ -404,7 +404,7 @@ function generateIndicatorBasedSL(
           isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using Moving Average");
-        code.onTick.push("double slPips;");
+        code.onTick.push("double slPips = 0;");
         code.onTick.push("double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);");
         code.onTick.push(`double maValue = ${varPrefix}Buffer[0];`);
         code.onTick.push("double distToMA = MathAbs(currentPrice - maValue) / _Point;");
@@ -721,6 +721,9 @@ void CleanMLTPStates()
   code.onTick.push("");
   code.onTick.push("   double mltp_open = PositionGetDouble(POSITION_PRICE_OPEN);");
   code.onTick.push("   double mltp_vol = PositionGetDouble(POSITION_VOLUME);");
+  code.onTick.push(
+    "   double mltp_origVol = mltp_vol; // Save original volume for percentage calculations"
+  );
   code.onTick.push("   long mltp_type = PositionGetInteger(POSITION_TYPE);");
   code.onTick.push("   double mltp_point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);");
   code.onTick.push("   int mltp_level = GetMLTPLevel(mltp_ticket);");
@@ -803,7 +806,7 @@ void CleanMLTPStates()
     } else {
       // Intermediate level: partial close, then update level and re-read volume for next check
       code.onTick.push(
-        `      double mltp_closeVol${lvlNum} = MathFloor(mltp_vol * InpTPL${lvlNum}Percent / 100.0 / mltp_lotStep) * mltp_lotStep;`
+        `      double mltp_closeVol${lvlNum} = MathFloor(mltp_origVol * InpTPL${lvlNum}Percent / 100.0 / mltp_lotStep) * mltp_lotStep;`
       );
       code.onTick.push(
         `      if(mltp_vol - mltp_closeVol${lvlNum} < mltp_minLot) mltp_closeVol${lvlNum} = MathFloor((mltp_vol - mltp_minLot) / mltp_lotStep) * mltp_lotStep;`
@@ -972,9 +975,12 @@ export function generateEntryLogic(
       if (group.fast !== undefined && group.slow !== undefined) {
         const fp = `ind${group.fast}`;
         const sp = `ind${group.slow}`;
+        // Bar offset: candle_close shifts all bar indices by +1 (uses confirmed bars only)
+        const fastData = indicatorNodes[group.fast!].data as Record<string, unknown>;
+        const cs = fastData.signalMode === "candle_close" ? 1 : 0;
         // Fast EMA crosses above Slow EMA (bullish crossover)
-        let buyCross = `(DoubleLE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleGT(${fp}Buffer[1], ${sp}Buffer[1]))`;
-        let sellCross = `(DoubleGE(${fp}Buffer[2], ${sp}Buffer[2]) && DoubleLT(${fp}Buffer[1], ${sp}Buffer[1]))`;
+        let buyCross = `(DoubleLE(${fp}Buffer[${2 + cs}], ${sp}Buffer[${2 + cs}]) && DoubleGT(${fp}Buffer[${1 + cs}], ${sp}Buffer[${1 + cs}]))`;
+        let sellCross = `(DoubleGE(${fp}Buffer[${2 + cs}], ${sp}Buffer[${2 + cs}]) && DoubleLT(${fp}Buffer[${1 + cs}], ${sp}Buffer[${1 + cs}]))`;
         // Minimum EMA separation filter
         if (group.minEmaSeparation && group.minEmaSeparation > 0) {
           const fastNode = indicatorNodes[group.fast!];
@@ -989,7 +995,7 @@ export function generateEntryLogic(
               "EMA Crossover"
             )
           );
-          const sepCondition = `MathAbs(${fp}Buffer[1] - ${sp}Buffer[1]) / (_Point * _pipFactor) >= InpMinEmaSeparation`;
+          const sepCondition = `MathAbs(${fp}Buffer[${1 + cs}] - ${sp}Buffer[${1 + cs}]) / (_Point * _pipFactor) >= InpMinEmaSeparation`;
           buyCross = `(${buyCross} && ${sepCondition})`;
           sellCross = `(${sellCross} && ${sepCondition})`;
         }
@@ -1503,6 +1509,26 @@ export function generateEntryLogic(
             );
             break;
 
+          case "obv":
+            // OBV crossover: OBV crosses above signal MA (bullish), below (bearish)
+            buyConditions.push(
+              `(DoubleLE(${varPrefix}Buffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleGE(${varPrefix}Buffer[${1 + s}], ${varPrefix}SignalBuffer[${1 + s}]) && DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}SignalBuffer[${0 + s}]))`
+            );
+            break;
+
+          case "custom-indicator":
+            // Custom indicator: buffer rising (buy) / falling (sell)
+            buyConditions.push(
+              `(DoubleGT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+            );
+            sellConditions.push(
+              `(DoubleLT(${varPrefix}Buffer[${0 + s}], ${varPrefix}Buffer[${1 + s}]))`
+            );
+            break;
+
           case "condition": {
             // Condition node: compares a connected indicator's buffer against a threshold
             const condData = indData as ConditionNodeData;
@@ -1862,7 +1888,7 @@ export function generateEntryLogic(
     // When range breakout uses R:R TP, tpPips is unused (TP calculated from pending SL distance).
     // Remove the unused tpPips declaration to prevent MQL5 compiler warnings.
     if (rangeBreakoutOnly && hasRR) {
-      const tpPipsIdx = code.onTick.findIndex((l) => l.startsWith("double tpPips = "));
+      const tpPipsIdx = code.onTick.findIndex((l) => l.trim().startsWith("double tpPips"));
       if (tpPipsIdx >= 0) code.onTick.splice(tpPipsIdx, 1);
     }
 

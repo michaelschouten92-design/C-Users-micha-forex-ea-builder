@@ -772,7 +772,17 @@ bool TrackRecordHttpPost(string endpoint, string jsonBody)
    string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
    if(StringLen(g_trInstanceId) == 0)
    {
-      // Try to extract instanceId from response headers or save from first successful call
+      int idPos = StringFind(response, "\\"instanceId\\":\\"");
+      if(idPos >= 0)
+      {
+         int valStart = idPos + 15;
+         int valEnd = StringFind(response, "\\"", valStart);
+         if(valEnd > valStart)
+         {
+            g_trInstanceId = StringSubstr(response, valStart, valEnd - valStart);
+            TrackRecordSaveState();
+         }
+      }
    }
 
    return (res >= 200 && res < 300);

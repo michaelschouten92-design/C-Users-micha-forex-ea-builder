@@ -287,7 +287,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(InpMACD${index}Fast < 1 || InpMACD${index}Slow < 1 || InpMACD${index}Signal < 1) Print("WARNING: MACD ${index + 1} has period(s) < 1. Clamping to minimum 1.");`
         );
         code.onInit.push(
-          `if(InpMACD${index}Fast >= InpMACD${index}Slow) Print("WARNING: MACD ${index + 1} fast period (", InpMACD${index}Fast, ") >= slow period (", InpMACD${index}Slow, "). This produces unreliable signals.");`
+          `if(InpMACD${index}Fast >= InpMACD${index}Slow) { Print("ERROR: MACD ${index + 1} fast period (", InpMACD${index}Fast, ") must be less than slow period (", InpMACD${index}Slow, ")."); return(INIT_FAILED); }`
         );
         code.onInit.push(
           `${varPrefix}Handle = iMACD(_Symbol, (ENUM_TIMEFRAMES)InpMACD${index}Timeframe, MathMax(1, InpMACD${index}Fast), MathMax(1, InpMACD${index}Slow), MathMax(1, InpMACD${index}Signal), InpMACD${index}Price);`
