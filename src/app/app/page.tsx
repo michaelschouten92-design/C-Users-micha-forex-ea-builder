@@ -140,16 +140,16 @@ export default async function DashboardPage() {
               </span>
               <NotificationCenter />
               <Link
+                href="/app"
+                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
+              >
+                EA Builder
+              </Link>
+              <Link
                 href="/app/live"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
                 Track Record
-              </Link>
-              <Link
-                href="/app/referrals"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
-              >
-                Referrals
               </Link>
               <Link
                 href="/app/risk-calculator"

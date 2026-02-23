@@ -7,6 +7,7 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { PushNotificationToggle } from "@/components/app/push-notification-toggle";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+import { ReferralsSection } from "./referrals-section";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -132,6 +133,9 @@ export default function SettingsPage() {
             </p>
             <PushNotificationToggle />
           </div>
+
+          {/* Referral Program */}
+          <ReferralsSection />
 
           {/* Change Password */}
           <ChangePasswordSection />
