@@ -43,7 +43,10 @@ export async function GET(request: Request, { params }: Params) {
     }
 
     const url = new URL(request.url);
-    const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
+    const page = Math.min(
+      10000,
+      Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1)
+    );
     const limit = Math.min(
       50,
       Math.max(1, parseInt(url.searchParams.get("limit") ?? "20", 10) || 20)
@@ -114,6 +117,16 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
+  // Early rejection based on Content-Length header before reading the body
+  const contentLength = parseInt(request.headers.get("content-length") ?? "0", 10);
+  if (contentLength > 5 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "Request too large", details: "Maximum request size is 5MB" },
+      { status: 413 }
+    );
+  }
+
+  // Fallback: check actual body size after reading (Content-Length can be absent or spoofed)
   const rawBody = await request.text();
   if (rawBody.length > 5 * 1024 * 1024) {
     return NextResponse.json(
@@ -179,16 +192,23 @@ export async function POST(request: Request, { params }: Params) {
 
       // Cleanup old autosaves within the same transaction for consistency
       if (isAutosave) {
-        const oldAutosaves = await tx.buildVersion.findMany({
-          where: { projectId: id, isAutosave: true },
-          orderBy: { versionNo: "desc" },
-          select: { id: true },
-          skip: 5,
-        });
-        if (oldAutosaves.length > 0) {
-          await tx.buildVersion.deleteMany({
-            where: { id: { in: oldAutosaves.map((v) => v.id) } },
+        try {
+          const oldAutosaves = await tx.buildVersion.findMany({
+            where: { projectId: id, isAutosave: true },
+            orderBy: { versionNo: "desc" },
+            select: { id: true },
+            skip: 5,
           });
+          if (oldAutosaves.length > 0) {
+            await tx.buildVersion.deleteMany({
+              where: { id: { in: oldAutosaves.map((v) => v.id) } },
+            });
+          }
+        } catch (cleanupError) {
+          logger.warn(
+            { error: cleanupError, projectId: id },
+            "Autosave cleanup failed — old autosaves may accumulate"
+          );
         }
       }
 
@@ -275,14 +295,11 @@ export async function POST(request: Request, { params }: Params) {
   } catch (error) {
     if (error instanceof VersionConflictError) {
       return NextResponse.json(
-        {
-          ...apiError(
-            ErrorCode.VERSION_CONFLICT,
-            "Version conflict",
-            `Expected version ${error.expected}, but current version is ${error.actual}. Another save may have occurred.`
-          ),
-          currentVersion: error.actual,
-        },
+        apiError(
+          ErrorCode.VERSION_CONFLICT,
+          "Version conflict",
+          "Version conflict — please refresh and try again."
+        ),
         { status: 409 }
       );
     }

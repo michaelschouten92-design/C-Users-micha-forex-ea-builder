@@ -79,7 +79,10 @@ export async function POST(request: NextRequest) {
       data: { passwordHash: newHash, passwordChangedAt: new Date() },
     });
 
-    log.info({ userId: session.user.id }, "Password changed successfully");
+    log.info(
+      { userId: session.user.id, action: "password_change", audit: true },
+      "Password changed successfully"
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

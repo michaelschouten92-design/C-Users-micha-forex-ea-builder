@@ -30,13 +30,21 @@ export async function GET(request: NextRequest, { params }: Props) {
     where: { token },
     include: {
       instance: {
-        select: { eaName: true, symbol: true, broker: true },
+        select: { eaName: true, symbol: true, broker: true, deletedAt: true },
       },
     },
   });
 
   if (!shared) {
     return NextResponse.json({ error: "Proof bundle not found" }, { status: 404 });
+  }
+
+  // Check if the underlying instance has been deleted
+  if (shared.instance.deletedAt !== null) {
+    return NextResponse.json(
+      { error: "The instance associated with this proof bundle has been deleted" },
+      { status: 410 }
+    );
   }
 
   // Check expiry

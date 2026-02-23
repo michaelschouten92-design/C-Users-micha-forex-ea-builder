@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { getCachedTier } from "@/lib/plan-limits";
+import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -112,6 +113,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Block private/internal URLs to prevent SSRF
+  if (webhookUrl && isPrivateUrl(webhookUrl)) {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        "Webhook URL must not point to a private or internal address"
+      ),
+      { status: 400 }
+    );
+  }
+
   // Validate threshold is required and must be > 0 for threshold-based alert types
   const THRESHOLD_REQUIRED_TYPES = ["DRAWDOWN", "DAILY_LOSS"] as const;
   if (
@@ -212,6 +224,17 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       apiError(
         ErrorCode.VALIDATION_FAILED,
         `Threshold is required and must be greater than 0 for ${effectiveAlertType} alerts`
+      ),
+      { status: 400 }
+    );
+  }
+
+  // Block private/internal URLs to prevent SSRF
+  if (updates.webhookUrl && isPrivateUrl(updates.webhookUrl)) {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        "Webhook URL must not point to a private or internal address"
       ),
       { status: 400 }
     );

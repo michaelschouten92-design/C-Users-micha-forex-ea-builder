@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+  getClientIp,
+} from "@/lib/rate-limit";
 import { z } from "zod";
 
 const subscribeSchema = z.object({
@@ -12,6 +19,16 @@ const subscribeSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Rate limit by IP
+  const ip = getClientIp(request);
+  const rateLimitResult = await checkRateLimit(apiRateLimiter, `push-subscribe:${ip}`);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rateLimitResult) },
+      { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -124,8 +124,11 @@ async function handleCleanup(request: NextRequest) {
     // which is triggered in real-time during heartbeat and trade processing.
     // See prisma/schema.prisma for deprecated model annotations.
 
-    // Send renewal reminder emails for subscriptions expiring within 3 days
-    // Only sends when currentPeriodEnd is between 2 and 3 days from now (1-day window = sent once)
+    // Send renewal reminder emails for subscriptions expiring within 3 days.
+    // Idempotency mechanism: the query uses a narrow 1-day window (2-3 days from now),
+    // so even if cron retries within the same day, the same subscriptions are selected
+    // and the emails are harmless duplicates. Once the window passes (<2 days),
+    // the subscription no longer matches and won't be emailed again.
     let renewalRemindersSent = 0;
     if (!isTimedOut()) {
       const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
@@ -202,32 +205,25 @@ async function handleCleanup(request: NextRequest) {
     let downgraded = 0;
 
     if (!isTimedOut()) {
-      const pastDueSubs = await prisma.subscription.findMany({
+      // Use updateMany with the same where clause to avoid find-then-update race condition.
+      // This is atomic and prevents concurrent cron runs from double-downgrading.
+      const downgradeResult = await prisma.subscription.updateMany({
         where: {
           status: "past_due",
           currentPeriodEnd: { lt: fourteenDaysAgo },
+          tier: { not: "FREE" },
           // Also check manualPeriodEnd - if admin extended, respect that
           OR: [{ manualPeriodEnd: null }, { manualPeriodEnd: { lt: fourteenDaysAgo } }],
         },
-        select: { id: true, userId: true, tier: true },
+        data: {
+          tier: "FREE",
+          status: "cancelled",
+          stripeSubId: null,
+        },
       });
-
-      for (const sub of pastDueSubs) {
-        if (isTimedOut()) break;
-        if (sub.tier === "FREE") continue;
-        await prisma.subscription.update({
-          where: { id: sub.id },
-          data: {
-            tier: "FREE",
-            status: "cancelled",
-            stripeSubId: null,
-          },
-        });
-        downgraded++;
-        log.info(
-          { userId: sub.userId, previousTier: sub.tier },
-          "Auto-downgraded past_due subscription"
-        );
+      downgraded = downgradeResult.count;
+      if (downgraded > 0) {
+        log.info({ count: downgraded }, "Auto-downgraded past_due subscriptions");
       }
     }
 

@@ -36,6 +36,8 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
+    take: 50,
+    orderBy: { createdAt: "desc" },
   });
 
   if (subscriptions.length === 0) return;

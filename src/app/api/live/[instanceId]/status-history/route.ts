@@ -61,6 +61,23 @@ export async function GET(
     });
   }
 
+  // Validate logical consistency: from must be before to
+  if (fromDate && toDate && fromDate >= toDate) {
+    return NextResponse.json(
+      apiError(ErrorCode.VALIDATION_FAILED, "'from' date must be before 'to' date"),
+      { status: 400 }
+    );
+  }
+
+  // Validate max range of 90 days
+  const MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1000;
+  if (fromDate && toDate && toDate.getTime() - fromDate.getTime() > MAX_RANGE_MS) {
+    return NextResponse.json(
+      apiError(ErrorCode.VALIDATION_FAILED, "Date range must not exceed 90 days"),
+      { status: 400 }
+    );
+  }
+
   const dateFilter: { gte?: Date; lte?: Date } = {};
   if (fromDate) dateFilter.gte = fromDate;
   if (toDate) dateFilter.lte = toDate;

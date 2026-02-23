@@ -28,6 +28,7 @@ export async function GET(request: Request, { params }: Params) {
       where: {
         id: versionId,
         projectId: id,
+        project: { userId: session.user.id },
       },
     });
 

@@ -79,7 +79,10 @@ function pearsonCorrelation(x: number[], y: number[]): number {
     sumY2 += y[i] * y[i];
   }
 
-  const denom = Math.sqrt((len * sumX2 - sumX * sumX) * (len * sumY2 - sumY * sumY));
+  const denomSq = (len * sumX2 - sumX * sumX) * (len * sumY2 - sumY * sumY);
+  const denom = Math.sqrt(Math.max(0, denomSq));
   if (denom === 0) return 0;
-  return (len * sumXY - sumX * sumY) / denom;
+  const r = (len * sumXY - sumX * sumY) / denom;
+  // Clamp to [-1, 1] to guard against floating-point drift
+  return Math.max(-1, Math.min(1, r));
 }

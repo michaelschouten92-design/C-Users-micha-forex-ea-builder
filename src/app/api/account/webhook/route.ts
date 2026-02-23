@@ -95,6 +95,19 @@ const webhookUpdateSchema = z.object({
         return !isPrivateUrl(val);
       },
       { message: "Webhook URL must not point to a private or internal address" }
+    )
+    .refine(
+      (val) => {
+        if (val === null || val === undefined) return true;
+        try {
+          const hostname = new URL(val).hostname.toLowerCase();
+          const blocked = ["algostudio", "algo-studio", "localhost"];
+          return !blocked.some((d) => hostname.includes(d));
+        } catch {
+          return false;
+        }
+      },
+      { message: "Webhook URL must not point back to this application" }
     ),
   telegramBotToken: z
     .string()
@@ -152,10 +165,7 @@ async function handleUpdate(request: NextRequest): Promise<NextResponse> {
     const parsed = webhookUpdateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0]?.message ?? "Invalid input" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid webhook configuration" }, { status: 400 });
     }
 
     const updateData: {

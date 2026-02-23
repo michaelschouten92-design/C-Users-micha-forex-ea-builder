@@ -113,6 +113,12 @@ providers.push(
           throw new PasswordTooShortError();
         }
 
+        // bcrypt silently truncates at 72 bytes; reject oversized passwords to avoid
+        // misleading users into thinking their full password is checked.
+        if (password.length > 72) {
+          return null;
+        }
+
         // Find existing user
         const existingUser = await prisma.user.findUnique({
           where: { email },

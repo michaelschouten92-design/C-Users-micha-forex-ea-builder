@@ -13,6 +13,7 @@ import {
 
 const MAX_VERIFY_BODY = 5 * 1024 * 1024; // 5MB cap
 const MAX_EVENTS = 10_000;
+const MAX_EVENTS_PAYLOAD = 4 * 1024 * 1024; // 4MB cap for events array
 
 // POST /api/track-record/verify-report — verify a proof bundle (public, no auth needed)
 export async function POST(request: NextRequest) {
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
       { error: "Invalid proof bundle: missing report, manifest, or events" },
       { status: 400 }
     );
+  }
+
+  // Check events payload size to prevent oversized bundles
+  const eventsSize = JSON.stringify(bundle.events).length;
+  if (eventsSize > MAX_EVENTS_PAYLOAD) {
+    return NextResponse.json({ error: "Events payload too large" }, { status: 413 });
   }
 
   try {

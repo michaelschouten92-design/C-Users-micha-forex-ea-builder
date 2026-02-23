@@ -261,10 +261,14 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   };
   const mappedStatus: SubscriptionStatus = statusMap[stripeSubscription.status] ?? "active";
 
-  // Use transaction with row-level locking to prevent race conditions with concurrent webhooks
+  // Use transaction with row-level locking to prevent race conditions with concurrent webhooks.
+  // FOR UPDATE ensures that if two checkout.session.completed webhooks arrive simultaneously
+  // for the same user, the second one blocks until the first commits, preventing double-processing.
   const previousTier = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; tier: string }>>`
-      SELECT id, tier FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; tier: string; stripeSubId: string | null }>
+    >`
+      SELECT id, tier, "stripeSubId" FROM "Subscription"
       WHERE "userId" = ${userId}
       FOR UPDATE
     `;
@@ -272,6 +276,16 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     if (!rows.length) {
       log.error({ userId }, "Subscription not found for user in checkout completion");
       return null;
+    }
+
+    // Detect possible duplicate webhook: if the subscription already has this exact stripeSubId,
+    // another checkout webhook already processed it while we were waiting on the lock.
+    if (rows[0].stripeSubId === subscriptionId) {
+      log.warn(
+        { userId, subscriptionId, existingTier: rows[0].tier },
+        "Duplicate checkout webhook detected — subscription already has this stripeSubId, skipping"
+      );
+      return rows[0].tier;
     }
 
     const prev = rows[0].tier;
@@ -424,7 +438,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
   const customerId = getStringId(subscription.customer);
 
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ subscriptionId: subscription.id }, "No customer ID in subscription cancellation");
+    return;
+  }
 
   // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
@@ -465,10 +482,19 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionId = getStringId(
     (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null
   );
-  if (!subscriptionId) return;
+  if (!subscriptionId) {
+    log.error({ invoiceId: invoice.id }, "No subscription ID in payment succeeded invoice");
+    return;
+  }
 
   const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error(
+      { invoiceId: invoice.id, subscriptionId },
+      "No customer ID in payment succeeded invoice"
+    );
+    return;
+  }
 
   const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(stripeSubscription);
@@ -507,7 +533,10 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ invoiceId: invoice.id }, "No customer ID in payment failed invoice");
+    return;
+  }
 
   // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
@@ -550,7 +579,10 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
 async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
   const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ invoiceId: invoice.id }, "No customer ID in payment action required invoice");
+    return;
+  }
 
   const subscription = await prisma.subscription.findFirst({
     where: { stripeCustomerId: customerId },
@@ -567,7 +599,10 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
 
 async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   const customerId = getStringId(subscription.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ subscriptionId: subscription.id }, "No customer ID in trial will end subscription");
+    return;
+  }
 
   const sub = await prisma.subscription.findFirst({
     where: { stripeCustomerId: customerId },
@@ -589,7 +624,10 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
 
 async function handleChargeRefunded(charge: Stripe.Charge) {
   const customerId = getStringId(charge.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ chargeId: charge.id }, "No customer ID in charge refund");
+    return;
+  }
 
   // Log the refund but do NOT auto-downgrade the subscription.
   // Stripe sends customer.subscription.deleted when a subscription is actually cancelled.
@@ -607,7 +645,10 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
 async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
   const customerId = getStringId(subscription.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ subscriptionId: subscription.id }, "No customer ID in subscription paused event");
+    return;
+  }
 
   // Update subscription status to paused
   const userId = await prisma.$transaction(async (tx) => {
@@ -635,7 +676,10 @@ async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
 
 async function handleInvoiceUncollectible(invoice: Stripe.Invoice) {
   const customerId = getStringId(invoice.customer);
-  if (!customerId) return;
+  if (!customerId) {
+    log.error({ invoiceId: invoice.id }, "No customer ID in uncollectible invoice");
+    return;
+  }
 
   // Mark subscription as unpaid when invoice is abandoned
   const userId = await prisma.$transaction(async (tx) => {

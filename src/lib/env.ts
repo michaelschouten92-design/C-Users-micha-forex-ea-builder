@@ -49,10 +49,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
 
   // Stripe Price IDs (required when Stripe is enabled)
-  STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional(),
-  STRIPE_PRO_YEARLY_PRICE_ID: z.string().optional(),
-  STRIPE_ELITE_MONTHLY_PRICE_ID: z.string().optional(),
-  STRIPE_ELITE_YEARLY_PRICE_ID: z.string().optional(),
+  STRIPE_PRO_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
+  STRIPE_PRO_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
+  STRIPE_ELITE_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
+  STRIPE_ELITE_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
 
   // Sentry (optional - for error tracking)
   SENTRY_DSN: z.string().url().optional().or(z.literal("")),

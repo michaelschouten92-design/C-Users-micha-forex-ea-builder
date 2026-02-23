@@ -69,15 +69,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Constant-time approach: record start, ensure minimum total time for ALL paths
+    // to prevent timing-based account enumeration
+    const startTime = Date.now();
+    const MINIMUM_RESPONSE_MS = 250;
+
+    // Helper to pad remaining time before responding
+    const padTiming = async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MINIMUM_RESPONSE_MS) {
+        await new Promise((r) => setTimeout(r, MINIMUM_RESPONSE_MS - elapsed + Math.random() * 50));
+      }
+    };
+
     // Check if user exists and uses password auth
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     // Always return success to prevent email enumeration
-    // Add a constant-time delay to prevent timing-based account enumeration
     if (!user || !user.passwordHash) {
-      await new Promise((r) => setTimeout(r, 150 + Math.random() * 100));
+      await padTiming();
       return NextResponse.json(
         {
           message: "If an account with this email exists, a reset link has been sent.",
@@ -112,6 +124,7 @@ export async function POST(request: Request) {
 
     log.info({ email: email.substring(0, 3) + "***" }, "Password reset email sent");
 
+    await padTiming();
     return NextResponse.json(
       {
         message: "If an account with this email exists, a reset link has been sent.",

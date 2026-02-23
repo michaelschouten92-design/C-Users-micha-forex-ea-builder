@@ -140,26 +140,20 @@ export async function DELETE(
 
   const { instanceId } = await params;
 
-  // Verify the user owns this instance and it hasn't already been soft-deleted
-  const instance = await prisma.liveEAInstance.findFirst({
+  // Atomic soft-delete: set deletedAt and mark as OFFLINE in one step to avoid race conditions
+  const result = await prisma.liveEAInstance.updateMany({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },
-    select: { id: true },
-  });
-
-  if (!instance) {
-    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Instance not found"), {
-      status: 404,
-    });
-  }
-
-  // Soft-delete: set deletedAt and mark as OFFLINE
-  await prisma.liveEAInstance.update({
-    where: { id: instanceId },
     data: {
       deletedAt: new Date(),
       status: "OFFLINE",
     },
   });
+
+  if (result.count === 0) {
+    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Instance not found"), {
+      status: 404,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

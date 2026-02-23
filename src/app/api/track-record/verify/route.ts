@@ -52,9 +52,13 @@ export async function GET(request: NextRequest) {
 
     // Guard against DoS: cap event count
     const eventCount = await prisma.trackRecordEvent.count({ where: { instanceId } });
-    if (eventCount > 50000) {
+    if (eventCount > 10_000) {
       return NextResponse.json(
-        { error: "Instance has too many events for full verification. Use proof bundles." },
+        {
+          error:
+            "Instance has too many events for live verification (limit: 10,000). " +
+            "Please use proof bundles for instances with more than 10,000 events.",
+        },
         { status: 413 }
       );
     }

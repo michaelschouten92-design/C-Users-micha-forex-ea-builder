@@ -150,12 +150,32 @@ export async function POST(request: NextRequest) {
         stripeCustomerId = customer.id;
       }
 
-      // Save customer ID (upsert in case subscription row doesn't exist yet)
-      await prisma.subscription.upsert({
-        where: { userId: user.id },
-        update: { stripeCustomerId },
-        create: { userId: user.id, tier: "FREE", stripeCustomerId },
-      });
+      // Save customer ID immediately to prevent concurrent requests from creating
+      // duplicate Stripe customers. If a concurrent request already wrote a
+      // stripeCustomerId, re-read it and use the existing one.
+      try {
+        await prisma.subscription.upsert({
+          where: { userId: user.id },
+          update: { stripeCustomerId },
+          create: { userId: user.id, tier: "FREE", stripeCustomerId },
+        });
+      } catch (upsertError) {
+        // Unique constraint race: another request already created the subscription row.
+        // Re-read the existing customer ID and use it instead.
+        const existing = await prisma.subscription.findUnique({
+          where: { userId: user.id },
+          select: { stripeCustomerId: true },
+        });
+        if (existing?.stripeCustomerId) {
+          stripeCustomerId = existing.stripeCustomerId;
+          log.warn(
+            { userId: user.id },
+            "Concurrent checkout detected — using existing Stripe customer"
+          );
+        } else {
+          throw upsertError;
+        }
+      }
     }
 
     // Create checkout session

@@ -100,8 +100,12 @@ async function handleReconcile(request: NextRequest) {
           try {
             stripeSub = await getStripe().subscriptions.retrieve(sub.stripeSubId!);
           } catch (err) {
-            // Subscription deleted in Stripe but still active in DB
             const stripeErr = err as { statusCode?: number };
+            // Stripe rate limit — stop processing to avoid more 429s
+            if (stripeErr.statusCode === 429) {
+              throw err;
+            }
+            // Subscription deleted in Stripe but still active in DB
             if (stripeErr.statusCode === 404) {
               log.warn(
                 { userId: sub.userId, stripeSubId: sub.stripeSubId },
@@ -176,15 +180,23 @@ async function handleReconcile(request: NextRequest) {
         })
       );
 
+      let hitRateLimit = false;
       for (const result of results) {
         checked++;
         if (result.status === "fulfilled" && result.value.mismatch) {
           mismatches++;
         } else if (result.status === "rejected") {
-          errors++;
-          log.error({ err: result.reason }, "Reconciliation check failed for subscription");
+          const reason = result.reason as { statusCode?: number };
+          if (reason?.statusCode === 429) {
+            hitRateLimit = true;
+            log.warn("Stripe 429 rate limit hit — stopping reconciliation early");
+          } else {
+            errors++;
+            log.error({ err: result.reason }, "Reconciliation check failed for subscription");
+          }
         }
       }
+      if (hitRateLimit) break;
     }
 
     const timedOut = isTimedOut();

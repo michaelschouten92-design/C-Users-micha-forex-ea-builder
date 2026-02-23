@@ -68,6 +68,11 @@ export async function GET(request: Request): Promise<Response> {
       // Poll for deltas every 5 seconds
       const pollInterval = setInterval(async () => {
         try {
+          // Backpressure check: if the stream is full or closed, stop enqueuing
+          if (controller.desiredSize === null || controller.desiredSize <= 0) {
+            return;
+          }
+
           const since = lastCheck;
           lastCheck = new Date();
 
@@ -173,15 +178,22 @@ export async function GET(request: Request): Promise<Response> {
             );
           }
         } catch {
-          // Silently continue polling
+          // Stream likely closed — clean up intervals to stop leaked polling
+          clearInterval(pollInterval);
+          clearInterval(keepAlive);
         }
       }, 5000);
 
       // Keep-alive every 30s
       const keepAlive = setInterval(() => {
         try {
+          if (controller.desiredSize === null || controller.desiredSize <= 0) {
+            clearInterval(keepAlive);
+            return;
+          }
           controller.enqueue(encoder.encode(": keep-alive\n\n"));
         } catch {
+          clearInterval(pollInterval);
           clearInterval(keepAlive);
         }
       }, 30000);

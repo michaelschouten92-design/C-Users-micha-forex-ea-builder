@@ -139,10 +139,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 10. Parse the report
+    // 10. Parse the report (with timeout to prevent hanging on malformed input)
     let parsed;
     try {
-      parsed = parseMT5Report(html);
+      parsed = await Promise.race([
+        Promise.resolve(parseMT5Report(html)),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Parse timeout: report took longer than 10s")), 10_000)
+        ),
+      ]);
     } catch (err) {
       logger.error({ error: err }, "Failed to parse MT5 report");
       return NextResponse.json(

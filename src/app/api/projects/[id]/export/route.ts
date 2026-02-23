@@ -108,9 +108,10 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit the export request
     await audit.exportRequest(session.user.id, id, "MQ5");
 
-    // Check export limits (plan-based monthly limits) — pre-check outside transaction
-    // for fast rejection. The authoritative check happens atomically inside the
-    // transaction below, preventing race conditions.
+    // ADVISORY ONLY: This pre-check is outside the transaction and can be bypassed by
+    // concurrent requests. It exists solely for fast rejection of obviously over-limit
+    // users. The authoritative, race-condition-safe enforcement happens atomically
+    // inside the transaction below (see tx.exportJob.count + conditional insert).
     const exportLimit = await checkExportLimit(session.user.id);
     if (!exportLimit.allowed) {
       return NextResponse.json(

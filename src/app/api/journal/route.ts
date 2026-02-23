@@ -70,14 +70,50 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     // Filter by symbol in metadata JSON
     if (symbol) {
+      if (!/^[A-Za-z0-9.]{1,20}$/.test(symbol)) {
+        return NextResponse.json({ error: "Invalid symbol format" }, { status: 400 });
+      }
       where.metadata = { path: ["symbol"], equals: symbol };
     }
 
     // Filter by date range
     if (dateFrom || dateTo) {
+      const parsedFrom = dateFrom ? new Date(dateFrom) : undefined;
+      const parsedTo = dateTo ? new Date(dateTo) : undefined;
+
+      if (parsedFrom && isNaN(parsedFrom.getTime())) {
+        return NextResponse.json(
+          apiError(ErrorCode.VALIDATION_FAILED, "Invalid 'dateFrom' parameter"),
+          { status: 400 }
+        );
+      }
+      if (parsedTo && isNaN(parsedTo.getTime())) {
+        return NextResponse.json(
+          apiError(ErrorCode.VALIDATION_FAILED, "Invalid 'dateTo' parameter"),
+          { status: 400 }
+        );
+      }
+
+      // Validate from < to
+      if (parsedFrom && parsedTo && parsedFrom >= parsedTo) {
+        return NextResponse.json(
+          apiError(ErrorCode.VALIDATION_FAILED, "'dateFrom' must be before 'dateTo'"),
+          { status: 400 }
+        );
+      }
+
+      // Max range of 365 days
+      const MAX_RANGE_MS = 365 * 24 * 60 * 60 * 1000;
+      if (parsedFrom && parsedTo && parsedTo.getTime() - parsedFrom.getTime() > MAX_RANGE_MS) {
+        return NextResponse.json(
+          apiError(ErrorCode.VALIDATION_FAILED, "Date range must not exceed 365 days"),
+          { status: 400 }
+        );
+      }
+
       where.startedAt = {};
-      if (dateFrom) where.startedAt.gte = new Date(dateFrom);
-      if (dateTo) where.startedAt.lte = new Date(dateTo);
+      if (parsedFrom) where.startedAt.gte = parsedFrom;
+      if (parsedTo) where.startedAt.lte = parsedTo;
     }
 
     const [entries, total] = await Promise.all([

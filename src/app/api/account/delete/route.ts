@@ -43,7 +43,11 @@ export async function DELETE(request: Request) {
   const body = result.data as Record<string, unknown>;
 
   try {
-    if (body?.confirm !== "DELETE") {
+    if (
+      String(body?.confirm ?? "")
+        .trim()
+        .toUpperCase() !== "DELETE"
+    ) {
       return NextResponse.json(
         { error: 'Confirmation required. Send { confirm: "DELETE" } to proceed.' },
         { status: 400 }
@@ -58,7 +62,9 @@ export async function DELETE(request: Request) {
       select: { email: true },
     });
 
-    // Cancel Stripe subscription if active
+    // Cancel Stripe first - if DB cleanup fails, cron will catch the orphaned subscription.
+    // This order is deliberate: Stripe cancellation is idempotent and safe to retry,
+    // whereas deleting DB records before cancelling Stripe could leave active billing.
     const subscription = await prisma.subscription.findUnique({
       where: { userId },
     });
