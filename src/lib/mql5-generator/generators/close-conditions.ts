@@ -179,13 +179,13 @@ export function generateCloseConditionCode(
           break;
 
         case "vwap":
-          // Close buy when price crosses below VWAP
+          // Close buy when price crosses below VWAP (scalar value, not array)
           closeBuyConditions.push(
-            `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+            `(DoubleLT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}Value))`
           );
           // Close sell when price crosses above VWAP
           closeSellConditions.push(
-            `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${1 + s}), ${varPrefix}Value))`
+            `(DoubleGT(iClose(_Symbol, PERIOD_CURRENT, ${0 + s}), ${varPrefix}Value))`
           );
           break;
 

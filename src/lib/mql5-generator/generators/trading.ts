@@ -748,7 +748,7 @@ void CleanMLTPStates()
         code.onTick.push(`   double mltp_tp${lvlNum}_pts = slPips * InpTPL${lvlNum}RR;`);
         break;
       case "ATR_BASED": {
-        // Reuse ATR buffer if available, otherwise use tpPips as a fallback multiplier base
+        // Reuse ATR buffer if available, otherwise create a dedicated TP ATR buffer
         const hasAtrBuf = code.globalVariables.some((v) => v.includes("atrBuffer"));
         const hasTpAtrBuf = code.globalVariables.some((v) => v.includes("tpAtrBuffer"));
         if (hasAtrBuf) {
@@ -760,8 +760,19 @@ void CleanMLTPStates()
             `   double mltp_tp${lvlNum}_pts = MathMax((tpAtrBuffer[0] / mltp_point) * InpTPL${lvlNum}ATRMult, _pipFactor);`
           );
         } else {
-          // Fallback: treat as fixed pips using the atrMultiplier value
-          code.onTick.push(`   double mltp_tp${lvlNum}_pts = InpTPL${lvlNum}ATRMult * _pipFactor;`);
+          // No ATR buffer exists (SL does not use ATR) -- create a dedicated one for TP
+          code.globalVariables.push("int tpAtrHandle = INVALID_HANDLE;");
+          code.globalVariables.push("double tpAtrBuffer[];");
+          code.onInit.push("tpAtrHandle = iATR(_Symbol, PERIOD_CURRENT, 14);");
+          code.onInit.push(
+            'if(tpAtrHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for TP"); return(INIT_FAILED); }'
+          );
+          code.onDeinit.push("if(tpAtrHandle != INVALID_HANDLE) IndicatorRelease(tpAtrHandle);");
+          code.onInit.push("ArraySetAsSeries(tpAtrBuffer, true);");
+          code.onTick.push("if(CopyBuffer(tpAtrHandle, 0, 0, 1, tpAtrBuffer) < 1) return;");
+          code.onTick.push(
+            `   double mltp_tp${lvlNum}_pts = MathMax((tpAtrBuffer[0] / mltp_point) * InpTPL${lvlNum}ATRMult, _pipFactor);`
+          );
         }
         break;
       }
@@ -773,35 +784,40 @@ void CleanMLTPStates()
   code.onTick.push("   double mltp_minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);");
   code.onTick.push("");
 
-  // Generate check for each TP level
+  // Generate check for each TP level (1-based: level 0 = no level reached yet)
+  // Use sequential if/else so that if price jumps past multiple levels in one tick,
+  // each level is processed in order without the continue skipping higher levels.
   for (let i = 0; i < levelCount; i++) {
     const lvlNum = i + 1;
     const isLast = i === levelCount - 1;
 
     code.onTick.push(`   // TP Level ${lvlNum}`);
-    code.onTick.push(`   if(mltp_level == ${i} && mltp_profit_pts >= mltp_tp${lvlNum}_pts)`);
+    code.onTick.push(`   if(mltp_level <= ${i} && mltp_profit_pts >= mltp_tp${lvlNum}_pts)`);
     code.onTick.push("   {");
 
     if (isLast) {
       // Final level: close remaining position
       code.onTick.push("      trade.PositionClose(mltp_ticket);");
       code.onTick.push(`      SetMLTPLevel(mltp_ticket, ${lvlNum});`);
+      code.onTick.push("      continue;");
     } else {
-      // Intermediate level: partial close
+      // Intermediate level: partial close, then update level and re-read volume for next check
       code.onTick.push(
-        `      double mltp_closeVol = MathFloor(mltp_vol * InpTPL${lvlNum}Percent / 100.0 / mltp_lotStep) * mltp_lotStep;`
+        `      double mltp_closeVol${lvlNum} = MathFloor(mltp_vol * InpTPL${lvlNum}Percent / 100.0 / mltp_lotStep) * mltp_lotStep;`
       );
       code.onTick.push(
-        "      if(mltp_vol - mltp_closeVol < mltp_minLot) mltp_closeVol = MathFloor((mltp_vol - mltp_minLot) / mltp_lotStep) * mltp_lotStep;"
+        `      if(mltp_vol - mltp_closeVol${lvlNum} < mltp_minLot) mltp_closeVol${lvlNum} = MathFloor((mltp_vol - mltp_minLot) / mltp_lotStep) * mltp_lotStep;`
       );
-      code.onTick.push("      if(mltp_closeVol >= mltp_minLot)");
+      code.onTick.push(`      if(mltp_closeVol${lvlNum} >= mltp_minLot)`);
       code.onTick.push("      {");
-      code.onTick.push("         trade.PositionClosePartial(mltp_ticket, mltp_closeVol);");
-      code.onTick.push(`         SetMLTPLevel(mltp_ticket, ${lvlNum});`);
+      code.onTick.push(`         trade.PositionClosePartial(mltp_ticket, mltp_closeVol${lvlNum});`);
+      code.onTick.push(`         mltp_vol -= mltp_closeVol${lvlNum};`);
       code.onTick.push("      }");
+      code.onTick.push(`      SetMLTPLevel(mltp_ticket, ${lvlNum});`);
+      code.onTick.push(`      mltp_level = ${lvlNum};`);
+      // Fall through to check next level
     }
 
-    code.onTick.push("      continue;");
     code.onTick.push("   }");
     code.onTick.push("");
   }

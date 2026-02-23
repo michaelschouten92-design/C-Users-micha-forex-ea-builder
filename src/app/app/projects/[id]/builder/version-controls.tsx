@@ -144,7 +144,10 @@ export function VersionControls({
     const controller = new AbortController();
     fetchVersions(controller.signal);
     return () => controller.abort();
-  }, [projectId, fetchVersions]);
+    // fetchVersions is excluded to avoid a double fetch: it already depends on projectId,
+    // so including both would trigger this effect twice when projectId changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   // Refresh versions when autosave transitions to "saved"
   const prevAutoSaveStatusRef = useRef(autoSaveStatus);

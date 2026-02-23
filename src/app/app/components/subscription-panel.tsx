@@ -27,8 +27,10 @@ export function SubscriptionPanel({
   const projectLimit = plan.limits.maxProjects;
   const exportLimit = plan.limits.maxExportsPerMonth;
 
-  const projectPercentage = projectLimit === Infinity ? 0 : (projectCount / projectLimit) * 100;
-  const exportPercentage = exportLimit === Infinity ? 0 : (exportCount / exportLimit) * 100;
+  const projectPercentage =
+    projectLimit === Infinity || projectLimit <= 0 ? 0 : (projectCount / projectLimit) * 100;
+  const exportPercentage =
+    exportLimit === Infinity || exportLimit <= 0 ? 0 : (exportCount / exportLimit) * 100;
 
   async function handleManageSubscription() {
     setLoading(true);

@@ -789,7 +789,8 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         const copyBars = ci.signalMode === "candle_close" ? 4 : 3;
         const group = `Custom Indicator ${index + 1}`;
         const safeName = sanitizeMQL5String(ci.indicatorName || "CustomIndicator");
-        const bufferIdx = ci.bufferIndex ?? 0;
+        // MT5 supports up to 8 buffers per indicator (indices 0-7). Clamp to valid range.
+        const bufferIdx = Math.min(Math.max(0, ci.bufferIndex ?? 0), 7);
 
         // Create input variables for each custom indicator parameter so they
         // become individually optimizable in the MT5 strategy tester
@@ -889,6 +890,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        // Validate buffer index at runtime (MT5 supports buffers 0-7)
+        code.onInit.push(
+          `if(InpCustom${index}Buffer < 0 || InpCustom${index}Buffer > 7) Print("WARNING: ${safeName} buffer index (", InpCustom${index}Buffer, ") is out of range 0-7. Clamping.");`
+        );
         code.onInit.push(
           `${varPrefix}Handle = iCustom(_Symbol, (ENUM_TIMEFRAMES)InpCustom${index}Timeframe, "${safeName}"${paramList});`
         );
@@ -897,7 +902,10 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `if(${varPrefix}Handle != INVALID_HANDLE) IndicatorRelease(${varPrefix}Handle);`
         );
         code.onInit.push(`ArraySetAsSeries(${varPrefix}Buffer, true);`);
-        addCopyBuffer(`${varPrefix}Handle`, bufferIdx, copyBars, `${varPrefix}Buffer`, code);
+        // Use runtime-clamped buffer index so the user's input is respected but bounded
+        code.onTick.push(
+          `if(CopyBuffer(${varPrefix}Handle, MathMin(MathMax(0, InpCustom${index}Buffer), 7), 0, ${copyBars}, ${varPrefix}Buffer) < ${copyBars}) return;`
+        );
         code.maxIndicatorPeriod = Math.max(code.maxIndicatorPeriod, 50);
         break;
       }

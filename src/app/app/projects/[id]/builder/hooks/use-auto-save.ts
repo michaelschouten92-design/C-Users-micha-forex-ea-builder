@@ -36,6 +36,7 @@ export function useAutoSave({
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedVersionRef = useRef<number>(0);
+  const mountedRef = useRef(true);
   const { getViewport } = useReactFlow();
 
   // Use refs to always have latest state in callbacks (prevents stale closures)
@@ -202,7 +203,10 @@ export function useAutoSave({
         // If an autosave was requested while we were busy, retry now
         if (pendingAutoSaveRef.current) {
           pendingAutoSaveRef.current = false;
-          setTimeout(() => saveToServerRef.current(true), 500);
+          setTimeout(() => {
+            if (!mountedRef.current) return;
+            saveToServerRef.current(true);
+          }, 500);
         }
       }
     },
@@ -217,11 +221,15 @@ export function useAutoSave({
   saveToServerRef.current = saveToServer;
 
   const attemptAutoSave = useCallback(async () => {
+    if (!mountedRef.current) return;
     const success = await saveToServerRef.current(true);
     if (!success && retryCountRef.current < MAX_RETRIES) {
       retryCountRef.current += 1;
       const backoff = Math.pow(2, retryCountRef.current) * 1000; // 2s, 4s, 8s
-      retryTimerRef.current = setTimeout(() => attemptAutoSave(), backoff);
+      retryTimerRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+        attemptAutoSave();
+      }, backoff);
     } else if (success) {
       retryCountRef.current = 0;
     }
@@ -249,6 +257,13 @@ export function useAutoSave({
       }
     };
   }, [hasUnsavedChanges, attemptAutoSave, debounceMs]);
+
+  // Mark component as unmounted so pending retry callbacks are discarded
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Warn user before leaving with unsaved changes (tab close / refresh)
   useEffect(() => {

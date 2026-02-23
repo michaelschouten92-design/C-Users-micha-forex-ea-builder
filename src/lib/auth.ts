@@ -189,11 +189,7 @@ providers.push(
           const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
           // Generate unique referral code
-          const referralCode = randomBytes(6)
-            .toString("base64url")
-            .replace(/[^a-zA-Z0-9]/g, "")
-            .slice(0, 8)
-            .toUpperCase();
+          const referralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
 
           // Validate referral code from the referring user
           let validatedReferredBy: string | undefined;
@@ -353,11 +349,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return false;
           } else {
             // Generate unique referral code for new OAuth user
-            const oauthReferralCode = randomBytes(6)
-              .toString("base64url")
-              .replace(/[^a-zA-Z0-9]/g, "")
-              .slice(0, 8)
-              .toUpperCase();
+            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
 
             // Read referral code from cookie (set by middleware)
             let oauthReferredBy: string | undefined;
@@ -436,11 +428,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
             return false;
           } else {
-            const oauthReferralCode = randomBytes(6)
-              .toString("base64url")
-              .replace(/[^a-zA-Z0-9]/g, "")
-              .slice(0, 8)
-              .toUpperCase();
+            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
 
             let oauthReferredBy: string | undefined;
             try {
@@ -534,11 +522,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
             return false;
           } else {
-            const oauthReferralCode = randomBytes(6)
-              .toString("base64url")
-              .replace(/[^a-zA-Z0-9]/g, "")
-              .slice(0, 8)
-              .toUpperCase();
+            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
 
             let oauthReferredBy: string | undefined;
             try {
@@ -657,7 +641,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.suspended = true;
       }
       if (token.emailVerified) {
-        session.user.emailVerified = new Date();
+        // Set as boolean true (not Date) — consumers check truthiness only
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (session.user as any).emailVerified = true;
       }
       if (token.impersonatorId) {
         session.user.impersonatorId = token.impersonatorId as string;

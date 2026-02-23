@@ -258,7 +258,8 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
 
   if (uniqueSymbols.length < 2) return null;
 
-  const hasApiData = apiData != null && apiData.labels.length >= 2 && apiData.matrix.length >= 2;
+  const hasApiData =
+    apiData != null && apiData?.labels?.length >= 2 && apiData?.matrix?.length >= 2;
   const apiCorrelationMap = hasApiData
     ? buildApiCorrelationMap(apiData.matrix, apiData.labels)
     : null;

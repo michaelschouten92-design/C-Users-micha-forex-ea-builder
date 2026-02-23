@@ -246,6 +246,10 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   const stripeSubscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const customerId = getStringId(session.customer);
+  if (!customerId) {
+    log.error({ sessionId: session.id }, "No customer ID in checkout session");
+    return;
+  }
   const period = getSubscriptionPeriod(stripeSubscription);
 
   // Map Stripe status to our SubscriptionStatus enum
@@ -259,6 +263,12 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     trialing: "trialing",
     unpaid: "unpaid",
   };
+  if (!statusMap[stripeSubscription.status]) {
+    log.warn(
+      { stripeStatus: stripeSubscription.status, subscriptionId },
+      "Unknown Stripe subscription status encountered in checkout — defaulting to active"
+    );
+  }
   const mappedStatus: SubscriptionStatus = statusMap[stripeSubscription.status] ?? "active";
 
   // Use transaction with row-level locking to prevent race conditions with concurrent webhooks.
@@ -369,6 +379,13 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     trialing: "trialing",
     unpaid: "unpaid",
   };
+
+  if (!statusMap[subscription.status]) {
+    log.warn(
+      { stripeStatus: subscription.status, subscriptionId: subscription.id },
+      "Unknown Stripe subscription status encountered in update — defaulting to active"
+    );
+  }
 
   const period = getSubscriptionPeriod(subscription);
 

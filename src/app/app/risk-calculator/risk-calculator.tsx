@@ -38,8 +38,10 @@ interface SimulationResult {
 
 function runMonteCarlo(params: SimulationParams): SimulationResult {
   const { winRate, rrRatio, riskPerTrade, numTrades, numSimulations, startBalance } = params;
-  const winProb = winRate / 100;
-  const risk = riskPerTrade / 100;
+  const winProb = Math.max(0.001, Math.min(0.999, winRate / 100));
+  const safeRR = Math.max(0.001, rrRatio);
+  const risk = Math.max(0.001, riskPerTrade / 100);
+  const safeSimulations = Math.max(1, numSimulations);
 
   const allFinalBalances: number[] = [];
   const allMaxDrawdowns: number[] = [];
@@ -55,7 +57,7 @@ function runMonteCarlo(params: SimulationParams): SimulationResult {
 
     for (let t = 0; t < numTrades; t++) {
       const win = Math.random() < winProb;
-      const pnl = win ? balance * risk * rrRatio : -balance * risk;
+      const pnl = win ? balance * risk * safeRR : -balance * risk;
       balance += pnl;
 
       if (balance <= 0) {
@@ -125,8 +127,8 @@ function runMonteCarlo(params: SimulationParams): SimulationResult {
     p75FinalBalance: percentile(sortedBalances, 0.75),
     medianMaxDrawdown: percentile(sortedDrawdowns, 0.5),
     worstMaxDrawdown: percentile(sortedDrawdowns, 0.95),
-    probabilityOfRuin: (ruinCount / numSimulations) * 100,
-    probabilityOf2x: (doubleCount / numSimulations) * 100,
+    probabilityOfRuin: (ruinCount / safeSimulations) * 100,
+    probabilityOf2x: (doubleCount / safeSimulations) * 100,
     equityCurves: { best, worst, median, p25, p75 },
   };
 }

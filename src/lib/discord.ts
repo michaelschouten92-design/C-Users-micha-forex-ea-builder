@@ -74,8 +74,7 @@ function decryptToken(token: string): string {
   if (isEncrypted(token)) {
     const decrypted = decrypt(token);
     if (!decrypted) {
-      log.error("Failed to decrypt Discord access token");
-      return token;
+      throw new Error("Failed to decrypt Discord access token");
     }
     return decrypted;
   }

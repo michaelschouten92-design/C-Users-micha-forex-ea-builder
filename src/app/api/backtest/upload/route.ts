@@ -125,6 +125,10 @@ export async function POST(request: Request) {
     }
 
     // 9. Content hash for deduplication (scoped per user)
+    // NOTE: This check-then-insert is intentionally not atomic. A concurrent request
+    // could pass this check before the transaction below commits. The P2002 unique
+    // constraint handler in the outer catch block (line ~231) serves as the fallback,
+    // returning a proper 409 response for any race condition that slips through.
     const contentHash = createHash("sha256").update(html).digest("hex");
 
     const existingUpload = await prisma.backtestUpload.findUnique({

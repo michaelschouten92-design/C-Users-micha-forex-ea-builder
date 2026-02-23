@@ -137,8 +137,8 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
     const wins = profits.filter((p) => p > 0).length;
     const winRate = withProfit.length > 0 ? (wins / withProfit.length) * 100 : 0;
     const avgPnL = profits.length > 0 ? profits.reduce((a, b) => a + b, 0) / profits.length : 0;
-    const bestTrade = profits.length > 0 ? Math.max(...profits) : 0;
-    const worstTrade = profits.length > 0 ? Math.min(...profits) : 0;
+    const bestTrade = profits.length > 0 ? Math.max(...profits) : null;
+    const worstTrade = profits.length > 0 ? Math.min(...profits) : null;
     const totalPnL = profits.reduce((a, b) => a + b, 0);
 
     return { total, winRate, avgPnL, bestTrade, worstTrade, totalPnL };
@@ -176,11 +176,19 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
       </div>
       <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Best Trade</p>
-        <p className="text-lg font-semibold text-[#10B981]">{formatCurrency(stats.bestTrade)}</p>
+        <p
+          className={`text-lg font-semibold ${stats.bestTrade !== null ? "text-[#10B981]" : "text-[#7C8DB0]"}`}
+        >
+          {stats.bestTrade !== null ? formatCurrency(stats.bestTrade) : "N/A"}
+        </p>
       </div>
       <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Worst Trade</p>
-        <p className="text-lg font-semibold text-[#EF4444]">{formatCurrency(stats.worstTrade)}</p>
+        <p
+          className={`text-lg font-semibold ${stats.worstTrade !== null ? "text-[#EF4444]" : "text-[#7C8DB0]"}`}
+        >
+          {stats.worstTrade !== null ? formatCurrency(stats.worstTrade) : "N/A"}
+        </p>
       </div>
     </div>
   );

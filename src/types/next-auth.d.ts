@@ -5,8 +5,8 @@ declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
       id: string;
+      emailVerified?: boolean;
       suspended?: boolean;
-      emailVerified?: Date | null;
       impersonatorId?: string;
       impersonatingEmail?: string;
     };
