@@ -46,6 +46,19 @@ import { generateCloseConditionCode } from "./generators/close-conditions";
 import { generateTelemetryCode, type TelemetryConfig } from "./generators/telemetry";
 import { transformCodeForMultiPair } from "./generators/multi-pair";
 
+/**
+ * Generate a deterministic magic number from a project name using a simple hash.
+ * Produces a positive 31-bit integer to stay within MQL5 int range (max 2^31-1).
+ * This avoids collisions when multiple EAs use the same fallback default.
+ */
+function hashStringToMagic(name: string): number {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash % 2147383647) + 100000;
+}
+
 // Helper function to get all connected node IDs starting from source nodes
 function getConnectedNodeIds(
   nodes: BuilderNode[],
@@ -151,7 +164,7 @@ export function generateMQL5Code(
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
     description: sanitizeMQL5String(description ?? ""),
-    magicNumber: buildJson.settings?.magicNumber ?? 123456,
+    magicNumber: buildJson.settings?.magicNumber ?? hashStringToMagic(projectName),
     comment: sanitizeMQL5String(buildJson.settings?.comment ?? "AlgoStudio EA"),
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
@@ -199,8 +212,11 @@ export function generateMQL5Code(
       {
         name: "InpTradeComment",
         type: "string",
-        value: sanitizeMQL5String(ctx.comment || ctx.description || ctx.projectName),
-        comment: "Trade Order Comment",
+        // MQL5 OrderSend comment field is limited to 31 characters
+        value: sanitizeMQL5String(
+          (ctx.comment || ctx.description || ctx.projectName).substring(0, 31)
+        ),
+        comment: "Trade Order Comment (max 31 chars)",
         isOptimizable: false,
         alwaysVisible: true,
         group: "General Settings",

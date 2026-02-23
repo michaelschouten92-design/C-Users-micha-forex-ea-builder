@@ -143,10 +143,10 @@ function transformOnInit(code: GeneratedCode, handleNames: string[]): void {
     result.push("}");
   }
 
-  // Validate all symbols allow trading
+  // Validate all symbols allow trading and remove invalid ones
   result.push("");
   result.push("//--- Validate all symbols");
-  result.push("for(int i = 0; i < g_symbolCount; i++)");
+  result.push("for(int i = g_symbolCount - 1; i >= 0; i--)");
   result.push("{");
   result.push(
     "   if(SymbolInfoInteger(g_symbols[i], SYMBOL_TRADE_MODE) != SYMBOL_TRADE_MODE_FULL)"
@@ -155,8 +155,15 @@ function transformOnInit(code: GeneratedCode, handleNames: string[]): void {
   result.push(
     '      Print("Symbol ", g_symbols[i], " does not allow full trading, removing from list");'
   );
+  result.push("      // Shift remaining symbols down to fill the gap");
+  result.push("      for(int j = i; j < g_symbolCount - 1; j++)");
+  result.push("         g_symbols[j] = g_symbols[j + 1];");
+  result.push("      g_symbolCount--;");
   result.push("   }");
   result.push("}");
+  result.push(
+    'if(g_symbolCount == 0) { Print("No tradeable symbols remaining after validation"); return(INIT_FAILED); }'
+  );
 
   code.onInit = result;
 }

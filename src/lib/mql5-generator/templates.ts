@@ -51,7 +51,7 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
   // Emit custom timeframe enum if any timeframe inputs exist
   const hasTimeframeInputs = inputs.some((i) => i.type === "ENUM_AS_TIMEFRAMES");
   if (hasTimeframeInputs) {
-    lines.push("//--- Timeframes (only AlgoStudio-supported timeframes for optimization)");
+    lines.push("//--- Timeframes for optimization");
     lines.push("enum ENUM_AS_TIMEFRAMES");
     lines.push("{");
     lines.push("   TF_M1  = PERIOD_M1,   // M1");
@@ -59,7 +59,12 @@ export function generateInputsSection(inputs: OptimizableInput[]): string {
     lines.push("   TF_M15 = PERIOD_M15,  // M15");
     lines.push("   TF_M30 = PERIOD_M30,  // M30");
     lines.push("   TF_H1  = PERIOD_H1,   // H1");
+    lines.push("   TF_H2  = PERIOD_H2,   // H2");
+    lines.push("   TF_H3  = PERIOD_H3,   // H3");
     lines.push("   TF_H4  = PERIOD_H4,   // H4");
+    lines.push("   TF_H6  = PERIOD_H6,   // H6");
+    lines.push("   TF_H8  = PERIOD_H8,   // H8");
+    lines.push("   TF_H12 = PERIOD_H12,  // H12");
     lines.push("   TF_D1  = PERIOD_D1,   // D1");
     lines.push("   TF_W1  = PERIOD_W1,   // W1");
     lines.push("   TF_MN1 = PERIOD_MN1   // MN1");
@@ -666,7 +671,8 @@ void CloseAllPositions()
          if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
             PositionGetString(POSITION_SYMBOL) == _Symbol)
          {
-            trade.PositionClose(ticket);
+            if(!trade.PositionClose(ticket))
+               Print("CloseAllPositions: failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
          }
       }
    }
@@ -686,7 +692,8 @@ void CloseBuyPositions()
             PositionGetString(POSITION_SYMBOL) == _Symbol &&
             PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
          {
-            trade.PositionClose(ticket);
+            if(!trade.PositionClose(ticket))
+               Print("CloseBuyPositions: failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
          }
       }
    }
@@ -706,7 +713,8 @@ void CloseSellPositions()
             PositionGetString(POSITION_SYMBOL) == _Symbol &&
             PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
          {
-            trade.PositionClose(ticket);
+            if(!trade.PositionClose(ticket))
+               Print("CloseSellPositions: failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
          }
       }
    }
@@ -720,6 +728,12 @@ void CloseSellPositions()
 double CalculateLotSize(double riskPercent, double slPips)
 {
    double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   //--- Clamp risk percent to valid range
+   if(riskPercent < 0.1 || riskPercent > 100.0)
+   {
+      Print("WARNING: Risk percent ", DoubleToString(riskPercent, 2), " out of range [0.1..100]. Clamping.");
+      riskPercent = MathMax(0.1, MathMin(100.0, riskPercent));
+   }
    if(slPips <= 0)
    {
       Print("WARNING: CalculateLotSize called with slPips=0, using minimum lot. Check SL configuration.");
@@ -928,7 +942,10 @@ void CloseAllPositions(string sym)
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
          PositionGetString(POSITION_SYMBOL) == sym)
-         trade.PositionClose(ticket);
+      {
+         if(!trade.PositionClose(ticket))
+            Print("CloseAllPositions ", sym, ": failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
+      }
    }
 }
 
@@ -941,7 +958,10 @@ void CloseAllPositionsGlobal()
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
-         trade.PositionClose(ticket);
+      {
+         if(!trade.PositionClose(ticket))
+            Print("CloseAllPositionsGlobal: failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
+      }
    }
 }
 
@@ -956,7 +976,10 @@ void CloseBuyPositions(string sym)
       if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
          PositionGetString(POSITION_SYMBOL) == sym &&
          PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
-         trade.PositionClose(ticket);
+      {
+         if(!trade.PositionClose(ticket))
+            Print("CloseBuyPositions ", sym, ": failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
+      }
    }
 }
 
@@ -971,7 +994,10 @@ void CloseSellPositions(string sym)
       if(ticket > 0 && PositionGetInteger(POSITION_MAGIC) == InpMagicNumber &&
          PositionGetString(POSITION_SYMBOL) == sym &&
          PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
-         trade.PositionClose(ticket);
+      {
+         if(!trade.PositionClose(ticket))
+            Print("CloseSellPositions ", sym, ": failed to close ticket ", ticket, " - ", trade.ResultRetcodeDescription());
+      }
    }
 }
 
@@ -982,6 +1008,12 @@ double CalculateLotSize(string sym, double riskPercent, double slPips)
 {
    double symPoint = SymbolInfoDouble(sym, SYMBOL_POINT);
    double minLot = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN);
+   //--- Clamp risk percent to valid range
+   if(riskPercent < 0.1 || riskPercent > 100.0)
+   {
+      Print("WARNING: Risk percent ", DoubleToString(riskPercent, 2), " out of range [0.1..100]. Clamping.");
+      riskPercent = MathMax(0.1, MathMin(100.0, riskPercent));
+   }
    if(slPips <= 0)
    {
       Print("WARNING: CalculateLotSize called with slPips=0 on ", sym, ", using minimum lot.");

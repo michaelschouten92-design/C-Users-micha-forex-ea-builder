@@ -126,14 +126,19 @@ export function getTimeframe(tf: string | undefined): string {
   return TIMEFRAME_MAP[tf as Timeframe] ?? "PERIOD_CURRENT";
 }
 
-// Map AlgoStudio timeframes → custom enum values (restricted set for optimizer)
+// Map AlgoStudio timeframes → custom enum values for optimizer
 export const AS_TIMEFRAME_ENUM_MAP: Record<string, string> = {
   M1: "TF_M1",
   M5: "TF_M5",
   M15: "TF_M15",
   M30: "TF_M30",
   H1: "TF_H1",
+  H2: "TF_H2",
+  H3: "TF_H3",
   H4: "TF_H4",
+  H6: "TF_H6",
+  H8: "TF_H8",
+  H12: "TF_H12",
   D1: "TF_D1",
   W1: "TF_W1",
   MN1: "TF_MN1",

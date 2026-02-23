@@ -285,7 +285,9 @@ export function generateStopLossCode(
       code.onDeinit.push("if(atrHandle != INVALID_HANDLE) IndicatorRelease(atrHandle);");
       code.onInit.push("ArraySetAsSeries(atrBuffer, true);");
       code.onTick.push("if(CopyBuffer(atrHandle, 0, 0, 1, atrBuffer) < 1) return;");
-      code.onTick.push("double slPips = (atrBuffer[0] / _Point) * InpATRMultiplier;");
+      code.onTick.push(
+        "double slPips = MathMax((atrBuffer[0] / _Point) * InpATRMultiplier, _pipFactor); // Min 1 pip"
+      );
       break;
     }
 
@@ -419,7 +421,9 @@ function generateIndicatorBasedSL(
           isOptimizable: false,
         });
         code.onTick.push("// Indicator-based SL using ATR");
-        code.onTick.push(`double slPips = (${varPrefix}Buffer[0] / _Point) * InpATRSLMultiplier;`);
+        code.onTick.push(
+          `double slPips = MathMax((${varPrefix}Buffer[0] / _Point) * InpATRSLMultiplier, _pipFactor); // Min 1 pip`
+        );
         break;
 
       case "adx":
@@ -516,7 +520,9 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
       // Check if SL already created an atrHandle; if so, reuse its buffer
       const hasAtrHandle = code.globalVariables.some((v) => v.startsWith("int atrHandle"));
       if (hasAtrHandle) {
-        code.onTick.push("double tpPips = (atrBuffer[0] / _Point) * InpTPATRMultiplier;");
+        code.onTick.push(
+          "double tpPips = MathMax((atrBuffer[0] / _Point) * InpTPATRMultiplier, _pipFactor); // Min 1 pip"
+        );
       } else {
         // Create a dedicated ATR handle for TP
         code.inputs.push(
@@ -539,7 +545,9 @@ export function generateTakeProfitCode(node: BuilderNode, code: GeneratedCode): 
         code.onDeinit.push("if(tpAtrHandle != INVALID_HANDLE) IndicatorRelease(tpAtrHandle);");
         code.onInit.push("ArraySetAsSeries(tpAtrBuffer, true);");
         code.onTick.push("if(CopyBuffer(tpAtrHandle, 0, 0, 1, tpAtrBuffer) < 1) return;");
-        code.onTick.push("double tpPips = (tpAtrBuffer[0] / _Point) * InpTPATRMultiplier;");
+        code.onTick.push(
+          "double tpPips = MathMax((tpAtrBuffer[0] / _Point) * InpTPATRMultiplier, _pipFactor); // Min 1 pip"
+        );
       }
       break;
     }

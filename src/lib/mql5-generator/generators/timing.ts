@@ -70,22 +70,31 @@ function generateCustomTimesCode(
   varName: string,
   code: GeneratedCode
 ): void {
+  const useServer = data.useServerTime ?? true;
   code.onTick.push("// Custom Trading Times");
+  if (useServer) {
+    code.onTick.push(
+      "// NOTE: Times are in broker server time (may differ from GMT/UTC by several hours)."
+    );
+    code.onTick.push(
+      "// Adjust time slots if your broker server is not in your expected timezone."
+    );
+  }
   code.onTick.push(`bool ${varName} = false;`);
 
   // Declare MqlDateTime if not already declared, always refresh TimeToStruct
   const needsTimeDecl = !code.onTick.some((l) => l.includes("MqlDateTime dt;"));
-  const timeSource = (data.useServerTime ?? true) ? "TimeCurrent()" : "TimeGMT()";
+  const timeSource = useServer ? "TimeCurrent()" : "TimeGMT()";
   if (needsTimeDecl) {
     code.onTick.push("MqlDateTime dt;");
     code.onTick.push(
-      `TimeToStruct(${timeSource}, dt); // Using ${(data.useServerTime ?? true) ? "broker server" : "GMT"} time`
+      `TimeToStruct(${timeSource}, dt); // Using ${useServer ? "broker server" : "GMT"} time`
     );
     code.onTick.push("int currentMinutes = dt.hour * 60 + dt.min;");
   } else {
     // Always re-call TimeToStruct for each timing block to avoid stale dt struct
     code.onTick.push(
-      `TimeToStruct(${timeSource}, dt); // Refresh for ${(data.useServerTime ?? true) ? "server" : "GMT"} time`
+      `TimeToStruct(${timeSource}, dt); // Refresh for ${useServer ? "server" : "GMT"} time`
     );
     code.onTick.push("currentMinutes = dt.hour * 60 + dt.min;");
   }
@@ -122,12 +131,31 @@ function generateCustomTimesCode(
 
   // Use varName-derived suffix to avoid collisions with multiple timing nodes
   const daySuffix = varName.replace("timingOK", "");
+  const timeSlots = data.timeSlots ?? [];
+
+  // Check for overnight slots (spans midnight) that require previous-day allowance
+  const hasOvernightSlot = timeSlots.some((slot) => {
+    const sm = slot.startHour * 60 + slot.startMinute;
+    const em = slot.endHour * 60 + slot.endMinute;
+    return em <= sm;
+  });
+
   if (activeDays.length === 7) {
     code.onTick.push("// Trading all days");
     code.onTick.push(`bool isDayAllowed${daySuffix} = true;`);
   } else {
     const dayConditions = activeDays.map((d) => `dt.day_of_week == ${d}`).join(" || ");
     code.onTick.push(`bool isDayAllowed${daySuffix} = (${dayConditions});`);
+    if (hasOvernightSlot) {
+      // For overnight slots, also allow early-morning hours if the *previous* day was active
+      const prevDayConditions = activeDays
+        .map((d) => `dt.day_of_week == ${(d + 1) % 7}`)
+        .join(" || ");
+      code.onTick.push(
+        `// Previous day was active (for overnight slot continuation past midnight)`
+      );
+      code.onTick.push(`bool isPrevDayActive${daySuffix} = (${prevDayConditions});`);
+    }
   }
 
   code.onTick.push("");
@@ -135,7 +163,6 @@ function generateCustomTimesCode(
   code.onTick.push("{");
 
   // Generate time slot conditions
-  const timeSlots = data.timeSlots ?? [];
   if (timeSlots.length === 0) {
     code.onTick.push(`   ${varName} = true; // No time slots defined, trade all day`);
   } else {
@@ -147,12 +174,12 @@ function generateCustomTimesCode(
         // Normal slot (same day)
         return `(currentMinutes >= ${startMinutes} && currentMinutes < ${endMinutes})`;
       } else {
-        // Overnight slot (spans midnight)
-        return `(currentMinutes >= ${startMinutes} || currentMinutes < ${endMinutes})`;
+        // Overnight slot (spans midnight): only the evening portion when today is allowed
+        return `(currentMinutes >= ${startMinutes})`;
       }
     });
 
-    code.onTick.push(`   // Time slots (${(data.useServerTime ?? true) ? "Server Time" : "GMT"})`);
+    code.onTick.push(`   // Time slots (${useServer ? "Server Time" : "GMT"})`);
     timeSlots.forEach((slot, i) => {
       const startStr = `${slot.startHour.toString().padStart(2, "0")}:${slot.startMinute.toString().padStart(2, "0")}`;
       const endStr = `${slot.endHour.toString().padStart(2, "0")}:${slot.endMinute.toString().padStart(2, "0")}`;
@@ -162,6 +189,31 @@ function generateCustomTimesCode(
   }
 
   code.onTick.push("}");
+
+  // Handle the early-morning portion of overnight slots (next calendar day)
+  if (hasOvernightSlot && activeDays.length < 7) {
+    const overnightEarlyConditions = timeSlots
+      .filter((slot) => {
+        const sm = slot.startHour * 60 + slot.startMinute;
+        const em = slot.endHour * 60 + slot.endMinute;
+        return em <= sm;
+      })
+      .map((slot) => {
+        const endMinutes = slot.endHour * 60 + slot.endMinute;
+        return `(currentMinutes < ${endMinutes})`;
+      });
+
+    if (overnightEarlyConditions.length > 0) {
+      code.onTick.push(
+        `// Overnight slot continuation: allow early-morning hours if previous day was active`
+      );
+      code.onTick.push(
+        `if(!${varName} && isPrevDayActive${daySuffix} && (${overnightEarlyConditions.join(" || ")}))`
+      );
+      code.onTick.push(`   ${varName} = true;`);
+    }
+  }
+
   code.onTick.push("");
 }
 

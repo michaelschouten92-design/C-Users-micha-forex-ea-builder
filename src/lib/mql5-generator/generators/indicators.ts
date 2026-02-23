@@ -487,8 +487,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         code.globalVariables.push(`double ${varPrefix}MainBuffer[];`); // ADX main line
         code.globalVariables.push(`double ${varPrefix}PlusDIBuffer[];`); // +DI line
         code.globalVariables.push(`double ${varPrefix}MinusDIBuffer[];`); // -DI line
+        // Validate ADX period: minimum 2
         code.onInit.push(
-          `${varPrefix}Handle = iADX(_Symbol, (ENUM_TIMEFRAMES)InpADX${index}Timeframe, InpADX${index}Period);`
+          `if(InpADX${index}Period < 2) Print("WARNING: ADX ${index + 1} period (", InpADX${index}Period, ") is < 2. Clamping to 2.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iADX(_Symbol, (ENUM_TIMEFRAMES)InpADX${index}Timeframe, MathMax(2, InpADX${index}Period));`
         );
         addHandleValidation(varPrefix, `ADX ${index + 1}`, code);
         code.onDeinit.push(
@@ -684,8 +688,12 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         );
         code.globalVariables.push(`int ${varPrefix}Handle = INVALID_HANDLE;`);
         code.globalVariables.push(`double ${varPrefix}Buffer[];`);
+        // Validate CCI period: minimum 2
         code.onInit.push(
-          `${varPrefix}Handle = iCCI(_Symbol, (ENUM_TIMEFRAMES)InpCCI${index}Timeframe, InpCCI${index}Period, InpCCI${index}Price);`
+          `if(InpCCI${index}Period < 2) Print("WARNING: CCI ${index + 1} period (", InpCCI${index}Period, ") is < 2. Clamping to 2.");`
+        );
+        code.onInit.push(
+          `${varPrefix}Handle = iCCI(_Symbol, (ENUM_TIMEFRAMES)InpCCI${index}Timeframe, MathMax(2, InpCCI${index}Period), InpCCI${index}Price);`
         );
         addHandleValidation(varPrefix, `CCI ${index + 1}`, code);
         code.onDeinit.push(

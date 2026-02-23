@@ -2,18 +2,24 @@ import type { BuilderNode } from "@/types/builder";
 import type { OptimizableInput, GeneratedCode } from "../types";
 
 export function sanitizeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 30);
+  // MQL5 allows identifiers up to 63 characters
+  return name.replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 63);
 }
 
 /** Escape a string for safe interpolation inside an MQL5 string literal ("..."). */
 export function sanitizeMQL5String(value: string): string {
-  return value
-    .substring(0, 2000)
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r")
-    .replace(/\t/g, "\\t");
+  return (
+    value
+      .substring(0, 2000)
+      // Strip null bytes and other control characters (U+0000-U+001F except \n \r \t)
+
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+      .replace(/\t/g, "\\t")
+  );
 }
 
 // Helper function to check if a field is optimizable for a node

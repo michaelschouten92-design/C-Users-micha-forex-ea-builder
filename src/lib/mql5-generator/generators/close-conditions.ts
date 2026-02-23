@@ -64,12 +64,13 @@ export function generateCloseConditionCode(
           break;
 
         case "rsi":
-          // Close buy when RSI hits overbought, close sell when RSI hits oversold
+          // Close buy when RSI crosses above overbought (crossover avoids repeated closes while RSI stays in zone)
           closeBuyConditions.push(
-            `(DoubleGE(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`
+            `(DoubleLT(${varPrefix}Buffer[${1 + s}], InpRSI${indIndex}Overbought) && DoubleGE(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Overbought))`
           );
+          // Close sell when RSI crosses below oversold
           closeSellConditions.push(
-            `(DoubleLE(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`
+            `(DoubleGT(${varPrefix}Buffer[${1 + s}], InpRSI${indIndex}Oversold) && DoubleLE(${varPrefix}Buffer[${0 + s}], InpRSI${indIndex}Oversold))`
           );
           break;
 
@@ -114,23 +115,24 @@ export function generateCloseConditionCode(
           break;
 
         case "stochastic":
-          // Close buy when %K enters overbought zone
+          // Close buy when %K crosses above overbought (crossover avoids repeated closes)
           closeBuyConditions.push(
-            `(DoubleGE(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Overbought))`
+            `(DoubleLT(${varPrefix}MainBuffer[${1 + s}], InpStoch${indIndex}Overbought) && DoubleGE(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Overbought))`
           );
-          // Close sell when %K enters oversold zone
+          // Close sell when %K crosses below oversold
           closeSellConditions.push(
-            `(DoubleLE(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Oversold))`
+            `(DoubleGT(${varPrefix}MainBuffer[${1 + s}], InpStoch${indIndex}Oversold) && DoubleLE(${varPrefix}MainBuffer[${0 + s}], InpStoch${indIndex}Oversold))`
           );
           break;
 
         case "cci":
-          // Close buy when CCI hits overbought, close sell when CCI hits oversold
+          // Close buy when CCI crosses above overbought (crossover avoids repeated closes)
           closeBuyConditions.push(
-            `(DoubleGE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Overbought))`
+            `(DoubleLT(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Overbought) && DoubleGE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Overbought))`
           );
+          // Close sell when CCI crosses below oversold
           closeSellConditions.push(
-            `(DoubleLE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Oversold))`
+            `(DoubleGT(${varPrefix}Buffer[${1 + s}], InpCCI${indIndex}Oversold) && DoubleLE(${varPrefix}Buffer[${0 + s}], InpCCI${indIndex}Oversold))`
           );
           break;
 
@@ -192,18 +194,23 @@ export function generateCloseConditionCode(
   code.onTick.push(
     "// Exit signals use reverse indicator conditions (e.g., buy exit triggers on bearish signal)"
   );
+  code.onTick.push("// Skip close-condition evaluation when no positions are open");
+  code.onTick.push("if(CountPositions() > 0)");
+  code.onTick.push("{");
 
   if (data.closeDirection === "BUY" || data.closeDirection === "BOTH") {
-    code.onTick.push(`bool closeBuyCondition = ${closeBuyExpr};`);
+    code.onTick.push(`   bool closeBuyCondition = ${closeBuyExpr};`);
     code.onTick.push(
-      'if(closeBuyCondition) { Print("Exit signal: closing buy positions"); CloseBuyPositions(); }'
+      '   if(closeBuyCondition) { Print("Exit signal: closing buy positions"); CloseBuyPositions(); }'
     );
   }
 
   if (data.closeDirection === "SELL" || data.closeDirection === "BOTH") {
-    code.onTick.push(`bool closeSellCondition = ${closeSellExpr};`);
+    code.onTick.push(`   bool closeSellCondition = ${closeSellExpr};`);
     code.onTick.push(
-      'if(closeSellCondition) { Print("Exit signal: closing sell positions"); CloseSellPositions(); }'
+      '   if(closeSellCondition) { Print("Exit signal: closing sell positions"); CloseSellPositions(); }'
     );
   }
+
+  code.onTick.push("}");
 }

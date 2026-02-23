@@ -1051,7 +1051,7 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Breakeven Stop Management");
       expect(code).toContain("InpBETriggerPips");
       expect(code).toContain("InpBELockPips");
-      expect(code).toContain("trade.PositionModify");
+      expect(code).toContain("SafePositionModify(trade, ticket,");
     });
 
     it("generates Trailing Stop code", () => {

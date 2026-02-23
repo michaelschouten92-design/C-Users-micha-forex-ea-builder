@@ -16,6 +16,27 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
     ("tradeManagementType" in data ? data.tradeManagementType : null) ||
     node.type;
 
+  // Add SafePositionModify helper once (deduplicated across multiple management nodes)
+  if (!code.helperFunctions.some((f) => f.includes("SafePositionModify"))) {
+    code.helperFunctions.push(
+      [
+        "//+------------------------------------------------------------------+",
+        "//| Modify position with error logging                               |",
+        "//+------------------------------------------------------------------+",
+        "bool SafePositionModify(CTrade &tradeObj, ulong ticket, double sl, double tp)",
+        "{",
+        "   if(!tradeObj.PositionModify(ticket, sl, tp))",
+        "   {",
+        '      PrintFormat("PositionModify failed for ticket %I64u: error %d (%s), SL=%.5f, TP=%.5f",',
+        "                  ticket, tradeObj.ResultRetcode(), tradeObj.ResultRetcodeDescription(), sl, tp);",
+        "      return false;",
+        "   }",
+        "   return true;",
+        "}",
+      ].join("\n")
+    );
+  }
+
   code.onTick.push("");
   code.onTick.push("//--- Trade Management");
 
@@ -177,7 +198,7 @@ function generateBreakevenStopCode(
   code.onTick.push("               double newBE = openPrice + lockPoints * point;");
   code.onTick.push("               if(currentSL < newBE)");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newBE, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("            }");
   code.onTick.push("            else if(posType == POSITION_TYPE_SELL)");
@@ -185,7 +206,7 @@ function generateBreakevenStopCode(
   code.onTick.push("               double newBE = openPrice - lockPoints * point;");
   code.onTick.push("               if(currentSL > newBE || currentSL == 0)");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newBE, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("            }");
   code.onTick.push("         }");
@@ -328,7 +349,7 @@ function generateTrailingStopCode(
   code.onTick.push("               if(newSL > currentSL)");
   code.onTick.push("               {");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("               }");
   code.onTick.push("            }");
@@ -342,7 +363,7 @@ function generateTrailingStopCode(
   code.onTick.push("               if(newSL < currentSL || currentSL == 0)");
   code.onTick.push("               {");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("               }");
   code.onTick.push("            }");
@@ -548,9 +569,9 @@ void CleanPartialClosedTickets()
   if (data.moveSLToBreakeven) {
     code.onTick.push("               // Move SL to breakeven after partial close");
     code.onTick.push("               if(posType == POSITION_TYPE_BUY)");
-    code.onTick.push("                  trade.PositionModify(ticket, openPrice, cachedTP);");
+    code.onTick.push("                  SafePositionModify(trade, ticket, openPrice, cachedTP);");
     code.onTick.push("               else");
-    code.onTick.push("                  trade.PositionModify(ticket, openPrice, cachedTP);");
+    code.onTick.push("                  SafePositionModify(trade, ticket, openPrice, cachedTP);");
   }
 
   code.onTick.push("            }");
@@ -635,10 +656,11 @@ function generateLockProfitCode(
   }
 
   code.onTick.push("               double newSL = openPrice + lockPoints * point;");
-  code.onTick.push("               if(newSL > currentSL)");
+  code.onTick.push("               // Guard: SL must stay below bid to avoid immediate stop-out");
+  code.onTick.push("               if(newSL > currentSL && newSL < bid)");
   code.onTick.push("               {");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("               }");
   code.onTick.push("            }");
@@ -659,10 +681,11 @@ function generateLockProfitCode(
   }
 
   code.onTick.push("               double newSL = openPrice - lockPoints * point;");
-  code.onTick.push("               if(newSL < currentSL || currentSL == 0)");
+  code.onTick.push("               // Guard: SL must stay above ask to avoid immediate stop-out");
+  code.onTick.push("               if((newSL < currentSL || currentSL == 0) && newSL > ask)");
   code.onTick.push("               {");
   code.onTick.push(
-    "                  trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));"
+    "                  SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));"
   );
   code.onTick.push("               }");
   code.onTick.push("            }");
@@ -849,13 +872,13 @@ void CleanMLTPStates()
     code.onTick.push("         // Move SL to breakeven after TP1");
     code.onTick.push("         if(PositionSelectByTicket(ticket))");
     code.onTick.push(
-      "            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
+      "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
     );
   } else if (data.moveSLAfterTP1 === "TRAIL") {
     code.onTick.push("         // Move SL to breakeven and let trailing stop take over");
     code.onTick.push("         if(PositionSelectByTicket(ticket))");
     code.onTick.push(
-      "            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));"
+      "            SafePositionModify(trade, ticket, openPrice, PositionGetDouble(POSITION_TP));"
     );
   }
 
