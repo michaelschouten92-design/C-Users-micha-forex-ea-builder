@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
-import { sendDowngradeWarningEmail } from "@/lib/email";
+import { sendDowngradeWarningEmail, sendRenewalReminderEmail } from "@/lib/email";
+import { getStripe } from "@/lib/stripe";
 import { env } from "@/lib/env";
 
 const log = logger.child({ route: "/api/cron/cleanup" });
@@ -123,6 +124,55 @@ async function handleCleanup(request: NextRequest) {
     // which is triggered in real-time during heartbeat and trade processing.
     // See prisma/schema.prisma for deprecated model annotations.
 
+    // Send renewal reminder emails for subscriptions expiring within 3 days
+    // Only sends when currentPeriodEnd is between 2 and 3 days from now (1-day window = sent once)
+    let renewalRemindersSent = 0;
+    if (!isTimedOut()) {
+      const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+      const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+      const renewalCandidates = await prisma.subscription.findMany({
+        where: {
+          status: "active",
+          tier: { not: "FREE" },
+          currentPeriodEnd: {
+            gte: twoDaysFromNow,
+            lt: threeDaysFromNow,
+          },
+        },
+        select: {
+          stripeCustomerId: true,
+          tier: true,
+          user: { select: { email: true } },
+        },
+      });
+
+      for (const sub of renewalCandidates) {
+        if (isTimedOut()) break;
+        if (!sub.user.email || !sub.stripeCustomerId) continue;
+        try {
+          // Get upcoming invoice amount from Stripe
+          const upcomingInvoice = await getStripe().invoices.createPreview({
+            customer: sub.stripeCustomerId,
+          });
+          // Create billing portal session for manage link
+          const portalSession = await getStripe().billingPortal.sessions.create({
+            customer: sub.stripeCustomerId,
+            return_url: `${env.AUTH_URL}/app`,
+          });
+          await sendRenewalReminderEmail(
+            sub.user.email,
+            sub.tier,
+            upcomingInvoice.amount_due,
+            portalSession.url
+          );
+          renewalRemindersSent++;
+        } catch (err) {
+          log.warn({ err, customerId: sub.stripeCustomerId }, "Failed to send renewal reminder");
+        }
+      }
+    }
+
     // Send downgrade warning emails to past_due subscriptions (7-day warning)
     let warningsSent = 0;
     if (!isTimedOut()) {
@@ -196,6 +246,7 @@ async function handleCleanup(request: NextRequest) {
         staleEAsOfflined: staleInstances.count,
         downgraded,
         warningsSent,
+        renewalRemindersSent,
         timedOut,
         durationMs: Date.now() - cronStartTime,
       },
@@ -216,6 +267,7 @@ async function handleCleanup(request: NextRequest) {
       staleEAsOfflined: staleInstances.count,
       downgraded,
       warningsSent,
+      renewalRemindersSent,
       timedOut,
     });
   } catch (error) {

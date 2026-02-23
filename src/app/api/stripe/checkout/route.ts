@@ -190,7 +190,14 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const checkoutSession = await getStripe().checkout.sessions.create(checkoutParams);
+    // Idempotency key with 5-minute window to prevent duplicate sessions on double-click
+    // while still allowing retries after a failed attempt
+    const timeWindow = Math.floor(Date.now() / (5 * 60 * 1000));
+    const idempotencyKey = `checkout_${session.user.id}_${plan}_${interval}_${timeWindow}`;
+
+    const checkoutSession = await getStripe().checkout.sessions.create(checkoutParams, {
+      idempotencyKey,
+    });
 
     log.info({ plan, interval, checkoutSessionId: checkoutSession.id }, "Checkout session created");
     return NextResponse.json({ url: checkoutSession.url });

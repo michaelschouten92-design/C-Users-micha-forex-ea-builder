@@ -21,6 +21,17 @@ const log = logger.child({ route: "/api/stripe/webhook" });
 // CUID format validation for userId from Stripe metadata
 const cuidSchema = z.string().cuid();
 
+/** Fire-and-forget Discord role sync with one retry after 2s delay */
+function syncDiscordWithRetry(userId: string, tier: string): void {
+  syncDiscordRoleForUser(userId, tier).catch(async (err) => {
+    log.error({ err, userId, tier }, "Discord sync failed — retrying once");
+    await new Promise((r) => setTimeout(r, 2000));
+    syncDiscordRoleForUser(userId, tier).catch((err2) =>
+      log.error({ err: err2, userId, tier }, "Discord sync retry also failed")
+    );
+  });
+}
+
 // Helper to safely extract string ID from Stripe expandable fields
 function getStringId(field: string | { id: string } | null | undefined): string | null {
   if (!field) return null;
@@ -51,7 +62,19 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
   };
 }
 
+// Optional IP allowlist for webhook endpoint (defense-in-depth)
+const STRIPE_WEBHOOK_IPS = process.env.STRIPE_WEBHOOK_IPS?.split(",") ?? [];
+
 export async function POST(request: NextRequest) {
+  // Optional IP allowlist check (only active when STRIPE_WEBHOOK_IPS env var is set)
+  if (STRIPE_WEBHOOK_IPS.length > 0) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (!ip || !STRIPE_WEBHOOK_IPS.includes(ip)) {
+      log.warn({ ip }, "Webhook request from non-allowlisted IP");
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
     log.error("Missing stripe-signature header");
@@ -289,10 +312,8 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       .subscriptionUpgrade(userId, previousTier, validatedPlan)
       .catch((err) => log.warn({ err }, "Audit log failed but subscription created"));
 
-    // Sync Discord role (fire-and-forget)
-    syncDiscordRoleForUser(userId, validatedPlan).catch((err) =>
-      log.warn({ err }, "Discord role sync failed after checkout")
-    );
+    // Sync Discord role (fire-and-forget with retry)
+    syncDiscordWithRetry(userId, validatedPlan);
   }
 }
 
@@ -394,10 +415,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         );
       }
 
-      // Sync Discord role (fire-and-forget)
-      syncDiscordRoleForUser(result.userId, tier).catch((err) =>
-        log.warn({ err }, "Discord role sync failed after tier change")
-      );
+      // Sync Discord role (fire-and-forget with retry)
+      syncDiscordWithRetry(result.userId, tier);
     }
   }
 }
@@ -437,10 +456,8 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
       .subscriptionCancel(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but subscription cancelled"));
 
-    // Sync Discord role to FREE (fire-and-forget)
-    syncDiscordRoleForUser(userId, "FREE").catch((err) =>
-      log.warn({ err }, "Discord role sync failed after subscription cancel")
-    );
+    // Sync Discord role to FREE (fire-and-forget with retry)
+    syncDiscordWithRetry(userId, "FREE");
   }
 }
 
@@ -464,7 +481,9 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       FOR UPDATE
     `;
 
-    if (!rows.length) return null;
+    if (!rows.length) {
+      throw new Error(`No subscription found for customer ${customerId} — will retry`);
+    }
 
     await tx.subscription.update({
       where: { id: rows[0].id },
@@ -683,7 +702,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
 
     if (userId) {
       invalidateSubscriptionCache(userId);
-      syncDiscordRoleForUser(userId, "FREE").catch(() => {});
+      syncDiscordWithRetry(userId, "FREE");
     }
 
     log.error(
