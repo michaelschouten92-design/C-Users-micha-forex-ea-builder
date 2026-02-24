@@ -66,6 +66,7 @@ export interface HealthScoreBreakdown {
 
 export interface HealthScoreResult {
   score: number; // 0-100
-  status: "ROBUST" | "MODERATE" | "WEAK";
+  status: "ROBUST" | "MODERATE" | "WEAK" | "INSUFFICIENT_DATA";
   breakdown: HealthScoreBreakdown[];
+  warnings: string[];
 }

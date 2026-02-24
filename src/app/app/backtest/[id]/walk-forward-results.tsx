@@ -36,7 +36,7 @@ export function WalkForwardResults({ backtestId, existingResult, tier }: WalkFor
       const res = await fetch(`/api/backtest/${backtestId}/walk-forward`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numWindows: 5, oosRatio: 0.2 }),
+        body: JSON.stringify({ numWindows: 5 }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

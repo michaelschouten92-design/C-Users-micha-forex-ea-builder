@@ -54,7 +54,7 @@ interface BacktestDetail {
     shortWinRate: number | null;
   };
   healthScore: number;
-  healthStatus: "ROBUST" | "MODERATE" | "WEAK";
+  healthStatus: "ROBUST" | "MODERATE" | "WEAK" | "INSUFFICIENT_DATA";
   scoreBreakdown: Array<{
     metric: string;
     value: number;
@@ -82,6 +82,8 @@ function getHealthColor(status: string): string {
       return "#F59E0B";
     case "WEAK":
       return "#EF4444";
+    case "INSUFFICIENT_DATA":
+      return "#7C8DB0";
     default:
       return "#7C8DB0";
   }
@@ -95,6 +97,8 @@ function getHealthBg(status: string): string {
       return "rgba(245,158,11,0.1)";
     case "WEAK":
       return "rgba(239,68,68,0.1)";
+    case "INSUFFICIENT_DATA":
+      return "rgba(124,141,176,0.1)";
     default:
       return "rgba(124,141,176,0.1)";
   }
@@ -318,7 +322,7 @@ export default function BacktestDetailPage() {
                 </div>
               </div>
 
-              {/* Status Badge */}
+              {/* Status Badge + Explainer */}
               <div className="flex-1 text-center sm:text-left">
                 <span
                   className="text-sm font-semibold px-3 py-1 rounded-full"
@@ -329,6 +333,16 @@ export default function BacktestDetailPage() {
                 >
                   {data.healthStatus}
                 </span>
+                <p className="text-xs text-[#94A3B8] mt-2 max-w-md">
+                  {data.healthStatus === "ROBUST" &&
+                    "Strategy shows consistent edge across multiple metrics. Consider paper trading or Monte Carlo validation before live deployment."}
+                  {data.healthStatus === "MODERATE" &&
+                    "Some metrics are below optimal. Review the score breakdown for specific concerns before deploying."}
+                  {data.healthStatus === "WEAK" &&
+                    "Multiple metrics indicate poor or risky performance. Do not deploy without significant improvements and retesting."}
+                  {data.healthStatus === "INSUFFICIENT_DATA" &&
+                    "Not enough trades for a statistically reliable assessment. Upload a backtest with at least 30 trades."}
+                </p>
               </div>
             </div>
 
@@ -485,17 +499,67 @@ export default function BacktestDetailPage() {
             tier={data.tier ?? "FREE"}
           />
 
-          {/* Parse Warnings */}
-          {data.parseWarnings.length > 0 && (
-            <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl px-5 py-4">
-              <p className="text-xs font-medium text-[#F59E0B] mb-2">Parse Warnings</p>
-              <ul className="text-xs text-[#94A3B8] space-y-1">
-                {data.parseWarnings.map((w, i) => (
-                  <li key={i}>- {w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Warnings — red flags separated from informational */}
+          {data.parseWarnings.length > 0 &&
+            (() => {
+              const RED_FLAG_PATTERNS = [
+                "martingale",
+                "grid",
+                "outlier",
+                "catastrophic",
+                "overfitting",
+                "suspiciously high",
+                "extremely high",
+                "unusually high",
+                "insufficient sample",
+              ];
+              const isRedFlag = (w: string) =>
+                RED_FLAG_PATTERNS.some((p) => w.toLowerCase().includes(p));
+              const redFlags = data.parseWarnings.filter(isRedFlag);
+              const infoWarnings = data.parseWarnings.filter((w) => !isRedFlag(w));
+
+              return (
+                <>
+                  {redFlags.length > 0 && (
+                    <div className="bg-[#EF4444]/5 border border-[#EF4444]/25 rounded-xl px-5 py-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg
+                          className="w-4 h-4 text-[#EF4444] flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                          />
+                        </svg>
+                        <p className="text-xs font-semibold text-[#EF4444]">Red Flags</p>
+                      </div>
+                      <ul className="text-xs text-[#F87171] space-y-1.5">
+                        {redFlags.map((w, i) => (
+                          <li key={i} className="pl-1">
+                            - {w}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {infoWarnings.length > 0 && (
+                    <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl px-5 py-4">
+                      <p className="text-xs font-medium text-[#F59E0B] mb-2">Warnings</p>
+                      <ul className="text-xs text-[#94A3B8] space-y-1">
+                        {infoWarnings.map((w, i) => (
+                          <li key={i}>- {w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
           {/* Validate Strategy CTA */}
           <Link

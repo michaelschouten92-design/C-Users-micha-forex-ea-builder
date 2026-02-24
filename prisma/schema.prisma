@@ -56,6 +56,7 @@ enum BacktestHealthStatus {
   ROBUST
   MODERATE
   WEAK
+  INSUFFICIENT_DATA
 }
 
 enum UserRole {

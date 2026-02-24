@@ -20,7 +20,9 @@ export function isLikelyMT5Report(html: string): { valid: boolean; reason?: stri
     !html.includes(MT5_IDENTIFIER) &&
     !html.includes("Тестер стратегий") &&
     !html.includes("Probador de estrategias") &&
-    !html.includes("Strategietester")
+    !html.includes("Strategietester") &&
+    !html.includes("Testeur de stratégie") &&
+    !html.includes("Testador de estratégia")
   ) {
     return { valid: false, reason: "File does not appear to be a Strategy Tester report" };
   }

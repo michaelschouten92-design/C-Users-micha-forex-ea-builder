@@ -54,13 +54,15 @@ export const SCORE_WEIGHTS: Record<string, ScoreWeight> = {
   },
   expectedPayoff: {
     weight: 0.1,
+    // Breakpoints are in % of initial deposit (normalized by scorer).
+    // e.g. 0.05% = $5 payoff on a $10K account.
     breakpoints: [
-      [-100, 0],
+      [-1, 0],
       [0, 30],
-      [5, 60],
-      [15, 80],
-      [30, 90],
-      [50, 100],
+      [0.05, 60],
+      [0.15, 80],
+      [0.3, 90],
+      [0.5, 100],
     ],
   },
   winRate: {

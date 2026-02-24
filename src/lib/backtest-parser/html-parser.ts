@@ -58,12 +58,17 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 5. Derive win rate if not parsed directly
   // ========================================
-  if (metrics.winRate === 0 && metrics.totalTrades > 0) {
-    const profitableDeals = deals.filter((d) => d.type !== "balance" && d.profit > 0);
-    const tradingDeals = deals.filter((d) => d.type !== "balance");
-    if (tradingDeals.length > 0) {
-      metrics.winRate = (profitableDeals.length / tradingDeals.length) * 100;
-      warnings.push("Win rate derived from deal list (not found in metrics table)");
+  if (metrics.winRate === 0 && metrics.totalTrades > 0 && deals.length > 0) {
+    // Use only exit deals (profit ≠ 0) as a heuristic for completed trades.
+    // Entry deals in MT5 hedging mode have profit=0 and would inflate the denominator.
+    const exitDeals = deals.filter((d) => d.type !== "balance" && d.profit !== 0);
+    if (exitDeals.length > 0) {
+      const profitableExits = exitDeals.filter((d) => d.profit > 0);
+      metrics.winRate = (profitableExits.length / exitDeals.length) * 100;
+      warnings.push(
+        "Win rate derived from deal exit rows (not from metrics table). " +
+          "May be inaccurate for strategies with partial closes."
+      );
     }
   }
 
@@ -231,6 +236,7 @@ function collectNumberSamples(root: HTMLElement): string[] {
 
 interface InternalMetrics extends ParsedMetrics {
   _initialDeposit?: number;
+  _hasEquityDrawdown?: boolean;
 }
 
 function extractMetrics(
@@ -299,6 +305,19 @@ function extractMetrics(
             metrics.totalTrades = Math.round(numValue);
             break;
           case "maxDrawdown": {
+            // Prefer equity drawdown over balance drawdown. MT5 reports
+            // can have both rows. We check the label text for "equity" to
+            // determine priority: if we already captured an equity value,
+            // skip any subsequent balance-only match.
+            const isEquityRow = label.toLowerCase().includes("equity");
+            const isBalanceRow = label.toLowerCase().includes("balance");
+            const alreadyHasEquity = metrics._hasEquityDrawdown === true;
+
+            // Skip balance row if we already have equity data
+            if (isBalanceRow && !isEquityRow && alreadyHasEquity) {
+              break;
+            }
+
             // Drawdown can be: "1234.56 (12.34%)" or just "12.34%"
             const ddMatch = valueText.match(/([\d\s.,]+)\s*\(([\d\s.,]+)%?\)/);
             if (ddMatch) {
@@ -308,6 +327,10 @@ function extractMetrics(
               metrics.maxDrawdownPct = numValue;
             } else {
               metrics.maxDrawdownAbs = numValue;
+            }
+
+            if (isEquityRow) {
+              metrics._hasEquityDrawdown = true;
             }
             break;
           }
@@ -463,7 +486,10 @@ function extractDeals(
       const ticket = parseInt(cellTexts[0], 10);
       if (isNaN(ticket)) continue;
 
-      const time = timeIdx >= 0 ? cellTexts[timeIdx] : "";
+      // Normalize MT5 dot-format timestamps to ISO-like format for reliable Date parsing.
+      // MT5 format: "2023.01.15 14:30:00" → "2023-01-15T14:30:00"
+      const rawTime = timeIdx >= 0 ? cellTexts[timeIdx] : "";
+      const time = rawTime.replace(/^(\d{4})\.(\d{2})\.(\d{2})\s/, "$1-$2-$3T");
       const typeText = typeIdx >= 0 ? cellTexts[typeIdx].toLowerCase() : "";
       const direction = directionIdx >= 0 ? cellTexts[directionIdx].toLowerCase() : "";
       const volume = volumeIdx >= 0 ? parseLocalizedNumber(cellTexts[volumeIdx], locale) || 0 : 0;

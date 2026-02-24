@@ -76,14 +76,18 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "retorno esperado",
   ],
   maxDrawdown: [
-    "maximal drawdown",
-    "balance drawdown maximal",
+    // Equity drawdown labels listed first for fuzzy match priority.
+    // Parser scans label-value rows sequentially; a later equity row will
+    // overwrite an earlier balance row because we use the same key.
     "equity drawdown maximal",
+    "maximal drawdown",
     "maximaler drawdown",
     "drawdown máximo",
     "максимальная просадка",
     "drawdown maximal",
     "drawdown máximo do saldo",
+    // Balance drawdown — still matched so we capture SOMETHING if equity row is absent.
+    "balance drawdown maximal",
   ],
   sharpeRatio: [
     "sharpe ratio",

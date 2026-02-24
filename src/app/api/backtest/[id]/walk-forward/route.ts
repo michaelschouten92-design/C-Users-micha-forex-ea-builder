@@ -58,18 +58,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // Parse options from request body
   let numWindows = 5;
-  let oosRatio = 0.2;
   try {
     const body = await request.json();
     if (body.numWindows) numWindows = Math.min(10, Math.max(3, body.numWindows));
-    if (body.oosRatio) oosRatio = Math.min(0.4, Math.max(0.1, body.oosRatio));
   } catch {
     // Use defaults
   }
 
   // Run walk-forward analysis
   const deals = backtestRun.trades as unknown as ParsedDeal[];
-  const result = runWalkForward(deals, backtestRun.initialDeposit, { numWindows, oosRatio });
+  const result = runWalkForward(deals, backtestRun.initialDeposit, { numWindows });
 
   // Store result
   await prisma.backtestRun.update({

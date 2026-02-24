@@ -164,7 +164,7 @@ export async function POST(request: Request) {
     }
 
     // 11. Compute health score
-    const healthResult = computeHealthScore(parsed.metrics);
+    const healthResult = computeHealthScore(parsed.metrics, parsed.metadata.initialDeposit);
 
     // 12. Sanitize HTML before storage and sanitize filename
     const sanitizedHtml = sanitizeHtmlForStorage(html);
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
           healthStatus: healthResult.status,
           trades: JSON.parse(JSON.stringify(parsed.deals)),
           scoreBreakdown: JSON.parse(JSON.stringify(healthResult.breakdown)),
-          parseWarnings: parsed.parseWarnings,
+          parseWarnings: [...parsed.parseWarnings, ...healthResult.warnings],
           detectedLocale: parsed.detectedLocale,
         },
       });
@@ -214,7 +214,8 @@ export async function POST(request: Request) {
       return { upload, run };
     });
 
-    // 14. Return result
+    // 14. Return result — merge parser warnings + scorer warnings
+    const allWarnings = [...parsed.parseWarnings, ...healthResult.warnings];
     return NextResponse.json(
       {
         uploadId: result.upload.id,
@@ -224,7 +225,8 @@ export async function POST(request: Request) {
         healthScore: healthResult.score,
         healthStatus: healthResult.status,
         scoreBreakdown: healthResult.breakdown,
-        parseWarnings: parsed.parseWarnings,
+        scoreWarnings: healthResult.warnings,
+        parseWarnings: allWarnings,
         detectedLocale: parsed.detectedLocale,
         dealCount: parsed.deals.length,
       },

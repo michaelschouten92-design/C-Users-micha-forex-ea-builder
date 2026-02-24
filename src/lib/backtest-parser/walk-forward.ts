@@ -6,7 +6,6 @@ import type { ParsedDeal } from "./types";
 
 export interface WalkForwardOptions {
   numWindows?: number;
-  oosRatio?: number;
 }
 
 interface WindowMetrics {
@@ -36,6 +35,7 @@ export interface WalkForwardResult {
   verdict: "ROBUST" | "MODERATE" | "OVERFITTED";
   totalDeals: number;
   numWindows: number;
+  /** Actual OOS ratio used (= 1/numWindows for leave-one-out cross-validation). */
   oosRatio: number;
 }
 
@@ -78,12 +78,26 @@ function calculateMetrics(deals: ParsedDeal[], initialDeposit: number): WindowMe
     }
   }
 
-  // Sharpe ratio (simplified: annualized from daily returns)
-  const profits = tradingDeals.map((d) => d.profit);
-  const mean = profits.reduce((s, p) => s + p, 0) / profits.length;
-  const variance = profits.reduce((s, p) => s + Math.pow(p - mean, 2), 0) / profits.length;
-  const stdDev = Math.sqrt(variance);
-  const sharpeRatio = stdDev > 0 ? (mean / stdDev) * Math.sqrt(252) : 0;
+  // Sharpe ratio — computed from DAILY returns, not per-trade returns.
+  // Group deals by date, compute daily P&L, then annualize with sqrt(252).
+  // This avoids over/under-stating Sharpe for strategies with multiple trades
+  // per day or infrequent trades.
+  const dailyPnL = new Map<string, number>();
+  for (const deal of tradingDeals) {
+    // Extract date portion from normalized ISO timestamp or raw format
+    const dayKey = deal.openTime.slice(0, 10);
+    dailyPnL.set(dayKey, (dailyPnL.get(dayKey) || 0) + deal.profit);
+  }
+
+  let sharpeRatio = 0;
+  const dailyReturns = [...dailyPnL.values()];
+  if (dailyReturns.length >= 2) {
+    const mean = dailyReturns.reduce((s, r) => s + r, 0) / dailyReturns.length;
+    const variance =
+      dailyReturns.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / dailyReturns.length;
+    const stdDev = Math.sqrt(variance);
+    sharpeRatio = stdDev > 0 ? (mean / stdDev) * Math.sqrt(252) : 0;
+  }
 
   return {
     profitFactor: Math.min(profitFactor, 10),
@@ -104,7 +118,8 @@ export function runWalkForward(
   initialDeposit: number,
   options: WalkForwardOptions = {}
 ): WalkForwardResult {
-  const { numWindows = 5, oosRatio = 0.2 } = options;
+  const { numWindows = 5 } = options;
+  const oosRatio = 1 / numWindows; // leave-one-out: each window is OOS once
 
   // Filter out balance deals and sort by time
   const tradingDeals = deals

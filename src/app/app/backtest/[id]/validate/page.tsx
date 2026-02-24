@@ -57,14 +57,58 @@ interface BacktestData {
 }
 
 // ============================================
-// Monte Carlo Engine (same as risk-calculator)
+// Seedable PRNG (mulberry32) for reproducible Monte Carlo results
 // ============================================
 
-function runMonteCarlo(params: SimulationParams): SimulationResult {
+function mulberry32(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Hash a string to a 32-bit integer seed. */
+function hashToSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return hash;
+}
+
+// ============================================
+// Monte Carlo Engine (seeded for reproducibility)
+// ============================================
+
+function runMonteCarlo(params: SimulationParams, seed: string): SimulationResult {
   const { winRate, rrRatio, riskPerTrade, numTrades, numSimulations, startBalance } = params;
   const winProb = winRate / 100;
   const risk = riskPerTrade / 100;
 
+  // Validate inputs — guard against NaN/Infinity propagation
+  if (!Number.isFinite(winProb) || !Number.isFinite(risk) || !Number.isFinite(rrRatio)) {
+    return {
+      medianFinalBalance: startBalance,
+      p25FinalBalance: startBalance,
+      p75FinalBalance: startBalance,
+      medianMaxDrawdown: 0,
+      worstMaxDrawdown: 0,
+      probabilityOfRuin: 0,
+      probabilityOf2x: 0,
+      equityCurves: {
+        best: [startBalance],
+        worst: [startBalance],
+        median: [startBalance],
+        p25: [startBalance],
+        p75: [startBalance],
+      },
+    };
+  }
+
+  const random = mulberry32(hashToSeed(seed));
   const allFinalBalances: number[] = [];
   const allMaxDrawdowns: number[] = [];
   const allCurves: number[][] = [];
@@ -78,7 +122,7 @@ function runMonteCarlo(params: SimulationParams): SimulationResult {
     const curve: number[] = [balance];
 
     for (let t = 0; t < numTrades; t++) {
-      const win = Math.random() < winProb;
+      const win = random() < winProb;
       const pnl = win ? balance * risk * rrRatio : -balance * risk;
       balance += pnl;
 
@@ -371,11 +415,11 @@ export default function ValidatePage() {
     if (!simParams) return;
     setRunning(true);
     setTimeout(() => {
-      const result = runMonteCarlo(simParams);
+      const result = runMonteCarlo(simParams, id);
       setSimResult(result);
       setRunning(false);
     }, 50);
-  }, [simParams]);
+  }, [simParams, id]);
 
   if (loading) {
     return (
@@ -489,7 +533,13 @@ export default function ValidatePage() {
               <p className="text-xs text-[#7C8DB0] mt-3 max-w-md mx-auto">
                 Based on {simParams?.numSimulations.toLocaleString()} simulations of{" "}
                 {simParams?.numTrades} trades using your backtest&apos;s win rate and risk:reward
-                ratio.
+                ratio. Results are deterministic for this backtest.
+              </p>
+              <p className="text-[10px] text-[#64748b] mt-2 max-w-lg mx-auto">
+                This simulation assumes each trade is independent (IID). Real trading exhibits
+                serial correlation — trend-following strategies may face clustered losses that this
+                model underestimates. Results do not account for spreads, slippage, or commission
+                costs.
               </p>
             </div>
 

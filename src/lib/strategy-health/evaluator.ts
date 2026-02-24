@@ -3,6 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { collectLiveMetrics } from "./collector";
 import { computeHealth } from "./scorer";
 import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
@@ -139,7 +140,9 @@ export async function getHealthWithFreshness(instanceId: string): Promise<{
   const elapsed = Date.now() - latest.createdAt.getTime();
   if (elapsed > HEALTH_STALE_THRESHOLD_MS) {
     // Stale — recalculate in background (don't block response)
-    evaluateHealth(instanceId).catch(() => {});
+    evaluateHealth(instanceId).catch((err) => {
+      logger.error({ err, instanceId }, "Background health evaluation failed");
+    });
     return { snapshot: latest, fresh: false };
   }
 
