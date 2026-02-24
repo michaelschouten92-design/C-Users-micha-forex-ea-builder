@@ -244,8 +244,8 @@ function buildHttpPostMQL5(): string {
 {
    string url = InpTelemetryURL + endpoint;
    string headers = "Content-Type: application/json\\r\\nX-EA-Key: " + InpTelemetryKey;
-   char postData[];
-   char result[];
+   uchar postData[];
+   uchar result[];
    string resultHeaders;
 
    StringToCharArray(jsonBody, postData, 0, WHOLE_ARRAY, CP_UTF8);

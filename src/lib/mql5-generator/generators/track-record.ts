@@ -251,8 +251,8 @@ void TrackRecordRecoverFromServer()
    string url = InpTrackRecordURL + "/state/" + g_trInstanceId;
    string headers = "Content-Type: application/json\\r\\nX-EA-Key: " + InpTelemetryKey;
 
-   char data[];
-   char result[];
+   uchar data[];
+   uchar result[];
    string resultHeaders;
 
    int res = WebRequest("GET", url, headers, 5000, data, result, resultHeaders);
@@ -755,8 +755,8 @@ bool TrackRecordHttpPost(string endpoint, string jsonBody)
 {
    string url = InpTrackRecordURL + endpoint;
    string headers = "Content-Type: application/json\\r\\nX-EA-Key: " + InpTelemetryKey;
-   char postData[];
-   char resultData[];
+   uchar postData[];
+   uchar resultData[];
    string resultHeaders;
 
    StringToCharArray(jsonBody, postData, 0, WHOLE_ARRAY, CP_UTF8);
