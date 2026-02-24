@@ -17,7 +17,7 @@ export function SiteNav() {
             AlgoStudio
           </Link>
           <span className="text-[10px] text-[#64748B] font-medium tracking-wider uppercase border border-[rgba(79,70,229,0.3)] rounded px-1.5 py-0.5 hidden sm:inline">
-            EA Builder
+            Strategy Platform
           </span>
         </div>
         <div className="hidden md:flex items-center gap-6">
