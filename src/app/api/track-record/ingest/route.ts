@@ -14,6 +14,7 @@ import {
 } from "@/lib/track-record/checkpoint";
 import { shouldCreateCommitment, buildCommitmentData } from "@/lib/track-record/ledger-commitment";
 import { validatePayload } from "@/lib/track-record/payload-schemas";
+import { checkRateLimit } from "@/lib/track-record/rate-limiter";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
 
 const ingestSchema = z.object({
@@ -43,6 +44,12 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
 
   const { instanceId } = auth;
+
+  // Per-instance rate limiting (100 events/minute)
+  const rateLimitError = checkRateLimit(instanceId);
+  if (rateLimitError) {
+    return NextResponse.json({ error: rateLimitError }, { status: 429 });
+  }
 
   let body: unknown;
   try {
@@ -117,6 +124,26 @@ export async function POST(request: NextRequest) {
               status: 400 as const,
               body: { error: "Timestamp is before instance creation date (minus 1 day tolerance)" },
             };
+          }
+        }
+
+        // receivedAt monotonicity check: detect clock manipulation or replays
+        // Server-side receive time should not regress for sequential events
+        if (dbState.lastSeqNo > 0) {
+          const lastEvent = await tx.trackRecordEvent.findUnique({
+            where: { instanceId_seqNo: { instanceId, seqNo: dbState.lastSeqNo } },
+            select: { receivedAt: true },
+          });
+          if (lastEvent) {
+            const lastReceivedMs = lastEvent.receivedAt.getTime();
+            const nowMs = Date.now();
+            // Allow 1 second tolerance for clock jitter between requests
+            if (nowMs < lastReceivedMs - 1000) {
+              logger.warn(
+                { instanceId, seqNo, lastReceivedAt: lastEvent.receivedAt.toISOString(), nowMs },
+                "receivedAt monotonicity violation: server clock may have regressed"
+              );
+            }
           }
         }
 

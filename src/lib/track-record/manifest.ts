@@ -236,12 +236,101 @@ export function verifyReportSignature(
 }
 
 /**
- * Compute the ledger root hash: SHA-256(concat(all event hashes in range)).
- * This binds the report to the exact event sequence.
+ * Compute the ledger root hash using a Merkle tree.
+ * This binds the report to the exact event sequence and enables
+ * partial verification — a verifier can check a subset of events
+ * using a Merkle proof without replaying the entire chain.
+ *
+ * Tree structure:
+ * - Leaves = SHA-256 of each event hash (double-hashed for domain separation)
+ * - Internal nodes = SHA-256(left || right)
+ * - Odd leaves: last leaf is promoted (not duplicated, to prevent second-preimage)
  */
 export function computeLedgerRootHash(eventHashes: string[]): string {
-  const concatenated = eventHashes.join("");
-  return sha256(concatenated);
+  if (eventHashes.length === 0) return sha256("");
+  if (eventHashes.length === 1) return sha256(eventHashes[0]);
+
+  // Build leaf nodes: double-hash for domain separation from internal nodes
+  let level = eventHashes.map((h) => sha256("leaf:" + h));
+
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 < level.length) {
+        next.push(sha256(level[i] + level[i + 1]));
+      } else {
+        // Odd node: promote without duplication (prevents second-preimage attacks)
+        next.push(level[i]);
+      }
+    }
+    level = next;
+  }
+
+  return level[0];
+}
+
+/**
+ * Generate a Merkle proof for a specific event index.
+ * Returns sibling hashes + directions needed to reconstruct the root.
+ */
+export function generateMerkleProof(
+  eventHashes: string[],
+  index: number
+): { siblings: string[]; directions: ("L" | "R")[] } {
+  if (index < 0 || index >= eventHashes.length) {
+    return { siblings: [], directions: [] };
+  }
+
+  const siblings: string[] = [];
+  const directions: ("L" | "R")[] = [];
+
+  let level = eventHashes.map((h) => sha256("leaf:" + h));
+  let pos = index;
+
+  while (level.length > 1) {
+    const next: string[] = [];
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 < level.length) {
+        if (i === pos || i + 1 === pos) {
+          if (pos % 2 === 0) {
+            siblings.push(level[i + 1]);
+            directions.push("R");
+          } else {
+            siblings.push(level[i]);
+            directions.push("L");
+          }
+        }
+        next.push(sha256(level[i] + level[i + 1]));
+      } else {
+        next.push(level[i]);
+      }
+    }
+    level = next;
+    pos = Math.floor(pos / 2);
+  }
+
+  return { siblings, directions };
+}
+
+/**
+ * Verify a Merkle proof for a single event hash against the root.
+ */
+export function verifyMerkleProof(
+  eventHash: string,
+  proof: { siblings: string[]; directions: ("L" | "R")[] },
+  expectedRoot: string
+): boolean {
+  let current = sha256("leaf:" + eventHash);
+
+  for (let i = 0; i < proof.siblings.length; i++) {
+    if (proof.directions[i] === "R") {
+      current = sha256(current + proof.siblings[i]);
+    } else {
+      current = sha256(proof.siblings[i] + current);
+    }
+  }
+
+  return current === expectedRoot;
 }
 
 /**

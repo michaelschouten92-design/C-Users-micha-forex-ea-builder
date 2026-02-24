@@ -38,6 +38,7 @@ import {
 import { verifyCommitment } from "./ledger-commitment";
 import { replayAll, buildDailyReturns, type ReplayEvent } from "./replay-engine";
 import { moneyStr } from "./decimal";
+import { isSegmentVerified, cacheVerifiedSegment } from "./verification-cache";
 
 /**
  * Verify a complete proof bundle. This is the main entry point for third-party verification.
@@ -88,54 +89,70 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
   const events = bundle.events;
   const report = bundle.report;
 
-  // 1. Verify hash chain
+  // 1. Verify hash chain (with segment caching at commitment boundaries)
   let chainValid = true;
-  let expectedSeqNo = events.length > 0 ? events[0].seqNo : 1;
-  let expectedPrevHash = expectedSeqNo === 1 ? GENESIS_HASH : events[0].prevHash;
+  const instanceId = report.manifest.instanceId;
 
-  // For ranges starting at seqNo > 1, we trust the first event's prevHash
-  // (it links to events outside this bundle's scope)
-  if (expectedSeqNo > 1) {
-    expectedPrevHash = events[0].prevHash;
-  }
+  // Check if the entire chain segment is already cached
+  const firstSeqNo = events.length > 0 ? events[0].seqNo : 0;
+  const lastSeqNo = events.length > 0 ? events[events.length - 1].seqNo : 0;
+  const lastHash = events.length > 0 ? events[events.length - 1].eventHash : "";
+  const fullSegmentCached =
+    events.length > 0 && isSegmentVerified(instanceId, firstSeqNo, lastSeqNo, lastHash);
 
-  for (let i = 0; i < events.length; i++) {
-    const ev = events[i];
+  if (!fullSegmentCached) {
+    let expectedSeqNo = events.length > 0 ? events[0].seqNo : 1;
+    let expectedPrevHash = expectedSeqNo === 1 ? GENESIS_HASH : events[0].prevHash;
 
-    // Sequence check
-    if (ev.seqNo !== expectedSeqNo) {
-      errors.push(`seqNo gap: expected ${expectedSeqNo}, got ${ev.seqNo}`);
-      chainValid = false;
-      break;
+    // For ranges starting at seqNo > 1, we trust the first event's prevHash
+    // (it links to events outside this bundle's scope)
+    if (expectedSeqNo > 1) {
+      expectedPrevHash = events[0].prevHash;
     }
 
-    // prevHash check (skip for first event in partial range)
-    if (i > 0 && ev.prevHash !== expectedPrevHash) {
-      errors.push(`prevHash mismatch at seqNo ${ev.seqNo}`);
-      chainValid = false;
-      break;
-    }
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
 
-    // Recompute event hash
-    const canonical = buildCanonicalEvent(
-      report.manifest.instanceId,
-      ev.eventType,
-      ev.seqNo,
-      ev.prevHash,
-      ev.timestamp,
-      ev.payload
-    );
-    const computed = computeEventHash(canonical);
-    if (computed !== ev.eventHash) {
-      errors.push(
-        `eventHash mismatch at seqNo ${ev.seqNo}: computed ${computed}, claimed ${ev.eventHash}`
+      // Sequence check
+      if (ev.seqNo !== expectedSeqNo) {
+        errors.push(`seqNo gap: expected ${expectedSeqNo}, got ${ev.seqNo}`);
+        chainValid = false;
+        break;
+      }
+
+      // prevHash check (skip for first event in partial range)
+      if (i > 0 && ev.prevHash !== expectedPrevHash) {
+        errors.push(`prevHash mismatch at seqNo ${ev.seqNo}`);
+        chainValid = false;
+        break;
+      }
+
+      // Recompute event hash
+      const canonical = buildCanonicalEvent(
+        instanceId,
+        ev.eventType,
+        ev.seqNo,
+        ev.prevHash,
+        ev.timestamp,
+        ev.payload
       );
-      chainValid = false;
-      break;
+      const computed = computeEventHash(canonical);
+      if (computed !== ev.eventHash) {
+        errors.push(
+          `eventHash mismatch at seqNo ${ev.seqNo}: computed ${computed}, claimed ${ev.eventHash}`
+        );
+        chainValid = false;
+        break;
+      }
+
+      expectedPrevHash = ev.eventHash;
+      expectedSeqNo++;
     }
 
-    expectedPrevHash = ev.eventHash;
-    expectedSeqNo++;
+    // Cache the verified segment if valid
+    if (chainValid && events.length > 0) {
+      cacheVerifiedSegment(instanceId, firstSeqNo, lastSeqNo, lastHash, true);
+    }
   }
 
   // 2. Verify Ed25519 signature + signing key version

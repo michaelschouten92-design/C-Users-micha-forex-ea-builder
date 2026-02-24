@@ -821,7 +821,7 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
 
 function buildTrackRecordHttpPost(): string {
   return `//+------------------------------------------------------------------+
-//| Track Record HTTP POST — returns true on success                 |
+//| Track Record HTTP POST with exponential backoff retry            |
 //+------------------------------------------------------------------+
 bool TrackRecordHttpPost(string endpoint, string jsonBody)
 {
@@ -835,34 +835,64 @@ bool TrackRecordHttpPost(string endpoint, string jsonBody)
    // Remove null terminator
    ArrayResize(postData, ArraySize(postData) - 1);
 
-   int res = WebRequest("POST", url, headers, 5000, postData, resultData, resultHeaders);
-   if(res == -1)
-   {
-      int err = GetLastError();
-      if(err == 4014)
-         Print("TrackRecord: Add ", url, " to Tools > Options > Expert Advisors > Allow WebRequest");
-      else
-         Print("TrackRecord: WebRequest failed, error ", err);
-      return false;
-   }
+   int maxRetries = 3;
+   int baseDelayMs = 1000; // 1 second base delay
 
-   // Parse response to get instanceId if needed
-   string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
-   if(StringLen(g_trInstanceId) == 0)
+   for(int attempt = 0; attempt <= maxRetries; attempt++)
    {
-      int idPos = StringFind(response, "\\"instanceId\\":\\"");
-      if(idPos >= 0)
+      if(attempt > 0)
       {
-         int valStart = idPos + 14;
-         int valEnd = StringFind(response, "\\"", valStart);
-         if(valEnd > valStart)
+         // Exponential backoff: 1s, 2s, 4s + up to 500ms jitter
+         int delayMs = baseDelayMs * (1 << (attempt - 1));
+         int jitterMs = MathRand() % 500;
+         int totalDelay = delayMs + jitterMs;
+         Print("TrackRecord: Retry ", attempt, "/", maxRetries, " in ", totalDelay, "ms");
+         Sleep(totalDelay);
+      }
+
+      int res = WebRequest("POST", url, headers, 5000, postData, resultData, resultHeaders);
+
+      if(res == -1)
+      {
+         int err = GetLastError();
+         if(err == 4014)
          {
-            g_trInstanceId = StringSubstr(response, valStart, valEnd - valStart);
-            TrackRecordSaveState();
+            Print("TrackRecord: Add ", url, " to Tools > Options > Expert Advisors > Allow WebRequest");
+            return false; // Config error, don't retry
+         }
+         Print("TrackRecord: WebRequest failed, error ", err);
+         if(attempt < maxRetries) continue; // Network error, retry
+         return false;
+      }
+
+      // 429 (rate limited) or 5xx (server error) — retry
+      if(res == 429 || res >= 500)
+      {
+         Print("TrackRecord: Server returned ", res, " — retryable");
+         if(attempt < maxRetries) continue;
+         return false;
+      }
+
+      // Parse response to get instanceId if needed
+      string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+      if(StringLen(g_trInstanceId) == 0)
+      {
+         int idPos = StringFind(response, "\\"instanceId\\":\\"");
+         if(idPos >= 0)
+         {
+            int valStart = idPos + 14;
+            int valEnd = StringFind(response, "\\"", valStart);
+            if(valEnd > valStart)
+            {
+               g_trInstanceId = StringSubstr(response, valStart, valEnd - valStart);
+               TrackRecordSaveState();
+            }
          }
       }
+
+      return (res >= 200 && res < 300);
    }
 
-   return (res >= 200 && res < 300);
+   return false;
 }`;
 }
