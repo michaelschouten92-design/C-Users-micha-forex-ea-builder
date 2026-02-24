@@ -23,11 +23,19 @@ import type {
   VerificationResult,
   L1Result,
   L2Result,
+  L3Result,
   VerificationLevel,
 } from "./types";
 import { GENESIS_HASH } from "./types";
 import { buildCanonicalEvent, computeEventHash, sha256 } from "./canonical";
-import { canonicalizeReportBody, verifyReportSignature, computeLedgerRootHash } from "./manifest";
+import {
+  canonicalizeReportBody,
+  verifyReportSignature,
+  computeLedgerRootHash,
+  getTrustedPublicKeys,
+  keyFingerprint,
+} from "./manifest";
+import { verifyCommitment } from "./ledger-commitment";
 import { replayAll, buildDailyReturns, type ReplayEvent } from "./replay-engine";
 import { moneyStr } from "./decimal";
 
@@ -43,7 +51,10 @@ export function verifyProofBundle(bundle: ProofBundle): VerificationResult {
       ? verifyLevel2(bundle)
       : null;
 
-  const l3 = bundle.verification.l3 ?? null;
+  const l3 =
+    bundle.commitments && bundle.commitments.length > 0
+      ? verifyLevel3(bundle)
+      : (bundle.verification.l3 ?? null);
 
   // Determine highest achieved level
   let level: VerificationLevel = "L0_NONE";
@@ -53,7 +64,9 @@ export function verifyProofBundle(bundle: ProofBundle): VerificationResult {
   if (level === "L1_LEDGER" && l2 && l2.mismatchedCount === 0 && l2.matchedCount > 0) {
     level = "L2_BROKER";
   }
-  if (level === "L2_BROKER" && l3?.notarized) {
+  // L3 requires at least L1 + notarized commitments
+  const l3Eligible = level === "L2_BROKER" || (level === "L1_LEDGER" && !l2);
+  if (l3Eligible && l3?.notarized) {
     level = "L3_NOTARIZED";
   }
 
@@ -125,7 +138,7 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
     expectedSeqNo++;
   }
 
-  // 2. Verify Ed25519 signature
+  // 2. Verify Ed25519 signature + signing key version
   const signatureValid = verifyReportSignature(
     report.manifest.reportBodyHash,
     report.manifest.signature,
@@ -133,6 +146,29 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
   );
   if (!signatureValid) {
     errors.push("Ed25519 signature verification failed");
+  }
+
+  // 2b. Verify signingKeyVersion matches the public key fingerprint
+  if (report.manifest.signingKeyVersion) {
+    const computedVersion = keyFingerprint(report.manifest.publicKey);
+    if (computedVersion !== report.manifest.signingKeyVersion) {
+      errors.push(
+        `signingKeyVersion mismatch: manifest claims ${report.manifest.signingKeyVersion}, ` +
+          `but publicKey fingerprint is ${computedVersion}`
+      );
+    }
+
+    // 2c. Check if the signing key is in our trusted key registry
+    const trustedKeys = getTrustedPublicKeys();
+    if (trustedKeys.length > 0) {
+      const isTrusted = trustedKeys.some((k) => k.version === report.manifest.signingKeyVersion);
+      if (!isTrusted) {
+        errors.push(
+          `Signing key version ${report.manifest.signingKeyVersion} is not in the trusted key registry. ` +
+            `The report may have been signed with a revoked or unknown key.`
+        );
+      }
+    }
   }
 
   // 3. Verify ledger root hash
@@ -305,6 +341,73 @@ function verifyLevel2(bundle: ProofBundle): L2Result {
     mismatches,
     digestValid,
     digestCount: digests.length,
+  };
+}
+
+// ============================================
+// LEVEL 3 — NOTARIZED COMMITMENTS
+// ============================================
+
+function verifyLevel3(bundle: ProofBundle): L3Result {
+  const commitments = bundle.commitments;
+  if (!commitments || commitments.length === 0) {
+    return {
+      notarized: false,
+      notarizationTimestamp: null,
+      notarizationProof: null,
+      provider: null,
+    };
+  }
+
+  // Verify each commitment hash is correctly computed
+  let allValid = true;
+  let hasNotarized = false;
+  let latestNotarization: string | null = null;
+  let latestProof: string | null = null;
+  let provider: string | null = null;
+
+  for (const c of commitments) {
+    // Find the event at this commitment's seqNo to get lastEventHash
+    const event = bundle.events.find((e) => e.seqNo === c.seqNo);
+    if (!event) {
+      allValid = false;
+      continue;
+    }
+
+    // Verify the commitment hash is correctly derived
+    const valid = verifyCommitment(
+      bundle.report.manifest.instanceId,
+      c.seqNo,
+      c.lastEventHash,
+      c.stateHmac,
+      c.commitmentHash
+    );
+
+    if (!valid) {
+      allValid = false;
+    }
+
+    // Check that the lastEventHash matches the event at that seqNo
+    if (c.lastEventHash !== event.eventHash) {
+      allValid = false;
+    }
+
+    // Track notarization status
+    if (c.notarizedAt) {
+      hasNotarized = true;
+      if (!latestNotarization || c.notarizedAt > latestNotarization) {
+        latestNotarization = c.notarizedAt;
+        latestProof = c.proof;
+        provider = c.provider;
+      }
+    }
+  }
+
+  return {
+    notarized: allValid && hasNotarized,
+    notarizationTimestamp: latestNotarization,
+    notarizationProof: latestProof,
+    provider,
   };
 }
 

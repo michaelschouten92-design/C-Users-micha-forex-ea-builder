@@ -28,38 +28,55 @@ import { sha256 } from "./canonical";
 interface KeyPair {
   privateKey: string; // hex-encoded raw private key
   publicKey: string; // hex-encoded raw public key
+  /** First 16 hex chars of SHA-256(publicKey). Identifies which key signed a report. */
+  version: string;
 }
 
 let cachedKeyPair: KeyPair | null = null;
+let cachedPreviousPublicKey: { publicKey: string; version: string } | null = null;
 
 /**
- * Get the signing key pair. Uses TRACK_RECORD_SIGNING_KEY env var if available,
- * otherwise generates an ephemeral pair (logged as warning).
+ * Compute key version fingerprint: first 16 hex chars of SHA-256(publicKeyHex).
+ */
+export function keyFingerprint(publicKeyHex: string): string {
+  return sha256(publicKeyHex).slice(0, 16);
+}
+
+/**
+ * Derive a KeyPair from a hex-encoded Ed25519 private key.
+ */
+function deriveKeyPair(privateKeyHex: string): KeyPair {
+  const privKeyBuf = Buffer.from(privateKeyHex, "hex");
+  const keyObj = {
+    key: Buffer.concat([
+      Buffer.from("302e020100300506032b657004220420", "hex"), // Ed25519 PKCS8 prefix
+      privKeyBuf.subarray(0, 32),
+    ]),
+    format: "der" as const,
+    type: "pkcs8" as const,
+  };
+  const privKeyObj = createPrivateKey(keyObj);
+  const pubKeyObj = createPublicKey(privKeyObj);
+  const pubKeyDer = pubKeyObj.export({ type: "spki", format: "der" });
+  const pubKeyRaw = pubKeyDer.subarray(pubKeyDer.length - 32);
+  const publicKey = pubKeyRaw.toString("hex");
+
+  return {
+    privateKey: privateKeyHex.slice(0, 64),
+    publicKey,
+    version: keyFingerprint(publicKey),
+  };
+}
+
+/**
+ * Get the current signing key pair. Uses TRACK_RECORD_SIGNING_KEY env var.
  */
 export function getSigningKeyPair(): KeyPair {
   if (cachedKeyPair) return cachedKeyPair;
 
   const envKey = process.env.TRACK_RECORD_SIGNING_KEY;
   if (envKey && envKey.length >= 64) {
-    // Derive public key from private key
-    const privKeyBuf = Buffer.from(envKey, "hex");
-    const keyObj = {
-      key: Buffer.concat([
-        Buffer.from("302e020100300506032b657004220420", "hex"), // Ed25519 PKCS8 prefix
-        privKeyBuf.subarray(0, 32),
-      ]),
-      format: "der" as const,
-      type: "pkcs8" as const,
-    };
-    const privKeyObj = createPrivateKey(keyObj);
-    const pubKeyObj = createPublicKey(privKeyObj);
-    const pubKeyDer = pubKeyObj.export({ type: "spki", format: "der" });
-    const pubKeyRaw = pubKeyDer.subarray(pubKeyDer.length - 32);
-
-    cachedKeyPair = {
-      privateKey: envKey.slice(0, 64),
-      publicKey: pubKeyRaw.toString("hex"),
-    };
+    cachedKeyPair = deriveKeyPair(envKey);
     return cachedKeyPair;
   }
 
@@ -67,6 +84,52 @@ export function getSigningKeyPair(): KeyPair {
     "TRACK_RECORD_SIGNING_KEY environment variable is required. " +
       "Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
   );
+}
+
+/**
+ * Get the previous signing key's public key (for verifying reports signed before rotation).
+ * Uses TRACK_RECORD_SIGNING_KEY_PREVIOUS env var.
+ */
+export function getPreviousPublicKey(): { publicKey: string; version: string } | null {
+  if (cachedPreviousPublicKey !== undefined && cachedPreviousPublicKey !== null) {
+    return cachedPreviousPublicKey;
+  }
+
+  const prevKey = process.env.TRACK_RECORD_SIGNING_KEY_PREVIOUS;
+  if (prevKey && prevKey.length >= 64) {
+    const kp = deriveKeyPair(prevKey);
+    cachedPreviousPublicKey = { publicKey: kp.publicKey, version: kp.version };
+    return cachedPreviousPublicKey;
+  }
+
+  cachedPreviousPublicKey = null;
+  return null;
+}
+
+/**
+ * Get all trusted public keys (current + previous) for verification.
+ * Used by the well-known endpoint and the verifier.
+ */
+export function getTrustedPublicKeys(): {
+  publicKey: string;
+  version: string;
+  status: "current" | "previous";
+}[] {
+  const keys: { publicKey: string; version: string; status: "current" | "previous" }[] = [];
+
+  try {
+    const current = getSigningKeyPair();
+    keys.push({ publicKey: current.publicKey, version: current.version, status: "current" });
+  } catch {
+    // No current key configured
+  }
+
+  const prev = getPreviousPublicKey();
+  if (prev) {
+    keys.push({ publicKey: prev.publicKey, version: prev.version, status: "previous" });
+  }
+
+  return keys;
 }
 
 // ============================================
@@ -114,6 +177,7 @@ function stableStringify(obj: unknown): string {
 export function signReportHash(reportBodyHash: string): {
   signature: string;
   publicKey: string;
+  signingKeyVersion: string;
 } {
   const keyPair = getSigningKeyPair();
 
@@ -135,6 +199,7 @@ export function signReportHash(reportBodyHash: string): {
   return {
     signature: sig.toString("hex"),
     publicKey: keyPair.publicKey,
+    signingKeyVersion: keyPair.version,
   };
 }
 
@@ -197,7 +262,7 @@ export function buildManifest(
   const canonicalBody = canonicalizeReportBody(reportBody);
   const reportBodyHash = sha256(canonicalBody);
   const ledgerRootHash = computeLedgerRootHash(eventHashes);
-  const { signature, publicKey } = signReportHash(reportBodyHash);
+  const { signature, publicKey, signingKeyVersion } = signReportHash(reportBodyHash);
 
   return {
     schemaVersion: "2.0",
@@ -216,6 +281,7 @@ export function buildManifest(
     reportBodyHash,
     signature,
     publicKey,
+    signingKeyVersion,
     generatedAt: new Date().toISOString(),
   };
 }

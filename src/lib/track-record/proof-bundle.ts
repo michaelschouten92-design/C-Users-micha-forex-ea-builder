@@ -91,6 +91,25 @@ export async function generateProofBundle(
       historyHash: (e.payload.historyHash as string) ?? "",
     }));
 
+  // Load ledger commitments
+  const dbCommitments = await prisma.ledgerCommitment.findMany({
+    where: whereClause.seqNo
+      ? { instanceId, seqNo: whereClause.seqNo as Record<string, number> }
+      : { instanceId },
+    orderBy: { seqNo: "asc" },
+  });
+
+  const commitments = dbCommitments.map((c) => ({
+    seqNo: c.seqNo,
+    commitmentHash: c.commitmentHash,
+    lastEventHash: c.lastEventHash,
+    stateHmac: c.stateHmac,
+    notarizedAt: c.notarizedAt?.toISOString() ?? null,
+    provider: c.provider,
+    proof: c.proof,
+    verifyUrl: c.verifyUrl,
+  }));
+
   // Build a preliminary verification (will be recomputed by the verifier)
   const preliminaryBundle: ProofBundle = {
     report,
@@ -98,6 +117,7 @@ export async function generateProofBundle(
     checkpoints,
     brokerEvidence,
     brokerDigests,
+    commitments,
     verification: {
       level: "L0_NONE",
       l1: {

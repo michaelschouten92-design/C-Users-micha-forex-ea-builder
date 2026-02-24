@@ -318,6 +318,10 @@ export interface ReportManifest {
   signature: string;
   /** Ed25519 public key (hex) for signature verification */
   publicKey: string;
+  /** Signing key version — SHA-256 fingerprint of the public key (first 16 hex chars).
+   *  Changes when the signing key is rotated. Third parties can match against
+   *  the published key registry at /.well-known/algostudio-signing-keys.json */
+  signingKeyVersion: string;
   /** ISO 8601 generation timestamp */
   generatedAt: string;
 }
@@ -544,6 +548,17 @@ export interface ProofBundle {
     periodEnd: string;
     tradeCount: number;
     historyHash: string;
+  }[];
+  /** Ledger commitments (for L3 verification) */
+  commitments: {
+    seqNo: number;
+    commitmentHash: string;
+    lastEventHash: string;
+    stateHmac: string;
+    notarizedAt: string | null;
+    provider: string | null;
+    proof: string | null;
+    verifyUrl: string | null;
   }[];
   /** Verification result */
   verification: VerificationResult;

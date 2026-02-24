@@ -371,6 +371,7 @@ model LiveEAInstance {
   trackRecordEvents      TrackRecordEvent[]
   trackRecordCheckpoints TrackRecordCheckpoint[]
   trackRecordState       TrackRecordState?
+  ledgerCommitments      LedgerCommitment[]
   healthSnapshots        HealthSnapshot[]
   sharedProofBundles     SharedProofBundle[]
 
@@ -677,6 +678,29 @@ model TrackRecordState {
   updatedAt              DateTime @updatedAt
 
   instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+model LedgerCommitment {
+  id             String   @id @default(cuid())
+  instanceId     String
+  seqNo          Int                        // seqNo at which this commitment was made
+  commitmentHash String                     // SHA-256(instanceId|seqNo|lastEventHash|stateHmac)
+  lastEventHash  String                     // Hash of the event at seqNo
+  stateHmac      String                     // HMAC of state at this point (from checkpoint)
+  /** NULL until submitted to an external notarization provider */
+  notarizedAt    DateTime?
+  /** Provider name (e.g., "opentimestamps", "originstamp") */
+  provider       String?
+  /** Opaque proof from the notarization provider */
+  proof          String?
+  /** Provider verification URL */
+  verifyUrl      String?
+  createdAt      DateTime @default(now())
+
+  instance       LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, seqNo])
+  @@index([instanceId, createdAt])
 }
 
 // ============================================

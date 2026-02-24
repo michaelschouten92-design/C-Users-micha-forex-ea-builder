@@ -6,6 +6,11 @@
  *   hmac = HMAC-SHA256(derivedKey, canonicalStateJson)
  *
  * Created every TRADE_CLOSE event and every 100 events.
+ *
+ * Key rotation:
+ *   New checkpoints are always signed with TRACK_RECORD_SECRET.
+ *   Verification tries the current secret first, then falls back to
+ *   TRACK_RECORD_SECRET_PREVIOUS for checkpoints created before rotation.
  */
 
 import { createHmac } from "crypto";
@@ -14,14 +19,21 @@ import type { TrackRecordRunningState } from "./types";
 const CHECKPOINT_INTERVAL = 100;
 
 /**
- * Derive a per-instance HMAC key from the global secret.
+ * Derive a per-instance HMAC key from an explicit secret.
+ */
+function deriveKeyWithSecret(secret: string, instanceId: string): string {
+  return createHmac("sha256", secret).update(instanceId).digest("hex");
+}
+
+/**
+ * Derive a per-instance HMAC key from the current global secret.
  */
 function deriveKey(instanceId: string): string {
   const secret = process.env.TRACK_RECORD_SECRET;
   if (!secret) {
     throw new Error("TRACK_RECORD_SECRET environment variable is required");
   }
-  return createHmac("sha256", secret).update(instanceId).digest("hex");
+  return deriveKeyWithSecret(secret, instanceId);
 }
 
 /**
@@ -62,21 +74,51 @@ export function computeCheckpointHmac(instanceId: string, state: TrackRecordRunn
 }
 
 /**
+ * Constant-time string comparison to prevent timing attacks.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/**
+ * Compute HMAC using an explicit secret (for verification with previous keys).
+ */
+function computeHmacWithSecret(
+  secret: string,
+  instanceId: string,
+  state: TrackRecordRunningState
+): string {
+  const key = deriveKeyWithSecret(secret, instanceId);
+  const stateJson = canonicalizeState(state);
+  return createHmac("sha256", key).update(stateJson).digest("hex");
+}
+
+/**
  * Verify a checkpoint's HMAC against the running state.
+ * Tries the current secret first, then falls back to TRACK_RECORD_SECRET_PREVIOUS.
  */
 export function verifyCheckpointHmac(
   instanceId: string,
   state: TrackRecordRunningState,
   storedHmac: string
 ): boolean {
+  // Try current secret
   const computed = computeCheckpointHmac(instanceId, state);
-  // Constant-time comparison
-  if (computed.length !== storedHmac.length) return false;
-  let diff = 0;
-  for (let i = 0; i < computed.length; i++) {
-    diff |= computed.charCodeAt(i) ^ storedHmac.charCodeAt(i);
+  if (constantTimeEqual(computed, storedHmac)) return true;
+
+  // Try previous secret (for checkpoints created before rotation)
+  const prevSecret = process.env.TRACK_RECORD_SECRET_PREVIOUS;
+  if (prevSecret) {
+    const prevComputed = computeHmacWithSecret(prevSecret, instanceId, state);
+    if (constantTimeEqual(prevComputed, storedHmac)) return true;
   }
-  return diff === 0;
+
+  return false;
 }
 
 /**

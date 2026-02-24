@@ -7,7 +7,12 @@ import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { TrackRecordEventType } from "@/lib/track-record/types";
 import { verifySingleEvent } from "@/lib/track-record/chain-verifier";
 import { processEvent, stateToDbUpdate, stateFromDb } from "@/lib/track-record/state-manager";
-import { shouldCreateCheckpoint, buildCheckpointData } from "@/lib/track-record/checkpoint";
+import {
+  shouldCreateCheckpoint,
+  buildCheckpointData,
+  computeCheckpointHmac,
+} from "@/lib/track-record/checkpoint";
+import { shouldCreateCommitment, buildCommitmentData } from "@/lib/track-record/ledger-commitment";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
 
 const ingestSchema = z.object({
@@ -56,18 +61,24 @@ export async function POST(request: NextRequest) {
   const { eventType, seqNo, prevHash, eventHash, timestamp, payload } = validation.data;
 
   // Timestamp bounds validation (before entering transaction)
+  // Tight window: 30 days back, 60 seconds forward.
+  // Prevents backdating attacks while allowing reasonable offline buffering.
   const nowSec = Math.floor(Date.now() / 1000);
-  const ONE_YEAR_SEC = 365 * 24 * 60 * 60;
+  const MAX_AGE_SEC = 30 * 24 * 60 * 60; // 30 days
+  const MAX_CLOCK_SKEW_SEC = 60;
 
-  if (timestamp > nowSec + 60) {
+  if (timestamp > nowSec + MAX_CLOCK_SKEW_SEC) {
     return NextResponse.json(
       { error: "Timestamp is in the future (max clock skew: 60s)" },
       { status: 400 }
     );
   }
 
-  if (timestamp < nowSec - ONE_YEAR_SEC) {
-    return NextResponse.json({ error: "Timestamp is older than 1 year" }, { status: 400 });
+  if (timestamp < nowSec - MAX_AGE_SEC) {
+    return NextResponse.json(
+      { error: "Timestamp is older than 30 days. Use CHAIN_RECOVERY for historical events." },
+      { status: 400 }
+    );
   }
 
   try {
@@ -178,6 +189,13 @@ export async function POST(request: NextRequest) {
 
         if (checkpoint) {
           await tx.trackRecordCheckpoint.create({ data: checkpoint });
+        }
+
+        // Build ledger commitment if due (every 500 events)
+        if (shouldCreateCommitment(seqNo)) {
+          const stateHmac = checkpoint ? checkpoint.hmac : computeCheckpointHmac(instanceId, state);
+          const commitment = buildCommitmentData(instanceId, seqNo, state.lastEventHash, stateHmac);
+          await tx.ledgerCommitment.create({ data: commitment });
         }
 
         return {
