@@ -11,6 +11,7 @@ function makeLiveMetrics(overrides: Partial<LiveMetrics> = {}): LiveMetrics {
     tradesPerDay: 2,
     totalTrades: 60,
     windowDays: 30,
+    tradeReturns: [],
     ...overrides,
   };
 }

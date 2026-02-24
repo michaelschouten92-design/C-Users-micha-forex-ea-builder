@@ -4,6 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { LiveMetrics } from "./types";
+import { computeTradeReturns } from "./drift-detector";
 
 /**
  * Collect live trading metrics for a given instance over a rolling window.
@@ -59,6 +60,7 @@ export async function collectLiveMetrics(
       tradesPerDay: 0,
       totalTrades: 0,
       windowDays,
+      tradeReturns: [],
     };
   }
 
@@ -112,6 +114,9 @@ export async function collectLiveMetrics(
 
   const tradesPerDay = tradeCount / Math.max(actualDays, 1);
 
+  // Per-trade returns for CUSUM drift detection
+  const tradeReturns = computeTradeReturns(closedTrades, estimatedStartBalance);
+
   return {
     returnPct,
     volatility,
@@ -120,11 +125,14 @@ export async function collectLiveMetrics(
     tradesPerDay,
     totalTrades: tradeCount,
     windowDays: Math.round(actualDays),
+    tradeReturns,
   };
 }
 
 /**
  * Group trades into daily buckets and compute daily return percentages.
+ * Includes zero-return days between first and last trade to avoid
+ * inflating volatility by only counting active days.
  */
 function computeDailyReturns(
   trades: Array<{ profit: number; swap: number; commission: number; timestamp: Date }>,
@@ -140,17 +148,25 @@ function computeDailyReturns(
     dailyPnL.set(dayKey, (dailyPnL.get(dayKey) || 0) + pnl);
   }
 
+  // Build calendar days from first trade to last trade (including zero-PnL days)
+  const firstDate = new Date(trades[0].timestamp);
+  const lastDate = new Date(trades[trades.length - 1].timestamp);
+  firstDate.setUTCHours(0, 0, 0, 0);
+  lastDate.setUTCHours(0, 0, 0, 0);
+
   let runningBalance = startBalance;
   const returns: number[] = [];
 
-  // Sort days chronologically
-  const sortedDays = [...dailyPnL.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const cursor = new Date(firstDate);
+  while (cursor <= lastDate) {
+    const dayKey = cursor.toISOString().slice(0, 10);
+    const pnl = dailyPnL.get(dayKey) || 0;
 
-  for (const [, pnl] of sortedDays) {
     if (runningBalance > 0) {
       returns.push(pnl / runningBalance);
     }
     runningBalance += pnl;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
   return returns;

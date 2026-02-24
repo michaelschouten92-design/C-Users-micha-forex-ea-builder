@@ -92,15 +92,20 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     }
   }
 
-  // Compute health scores
-  const result = computeHealth(liveMetrics, baseline);
-
-  // Detect status transitions and fire alerts on degradation
+  // Load previous snapshot for hysteresis and transition detection
   const previousSnapshot = await prisma.healthSnapshot.findFirst({
     where: { instanceId },
     orderBy: { createdAt: "desc" },
     select: { status: true },
   });
+
+  // Compute health scores (with hysteresis from previous status)
+  const previousStatus = previousSnapshot
+    ? (previousSnapshot.status as HealthStatusType)
+    : undefined;
+  const result = computeHealth(liveMetrics, baseline, previousStatus);
+
+  // Detect status transitions and fire alerts on degradation
   if (previousSnapshot && previousSnapshot.status !== result.status) {
     const prev = previousSnapshot.status as HealthStatusType;
     logger.info(
@@ -152,6 +157,11 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       baselineTradesPerDay: baseline?.tradesPerDay ?? null,
       tradesSampled: liveMetrics.totalTrades,
       windowDays: liveMetrics.windowDays,
+      confidenceLower: result.confidenceInterval.lower,
+      confidenceUpper: result.confidenceInterval.upper,
+      driftCusumValue: result.drift.cusumValue,
+      driftDetected: result.drift.driftDetected,
+      driftSeverity: result.drift.driftSeverity,
     },
   });
 

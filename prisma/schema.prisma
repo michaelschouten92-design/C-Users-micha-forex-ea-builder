@@ -786,6 +786,13 @@ model HealthSnapshot {
   baselineTradesPerDay Float?
   tradesSampled       Int
   windowDays          Int
+  // Confidence interval on overallScore (based on sample size)
+  confidenceLower     Float    @default(0)
+  confidenceUpper     Float    @default(0)
+  // CUSUM drift detection
+  driftCusumValue     Float    @default(0)
+  driftDetected       Boolean  @default(false)
+  driftSeverity       Float    @default(0)
   createdAt           DateTime @default(now())
 
   instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)

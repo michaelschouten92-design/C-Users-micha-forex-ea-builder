@@ -22,8 +22,15 @@ interface HealthSnapshotData {
   baselineTradesPerDay: number | null;
   tradesSampled: number;
   windowDays: number;
+  confidenceLower: number;
+  confidenceUpper: number;
+  driftDetected: boolean;
+  driftSeverity: number;
   createdAt: string;
 }
+
+const MIN_TRADES = 10;
+const MIN_DAYS = 7;
 
 interface HealthDetailPanelProps {
   instanceId: string;
@@ -136,6 +143,74 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
 
   const config = STATUS_CONFIG[health.status];
 
+  // Insufficient data: show progress indicator instead of scores
+  if (health.status === "INSUFFICIENT_DATA") {
+    const tradeProgress = Math.min(1, health.tradesSampled / MIN_TRADES);
+    const dayProgress = Math.min(1, health.windowDays / MIN_DAYS);
+    const tradePct = Math.round(tradeProgress * 100);
+    const dayPct = Math.round(dayProgress * 100);
+
+    return (
+      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-3">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border"
+            style={{
+              backgroundColor: `${config.bg}20`,
+              color: config.color,
+              borderColor: `${config.color}30`,
+            }}
+          >
+            Collecting Data
+          </span>
+        </div>
+        <p className="text-xs text-[#7C8DB0]">
+          Health assessment begins after enough trading activity.
+        </p>
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px]">
+              <span className="text-[#7C8DB0]">Trades</span>
+              <span className="text-white">
+                {health.tradesSampled} / {MIN_TRADES}
+              </span>
+            </div>
+            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${tradePct}%`,
+                  backgroundColor: tradeProgress >= 1 ? "#10B981" : "#7C8DB0",
+                }}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px]">
+              <span className="text-[#7C8DB0]">Window</span>
+              <span className="text-white">
+                {health.windowDays} / {MIN_DAYS} days
+              </span>
+            </div>
+            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${dayPct}%`,
+                  backgroundColor: dayProgress >= 1 ? "#10B981" : "#7C8DB0",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const scorePct = Math.round(health.overallScore * 100);
+  const ciLower = Math.round(health.confidenceLower * 100);
+  const ciUpper = Math.round(health.confidenceUpper * 100);
+
   return (
     <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
       {/* Header */}
@@ -152,13 +227,32 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
             {config.label}
           </span>
           <span className="text-xs text-[#7C8DB0]">
-            Score: {Math.round(health.overallScore * 100)}%
+            {scorePct}%
+            <span className="text-[10px] ml-1 opacity-70">
+              ({ciLower}–{ciUpper}%)
+            </span>
           </span>
         </div>
         <span className="text-[10px] text-[#7C8DB0]">
           {health.tradesSampled} trades / {health.windowDays}d window
         </span>
       </div>
+
+      {/* Drift Warning */}
+      {health.driftDetected && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20">
+          <span className="text-[10px] text-[#EF4444] font-medium">
+            Edge drift detected — strategy expectancy has persistently declined
+          </span>
+        </div>
+      )}
+      {!health.driftDetected && health.driftSeverity > 0.5 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+          <span className="text-[10px] text-[#F59E0B] font-medium">
+            Possible drift ({Math.round(health.driftSeverity * 100)}% toward threshold)
+          </span>
+        </div>
+      )}
 
       {/* Score Bars */}
       <div className="space-y-2.5">

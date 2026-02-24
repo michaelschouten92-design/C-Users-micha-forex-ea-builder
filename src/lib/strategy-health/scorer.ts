@@ -11,7 +11,10 @@ import type {
   HealthResult,
   HealthStatusType,
   MetricScore,
+  ConfidenceInterval,
+  DriftInfo,
 } from "./types";
+import { computeCusum } from "./drift-detector";
 import {
   THRESHOLDS,
   MIN_TRADES_FOR_ASSESSMENT,
@@ -128,20 +131,83 @@ function scoreMetricAbsolute(liveValue: number, thresholdKey: string): number {
   }
 }
 
+/** Hysteresis margin to prevent status flapping near thresholds */
+const HYSTERESIS_MARGIN = 0.05;
+
 /**
- * Determine health status from overall score.
+ * Determine health status from overall score with hysteresis.
+ *
+ * To transition DOWN (degrade), score must drop below threshold - margin.
+ * To transition UP (improve), score must rise above threshold + margin.
+ * This prevents flapping when score oscillates near a boundary.
  */
-function determineStatus(overallScore: number): HealthStatusType {
-  if (overallScore >= 0.7) return "HEALTHY";
-  if (overallScore >= 0.4) return "WARNING";
+function determineStatus(
+  overallScore: number,
+  previousStatus?: HealthStatusType
+): HealthStatusType {
+  // Without previous status, use simple thresholds
+  if (!previousStatus || previousStatus === "INSUFFICIENT_DATA") {
+    if (overallScore >= 0.7) return "HEALTHY";
+    if (overallScore >= 0.4) return "WARNING";
+    return "DEGRADED";
+  }
+
+  // Apply hysteresis based on current status
+  if (previousStatus === "HEALTHY") {
+    // Must drop below 0.7 - margin to degrade to WARNING
+    if (overallScore < 0.7 - HYSTERESIS_MARGIN) {
+      return overallScore >= 0.4 - HYSTERESIS_MARGIN ? "WARNING" : "DEGRADED";
+    }
+    return "HEALTHY";
+  }
+
+  if (previousStatus === "WARNING") {
+    // Must rise above 0.7 + margin to improve to HEALTHY
+    if (overallScore >= 0.7 + HYSTERESIS_MARGIN) return "HEALTHY";
+    // Must drop below 0.4 - margin to degrade to DEGRADED
+    if (overallScore < 0.4 - HYSTERESIS_MARGIN) return "DEGRADED";
+    return "WARNING";
+  }
+
+  // previousStatus === "DEGRADED"
+  // Must rise above 0.4 + margin to improve to WARNING
+  if (overallScore >= 0.4 + HYSTERESIS_MARGIN) {
+    return overallScore >= 0.7 + HYSTERESIS_MARGIN ? "HEALTHY" : "WARNING";
+  }
   return "DEGRADED";
+}
+
+/**
+ * Compute confidence interval on the overall score based on trade count.
+ *
+ * Margin = BASE_MARGIN * sqrt(REFERENCE_TRADES / N)
+ *   N=10:  ±0.316 (very wide)
+ *   N=30:  ±0.183
+ *   N=100: ±0.10  (base margin)
+ *   N=500: ±0.045
+ */
+function computeConfidenceInterval(overallScore: number, totalTrades: number): ConfidenceInterval {
+  const BASE_MARGIN = 0.1;
+  const margin = BASE_MARGIN * Math.sqrt(REFERENCE_TRADES / Math.max(totalTrades, 1));
+  return {
+    lower: Math.max(0, overallScore - margin),
+    upper: Math.min(1, overallScore + margin),
+  };
 }
 
 /**
  * Compute health assessment from live and baseline metrics.
  * Pure function — no side effects, no DB calls.
+ *
+ * @param previousStatus - Previous health status for hysteresis (prevents flapping)
  */
-export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | null): HealthResult {
+export function computeHealth(
+  live: LiveMetrics,
+  baseline: BaselineMetrics | null,
+  previousStatus?: HealthStatusType
+): HealthResult {
+  const noDrift: DriftInfo = { cusumValue: 0, driftDetected: false, driftSeverity: 0 };
+
   // Check for insufficient data
   if (live.totalTrades < MIN_TRADES_FOR_ASSESSMENT || live.windowDays < MIN_DAYS_FOR_ASSESSMENT) {
     const emptyMetric = (name: string, weight: number, liveValue: number): MetricScore => ({
@@ -155,6 +221,8 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
     return {
       status: "INSUFFICIENT_DATA",
       overallScore: 0,
+      confidenceInterval: { lower: 0, upper: 0 },
+      drift: noDrift,
       metrics: {
         return: emptyMetric("return", 0.25, live.returnPct),
         volatility: emptyMetric("volatility", 0.15, live.volatility),
@@ -203,11 +271,32 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
     winRateScore * THRESHOLDS.winRate.weight +
     tradeFrequencyScore * THRESHOLDS.tradeFrequency.weight;
 
-  const status = determineStatus(overallScore);
+  const status = determineStatus(overallScore, previousStatus);
+  const confidenceInterval = computeConfidenceInterval(overallScore, N);
+
+  // CUSUM drift detection: compare live expectancy against baseline
+  let drift: DriftInfo = noDrift;
+  if (hasBaseline && live.tradeReturns.length >= 5) {
+    const expectedMean = baseline.returnPct / Math.max(live.totalTrades, 1);
+    // Estimate std dev from the trade returns
+    const mean = live.tradeReturns.reduce((a, b) => a + b, 0) / live.tradeReturns.length;
+    const variance =
+      live.tradeReturns.reduce((s, r) => s + (r - mean) ** 2, 0) / (live.tradeReturns.length - 1);
+    const stdDev = Math.sqrt(variance);
+
+    const cusum = computeCusum(live.tradeReturns, expectedMean, stdDev);
+    drift = {
+      cusumValue: cusum.cusumValue,
+      driftDetected: cusum.driftDetected,
+      driftSeverity: cusum.driftSeverity,
+    };
+  }
 
   return {
     status,
     overallScore,
+    confidenceInterval,
+    drift,
     metrics: {
       return: {
         name: "return",
