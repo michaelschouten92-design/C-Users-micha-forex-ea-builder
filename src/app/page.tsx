@@ -9,14 +9,14 @@ import { CTASection } from "@/components/marketing/cta-section";
 import { LifecycleDemo } from "@/components/marketing/lifecycle-demo";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio — Build, Validate & Monitor MT5 Trading Strategies",
+  title: "AlgoStudio — Strategy Intelligence for Algorithmic Traders",
   description:
-    "Build no-code MT5 Expert Advisors, validate with Monte Carlo simulation, prove performance with verified track records, and monitor live edge degradation. Start free.",
+    "Evaluate, verify, and monitor MT5 trading strategies. Health scoring, Monte Carlo simulation, verified track records, and edge degradation detection. Start free.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "AlgoStudio — Build & Validate MT5 Trading Strategies",
+    title: "AlgoStudio — Know Where Your Strategy Stands",
     description:
-      "Build no-code MT5 Expert Advisors, validate with Monte Carlo simulation, prove performance with verified track records, and monitor live edge degradation. Start free.",
+      "Evaluate, verify, and monitor MT5 trading strategies. Health scoring, Monte Carlo simulation, verified track records, and edge degradation detection. Start free.",
   },
 };
 
@@ -32,7 +32,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "Build no-code MT5 Expert Advisors, validate strategies with Monte Carlo simulation, prove performance with verified track records, and monitor live edge degradation.",
+      "Strategy intelligence platform for algorithmic traders. Evaluate, verify, and monitor MT5 trading strategies with health scoring, Monte Carlo simulation, and verified track records.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -118,49 +118,73 @@ export default async function Home() {
           {/* Left column — Copy + CTA */}
           <div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Know if your strategy works{" "}
-              <span className="text-[#A78BFA]">before you go live.</span>
+              Know where your strategy <span className="text-[#A78BFA]">stands.</span>
             </h1>
 
             <p className="text-lg text-[#94A3B8] mb-8 max-w-lg">
-              Build, stress-test, verify, and monitor MT5 strategies. From backtest to proven edge.
+              Upload a backtest or connect a live EA. AlgoStudio evaluates performance, assigns a
+              Strategy Status, and monitors for edge degradation — continuously.
             </p>
 
             {/* Trust badges */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-8 text-sm text-[#CBD5E1]">
-              {["Monte Carlo validated", "Verified track records", "Live health monitoring"].map(
-                (badge) => (
-                  <div key={badge} className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4 text-[#22D3EE] flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {badge}
-                  </div>
-                )
-              )}
+              {[
+                "Verified track records",
+                "Continuous health monitoring",
+                "Cryptographic proof chain",
+              ].map((badge) => (
+                <div key={badge} className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-[#22D3EE] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  {badge}
+                </div>
+              ))}
             </div>
 
-            {/* Single CTA */}
-            <Link
-              href="/login?mode=register&redirect=/app/backtest"
-              className="inline-block w-full sm:w-auto bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)] text-center"
-            >
-              Start Free — Upload a Backtest
-            </Link>
+            {/* Primary CTA */}
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <Link
+                href="/login?mode=register&redirect=/app/backtest"
+                className="inline-block w-full sm:w-auto bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)] text-center"
+              >
+                Get Your Strategy Evaluated — Free
+              </Link>
+              <Link
+                href="/product/how-it-works"
+                className="inline-flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors py-3.5"
+              >
+                See how it works
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Link>
+            </div>
 
             <p className="mt-4 text-xs text-[#64748B]">
-              Free forever to start. No credit card. Your exported EA code is yours.
+              Free forever. No credit card. Your first evaluation in under 2 minutes.
             </p>
           </div>
 
@@ -278,12 +302,11 @@ export default async function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Every strategy has a lifecycle.{" "}
-              <span className="text-[#A78BFA]">We track it for you.</span>
+              Every strategy gets a <span className="text-[#A78BFA]">status.</span>
             </h2>
             <p className="text-[#94A3B8] max-w-2xl mx-auto">
-              From first deployment to proven edge — or retirement. AlgoStudio manages every phase
-              so you always know where your strategy stands.
+              AlgoStudio evaluates your strategy and assigns a status — not a score, a verdict. From
+              first deployment to proven edge, or retirement.
             </p>
           </div>
 
@@ -342,7 +365,7 @@ export default async function Home() {
               href="/login?mode=register&redirect=/app/backtest"
               className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
             >
-              Start Free — Upload a Backtest
+              Get Your Strategy Evaluated — Free
             </Link>
           </div>
 
@@ -457,7 +480,7 @@ export default async function Home() {
       <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white">Built for traders who trust no one.</h2>
+            <h2 className="text-3xl font-bold text-white">Verification you can prove.</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -563,12 +586,11 @@ export default async function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-4">
             <h2 className="text-3xl font-bold text-white mb-3">
-              Start free. Upgrade when your strategy proves itself.
+              Free to evaluate. Pro to verify and monitor.
             </h2>
             <p className="text-sm text-[#94A3B8]">
-              <span className="text-white font-medium">Free</span> — Build &amp; export unlimited
-              EAs. <span className="text-white font-medium">Pro from &euro;39/mo</span> — Full
-              validation &amp; monitoring.
+              Upload backtests and receive Health Scores for free. Unlock Verified Track Records,
+              live monitoring, and edge detection on Pro.
             </p>
           </div>
           <PricingSection showHeader={false} />
@@ -615,9 +637,8 @@ export default async function Home() {
 
       {/* Final CTA */}
       <CTASection
-        title="Your next strategy deserves more than a backtest and a prayer."
-        description="Free forever for strategy building and export. Validation and monitoring available on Pro."
-        ctaText="Start Free — Upload a Backtest"
+        title="Your strategy has a status. Find out what it is."
+        description="Free forever for evaluations. No credit card. Verification and monitoring available on Pro."
       />
 
       <Footer />

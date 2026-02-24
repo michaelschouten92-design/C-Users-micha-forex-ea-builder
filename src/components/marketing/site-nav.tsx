@@ -17,7 +17,7 @@ export function SiteNav() {
             AlgoStudio
           </Link>
           <span className="text-[10px] text-[#64748B] font-medium tracking-wider uppercase border border-[rgba(79,70,229,0.3)] rounded px-1.5 py-0.5 hidden sm:inline">
-            Strategy Platform
+            Strategy Intelligence
           </span>
         </div>
         <div className="hidden md:flex items-center gap-6">
@@ -49,7 +49,7 @@ export function SiteNav() {
             href="/login?mode=register&redirect=/app/backtest"
             className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >
-            Upload Backtest
+            Get Evaluated — Free
           </Link>
         </div>
         <MobileNav />

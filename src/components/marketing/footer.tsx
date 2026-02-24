@@ -151,7 +151,7 @@ export function Footer() {
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-white">AlgoStudio</span>
             <span className="text-xs text-[#64748B]">
-              Build, Validate &amp; Monitor Trading Strategies
+              Strategy Intelligence for Algorithmic Traders
             </span>
           </div>
           <span className="text-sm text-[#64748B]">

@@ -10,7 +10,7 @@ interface CTASectionProps {
 export function CTASection({
   title,
   description,
-  ctaText = "Upload Backtest — Free",
+  ctaText = "Get Your Strategy Evaluated — Free",
   ctaHref = "/login?mode=register&redirect=/app/backtest",
 }: CTASectionProps) {
   return (
