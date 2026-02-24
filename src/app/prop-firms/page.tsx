@@ -7,9 +7,9 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Prop Firm Strategies — Validated EAs for Funded Challenges | AlgoStudio",
+  title: "Prop Firm Strategies — Evaluated & Validated EAs for Funded Challenges | AlgoStudio",
   description:
-    "Build Expert Advisors configured for prop firm challenges. Pre-set daily loss limits, drawdown protection, and risk settings for FTMO, E8 Markets, FundingPips, and more.",
+    "Build and evaluate Expert Advisors configured for prop firm challenges. Health scoring, Monte Carlo validation, daily loss limits, and drawdown protection for FTMO, E8 Markets, FundingPips, and more.",
   alternates: { canonical: "/prop-firms" },
 };
 
@@ -213,19 +213,20 @@ export default function PropFirmsPage() {
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Build EAs That Pass
+              Evaluate Your Strategy for
               <br />
               <span className="text-[#A78BFA]">Prop Firm Challenges</span>
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              Configure your Expert Advisor with the exact risk settings, drawdown limits, and daily
-              loss caps required by top prop firms. Built-in compliance, not afterthought settings.
+              Build and evaluate Expert Advisors with the exact risk settings, drawdown limits, and
+              daily loss caps required by top prop firms. Know your strategy&apos;s status before
+              you fund a challenge.
             </p>
             <Link
-              href="/login?mode=register"
+              href="/login?mode=register&redirect=/app/backtest"
               className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
             >
-              Start Building Your Prop Firm EA
+              Get Your Prop Strategy Evaluated — Free
             </Link>
           </section>
 
@@ -432,9 +433,8 @@ export default function PropFirmsPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Start Building Your Prop Firm EA"
-        description="Configure risk settings for any prop firm in minutes. Free to start, no credit card required."
-        ctaText="Build Your EA Free"
+        title="Evaluate your prop firm strategy"
+        description="Build your EA, upload the backtest, and get an instant health score. Know if your strategy can handle the challenge — before you fund it."
       />
 
       <Footer />

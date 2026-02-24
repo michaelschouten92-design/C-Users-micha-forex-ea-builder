@@ -7,14 +7,14 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "EA Builder Templates | 10 Ready-to-Export MT5 Expert Advisors",
+  title: "Strategy Templates | 10 Ready-to-Evaluate MT5 Expert Advisors | AlgoStudio",
   description:
-    "Build your EA from a proven template. Pick a strategy, adjust a few settings, and export a working MT5 Expert Advisor. 10 templates including EMA Crossover, RSI Reversal, Bollinger Bands, MACD, Ichimoku Cloud, and more.",
+    "Start with a proven template, export a working MT5 Expert Advisor, and evaluate it instantly with health scoring and Monte Carlo simulation. 10 templates including EMA Crossover, RSI Reversal, Bollinger Bands, MACD, Ichimoku Cloud, and more.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "EA Builder Templates | 10 Ready-to-Export MT5 Expert Advisors",
+    title: "Strategy Templates | 10 Ready-to-Evaluate MT5 Expert Advisors | AlgoStudio",
     description:
-      "Build your EA from a proven template. Adjust a few settings and export a working MT5 Expert Advisor in minutes. No coding required.",
+      "Start with a proven template, export a working MT5 Expert Advisor, and evaluate it with health scoring and Monte Carlo simulation. No coding required.",
     url: "/templates",
   },
 };
@@ -326,8 +326,8 @@ export default function TemplatesPage() {
       </article>
 
       <CTASection
-        title="Start building your EA today"
-        description="Pick a template, adjust a few settings, and export a working Expert Advisor to MetaTrader 5."
+        title="Pick a template and evaluate your strategy"
+        description="Export a working Expert Advisor, backtest it in MT5, then upload for instant health scoring and Monte Carlo validation. Free to start."
       />
 
       <Footer />

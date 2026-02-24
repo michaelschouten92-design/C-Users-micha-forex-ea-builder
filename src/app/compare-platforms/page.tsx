@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio EA Builder vs Competitors — Platform Comparisons",
+  title: "AlgoStudio vs Competitors — Strategy Intelligence Platform Comparisons",
   description:
-    "Compare AlgoStudio's no-code EA builder with EA Builder, StrategyQuant, FXDreema, and other platforms. Honest feature, pricing, and usability comparisons.",
+    "Compare AlgoStudio's strategy intelligence platform with EA Builder, StrategyQuant, FXDreema, and others. Honest comparisons on building, evaluation, verification, and monitoring.",
   alternates: { canonical: "/compare-platforms" },
 };
 
@@ -66,8 +66,9 @@ export default function ComparePlatformsPage() {
               How AlgoStudio Compares
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
-              There are several ways to build MT5 Expert Advisors. We believe in honest comparisons
-              — every tool has strengths. Here is how AlgoStudio stacks up.
+              There are several ways to build MT5 Expert Advisors. Most stop at building —
+              AlgoStudio adds evaluation, verification, and monitoring. Here is an honest
+              comparison.
             </p>
           </section>
 
@@ -96,6 +97,10 @@ export default function ComparePlatformsPage() {
                     ["Built-in risk mgmt", "Yes", "Basic", "Advanced", "Manual"],
                     ["Free tier", "Yes", "Limited free", "No", "Yes"],
                     ["Built-in backtesting", "Via MT5", "No", "Yes", "No"],
+                    ["Health scoring", "Yes", "No", "No", "No"],
+                    ["Monte Carlo validation", "Yes", "No", "Yes", "No"],
+                    ["Verified track record", "Yes", "No", "No", "No"],
+                    ["Edge degradation alerts", "Yes", "No", "No", "No"],
                     ["Learning curve", "Minimal", "Moderate", "Steep", "Moderate"],
                   ].map(([feature, algo, ea, sq, fx]) => (
                     <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -185,8 +190,8 @@ export default function ComparePlatformsPage() {
       </main>
 
       <CTASection
-        title="Build your first EA and see the difference"
-        description="Pick a template, export a working Expert Advisor in minutes, and validate it with data. No credit card required."
+        title="See the difference for yourself"
+        description="Upload a backtest and get your Strategy Health Score in under 2 minutes. Evaluation, verification, and monitoring — not just building."
       />
 
       <Footer />

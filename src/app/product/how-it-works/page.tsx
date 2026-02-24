@@ -6,9 +6,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumb
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "How It Works — Build an EA & Validate It in 4 Steps | AlgoStudio",
+  title: "How It Works — From Backtest to Proven Edge in 4 Steps | AlgoStudio",
   description:
-    "From trading idea to validated Expert Advisor in 4 steps. Build with the no-code EA builder, test in MT5, verify with immutable track records, and monitor health in production.",
+    "From trading idea to proven edge in 4 steps. Build with the no-code EA builder, evaluate with health scoring, verify with immutable track records, and monitor for edge degradation.",
   alternates: { canonical: "/product/how-it-works" },
 };
 
@@ -131,11 +131,11 @@ export default function HowItWorksPage() {
           {/* Hero */}
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              From trading idea to validated EA in 4 steps
+              From backtest to proven edge in 4 steps
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
               No coding at any step. AlgoStudio guides you from building your Expert Advisor through
-              validation, verification, and live monitoring.
+              evaluation, verification, and continuous monitoring.
             </p>
           </section>
 
@@ -286,9 +286,8 @@ export default function HowItWorksPage() {
       </main>
 
       <CTASection
-        title="Ready to build your first EA?"
-        description="From template to validated Expert Advisor in minutes. Build, verify, and monitor — all free to start."
-        ctaText="Start Building — Free"
+        title="Ready to evaluate your strategy?"
+        description="From backtest to proven edge in minutes. Build, evaluate, verify, and monitor — all free to start."
       />
 
       <Footer />

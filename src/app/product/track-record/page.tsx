@@ -573,8 +573,8 @@ export default function TrackRecordPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Build your EA with built-in proof"
-        description="Every trade cryptographically sealed. Multi-level verification. Risk-adjusted metrics. Shareable proof bundles. Built into every EA you create — start with a free account."
+        title="Start building proof today"
+        description="Every trade cryptographically sealed. Multi-level verification. Risk-adjusted metrics. Shareable proof bundles. Built into every EA — start with a free evaluation."
       />
 
       <Footer />

@@ -4,9 +4,9 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "About — AlgoStudio | Strategy Validation Platform",
+  title: "About — AlgoStudio | Strategy Intelligence Platform",
   description:
-    "AlgoStudio is a strategy validation platform that helps traders know if their strategy actually works. One founder. One mission: replace trading hope with objective evidence.",
+    "AlgoStudio is a strategy intelligence platform that helps traders know where their strategy stands. One founder. One mission: replace trading hope with objective evidence.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About AlgoStudio",
@@ -41,8 +41,8 @@ export default function AboutPage() {
             </p>
 
             <p>
-              That&apos;s why AlgoStudio isn&apos;t just an EA builder. It&apos;s a complete
-              strategy intelligence platform.
+              That&apos;s why AlgoStudio exists. It&apos;s a strategy intelligence platform — not
+              just a builder, but a system for knowing where your strategy stands.
             </p>
 
             <p>
@@ -56,8 +56,8 @@ export default function AboutPage() {
             </p>
 
             <p>
-              The platform is built around a simple pipeline: Build → Verify → Monitor. Each stage
-              builds confidence before you commit more capital. One test tells you nothing. A
+              The platform is built around a simple pipeline: Evaluate → Verify → Monitor. Each
+              stage builds confidence before you commit more capital. One test tells you nothing. A
               thousand Monte Carlo simulations tell you everything.
             </p>
 
@@ -68,12 +68,14 @@ export default function AboutPage() {
             </p>
 
             <div className="border-t border-[rgba(79,70,229,0.1)] pt-6 mt-8">
-              <p className="text-white font-medium">Stop guessing. Start validating.</p>
+              <p className="text-white font-medium">
+                Your strategy has a status. Find out what it is.
+              </p>
               <Link
-                href="/login?mode=register"
+                href="/login?mode=register&redirect=/app/backtest"
                 className="inline-block mt-4 bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
               >
-                Start Validating — Free
+                Get Your Strategy Evaluated — Free
               </Link>
             </div>
           </div>

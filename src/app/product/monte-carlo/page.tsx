@@ -197,8 +197,8 @@ export default function MonteCarloPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Stress-test your strategy"
-        description="Run Monte Carlo simulations on your backtest results. See the full range of outcomes before you risk real capital. Free — no credit card required."
+        title="Know what your strategy can survive"
+        description="Upload your backtest, get a health score, and run 1,000 Monte Carlo simulations. See the full range of outcomes before you risk real capital. Free — no credit card required."
       />
 
       <Footer />

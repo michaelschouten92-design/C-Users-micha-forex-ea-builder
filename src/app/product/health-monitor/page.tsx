@@ -213,8 +213,8 @@ export default function HealthMonitorPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Build your EA, then protect it"
-        description="Detect edge degradation early. 5 metrics continuously compared against your baseline. Build your EA for free and upgrade to Health Monitor when you go live."
+        title="Evaluate your strategy, then protect it"
+        description="Detect edge degradation early. 5 metrics continuously compared against your baseline. Start with a free evaluation and upgrade to Health Monitor when you go live."
       />
 
       <Footer />
