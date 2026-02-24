@@ -13,7 +13,7 @@ import {
 
 const NOW = Date.now();
 
-/** Healthy, online, PROVEN strategy with chain + baseline — should be VERIFIED */
+/** Healthy, online, PROVEN strategy with chain + baseline — should be CONSISTENT */
 function makeInput(overrides: Partial<StatusInput> = {}): StatusInput {
   return {
     eaStatus: "ONLINE",
@@ -46,28 +46,34 @@ describe("resolveStrategyStatus", () => {
   // All 6 states are reachable
   // ------------------------------------------
   describe("all 6 states are reachable", () => {
-    it("returns VERIFIED for PROVEN + HEALTHY + chain + baseline", () => {
-      expect(resolveStrategyStatus(makeInput())).toBe("VERIFIED");
+    it("returns CONSISTENT for PROVEN + HEALTHY + chain + baseline", () => {
+      expect(resolveStrategyStatus(makeInput()).status).toBe("CONSISTENT");
     });
 
     it("returns MONITORING for PROVING + HEALTHY (missing PROVEN)", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" }))).toBe("MONITORING");
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" })).status).toBe(
+        "MONITORING"
+      );
     });
 
     it("returns TESTING for NEW lifecycle phase", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW" }))).toBe("TESTING");
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW" })).status).toBe("TESTING");
     });
 
     it("returns UNSTABLE for WARNING health", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" }))).toBe("UNSTABLE");
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" })).status).toBe("UNSTABLE");
     });
 
     it("returns EDGE_DEGRADED for DEGRADED health", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" }))).toBe("EDGE_DEGRADED");
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" })).status).toBe(
+        "EDGE_DEGRADED"
+      );
     });
 
     it("returns INACTIVE for RETIRED lifecycle", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "RETIRED" }))).toBe("INACTIVE");
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "RETIRED" })).status).toBe(
+        "INACTIVE"
+      );
     });
   });
 
@@ -76,18 +82,20 @@ describe("resolveStrategyStatus", () => {
   // ------------------------------------------
   describe("INACTIVE (priority #1)", () => {
     it("deletedAt is set → INACTIVE", () => {
-      expect(resolveStrategyStatus(makeInput({ deletedAt: new Date() }))).toBe("INACTIVE");
+      expect(resolveStrategyStatus(makeInput({ deletedAt: new Date() })).status).toBe("INACTIVE");
     });
 
     it("RETIRED overrides DEGRADED health", () => {
       expect(
         resolveStrategyStatus(makeInput({ lifecyclePhase: "RETIRED", healthStatus: "DEGRADED" }))
+          .status
       ).toBe("INACTIVE");
     });
 
     it("OFFLINE with last heartbeat > 24h ago → INACTIVE", () => {
       expect(
         resolveStrategyStatus(makeInput({ eaStatus: "OFFLINE", lastHeartbeat: hoursAgo(25) }))
+          .status
       ).toBe("INACTIVE");
     });
 
@@ -95,32 +103,32 @@ describe("resolveStrategyStatus", () => {
       const result = resolveStrategyStatus(
         makeInput({ eaStatus: "OFFLINE", lastHeartbeat: hoursAgo(12) })
       );
-      expect(result).not.toBe("INACTIVE");
+      expect(result.status).not.toBe("INACTIVE");
     });
 
     it("ONLINE with old heartbeat → NOT INACTIVE (only OFFLINE triggers)", () => {
       const result = resolveStrategyStatus(
         makeInput({ eaStatus: "ONLINE", lastHeartbeat: hoursAgo(30) })
       );
-      expect(result).not.toBe("INACTIVE");
+      expect(result.status).not.toBe("INACTIVE");
     });
 
     it("no heartbeat ever, created > 48h ago → INACTIVE", () => {
-      expect(resolveStrategyStatus(makeInput({ lastHeartbeat: null, createdAt: daysAgo(3) }))).toBe(
-        "INACTIVE"
-      );
+      expect(
+        resolveStrategyStatus(makeInput({ lastHeartbeat: null, createdAt: daysAgo(3) })).status
+      ).toBe("INACTIVE");
     });
 
     it("no heartbeat ever, created < 48h ago → NOT INACTIVE", () => {
       const result = resolveStrategyStatus(
         makeInput({ lastHeartbeat: null, createdAt: hoursAgo(24) })
       );
-      expect(result).not.toBe("INACTIVE");
+      expect(result.status).not.toBe("INACTIVE");
     });
 
     it("deleted + HEALTHY → still INACTIVE (delete wins)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ deletedAt: new Date(), healthStatus: "HEALTHY" }))
+        resolveStrategyStatus(makeInput({ deletedAt: new Date(), healthStatus: "HEALTHY" })).status
       ).toBe("INACTIVE");
     });
   });
@@ -130,22 +138,26 @@ describe("resolveStrategyStatus", () => {
   // ------------------------------------------
   describe("EDGE_DEGRADED (priority #2)", () => {
     it("DEGRADED health → EDGE_DEGRADED", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" }))).toBe("EDGE_DEGRADED");
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" })).status).toBe(
+        "EDGE_DEGRADED"
+      );
     });
 
     it("drift detected with HEALTHY health → EDGE_DEGRADED", () => {
-      expect(resolveStrategyStatus(makeInput({ driftDetected: true }))).toBe("EDGE_DEGRADED");
+      expect(resolveStrategyStatus(makeInput({ driftDetected: true })).status).toBe(
+        "EDGE_DEGRADED"
+      );
     });
 
     it("drift detected with WARNING health → EDGE_DEGRADED (drift wins over WARNING)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ driftDetected: true, healthStatus: "WARNING" }))
+        resolveStrategyStatus(makeInput({ driftDetected: true, healthStatus: "WARNING" })).status
       ).toBe("EDGE_DEGRADED");
     });
 
     it("DEGRADED + NEW lifecycle → EDGE_DEGRADED (health severity wins over lifecycle)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED", lifecyclePhase: "NEW" }))
+        resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED", lifecyclePhase: "NEW" })).status
       ).toBe("EDGE_DEGRADED");
     });
   });
@@ -155,17 +167,17 @@ describe("resolveStrategyStatus", () => {
   // ------------------------------------------
   describe("UNSTABLE (priority #3)", () => {
     it("WARNING health → UNSTABLE", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" }))).toBe("UNSTABLE");
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" })).status).toBe("UNSTABLE");
     });
 
     it("WARNING + NEW lifecycle → UNSTABLE (WARNING wins over NEW)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ healthStatus: "WARNING", lifecyclePhase: "NEW" }))
+        resolveStrategyStatus(makeInput({ healthStatus: "WARNING", lifecyclePhase: "NEW" })).status
       ).toBe("UNSTABLE");
     });
 
-    it("WARNING + PROVEN + chain + baseline → UNSTABLE (not VERIFIED)", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" }))).toBe("UNSTABLE");
+    it("WARNING + PROVEN + chain + baseline → UNSTABLE (not CONSISTENT)", () => {
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "WARNING" })).status).toBe("UNSTABLE");
     });
   });
 
@@ -174,20 +186,20 @@ describe("resolveStrategyStatus", () => {
   // ------------------------------------------
   describe("TESTING (priority #4)", () => {
     it("NEW lifecycle phase → TESTING", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW" }))).toBe("TESTING");
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW" })).status).toBe("TESTING");
     });
 
     it("INSUFFICIENT_DATA health → TESTING", () => {
       expect(
         resolveStrategyStatus(
           makeInput({ healthStatus: "INSUFFICIENT_DATA", lifecyclePhase: "PROVING" })
-        )
+        ).status
       ).toBe("TESTING");
     });
 
     it("NEW + HEALTHY health → TESTING (NEW lifecycle wins)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW", healthStatus: "HEALTHY" }))
+        resolveStrategyStatus(makeInput({ lifecyclePhase: "NEW", healthStatus: "HEALTHY" })).status
       ).toBe("TESTING");
     });
 
@@ -195,33 +207,35 @@ describe("resolveStrategyStatus", () => {
       expect(
         resolveStrategyStatus(
           makeInput({ healthStatus: "INSUFFICIENT_DATA", lifecyclePhase: "PROVEN" })
-        )
+        ).status
       ).toBe("TESTING");
     });
   });
 
   // ------------------------------------------
-  // Priority #5: VERIFIED
+  // Priority #5: CONSISTENT
   // ------------------------------------------
-  describe("VERIFIED (priority #5)", () => {
-    it("PROVEN + HEALTHY + chainVerified + hasBaseline → VERIFIED", () => {
-      expect(resolveStrategyStatus(makeInput())).toBe("VERIFIED");
+  describe("CONSISTENT (priority #5)", () => {
+    it("PROVEN + HEALTHY + chainVerified + hasBaseline → CONSISTENT", () => {
+      expect(resolveStrategyStatus(makeInput()).status).toBe("CONSISTENT");
     });
 
-    it("PROVEN + HEALTHY but no chain → MONITORING (not VERIFIED)", () => {
-      expect(resolveStrategyStatus(makeInput({ chainVerified: false }))).toBe("MONITORING");
+    it("PROVEN + HEALTHY but no chain → MONITORING (not CONSISTENT)", () => {
+      expect(resolveStrategyStatus(makeInput({ chainVerified: false })).status).toBe("MONITORING");
     });
 
-    it("PROVEN + HEALTHY but no baseline → MONITORING (not VERIFIED)", () => {
-      expect(resolveStrategyStatus(makeInput({ hasBaseline: false }))).toBe("MONITORING");
+    it("PROVEN + HEALTHY but no baseline → MONITORING (not CONSISTENT)", () => {
+      expect(resolveStrategyStatus(makeInput({ hasBaseline: false })).status).toBe("MONITORING");
     });
 
-    it("PROVING + HEALTHY + chain + baseline → MONITORING (not VERIFIED — requires PROVEN)", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" }))).toBe("MONITORING");
+    it("PROVING + HEALTHY + chain + baseline → MONITORING (not CONSISTENT — requires PROVEN)", () => {
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" })).status).toBe(
+        "MONITORING"
+      );
     });
 
     it("PROVEN + null health + chain + baseline → MONITORING (needs HEALTHY)", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: null }))).toBe("MONITORING");
+      expect(resolveStrategyStatus(makeInput({ healthStatus: null })).status).toBe("MONITORING");
     });
   });
 
@@ -230,18 +244,20 @@ describe("resolveStrategyStatus", () => {
   // ------------------------------------------
   describe("MONITORING (priority #6 — catch-all)", () => {
     it("PROVING + HEALTHY → MONITORING", () => {
-      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" }))).toBe("MONITORING");
-    });
-
-    it("PROVEN + HEALTHY but missing both chain and baseline → MONITORING", () => {
-      expect(resolveStrategyStatus(makeInput({ chainVerified: false, hasBaseline: false }))).toBe(
+      expect(resolveStrategyStatus(makeInput({ lifecyclePhase: "PROVING" })).status).toBe(
         "MONITORING"
       );
     });
 
+    it("PROVEN + HEALTHY but missing both chain and baseline → MONITORING", () => {
+      expect(
+        resolveStrategyStatus(makeInput({ chainVerified: false, hasBaseline: false })).status
+      ).toBe("MONITORING");
+    });
+
     it("null healthStatus + PROVING → MONITORING", () => {
       expect(
-        resolveStrategyStatus(makeInput({ healthStatus: null, lifecyclePhase: "PROVING" }))
+        resolveStrategyStatus(makeInput({ healthStatus: null, lifecyclePhase: "PROVING" })).status
       ).toBe("MONITORING");
     });
   });
@@ -252,35 +268,38 @@ describe("resolveStrategyStatus", () => {
   describe("priority ordering", () => {
     it("INACTIVE beats EDGE_DEGRADED (deleted + DEGRADED → INACTIVE)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ deletedAt: new Date(), healthStatus: "DEGRADED" }))
+        resolveStrategyStatus(makeInput({ deletedAt: new Date(), healthStatus: "DEGRADED" })).status
       ).toBe("INACTIVE");
     });
 
     it("INACTIVE beats UNSTABLE (RETIRED + WARNING → INACTIVE)", () => {
       expect(
         resolveStrategyStatus(makeInput({ lifecyclePhase: "RETIRED", healthStatus: "WARNING" }))
+          .status
       ).toBe("INACTIVE");
     });
 
     it("EDGE_DEGRADED beats UNSTABLE (DEGRADED wins over WARNING path)", () => {
       // DEGRADED is checked before WARNING in priority
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" }))).toBe("EDGE_DEGRADED");
-    });
-
-    it("EDGE_DEGRADED beats TESTING (drift + NEW → EDGE_DEGRADED)", () => {
-      expect(resolveStrategyStatus(makeInput({ driftDetected: true, lifecyclePhase: "NEW" }))).toBe(
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "DEGRADED" })).status).toBe(
         "EDGE_DEGRADED"
       );
     });
 
+    it("EDGE_DEGRADED beats TESTING (drift + NEW → EDGE_DEGRADED)", () => {
+      expect(
+        resolveStrategyStatus(makeInput({ driftDetected: true, lifecyclePhase: "NEW" })).status
+      ).toBe("EDGE_DEGRADED");
+    });
+
     it("UNSTABLE beats TESTING (WARNING + NEW → UNSTABLE)", () => {
       expect(
-        resolveStrategyStatus(makeInput({ healthStatus: "WARNING", lifecyclePhase: "NEW" }))
+        resolveStrategyStatus(makeInput({ healthStatus: "WARNING", lifecyclePhase: "NEW" })).status
       ).toBe("UNSTABLE");
     });
 
-    it("TESTING beats VERIFIED (INSUFFICIENT_DATA + PROVEN + chain + baseline → TESTING)", () => {
-      expect(resolveStrategyStatus(makeInput({ healthStatus: "INSUFFICIENT_DATA" }))).toBe(
+    it("TESTING beats CONSISTENT (INSUFFICIENT_DATA + PROVEN + chain + baseline → TESTING)", () => {
+      expect(resolveStrategyStatus(makeInput({ healthStatus: "INSUFFICIENT_DATA" })).status).toBe(
         "TESTING"
       );
     });
@@ -293,14 +312,14 @@ describe("resolveStrategyStatus", () => {
     it("ERROR ea status with no other issues → falls through to health-based resolution", () => {
       const result = resolveStrategyStatus(makeInput({ eaStatus: "ERROR" }));
       // ERROR ea status doesn't directly map to INACTIVE (only OFFLINE 24h+ does)
-      expect(result).toBe("VERIFIED");
+      expect(result.status).toBe("CONSISTENT");
     });
 
     it("OFFLINE but recent heartbeat → not INACTIVE", () => {
       const result = resolveStrategyStatus(
         makeInput({ eaStatus: "OFFLINE", lastHeartbeat: hoursAgo(2) })
       );
-      expect(result).toBe("VERIFIED");
+      expect(result.status).toBe("CONSISTENT");
     });
 
     it("OFFLINE just under 24h boundary → not INACTIVE", () => {
@@ -308,7 +327,7 @@ describe("resolveStrategyStatus", () => {
       const result = resolveStrategyStatus(
         makeInput({ eaStatus: "OFFLINE", lastHeartbeat: hoursAgo(23.98) })
       );
-      expect(result).not.toBe("INACTIVE");
+      expect(result.status).not.toBe("INACTIVE");
     });
 
     it("no heartbeat, created just under 48h boundary → not INACTIVE", () => {
@@ -316,7 +335,7 @@ describe("resolveStrategyStatus", () => {
       const result = resolveStrategyStatus(
         makeInput({ lastHeartbeat: null, createdAt: hoursAgo(47.98) })
       );
-      expect(result).not.toBe("INACTIVE");
+      expect(result.status).not.toBe("INACTIVE");
     });
   });
 });
@@ -421,10 +440,10 @@ describe("resolveStatusConfidence", () => {
 // ============================================
 
 describe("getStatusExplanation", () => {
-  it("returns explanation for VERIFIED", () => {
-    const msg = getStatusExplanation("VERIFIED", {});
-    expect(msg).toContain("Proven");
-    expect(msg).toContain("verified chain");
+  it("returns explanation for CONSISTENT", () => {
+    const msg = getStatusExplanation("CONSISTENT", {});
+    expect(msg).toContain("consistently matches");
+    expect(msg).toContain("baseline");
   });
 
   it("returns explanation for MONITORING", () => {

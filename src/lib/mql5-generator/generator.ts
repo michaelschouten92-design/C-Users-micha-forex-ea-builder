@@ -158,6 +158,301 @@ function buildStrategyOverlayArray(nodes: BuilderNode[], ctx: GeneratorContext):
   return `const string g_strategyInfo[] = {${escaped.join(", ")}};`;
 }
 
+/**
+ * Decompose entry strategy nodes into virtual indicator + buy/sell nodes.
+ * Entry strategy nodes (ema-crossover-entry, trend-pullback-entry, divergence-entry)
+ * are composite nodes that must be split into the component parts the generator expects.
+ */
+function decomposeEntryStrategyNodes(
+  nodes: BuilderNode[],
+  edges: BuilderEdge[]
+): { nodes: BuilderNode[]; edges: BuilderEdge[] } | null {
+  const entryStrategyTypes = new Set([
+    "ema-crossover-entry",
+    "trend-pullback-entry",
+    "divergence-entry",
+    "macd-crossover-entry",
+    "rsi-reversal-entry",
+  ]);
+
+  const hasEntryStrategy = nodes.some((n) => entryStrategyTypes.has(n.type as string));
+  if (!hasEntryStrategy) return null;
+
+  const newNodes: BuilderNode[] = [];
+  const newEdges: BuilderEdge[] = [...edges];
+
+  for (const node of nodes) {
+    if (!entryStrategyTypes.has(node.type as string)) {
+      newNodes.push(node);
+      continue;
+    }
+
+    const d = node.data as Record<string, unknown>;
+    const esId = node.id;
+    const direction = (d.direction as string) || "BOTH";
+    const appliedPrice = (d.appliedPrice as string) || "CLOSE";
+    const timeframe = (d.timeframe as string) || "H1";
+    const entryType = d.entryType as string;
+
+    // Create virtual indicator nodes based on entry type
+    if (entryType === "ema-crossover") {
+      // Fast EMA
+      newNodes.push({
+        id: `${esId}_fast`,
+        type: "moving-average",
+        position: { x: 0, y: 0 },
+        data: {
+          label: "Fast EMA",
+          indicatorType: "moving-average",
+          period: d.fastEma ?? 50,
+          method: "EMA",
+          shift: 0,
+          appliedPrice,
+          timeframe,
+          _entryStrategyType: "ema-crossover",
+          _entryStrategyId: esId,
+          _role: "fast",
+          _minEmaSeparation: d.minEmaSeparation ?? 0,
+        },
+      } as unknown as BuilderNode);
+
+      // Slow EMA
+      newNodes.push({
+        id: `${esId}_slow`,
+        type: "moving-average",
+        position: { x: 0, y: 0 },
+        data: {
+          label: "Slow EMA",
+          indicatorType: "moving-average",
+          period: d.slowEma ?? 200,
+          method: "EMA",
+          shift: 0,
+          appliedPrice,
+          timeframe,
+          _entryStrategyType: "ema-crossover",
+          _entryStrategyId: esId,
+          _role: "slow",
+        },
+      } as unknown as BuilderNode);
+
+      // Optional HTF trend filter
+      if (d.htfTrendFilter) {
+        newNodes.push({
+          id: `${esId}_htf`,
+          type: "moving-average",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "HTF Trend EMA",
+            indicatorType: "moving-average",
+            period: d.htfEma ?? 200,
+            method: "EMA",
+            shift: 0,
+            appliedPrice,
+            timeframe: d.htfTimeframe ?? "H4",
+            _filterRole: "htf-trend",
+          },
+        } as unknown as BuilderNode);
+      }
+
+      // Optional RSI confirmation
+      if (d.rsiConfirmation) {
+        newNodes.push({
+          id: `${esId}_rsi`,
+          type: "rsi",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI Confirmation",
+            indicatorType: "rsi",
+            period: d.rsiPeriod ?? 14,
+            appliedPrice,
+            timeframe,
+            overboughtLevel: d.rsiLongMax ?? 60,
+            oversoldLevel: d.rsiShortMin ?? 40,
+            _filterRole: "rsi-confirm",
+          },
+        } as unknown as BuilderNode);
+      }
+    } else if (entryType === "trend-pullback") {
+      // Trend EMA (with pullback proximity check)
+      newNodes.push({
+        id: `${esId}_trend`,
+        type: "moving-average",
+        position: { x: 0, y: 0 },
+        data: {
+          label: "Trend EMA",
+          indicatorType: "moving-average",
+          period: d.trendEma ?? 50,
+          method: "EMA",
+          shift: 0,
+          appliedPrice,
+          timeframe,
+          _requireEmaBuffer: d.requireEmaBuffer ?? true,
+          _pullbackMaxDistance: d.pullbackMaxDistance ?? 2.0,
+        },
+      } as unknown as BuilderNode);
+
+      // Pullback RSI
+      newNodes.push({
+        id: `${esId}_rsi`,
+        type: "rsi",
+        position: { x: 0, y: 0 },
+        data: {
+          label: "Pullback RSI",
+          indicatorType: "rsi",
+          period: d.pullbackRsiPeriod ?? 14,
+          appliedPrice,
+          timeframe,
+          oversoldLevel: d.rsiPullbackLevel ?? 30,
+          overboughtLevel: 100 - ((d.rsiPullbackLevel as number) ?? 30),
+          _filterRole: "rsi-confirm",
+        },
+      } as unknown as BuilderNode);
+
+      // Optional ADX filter
+      if (d.useAdxFilter) {
+        newNodes.push({
+          id: `${esId}_adx`,
+          type: "adx",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "ADX Filter",
+            indicatorType: "adx",
+            period: d.adxPeriod ?? 14,
+            timeframe,
+            trendLevel: d.adxThreshold ?? 25,
+            _filterRole: "adx-trend-strength",
+          },
+        } as unknown as BuilderNode);
+      }
+    } else if (entryType === "divergence") {
+      const indicator = (d.indicator as string) || "RSI";
+      if (indicator === "RSI") {
+        newNodes.push({
+          id: `${esId}_rsi`,
+          type: "rsi",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "RSI Divergence",
+            indicatorType: "rsi",
+            period: d.rsiPeriod ?? 14,
+            appliedPrice,
+            timeframe,
+            overboughtLevel: 70,
+            oversoldLevel: 30,
+            _divergenceMode: true,
+            _divergenceLookback: d.lookbackBars ?? 20,
+            _divergenceMinSwing: d.minSwingBars ?? 5,
+            _copyBarsOverride: ((d.lookbackBars as number) ?? 20) + 5,
+          },
+        } as unknown as BuilderNode);
+      } else {
+        // MACD
+        newNodes.push({
+          id: `${esId}_macd`,
+          type: "macd",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "MACD Divergence",
+            indicatorType: "macd",
+            fastPeriod: d.macdFast ?? 12,
+            slowPeriod: d.macdSlow ?? 26,
+            signalPeriod: d.macdSignal ?? 9,
+            appliedPrice,
+            timeframe,
+            _divergenceMode: true,
+            _divergenceLookback: d.lookbackBars ?? 20,
+            _divergenceMinSwing: d.minSwingBars ?? 5,
+            _copyBarsOverride: ((d.lookbackBars as number) ?? 20) + 5,
+          },
+        } as unknown as BuilderNode);
+      }
+    }
+
+    // Create virtual buy/sell nodes based on direction
+    // Map entry strategy SL method names to stop-loss node method names
+    const slMethodMap: Record<string, string> = {
+      PIPS: "FIXED_PIPS",
+      FIXED_PIPS: "FIXED_PIPS",
+      ATR: "ATR_BASED",
+      ATR_BASED: "ATR_BASED",
+      PERCENT: "PERCENT",
+      INDICATOR: "INDICATOR",
+    };
+    const slMethod = slMethodMap[(d.slMethod as string) || "ATR"] || "ATR_BASED";
+    const buyData: Record<string, unknown> = {
+      label: "Buy",
+      category: "trading",
+      tradingType: "place-buy",
+      method: "RISK_PERCENT",
+      fixedLot: 0.1,
+      riskPercent: d.riskPercent ?? 1,
+      minLot: 0.01,
+      maxLot: 100,
+      slMethod,
+      slFixedPips: d.slFixedPips ?? 50,
+      slPercent: d.slPercent ?? 1,
+      slAtrMultiplier: d.slAtrMultiplier ?? 1.5,
+      slAtrPeriod: 14,
+      tpMethod: "RISK_REWARD",
+      tpRiskRewardRatio: d.tpRMultiple ?? 2,
+      tpFixedPips: 100,
+      tpAtrMultiplier: 2,
+      tpAtrPeriod: 14,
+    };
+
+    if (direction === "BOTH" || direction === "BUY") {
+      newNodes.push({
+        id: `${esId}_buy`,
+        type: "place-buy",
+        position: { x: 0, y: 0 },
+        data: { ...buyData },
+      } as BuilderNode);
+    }
+    if (direction === "BOTH" || direction === "SELL") {
+      newNodes.push({
+        id: `${esId}_sell`,
+        type: "place-sell",
+        position: { x: 0, y: 0 },
+        data: { ...buyData, label: "Sell", tradingType: "place-sell" },
+      } as BuilderNode);
+    }
+
+    // Collect IDs of all virtual nodes created for this entry strategy
+    const virtualIds: string[] = [];
+    if (entryType === "ema-crossover") {
+      virtualIds.push(`${esId}_fast`, `${esId}_slow`);
+      if (d.htfTrendFilter) virtualIds.push(`${esId}_htf`);
+      if (d.rsiConfirmation) virtualIds.push(`${esId}_rsi`);
+    } else if (entryType === "trend-pullback") {
+      virtualIds.push(`${esId}_trend`, `${esId}_rsi`);
+      if (d.useAdxFilter) virtualIds.push(`${esId}_adx`);
+    } else if (entryType === "divergence") {
+      virtualIds.push(d.indicator === "MACD" ? `${esId}_macd` : `${esId}_rsi`);
+    }
+    if (direction === "BOTH" || direction === "BUY") virtualIds.push(`${esId}_buy`);
+    if (direction === "BOTH" || direction === "SELL") virtualIds.push(`${esId}_sell`);
+
+    // Re-wire edges: replace entry strategy node references with first virtual indicator
+    const firstVirtualId = virtualIds[0];
+    for (let i = 0; i < newEdges.length; i++) {
+      if (newEdges[i].target === esId) {
+        newEdges[i] = { ...newEdges[i], target: firstVirtualId };
+      }
+    }
+
+    // Chain virtual nodes together so connectivity check can reach them all
+    for (let i = 1; i < virtualIds.length; i++) {
+      newEdges.push({
+        id: `${esId}_ve${i}`,
+        source: virtualIds[i - 1],
+        target: virtualIds[i],
+      } as BuilderEdge);
+    }
+  }
+
+  return { nodes: newNodes, edges: newEdges };
+}
+
 export function generateMQL5Code(
   buildJson: BuildJsonSchema,
   projectName: string,
@@ -246,6 +541,12 @@ export function generateMQL5Code(
     helperFunctions: [],
     maxIndicatorPeriod: 0,
   };
+
+  // Decompose entry strategy nodes into virtual indicator + buy/sell nodes
+  const decomposed = decomposeEntryStrategyNodes(buildJson.nodes, buildJson.edges);
+  if (decomposed) {
+    buildJson = { ...buildJson, nodes: decomposed.nodes, edges: decomposed.edges };
+  }
 
   // Get all nodes that are connected to the strategy (starting from timing nodes)
   const connectedNodeIds = getConnectedNodeIds(buildJson.nodes, buildJson.edges, [

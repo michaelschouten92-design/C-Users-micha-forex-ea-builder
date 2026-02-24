@@ -89,6 +89,7 @@ const nodeCategorySchema = z.enum([
   "indicator",
   "priceaction",
   "entry",
+  "entrystrategy",
   "trading",
   "riskmanagement",
   "trademanagement",
@@ -534,6 +535,78 @@ const builderNodeDataSchema = z
         if (!result.success) {
           for (const issue of (result as { success: false; error: z.ZodError }).error.issues) {
             ctx.addIssue(issue);
+          }
+        }
+      }
+    }
+
+    // Entry strategy nodes get cross-field validation
+    if (data.category === "entrystrategy" && "entryType" in data) {
+      const d = data as Record<string, unknown>;
+      const entryType = d.entryType as string;
+
+      if (
+        entryType === "ema-crossover" &&
+        typeof d.fastEma === "number" &&
+        typeof d.slowEma === "number"
+      ) {
+        if (d.fastEma >= d.slowEma) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "fastEma must be less than slowEma",
+          });
+        }
+      }
+
+      if (
+        entryType === "macd-crossover" &&
+        typeof d.macdFast === "number" &&
+        typeof d.macdSlow === "number"
+      ) {
+        if (d.macdFast >= d.macdSlow) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "macdFast must be less than macdSlow",
+          });
+        }
+      }
+
+      if (
+        entryType === "rsi-reversal" &&
+        typeof d.overboughtLevel === "number" &&
+        typeof d.oversoldLevel === "number"
+      ) {
+        if (d.overboughtLevel <= d.oversoldLevel) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "overboughtLevel must be greater than oversoldLevel",
+          });
+        }
+      }
+
+      if (entryType === "trend-pullback" && typeof d.rsiPullbackLevel === "number") {
+        if (d.rsiPullbackLevel < 10) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "rsiPullbackLevel must be at least 10",
+          });
+        }
+      }
+
+      if (entryType === "divergence") {
+        if (typeof d.lookbackBars === "number" && d.lookbackBars < 5) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "lookbackBars must be at least 5" });
+        }
+        if (
+          d.indicator === "MACD" &&
+          typeof d.macdFast === "number" &&
+          typeof d.macdSlow === "number"
+        ) {
+          if (d.macdFast >= d.macdSlow) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "macdFast must be less than macdSlow",
+            });
           }
         }
       }

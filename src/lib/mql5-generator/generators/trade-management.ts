@@ -136,7 +136,7 @@ function generateBreakevenStopCode(
   data: BreakevenStopNodeData,
   code: GeneratedCode
 ): void {
-  const group = "Breakeven Stop";
+  const group = "Breakeven Stop Management";
   // Deduplicate when multiple breakeven nodes exist
   const existingBE = code.inputs.filter((i) => i.name.startsWith("InpBELockPips"));
   const beSuffix = existingBE.length > 0 ? `${existingBE.length + 1}` : "";
@@ -296,7 +296,7 @@ function generateTrailingStopCode(
   data: TrailingStopNodeData,
   code: GeneratedCode
 ): void {
-  const group = "Trailing Stop";
+  const group = "Trailing Stop Management";
   // Deduplicate when multiple trailing stop nodes exist
   const existingTrail = code.inputs.filter((i) => i.name.startsWith("InpTrailStartPips"));
   const tsSuffix = existingTrail.length > 0 ? `${existingTrail.length + 1}` : "";
@@ -460,7 +460,7 @@ function generatePartialCloseCode(
   data: PartialCloseNodeData,
   code: GeneratedCode
 ): void {
-  const group = "Partial Close";
+  const group = "Partial Close Management";
   // Deduplicate input name when multiple partial-close nodes exist
   const existingPartialInputs = code.inputs.filter((i) =>
     i.name.startsWith("InpPartialClosePercent")
@@ -660,7 +660,7 @@ function generateLockProfitCode(
   data: LockProfitNodeData,
   code: GeneratedCode
 ): void {
-  const group = "Lock Profit";
+  const group = "Lock Profit Management";
   // Deduplicate when multiple lock-profit nodes exist
   const existingLock = code.inputs.filter((i) => i.name.startsWith("InpLockCheckInterval"));
   const lpSuffix = existingLock.length > 0 ? `${existingLock.length + 1}` : "";
@@ -777,7 +777,7 @@ function generateMultiLevelTPCode(
   data: MultiLevelTPNodeData,
   code: GeneratedCode
 ): void {
-  const group = "Multi-Level TP";
+  const group = "Multi-Level TP Management";
 
   // Deduplicate when multiple multi-level TP nodes exist
   const existingMLTP = code.inputs.filter((i) => i.name.startsWith("InpMLTP1Pips"));

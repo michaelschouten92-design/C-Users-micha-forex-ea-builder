@@ -711,6 +711,15 @@ describe("generateMQL5Code", () => {
           minLot: 0.01,
           maxLot: 100,
         }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
@@ -731,6 +740,15 @@ describe("generateMQL5Code", () => {
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
           method: "FIXED_LOT",
           fixedLot: 0.1,
           riskPercent: 2,
@@ -763,6 +781,15 @@ describe("generateMQL5Code", () => {
           minLot: 0.01,
           maxLot: 100,
         }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toMatch(/buyCondition\s*=.*pa0BuySignal/);
@@ -782,6 +809,15 @@ describe("generateMQL5Code", () => {
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
           method: "FIXED_LOT",
           fixedLot: 0.1,
           riskPercent: 2,
@@ -808,6 +844,15 @@ describe("generateMQL5Code", () => {
         makeNode("b1", "place-buy", {
           category: "trading",
           tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
           method: "FIXED_LOT",
           fixedLot: 0.1,
           riskPercent: 2,
@@ -3548,11 +3593,10 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const codeWith = generateMQL5Code(withNews, "Test");
-      expect(codeWith).toContain("NEWS FILTER — SETUP GUIDE");
-      expect(codeWith).toContain("STEP 1");
-      expect(codeWith).toContain("STEP 2");
-      expect(codeWith).toContain("STEP 3");
-      expect(codeWith).toContain("ea_builder_news.csv");
+      expect(codeWith).toContain("NEWS FILTER");
+      expect(codeWith).toContain("LIVE TRADING");
+      expect(codeWith).toContain("BACKTESTING");
+      expect(codeWith).toContain("Calendar API");
 
       const withoutNews = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
@@ -3567,7 +3611,7 @@ describe("generateMQL5Code", () => {
         }),
       ]);
       const codeWithout = generateMQL5Code(withoutNews, "Test");
-      expect(codeWithout).not.toContain("NEWS FILTER — SETUP GUIDE");
+      expect(codeWithout).not.toContain("NEWS FILTER");
     });
 
     it("does not generate close positions loop when closePositions is false", () => {
@@ -4392,10 +4436,11 @@ describe("generateMQL5Code", () => {
       ]);
       const code = generateMQL5Code(build, "Test");
       expect(code).toContain("iCustom");
-      expect(code).toContain("(int)14");
-      expect(code).toContain("(double)1.5");
+      // Type-aware input declarations: int, double, string, bool, color
+      expect(code).toMatch(/int\s+InpCustom\d+P\d+\s*=\s*14/);
+      expect(code).toMatch(/double\s+InpCustom\d+P\d+\s*=\s*1\.5/);
       expect(code).toContain('"hello"');
-      expect(code).toContain("true");
+      expect(code).toMatch(/bool\s+InpCustom\d+P\d+\s*=\s*true/);
       expect(code).toContain("clrRed");
     });
 

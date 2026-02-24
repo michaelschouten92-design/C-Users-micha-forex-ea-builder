@@ -848,7 +848,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
             paramInputNames.push(inputName);
           } else if (paramType === "string") {
             code.inputs.push(
-              createInput(node, `params.${pi}`, inputName, "string", p.value, comment, group)
+              createInput(
+                node,
+                `params.${pi}`,
+                inputName,
+                "string",
+                sanitizeMQL5String(p.value),
+                comment,
+                group
+              )
             );
             paramInputNames.push(inputName);
           } else if (paramType === "color") {
@@ -867,7 +875,15 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
               );
             } else {
               code.inputs.push(
-                createInput(node, `params.${pi}`, inputName, "string", p.value, comment, group)
+                createInput(
+                  node,
+                  `params.${pi}`,
+                  inputName,
+                  "string",
+                  sanitizeMQL5String(p.value),
+                  comment,
+                  group
+                )
               );
             }
             paramInputNames.push(inputName);
