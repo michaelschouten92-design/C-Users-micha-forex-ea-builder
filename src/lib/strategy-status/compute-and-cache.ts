@@ -15,6 +15,7 @@ import {
   type StrategyStatus,
   type StatusInput,
   type StatusConfidence,
+  type StatusResult,
 } from "./resolver";
 
 const log = logger.child({ module: "strategy-status" });
@@ -22,8 +23,8 @@ const log = logger.child({ module: "strategy-status" });
 /** Transitions that are expected progress and should not generate alerts */
 const SILENT_TRANSITIONS = new Set([
   "TESTING→MONITORING",
-  "TESTING→VERIFIED",
-  "MONITORING→VERIFIED",
+  "TESTING→CONSISTENT",
+  "MONITORING→CONSISTENT",
 ]);
 
 export interface ComputeResult {
@@ -106,7 +107,8 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
     chainVerified,
   };
 
-  const newStatus = resolveStrategyStatus(statusInput);
+  const statusResult = resolveStrategyStatus(statusInput);
+  const newStatus = statusResult.status;
 
   // Compute confidence
   const confidence = healthSnapshot
@@ -136,9 +138,12 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
 
     log.info({ instanceId, from: previousStatus, to: newStatus }, "Strategy status changed");
 
-    // Fire alert for meaningful transitions
+    // Flapping detection: suppress alerts if status is flip-flopping
+    const isFlapping = await detectFlapping(instanceId);
+
+    // Fire alert for meaningful transitions (unless flapping)
     const transitionKey = `${previousStatus}→${newStatus}`;
-    if (!SILENT_TRANSITIONS.has(transitionKey)) {
+    if (!SILENT_TRANSITIONS.has(transitionKey) && !isFlapping) {
       triggerAlert({
         userId: instance.userId,
         instanceId,
@@ -167,4 +172,46 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
   }
 
   return { status: newStatus, confidence, changed };
+}
+
+const FLAPPING_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+const FLAPPING_THRESHOLD = 6; // 6+ transitions in window = flapping
+
+/**
+ * Detect status flapping: if the same status pair flips back and forth
+ * 3+ times in 24 hours, suppress alerts to avoid noise.
+ */
+async function detectFlapping(instanceId: string): Promise<boolean> {
+  const cutoff = new Date(Date.now() - FLAPPING_WINDOW_MS);
+  const recentChanges = await prisma.auditLog.findMany({
+    where: {
+      resourceId: instanceId,
+      eventType: "live.strategy_status_change",
+      createdAt: { gte: cutoff },
+    },
+    orderBy: { createdAt: "desc" },
+    take: FLAPPING_THRESHOLD,
+    select: { metadata: true },
+  });
+
+  if (recentChanges.length < FLAPPING_THRESHOLD) return false;
+
+  // Count transition pairs — if A→B and B→A both appear 3+ times, it's flapping
+  const pairCounts = new Map<string, number>();
+  for (const change of recentChanges) {
+    const meta = change.metadata as { from?: string; to?: string } | null;
+    if (meta?.from && meta?.to) {
+      const pair = [meta.from, meta.to].sort().join("↔");
+      pairCounts.set(pair, (pairCounts.get(pair) || 0) + 1);
+    }
+  }
+
+  for (const count of pairCounts.values()) {
+    if (count >= 3) {
+      log.warn({ instanceId }, "Status flapping detected — suppressing alerts");
+      return true;
+    }
+  }
+
+  return false;
 }

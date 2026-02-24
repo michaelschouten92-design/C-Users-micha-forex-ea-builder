@@ -46,7 +46,7 @@ interface LifecycleData {
 const LIFECYCLE_CONFIG = {
   NEW: { color: "#7C8DB0", label: "Collecting Data" },
   PROVING: { color: "#6366F1", label: "Proving" },
-  PROVEN: { color: "#10B981", label: "Proven" },
+  PROVEN: { color: "#10B981", label: "Established" },
   RETIRED: { color: "#EF4444", label: "Edge Expired" },
 } as const;
 

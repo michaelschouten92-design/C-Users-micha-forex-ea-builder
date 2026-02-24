@@ -293,6 +293,14 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
           )}
         </div>
 
+        {/* Risk Disclaimer */}
+        <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-3 mb-6">
+          <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
+            Track record shows historical performance only. Past results do not guarantee future
+            returns. All trading involves risk.
+          </p>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <StatCard label="Total Trades" value={trackRecord?.totalTrades.toString() || "---"} />

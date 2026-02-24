@@ -289,7 +289,7 @@ export default async function DashboardPage() {
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${(() => {
                         const s = ea.strategyStatus;
-                        if (s === "VERIFIED")
+                        if (s === "CONSISTENT")
                           return "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25";
                         if (s === "MONITORING")
                           return "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/25";
@@ -306,7 +306,7 @@ export default async function DashboardPage() {
                         className="w-1.5 h-1.5 rounded-full"
                         style={{
                           backgroundColor:
-                            ea.strategyStatus === "VERIFIED"
+                            ea.strategyStatus === "CONSISTENT"
                               ? "#10B981"
                               : ea.strategyStatus === "MONITORING"
                                 ? "#6366F1"
@@ -319,8 +319,8 @@ export default async function DashboardPage() {
                                       : "#7C8DB0",
                         }}
                       />
-                      {ea.strategyStatus === "VERIFIED"
-                        ? "Verified"
+                      {ea.strategyStatus === "CONSISTENT"
+                        ? "Consistent"
                         : ea.strategyStatus === "MONITORING"
                           ? "Monitoring"
                           : ea.strategyStatus === "TESTING"

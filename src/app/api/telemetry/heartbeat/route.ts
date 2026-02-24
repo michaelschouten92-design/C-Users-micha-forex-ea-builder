@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ module: "heartbeat" });
 import {
   checkDrawdownAlerts,
   checkOfflineAlerts,
@@ -100,13 +103,17 @@ export async function POST(request: NextRequest) {
     // Fire-and-forget side effects: webhook and EAAlertConfig-based alerts
     if (previousState) {
       processHeartbeatSideEffects(auth.instanceId, auth.userId, data, previousState).catch(
-        () => {}
+        (err) => {
+          log.error({ err, instanceId: auth.instanceId }, "Heartbeat side effects failed");
+        }
       );
 
       // Recompute strategy status when EA comes online from offline/error
       const statusChanged = previousState.status !== "ONLINE";
       if (statusChanged) {
-        computeAndCacheStatus(auth.instanceId).catch(() => {});
+        computeAndCacheStatus(auth.instanceId).catch((err) => {
+          log.error({ err, instanceId: auth.instanceId }, "Strategy status recomputation failed");
+        });
       }
     }
 
@@ -149,7 +156,9 @@ async function processHeartbeatSideEffects(
         profit: data.totalProfit,
         status: "ONLINE",
       },
-    }).catch(() => {});
+    }).catch((err) => {
+      log.error({ err, instanceId }, "Heartbeat webhook failed");
+    });
   }
 
   // Email alert: EA was ONLINE but last heartbeat was more than 1 hour ago (unexpected disconnect)
@@ -160,24 +169,36 @@ async function processHeartbeatSideEffects(
         prev.user.email,
         prev.eaName,
         `Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.`
-      ).catch(() => {});
+      ).catch((err) => {
+        log.error({ err, instanceId }, "Offline recovery email failed");
+      });
 
       // Trigger user-configured offline alerts (EAAlertConfig system)
       checkOfflineAlerts(userId, instanceId, prev.eaName, Math.round(elapsed / 60000)).catch(
-        () => {}
+        (err) => {
+          log.error({ err, instanceId }, "Offline alert check failed");
+        }
       );
     }
   }
 
   // Check user-configured drawdown alerts (EAAlertConfig system)
   if (data.drawdown > 0) {
-    checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch(() => {});
+    checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch((err) => {
+      log.error({ err, instanceId }, "Drawdown alert check failed");
+    });
   }
 
   // Check daily/weekly loss alerts and equity target alerts
-  checkDailyLossAlerts(userId, instanceId, prev.eaName).catch(() => {});
-  checkWeeklyLossAlerts(userId, instanceId, prev.eaName).catch(() => {});
+  checkDailyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
+    log.error({ err, instanceId }, "Daily loss alert check failed");
+  });
+  checkWeeklyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
+    log.error({ err, instanceId }, "Weekly loss alert check failed");
+  });
   if (data.equity > 0) {
-    checkEquityTargetAlerts(userId, instanceId, prev.eaName, data.equity).catch(() => {});
+    checkEquityTargetAlerts(userId, instanceId, prev.eaName, data.equity).catch((err) => {
+      log.error({ err, instanceId }, "Equity target alert check failed");
+    });
   }
 }

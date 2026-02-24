@@ -77,6 +77,7 @@ int    g_queueCount = 0;
 bool   g_initialized = false;
 string g_stateFile   = "";
 string g_lockGV      = "";
+bool   g_processingTrade = false;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -223,6 +224,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeResult& result)
 {
    if(!g_initialized) return;
+   g_processingTrade = true;
 
    // We care about deal additions
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD)
@@ -253,10 +255,18 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          SendTradeClose(dealTicket);
          BuildKnownPositions();
       }
+      else if(entry == DEAL_ENTRY_INOUT)
+      {
+         // Partial fill via close-and-reopen (netting mode or partial close)
+         SendTradeClose(dealTicket);
+         BuildKnownPositions();
+      }
 
       // Mark deal as known
       AddKnownDeal((int)dealTicket);
    }
+
+   g_processingTrade = false;
 }
 
 //+------------------------------------------------------------------+
@@ -409,6 +419,7 @@ void AddKnownDeal(int ticket)
 //+------------------------------------------------------------------+
 void PollTradeChanges()
 {
+   if(g_processingTrade) return; // Skip if OnTradeTransaction is active
    HistorySelect(0, TimeCurrent());
    int total = HistoryDealsTotal();
 
@@ -432,7 +443,7 @@ void PollTradeChanges()
 
       if(entry == DEAL_ENTRY_IN)
          SendTradeOpen(ticket);
-      else if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY)
+      else if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY || entry == DEAL_ENTRY_INOUT)
          SendTradeClose(ticket);
 
       AddKnownDeal((int)ticket);
@@ -611,19 +622,22 @@ void SendSessionStart()
 
    string symbol = (InpMonitorMode == MODE_SYMBOL_ONLY) ? _Symbol : "MULTI";
    string tf = EnumToString((ENUM_TIMEFRAMES)Period());
+   string accountMode = (ENUM_ACCOUNT_MARGIN_MODE)AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING ? "HEDGING" : "NETTING";
 
    string payloadPairs[];
-   ArrayResize(payloadPairs, 7);
+   ArrayResize(payloadPairs, 8);
    payloadPairs[0] = JStr("account", account);
-   payloadPairs[1] = JMoney("balance", bal);
-   payloadPairs[2] = JStr("broker", broker);
-   payloadPairs[3] = JStr("eaVersion", "Monitor-1.0");
-   payloadPairs[4] = JStr("mode", mode);
-   payloadPairs[5] = JStr("symbol", symbol);
-   payloadPairs[6] = JStr("timeframe", tf);
+   payloadPairs[1] = JStr("accountMode", accountMode);
+   payloadPairs[2] = JMoney("balance", bal);
+   payloadPairs[3] = JStr("broker", broker);
+   payloadPairs[4] = JStr("eaVersion", "Monitor-1.0");
+   payloadPairs[5] = JStr("mode", mode);
+   payloadPairs[6] = JStr("symbol", symbol);
+   payloadPairs[7] = JStr("timeframe", tf);
 
    string payloadJson = "{"
       + JStr("account", account) + ","
+      + JStr("accountMode", accountMode) + ","
       + JMoney("balance", bal) + ","
       + JStr("broker", broker) + ","
       + JStr("eaVersion", "Monitor-1.0") + ","
@@ -889,7 +903,7 @@ bool HttpPost(string endpoint, string jsonBody)
       }
 
       ResetLastError();
-      int res = WebRequest("POST", url, headers, 10000, postData, resultData, resultHeaders);
+      int res = WebRequest("POST", url, headers, 3000, postData, resultData, resultHeaders);
 
       if(res == -1)
       {
@@ -955,7 +969,7 @@ void SyncChainState()
    string resultHeaders;
 
    ResetLastError();
-   int res = WebRequest("GET", url, headers, 10000, postData, resultData, resultHeaders);
+   int res = WebRequest("GET", url, headers, 3000, postData, resultData, resultHeaders);
 
    if(res < 200 || res >= 300) return;
 

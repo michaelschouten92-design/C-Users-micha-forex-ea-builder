@@ -117,7 +117,7 @@ export function EmbedWidget({ token }: { token: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
         <span style={{ fontSize: 11, color: "#10B981", fontWeight: 600 }}>
-          Verified by AlgoStudio
+          Tracked by AlgoStudio
         </span>
       </div>
 

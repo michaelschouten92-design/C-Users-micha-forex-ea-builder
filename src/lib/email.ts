@@ -21,9 +21,19 @@ async function sendWithRetry(
   if (!resend) return { error: new Error("Email service not configured") };
   let lastError: unknown = null;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const { error } = await resend!.emails.send(params);
-    if (!error) return { error: null };
+    const { data, error } = await resend!.emails.send(params);
+    if (!error) {
+      log.info(
+        { to: params.to, subject: params.subject, messageId: data?.id },
+        "Email sent successfully"
+      );
+      return { error: null };
+    }
     lastError = error;
+    log.warn(
+      { to: params.to, subject: params.subject, attempt, error: String(error) },
+      "Email send attempt failed"
+    );
     // Only retry on server/network errors (5xx or timeout-like), not 4xx
     const statusCode = (error as { statusCode?: number }).statusCode;
     if (statusCode && statusCode >= 400 && statusCode < 500) break;
@@ -31,6 +41,10 @@ async function sendWithRetry(
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
     }
   }
+  log.error(
+    { to: params.to, subject: params.subject, error: String(lastError) },
+    "Email delivery failed after all retries"
+  );
   return { error: lastError };
 }
 

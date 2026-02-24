@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   const { instanceId } = auth;
 
   // Per-instance rate limiting (100 events/minute)
-  const rateLimitError = checkRateLimit(instanceId);
+  const rateLimitError = await checkRateLimit(instanceId);
   if (rateLimitError) {
     return NextResponse.json({ error: rateLimitError }, { status: 429 });
   }
@@ -79,11 +79,11 @@ export async function POST(request: NextRequest) {
   // Prevents backdating attacks while allowing reasonable offline buffering.
   const nowSec = Math.floor(Date.now() / 1000);
   const MAX_AGE_SEC = 30 * 24 * 60 * 60; // 30 days
-  const MAX_CLOCK_SKEW_SEC = 60;
+  const MAX_CLOCK_SKEW_SEC = 15;
 
   if (timestamp > nowSec + MAX_CLOCK_SKEW_SEC) {
     return NextResponse.json(
-      { error: "Timestamp is in the future (max clock skew: 60s)" },
+      { error: "Timestamp is in the future (max clock skew: 15s)" },
       { status: 400 }
     );
   }
@@ -212,7 +212,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Process event to compute new state
-        processEvent(state, eventType as TrackRecordEventType, eventHash, seqNo, payload);
+        processEvent(
+          state,
+          eventType as TrackRecordEventType,
+          eventHash,
+          seqNo,
+          payload,
+          timestamp
+        );
         const stateUpdate = stateToDbUpdate(state);
 
         // Build checkpoint if needed

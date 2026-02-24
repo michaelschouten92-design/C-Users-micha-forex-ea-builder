@@ -35,12 +35,15 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
     "double   g_trKnownSL[];",
     "double   g_trKnownTP[];",
     "double   g_trKnownLots[];",
+    "// Guard against OnTimer/OnTradeTransaction race condition",
+    "bool     g_trProcessingTrade = false;",
     "// Write-ahead log for crash resilience",
     'string   g_trWALFile = "";'
   );
 
   // --- OnInit ---
   code.onInit.push(
+    'if(SymbolInfoInteger(_Symbol, SYMBOL_TRADE_MODE) == SYMBOL_TRADE_MODE_DISABLED) { Print("TrackRecord: Symbol trading disabled for ", _Symbol); return INIT_FAILED; }',
     "g_trEnabled = (StringLen(InpTelemetryKey) > 0 && !MQLInfoInteger(MQL_TESTER));",
     'if(g_trEnabled) { g_trWALFile = "AlgoStudio_WAL_" + IntegerToString(InpMagicNumber) + ".log"; TrackRecordLoadState(); TrackRecordReplayWAL(); TrackRecordSendSessionStart(); }'
   );
@@ -338,12 +341,11 @@ void TrackRecordReplayWAL()
       g_trSeqNo = walSeqNo;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
       Print("TrackRecord: WAL replay successful.");
    }
    else
       Print("TrackRecord: WAL replay failed. Will retry on next start.");
-
-   TrackRecordWALClear();
 }`;
 }
 
@@ -353,6 +355,7 @@ function buildEventDetection(): string {
 //+------------------------------------------------------------------+
 void TrackRecordDetectTradeEvents()
 {
+   if(g_trProcessingTrade) return; // Skip if OnTradeTransaction is active
    // Scan current positions
    long currentTickets[];
    double currentSL[];
@@ -464,7 +467,8 @@ void TrackRecordDetectClose(long ticket)
       if(dTicket == 0) continue;
       if(HistoryDealGetInteger(dTicket, DEAL_MAGIC) != InpMagicNumber) continue;
       if((long)HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) != ticket) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+      long dealEntry = HistoryDealGetInteger(dTicket, DEAL_ENTRY);
+      if(dealEntry != DEAL_ENTRY_OUT && dealEntry != DEAL_ENTRY_INOUT) continue;
 
       double profit = HistoryDealGetDouble(dTicket, DEAL_PROFIT);
       double swap = HistoryDealGetDouble(dTicket, DEAL_SWAP);
@@ -496,8 +500,11 @@ void TrackRecordSendSessionStart()
    ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
    string mode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
 
+   string accountMode = (ENUM_ACCOUNT_MARGIN_MODE)AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING ? "HEDGING" : "NETTING";
+
    string payload =
       TRJsonStr("account", IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))) + ShortToString(1) +
+      TRJsonStr("accountMode", accountMode) + ShortToString(1) +
       TRJsonMoney("balance", AccountInfoDouble(ACCOUNT_BALANCE)) + ShortToString(1) +
       TRJsonStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ShortToString(1) +
       TRJsonStr("eaVersion", "1.0") + ShortToString(1) +
@@ -517,6 +524,7 @@ void TrackRecordSendSessionStart()
       + "\\"timestamp\\":" + IntegerToString(ts) + ","
       + "\\"payload\\":{"
       + TRJsonStr("account", IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))) + ","
+      + TRJsonStr("accountMode", accountMode) + ","
       + TRJsonMoney("balance", AccountInfoDouble(ACCOUNT_BALANCE)) + ","
       + TRJsonStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
       + TRJsonStr("eaVersion", "1.0") + ","
@@ -532,8 +540,8 @@ void TrackRecordSendSessionStart()
       g_trLastHash = hash;
       g_trSessionStartSent = true;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendSessionEnd(int reason)
@@ -579,8 +587,8 @@ void TrackRecordSendSessionEnd(int reason)
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendSnapshot()
@@ -633,8 +641,8 @@ void TrackRecordSendSnapshot()
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
@@ -677,8 +685,8 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
@@ -719,8 +727,8 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
@@ -759,8 +767,8 @@ void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }
 
 void TrackRecordSendPartialClose(long ticket, double closedLots, double remainingLots)
@@ -814,8 +822,8 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
+      TrackRecordWALClear();
    }
-   TrackRecordWALClear();
 }`;
 }
 

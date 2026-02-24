@@ -51,7 +51,8 @@ export function processEvent(
   eventType: TrackRecordEventType,
   eventHash: string,
   seqNo: number,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  timestamp?: number
 ): TrackRecordRunningState {
   // Update chain tracking
   state.lastSeqNo = seqNo;
@@ -67,7 +68,7 @@ export function processEvent(
     case "SNAPSHOT": {
       const balance = payload.balance as number;
       const equity = payload.equity as number;
-      updateEquityFromSnapshot(state, balance, equity);
+      updateEquityFromSnapshot(state, balance, equity, timestamp);
       break;
     }
 
@@ -91,7 +92,8 @@ export function processEvent(
         payload.ticket as string,
         payload.profit as number,
         payload.swap as number,
-        payload.commission as number
+        payload.commission as number,
+        timestamp
       );
       break;
     }
@@ -111,7 +113,8 @@ export function processEvent(
         state,
         payload.ticket as string,
         payload.remainingLots as number,
-        payload.profit as number
+        payload.profit as number,
+        timestamp
       );
       break;
     }

@@ -84,7 +84,7 @@ export async function fireWebhook(url: string, payload: object): Promise<void> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
 
-    await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers,
       body,
@@ -92,6 +92,15 @@ export async function fireWebhook(url: string, payload: object): Promise<void> {
     });
 
     clearTimeout(timeout);
+
+    if (!response.ok) {
+      log.warn(
+        { status: response.status, url: url.substring(0, 40) },
+        "Webhook delivery returned non-2xx status"
+      );
+    } else {
+      log.info({ status: response.status, url: url.substring(0, 40) }, "Webhook delivered");
+    }
   } catch (error) {
     log.warn(
       { error: error instanceof Error ? error.message : String(error), url: url.substring(0, 40) },

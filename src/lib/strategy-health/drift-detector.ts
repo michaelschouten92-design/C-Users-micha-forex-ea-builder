@@ -53,7 +53,7 @@ export function computeCusum(
   expectedMean: number,
   stdDev: number
 ): CusumResult {
-  if (tradeReturns.length < 5) {
+  if (tradeReturns.length < 20) {
     return { cusumValue: 0, driftDetected: false, driftSeverity: 0 };
   }
 
@@ -104,7 +104,8 @@ export function computeTradeReturns(
   for (const trade of trades) {
     const pnl = trade.profit + trade.swap + trade.commission;
     if (balance > 0) {
-      returns.push((pnl / balance) * 100);
+      // Use log returns: additive and symmetric — better for statistical tests
+      returns.push(Math.log(1 + pnl / balance) * 100);
     }
     balance += pnl;
   }

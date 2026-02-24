@@ -200,7 +200,8 @@ export async function POST(request: NextRequest, { params }: Props) {
       {
         apiKey: telemetryApiKey,
         baseUrl: `${telemetryBaseUrl}/api/telemetry`,
-      }
+      },
+      project.id
     );
     const fileExtension = ".mq5";
 
@@ -344,7 +345,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           outputName: true,
           exportType: true,
           buildVersion: { select: { buildJson: true } },
-          project: { select: { name: true, description: true } },
+          project: { select: { id: true, name: true, description: true } },
         },
       });
 
@@ -386,7 +387,8 @@ export async function GET(request: NextRequest, { params }: Props) {
         buildJson,
         exportJob.project.name,
         exportJob.project.description ?? undefined,
-        telemetryConfig
+        telemetryConfig,
+        exportJob.project.id
       );
 
       return NextResponse.json({

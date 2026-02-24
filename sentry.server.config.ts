@@ -24,7 +24,7 @@ Sentry.init({
     "Rate limit exceeded",
   ],
 
-  // Before sending, filter sensitive data
+  // Before sending, filter sensitive data and add custom context
   beforeSend(event) {
     // Don't send events in development
     if (process.env.NODE_ENV !== "production") {
@@ -40,3 +40,15 @@ Sentry.init({
     return event;
   },
 });
+
+/**
+ * Set Sentry user context with subscription tier.
+ * Call this from auth session resolution or middleware.
+ */
+export function setSentryUserContext(userId: string, tier?: string) {
+  Sentry.setUser({ id: userId });
+  if (tier) {
+    Sentry.setTag("tier", tier);
+    Sentry.setContext("subscription", { tier });
+  }
+}

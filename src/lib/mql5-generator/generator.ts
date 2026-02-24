@@ -162,12 +162,15 @@ export function generateMQL5Code(
   buildJson: BuildJsonSchema,
   projectName: string,
   description?: string,
-  telemetry?: TelemetryConfig
+  telemetry?: TelemetryConfig,
+  projectId?: string
 ): string {
   const ctx: GeneratorContext = {
     projectName: sanitizeName(projectName),
     description: sanitizeMQL5String(description ?? ""),
-    magicNumber: buildJson.settings?.magicNumber ?? hashStringToMagic(projectName),
+    magicNumber:
+      buildJson.settings?.magicNumber ??
+      hashStringToMagic(projectId ? `${projectId}_${projectName}` : projectName),
     comment: sanitizeMQL5String(buildJson.settings?.comment ?? "AlgoStudio EA"),
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,

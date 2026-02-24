@@ -10,6 +10,8 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const PBKDF2_ITERATIONS = 100_000;
 let cachedKey: Buffer | null = null;
+let cachedPreviousKey: Buffer | null = null;
+let previousKeyChecked = false;
 
 /**
  * Derive a 256-bit key from AUTH_SECRET using PBKDF2.
@@ -32,6 +34,20 @@ function getEncryptionKey(): Buffer {
 }
 
 /**
+ * Get the previous encryption key (for key rotation).
+ * Returns null if ENCRYPTION_SALT_PREVIOUS is not set.
+ */
+function getPreviousEncryptionKey(): Buffer | null {
+  if (previousKeyChecked) return cachedPreviousKey;
+  previousKeyChecked = true;
+  const secret = process.env.AUTH_SECRET;
+  const prevSalt = process.env.ENCRYPTION_SALT_PREVIOUS;
+  if (!secret || !prevSalt) return null;
+  cachedPreviousKey = pbkdf2Sync(secret, prevSalt, PBKDF2_ITERATIONS, 32, "sha256");
+  return cachedPreviousKey;
+}
+
+/**
  * Encrypt a plaintext string. Returns a base64 string containing IV + ciphertext + auth tag.
  */
 export function encrypt(plaintext: string): string {
@@ -49,15 +65,34 @@ export function encrypt(plaintext: string): string {
 
 /**
  * Decrypt a base64-encoded encrypted string.
- * Returns null if decryption fails (e.g., wrong key, corrupted data).
+ * Tries the current key first; if it fails and ENCRYPTION_SALT_PREVIOUS is set,
+ * tries the previous key (for zero-downtime key rotation).
+ * Returns null if decryption fails with both keys.
  */
 export function decrypt(encryptedBase64: string): string | null {
+  const combined = Buffer.from(encryptedBase64, "base64");
+  if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
+
+  // Try current key
+  const result = decryptWithKey(combined, getEncryptionKey());
+  if (result !== null) return result;
+
+  // Try previous key for key rotation
+  const prevKey = getPreviousEncryptionKey();
+  if (prevKey) {
+    const prevResult = decryptWithKey(combined, prevKey);
+    if (prevResult !== null) {
+      // Re-encrypt with current key would require the caller to save.
+      // Return the decrypted value; caller should re-encrypt if persisting.
+      return prevResult;
+    }
+  }
+
+  return null;
+}
+
+function decryptWithKey(combined: Buffer, key: Buffer): string | null {
   try {
-    const key = getEncryptionKey();
-    const combined = Buffer.from(encryptedBase64, "base64");
-
-    if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH) return null;
-
     const iv = combined.subarray(0, IV_LENGTH);
     const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
     const encrypted = combined.subarray(IV_LENGTH, combined.length - AUTH_TAG_LENGTH);

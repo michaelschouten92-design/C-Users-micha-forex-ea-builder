@@ -43,7 +43,7 @@ export async function appendChainEvent(
       const eventHash = computeEventHash(canonical);
 
       const state = stateFromDb(dbState);
-      processEvent(state, eventType, eventHash, seqNo, payload);
+      processEvent(state, eventType, eventHash, seqNo, payload, timestamp);
       const stateUpdate = stateToDbUpdate(state);
 
       const checkpoint = shouldCreateCheckpoint(eventType, seqNo)

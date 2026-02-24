@@ -126,6 +126,26 @@ async function updateLifecyclePhase(
   } else if (currentPhase === "PROVEN") {
     // Transition to RETIRED after consecutive DEGRADED evaluations
     const consecutiveDegraded = countConsecutiveLeading(result.status, recentSnapshots, "DEGRADED");
+
+    // Fire pre-retirement warning when approaching threshold
+    if (
+      consecutiveDegraded >= RETIRED_CONSECUTIVE_DEGRADED - 2 &&
+      consecutiveDegraded < RETIRED_CONSECUTIVE_DEGRADED
+    ) {
+      const remaining = RETIRED_CONSECUTIVE_DEGRADED - consecutiveDegraded;
+      triggerAlert({
+        userId: instance.userId,
+        instanceId,
+        eaName: instance.eaName,
+        alertType: "STRATEGY_RETIREMENT_WARNING",
+        message:
+          `Strategy has ${consecutiveDegraded} consecutive DEGRADED evaluations. ` +
+          `It will be automatically retired after ${remaining} more. Review your strategy now.`,
+      }).catch((err) => {
+        logger.error({ err, instanceId }, "Failed to trigger retirement warning alert");
+      });
+    }
+
     if (consecutiveDegraded >= RETIRED_CONSECUTIVE_DEGRADED) {
       updateData.lifecyclePhase = "RETIRED";
       updateData.phaseEnteredAt = new Date();
@@ -223,8 +243,10 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       // Arithmetic scaling (r/days*30) overestimates for large returns.
       const days = backtestBaseline.backtestDurationDays;
       const r = backtestBaseline.netReturnPct;
+      // Apply 25% decay factor to account for natural strategy degradation
+      // A live strategy shouldn't be expected to exactly match backtest returns
       const returnPct30d =
-        days > 0 && Math.abs(r) > 0.001 ? (Math.pow(1 + r / 100, 30 / days) - 1) * 100 : 0;
+        days > 0 && Math.abs(r) > 0.001 ? (Math.pow(1 + r / 100, 30 / days) - 1) * 100 * 0.75 : 0;
 
       // Scale baseline DD to 30-day equivalent.
       // Max drawdown scales roughly with sqrt(observation period).

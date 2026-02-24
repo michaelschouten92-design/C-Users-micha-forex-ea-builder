@@ -6,7 +6,7 @@
  */
 
 export type StrategyStatus =
-  | "VERIFIED"
+  | "CONSISTENT"
   | "MONITORING"
   | "TESTING"
   | "UNSTABLE"
@@ -36,49 +36,55 @@ const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
  * 2. EDGE_DEGRADED — health DEGRADED or drift detected
  * 3. UNSTABLE   — health WARNING
  * 4. TESTING    — lifecycle NEW or health INSUFFICIENT_DATA
- * 5. VERIFIED   — PROVEN + HEALTHY + verified chain + has baseline
+ * 5. CONSISTENT — PROVEN + HEALTHY + verified chain + has baseline
  * 6. MONITORING — everything else
  */
-export function resolveStrategyStatus(input: StatusInput): StrategyStatus {
+export interface StatusResult {
+  status: StrategyStatus;
+  reason?: "drift" | "health_degraded";
+}
+
+export function resolveStrategyStatus(input: StatusInput): StatusResult {
   const now = Date.now();
 
   // 1. INACTIVE
-  if (input.deletedAt !== null) return "INACTIVE";
-  if (input.lifecyclePhase === "RETIRED") return "INACTIVE";
+  if (input.deletedAt !== null) return { status: "INACTIVE" };
+  if (input.lifecyclePhase === "RETIRED") return { status: "INACTIVE" };
   if (
     input.eaStatus === "OFFLINE" &&
     input.lastHeartbeat !== null &&
     now - input.lastHeartbeat.getTime() > TWENTY_FOUR_HOURS_MS
   ) {
-    return "INACTIVE";
+    return { status: "INACTIVE" };
   }
   if (input.lastHeartbeat === null && now - input.createdAt.getTime() > FORTY_EIGHT_HOURS_MS) {
-    return "INACTIVE";
+    return { status: "INACTIVE" };
   }
 
   // 2. EDGE_DEGRADED
-  if (input.healthStatus === "DEGRADED") return "EDGE_DEGRADED";
-  if (input.driftDetected) return "EDGE_DEGRADED";
+  if (input.healthStatus === "DEGRADED")
+    return { status: "EDGE_DEGRADED", reason: "health_degraded" };
+  if (input.driftDetected) return { status: "EDGE_DEGRADED", reason: "drift" };
 
   // 3. UNSTABLE
-  if (input.healthStatus === "WARNING") return "UNSTABLE";
+  if (input.healthStatus === "WARNING") return { status: "UNSTABLE" };
 
   // 4. TESTING
-  if (input.lifecyclePhase === "NEW") return "TESTING";
-  if (input.healthStatus === "INSUFFICIENT_DATA") return "TESTING";
+  if (input.lifecyclePhase === "NEW") return { status: "TESTING" };
+  if (input.healthStatus === "INSUFFICIENT_DATA") return { status: "TESTING" };
 
-  // 5. VERIFIED
+  // 5. CONSISTENT
   if (
     input.lifecyclePhase === "PROVEN" &&
     input.healthStatus === "HEALTHY" &&
     input.chainVerified &&
     input.hasBaseline
   ) {
-    return "VERIFIED";
+    return { status: "CONSISTENT" };
   }
 
   // 6. MONITORING — everything else
-  return "MONITORING";
+  return { status: "MONITORING" };
 }
 
 // ============================================
@@ -115,8 +121,8 @@ export function resolveStatusConfidence(input: ConfidenceInput): StatusConfidenc
 /** Human-readable explanation for a strategy status */
 export function getStatusExplanation(status: StrategyStatus, input: Partial<StatusInput>): string {
   switch (status) {
-    case "VERIFIED":
-      return "Proven strategy with healthy metrics and verified chain";
+    case "CONSISTENT":
+      return "Strategy consistently matches its baseline with healthy metrics";
     case "MONITORING":
       return "Strategy is performing within expected parameters";
     case "TESTING":

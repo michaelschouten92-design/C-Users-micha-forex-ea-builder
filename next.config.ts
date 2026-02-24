@@ -115,6 +115,9 @@ const nextConfig: NextConfig = {
 };
 
 // Sentry configuration options
+// NOTE: SENTRY_AUTH_TOKEN must be set in CI/deployment environment for source map upload.
+// Generate at: https://sentry.io/settings/auth-tokens/
+// Without it, source maps won't be uploaded and production errors will show minified stack traces.
 const sentryConfig = {
   // Suppresses source map uploading logs during build
   silent: true,
@@ -122,6 +125,9 @@ const sentryConfig = {
   // Organization and project slugs (set via env vars)
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
+
+  // Auth token for source map upload (set SENTRY_AUTH_TOKEN in CI env)
+  authToken: process.env.SENTRY_AUTH_TOKEN,
 
   // Upload source maps for better debugging
   widenClientFileUpload: true,

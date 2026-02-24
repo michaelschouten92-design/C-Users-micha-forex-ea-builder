@@ -85,8 +85,19 @@ const PauseIcon = (
   </svg>
 );
 
+const CheckCircleIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
+  </svg>
+);
+
 const STATUS_CONFIG: Record<StrategyStatus, StatusConfig> = {
-  VERIFIED: { color: "#10B981", label: "Verified", icon: ShieldIcon },
+  CONSISTENT: { color: "#10B981", label: "Consistent", icon: CheckCircleIcon },
   MONITORING: { color: "#6366F1", label: "Monitoring", icon: EyeIcon },
   TESTING: { color: "#A78BFA", label: "Testing", icon: FlaskIcon },
   UNSTABLE: { color: "#F59E0B", label: "Unstable", icon: WarningIcon },

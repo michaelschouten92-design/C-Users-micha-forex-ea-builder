@@ -57,8 +57,11 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       data: { lastTriggered: now },
     });
 
+    const channel = config.channel;
     if (config.channel === "EMAIL") {
-      sendEAAlertEmail(config.user.email, eaName, message).catch(() => {});
+      sendEAAlertEmail(config.user.email, eaName, message).catch((err) => {
+        log.error({ err, channel }, "Alert delivery failed");
+      });
     } else if (config.channel === "WEBHOOK" && config.webhookUrl) {
       fireWebhook(config.webhookUrl, {
         event: "alert",
@@ -67,14 +70,18 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         instanceId,
         message,
         triggeredAt: now.toISOString(),
-      }).catch(() => {});
+      }).catch((err) => {
+        log.error({ err, channel }, "Alert delivery failed");
+      });
     } else if (config.channel === "BROWSER_PUSH") {
       sendPushNotification(userId, {
         title: `AlgoStudio: ${alertType}`,
         body: `${eaName} — ${message}`,
         url: "/app/live",
         tag: `${alertType}-${instanceId}`,
-      }).catch(() => {});
+      }).catch((err) => {
+        log.error({ err, channel }, "Alert delivery failed");
+      });
     } else if (config.channel === "TELEGRAM") {
       const rawToken = config.user.telegramBotToken;
       const chatId = config.user.telegramChatId;
@@ -83,7 +90,9 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
         if (botToken) {
           const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
-          sendTelegramAlert(botToken, chatId, telegramMessage).catch(() => {});
+          sendTelegramAlert(botToken, chatId, telegramMessage).catch((err) => {
+            log.error({ err, channel }, "Alert delivery failed");
+          });
         }
       }
     }
@@ -127,6 +136,46 @@ export async function checkDrawdownAlerts(
       eaName,
       alertType: "DRAWDOWN",
       message: `Drawdown of ${drawdown.toFixed(2)}% exceeded your threshold of ${lowestExceeded}%`,
+    });
+  }
+}
+
+/**
+ * Check absolute (dollar) drawdown threshold alerts for a specific heartbeat.
+ */
+export async function checkAbsoluteDrawdownAlerts(
+  userId: string,
+  instanceId: string,
+  eaName: string,
+  balance: number,
+  equity: number
+): Promise<void> {
+  const drawdownAmount = balance - equity;
+  if (drawdownAmount <= 0) return;
+
+  const configs = await prisma.eAAlertConfig.findMany({
+    where: {
+      userId,
+      alertType: "ABSOLUTE_DRAWDOWN",
+      enabled: true,
+      OR: [{ instanceId: null }, { instanceId }],
+    },
+  });
+
+  const lowestExceeded = configs.reduce<number | null>((lowest, config) => {
+    if (config.threshold !== null && drawdownAmount >= config.threshold) {
+      return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
+    }
+    return lowest;
+  }, null);
+
+  if (lowestExceeded !== null) {
+    await triggerAlert({
+      userId,
+      instanceId,
+      eaName,
+      alertType: "ABSOLUTE_DRAWDOWN",
+      message: `Absolute drawdown of $${drawdownAmount.toFixed(2)} exceeded your threshold of $${lowestExceeded.toFixed(2)}`,
     });
   }
 }

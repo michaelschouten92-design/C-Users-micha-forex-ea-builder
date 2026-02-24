@@ -17,7 +17,8 @@ import type { TrackRecordRunningState, OpenPosition } from "./types";
 export function updateEquityFromSnapshot(
   state: TrackRecordRunningState,
   balance: number,
-  equity: number
+  equity: number,
+  eventTimestamp?: number
 ): void {
   // Detect cashflow (deposit/withdrawal): balance changed without a trade event
   const balanceDelta = balance - state.balance;
@@ -35,7 +36,7 @@ export function updateEquityFromSnapshot(
   }
 
   // Update drawdown
-  updateDrawdown(state);
+  updateDrawdown(state, eventTimestamp);
 }
 
 /**
@@ -56,7 +57,8 @@ export function updateStateOnTradeClose(
   ticket: string,
   profit: number,
   swap: number,
-  commission: number
+  commission: number,
+  eventTimestamp?: number
 ): void {
   state.openPositions = state.openPositions.filter((p) => p.ticket !== ticket);
 
@@ -86,7 +88,7 @@ export function updateStateOnTradeClose(
     state.highWaterMark = state.equity;
   }
 
-  updateDrawdown(state);
+  updateDrawdown(state, eventTimestamp);
 }
 
 /**
@@ -96,7 +98,8 @@ export function updateStateOnPartialClose(
   state: TrackRecordRunningState,
   ticket: string,
   remainingLots: number,
-  profit: number
+  profit: number,
+  eventTimestamp?: number
 ): void {
   const position = state.openPositions.find((p) => p.ticket === ticket);
   if (position) {
@@ -117,7 +120,7 @@ export function updateStateOnPartialClose(
     state.highWaterMark = state.equity;
   }
 
-  updateDrawdown(state);
+  updateDrawdown(state, eventTimestamp);
 }
 
 /**
@@ -161,8 +164,9 @@ export function updateStateOnSessionStart(state: TrackRecordRunningState, balanc
 
 /**
  * Update max drawdown tracking.
+ * Uses event timestamp when available for consistency (instead of wall clock).
  */
-function updateDrawdown(state: TrackRecordRunningState): void {
+function updateDrawdown(state: TrackRecordRunningState, eventTimestamp?: number): void {
   if (state.highWaterMark <= 0) return;
 
   const drawdownAbs = state.highWaterMark - state.equity;
@@ -175,18 +179,19 @@ function updateDrawdown(state: TrackRecordRunningState): void {
     state.maxDrawdownPct = drawdownPct;
   }
 
+  const ts = eventTimestamp ?? Math.floor(Date.now() / 1000);
+
   // Track peak equity timestamp
   if (state.equity >= state.highWaterMark) {
-    state.peakEquityTimestamp = Math.floor(Date.now() / 1000);
+    state.peakEquityTimestamp = ts;
     state.drawdownStartTimestamp = 0; // Not in drawdown
   } else if (state.drawdownStartTimestamp === 0 && drawdownAbs > 0.01) {
-    state.drawdownStartTimestamp = Math.floor(Date.now() / 1000);
+    state.drawdownStartTimestamp = ts;
   }
 
   // Update max drawdown duration
   if (state.drawdownStartTimestamp > 0) {
-    const now = Math.floor(Date.now() / 1000);
-    const duration = now - state.drawdownStartTimestamp;
+    const duration = ts - state.drawdownStartTimestamp;
     if (duration > state.maxDrawdownDurationSec) {
       state.maxDrawdownDurationSec = duration;
     }

@@ -397,6 +397,14 @@ export default function BacktestDetailPage() {
             </div>
           </div>
 
+          {/* Risk Disclaimer */}
+          <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-3">
+            <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
+              Past performance does not guarantee future results. Backtest results are hypothetical
+              and subject to model limitations.
+            </p>
+          </div>
+
           {/* Extended Metrics */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
             <h3 className="text-sm font-medium text-white mb-4">Extended Metrics</h3>

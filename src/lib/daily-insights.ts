@@ -108,7 +108,7 @@ export function generateDailyInsights(
 
   // Strategy status-based insights
   const degradedStrategies = liveEAs.filter((ea) => ea.strategyStatus === "EDGE_DEGRADED");
-  const verifiedStrategies = liveEAs.filter((ea) => ea.strategyStatus === "VERIFIED");
+  const verifiedStrategies = liveEAs.filter((ea) => ea.strategyStatus === "CONSISTENT");
   const unstableStrategies = liveEAs.filter((ea) => ea.strategyStatus === "UNSTABLE");
 
   if (degradedStrategies.length > 0) {

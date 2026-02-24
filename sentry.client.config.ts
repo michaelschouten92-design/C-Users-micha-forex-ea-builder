@@ -44,3 +44,15 @@ Sentry.init({
     }),
   ],
 });
+
+/**
+ * Set Sentry user context with subscription tier on the client side.
+ * Call this after auth session is loaded in the app layout.
+ */
+export function setSentryClientContext(userId: string, tier?: string) {
+  Sentry.setUser({ id: userId });
+  if (tier) {
+    Sentry.setTag("tier", tier);
+    Sentry.setContext("subscription", { tier });
+  }
+}
