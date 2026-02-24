@@ -76,12 +76,12 @@ function buildSHA256Helper(): string {
   return `//+------------------------------------------------------------------+
 //| SHA-256 using MQL5 native CryptEncode                            |
 //+------------------------------------------------------------------+
-string TrackRecordSHA256(string input)
+string TrackRecordSHA256(string inputStr)
 {
    uchar data[];
    uchar key[];  // empty key (unused for hash algorithms)
    uchar hash[];
-   StringToCharArray(input, data, 0, WHOLE_ARRAY, CP_UTF8);
+   StringToCharArray(inputStr, data, 0, WHOLE_ARRAY, CP_UTF8);
    // Remove null terminator
    ArrayResize(data, ArraySize(data) - 1);
    if(!CryptEncode(CRYPT_HASH_SHA256, data, key, hash))
