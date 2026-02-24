@@ -75,12 +75,26 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
         winRate: backtestBaseline.winRate,
         tradesPerDay: backtestBaseline.avgTradesPerDay,
         sharpeRatio: backtestBaseline.sharpeRatio,
+        volatility: backtestBaseline.volatility,
       };
     }
   }
 
   // Compute health scores
   const result = computeHealth(liveMetrics, baseline);
+
+  // Log status transitions (compare with most recent snapshot)
+  const previousSnapshot = await prisma.healthSnapshot.findFirst({
+    where: { instanceId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true },
+  });
+  if (previousSnapshot && previousSnapshot.status !== result.status) {
+    logger.info(
+      { instanceId, from: previousSnapshot.status, to: result.status, score: result.overallScore },
+      "Health status changed"
+    );
+  }
 
   // Store snapshot
   await prisma.healthSnapshot.create({

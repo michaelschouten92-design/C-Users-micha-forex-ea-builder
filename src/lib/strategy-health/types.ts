@@ -18,6 +18,8 @@ export interface BaselineMetrics {
   winRate: number;
   tradesPerDay: number;
   sharpeRatio: number;
+  /** Annualized volatility from backtest daily returns. Null if not computed. */
+  volatility: number | null;
 }
 
 export type HealthStatusType = "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA";

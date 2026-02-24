@@ -343,6 +343,17 @@ export default function BacktestDetailPage() {
                   {data.healthStatus === "INSUFFICIENT_DATA" &&
                     "Not enough trades for a statistically reliable assessment. Upload a backtest with at least 30 trades."}
                 </p>
+                <div className="mt-2 text-[11px] text-[#7C8DB0]">
+                  <span className="font-medium text-[#A78BFA]">Next steps: </span>
+                  {data.healthStatus === "ROBUST" &&
+                    "Run Monte Carlo validation below \u2192 Set up live monitoring after deployment."}
+                  {data.healthStatus === "MODERATE" &&
+                    "Review weak metrics in the breakdown \u2192 Consider parameter optimization \u2192 Retest with a longer period."}
+                  {data.healthStatus === "WEAK" &&
+                    "Review strategy fundamentals \u2192 Check for overfitting with walk-forward analysis \u2192 Rework entry/exit logic before retesting."}
+                  {data.healthStatus === "INSUFFICIENT_DATA" &&
+                    "Upload a backtest with more trades (ideally 100+) for a reliable assessment."}
+                </div>
               </div>
             </div>
 

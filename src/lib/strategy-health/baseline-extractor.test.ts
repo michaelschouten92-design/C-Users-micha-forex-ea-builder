@@ -43,6 +43,27 @@ describe("extractBaselineMetrics", () => {
     expect(raw.avgTradesPerDay).toBeCloseTo(2, 1);
   });
 
+  it("computes volatility from Sharpe ratio when available", () => {
+    const { metrics } = extractBaselineMetrics(
+      {
+        totalTrades: 300,
+        winRate: 55,
+        profitFactor: 1.5,
+        maxDrawdown: 1000,
+        maxDrawdownPercent: 10,
+        netProfit: 3000,
+        sharpeRatio: 1.5,
+        initialDeposit: 10000,
+        finalBalance: 13000,
+      },
+      90
+    );
+
+    // volatility should be computed and non-null
+    expect(metrics.volatility).not.toBeNull();
+    expect(metrics.volatility).toBeGreaterThan(0);
+  });
+
   it("defaults initialDeposit to 10000 when 0", () => {
     const { raw } = extractBaselineMetrics(
       {

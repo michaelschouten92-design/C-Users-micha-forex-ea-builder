@@ -77,8 +77,9 @@ export async function collectLiveMetrics(
   const dailyReturns = computeDailyReturns(closedTrades, estimatedStartBalance);
   const volatility = computeAnnualizedVolatility(dailyReturns);
 
-  // Max drawdown from state (overall, not just window)
-  const maxDrawdownPct = state.maxDrawdownPct;
+  // Max drawdown computed from trades within the window (not cumulative all-time).
+  // This ensures old drawdown events don't permanently depress the health score.
+  const maxDrawdownPct = computeWindowedMaxDrawdown(closedTrades, estimatedStartBalance);
 
   // Win rate from trades in window
   const wins = closedTrades.filter((t) => t.profit + t.swap + t.commission > 0).length;
@@ -136,6 +137,32 @@ function computeDailyReturns(
   }
 
   return returns;
+}
+
+/**
+ * Compute max drawdown % from trades within the window.
+ * Walks the equity curve trade-by-trade and tracks peak-to-trough.
+ */
+function computeWindowedMaxDrawdown(
+  trades: Array<{ profit: number; swap: number; commission: number }>,
+  startBalance: number
+): number {
+  if (trades.length === 0) return 0;
+
+  let equity = startBalance;
+  let peak = equity;
+  let maxDD = 0;
+
+  for (const trade of trades) {
+    equity += trade.profit + trade.swap + trade.commission;
+    if (equity > peak) peak = equity;
+    if (peak > 0) {
+      const dd = ((peak - equity) / peak) * 100;
+      if (dd > maxDD) maxDD = dd;
+    }
+  }
+
+  return maxDD;
 }
 
 /**

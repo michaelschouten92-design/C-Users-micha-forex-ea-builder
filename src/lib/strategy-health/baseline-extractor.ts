@@ -53,12 +53,43 @@ export function extractBaselineMetrics(
   const dailyReturnPct = backtestDurationDays > 0 ? netReturnPct / backtestDurationDays : 0;
   const returnPct30d = dailyReturnPct * 30;
 
+  // Compute annualized volatility from equity curve if available.
+  // Uses daily return approximation: total return spread evenly, then annualized.
+  // This is a rough estimate; a proper computation requires per-trade or per-day PnL data.
+  let volatility: number | null = null;
+  if (backtestDurationDays > 1 && backtestResult.totalTrades > 1) {
+    // Approximate daily return std dev from total return and Sharpe ratio
+    // If Sharpe is available and non-zero: vol ≈ |annualReturn / Sharpe|
+    const annualReturnPct =
+      backtestDurationDays > 0 ? (netReturnPct / backtestDurationDays) * 252 : 0;
+    if (Math.abs(backtestResult.sharpeRatio) > 0.01) {
+      volatility = Math.abs(annualReturnPct / backtestResult.sharpeRatio) / 100;
+    } else if (backtestResult.equityCurve && backtestResult.equityCurve.length >= 2) {
+      // Compute from equity curve changes
+      const curve = backtestResult.equityCurve;
+      const returns: number[] = [];
+      for (let i = 1; i < curve.length; i++) {
+        if (curve[i - 1].equity > 0) {
+          returns.push((curve[i].equity - curve[i - 1].equity) / curve[i - 1].equity);
+        }
+      }
+      if (returns.length >= 2) {
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / (returns.length - 1);
+        // Approximate annualization using trades-per-day ratio
+        const tradesPerPeriod = Math.max(avgTradesPerDay, 1);
+        volatility = Math.sqrt(variance * tradesPerPeriod) * Math.sqrt(252);
+      }
+    }
+  }
+
   const metrics: BaselineMetrics = {
     returnPct: returnPct30d,
     maxDrawdownPct: backtestResult.maxDrawdownPercent || 0,
     winRate: backtestResult.winRate || 0,
     tradesPerDay: avgTradesPerDay,
     sharpeRatio: backtestResult.sharpeRatio || 0,
+    volatility,
   };
 
   const raw = {
@@ -69,6 +100,7 @@ export function extractBaselineMetrics(
     avgTradesPerDay,
     netReturnPct,
     sharpeRatio: backtestResult.sharpeRatio || 0,
+    volatility,
     initialDeposit,
     backtestDurationDays,
   };

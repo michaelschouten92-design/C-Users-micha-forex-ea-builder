@@ -141,9 +141,13 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
     ? scoreMetric(live.returnPct, baseline.returnPct, "return")
     : scoreMetricAbsolute(live.returnPct, "return");
 
-  const volatilityScore = hasBaseline
-    ? scoreMetric(live.volatility, estimateBaselineVolatility(baseline), "volatility")
-    : scoreMetricAbsolute(live.volatility, "volatility");
+  const baselineVolatility = hasBaseline
+    ? (baseline.volatility ?? estimateBaselineVolatility(baseline))
+    : null;
+  const volatilityScore =
+    baselineVolatility !== null
+      ? scoreMetric(live.volatility, baselineVolatility, "volatility")
+      : scoreMetricAbsolute(live.volatility, "volatility");
 
   const drawdownScore = hasBaseline
     ? scoreMetric(live.maxDrawdownPct, baseline.maxDrawdownPct, "drawdown")
@@ -183,7 +187,7 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
         score: volatilityScore,
         weight: THRESHOLDS.volatility.weight,
         liveValue: live.volatility,
-        baselineValue: hasBaseline ? estimateBaselineVolatility(baseline) : null,
+        baselineValue: baselineVolatility,
       },
       drawdown: {
         name: "drawdown",

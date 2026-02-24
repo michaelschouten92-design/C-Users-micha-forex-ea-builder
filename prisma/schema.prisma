@@ -729,6 +729,7 @@ model BacktestBaseline {
   avgTradesPerDay      Float
   netReturnPct         Float
   sharpeRatio          Float
+  volatility           Float?
   initialDeposit       Float
   backtestDurationDays Int
   rawMetrics           Json

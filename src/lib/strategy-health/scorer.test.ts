@@ -22,6 +22,7 @@ function makeBaseline(overrides: Partial<BaselineMetrics> = {}): BaselineMetrics
     winRate: 55,
     tradesPerDay: 2,
     sharpeRatio: 1.2,
+    volatility: 0.1,
     ...overrides,
   };
 }

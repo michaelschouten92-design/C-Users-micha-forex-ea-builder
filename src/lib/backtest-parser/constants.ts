@@ -18,10 +18,11 @@ export interface ScoreWeight {
 export const SCORE_WEIGHTS: Record<string, ScoreWeight> = {
   profitFactor: {
     weight: 0.2,
+    // PF=1.0 is breakeven before costs — intentionally scored low (25).
     breakpoints: [
       [0.0, 0],
-      [0.8, 20],
-      [1.0, 40],
+      [0.8, 15],
+      [1.0, 25],
       [1.5, 70],
       [2.0, 90],
       [3.0, 100],
