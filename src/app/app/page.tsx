@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreateProjectButton } from "./components/create-project-button";
 import { ProjectList } from "./components/project-list";
-import { SubscriptionPanel } from "./components/subscription-panel";
 import { EmailVerificationBanner } from "./components/email-verification-banner";
 import { NotificationCenter } from "@/components/app/notification-center";
 import { MobileNavMenu } from "./components/mobile-nav-menu";
@@ -17,12 +16,7 @@ export default async function DashboardPage() {
     redirect("/login?expired=true");
   }
 
-  // Get start of current month for export count (UTC to match backend)
-  const startOfMonth = new Date();
-  startOfMonth.setUTCDate(1);
-  startOfMonth.setUTCHours(0, 0, 0, 0);
-
-  const [projects, subscription, exportCount, user, liveEAs, recentBacktests] = await Promise.all([
+  const [projects, subscription, user, liveEAs, recentBacktests] = await Promise.all([
     prisma.project.findMany({
       where: { userId: session.user.id, deletedAt: null },
       orderBy: { updatedAt: "desc" },
@@ -38,13 +32,6 @@ export default async function DashboardPage() {
     }),
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
-    }),
-    prisma.exportJob.count({
-      where: {
-        userId: session.user.id,
-        createdAt: { gte: startOfMonth },
-        deletedAt: null,
-      },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -452,17 +439,6 @@ export default async function DashboardPage() {
             </div>
           </Link>
         )}
-
-        {/* ====================================== */}
-        {/* Subscription Panel */}
-        {/* ====================================== */}
-        <SubscriptionPanel
-          tier={tier}
-          subscriptionStatus={subscription?.status ?? undefined}
-          projectCount={projects.length}
-          exportCount={exportCount}
-          hasStripeSubscription={!!subscription?.stripeSubId}
-        />
 
         {/* ====================================== */}
         {/* Projects */}
