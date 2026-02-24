@@ -82,6 +82,7 @@ export default async function SettingsPage() {
           projectCount={projectCount}
           exportCount={exportCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
+          currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
         />
 
         <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />
