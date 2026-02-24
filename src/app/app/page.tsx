@@ -162,7 +162,7 @@ export default async function DashboardPage() {
                 href="/app/settings"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
               >
-                Settings
+                Account
               </Link>
               <form
                 action={async () => {

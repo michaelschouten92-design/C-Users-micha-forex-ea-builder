@@ -147,7 +147,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            Settings
+            Account
           </Link>
           <div className="border-t border-[rgba(79,70,229,0.15)] mt-1 pt-1">
             <form action="/api/auth/signout" method="POST">

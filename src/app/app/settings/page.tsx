@@ -85,7 +85,7 @@ export default function SettingsPage() {
                 AlgoStudio
               </Link>
               <span className="text-[#7C8DB0]">/</span>
-              <span className="text-[#94A3B8]">Settings</span>
+              <span className="text-[#94A3B8]">Account</span>
             </div>
             <Link href="/app" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
               Back to Dashboard
@@ -95,7 +95,7 @@ export default function SettingsPage() {
       </nav>
 
       <main id="main-content" className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
-        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Settings" }]} />
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Account" }]} />
         <h1 className="text-2xl font-bold text-white mb-8">Account Settings</h1>
 
         <div className="space-y-6">
