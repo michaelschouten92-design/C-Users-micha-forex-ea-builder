@@ -358,8 +358,8 @@ export function transformCodeForMultiPair(
       "//--- Per-symbol spread override",
       "if(g_perSymbolMaxSpread[sym] > 0)",
       "{",
-      "   int symSpread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);",
-      "   if(symSpread > g_perSymbolMaxSpread[sym] * _pipFactor) return;",
+      "   int symSpread = (int)SymbolInfoInteger(tradeSym, SYMBOL_SPREAD);",
+      "   if(symSpread > g_perSymbolMaxSpread[sym] * symPipFactor) continue;",
       "}"
     );
   }

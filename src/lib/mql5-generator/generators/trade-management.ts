@@ -21,10 +21,20 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
     code.helperFunctions.push(
       [
         "//+------------------------------------------------------------------+",
-        "//| Modify position with error logging                               |",
+        "//| Modify position with freeze-level guard and error logging        |",
         "//+------------------------------------------------------------------+",
         "bool SafePositionModify(CTrade &tradeObj, ulong ticket, double sl, double tp)",
         "{",
+        "   if(!PositionSelectByTicket(ticket)) return false;",
+        "   string sym = PositionGetString(POSITION_SYMBOL);",
+        "   double freezeLvl = (double)SymbolInfoInteger(sym, SYMBOL_TRADE_FREEZE_LEVEL) * SymbolInfoDouble(sym, SYMBOL_POINT);",
+        "   if(freezeLvl > 0)",
+        "   {",
+        "      long pType = PositionGetInteger(POSITION_TYPE);",
+        "      double price = (pType == POSITION_TYPE_BUY) ? SymbolInfoDouble(sym, SYMBOL_BID) : SymbolInfoDouble(sym, SYMBOL_ASK);",
+        "      if((sl > 0 && MathAbs(price - sl) < freezeLvl) || (tp > 0 && MathAbs(price - tp) < freezeLvl))",
+        "         return false;",
+        "   }",
         "   if(!tradeObj.PositionModify(ticket, sl, tp))",
         "   {",
         '      PrintFormat("PositionModify failed for ticket %I64u: error %d (%s), SL=%.5f, TP=%.5f",',
@@ -214,7 +224,7 @@ function generateBreakevenStopCode(
     "//+------------------------------------------------------------------+",
     "//| Check breakeven stop for a single position                       |",
     "//+------------------------------------------------------------------+",
-    `void CheckBreakevenStop${beSuffix}(ulong ticket, double openPrice, double currentSL, double positionProfit, long posType, double point)`,
+    `void CheckBreakevenStop${beSuffix}(ulong ticket, double openPrice, double currentSL, double currentTP, double positionProfit, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
@@ -255,13 +265,13 @@ function generateBreakevenStopCode(
     "      {",
     "         double newBE = NormalizeDouble(openPrice + lockPoints * point, digits);",
     "         if(currentSL < newBE)",
-    "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newBE, currentTP);",
     "      }",
     "      else if(posType == POSITION_TYPE_SELL)",
     "      {",
     "         double newBE = NormalizeDouble(openPrice - lockPoints * point, digits);",
     "         if(currentSL > newBE || currentSL == 0)",
-    "            SafePositionModify(trade, ticket, newBE, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newBE, currentTP);",
     "      }",
     "   }",
     "}"
@@ -270,11 +280,11 @@ function generateBreakevenStopCode(
   code.helperFunctions.push(fnLines.join("\n"));
   if (data.trigger === "ATR") {
     code._managementCalls!.push(
-      `if(beATRReady${beSuffix}) CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
+      `if(beATRReady${beSuffix}) CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, currentTP, positionProfit, posType, point);`
     );
   } else {
     code._managementCalls!.push(
-      `CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
+      `CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, currentTP, positionProfit, posType, point);`
     );
   }
 }
@@ -377,7 +387,7 @@ function generateTrailingStopCode(
     "//+------------------------------------------------------------------+",
     "//| Check trailing stop for a single position                        |",
     "//+------------------------------------------------------------------+",
-    `void CheckTrailingStop${tsSuffix}(ulong ticket, double openPrice, double currentSL, long posType, double point)`,
+    `void CheckTrailingStop${tsSuffix}(ulong ticket, double openPrice, double currentSL, double currentTP, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
@@ -412,7 +422,7 @@ function generateTrailingStopCode(
     "         double newSL = NormalizeDouble(bid - trailPoints * point, digits);",
     "         if(newSL > currentSL)",
     "         {",
-    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newSL, currentTP);",
     "         }",
     "      }",
     "   }",
@@ -424,7 +434,7 @@ function generateTrailingStopCode(
     "         double newSL = NormalizeDouble(ask + trailPoints * point, digits);",
     "         if(newSL < currentSL || currentSL == 0)",
     "         {",
-    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newSL, currentTP);",
     "         }",
     "      }",
     "   }",
@@ -434,11 +444,11 @@ function generateTrailingStopCode(
   code.helperFunctions.push(fnLines.join("\n"));
   if (data.method === "ATR_BASED") {
     code._managementCalls!.push(
-      `if(trailATRReady${tsSuffix}) CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
+      `if(trailATRReady${tsSuffix}) CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, currentTP, posType, point);`
     );
   } else {
     code._managementCalls!.push(
-      `CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
+      `CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, currentTP, posType, point);`
     );
   }
 }
@@ -695,7 +705,7 @@ function generateLockProfitCode(
     "//+------------------------------------------------------------------+",
     "//| Check lock profit for a single position                          |",
     "//+------------------------------------------------------------------+",
-    `void CheckLockProfit${lpSuffix}(ulong ticket, double openPrice, double currentSL, long posType, double point)`,
+    `void CheckLockProfit${lpSuffix}(ulong ticket, double openPrice, double currentSL, double currentTP, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
@@ -722,7 +732,7 @@ function generateLockProfitCode(
     "         // Guard: SL must stay below bid to avoid immediate stop-out",
     "         if(newSL > currentSL && newSL < bid)",
     "         {",
-    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newSL, currentTP);",
     "         }",
     "      }",
     "   }",
@@ -747,7 +757,7 @@ function generateLockProfitCode(
     "         // Guard: SL must stay above ask to avoid immediate stop-out",
     "         if((newSL < currentSL || currentSL == 0) && newSL > ask)",
     "         {",
-    "            SafePositionModify(trade, ticket, newSL, PositionGetDouble(POSITION_TP));",
+    "            SafePositionModify(trade, ticket, newSL, currentTP);",
     "         }",
     "      }",
     "   }",
@@ -756,7 +766,7 @@ function generateLockProfitCode(
 
   code.helperFunctions.push(fnLines.join("\n"));
   code._managementCalls!.push(
-    `CheckLockProfit${lpSuffix}(ticket, openPrice, currentSL, posType, point);`
+    `CheckLockProfit${lpSuffix}(ticket, openPrice, currentSL, currentTP, posType, point);`
   );
 }
 

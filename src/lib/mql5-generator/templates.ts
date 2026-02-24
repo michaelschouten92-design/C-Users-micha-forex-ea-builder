@@ -579,6 +579,14 @@ bool OpenBuy(double lots, double sl = 0, double tp = 0)
       double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * _Point, _Digits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * _Point, _Digits) : 0;
 
+      //--- Enforce minimum stops level
+      double stopsLvl = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+      if(stopsLvl > 0)
+      {
+         if(slPrice > 0 && ask - slPrice < stopsLvl) slPrice = NormalizeDouble(ask - stopsLvl, _Digits);
+         if(tpPrice > 0 && tpPrice - ask < stopsLvl) tpPrice = NormalizeDouble(ask + stopsLvl, _Digits);
+      }
+
       if(trade.Buy(lots, _Symbol, ask, slPrice, tpPrice, InpTradeComment))
          return true;
 
@@ -630,6 +638,14 @@ bool OpenSell(double lots, double sl = 0, double tp = 0)
       double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
       double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * _Point, _Digits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * _Point, _Digits) : 0;
+
+      //--- Enforce minimum stops level
+      double stopsLvl = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;
+      if(stopsLvl > 0)
+      {
+         if(slPrice > 0 && slPrice - bid < stopsLvl) slPrice = NormalizeDouble(bid + stopsLvl, _Digits);
+         if(tpPrice > 0 && bid - tpPrice < stopsLvl) tpPrice = NormalizeDouble(bid - stopsLvl, _Digits);
+      }
 
       if(trade.Sell(lots, _Symbol, bid, slPrice, tpPrice, InpTradeComment))
          return true;
@@ -852,6 +868,14 @@ bool OpenBuy(string sym, double lots, double sl = 0, double tp = 0)
       double slPrice = (sl > 0) ? NormalizeDouble(ask - sl * symPoint, symDigits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(ask + tp * symPoint, symDigits) : 0;
 
+      //--- Enforce minimum stops level
+      double stopsLvl = (double)SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL) * symPoint;
+      if(stopsLvl > 0)
+      {
+         if(slPrice > 0 && ask - slPrice < stopsLvl) slPrice = NormalizeDouble(ask - stopsLvl, symDigits);
+         if(tpPrice > 0 && tpPrice - ask < stopsLvl) tpPrice = NormalizeDouble(ask + stopsLvl, symDigits);
+      }
+
       if(trade.Buy(lots, sym, ask, slPrice, tpPrice, InpTradeComment))
          return true;
 
@@ -906,6 +930,14 @@ bool OpenSell(string sym, double lots, double sl = 0, double tp = 0)
       double bid = SymbolInfoDouble(sym, SYMBOL_BID);
       double slPrice = (sl > 0) ? NormalizeDouble(bid + sl * symPoint, symDigits) : 0;
       double tpPrice = (tp > 0) ? NormalizeDouble(bid - tp * symPoint, symDigits) : 0;
+
+      //--- Enforce minimum stops level
+      double stopsLvl = (double)SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL) * symPoint;
+      if(stopsLvl > 0)
+      {
+         if(slPrice > 0 && slPrice - bid < stopsLvl) slPrice = NormalizeDouble(bid + stopsLvl, symDigits);
+         if(tpPrice > 0 && bid - tpPrice < stopsLvl) tpPrice = NormalizeDouble(bid - stopsLvl, symDigits);
+      }
 
       if(trade.Sell(lots, sym, bid, slPrice, tpPrice, InpTradeComment))
          return true;
