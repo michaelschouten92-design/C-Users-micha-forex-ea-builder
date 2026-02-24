@@ -17,7 +17,13 @@
  */
 
 import type { ParsedMetrics, HealthScoreResult, HealthScoreBreakdown } from "./types";
-import { SCORE_WEIGHTS, type ScoreWeight } from "./constants";
+import {
+  SCORE_WEIGHTS,
+  HEALTH_SCORE_VERSION,
+  PROP_FIRM_DD_BREAKPOINTS,
+  type ScoreWeight,
+  type ScoringMode,
+} from "./constants";
 
 /** Minimum trades for any meaningful score. Below this → INSUFFICIENT_DATA. */
 const MIN_TRADES_FOR_SCORING = 30;
@@ -78,18 +84,39 @@ function scoreMetric(metricName: string, value: number, config: ScoreWeight): He
 }
 
 /**
+ * Compute confidence interval for a health score based on trade count.
+ * Fewer trades → wider interval. Uses sqrt(N) scaling with 100 trades as reference.
+ * At 100 trades: ±10 points. At 30 trades: ±18 points. At 500 trades: ±4 points.
+ */
+function computeConfidenceInterval(
+  score: number,
+  totalTrades: number
+): { lower: number; upper: number } {
+  const REFERENCE_TRADES = 100;
+  const BASE_MARGIN = 10;
+  const margin =
+    BASE_MARGIN * Math.sqrt(REFERENCE_TRADES / Math.max(MIN_TRADES_FOR_SCORING, totalTrades));
+  return {
+    lower: Math.max(0, Math.round(score - margin)),
+    upper: Math.min(100, Math.round(score + margin)),
+  };
+}
+
+/**
  * Compute the overall health score from parsed backtest metrics.
  * Returns a score (0-100), status, per-metric breakdown, and warnings.
  *
  * @param metrics - Parsed backtest metrics
  * @param initialDeposit - Initial deposit from backtest metadata (used to normalize expectedPayoff).
  *   Pass 0 if unknown — expectedPayoff will be excluded from scoring with a warning.
+ * @param mode - Scoring mode. "propFirm" uses tighter drawdown breakpoints (5-10% limits).
  *
  * Safety-critical: no silent NaN propagation, no inflated scores from missing data.
  */
 export function computeHealthScore(
   metrics: ParsedMetrics,
-  initialDeposit: number = 0
+  initialDeposit: number = 0,
+  mode: ScoringMode = "default"
 ): HealthScoreResult {
   const breakdown: HealthScoreBreakdown[] = [];
   const warnings: string[] = [];
@@ -106,6 +133,8 @@ export function computeHealthScore(
       status: "INSUFFICIENT_DATA",
       breakdown: [],
       warnings,
+      version: HEALTH_SCORE_VERSION,
+      confidenceInterval: { lower: 0, upper: 0 },
     };
   }
 
@@ -153,10 +182,16 @@ export function computeHealthScore(
       continue;
     }
 
-    const result = scoreMetric(metricName, rawValue, config);
+    // In prop firm mode, override DD breakpoints with tighter limits
+    const effectiveConfig =
+      mode === "propFirm" && metricName === "maxDrawdownPct"
+        ? { ...config, breakpoints: PROP_FIRM_DD_BREAKPOINTS }
+        : config;
+
+    const result = scoreMetric(metricName, rawValue, effectiveConfig);
     breakdown.push(result);
-    weightedSum += result.score * config.weight;
-    totalWeight += config.weight;
+    weightedSum += result.score * effectiveConfig.weight;
+    totalWeight += effectiveConfig.weight;
   }
 
   // ─── Guard: no scoreable metrics ────────────────────────────
@@ -167,6 +202,8 @@ export function computeHealthScore(
       status: "WEAK",
       breakdown: [],
       warnings,
+      version: HEALTH_SCORE_VERSION,
+      confidenceInterval: { lower: 0, upper: 0 },
     };
   }
 
@@ -186,15 +223,18 @@ export function computeHealthScore(
   }
 
   // ─── Red flag: outlier dependency ───────────────────────────
-  if (
-    metrics.largestProfitTrade !== undefined &&
-    metrics.totalNetProfit > 0 &&
-    metrics.largestProfitTrade > metrics.totalNetProfit * 0.3
-  ) {
-    warnings.push(
-      `Largest winning trade accounts for ${((metrics.largestProfitTrade / metrics.totalNetProfit) * 100).toFixed(0)}% of total net profit. ` +
-        "Strategy performance depends heavily on a single outlier trade."
-    );
+  // Threshold scales with trade count: stricter with more trades.
+  // 30 trades → ~27%, 100 → 15%, 500 → ~7% (clamped to 10%-50% range).
+  if (metrics.largestProfitTrade !== undefined && metrics.totalNetProfit > 0) {
+    const outlierThreshold = Math.min(0.5, Math.max(0.1, 1.5 / Math.sqrt(metrics.totalTrades)));
+    if (metrics.largestProfitTrade > metrics.totalNetProfit * outlierThreshold) {
+      const pct = ((metrics.largestProfitTrade / metrics.totalNetProfit) * 100).toFixed(0);
+      warnings.push(
+        `Largest winning trade accounts for ${pct}% of total net profit ` +
+          `(threshold: ${(outlierThreshold * 100).toFixed(0)}% for ${metrics.totalTrades} trades). ` +
+          "Strategy performance depends heavily on a single outlier trade."
+      );
+    }
   }
 
   // ─── Red flag: too-good-to-be-true Sharpe ───────────────────
@@ -227,6 +267,21 @@ export function computeHealthScore(
     );
   }
 
+  // ─── Prop firm mode: hard-fail warnings ────────────────────
+  if (mode === "propFirm") {
+    if (metrics.maxDrawdownPct > 10) {
+      warnings.push(
+        `Max drawdown (${metrics.maxDrawdownPct.toFixed(1)}%) exceeds the typical 10% prop firm limit. ` +
+          "Most prop firms (FTMO, MFF, TFT) would terminate this account."
+      );
+    } else if (metrics.maxDrawdownPct > 5) {
+      warnings.push(
+        `Max drawdown (${metrics.maxDrawdownPct.toFixed(1)}%) exceeds the typical 5% daily drawdown limit. ` +
+          "Consider tighter risk management for prop firm compliance."
+      );
+    }
+  }
+
   // ─── Determine status ──────────────────────────────────────
   let status: HealthScoreResult["status"];
   if (score >= 80) {
@@ -237,5 +292,12 @@ export function computeHealthScore(
     status = "WEAK";
   }
 
-  return { score, status, breakdown, warnings };
+  return {
+    score,
+    status,
+    breakdown,
+    warnings,
+    version: HEALTH_SCORE_VERSION,
+    confidenceInterval: computeConfidenceInterval(score, metrics.totalTrades),
+  };
 }

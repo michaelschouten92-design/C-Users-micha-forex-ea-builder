@@ -69,4 +69,8 @@ export interface HealthScoreResult {
   status: "ROBUST" | "MODERATE" | "WEAK" | "INSUFFICIENT_DATA";
   breakdown: HealthScoreBreakdown[];
   warnings: string[];
+  /** Algorithm version — changes when scoring logic is modified. */
+  version: number;
+  /** Confidence interval (±margin) based on sample size. Wider with fewer trades. */
+  confidenceInterval: { lower: number; upper: number };
 }

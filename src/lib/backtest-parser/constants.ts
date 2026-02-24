@@ -104,6 +104,40 @@ export const SCORE_WEIGHTS: Record<string, ScoreWeight> = {
   },
 };
 
+/**
+ * Scoring mode affects drawdown breakpoints and adds mode-specific warnings.
+ * - "default": standard scoring for personal accounts
+ * - "propFirm": tighter drawdown limits matching typical prop firm rules (5-10% DD)
+ */
+export type ScoringMode = "default" | "propFirm";
+
+/**
+ * Prop firm mode: tighter drawdown breakpoints.
+ * Most prop firms enforce ~5% daily DD and ~10% total DD hard limits.
+ * Scoring reflects this: anything above 10% DD scores very poorly.
+ */
+export const PROP_FIRM_DD_BREAKPOINTS: [number, number][] = [
+  [0.0, 100],
+  [3.0, 95],
+  [5.0, 80],
+  [8.0, 50],
+  [10.0, 20],
+  [15.0, 5],
+  [20.0, 0],
+];
+
+/**
+ * Health score algorithm version. Increment when scoring logic changes
+ * (weight adjustments, breakpoint changes, new metrics, new guards).
+ * Stored alongside each score so historical comparisons remain valid.
+ *
+ * v1: initial release
+ * v2: P1 fixes (expectedPayoff normalization, NaN guards, red flags, INSUFFICIENT_DATA)
+ * v3: P2 fixes (PF breakpoint adjustment, baseline volatility)
+ * v4: P3 fixes (adaptive outlier threshold, prop firm mode, confidence intervals)
+ */
+export const HEALTH_SCORE_VERSION = 4;
+
 /** Maximum upload file size in bytes (5MB) */
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 

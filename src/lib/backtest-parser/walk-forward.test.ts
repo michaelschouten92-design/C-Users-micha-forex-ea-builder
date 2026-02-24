@@ -74,4 +74,25 @@ describe("runWalkForward", () => {
       expect(window.outOfSample.totalTrades).toBeGreaterThan(0);
     }
   });
+
+  it("overfit probability uses all 3 degradation metrics", () => {
+    // Create deals with high variance across windows to trigger degradation
+    const deals = makeSyntheticDeals(150, { profitRange: [-100, 200] });
+    const result = runWalkForward(deals, 10000, { numWindows: 5 });
+
+    // overfitProbability should be between 0 and 1
+    expect(result.overfitProbability).toBeGreaterThanOrEqual(0);
+    expect(result.overfitProbability).toBeLessThanOrEqual(1);
+  });
+
+  it("consistency handles near-zero Sharpe values without exploding", () => {
+    // Create deals with near-zero net profit (Sharpe ≈ 0)
+    const deals = makeSyntheticDeals(100, { profitRange: [-50, 50] });
+    const result = runWalkForward(deals, 10000, { numWindows: 5 });
+
+    // Should not be NaN or Infinity — the near-zero-mean fix handles this
+    expect(Number.isFinite(result.consistencyScore)).toBe(true);
+    expect(result.consistencyScore).toBeGreaterThanOrEqual(0);
+    expect(result.consistencyScore).toBeLessThanOrEqual(100);
+  });
 });

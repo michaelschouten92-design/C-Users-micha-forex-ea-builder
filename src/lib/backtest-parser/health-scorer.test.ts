@@ -147,4 +147,71 @@ describe("computeHealthScore", () => {
     const payoffBreakdown = result.breakdown.find((b) => b.metric === "expectedPayoff");
     expect(payoffBreakdown).toBeUndefined();
   });
+
+  // ─── Test 11: includes version number ─────────────────────
+  it("includes healthScoreVersion in result", () => {
+    const result = computeHealthScore(makeMetrics(), 10000);
+    expect(result.version).toBeGreaterThanOrEqual(1);
+    expect(typeof result.version).toBe("number");
+  });
+
+  // ─── Test 12: includes confidence interval ────────────────
+  it("includes confidence interval that narrows with more trades", () => {
+    const few = computeHealthScore(makeMetrics({ totalTrades: 35 }), 10000);
+    const many = computeHealthScore(makeMetrics({ totalTrades: 500 }), 10000);
+
+    // Both should have CI
+    expect(few.confidenceInterval).toBeDefined();
+    expect(many.confidenceInterval).toBeDefined();
+
+    // Fewer trades → wider interval
+    const fewWidth = few.confidenceInterval.upper - few.confidenceInterval.lower;
+    const manyWidth = many.confidenceInterval.upper - many.confidenceInterval.lower;
+    expect(fewWidth).toBeGreaterThan(manyWidth);
+  });
+
+  // ─── Test 13: prop firm mode flags high DD ────────────────
+  it("prop firm mode warns when DD exceeds 10%", () => {
+    const result = computeHealthScore(
+      makeMetrics({ maxDrawdownPct: 15, totalTrades: 200 }),
+      10000,
+      "propFirm"
+    );
+
+    expect(result.warnings.some((w) => w.includes("prop firm"))).toBe(true);
+  });
+
+  // ─── Test 14: prop firm mode scores DD more harshly ───────
+  it("prop firm mode produces lower score for same DD", () => {
+    const metrics = makeMetrics({ maxDrawdownPct: 12, totalTrades: 200 });
+    const defaultResult = computeHealthScore(metrics, 10000, "default");
+    const propFirmResult = computeHealthScore(metrics, 10000, "propFirm");
+
+    expect(propFirmResult.score).toBeLessThan(defaultResult.score);
+  });
+
+  // ─── Test 15: adaptive outlier threshold scales with trades ─
+  it("adaptive outlier threshold is stricter with more trades", () => {
+    // 500 trades, largest trade = 12% of profit → should flag (threshold ~7%)
+    const manyTrades = computeHealthScore(
+      makeMetrics({
+        totalTrades: 500,
+        totalNetProfit: 10000,
+        largestProfitTrade: 1200,
+      }),
+      10000
+    );
+    expect(manyTrades.warnings.some((w) => w.includes("outlier"))).toBe(true);
+
+    // 30 trades, largest trade = 25% of profit → should NOT flag (threshold ~27%)
+    const fewTrades = computeHealthScore(
+      makeMetrics({
+        totalTrades: 30,
+        totalNetProfit: 10000,
+        largestProfitTrade: 2500,
+      }),
+      10000
+    );
+    expect(fewTrades.warnings.some((w) => w.includes("outlier"))).toBe(false);
+  });
 });

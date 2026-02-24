@@ -72,6 +72,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
       healthScore: run.healthScore,
       healthStatus: run.healthStatus,
+      healthScoreVersion: run.healthScoreVersion ?? null,
+      confidenceInterval:
+        run.confidenceLower != null && run.confidenceUpper != null
+          ? { lower: run.confidenceLower, upper: run.confidenceUpper }
+          : null,
       scoreBreakdown: run.scoreBreakdown,
       parseWarnings: run.parseWarnings,
       detectedLocale: run.detectedLocale,

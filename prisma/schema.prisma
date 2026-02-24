@@ -854,6 +854,9 @@ model BacktestRun {
 
   healthScore     Int                    // 0-100
   healthStatus    BacktestHealthStatus
+  healthScoreVersion Int?               // Algorithm version that produced this score
+  confidenceLower    Int?               // Confidence interval lower bound
+  confidenceUpper    Int?               // Confidence interval upper bound
 
   walkForwardResult Json?       // Walk-forward analysis results
   trades          Json         // ParsedDeal[]

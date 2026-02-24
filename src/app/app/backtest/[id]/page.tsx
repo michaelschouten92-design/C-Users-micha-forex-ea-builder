@@ -55,6 +55,8 @@ interface BacktestDetail {
   };
   healthScore: number;
   healthStatus: "ROBUST" | "MODERATE" | "WEAK" | "INSUFFICIENT_DATA";
+  healthScoreVersion: number | null;
+  confidenceInterval: { lower: number; upper: number } | null;
   scoreBreakdown: Array<{
     metric: string;
     value: number;
@@ -318,6 +320,14 @@ export default function BacktestDetailPage() {
                       {data.healthScore}
                     </div>
                     <div className="text-xs text-[#7C8DB0]">/ 100</div>
+                    {data.confidenceInterval && data.healthStatus !== "INSUFFICIENT_DATA" && (
+                      <div className="text-[10px] text-[#7C8DB0] mt-0.5">
+                        ±
+                        {Math.round(
+                          (data.confidenceInterval.upper - data.confidenceInterval.lower) / 2
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -333,6 +343,11 @@ export default function BacktestDetailPage() {
                 >
                   {data.healthStatus}
                 </span>
+                {data.confidenceInterval && data.healthStatus !== "INSUFFICIENT_DATA" && (
+                  <span className="text-[10px] text-[#7C8DB0] ml-2">
+                    CI: {data.confidenceInterval.lower}–{data.confidenceInterval.upper}
+                  </span>
+                )}
                 <p className="text-xs text-[#94A3B8] mt-2 max-w-md">
                   {data.healthStatus === "ROBUST" &&
                     "Strategy shows consistent edge across multiple metrics. Consider paper trading or Monte Carlo validation before live deployment."}

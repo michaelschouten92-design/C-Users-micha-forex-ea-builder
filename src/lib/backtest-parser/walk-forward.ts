@@ -194,11 +194,18 @@ export function runWalkForward(
     pfConsistency * 0.3 + wrConsistency * 0.2 + sharpeConsistency * 0.2 + profitabilityScore * 0.3
   );
 
-  // Overfit probability: based on IS->OOS degradation
-  const avgDegradation =
+  // Overfit probability: composite of all three IS→OOS degradation metrics.
+  // PF degradation is most informative, Sharpe second, win rate third.
+  const avgPFDeg =
     windows.reduce((s, w) => s + Math.abs(w.degradation.profitFactor), 0) / windows.length;
+  const avgSharpeDeg =
+    windows.reduce((s, w) => s + Math.abs(w.degradation.sharpeRatio), 0) / windows.length;
+  const avgWRDeg =
+    windows.reduce((s, w) => s + Math.abs(w.degradation.winRate), 0) / windows.length;
 
-  const overfitProbability = Math.min(1, Math.max(0, avgDegradation / 100));
+  // Weighted composite: PF 50%, Sharpe 30%, WinRate 20%
+  const compositeDegradation = avgPFDeg * 0.5 + avgSharpeDeg * 0.3 + avgWRDeg * 0.2;
+  const overfitProbability = Math.min(1, Math.max(0, compositeDegradation / 100));
 
   // Verdict
   let verdict: "ROBUST" | "MODERATE" | "OVERFITTED";
@@ -224,9 +231,17 @@ export function runWalkForward(
 function calculateConsistency(values: number[]): number {
   if (values.length === 0) return 0;
   const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  if (mean === 0) return 0;
   const variance = values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / values.length;
-  const cv = Math.sqrt(variance) / Math.abs(mean); // Coefficient of variation
+  const stdDev = Math.sqrt(variance);
+
+  // When mean is near zero, CV is undefined (division by ~0).
+  // Fall back to absolute spread: if values are tightly clustered near zero,
+  // that's still consistent. Map stdDev 0→100, ≥1→0.
+  if (Math.abs(mean) < 0.01) {
+    return Math.max(0, Math.min(100, (1 - stdDev) * 100));
+  }
+
+  const cv = stdDev / Math.abs(mean); // Coefficient of variation
   // Lower CV = more consistent. Map CV 0->100, 1->0
   return Math.max(0, Math.min(100, (1 - cv) * 100));
 }
