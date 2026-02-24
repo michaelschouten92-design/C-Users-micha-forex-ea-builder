@@ -10,6 +10,38 @@ import { computeHealth } from "./scorer";
 import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 
+/** Number of recent snapshots to consider for EWMA trend computation */
+const EWMA_WINDOW = 10;
+/** EWMA decay factor: higher = more responsive to recent changes (0–1) */
+const EWMA_ALPHA = 0.3;
+/** Score difference threshold to call it "improving" or "declining" */
+const TREND_THRESHOLD = 0.03;
+/** Number of consecutive DEGRADED snapshots before escalation alert */
+const ESCALATION_THRESHOLD = 3;
+
+/**
+ * Compute score trend by comparing current score to EWMA of recent history.
+ * Returns "improving" | "stable" | "declining" | null (if no history).
+ */
+function computeScoreTrend(
+  currentScore: number,
+  recentSnapshots: Array<{ overallScore: number }>
+): string | null {
+  if (recentSnapshots.length < 2) return null;
+
+  // Compute EWMA from oldest to newest (recentSnapshots is desc order, so reverse)
+  const scores = recentSnapshots.map((s) => s.overallScore).reverse();
+  let ewma = scores[0];
+  for (let i = 1; i < scores.length; i++) {
+    ewma = EWMA_ALPHA * scores[i] + (1 - EWMA_ALPHA) * ewma;
+  }
+
+  const diff = currentScore - ewma;
+  if (diff > TREND_THRESHOLD) return "improving";
+  if (diff < -TREND_THRESHOLD) return "declining";
+  return "stable";
+}
+
 /**
  * Evaluate health for an instance, rate-limited to once per hour.
  * Called fire-and-forget after TRADE_CLOSE events.
@@ -92,18 +124,37 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     }
   }
 
-  // Load previous snapshot for hysteresis and transition detection
-  const previousSnapshot = await prisma.healthSnapshot.findFirst({
+  // Load recent snapshots for hysteresis, EWMA trend, and escalation
+  const recentSnapshots = await prisma.healthSnapshot.findMany({
     where: { instanceId },
     orderBy: { createdAt: "desc" },
-    select: { status: true },
+    take: EWMA_WINDOW,
+    select: { status: true, overallScore: true },
   });
+
+  const previousSnapshot = recentSnapshots[0] ?? null;
 
   // Compute health scores (with hysteresis from previous status)
   const previousStatus = previousSnapshot
     ? (previousSnapshot.status as HealthStatusType)
     : undefined;
   const result = computeHealth(liveMetrics, baseline, previousStatus);
+
+  // EWMA trend: compare current score to exponentially weighted average of recent scores
+  const scoreTrend = computeScoreTrend(result.overallScore, recentSnapshots);
+
+  // Rolling expectancy: avg PnL per trade as % of balance
+  const expectancy =
+    liveMetrics.tradeReturns.length > 0
+      ? liveMetrics.tradeReturns.reduce((a, b) => a + b, 0) / liveMetrics.tradeReturns.length
+      : null;
+
+  // Count consecutive DEGRADED snapshots for severity escalation
+  let consecutiveDegraded = 0;
+  for (const snap of recentSnapshots) {
+    if (snap.status === "DEGRADED") consecutiveDegraded++;
+    else break;
+  }
 
   // Detect status transitions and fire alerts on degradation
   if (previousSnapshot && previousSnapshot.status !== result.status) {
@@ -134,6 +185,26 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     }
   }
 
+  // Severity escalation: fire critical alert after 3+ consecutive DEGRADED snapshots
+  if (
+    result.status === "DEGRADED" &&
+    consecutiveDegraded >= ESCALATION_THRESHOLD &&
+    consecutiveDegraded % ESCALATION_THRESHOLD === 0
+  ) {
+    const scoreStr = Math.round(result.overallScore * 100);
+    triggerAlert({
+      userId: instance.userId,
+      instanceId,
+      eaName: instance.eaName,
+      alertType: "HEALTH_CRITICAL",
+      message:
+        `Strategy has been DEGRADED for ${consecutiveDegraded + 1} consecutive evaluations ` +
+        `(score: ${scoreStr}%). Consider pausing live trading.`,
+    }).catch((err) => {
+      logger.error({ err, instanceId }, "Failed to trigger health critical alert");
+    });
+  }
+
   // Store snapshot
   await prisma.healthSnapshot.create({
     data: {
@@ -162,6 +233,9 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       driftCusumValue: result.drift.cusumValue,
       driftDetected: result.drift.driftDetected,
       driftSeverity: result.drift.driftSeverity,
+      primaryDriver: result.primaryDriver,
+      scoreTrend,
+      expectancy,
     },
   });
 

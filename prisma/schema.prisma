@@ -793,6 +793,12 @@ model HealthSnapshot {
   driftCusumValue     Float    @default(0)
   driftDetected       Boolean  @default(false)
   driftSeverity       Float    @default(0)
+  // Primary driver explanation
+  primaryDriver       String?
+  // Score trend (EWMA-based): "improving" | "stable" | "declining"
+  scoreTrend          String?
+  // Rolling expectancy (avg PnL per trade as % of balance)
+  expectancy          Float?
   createdAt           DateTime @default(now())
 
   instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)

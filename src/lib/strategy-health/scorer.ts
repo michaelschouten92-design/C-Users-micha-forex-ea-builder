@@ -223,6 +223,7 @@ export function computeHealth(
       overallScore: 0,
       confidenceInterval: { lower: 0, upper: 0 },
       drift: noDrift,
+      primaryDriver: null,
       metrics: {
         return: emptyMetric("return", 0.25, live.returnPct),
         volatility: emptyMetric("volatility", 0.15, live.volatility),
@@ -292,51 +293,95 @@ export function computeHealth(
     };
   }
 
+  const allMetrics: HealthResult["metrics"] = {
+    return: {
+      name: "return",
+      score: returnScore,
+      weight: THRESHOLDS.return.weight,
+      liveValue: live.returnPct,
+      baselineValue: hasBaseline ? baseline.returnPct : null,
+    },
+    volatility: {
+      name: "volatility",
+      score: volatilityScore,
+      weight: THRESHOLDS.volatility.weight,
+      liveValue: live.volatility,
+      baselineValue: baselineVolatility,
+    },
+    drawdown: {
+      name: "drawdown",
+      score: drawdownScore,
+      weight: THRESHOLDS.drawdown.weight,
+      liveValue: live.maxDrawdownPct,
+      baselineValue: hasBaseline ? baseline.maxDrawdownPct : null,
+    },
+    winRate: {
+      name: "winRate",
+      score: winRateScore,
+      weight: THRESHOLDS.winRate.weight,
+      liveValue: live.winRate,
+      baselineValue: hasBaseline ? baseline.winRate : null,
+    },
+    tradeFrequency: {
+      name: "tradeFrequency",
+      score: tradeFrequencyScore,
+      weight: THRESHOLDS.tradeFrequency.weight,
+      liveValue: live.tradesPerDay,
+      baselineValue: hasBaseline ? baseline.tradesPerDay : null,
+    },
+  };
+
   return {
     status,
     overallScore,
     confidenceInterval,
     drift,
-    metrics: {
-      return: {
-        name: "return",
-        score: returnScore,
-        weight: THRESHOLDS.return.weight,
-        liveValue: live.returnPct,
-        baselineValue: hasBaseline ? baseline.returnPct : null,
-      },
-      volatility: {
-        name: "volatility",
-        score: volatilityScore,
-        weight: THRESHOLDS.volatility.weight,
-        liveValue: live.volatility,
-        baselineValue: baselineVolatility,
-      },
-      drawdown: {
-        name: "drawdown",
-        score: drawdownScore,
-        weight: THRESHOLDS.drawdown.weight,
-        liveValue: live.maxDrawdownPct,
-        baselineValue: hasBaseline ? baseline.maxDrawdownPct : null,
-      },
-      winRate: {
-        name: "winRate",
-        score: winRateScore,
-        weight: THRESHOLDS.winRate.weight,
-        liveValue: live.winRate,
-        baselineValue: hasBaseline ? baseline.winRate : null,
-      },
-      tradeFrequency: {
-        name: "tradeFrequency",
-        score: tradeFrequencyScore,
-        weight: THRESHOLDS.tradeFrequency.weight,
-        liveValue: live.tradesPerDay,
-        baselineValue: hasBaseline ? baseline.tradesPerDay : null,
-      },
-    },
+    primaryDriver: computePrimaryDriver(allMetrics, hasBaseline),
+    metrics: allMetrics,
     live,
     baseline,
   };
+}
+
+const METRIC_DISPLAY_NAMES: Record<string, string> = {
+  return: "Return",
+  volatility: "Volatility",
+  drawdown: "Drawdown",
+  winRate: "Win rate",
+  tradeFrequency: "Trade frequency",
+};
+
+/**
+ * Identify the metric contributing most to score drag.
+ * Returns a human-readable explanation string.
+ */
+function computePrimaryDriver(
+  metrics: HealthResult["metrics"],
+  hasBaseline: boolean
+): string | null {
+  let worstName = "";
+  let worstWeightedLoss = 0;
+
+  for (const key of Object.keys(metrics) as Array<keyof typeof metrics>) {
+    const m = metrics[key];
+    // Weighted loss = weight * (1 - score). Higher = more drag.
+    const weightedLoss = m.weight * (1 - m.score);
+    if (weightedLoss > worstWeightedLoss) {
+      worstWeightedLoss = weightedLoss;
+      worstName = key;
+    }
+  }
+
+  if (!worstName || worstWeightedLoss < 0.01) return null;
+
+  const m = metrics[worstName as keyof typeof metrics];
+  const label = METRIC_DISPLAY_NAMES[worstName] || worstName;
+  const scorePct = Math.round(m.score * 100);
+
+  if (hasBaseline && m.baselineValue !== null) {
+    return `${label} is the primary factor (score: ${scorePct}%)`;
+  }
+  return `${label} is the primary factor (score: ${scorePct}%)`;
 }
 
 /**

@@ -55,6 +55,8 @@ export interface HealthResult {
   confidenceInterval: ConfidenceInterval;
   /** CUSUM drift detection on strategy expectancy */
   drift: DriftInfo;
+  /** Which metric is dragging the score down the most (null if INSUFFICIENT_DATA) */
+  primaryDriver: string | null;
   metrics: {
     return: MetricScore;
     volatility: MetricScore;

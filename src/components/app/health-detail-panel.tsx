@@ -26,6 +26,9 @@ interface HealthSnapshotData {
   confidenceUpper: number;
   driftDetected: boolean;
   driftSeverity: number;
+  primaryDriver: string | null;
+  scoreTrend: string | null;
+  expectancy: number | null;
   createdAt: string;
 }
 
@@ -98,17 +101,106 @@ function MetricRow({
   );
 }
 
+interface HistoryPoint {
+  overallScore: number;
+  status: string;
+  createdAt: string;
+}
+
+function HealthSparkline({ points }: { points: HistoryPoint[] }) {
+  if (points.length < 2) return null;
+
+  const W = 200;
+  const H = 32;
+  const pad = 1;
+
+  // Points are newest-first from the API; reverse to chronological order
+  const sorted = [...points].reverse();
+  const scores = sorted.map((p) => p.overallScore);
+
+  const xStep = (W - pad * 2) / Math.max(scores.length - 1, 1);
+
+  const pathParts = scores.map((s, i) => {
+    const x = pad + i * xStep;
+    const y = H - pad - s * (H - pad * 2);
+    return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  // Color based on most recent score
+  const latest = scores[scores.length - 1];
+  const strokeColor = latest >= 0.7 ? "#10B981" : latest >= 0.4 ? "#F59E0B" : "#EF4444";
+
+  // Zone backgrounds
+  const warningY = H - pad - 0.7 * (H - pad * 2);
+  const degradedY = H - pad - 0.4 * (H - pad * 2);
+
+  return (
+    <div className="pt-3 border-t border-[rgba(79,70,229,0.1)]">
+      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Score History</p>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-8" preserveAspectRatio="none">
+        {/* Zone backgrounds */}
+        <rect x={0} y={pad} width={W} height={warningY - pad} fill="#EF4444" opacity={0.05} />
+        <rect
+          x={0}
+          y={warningY}
+          width={W}
+          height={degradedY - warningY}
+          fill="#F59E0B"
+          opacity={0.05}
+        />
+        <rect
+          x={0}
+          y={degradedY}
+          width={W}
+          height={H - pad - degradedY}
+          fill="#10B981"
+          opacity={0.05}
+        />
+        {/* Threshold lines */}
+        <line
+          x1={0}
+          y1={warningY}
+          x2={W}
+          y2={warningY}
+          stroke="#7C8DB0"
+          strokeWidth={0.3}
+          strokeDasharray="2,2"
+        />
+        <line
+          x1={0}
+          y1={degradedY}
+          x2={W}
+          y2={degradedY}
+          stroke="#7C8DB0"
+          strokeWidth={0.3}
+          strokeDasharray="2,2"
+        />
+        {/* Score line */}
+        <path d={pathParts.join("")} fill="none" stroke={strokeColor} strokeWidth={1.5} />
+      </svg>
+    </div>
+  );
+}
+
 export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
   const [health, setHealth] = useState<HealthSnapshotData | null>(null);
+  const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchHealth() {
       try {
-        const res = await fetch(`/api/live/${instanceId}/health`);
-        if (res.ok) {
-          const data = await res.json();
+        const [healthRes, historyRes] = await Promise.all([
+          fetch(`/api/live/${instanceId}/health`),
+          fetch(`/api/live/${instanceId}/health/history?limit=20`),
+        ]);
+        if (healthRes.ok) {
+          const data = await healthRes.json();
           setHealth(data.health);
+        }
+        if (historyRes.ok) {
+          const data = await historyRes.json();
+          setHistory(data.snapshots ?? []);
         }
       } catch {
         // Silently fail — health is non-critical
@@ -254,6 +346,27 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
         </div>
       )}
 
+      {/* Primary Driver + Trend + Expectancy */}
+      {(health.primaryDriver || health.scoreTrend || health.expectancy !== null) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#7C8DB0]">
+          {health.primaryDriver && <span>{health.primaryDriver}</span>}
+          {health.scoreTrend && (
+            <span className="flex items-center gap-0.5">
+              {health.scoreTrend === "improving" && <span className="text-[#10B981]">&#9650;</span>}
+              {health.scoreTrend === "declining" && <span className="text-[#EF4444]">&#9660;</span>}
+              {health.scoreTrend === "stable" && <span className="text-[#7C8DB0]">&#9654;</span>}
+              {health.scoreTrend}
+            </span>
+          )}
+          {health.expectancy !== null && (
+            <span>
+              Exp: {health.expectancy >= 0 ? "+" : ""}
+              {health.expectancy.toFixed(3)}%/trade
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Score Bars */}
       <div className="space-y-2.5">
         <ScoreBar score={health.returnScore} label="Return" />
@@ -291,6 +404,9 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
           format={METRIC_LABELS.tradeFrequency.format}
         />
       </div>
+
+      {/* Health History Sparkline */}
+      {history.length >= 2 && <HealthSparkline points={history} />}
 
       <p className="text-[10px] text-[#7C8DB0]">
         Last assessed: {new Date(health.createdAt).toLocaleString()}
