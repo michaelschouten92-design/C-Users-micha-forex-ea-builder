@@ -125,16 +125,20 @@ function generateBreakevenStopCode(
   code: GeneratedCode
 ): void {
   const group = "Breakeven Stop";
+  // Deduplicate when multiple breakeven nodes exist
+  const existingBE = code.inputs.filter((i) => i.name.startsWith("InpBELockPips"));
+  const beSuffix = existingBE.length > 0 ? `${existingBE.length + 1}` : "";
+
   // Add inputs based on trigger type
   if (data.trigger === "PIPS") {
     code.inputs.push(
       createInput(
         node,
         "triggerPips",
-        "InpBETriggerPips",
+        `InpBETriggerPips${beSuffix}`,
         "double",
         data.triggerPips,
-        "Breakeven Trigger (pips)",
+        `Breakeven Trigger (pips)${beSuffix ? ` ${beSuffix}` : ""}`,
         group
       )
     );
@@ -143,10 +147,10 @@ function generateBreakevenStopCode(
       createInput(
         node,
         "triggerPercent",
-        "InpBETriggerPercent",
+        `InpBETriggerPercent${beSuffix}`,
         "double",
         data.triggerPercent,
-        "Breakeven Trigger (% profit)",
+        `Breakeven Trigger (% profit)${beSuffix ? ` ${beSuffix}` : ""}`,
         group
       )
     );
@@ -155,10 +159,10 @@ function generateBreakevenStopCode(
       createInput(
         node,
         "triggerAtrPeriod",
-        "InpBEATRPeriod",
+        `InpBEATRPeriod${beSuffix}`,
         "int",
         data.triggerAtrPeriod,
-        "Breakeven ATR Period",
+        `Breakeven ATR Period${beSuffix ? ` ${beSuffix}` : ""}`,
         group
       )
     );
@@ -166,37 +170,43 @@ function generateBreakevenStopCode(
       createInput(
         node,
         "triggerAtrMultiplier",
-        "InpBEATRMultiplier",
+        `InpBEATRMultiplier${beSuffix}`,
         "double",
         data.triggerAtrMultiplier,
-        "Breakeven ATR Multiplier",
+        `Breakeven ATR Multiplier${beSuffix ? ` ${beSuffix}` : ""}`,
         group
       )
     );
-    code.globalVariables.push("int beATRHandle = INVALID_HANDLE;");
-    code.globalVariables.push("double beATRBuffer[];");
-    code.onInit.push("beATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpBEATRPeriod);");
+    code.globalVariables.push(`int beATRHandle${beSuffix} = INVALID_HANDLE;`);
+    code.globalVariables.push(`double beATRBuffer${beSuffix}[];`);
     code.onInit.push(
-      'if(beATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Breakeven"); return(INIT_FAILED); }'
+      `beATRHandle${beSuffix} = iATR(_Symbol, PERIOD_CURRENT, InpBEATRPeriod${beSuffix});`
     );
-    code.onDeinit.push("if(beATRHandle != INVALID_HANDLE) IndicatorRelease(beATRHandle);");
-    code.onInit.push("ArraySetAsSeries(beATRBuffer, true);");
+    code.onInit.push(
+      `if(beATRHandle${beSuffix} == INVALID_HANDLE) { Print("Failed to create ATR handle for Breakeven"); return(INIT_FAILED); }`
+    );
+    code.onDeinit.push(
+      `if(beATRHandle${beSuffix} != INVALID_HANDLE) IndicatorRelease(beATRHandle${beSuffix});`
+    );
+    code.onInit.push(`ArraySetAsSeries(beATRBuffer${beSuffix}, true);`);
   }
   code.inputs.push(
     createInput(
       node,
       "lockPips",
-      "InpBELockPips",
+      `InpBELockPips${beSuffix}`,
       "double",
       data.lockPips,
-      "Breakeven Lock (pips above entry)",
+      `Breakeven Lock (pips above entry)${beSuffix ? ` ${beSuffix}` : ""}`,
       group
     )
   );
 
   // Pre-loop: CopyBuffer for ATR if needed
   if (data.trigger === "ATR") {
-    code._managementPreLoop!.push("if(CopyBuffer(beATRHandle, 0, 0, 1, beATRBuffer) < 1) return;");
+    code._managementPreLoop!.push(
+      `if(CopyBuffer(beATRHandle${beSuffix}, 0, 0, 1, beATRBuffer${beSuffix}) < 1) return;`
+    );
   }
 
   // Build per-position helper function
@@ -204,18 +214,18 @@ function generateBreakevenStopCode(
     "//+------------------------------------------------------------------+",
     "//| Check breakeven stop for a single position                       |",
     "//+------------------------------------------------------------------+",
-    "void CheckBreakevenStop(ulong ticket, double openPrice, double currentSL, double positionProfit, long posType, double point)",
+    `void CheckBreakevenStop${beSuffix}(ulong ticket, double openPrice, double currentSL, double positionProfit, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
-    "   double lockPoints = InpBELockPips * _pipFactor;",
+    `   double lockPoints = InpBELockPips${beSuffix} * _pipFactor;`,
     "",
     "   bool triggerReached = false;",
   ];
 
   if (data.trigger === "PIPS") {
     fnLines.push(
-      "   double triggerPoints = InpBETriggerPips * _pipFactor;",
+      `   double triggerPoints = InpBETriggerPips${beSuffix} * _pipFactor;`,
       "   if(posType == POSITION_TYPE_BUY)",
       "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);",
       "   else if(posType == POSITION_TYPE_SELL)",
@@ -225,11 +235,11 @@ function generateBreakevenStopCode(
     fnLines.push(
       "   double beBalance = AccountInfoDouble(ACCOUNT_BALANCE);",
       "   double profitPercent = (beBalance > 0) ? (positionProfit / beBalance) * 100.0 : 0;",
-      "   triggerReached = (profitPercent >= InpBETriggerPercent);"
+      `   triggerReached = (profitPercent >= InpBETriggerPercent${beSuffix});`
     );
   } else if (data.trigger === "ATR") {
     fnLines.push(
-      "   double triggerPoints = (beATRBuffer[0] / point) * InpBEATRMultiplier;",
+      `   double triggerPoints = (beATRBuffer${beSuffix}[0] / point) * InpBEATRMultiplier${beSuffix};`,
       "   if(posType == POSITION_TYPE_BUY)",
       "      triggerReached = (SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point);",
       "   else if(posType == POSITION_TYPE_SELL)",
@@ -259,7 +269,7 @@ function generateBreakevenStopCode(
 
   code.helperFunctions.push(fnLines.join("\n"));
   code._managementCalls!.push(
-    "CheckBreakevenStop(ticket, openPrice, currentSL, positionProfit, posType, point);"
+    `CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
   );
 }
 
@@ -269,6 +279,9 @@ function generateTrailingStopCode(
   code: GeneratedCode
 ): void {
   const group = "Trailing Stop";
+  // Deduplicate when multiple trailing stop nodes exist
+  const existingTrail = code.inputs.filter((i) => i.name.startsWith("InpTrailStartPips"));
+  const tsSuffix = existingTrail.length > 0 ? `${existingTrail.length + 1}` : "";
 
   // Method-specific inputs and setup
   if (data.method === "ATR_BASED") {
@@ -276,10 +289,10 @@ function generateTrailingStopCode(
       createInput(
         node,
         "trailAtrPeriod",
-        "InpTrailATRPeriod",
+        `InpTrailATRPeriod${tsSuffix}`,
         "int",
         data.trailAtrPeriod,
-        "Trail ATR Period",
+        `Trail ATR Period${tsSuffix ? ` ${tsSuffix}` : ""}`,
         group
       )
     );
@@ -287,30 +300,34 @@ function generateTrailingStopCode(
       createInput(
         node,
         "trailAtrMultiplier",
-        "InpTrailATRMultiplier",
+        `InpTrailATRMultiplier${tsSuffix}`,
         "double",
         data.trailAtrMultiplier,
-        "Trail ATR Multiplier",
+        `Trail ATR Multiplier${tsSuffix ? ` ${tsSuffix}` : ""}`,
         group
       )
     );
-    code.globalVariables.push("int trailATRHandle = INVALID_HANDLE;");
-    code.globalVariables.push("double trailATRBuffer[];");
-    code.onInit.push("trailATRHandle = iATR(_Symbol, PERIOD_CURRENT, InpTrailATRPeriod);");
+    code.globalVariables.push(`int trailATRHandle${tsSuffix} = INVALID_HANDLE;`);
+    code.globalVariables.push(`double trailATRBuffer${tsSuffix}[];`);
     code.onInit.push(
-      'if(trailATRHandle == INVALID_HANDLE) { Print("Failed to create ATR handle for Trailing Stop"); return(INIT_FAILED); }'
+      `trailATRHandle${tsSuffix} = iATR(_Symbol, PERIOD_CURRENT, InpTrailATRPeriod${tsSuffix});`
     );
-    code.onInit.push("ArraySetAsSeries(trailATRBuffer, true);");
-    code.onDeinit.push("if(trailATRHandle != INVALID_HANDLE) IndicatorRelease(trailATRHandle);");
+    code.onInit.push(
+      `if(trailATRHandle${tsSuffix} == INVALID_HANDLE) { Print("Failed to create ATR handle for Trailing Stop"); return(INIT_FAILED); }`
+    );
+    code.onInit.push(`ArraySetAsSeries(trailATRBuffer${tsSuffix}, true);`);
+    code.onDeinit.push(
+      `if(trailATRHandle${tsSuffix} != INVALID_HANDLE) IndicatorRelease(trailATRHandle${tsSuffix});`
+    );
   } else if (data.method === "PERCENTAGE") {
     code.inputs.push(
       createInput(
         node,
         "trailPercent",
-        "InpTrailPercent",
+        `InpTrailPercent${tsSuffix}`,
         "double",
         data.trailPercent,
-        "Trail Distance (%)",
+        `Trail Distance (%)${tsSuffix ? ` ${tsSuffix}` : ""}`,
         group
       )
     );
@@ -320,10 +337,10 @@ function generateTrailingStopCode(
       createInput(
         node,
         "trailPips",
-        "InpTrailPips",
+        `InpTrailPips${tsSuffix}`,
         "double",
         data.trailPips,
-        "Trail Distance (pips)",
+        `Trail Distance (pips)${tsSuffix ? ` ${tsSuffix}` : ""}`,
         group
       )
     );
@@ -334,10 +351,10 @@ function generateTrailingStopCode(
     createInput(
       node,
       "startAfterPips",
-      "InpTrailStartPips",
+      `InpTrailStartPips${tsSuffix}`,
       "double",
       data.startAfterPips,
-      "Trail Start After (pips profit)",
+      `Trail Start After (pips profit)${tsSuffix ? ` ${tsSuffix}` : ""}`,
       group
     )
   );
@@ -345,7 +362,7 @@ function generateTrailingStopCode(
   // Pre-loop: CopyBuffer for ATR if needed
   if (data.method === "ATR_BASED") {
     code._managementPreLoop!.push(
-      "if(CopyBuffer(trailATRHandle, 0, 0, 1, trailATRBuffer) < 1) return;"
+      `if(CopyBuffer(trailATRHandle${tsSuffix}, 0, 0, 1, trailATRBuffer${tsSuffix}) < 1) return;`
     );
   }
 
@@ -354,15 +371,17 @@ function generateTrailingStopCode(
     "//+------------------------------------------------------------------+",
     "//| Check trailing stop for a single position                        |",
     "//+------------------------------------------------------------------+",
-    "void CheckTrailingStop(ulong ticket, double openPrice, double currentSL, long posType, double point)",
+    `void CheckTrailingStop${tsSuffix}(ulong ticket, double openPrice, double currentSL, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
-    "   double startPoints = InpTrailStartPips * _pipFactor;",
+    `   double startPoints = InpTrailStartPips${tsSuffix} * _pipFactor;`,
   ];
 
   if (data.method === "ATR_BASED") {
-    fnLines.push("   double trailPoints = (trailATRBuffer[0] / point) * InpTrailATRMultiplier;");
+    fnLines.push(
+      `   double trailPoints = (trailATRBuffer${tsSuffix}[0] / point) * InpTrailATRMultiplier${tsSuffix};`
+    );
   } else if (data.method === "PERCENTAGE") {
     fnLines.push(
       "   double currentProfitPoints = 0;",
@@ -370,11 +389,11 @@ function generateTrailingStopCode(
       "      currentProfitPoints = (SymbolInfoDouble(_Symbol, SYMBOL_BID) - openPrice) / point;",
       "   else",
       "      currentProfitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;",
-      "   double trailPoints = MathMax(currentProfitPoints * (InpTrailPercent / 100.0), _pipFactor);"
+      `   double trailPoints = MathMax(currentProfitPoints * (InpTrailPercent${tsSuffix} / 100.0), _pipFactor);`
     );
   } else {
     // FIXED_PIPS
-    fnLines.push("   double trailPoints = InpTrailPips * _pipFactor;");
+    fnLines.push(`   double trailPoints = InpTrailPips${tsSuffix} * _pipFactor;`);
   }
 
   fnLines.push(
@@ -407,7 +426,9 @@ function generateTrailingStopCode(
   );
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push("CheckTrailingStop(ticket, openPrice, currentSL, posType, point);");
+  code._managementCalls!.push(
+    `CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
+  );
 }
 
 function generatePartialCloseCode(
@@ -617,15 +638,19 @@ function generateLockProfitCode(
   code: GeneratedCode
 ): void {
   const group = "Lock Profit";
+  // Deduplicate when multiple lock-profit nodes exist
+  const existingLock = code.inputs.filter((i) => i.name.startsWith("InpLockCheckInterval"));
+  const lpSuffix = existingLock.length > 0 ? `${existingLock.length + 1}` : "";
+
   if (data.method === "PERCENTAGE") {
     code.inputs.push(
       createInput(
         node,
         "lockPercent",
-        "InpLockProfitPercent",
+        `InpLockProfitPercent${lpSuffix}`,
         "double",
         data.lockPercent,
-        "Lock Profit %",
+        `Lock Profit %${lpSuffix ? ` ${lpSuffix}` : ""}`,
         group
       )
     );
@@ -634,10 +659,10 @@ function generateLockProfitCode(
       createInput(
         node,
         "lockPips",
-        "InpLockProfitPips",
+        `InpLockProfitPips${lpSuffix}`,
         "double",
         data.lockPips,
-        "Lock Profit (pips)",
+        `Lock Profit (pips)${lpSuffix ? ` ${lpSuffix}` : ""}`,
         group
       )
     );
@@ -646,10 +671,10 @@ function generateLockProfitCode(
     createInput(
       node,
       "checkIntervalPips",
-      "InpLockCheckInterval",
+      `InpLockCheckInterval${lpSuffix}`,
       "double",
       data.checkIntervalPips,
-      "Min Profit Threshold (pips)",
+      `Min Profit Threshold (pips)${lpSuffix ? ` ${lpSuffix}` : ""}`,
       group
     )
   );
@@ -659,11 +684,11 @@ function generateLockProfitCode(
     "//+------------------------------------------------------------------+",
     "//| Check lock profit for a single position                          |",
     "//+------------------------------------------------------------------+",
-    "void CheckLockProfit(ulong ticket, double openPrice, double currentSL, long posType, double point)",
+    `void CheckLockProfit${lpSuffix}(ulong ticket, double openPrice, double currentSL, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);",
-    "   double checkPoints = InpLockCheckInterval * _pipFactor;",
+    `   double checkPoints = InpLockCheckInterval${lpSuffix} * _pipFactor;`,
     "",
     "   if(posType == POSITION_TYPE_BUY)",
     "   {",
@@ -675,10 +700,10 @@ function generateLockProfitCode(
 
   if (data.method === "PERCENTAGE") {
     fnLines.push(
-      "         double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
+      `         double lockPoints = currentProfitPoints * (InpLockProfitPercent${lpSuffix} / 100.0);`
     );
   } else {
-    fnLines.push("         double lockPoints = InpLockProfitPips * _pipFactor;");
+    fnLines.push(`         double lockPoints = InpLockProfitPips${lpSuffix} * _pipFactor;`);
   }
 
   fnLines.push(
@@ -700,10 +725,10 @@ function generateLockProfitCode(
 
   if (data.method === "PERCENTAGE") {
     fnLines.push(
-      "         double lockPoints = currentProfitPoints * (InpLockProfitPercent / 100.0);"
+      `         double lockPoints = currentProfitPoints * (InpLockProfitPercent${lpSuffix} / 100.0);`
     );
   } else {
-    fnLines.push("         double lockPoints = InpLockProfitPips * _pipFactor;");
+    fnLines.push(`         double lockPoints = InpLockProfitPips${lpSuffix} * _pipFactor;`);
   }
 
   fnLines.push(
@@ -719,7 +744,9 @@ function generateLockProfitCode(
   );
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push("CheckLockProfit(ticket, openPrice, currentSL, posType, point);");
+  code._managementCalls!.push(
+    `CheckLockProfit${lpSuffix}(ticket, openPrice, currentSL, posType, point);`
+  );
 }
 
 function generateMultiLevelTPCode(
