@@ -49,6 +49,7 @@ export default async function DashboardPage() {
         balance: true,
         equity: true,
         lastHeartbeat: true,
+        strategyStatus: true,
       },
       orderBy: { updatedAt: "desc" },
       take: 10,
@@ -286,14 +287,50 @@ export default async function DashboardPage() {
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-medium text-white truncate">{ea.eaName}</span>
                     <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        ea.status === "ONLINE"
-                          ? "bg-[#22C55E]"
-                          : ea.status === "ERROR"
-                            ? "bg-[#EF4444]"
-                            : "bg-[#64748b]"
-                      }`}
-                    />
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${(() => {
+                        const s = ea.strategyStatus;
+                        if (s === "VERIFIED")
+                          return "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25";
+                        if (s === "MONITORING")
+                          return "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/25";
+                        if (s === "TESTING")
+                          return "bg-[#A78BFA]/10 text-[#A78BFA] border-[#A78BFA]/25";
+                        if (s === "UNSTABLE")
+                          return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/25";
+                        if (s === "EDGE_DEGRADED")
+                          return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25";
+                        return "bg-[#7C8DB0]/10 text-[#7C8DB0] border-[#7C8DB0]/25";
+                      })()}`}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            ea.strategyStatus === "VERIFIED"
+                              ? "#10B981"
+                              : ea.strategyStatus === "MONITORING"
+                                ? "#6366F1"
+                                : ea.strategyStatus === "TESTING"
+                                  ? "#A78BFA"
+                                  : ea.strategyStatus === "UNSTABLE"
+                                    ? "#F59E0B"
+                                    : ea.strategyStatus === "EDGE_DEGRADED"
+                                      ? "#EF4444"
+                                      : "#7C8DB0",
+                        }}
+                      />
+                      {ea.strategyStatus === "VERIFIED"
+                        ? "Verified"
+                        : ea.strategyStatus === "MONITORING"
+                          ? "Monitoring"
+                          : ea.strategyStatus === "TESTING"
+                            ? "Testing"
+                            : ea.strategyStatus === "UNSTABLE"
+                              ? "Unstable"
+                              : ea.strategyStatus === "EDGE_DEGRADED"
+                                ? "Degraded"
+                                : "Inactive"}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>

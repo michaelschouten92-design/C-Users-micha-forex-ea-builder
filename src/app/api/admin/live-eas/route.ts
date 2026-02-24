@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
       lastHeartbeat: inst.lastHeartbeat,
       lastError: inst.lastError,
       createdAt: inst.createdAt,
+      strategyStatus: inst.strategyStatus,
       userEmail: inst.user.email,
       exportType: inst.exportJob?.exportType ?? null,
       exportDate: inst.exportJob?.createdAt ?? null,

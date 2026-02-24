@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
-import { HealthBadge } from "@/components/app/health-detail-panel";
 import { HealthDetailPanel } from "@/components/app/health-detail-panel";
+import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
+import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
@@ -35,6 +36,7 @@ interface EAInstanceData {
   heartbeats: { equity: number; createdAt: string }[];
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
+  strategyStatus?: string | null;
 }
 
 interface TradeRecord {
@@ -750,7 +752,9 @@ function EACard({
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={ea.status} animate={statusChanged} />
-          <HealthBadge status={ea.healthStatus ?? null} score={ea.healthScore ?? null} />
+          {ea.strategyStatus && (
+            <StrategyStatusBadge status={ea.strategyStatus as StrategyStatus} variant="compact" />
+          )}
           {ea.paused && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paused
@@ -1002,7 +1006,12 @@ function EACard({
       {showTrackRecord && <TrackRecordPanel instanceId={ea.id} eaName={ea.eaName} />}
 
       {/* Health Detail (expandable) */}
-      {showHealth && <HealthDetailPanel instanceId={ea.id} />}
+      {showHealth && (
+        <HealthDetailPanel
+          instanceId={ea.id}
+          strategyStatus={(ea.strategyStatus as StrategyStatus) ?? null}
+        />
+      )}
     </div>
   );
 }

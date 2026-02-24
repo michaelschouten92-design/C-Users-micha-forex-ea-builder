@@ -60,6 +60,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         provenAt: true,
         retiredAt: true,
         peakScore: true,
+        strategyStatus: true,
       },
     });
 

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
+import { getStatusExplanation } from "@/lib/strategy-status/resolver";
+import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
 interface HealthSnapshotData {
   id: string;
@@ -52,6 +55,7 @@ const MIN_DAYS = 7;
 
 interface HealthDetailPanelProps {
   instanceId: string;
+  strategyStatus?: StrategyStatus | null;
 }
 
 const STATUS_CONFIG = {
@@ -231,7 +235,7 @@ function LifecycleBadge({ lifecycle }: { lifecycle: LifecycleData }) {
   );
 }
 
-export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
+export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPanelProps) {
   const [health, setHealth] = useState<HealthSnapshotData | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
@@ -359,17 +363,36 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border"
-            style={{
-              backgroundColor: `${config.bg}20`,
-              color: config.color,
-              borderColor: `${config.color}30`,
-            }}
-          >
-            {config.label}
-          </span>
-          {lifecycle && lifecycle.phase !== "NEW" && <LifecycleBadge lifecycle={lifecycle} />}
+          {strategyStatus ? (
+            <StrategyStatusBadge
+              status={strategyStatus}
+              variant="expanded"
+              explanation={getStatusExplanation(strategyStatus, {
+                lifecyclePhase: lifecycle?.phase as
+                  | "NEW"
+                  | "PROVING"
+                  | "PROVEN"
+                  | "RETIRED"
+                  | undefined,
+                driftDetected: health.driftDetected,
+                deletedAt: null,
+              })}
+            />
+          ) : (
+            <>
+              <span
+                className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border"
+                style={{
+                  backgroundColor: `${config.bg}20`,
+                  color: config.color,
+                  borderColor: `${config.color}30`,
+                }}
+              >
+                {config.label}
+              </span>
+              {lifecycle && lifecycle.phase !== "NEW" && <LifecycleBadge lifecycle={lifecycle} />}
+            </>
+          )}
           <span className="text-xs text-[#7C8DB0]">
             {scorePct}%
             <span className="text-[10px] ml-1 opacity-70">

@@ -10,6 +10,7 @@ import {
   checkWeeklyLossAlerts,
   checkEquityTargetAlerts,
 } from "@/lib/alerts";
+import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
 import { z } from "zod";
 
 // NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
@@ -101,6 +102,12 @@ export async function POST(request: NextRequest) {
       processHeartbeatSideEffects(auth.instanceId, auth.userId, data, previousState).catch(
         () => {}
       );
+
+      // Recompute strategy status when EA comes online from offline/error
+      const statusChanged = previousState.status !== "ONLINE";
+      if (statusChanged) {
+        computeAndCacheStatus(auth.instanceId).catch(() => {});
+      }
     }
 
     // If the instance is paused, instruct the EA to pause trading

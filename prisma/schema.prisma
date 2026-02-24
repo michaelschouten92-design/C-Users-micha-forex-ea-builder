@@ -368,6 +368,10 @@ model LiveEAInstance {
   peakScore         Float     @default(0)
   peakScoreAt       DateTime?
 
+  // Strategy Status (computed, cached)
+  strategyStatus          String    @default("TESTING")  // VERIFIED | MONITORING | TESTING | UNSTABLE | EDGE_DEGRADED | INACTIVE
+  strategyStatusUpdatedAt DateTime?
+
   exportJob      ExportJob?       @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   strategyVersion StrategyVersion? @relation(fields: [strategyVersionId], references: [id])

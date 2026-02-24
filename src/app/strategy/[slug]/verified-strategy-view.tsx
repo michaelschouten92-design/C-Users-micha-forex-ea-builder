@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
+import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
 interface StrategyPageData {
   strategy: {
@@ -29,6 +31,7 @@ interface StrategyPageData {
     totalProfit: number;
     createdAt: string;
     lastHeartbeat: string | null;
+    strategyStatus?: string;
   } | null;
   trackRecord: {
     totalTrades: number;
@@ -247,77 +250,13 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Verified badge */}
-            {chainVerified && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 text-xs font-medium text-[#10B981]">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
-                </svg>
-                Integrity Verified
-              </span>
-            )}
-
-            {/* Lifecycle phase badge */}
-            {lifecycle && lifecycle.phase !== "NEW" && LIFECYCLE_BADGE[lifecycle.phase] && (
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium"
-                style={{
-                  backgroundColor: `${LIFECYCLE_BADGE[lifecycle.phase].color}15`,
-                  borderColor: `${LIFECYCLE_BADGE[lifecycle.phase].color}25`,
-                  color: LIFECYCLE_BADGE[lifecycle.phase].color,
-                }}
-                title={
-                  lifecycle.phase === "PROVEN" && lifecycle.provenAt
-                    ? `Proven since ${new Date(lifecycle.provenAt).toLocaleDateString()}`
-                    : lifecycle.phase === "RETIRED" && lifecycle.retiredAt
-                      ? `Retired on ${new Date(lifecycle.retiredAt).toLocaleDateString()}`
-                      : undefined
-                }
-              >
-                {lifecycle.phase === "PROVEN" && (
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                )}
-                {LIFECYCLE_BADGE[lifecycle.phase].label}
-              </span>
-            )}
-
-            {/* Health status badge */}
-            {settings.showHealthStatus && healthConfig && (
-              <span
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium"
-                style={{
-                  backgroundColor: `${healthConfig.color}15`,
-                  borderColor: `${healthConfig.color}25`,
-                  color: healthConfig.color,
-                }}
-              >
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: healthConfig.color }}
-                />
-                {healthConfig.label}
-                {health &&
-                  health.status !== "INSUFFICIENT_DATA" &&
-                  ` (${Math.round(health.overallScore * 100)}%)`}
-              </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Unified Strategy Status Badge */}
+            {instance?.strategyStatus && (
+              <StrategyStatusBadge
+                status={instance.strategyStatus as StrategyStatus}
+                variant="expanded"
+              />
             )}
 
             {/* Broker Verified badge */}

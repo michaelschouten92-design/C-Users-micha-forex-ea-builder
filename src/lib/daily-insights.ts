@@ -15,6 +15,7 @@ interface LiveEASummary {
   balance: number | null;
   equity: number | null;
   lastHeartbeat: Date | null;
+  strategyStatus?: string;
 }
 
 interface BacktestSummary {
@@ -105,9 +106,45 @@ export function generateDailyInsights(
     });
   }
 
-  // Profitable EAs summary
+  // Strategy status-based insights
+  const degradedStrategies = liveEAs.filter((ea) => ea.strategyStatus === "EDGE_DEGRADED");
+  const verifiedStrategies = liveEAs.filter((ea) => ea.strategyStatus === "VERIFIED");
+  const unstableStrategies = liveEAs.filter((ea) => ea.strategyStatus === "UNSTABLE");
+
+  if (degradedStrategies.length > 0) {
+    const names = degradedStrategies.map((ea) => ea.eaName).join(", ");
+    insights.push({
+      type: "warning",
+      icon: "alert",
+      message: `${degradedStrategies.length} strategy${degradedStrategies.length > 1 ? "s have" : " has"} degraded edge — review performance`,
+      detail: names,
+      linkHref: "/app/live",
+      linkLabel: "View Strategies",
+    });
+  }
+
+  if (verifiedStrategies.length > 0) {
+    insights.push({
+      type: "success",
+      icon: "profit",
+      message: `${verifiedStrategies.length} ${verifiedStrategies.length === 1 ? "strategy" : "strategies"} verified and performing`,
+    });
+  }
+
+  if (unstableStrategies.length > 0 && insights.length < 3) {
+    const names = unstableStrategies.map((ea) => ea.eaName).join(", ");
+    insights.push({
+      type: "warning",
+      icon: "weak",
+      message: `${unstableStrategies.length === 1 ? `Strategy ${names}` : `${unstableStrategies.length} strategies`} showing warning signs`,
+      linkHref: "/app/live",
+      linkLabel: "Review",
+    });
+  }
+
+  // Profitable EAs summary (only if no verified insight already added)
   const profitableEAs = onlineEAs.filter((ea) => ea.totalProfit > 0);
-  if (profitableEAs.length > 0 && onlineEAs.length > 0) {
+  if (profitableEAs.length > 0 && onlineEAs.length > 0 && verifiedStrategies.length === 0) {
     const totalProfit = profitableEAs.reduce((sum, ea) => sum + ea.totalProfit, 0);
     insights.push({
       type: "success",

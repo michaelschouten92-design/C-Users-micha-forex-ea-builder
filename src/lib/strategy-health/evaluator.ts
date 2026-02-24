@@ -15,6 +15,7 @@ import {
   RETIRED_CONSECUTIVE_DEGRADED,
 } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
+import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
 
 /** Number of recent snapshots to consider for EWMA trend computation */
 const EWMA_WINDOW = 10;
@@ -360,6 +361,11 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       scoreTrend,
       expectancy,
     },
+  });
+
+  // Recompute unified strategy status after health evaluation
+  await computeAndCacheStatus(instanceId).catch((err) => {
+    logger.error({ err, instanceId }, "Failed to compute strategy status after health eval");
   });
 
   return result;

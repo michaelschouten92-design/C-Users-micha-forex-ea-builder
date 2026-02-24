@@ -96,6 +96,7 @@ export default async function LiveEADashboardPage() {
     openTrades: ea.openTrades,
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
+    strategyStatus: ea.strategyStatus as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     trades: ea.trades.map((t) => ({
       profit: t.profit,
