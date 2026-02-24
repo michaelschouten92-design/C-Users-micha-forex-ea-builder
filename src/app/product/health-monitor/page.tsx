@@ -66,7 +66,7 @@ export default function HealthMonitorPage() {
 
           <section className="text-center mb-20">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Catch edge degradation before it costs you
+              Know the moment your edge starts to fade
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
               Markets change. Strategies that worked last quarter may not work next quarter. The

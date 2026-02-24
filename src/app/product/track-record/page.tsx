@@ -93,9 +93,7 @@ export default function TrackRecordPage() {
             </div>
 
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Every trade. Cryptographically sealed.
-              <br />
-              <span className="text-[#A78BFA]">Automatically.</span>
+              Proof that can&apos;t be <span className="text-[#A78BFA]">edited.</span>
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
               The Verified Track Record is built into every EA you create with AlgoStudio. No setup,

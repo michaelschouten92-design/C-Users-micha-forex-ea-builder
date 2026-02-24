@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { PLANS, formatPrice } from "@/lib/plans";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
@@ -29,8 +28,6 @@ const DashIcon = ({ className = "w-5 h-5 text-[#334155]" }: { className?: string
 );
 
 export default function PricingPage() {
-  const proPrice = PLANS.PRO.prices?.monthly;
-
   const faqItems = [
     {
       q: "How much does it cost to build an MT5 Expert Advisor?",
@@ -87,11 +84,11 @@ export default function PricingPage() {
         {/* ================================================================ */}
         <div className="text-center mb-6">
           <h1 className="text-4xl md:text-5xl font-bold text-white mt-4 leading-tight">
-            Build EAs that you can trust with real money
+            Choose your level of strategy intelligence
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            From your first strategy to a verified, health-monitored portfolio. Build with
-            confidence, trade with proof.
+            From first evaluation to verified, health-monitored portfolio. Every plan gives you
+            strategy intelligence — choose the depth that matches your stage.
           </p>
         </div>
 
@@ -101,15 +98,15 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto mt-8 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#0D0117]/50 border border-[rgba(34,211,238,0.15)] rounded-lg px-4 py-3 text-center">
-              <p className="text-xs text-[#64748B] mb-1">Building your first EA?</p>
+              <p className="text-xs text-[#64748B] mb-1">Testing a strategy?</p>
               <p className="text-sm font-medium text-[#22D3EE]">Start Free</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
-              <p className="text-xs text-[#64748B] mb-1">Ready to go live?</p>
+              <p className="text-xs text-[#64748B] mb-1">Trading live?</p>
               <p className="text-sm font-medium text-[#A78BFA]">Go Pro</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3 text-center">
-              <p className="text-xs text-[#64748B] mb-1">Trading real capital?</p>
+              <p className="text-xs text-[#64748B] mb-1">Protecting capital?</p>
               <p className="text-sm font-medium text-[#A78BFA]">Go Elite</p>
             </div>
           </div>
@@ -333,84 +330,6 @@ export default function PricingPage() {
         </div>
 
         {/* ================================================================ */}
-        {/* WHY PRO PAYS FOR ITSELF                                          */}
-        {/* ================================================================ */}
-        <div className="mt-20 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-4">
-            Why Pro pays for itself
-          </h2>
-          <p className="text-[#94A3B8] text-center mb-8 max-w-2xl mx-auto">
-            Most MQL5 freelancers charge {formatPrice(20000, "eur")}&ndash;
-            {formatPrice(100000, "eur")}+ per Expert Advisor. Every modification is an additional
-            cost. With AlgoStudio, you iterate instantly.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.1)] rounded-xl p-6">
-              <h3 className="text-base font-semibold text-white mb-4">Hiring an MQL5 Developer</h3>
-              <ul className="space-y-3 text-sm text-[#94A3B8]">
-                {[
-                  `${formatPrice(20000, "eur")}–${formatPrice(100000, "eur")}+ per EA`,
-                  "Days to weeks delivery time",
-                  "Extra cost per modification",
-                  "Communication overhead",
-                  "No verification or track record",
-                  "No health monitoring",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <svg
-                      className="w-4 h-4 text-[#EF4444] flex-shrink-0 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
-                <p className="text-xs text-[#64748B]">
-                  Typical cost for 3 EAs: {formatPrice(60000, "eur")}&ndash;
-                  {formatPrice(300000, "eur")}+
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-              <h3 className="text-base font-semibold text-white mb-4">AlgoStudio Pro</h3>
-              <ul className="space-y-3 text-sm text-[#CBD5E1]">
-                {[
-                  `${formatPrice(proPrice?.amount ?? 3900, "eur")}/month for unlimited EAs`,
-                  "Build in under 5 minutes",
-                  "Instant rebuilds, no extra cost",
-                  "Verified track record built-in",
-                  "Public Verified Strategy Page",
-                  "Live monitoring + alerts",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckIcon className="w-4 h-4" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
-                <p className="text-xs text-[#22D3EE]">
-                  Cost for unlimited EAs + verification:{" "}
-                  {formatPrice(proPrice?.amount ?? 3900, "eur")}/month
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ================================================================ */}
         {/* ELITE VALUE PROPOSITION                                          */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-4xl mx-auto">
@@ -535,29 +454,6 @@ export default function PricingPage() {
         </div>
 
         {/* ================================================================ */}
-        {/* COACHING BANNER                                                  */}
-        {/* ================================================================ */}
-        <div className="mt-20 max-w-4xl mx-auto">
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-semibold text-white mb-1">
-                Want personalized guidance?
-              </h3>
-              <p className="text-sm text-[#94A3B8]">
-                Book a 1-on-1 coaching session for expert strategy review, build guidance, and risk
-                management.
-              </p>
-            </div>
-            <Link
-              href="/coaching"
-              className="text-sm text-[#22D3EE] hover:underline whitespace-nowrap flex-shrink-0"
-            >
-              From &euro;179/session &mdash; Learn More &rarr;
-            </Link>
-          </div>
-        </div>
-
-        {/* ================================================================ */}
         {/* FAQ                                                              */}
         {/* ================================================================ */}
         <div className="mt-20 max-w-3xl mx-auto">
@@ -598,17 +494,17 @@ export default function PricingPage() {
         {/* ================================================================ */}
         <div className="text-center mt-16">
           <h2 className="text-2xl font-bold text-white mb-4">
-            Start building your Expert Advisor today
+            Start your strategy evaluation today
           </h2>
           <p className="text-[#94A3B8] mb-6 max-w-lg mx-auto">
-            No credit card required for the free plan. Build, verify, and go live when you&apos;re
-            ready.
+            No credit card required. Upload a backtest and get your Strategy Health Score in under 2
+            minutes.
           </p>
           <Link
-            href="/login?mode=register"
+            href="/login?mode=register&redirect=/app/backtest"
             className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
           >
-            Build Your First EA — Free
+            Get Your Strategy Evaluated — Free
           </Link>
           <p className="mt-4 text-[#64748B] text-sm">
             Already have an account?{" "}

@@ -87,18 +87,18 @@ const platformModules = [
     href: "/product/track-record",
   },
   {
-    color: "#EC4899",
-    title: "EA Builder",
-    description:
-      "No-code visual EA builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own. From idea to working Expert Advisor in minutes.",
-    href: "/product/how-it-works",
-  },
-  {
     color: "#EF4444",
     title: "Health Monitor",
     description:
       "Continuously compares live performance against your baseline. 5 metrics tracked. Alerts when returns drift, drawdowns exceed norms, or edge degrades.",
     href: "/product/health-monitor",
+  },
+  {
+    color: "#EC4899",
+    title: "EA Builder",
+    description:
+      "No-code visual EA builder with 6 proven templates. Customize risk, stops, and entries. Export clean MQL5 source code that you own. From idea to working Expert Advisor in minutes.",
+    href: "/product/how-it-works",
   },
 ];
 
@@ -137,19 +137,19 @@ export default function ProductPage() {
           {/* Hero */}
           <section className="text-center mb-24">
             <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Build EAs. Then prove they work.
+              Strategy intelligence from first backtest to proven edge.
             </h1>
             <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              No-code EA builder with built-in validation. Build your Expert Advisor, upload your
-              backtest, get AI-powered analysis and Monte Carlo validation, then monitor live
-              performance — everything in one platform.
+              Upload a backtest. Get an instant health score and AI analysis. Validate with Monte
+              Carlo. Monitor live performance with verified track records — one platform, from
+              evaluation to proof.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/login?mode=register&redirect=/app/backtest"
                 className="w-full sm:w-auto bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
               >
-                Upload Backtest — Free
+                Start Your First Evaluation — Free
               </Link>
               <Link
                 href="/product/how-it-works"
@@ -166,7 +166,7 @@ export default function ProductPage() {
               Strategy Intelligence Pipeline
             </h2>
             <p className="text-[#94A3B8] text-center max-w-2xl mx-auto mb-12">
-              Build &rarr; Upload &rarr; Validate &rarr; Monitor
+              Upload &rarr; Evaluate &rarr; Verify &rarr; Monitor
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               {pipelineSteps.map((step) => (
@@ -250,8 +250,8 @@ export default function ProductPage() {
       </main>
 
       <CTASection
-        title="Build your first EA"
-        description="From template to validated Expert Advisor in minutes. Health scoring, AI analysis, and Monte Carlo validation included. Free — no credit card required."
+        title="Start your strategy evaluation"
+        description="Upload a backtest and get your Strategy Health Score in under 2 minutes. AI analysis, Monte Carlo validation, and verified track records included. Free — no credit card required."
       />
 
       <Footer />

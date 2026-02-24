@@ -53,61 +53,12 @@ export default async function Home() {
     ],
   };
 
-  const faqItems = [
-    {
-      q: "Do I need to know MQL5 to use AlgoStudio?",
-      a: "No. AlgoStudio includes a no-code visual builder with proven templates. Pick a template, adjust risk parameters, and export a ready-to-use .mq5 file. If you already code in MQL5, you can upload any backtest report for analysis instead.",
-    },
-    {
-      q: "Does AlgoStudio work with prop firms like FTMO?",
-      a: "Yes. The exported EA runs on any MT5 broker, including prop firm platforms like FTMO, E8 Markets, and FundingPips. The Verified Track Record feature also helps you document provable performance for prop firm applications and evaluations.",
-    },
-    {
-      q: "What is a Strategy Health Score?",
-      a: "A 0-100 composite score that rates your strategy across 7 weighted dimensions: profit factor, max drawdown, trade count, expected payoff, win rate, Sharpe ratio, and recovery factor. Scores above 80 are ROBUST, 60-79 are MODERATE, and below 60 are WEAK. It gives you an instant, objective read on whether a strategy is worth deploying.",
-    },
-    {
-      q: "How does Monte Carlo validation work?",
-      a: "Monte Carlo validation runs 1,000 randomized simulations of your trade sequence — shuffling trade order, varying slippage, and stress-testing under different conditions. It tells you the survival probability and realistic range of outcomes, not just the single best-case backtest. If your strategy can't survive randomized conditions, it's unlikely to survive live markets.",
-    },
-    {
-      q: "Can I use the exported EA without a subscription?",
-      a: "Yes. Every EA you build and export is yours permanently — no subscription required to run it. The free plan lets you build and export unlimited EAs. Pro features like Monte Carlo validation, Verified Track Record, and live monitoring require a subscription, but your exported code never stops working.",
-    },
-    {
-      q: "What is a Verified Track Record?",
-      a: "A cryptographic proof of your live trading performance. Every trade is recorded in an immutable hash chain that can't be altered or cherry-picked. You can share proof bundles that anyone can independently verify — making it useful for prop firm applications, investor presentations, or simply proving to yourself that your edge is real.",
-    },
-    {
-      q: "What is the Strategy Lifecycle?",
-      a: "Every strategy in AlgoStudio follows a lifecycle: NEW (collecting initial data), PROVING (building track record with health monitoring), PROVEN (5 consecutive healthy evaluations — edge verified), and RETIRED (edge degraded, auto-retired to protect capital). This gives you a clear, objective framework for when to trust, scale, or stop a strategy.",
-    },
-  ];
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
-      "@type": "Question",
-      name: item.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.a,
-      },
-    })),
-  };
-
   return (
     <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
       <SiteNav />
 
       {/* ================================================================ */}
@@ -483,7 +434,7 @@ export default async function Home() {
             <h2 className="text-3xl font-bold text-white">Verification you can prove.</h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 title: "Your code is yours.",
@@ -501,26 +452,6 @@ export default async function Home() {
                       strokeLinejoin="round"
                       strokeWidth={1.5}
                       d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                    />
-                  </svg>
-                ),
-              },
-              {
-                title: "Strategy logic stays local.",
-                desc: "Client-side generation, never transmitted.",
-                icon: (
-                  <svg
-                    className="w-8 h-8 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
                 ),
@@ -546,8 +477,8 @@ export default async function Home() {
                 ),
               },
               {
-                title: "Broker-verified trades.",
-                desc: "Cross-matched against broker execution data.",
+                title: "Independent verification.",
+                desc: "Anyone can audit your proof bundle — no account needed.",
                 icon: (
                   <svg
                     className="w-8 h-8 text-[#22D3EE]"
@@ -560,7 +491,7 @@ export default async function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={1.5}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                     />
                   </svg>
                 ),
@@ -594,44 +525,6 @@ export default async function Home() {
             </p>
           </div>
           <PricingSection showHeader={false} />
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* S7: FAQ + FINAL CTA — Combined close                             */}
-      {/* ================================================================ */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Frequently asked questions</h2>
-          </div>
-          <div className="space-y-4">
-            {faqItems.map((item, i) => (
-              <details
-                key={i}
-                className="group bg-[#0D0117]/50 border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
-              >
-                <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-sm list-none">
-                  {item.q}
-                  <svg
-                    className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </summary>
-                <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">{item.a}</div>
-              </details>
-            ))}
-          </div>
         </div>
       </section>
 
