@@ -7,12 +7,13 @@ import type { GeneratedCode, GeneratorContext } from "../types";
 
 /**
  * Collects indicator handle variable names from global variable declarations.
- * Pattern: `int XYZHandle = INVALID_HANDLE;`
+ * Pattern: `int XYZHandle = INVALID_HANDLE;` or `int XYZHandle2 = INVALID_HANDLE;`
+ * (numeric suffix from breakeven/trailing-stop dedup)
  */
 function collectHandleNames(globals: string[]): string[] {
   const names: string[] = [];
   for (const line of globals) {
-    const match = line.match(/^int (\w+Handle) = INVALID_HANDLE;$/);
+    const match = line.match(/^int (\w+Handle\d*) = INVALID_HANDLE;$/);
     if (match) names.push(match[1]);
   }
   return names;
@@ -209,9 +210,6 @@ function transformOnTick(code: GeneratedCode, handleNames: string[]): void {
 
     return t;
   });
-
-  // Compute symPipFactor per-symbol inside the OnTick for-loop
-  code.onTick.unshift("int symPipFactor = (symDigits == 3 || symDigits == 5) ? 10 : 1;");
 }
 
 /**
@@ -325,7 +323,7 @@ export function transformCodeForMultiPair(
 
   // Transform globals: handle declarations → arrays
   code.globalVariables = code.globalVariables.map((line) => {
-    const match = line.match(/^int (\w+Handle) = INVALID_HANDLE;$/);
+    const match = line.match(/^int (\w+Handle\d*) = INVALID_HANDLE;$/);
     if (match) return `int g_${match[1]}[];`;
     return line;
   });
@@ -369,20 +367,7 @@ export function transformCodeForMultiPair(
   // 4. Transform OnTick (symbol references + function calls)
   transformOnTick(code, handleNames);
 
-  // 4b. Inject correlation filter check into OnTick (before entry logic)
-  if (settings.correlationFilter) {
-    const entryIdx = code.onTick.findIndex((l) => l.includes("Execute Entry"));
-    if (entryIdx >= 0) {
-      code.onTick.splice(
-        entryIdx,
-        0,
-        "//--- Correlation filter: skip if correlated with open positions",
-        "if(IsCorrelatedWithOpenPositions(tradeSym)) continue;"
-      );
-    }
-  }
-
-  // 4c. Transform ManageOpenPositions for multi-pair via global management context
+  // 4b. Transform ManageOpenPositions for multi-pair via global management context
   code.globalVariables.push('string g_mgmtSym = "";');
   code.globalVariables.push("double g_mgmtPoint = 0;");
   code.globalVariables.push("int g_mgmtPipFactor = 0;");

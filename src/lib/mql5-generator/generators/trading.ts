@@ -960,7 +960,14 @@ export function generateEntryLogic(
   let hasFilterConditions = false;
 
   if (!hasConditions) {
-    // No conditions at all — buyCondition/sellCondition not needed
+    // No indicator/price-action conditions — declare always-true conditions
+    // so filter-only or unconditional EAs can still reference buyCondition/sellCondition
+    if (hasBuyNode) {
+      code.onTick.push("bool buyCondition = true;");
+    }
+    if (hasSellNode) {
+      code.onTick.push("bool sellCondition = true;");
+    }
   } else {
     // Generate conditions based on all indicators and price action
     const buyConditions: string[] = [];
@@ -2015,21 +2022,29 @@ export function generateEntryLogic(
     const hasSellRisk = hasSharedRisk || code.inputs.some((i) => i.name === "InpSellRiskPercent");
     const buyRiskInput = hasSharedRisk ? "InpRiskPercent" : "InpBuyRiskPercent";
     const sellRiskInput = hasSharedRisk ? "InpRiskPercent" : "InpSellRiskPercent";
-    if (hasBuyRisk) {
-      code.onTick.push(`   double pendBuyLot = CalculateLotSize(${buyRiskInput}, pendBuySLDist);`);
-      code.onTick.push(`   pendBuyLot = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, pendBuyLot));`);
-    } else {
-      code.onTick.push(`   double pendBuyLot = buyLotSize;`);
+    if (hasBuyNode) {
+      if (hasBuyRisk) {
+        code.onTick.push(
+          `   double pendBuyLot = CalculateLotSize(${buyRiskInput}, pendBuySLDist);`
+        );
+        code.onTick.push(
+          `   pendBuyLot = MathMax(InpBuyMinLot, MathMin(InpBuyMaxLot, pendBuyLot));`
+        );
+      } else {
+        code.onTick.push(`   double pendBuyLot = buyLotSize;`);
+      }
     }
-    if (hasSellRisk) {
-      code.onTick.push(
-        `   double pendSellLot = CalculateLotSize(${sellRiskInput}, pendSellSLDist);`
-      );
-      code.onTick.push(
-        `   pendSellLot = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, pendSellLot));`
-      );
-    } else {
-      code.onTick.push(`   double pendSellLot = sellLotSize;`);
+    if (hasSellNode) {
+      if (hasSellRisk) {
+        code.onTick.push(
+          `   double pendSellLot = CalculateLotSize(${sellRiskInput}, pendSellSLDist);`
+        );
+        code.onTick.push(
+          `   pendSellLot = MathMax(InpSellMinLot, MathMin(InpSellMaxLot, pendSellLot));`
+        );
+      } else {
+        code.onTick.push(`   double pendSellLot = sellLotSize;`);
+      }
     }
     code.onTick.push("");
 

@@ -1189,10 +1189,19 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         addCopyBuffer(`${varPrefix}ATRHandle`, 0, copyBars, `${varPrefix}ATRBuffer`, code);
         addCopyBuffer(`${varPrefix}KCEMAHandle`, 0, copyBars, `${varPrefix}KCEMABuffer`, code);
 
-        // Calculate squeeze state: BB inside KC
+        // Calculate squeeze state: BB inside KC (using confirmed bars [1] and [2])
         code.onTick.push(`//--- BB Squeeze ${index + 1}: detect squeeze and breakout`);
         code.onTick.push(`{`);
         code.onTick.push(`   double kcMult${index} = MathMax(1.0, InpBBS${index}KCMult);`);
+        code.onTick.push(
+          `   double kcUpper2 = ${varPrefix}KCEMABuffer[2] + kcMult${index} * ${varPrefix}ATRBuffer[2];`
+        );
+        code.onTick.push(
+          `   double kcLower2 = ${varPrefix}KCEMABuffer[2] - kcMult${index} * ${varPrefix}ATRBuffer[2];`
+        );
+        code.onTick.push(
+          `   bool prevSqueeze = ${varPrefix}BBUpper[2] < kcUpper2 && ${varPrefix}BBLower[2] > kcLower2;`
+        );
         code.onTick.push(
           `   double kcUpper1 = ${varPrefix}KCEMABuffer[1] + kcMult${index} * ${varPrefix}ATRBuffer[1];`
         );
@@ -1200,16 +1209,7 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
           `   double kcLower1 = ${varPrefix}KCEMABuffer[1] - kcMult${index} * ${varPrefix}ATRBuffer[1];`
         );
         code.onTick.push(
-          `   bool prevSqueeze = ${varPrefix}BBUpper[1] < kcUpper1 && ${varPrefix}BBLower[1] > kcLower1;`
-        );
-        code.onTick.push(
-          `   double kcUpper0 = ${varPrefix}KCEMABuffer[0] + kcMult${index} * ${varPrefix}ATRBuffer[0];`
-        );
-        code.onTick.push(
-          `   double kcLower0 = ${varPrefix}KCEMABuffer[0] - kcMult${index} * ${varPrefix}ATRBuffer[0];`
-        );
-        code.onTick.push(
-          `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[0] < kcUpper0 && ${varPrefix}BBLower[0] > kcLower0;`
+          `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[1] < kcUpper1 && ${varPrefix}BBLower[1] > kcLower1;`
         );
         code.onTick.push(`   ${varPrefix}WasSqueeze = prevSqueeze;`);
         code.onTick.push(`}`);

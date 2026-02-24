@@ -205,7 +205,7 @@ function generateBreakevenStopCode(
   // Pre-loop: CopyBuffer for ATR if needed
   if (data.trigger === "ATR") {
     code._managementPreLoop!.push(
-      `if(CopyBuffer(beATRHandle${beSuffix}, 0, 0, 1, beATRBuffer${beSuffix}) < 1) return;`
+      `bool beATRReady${beSuffix} = (CopyBuffer(beATRHandle${beSuffix}, 0, 0, 1, beATRBuffer${beSuffix}) >= 1);`
     );
   }
 
@@ -268,9 +268,15 @@ function generateBreakevenStopCode(
   );
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push(
-    `CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
-  );
+  if (data.trigger === "ATR") {
+    code._managementCalls!.push(
+      `if(beATRReady${beSuffix}) CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
+    );
+  } else {
+    code._managementCalls!.push(
+      `CheckBreakevenStop${beSuffix}(ticket, openPrice, currentSL, positionProfit, posType, point);`
+    );
+  }
 }
 
 function generateTrailingStopCode(
@@ -362,7 +368,7 @@ function generateTrailingStopCode(
   // Pre-loop: CopyBuffer for ATR if needed
   if (data.method === "ATR_BASED") {
     code._managementPreLoop!.push(
-      `if(CopyBuffer(trailATRHandle${tsSuffix}, 0, 0, 1, trailATRBuffer${tsSuffix}) < 1) return;`
+      `bool trailATRReady${tsSuffix} = (CopyBuffer(trailATRHandle${tsSuffix}, 0, 0, 1, trailATRBuffer${tsSuffix}) >= 1);`
     );
   }
 
@@ -426,9 +432,15 @@ function generateTrailingStopCode(
   );
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push(
-    `CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
-  );
+  if (data.method === "ATR_BASED") {
+    code._managementCalls!.push(
+      `if(trailATRReady${tsSuffix}) CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
+    );
+  } else {
+    code._managementCalls!.push(
+      `CheckTrailingStop${tsSuffix}(ticket, openPrice, currentSL, posType, point);`
+    );
+  }
 }
 
 function generatePartialCloseCode(
@@ -462,10 +474,10 @@ function generatePartialCloseCode(
       createInput(
         node,
         "_rMultipleTrigger",
-        "InpTP1RMultiple",
+        `InpTP1RMultiple${pcSuffix}`,
         "double",
         rMultipleTrigger,
-        "TP1 R-Multiple",
+        `TP1 R-Multiple${pcSuffix ? ` (${pcSuffix})` : ""}`,
         group
       )
     );
@@ -474,10 +486,10 @@ function generatePartialCloseCode(
       createInput(
         node,
         "triggerPercent",
-        "InpPartialCloseTriggerPercent",
+        `InpPartialCloseTriggerPercent${pcSuffix}`,
         "double",
         ((data as Record<string, unknown>).triggerPercent as number) ?? 1,
-        "Partial Close Trigger (%)",
+        `Partial Close Trigger (%)${pcSuffix ? ` (${pcSuffix})` : ""}`,
         group
       )
     );
@@ -486,64 +498,63 @@ function generatePartialCloseCode(
       createInput(
         node,
         "triggerPips",
-        "InpPartialCloseTriggerPips",
+        `InpPartialCloseTriggerPips${pcSuffix}`,
         "double",
         data.triggerPips,
-        "Partial Close Trigger (pips)",
+        `Partial Close Trigger (pips)${pcSuffix ? ` (${pcSuffix})` : ""}`,
         group
       )
     );
   }
-  // Only declare shared globals/helpers once (avoid duplicates with multiple partial close nodes)
-  if (!code.globalVariables.includes("ulong partialClosedTickets[];")) {
-    code.globalVariables.push("ulong partialClosedTickets[];");
+  // Each partial-close node gets its own tracking array and helpers (suffixed by pcSuffix)
+  code.globalVariables.push(`ulong partialClosedTickets${pcSuffix}[];`);
 
-    code.helperFunctions
-      .push(`//+------------------------------------------------------------------+
-//| Check if ticket has been partially closed                         |
+  code.helperFunctions.push(`//+------------------------------------------------------------------+
+//| Check if ticket has been partially closed (${pcSuffix || "default"})                |
 //+------------------------------------------------------------------+
-bool IsPartialClosed(ulong ticket)
+bool IsPartialClosed${pcSuffix}(ulong ticket)
 {
-   for(int i = ArraySize(partialClosedTickets) - 1; i >= 0; i--)
+   for(int i = ArraySize(partialClosedTickets${pcSuffix}) - 1; i >= 0; i--)
    {
-      if(partialClosedTickets[i] == ticket) return true;
+      if(partialClosedTickets${pcSuffix}[i] == ticket) return true;
    }
    return false;
 }
 
 //+------------------------------------------------------------------+
-//| Mark ticket as partially closed                                   |
+//| Mark ticket as partially closed (${pcSuffix || "default"})                          |
 //+------------------------------------------------------------------+
-void MarkPartialClosed(ulong ticket)
+void MarkPartialClosed${pcSuffix}(ulong ticket)
 {
-   int size = ArraySize(partialClosedTickets);
-   ArrayResize(partialClosedTickets, size + 1);
-   partialClosedTickets[size] = ticket;
+   int size = ArraySize(partialClosedTickets${pcSuffix});
+   ArrayResize(partialClosedTickets${pcSuffix}, size + 1);
+   partialClosedTickets${pcSuffix}[size] = ticket;
 }
 
 //+------------------------------------------------------------------+
-//| Remove tickets for positions that no longer exist                 |
+//| Remove tickets for positions that no longer exist (${pcSuffix || "default"})        |
 //+------------------------------------------------------------------+
-void CleanPartialClosedTickets()
+void CleanPartialClosedTickets${pcSuffix}()
 {
-   for(int i = ArraySize(partialClosedTickets) - 1; i >= 0; i--)
+   for(int i = ArraySize(partialClosedTickets${pcSuffix}) - 1; i >= 0; i--)
    {
-      if(!PositionSelectByTicket(partialClosedTickets[i]))
+      if(!PositionSelectByTicket(partialClosedTickets${pcSuffix}[i]))
       {
-         int last = ArraySize(partialClosedTickets) - 1;
-         partialClosedTickets[i] = partialClosedTickets[last];
-         ArrayResize(partialClosedTickets, last);
+         int last = ArraySize(partialClosedTickets${pcSuffix}) - 1;
+         partialClosedTickets${pcSuffix}[i] = partialClosedTickets${pcSuffix}[last];
+         ArrayResize(partialClosedTickets${pcSuffix}, last);
       }
    }
 }`);
 
-    // Throttle CleanPartialClosedTickets: only every 100 ticks (P7)
+  // Throttle CleanPartialClosedTickets: only every 100 ticks (one counter per suffix)
+  if (!code._managementPreLoop!.some((l) => l.includes(`CleanPartialClosedTickets${pcSuffix}()`))) {
     code._managementPreLoop!.push(
-      "static int _cleanTickCounter = 0;",
-      "if(++_cleanTickCounter >= 100)",
+      `static int _cleanTickCounter${pcSuffix} = 0;`,
+      `if(++_cleanTickCounter${pcSuffix} >= 100)`,
       "{",
-      "   CleanPartialClosedTickets();",
-      "   _cleanTickCounter = 0;",
+      `   CleanPartialClosedTickets${pcSuffix}();`,
+      `   _cleanTickCounter${pcSuffix} = 0;`,
       "}"
     );
   }
@@ -563,7 +574,7 @@ void CleanPartialClosedTickets()
       "   double openSL = PositionGetDouble(POSITION_SL);",
       "   if(openSL == 0) return; // R-multiple trigger requires a defined SL",
       "   double slDistPoints = MathAbs(openPrice - openSL) / point;",
-      "   double triggerPoints = slDistPoints * InpTP1RMultiple;",
+      `   double triggerPoints = slDistPoints * InpTP1RMultiple${pcSuffix};`,
       "   if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPoints * point)",
       "      profitReached = true;",
       "   if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPoints * point)",
@@ -573,12 +584,12 @@ void CleanPartialClosedTickets()
     fnLines.push(
       "   double posProfit = PositionGetDouble(POSITION_PROFIT);",
       "   double balance = AccountInfoDouble(ACCOUNT_BALANCE);",
-      "   if(balance > 0 && (posProfit / balance) * 100.0 >= InpPartialCloseTriggerPercent)",
+      `   if(balance > 0 && (posProfit / balance) * 100.0 >= InpPartialCloseTriggerPercent${pcSuffix})`,
       "      profitReached = true;"
     );
   } else {
     fnLines.push(
-      "   double triggerPrice = InpPartialCloseTriggerPips * _pipFactor * point;",
+      `   double triggerPrice = InpPartialCloseTriggerPips${pcSuffix} * _pipFactor * point;`,
       "   if(posType == POSITION_TYPE_BUY && SymbolInfoDouble(_Symbol, SYMBOL_BID) >= openPrice + triggerPrice)",
       "      profitReached = true;",
       "   if(posType == POSITION_TYPE_SELL && SymbolInfoDouble(_Symbol, SYMBOL_ASK) <= openPrice - triggerPrice)",
@@ -588,7 +599,7 @@ void CleanPartialClosedTickets()
 
   fnLines.push(
     "",
-    "   if(profitReached && !IsPartialClosed(ticket))",
+    `   if(profitReached && !IsPartialClosed${pcSuffix}(ticket))`,
     "   {",
     "      double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
     "      double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
@@ -610,7 +621,7 @@ void CleanPartialClosedTickets()
     "               { ticket = pcTk; break; }",
     "            }",
     "         }",
-    "         MarkPartialClosed(ticket);"
+    `         MarkPartialClosed${pcSuffix}(ticket);`
   );
 
   if (data.moveSLToBreakeven) {
@@ -756,14 +767,18 @@ function generateMultiLevelTPCode(
 ): void {
   const group = "Multi-Level TP";
 
+  // Deduplicate when multiple multi-level TP nodes exist
+  const existingMLTP = code.inputs.filter((i) => i.name.startsWith("InpMLTP1Pips"));
+  const mltpSuffix = existingMLTP.length > 0 ? `${existingMLTP.length + 1}` : "";
+
   code.inputs.push(
     createInput(
       node,
       "tp1Pips",
-      "InpMLTP1Pips",
+      `InpMLTP1Pips${mltpSuffix}`,
       "double",
       data.tp1Pips,
-      "TP1 Distance (pips)",
+      `TP1 Distance (pips)${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -771,10 +786,10 @@ function generateMultiLevelTPCode(
     createInput(
       node,
       "tp1Percent",
-      "InpMLTP1Percent",
+      `InpMLTP1Percent${mltpSuffix}`,
       "double",
       data.tp1Percent,
-      "TP1 Close %",
+      `TP1 Close %${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -782,10 +797,10 @@ function generateMultiLevelTPCode(
     createInput(
       node,
       "tp2Pips",
-      "InpMLTP2Pips",
+      `InpMLTP2Pips${mltpSuffix}`,
       "double",
       data.tp2Pips,
-      "TP2 Distance (pips)",
+      `TP2 Distance (pips)${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -793,10 +808,10 @@ function generateMultiLevelTPCode(
     createInput(
       node,
       "tp2Percent",
-      "InpMLTP2Percent",
+      `InpMLTP2Percent${mltpSuffix}`,
       "double",
       data.tp2Percent,
-      "TP2 Close %",
+      `TP2 Close %${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -804,10 +819,10 @@ function generateMultiLevelTPCode(
     createInput(
       node,
       "tp3Pips",
-      "InpMLTP3Pips",
+      `InpMLTP3Pips${mltpSuffix}`,
       "double",
       data.tp3Pips,
-      "TP3 Distance (pips)",
+      `TP3 Distance (pips)${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -815,10 +830,10 @@ function generateMultiLevelTPCode(
     createInput(
       node,
       "tp3Percent",
-      "InpMLTP3Percent",
+      `InpMLTP3Percent${mltpSuffix}`,
       "double",
       data.tp3Percent,
-      "TP3 Close %",
+      `TP3 Close %${mltpSuffix ? ` ${mltpSuffix}` : ""}`,
       group
     )
   );
@@ -877,22 +892,24 @@ void CleanMLTPStates()
 }`);
   }
 
-  // Throttle CleanMLTPStates: only every 100 ticks
-  code._managementPreLoop!.push(
-    "static int _cleanMLTPCounter = 0;",
-    "if(++_cleanMLTPCounter >= 100)",
-    "{",
-    "   CleanMLTPStates();",
-    "   _cleanMLTPCounter = 0;",
-    "}"
-  );
+  // Throttle CleanMLTPStates: only every 100 ticks (push once)
+  if (!code._managementPreLoop!.some((l) => l.includes("CleanMLTPStates()"))) {
+    code._managementPreLoop!.push(
+      "static int _cleanMLTPCounter = 0;",
+      "if(++_cleanMLTPCounter >= 100)",
+      "{",
+      "   CleanMLTPStates();",
+      "   _cleanMLTPCounter = 0;",
+      "}"
+    );
+  }
 
   // Build per-position helper function
   const fnLines: string[] = [
     "//+------------------------------------------------------------------+",
     "//| Check multi-level TP for a single position                       |",
     "//+------------------------------------------------------------------+",
-    "void CheckMultiLevelTP(ulong ticket, double openPrice, double volume, long posType, double point)",
+    `void CheckMultiLevelTP${mltpSuffix}(ulong ticket, double openPrice, double volume, long posType, double point)`,
     "{",
     "   if(point <= 0) return;",
     "   int tpLevel = GetMLTPLevel(ticket);",
@@ -903,9 +920,9 @@ void CleanMLTPStates()
     "   else if(posType == POSITION_TYPE_SELL)",
     "      profitPoints = (openPrice - SymbolInfoDouble(_Symbol, SYMBOL_ASK)) / point;",
     "",
-    "   double tp1Points = InpMLTP1Pips * _pipFactor;",
-    "   double tp2Points = InpMLTP2Pips * _pipFactor;",
-    "   double tp3Points = InpMLTP3Pips * _pipFactor;",
+    `   double tp1Points = InpMLTP1Pips${mltpSuffix} * _pipFactor;`,
+    `   double tp2Points = InpMLTP2Pips${mltpSuffix} * _pipFactor;`,
+    `   double tp3Points = InpMLTP3Pips${mltpSuffix} * _pipFactor;`,
     "",
     "   double pcLotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);",
     "   double pcMinLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);",
@@ -913,7 +930,7 @@ void CleanMLTPStates()
     "   // TP Level 1",
     "   if(tpLevel < 1 && profitPoints >= tp1Points)",
     "   {",
-    "      double closeVol = MathFloor(volume * InpMLTP1Percent / 100.0 / pcLotStep) * pcLotStep;",
+    `      double closeVol = MathFloor(volume * InpMLTP1Percent${mltpSuffix} / 100.0 / pcLotStep) * pcLotStep;`,
     "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
     "      if(closeVol >= pcMinLot)",
     "      {",
@@ -937,8 +954,8 @@ void CleanMLTPStates()
     "   // TP Level 2",
     "   if(tpLevel == 1 && profitPoints >= tp2Points)",
     "   {",
-    "      double tp2Denom = InpMLTP2Percent + InpMLTP3Percent;",
-    "      double closeVol = (tp2Denom > 0) ? MathFloor(volume * InpMLTP2Percent / tp2Denom / pcLotStep) * pcLotStep : 0;",
+    `      double tp2Denom = InpMLTP2Percent${mltpSuffix} + InpMLTP3Percent${mltpSuffix};`,
+    `      double closeVol = (tp2Denom > 0) ? MathFloor(volume * InpMLTP2Percent${mltpSuffix} / tp2Denom / pcLotStep) * pcLotStep : 0;`,
     "      if(volume - closeVol < pcMinLot) closeVol = MathFloor((volume - pcMinLot) / pcLotStep) * pcLotStep;",
     "      if(closeVol >= pcMinLot)",
     "      {",
@@ -958,5 +975,7 @@ void CleanMLTPStates()
   );
 
   code.helperFunctions.push(fnLines.join("\n"));
-  code._managementCalls!.push("CheckMultiLevelTP(ticket, openPrice, volume, posType, point);");
+  code._managementCalls!.push(
+    `CheckMultiLevelTP${mltpSuffix}(ticket, openPrice, volume, posType, point);`
+  );
 }

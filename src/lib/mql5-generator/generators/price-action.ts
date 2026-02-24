@@ -790,7 +790,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
         // OnTick: recalculate on new bar, check proximity every tick
         code.onTick.push(`// Support/Resistance Detection ${index + 1}`);
-        code.onTick.push(`if(isNewBar || ${varPrefix}Support == 0)`);
+        code.onTick.push(`if(isNewBar)`);
         code.onTick.push(`{`);
         code.onTick.push(
           `   ${fnName}((ENUM_TIMEFRAMES)InpSR${index}Timeframe, InpSR${index}Lookback, InpSR${index}Touches, InpSR${index}ZoneSize, ${varPrefix}Support, ${varPrefix}Resistance);`
@@ -992,9 +992,10 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`${varPrefix}SellSignal = false;`);
         code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
         code.onTick.push(`double ${varPrefix}Ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);`);
+        code.onTick.push(`int ${varPrefix}MaxBars = Bars(_Symbol, ${fvgTf}) - 3;`);
         code.onTick.push(`// Scan for bullish FVG: candle[i+2].high < candle[i].low`);
         code.onTick.push(
-          `for(int i = 1; i < InpFVG${index}MaxAge && !${varPrefix}BuySignal; i++) {`
+          `for(int i = 1; i < MathMin(InpFVG${index}MaxAge, ${varPrefix}MaxBars) && !${varPrefix}BuySignal; i++) {`
         );
         code.onTick.push(`   double highTwo = iHigh(_Symbol, ${fvgTf}, i + 2);`);
         code.onTick.push(`   double lowZero = iLow(_Symbol, ${fvgTf}, i);`);
@@ -1014,7 +1015,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`}`);
         code.onTick.push(`// Scan for bearish FVG: candle[i+2].low > candle[i].high`);
         code.onTick.push(
-          `for(int i = 1; i < InpFVG${index}MaxAge && !${varPrefix}SellSignal; i++) {`
+          `for(int i = 1; i < MathMin(InpFVG${index}MaxAge, ${varPrefix}MaxBars) && !${varPrefix}SellSignal; i++) {`
         );
         code.onTick.push(`   double lowTwo = iLow(_Symbol, ${fvgTf}, i + 2);`);
         code.onTick.push(`   double highZero = iHigh(_Symbol, ${fvgTf}, i);`);
@@ -1071,6 +1072,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.globalVariables.push(`bool ${varPrefix}BuySignal, ${varPrefix}SellSignal;`);
         if (ms.detectBOS) {
           code.globalVariables.push(`bool ${varPrefix}BOS_Bull, ${varPrefix}BOS_Bear;`);
+          code.globalVariables.push(`bool ${varPrefix}WasAboveSH, ${varPrefix}WasBelowSL;`);
         }
 
         // OnTick: detect market structure
@@ -1089,7 +1091,7 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`   int ${varPrefix}FoundSH = 0, ${varPrefix}FoundSL = 0;`);
         code.onTick.push(`   // Find swing points using strength bars on each side`);
         code.onTick.push(
-          `   for(int i = ${varPrefix}Str; i < ${varPrefix}Lookback - ${varPrefix}Str; i++) {`
+          `   for(int i = ${varPrefix}Str + 1; i < ${varPrefix}Lookback - ${varPrefix}Str; i++) {`
         );
         code.onTick.push(`      bool isSwingHigh = true, isSwingLow = true;`);
         code.onTick.push(`      double high_i = iHigh(_Symbol, ${msTf}, i);`);
@@ -1135,8 +1137,11 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
 
         // Signal generation
         code.onTick.push(`double ${varPrefix}Bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);`);
+        code.onTick.push(`if(${varPrefix}SwingLow >= DBL_MAX) ${varPrefix}SwingLow = 0;`);
         code.onTick.push(`// Buy on HL in uptrend (price near swing low)`);
-        code.onTick.push(`if(${varPrefix}IsUptrend && ${varPrefix}SwingLow < DBL_MAX) {`);
+        code.onTick.push(
+          `if(${varPrefix}IsUptrend && ${varPrefix}SwingLow > 0 && ${varPrefix}SwingHigh > 0) {`
+        );
         code.onTick.push(
           `   double ${varPrefix}Zone = MathAbs(${varPrefix}SwingHigh - ${varPrefix}SwingLow) * 0.25;`
         );
@@ -1146,7 +1151,9 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`      ${varPrefix}BuySignal = true;`);
         code.onTick.push(`}`);
         code.onTick.push(`// Sell on LH in downtrend (price near swing high)`);
-        code.onTick.push(`if(${varPrefix}IsDowntrend && ${varPrefix}SwingHigh > 0) {`);
+        code.onTick.push(
+          `if(${varPrefix}IsDowntrend && ${varPrefix}SwingHigh > 0 && ${varPrefix}SwingLow > 0) {`
+        );
         code.onTick.push(
           `   double ${varPrefix}Zone2 = MathAbs(${varPrefix}SwingHigh - ${varPrefix}SwingLow) * 0.25;`
         );
@@ -1156,15 +1163,23 @@ void ${fnName}(ENUM_TIMEFRAMES tf, int lookback, int minTouches, double zonePips
         code.onTick.push(`      ${varPrefix}SellSignal = true;`);
         code.onTick.push(`}`);
 
-        // BOS detection
+        // BOS detection (state-transition: fires once when price first crosses swing level)
         if (ms.detectBOS) {
           code.onTick.push(`// Break of Structure detection`);
           code.onTick.push(
-            `${varPrefix}BOS_Bull = (${varPrefix}Bid > ${varPrefix}SwingHigh && ${varPrefix}SwingHigh > 0);`
+            `bool ${varPrefix}AboveSH = (${varPrefix}Bid > ${varPrefix}SwingHigh && ${varPrefix}SwingHigh > 0);`
           );
           code.onTick.push(
-            `${varPrefix}BOS_Bear = (${varPrefix}Bid < ${varPrefix}SwingLow && ${varPrefix}SwingLow < DBL_MAX && ${varPrefix}SwingLow > 0);`
+            `${varPrefix}BOS_Bull = (${varPrefix}AboveSH && !${varPrefix}WasAboveSH);`
           );
+          code.onTick.push(`${varPrefix}WasAboveSH = ${varPrefix}AboveSH;`);
+          code.onTick.push(
+            `bool ${varPrefix}BelowSL = (${varPrefix}Bid < ${varPrefix}SwingLow && ${varPrefix}SwingLow < DBL_MAX && ${varPrefix}SwingLow > 0);`
+          );
+          code.onTick.push(
+            `${varPrefix}BOS_Bear = (${varPrefix}BelowSL && !${varPrefix}WasBelowSL);`
+          );
+          code.onTick.push(`${varPrefix}WasBelowSL = ${varPrefix}BelowSL;`);
         }
 
         code.onTick.push("");

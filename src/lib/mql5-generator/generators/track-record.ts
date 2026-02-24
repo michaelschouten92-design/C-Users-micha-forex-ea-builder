@@ -785,7 +785,7 @@ bool TrackRecordHttpPost(string endpoint, string jsonBody)
       int idPos = StringFind(response, "\\"instanceId\\":\\"");
       if(idPos >= 0)
       {
-         int valStart = idPos + 15;
+         int valStart = idPos + 14;
          int valEnd = StringFind(response, "\\"", valStart);
          if(valEnd > valStart)
          {

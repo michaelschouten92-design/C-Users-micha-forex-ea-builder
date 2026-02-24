@@ -332,13 +332,20 @@ function generateTradingSessionCode(
     code.onTick.push("{");
   }
 
+  const isOvernight = endMinutes < startMinutes;
+
   if (endMinutes > startMinutes) {
     // Normal session (same day)
     code.onTick.push(
       `   if(currentMinutes >= ${startMinutes} && currentMinutes < ${endMinutes}) ${varName} = true;`
     );
+  } else if (allDays) {
+    // Overnight session (spans midnight) with all days active - no previous-day check needed
+    code.onTick.push(
+      `   if(currentMinutes >= ${startMinutes} || currentMinutes < ${endMinutes}) ${varName} = true;`
+    );
   } else {
-    // Overnight session (spans midnight) - e.g., Sydney 22:00-07:00
+    // Overnight session (spans midnight) with day filter - only the evening portion when today is allowed
     code.onTick.push(
       `   if(currentMinutes >= ${startMinutes} || currentMinutes < ${endMinutes}) ${varName} = true;`
     );
@@ -346,6 +353,35 @@ function generateTradingSessionCode(
 
   if (!allDays) {
     code.onTick.push("}");
+
+    // For overnight sessions, allow early-morning hours if the *previous* day was active
+    if (isOvernight) {
+      code.onTick.push("else");
+      code.onTick.push("{");
+      code.onTick.push(
+        "   // Check if previous day was allowed (for overnight session continuation)"
+      );
+      code.onTick.push("   int prevDay = dt.day_of_week - 1;");
+      code.onTick.push("   if(prevDay < 0) prevDay = 6;");
+
+      // Build condition that checks if prevDay was one of the active days
+      const isWeekdays =
+        activeDays.length === 5 &&
+        [1, 2, 3, 4, 5].every((d) => activeDays.includes(d)) &&
+        !activeDays.includes(0) &&
+        !activeDays.includes(6);
+      if (isWeekdays) {
+        code.onTick.push(
+          `   if(prevDay >= 1 && prevDay <= 5 && currentMinutes < ${endMinutes}) ${varName} = true;`
+        );
+      } else {
+        const prevDayConditions = activeDays.map((d) => `prevDay == ${d}`).join(" || ");
+        code.onTick.push(
+          `   if((${prevDayConditions}) && currentMinutes < ${endMinutes}) ${varName} = true;`
+        );
+      }
+      code.onTick.push("}");
+    }
   }
 
   code.onTick.push("");
