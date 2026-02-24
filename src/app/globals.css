@@ -321,6 +321,156 @@ body {
 }
 
 /* ============================================
+   HOMEPAGE V2 ANIMATIONS
+   ============================================ */
+
+/* Health score circle fill animation */
+@keyframes score-fill {
+  from {
+    stroke-dasharray: 0 264;
+  }
+}
+
+/* Metric bar fill animation */
+@keyframes bar-fill {
+  from {
+    width: 0%;
+  }
+}
+
+/* Fade-up entrance animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Horizontal connector line draw */
+@keyframes line-draw {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Vertical connector line draw */
+@keyframes line-draw-v {
+  from {
+    height: 0%;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+/* Proving phase pulsing border */
+@keyframes proving-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px rgba(99, 102, 241, 0.25);
+  }
+}
+
+/* Bar shimmer sweep */
+@keyframes bar-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Health glow pulse */
+@keyframes health-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
+  }
+}
+
+/* Scroll-triggered visibility */
+.fade-up-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.fade-up-hidden.is-visible {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+/* Stagger delays for sequential animation */
+.stagger-1 {
+  animation-delay: 0ms;
+}
+.stagger-2 {
+  animation-delay: 150ms;
+}
+.stagger-3 {
+  animation-delay: 300ms;
+}
+.stagger-4 {
+  animation-delay: 450ms;
+}
+.stagger-5 {
+  animation-delay: 600ms;
+}
+
+/* Score fill utility */
+.animate-score-fill {
+  animation: score-fill 1.2s ease-out forwards;
+}
+
+/* Bar fill utility */
+.animate-bar-fill {
+  animation: bar-fill 0.8s ease-out forwards;
+}
+
+/* Proving pulse utility */
+.animate-proving-pulse {
+  animation: proving-pulse 2s ease-in-out infinite;
+}
+
+/* Health glow utility */
+.animate-health-glow {
+  animation: health-glow 3s ease-in-out infinite;
+}
+
+/* Line draw utility */
+.animate-line-draw {
+  animation: line-draw 0.6s ease-out forwards;
+}
+
+.animate-line-draw-v {
+  animation: line-draw-v 0.6s ease-out forwards;
+}
+
+/* Bar shimmer effect */
+.bar-shimmer {
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: bar-shimmer 4s ease-in-out infinite;
+}
+
+/* ============================================
    REDUCED MOTION (Accessibility)
    ============================================ */
 
@@ -349,5 +499,21 @@ body {
   .glow-cyan-lg,
   .glow-violet {
     box-shadow: none;
+  }
+
+  /* Show hidden elements immediately without animation */
+  .fade-up-hidden {
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-proving-pulse,
+  .animate-health-glow {
+    animation: none !important;
+  }
+
+  .bar-shimmer {
+    animation: none !important;
+    background-image: none;
   }
 }
