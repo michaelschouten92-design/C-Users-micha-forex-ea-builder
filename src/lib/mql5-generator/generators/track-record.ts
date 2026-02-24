@@ -88,11 +88,7 @@ string TrackRecordSHA256(string input)
       return "";
    string result = "";
    for(int i = 0; i < ArraySize(hash); i++)
-   {
-      uchar hi = (uchar)(hash[i] >> 4);
-      uchar lo = (uchar)(hash[i] & 0x0F);
-      result += StringFormat("%c%c", hi < 10 ? '0'+hi : 'a'+hi-10, lo < 10 ? '0'+lo : 'a'+lo-10);
-   }
+      result += StringFormat("%02x", hash[i]);
    return result;
 }`;
 }
