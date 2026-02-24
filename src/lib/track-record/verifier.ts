@@ -261,6 +261,22 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
     }
   }
 
+  // Build caveats for data provenance
+  const caveats: string[] = [];
+
+  // Mode field is self-reported by the EA and unverifiable at L1
+  const sessionEvents = events.filter((e) => e.eventType === "SESSION_START");
+  if (sessionEvents.length > 0) {
+    const modes = sessionEvents.map((e) => (e.payload as Record<string, unknown>).mode);
+    const hasLive = modes.includes("LIVE");
+    if (hasLive) {
+      caveats.push(
+        "Trading mode (LIVE) is self-reported by the EA and cannot be independently verified at L1. " +
+          "L2 broker evidence is required to confirm live trading."
+      );
+    }
+  }
+
   return {
     chainValid,
     chainLength: events.length,
@@ -269,6 +285,7 @@ function verifyLevel1(bundle: ProofBundle): L1Result {
     signatureValid,
     reportReproducible,
     errors,
+    caveats,
   };
 }
 

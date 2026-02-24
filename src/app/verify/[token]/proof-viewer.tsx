@@ -13,6 +13,7 @@ interface VerificationResult {
     signatureValid: boolean;
     reportReproducible: boolean;
     errors: string[];
+    caveats?: string[];
   };
   l2: {
     brokerEvidenceCount: number;
@@ -336,6 +337,15 @@ export function ProofViewer({
               {verification.l1.errors.map((err, i) => (
                 <p key={i} className="text-xs text-[#EF4444]">
                   {err}
+                </p>
+              ))}
+            </div>
+          )}
+          {verification.l1.caveats && verification.l1.caveats.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {verification.l1.caveats.map((caveat: string, i: number) => (
+                <p key={i} className="text-xs text-[#F59E0B]">
+                  {caveat}
                 </p>
               ))}
             </div>

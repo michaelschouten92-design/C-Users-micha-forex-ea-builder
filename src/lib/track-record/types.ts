@@ -490,6 +490,8 @@ export interface L1Result {
   signatureValid: boolean;
   reportReproducible: boolean;
   errors: string[];
+  /** Non-fatal warnings about data provenance and limitations */
+  caveats: string[];
 }
 
 export interface L2Result {

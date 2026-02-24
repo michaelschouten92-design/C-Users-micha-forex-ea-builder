@@ -13,6 +13,7 @@ import {
   computeCheckpointHmac,
 } from "@/lib/track-record/checkpoint";
 import { shouldCreateCommitment, buildCommitmentData } from "@/lib/track-record/ledger-commitment";
+import { validatePayload } from "@/lib/track-record/payload-schemas";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
 
 const ingestSchema = z.object({
@@ -59,6 +60,12 @@ export async function POST(request: NextRequest) {
   }
 
   const { eventType, seqNo, prevHash, eventHash, timestamp, payload } = validation.data;
+
+  // Per-event-type payload validation
+  const payloadError = validatePayload(eventType, payload);
+  if (payloadError) {
+    return NextResponse.json({ error: payloadError }, { status: 400 });
+  }
 
   // Timestamp bounds validation (before entering transaction)
   // Tight window: 30 days back, 60 seconds forward.
@@ -159,8 +166,25 @@ export async function POST(request: NextRequest) {
           };
         }
 
-        // Process event to compute new state
+        // Cross-event validation: CLOSE/MODIFY/PARTIAL_CLOSE must reference a known open ticket
         const state = stateFromDb(dbState);
+        if (
+          (eventType === "TRADE_CLOSE" ||
+            eventType === "TRADE_MODIFY" ||
+            eventType === "PARTIAL_CLOSE") &&
+          payload.ticket
+        ) {
+          const ticketStr = String(payload.ticket);
+          const knownOpen = state.openPositions.some((p) => p.ticket === ticketStr);
+          if (!knownOpen) {
+            logger.warn(
+              { instanceId, eventType, ticket: ticketStr, seqNo },
+              "Cross-event warning: ticket not found in open positions"
+            );
+          }
+        }
+
+        // Process event to compute new state
         processEvent(state, eventType as TrackRecordEventType, eventHash, seqNo, payload);
         const stateUpdate = stateToDbUpdate(state);
 

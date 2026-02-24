@@ -34,13 +34,15 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
     "long     g_trKnownTickets[];",
     "double   g_trKnownSL[];",
     "double   g_trKnownTP[];",
-    "double   g_trKnownLots[];"
+    "double   g_trKnownLots[];",
+    "// Write-ahead log for crash resilience",
+    'string   g_trWALFile = "";'
   );
 
   // --- OnInit ---
   code.onInit.push(
     "g_trEnabled = (StringLen(InpTelemetryKey) > 0 && !MQLInfoInteger(MQL_TESTER));",
-    "if(g_trEnabled) { TrackRecordLoadState(); TrackRecordSendSessionStart(); }"
+    'if(g_trEnabled) { g_trWALFile = "AlgoStudio_WAL_" + IntegerToString(InpMagicNumber) + ".log"; TrackRecordLoadState(); TrackRecordReplayWAL(); TrackRecordSendSessionStart(); }'
   );
 
   // --- OnDeinit ---
@@ -67,6 +69,7 @@ export function generateTrackRecordCode(code: GeneratedCode, config: TelemetryCo
   code.helperFunctions.push(buildCanonicalJsonHelpers());
   code.helperFunctions.push(buildHashChainHelpers());
   code.helperFunctions.push(buildStateHelpers());
+  code.helperFunctions.push(buildWALHelpers());
   code.helperFunctions.push(buildEventDetection());
   code.helperFunctions.push(buildEventSenders());
   code.helperFunctions.push(buildTrackRecordHttpPost());
@@ -149,9 +152,9 @@ string TrackRecordComputeHash(string eventType, int seqNo, string prevHash,
    pairs[pairCount++] = TRJsonInt("seqNo", seqNo);
    pairs[pairCount++] = TRJsonLong("timestamp", timestamp);
 
-   // Add payload fields (already formatted as key:value strings)
+   // Add payload fields (already formatted as key:value strings, SOH-delimited)
    string payloadParts[];
-   int numParts = StringSplit(payloadFields, '|', payloadParts);
+   int numParts = StringSplit(payloadFields, 1, payloadParts); // 1 = SOH (\\x01)
    for(int i = 0; i < numParts; i++)
    {
       if(StringLen(payloadParts[i]) > 0)
@@ -286,6 +289,61 @@ void TrackRecordRecoverFromServer()
 
    if(g_trSeqNo > 0)
       Print("TrackRecord: Recovered from server. SeqNo=", g_trSeqNo, " Hash=", StringSubstr(g_trLastHash, 0, 8), "...");
+}`;
+}
+
+function buildWALHelpers(): string {
+  return `//+------------------------------------------------------------------+
+//| Write-Ahead Log: persist events before sending for crash safety  |
+//+------------------------------------------------------------------+
+void TrackRecordWALWrite(string jsonBody, string eventHash, int seqNo)
+{
+   int handle = FileOpen(g_trWALFile, FILE_WRITE|FILE_TXT);
+   if(handle != INVALID_HANDLE)
+   {
+      FileWriteString(handle, IntegerToString(seqNo) + "\\n");
+      FileWriteString(handle, eventHash + "\\n");
+      FileWriteString(handle, jsonBody + "\\n");
+      FileClose(handle);
+   }
+}
+
+void TrackRecordWALClear()
+{
+   // Overwrite with empty file
+   int handle = FileOpen(g_trWALFile, FILE_WRITE|FILE_TXT);
+   if(handle != INVALID_HANDLE)
+      FileClose(handle);
+}
+
+void TrackRecordReplayWAL()
+{
+   int handle = FileOpen(g_trWALFile, FILE_READ|FILE_TXT);
+   if(handle == INVALID_HANDLE) return;
+
+   string seqStr = FileReadString(handle);
+   string hash = FileReadString(handle);
+   string json = FileReadString(handle);
+   FileClose(handle);
+
+   if(StringLen(json) == 0 || StringLen(hash) == 0) { TrackRecordWALClear(); return; }
+
+   int walSeqNo = (int)StringToInteger(seqStr);
+   if(walSeqNo != g_trSeqNo + 1) { TrackRecordWALClear(); return; }
+
+   // Retry sending the WAL entry
+   Print("TrackRecord: Replaying WAL entry seqNo=", walSeqNo);
+   if(TrackRecordHttpPost("/ingest", json))
+   {
+      g_trSeqNo = walSeqNo;
+      g_trLastHash = hash;
+      TrackRecordSaveState();
+      Print("TrackRecord: WAL replay successful.");
+   }
+   else
+      Print("TrackRecord: WAL replay failed. Will retry on next start.");
+
+   TrackRecordWALClear();
 }`;
 }
 
@@ -439,12 +497,12 @@ void TrackRecordSendSessionStart()
    string mode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
 
    string payload =
-      TRJsonStr("account", IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))) + "|" +
-      TRJsonMoney("balance", AccountInfoDouble(ACCOUNT_BALANCE)) + "|" +
-      TRJsonStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + "|" +
-      TRJsonStr("eaVersion", "1.0") + "|" +
-      TRJsonStr("mode", mode) + "|" +
-      TRJsonStr("symbol", _Symbol) + "|" +
+      TRJsonStr("account", IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))) + ShortToString(1) +
+      TRJsonMoney("balance", AccountInfoDouble(ACCOUNT_BALANCE)) + ShortToString(1) +
+      TRJsonStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ShortToString(1) +
+      TRJsonStr("eaVersion", "1.0") + ShortToString(1) +
+      TRJsonStr("mode", mode) + ShortToString(1) +
+      TRJsonStr("symbol", _Symbol) + ShortToString(1) +
       TRJsonStr("timeframe", EnumToString((ENUM_TIMEFRAMES)Period()));
 
    string hash = TrackRecordComputeHash("SESSION_START", nextSeq, g_trLastHash, ts, payload);
@@ -467,6 +525,7 @@ void TrackRecordSendSessionStart()
       + TRJsonStr("timeframe", EnumToString((ENUM_TIMEFRAMES)Period()))
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
@@ -474,6 +533,7 @@ void TrackRecordSendSessionStart()
       g_trSessionStartSent = true;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendSessionEnd(int reason)
@@ -492,9 +552,9 @@ void TrackRecordSendSessionEnd(int reason)
    else if(reason == REASON_ACCOUNT) reasonStr = "ACCOUNT_CHANGE";
 
    string payload =
-      TRJsonMoney("finalBalance", AccountInfoDouble(ACCOUNT_BALANCE)) + "|" +
-      TRJsonMoney("finalEquity", AccountInfoDouble(ACCOUNT_EQUITY)) + "|" +
-      TRJsonStr("reason", reasonStr) + "|" +
+      TRJsonMoney("finalBalance", AccountInfoDouble(ACCOUNT_BALANCE)) + ShortToString(1) +
+      TRJsonMoney("finalEquity", AccountInfoDouble(ACCOUNT_EQUITY)) + ShortToString(1) +
+      TRJsonStr("reason", reasonStr) + ShortToString(1) +
       TRJsonInt("uptimeSeconds", 0);
 
    string hash = TrackRecordComputeHash("SESSION_END", nextSeq, g_trLastHash, ts, payload);
@@ -513,12 +573,14 @@ void TrackRecordSendSessionEnd(int reason)
       + TRJsonInt("uptimeSeconds", 0)
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendSnapshot()
@@ -542,10 +604,10 @@ void TrackRecordSendSnapshot()
    }
 
    string payload =
-      TRJsonMoney("balance", bal) + "|" +
-      TRJsonMoney("drawdown", dd) + "|" +
-      TRJsonMoney("equity", eq) + "|" +
-      TRJsonInt("openTrades", openCount) + "|" +
+      TRJsonMoney("balance", bal) + ShortToString(1) +
+      TRJsonMoney("drawdown", dd) + ShortToString(1) +
+      TRJsonMoney("equity", eq) + ShortToString(1) +
+      TRJsonInt("openTrades", openCount) + ShortToString(1) +
       TRJsonMoney("unrealizedPnL", unrealized);
 
    string hash = TrackRecordComputeHash("SNAPSHOT", nextSeq, g_trLastHash, ts, payload);
@@ -565,12 +627,14 @@ void TrackRecordSendSnapshot()
       + TRJsonMoney("unrealizedPnL", unrealized)
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
@@ -580,12 +644,12 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
    long ts = (long)TimeCurrent();
 
    string payload =
-      TRJsonStr("direction", dir) + "|" +
-      TRJsonMoney("lots", lots) + "|" +
-      TRJsonPrice("openPrice", openPrice) + "|" +
-      TRJsonPrice("sl", sl) + "|" +
-      TRJsonStr("symbol", symbol) + "|" +
-      TRJsonStr("ticket", IntegerToString(ticket)) + "|" +
+      TRJsonStr("direction", dir) + ShortToString(1) +
+      TRJsonMoney("lots", lots) + ShortToString(1) +
+      TRJsonPrice("openPrice", openPrice) + ShortToString(1) +
+      TRJsonPrice("sl", sl) + ShortToString(1) +
+      TRJsonStr("symbol", symbol) + ShortToString(1) +
+      TRJsonStr("ticket", IntegerToString(ticket)) + ShortToString(1) +
       TRJsonPrice("tp", tp);
 
    string hash = TrackRecordComputeHash("TRADE_OPEN", nextSeq, g_trLastHash, ts, payload);
@@ -607,12 +671,14 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
       + TRJsonPrice("tp", tp)
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
@@ -622,11 +688,11 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
    long ts = (long)TimeCurrent();
 
    string payload =
-      TRJsonPrice("closePrice", closePrice) + "|" +
-      TRJsonStr("closeReason", closeReason) + "|" +
-      TRJsonMoney("commission", commission) + "|" +
-      TRJsonMoney("profit", profit) + "|" +
-      TRJsonMoney("swap", swap) + "|" +
+      TRJsonPrice("closePrice", closePrice) + ShortToString(1) +
+      TRJsonStr("closeReason", closeReason) + ShortToString(1) +
+      TRJsonMoney("commission", commission) + ShortToString(1) +
+      TRJsonMoney("profit", profit) + ShortToString(1) +
+      TRJsonMoney("swap", swap) + ShortToString(1) +
       TRJsonStr("ticket", IntegerToString(ticket));
 
    string hash = TrackRecordComputeHash("TRADE_CLOSE", nextSeq, g_trLastHash, ts, payload);
@@ -647,12 +713,14 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
       + TRJsonStr("ticket", IntegerToString(ticket))
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
@@ -662,10 +730,10 @@ void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
    long ts = (long)TimeCurrent();
 
    string payload =
-      TRJsonPrice("newSL", newSL) + "|" +
-      TRJsonPrice("newTP", newTP) + "|" +
-      TRJsonPrice("oldSL", oldSL) + "|" +
-      TRJsonPrice("oldTP", oldTP) + "|" +
+      TRJsonPrice("newSL", newSL) + ShortToString(1) +
+      TRJsonPrice("newTP", newTP) + ShortToString(1) +
+      TRJsonPrice("oldSL", oldSL) + ShortToString(1) +
+      TRJsonPrice("oldTP", oldTP) + ShortToString(1) +
       TRJsonStr("ticket", IntegerToString(ticket));
 
    string hash = TrackRecordComputeHash("TRADE_MODIFY", nextSeq, g_trLastHash, ts, payload);
@@ -685,12 +753,14 @@ void TrackRecordSendTradeModify(long ticket, double newSL, double newTP,
       + TRJsonStr("ticket", IntegerToString(ticket))
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }
 
 void TrackRecordSendPartialClose(long ticket, double closedLots, double remainingLots)
@@ -715,10 +785,10 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
    }
 
    string payload =
-      TRJsonMoney("closedLots", closedLots) + "|" +
-      TRJsonPrice("closePrice", closePrice) + "|" +
-      TRJsonMoney("profit", profit) + "|" +
-      TRJsonMoney("remainingLots", remainingLots) + "|" +
+      TRJsonMoney("closedLots", closedLots) + ShortToString(1) +
+      TRJsonPrice("closePrice", closePrice) + ShortToString(1) +
+      TRJsonMoney("profit", profit) + ShortToString(1) +
+      TRJsonMoney("remainingLots", remainingLots) + ShortToString(1) +
       TRJsonStr("ticket", IntegerToString(ticket));
 
    string hash = TrackRecordComputeHash("PARTIAL_CLOSE", nextSeq, g_trLastHash, ts, payload);
@@ -738,12 +808,14 @@ void TrackRecordSendPartialClose(long ticket, double closedLots, double remainin
       + TRJsonStr("ticket", IntegerToString(ticket))
       + "}}";
 
+   TrackRecordWALWrite(json, hash, nextSeq);
    if(TrackRecordHttpPost("/ingest", json))
    {
       g_trSeqNo = nextSeq;
       g_trLastHash = hash;
       TrackRecordSaveState();
    }
+   TrackRecordWALClear();
 }`;
 }
 

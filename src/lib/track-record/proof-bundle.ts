@@ -128,6 +128,7 @@ export async function generateProofBundle(
         signatureValid: false,
         reportReproducible: false,
         errors: [],
+        caveats: [],
       },
       l2: null,
       l3: null,
