@@ -8,6 +8,7 @@ import { HealthBadge } from "@/components/app/health-detail-panel";
 import { HealthDetailPanel } from "@/components/app/health-detail-panel";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
+import { RegisterEADialog } from "./register-ea-dialog";
 
 // ============================================
 // TYPES
@@ -65,6 +66,7 @@ interface AlertConfig {
 
 interface LiveDashboardClientProps {
   initialData: EAInstanceData[];
+  tier?: "FREE" | "PRO" | "ELITE";
 }
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
@@ -1425,7 +1427,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
 // MAIN COMPONENT
 // ============================================
 
-export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
+export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientProps) {
   const [eaInstances, setEaInstances] = useState<EAInstanceData[]>(initialData);
   const [soundAlerts, setSoundAlerts] = useState(false);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
@@ -1685,6 +1687,9 @@ export function LiveDashboardClient({ initialData }: LiveDashboardClientProps) {
             </svg>
             Alerts
           </button>
+
+          {/* Connect external EA */}
+          {tier && tier !== "FREE" && <RegisterEADialog onSuccess={fetchUpdate} />}
 
           {/* Manual refresh */}
           <button

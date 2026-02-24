@@ -335,7 +335,7 @@ model Announcement {
 
 model LiveEAInstance {
   id            String    @id @default(cuid())
-  exportJobId   String    @unique
+  exportJobId   String?   @unique
   userId        String
   apiKeyHash    String    @unique
   eaName        String
@@ -368,7 +368,7 @@ model LiveEAInstance {
   peakScore         Float     @default(0)
   peakScoreAt       DateTime?
 
-  exportJob      ExportJob        @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
+  exportJob      ExportJob?       @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   strategyVersion StrategyVersion? @relation(fields: [strategyVersionId], references: [id])
   heartbeats     EAHeartbeat[]

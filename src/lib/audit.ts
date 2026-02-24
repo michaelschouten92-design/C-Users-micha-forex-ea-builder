@@ -26,6 +26,8 @@ export type AuditEventType =
   | "subscription.cancel"
   | "subscription.payment_success"
   | "subscription.payment_failed"
+  // Live EA
+  | "live.external_ea_registered"
   // Admin impersonation
   | "admin.impersonation_start"
   | "admin.impersonation_stop"

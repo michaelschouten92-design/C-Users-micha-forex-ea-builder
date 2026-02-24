@@ -174,7 +174,7 @@ export default async function LiveEADashboardPage() {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Track Record" }]} />
 
-        <LiveDashboardClient initialData={serializedInstances} />
+        <LiveDashboardClient initialData={serializedInstances} tier={tier} />
 
         {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
         {(() => {

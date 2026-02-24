@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       lastError: inst.lastError,
       createdAt: inst.createdAt,
       userEmail: inst.user.email,
-      exportType: inst.exportJob.exportType,
-      exportDate: inst.exportJob.createdAt,
+      exportType: inst.exportJob?.exportType ?? null,
+      exportDate: inst.exportJob?.createdAt ?? null,
     })),
     pagination: {
       page,
