@@ -424,15 +424,24 @@ void ParseSymbolList(string csv, string &result[], int &count)
       string sym = temp[i];
       StringTrimLeft(sym);
       StringTrimRight(sym);
-      if(StringLen(sym) > 0 && SymbolSelect(sym, true))
+      if(StringLen(sym) == 0) continue;
+      //--- Validate symbol exists before attempting to select
+      if(!SymbolInfoInteger(sym, SYMBOL_EXIST))
       {
-         result[count] = sym;
-         count++;
+         Print("WARNING: Symbol '", sym, "' does not exist on this broker, skipping.");
+         continue;
       }
-      else if(StringLen(sym) > 0)
-         Print("WARNING: Symbol '", sym, "' not found in Market Watch, skipping.");
+      if(!SymbolSelect(sym, true))
+      {
+         Print("WARNING: Symbol '", sym, "' could not be added to Market Watch, skipping.");
+         continue;
+      }
+      result[count] = sym;
+      count++;
    }
    ArrayResize(result, count);
+   if(count == 0)
+      Print("CRITICAL: No valid symbols found in list. Trading disabled.");
 }
 
 //+------------------------------------------------------------------+

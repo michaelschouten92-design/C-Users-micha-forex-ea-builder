@@ -22,6 +22,8 @@ export function generateTradeManagementCode(node: BuilderNode, code: GeneratedCo
       [
         "//+------------------------------------------------------------------+",
         "//| Modify position with freeze-level guard and error logging        |",
+        "//| Note: PositionModify sets exact SL/TP prices (not market orders) |",
+        "//| so deviation/slippage does not apply to this operation.          |",
         "//+------------------------------------------------------------------+",
         "bool SafePositionModify(CTrade &tradeObj, ulong ticket, double sl, double tp)",
         "{",

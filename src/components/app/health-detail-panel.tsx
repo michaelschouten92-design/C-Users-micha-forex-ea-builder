@@ -76,6 +76,55 @@ const METRIC_LABELS: Record<
   tradeFrequency: { label: "Trade Frequency", unit: "/day", format: (v) => v.toFixed(2) },
 };
 
+const METRIC_TOOLTIPS: Record<string, string> = {
+  "Health Score":
+    "Composite score (0–100%) measuring live performance against backtest baseline. Above 70% is healthy, below 40% is degraded.",
+  Confidence:
+    "Statistical confidence interval for the health score. Wider ranges mean fewer trades have been sampled.",
+  "CUSUM Drift":
+    "Cumulative Sum test detecting persistent shifts in strategy expectancy. Triggered when performance deviates significantly from baseline.",
+  "Drift Severity":
+    "How close the strategy is to triggering a drift alert. 100% = drift confirmed.",
+  Expectancy:
+    "Average profit per trade as a percentage of account balance. Positive = edge exists, negative = losing strategy.",
+  Return:
+    "Compares live return against backtest return. High score means live performance matches or exceeds backtest expectations.",
+  Drawdown:
+    "Measures live max drawdown relative to backtest drawdown. High score means drawdowns are controlled and within expected range.",
+  "Win Rate":
+    "Compares live win rate to backtest win rate. A significant drop may indicate changing market conditions or overfitting.",
+  Volatility:
+    "Measures consistency of live returns. Lower volatility relative to baseline scores higher.",
+  "Trade Frequency":
+    "Compares live trading frequency to backtest. Large deviations may indicate missed signals or changed market structure.",
+};
+
+function MetricTooltip({ metric }: { metric: string }) {
+  const text = METRIC_TOOLTIPS[metric];
+  if (!text) return null;
+
+  return (
+    <span className="group relative inline-flex ml-1 cursor-help">
+      <svg
+        className="w-3 h-3 text-[#7C8DB0] opacity-50 group-hover:opacity-100 transition-opacity"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[10px] leading-relaxed text-white bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg shadow-lg w-52 z-50 pointer-events-none">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function ScoreBar({ score, label }: { score: number; label: string }) {
   const pct = Math.round(score * 100);
   const barColor = pct >= 70 ? "#10B981" : pct >= 40 ? "#F59E0B" : "#EF4444";
@@ -83,7 +132,10 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
-        <span className="text-[#7C8DB0]">{label}</span>
+        <span className="text-[#7C8DB0] flex items-center">
+          {label}
+          <MetricTooltip metric={label} />
+        </span>
         <span className="text-white font-medium">{pct}%</span>
       </div>
       <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
@@ -393,10 +445,12 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
               {lifecycle && lifecycle.phase !== "NEW" && <LifecycleBadge lifecycle={lifecycle} />}
             </>
           )}
-          <span className="text-xs text-[#7C8DB0]">
+          <span className="text-xs text-[#7C8DB0] flex items-center">
             {scorePct}%
-            <span className="text-[10px] ml-1 opacity-70">
+            <MetricTooltip metric="Health Score" />
+            <span className="text-[10px] ml-1 opacity-70 flex items-center">
               ({ciLower}–{ciUpper}%)
+              <MetricTooltip metric="Confidence" />
             </span>
           </span>
         </div>
@@ -408,15 +462,17 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
       {/* Drift Warning */}
       {health.driftDetected && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <span className="text-[10px] text-[#EF4444] font-medium">
+          <span className="text-[10px] text-[#EF4444] font-medium flex items-center">
             Edge drift detected — strategy expectancy has persistently declined
+            <MetricTooltip metric="CUSUM Drift" />
           </span>
         </div>
       )}
       {!health.driftDetected && health.driftSeverity > 0.5 && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#F59E0B]/10 border border-[#F59E0B]/20">
-          <span className="text-[10px] text-[#F59E0B] font-medium">
+          <span className="text-[10px] text-[#F59E0B] font-medium flex items-center">
             Possible drift ({Math.round(health.driftSeverity * 100)}% toward threshold)
+            <MetricTooltip metric="Drift Severity" />
           </span>
         </div>
       )}
@@ -434,9 +490,10 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
             </span>
           )}
           {health.expectancy !== null && (
-            <span>
+            <span className="flex items-center">
               Exp: {health.expectancy >= 0 ? "+" : ""}
               {health.expectancy.toFixed(3)}%/trade
+              <MetricTooltip metric="Expectancy" />
             </span>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { env, features } from "./env";
 import { logger } from "./logger";
+import { resendCircuit } from "./circuit-breaker";
 
 // Initialize Resend only if API key is available
 const resend = features.email ? new Resend(env.RESEND_API_KEY) : null;
@@ -19,10 +20,15 @@ async function sendWithRetry(
   params: Parameters<NonNullable<typeof resend>["emails"]["send"]>[0]
 ): Promise<{ error: unknown }> {
   if (!resend) return { error: new Error("Email service not configured") };
+  if (!resendCircuit.canExecute()) {
+    log.warn("Email send skipped — circuit breaker open");
+    return { error: new Error("Email service temporarily unavailable") };
+  }
   let lastError: unknown = null;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const { data, error } = await resend!.emails.send(params);
     if (!error) {
+      resendCircuit.recordSuccess();
       log.info(
         { to: params.to, subject: params.subject, messageId: data?.id },
         "Email sent successfully"
@@ -41,6 +47,7 @@ async function sendWithRetry(
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
     }
   }
+  resendCircuit.recordFailure();
   log.error(
     { to: params.to, subject: params.subject, error: String(lastError) },
     "Email delivery failed after all retries"

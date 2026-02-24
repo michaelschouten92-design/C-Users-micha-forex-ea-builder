@@ -1,6 +1,7 @@
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SuspendedGuard } from "@/components/suspended-guard";
 import { ServiceWorkerRegistration } from "@/components/app/service-worker-registration";
+import { HelpButton } from "@/components/app/help-button";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AnnouncementBanner />
       <ServiceWorkerRegistration />
       {children}
+      <HelpButton />
     </>
   );
 }

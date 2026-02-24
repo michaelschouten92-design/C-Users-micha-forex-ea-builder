@@ -124,6 +124,13 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       );
     }
 
+    if (!result) {
+      return NextResponse.json(
+        apiError(ErrorCode.INTERNAL_ERROR, "AI analysis failed. Please try again later."),
+        { status: 500 }
+      );
+    }
+
     // 7. Store result (handle race condition with P2002)
     let aiAnalysis;
     try {

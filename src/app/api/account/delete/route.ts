@@ -11,6 +11,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+import bcrypt from "bcryptjs";
 
 /**
  * DELETE /api/account/delete - GDPR account deletion
@@ -64,11 +65,26 @@ export async function DELETE(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Fetch user email before deletion (needed for confirmation email)
+    // Fetch user record (email + password hash for verification)
     const userRecord = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, passwordHash: true },
     });
+
+    // Password verification: required for credential users, skipped for OAuth-only
+    if (userRecord?.passwordHash) {
+      const password = typeof body?.password === "string" ? body.password : "";
+      if (!password) {
+        return NextResponse.json(
+          { error: "Password is required to delete your account." },
+          { status: 400 }
+        );
+      }
+      const isValid = await bcrypt.compare(password, userRecord.passwordHash);
+      if (!isValid) {
+        return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
+      }
+    }
 
     // Cancel Stripe first - if DB cleanup fails, cron will catch the orphaned subscription.
     // This order is deliberate: Stripe cancellation is idempotent and safe to retry,

@@ -4510,4 +4510,137 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("Re-export the EA to refresh");
     });
   });
+
+  // ============================================
+  // MQL5 SAFETY TESTS (Audit Phase 4C)
+  // ============================================
+
+  describe("multi-pair safety", () => {
+    it("generates SYMBOL_EXIST check in ParseSymbolList", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("e1", "ma-crossover", {
+          category: "entry",
+          entryType: "ma-crossover",
+          fastEma: 10,
+          slowEma: 20,
+          direction: "BUY",
+        }),
+      ]);
+      build.settings.multiPair = {
+        enabled: true,
+        symbols: ["EURUSD", "GBPUSD"],
+        perSymbolOverrides: [],
+        correlationFilter: false,
+        correlationThreshold: 0.7,
+        correlationPeriod: 50,
+        maxTotalPositions: 4,
+        maxPositionsPerPair: 2,
+      };
+      const code = generateMQL5Code(build, "MultiSafety");
+      expect(code).toContain("SYMBOL_EXIST");
+      expect(code).toContain("does not exist on this broker");
+    });
+
+    it("generates symbol validation in multi-pair OnInit", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("e1", "ma-crossover", {
+          category: "entry",
+          entryType: "ma-crossover",
+          fastEma: 10,
+          slowEma: 20,
+          direction: "BUY",
+        }),
+      ]);
+      build.settings.multiPair = {
+        enabled: true,
+        symbols: ["EURUSD", "GBPUSD"],
+        perSymbolOverrides: [],
+        correlationFilter: false,
+        correlationThreshold: 0.7,
+        correlationPeriod: 50,
+        maxTotalPositions: 4,
+        maxPositionsPerPair: 2,
+      };
+      const code = generateMQL5Code(build, "MultiInit");
+      expect(code).toContain("SYMBOL_TRADE_MODE");
+      expect(code).toContain("SYMBOL_TRADE_MODE_FULL");
+      expect(code).toContain("No tradeable symbols remaining");
+    });
+  });
+
+  describe("daily loss limit safety", () => {
+    it("generates daily loss limit code when maxDailyLossPercent > 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("e1", "ma-crossover", {
+          category: "entry",
+          entryType: "ma-crossover",
+          fastEma: 10,
+          slowEma: 20,
+          direction: "BUY",
+        }),
+      ]);
+      build.settings.maxDailyLossPercent = 5;
+      const code = generateMQL5Code(build, "DailyLoss");
+      expect(code).toContain("Daily P&L Protection");
+      expect(code).toContain("lossLimitHit");
+      expect(code).toContain("Daily loss limit reached");
+    });
+
+    it("uses CloseAllPositionsGlobal in multi-pair daily loss code", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("e1", "ma-crossover", {
+          category: "entry",
+          entryType: "ma-crossover",
+          fastEma: 10,
+          slowEma: 20,
+          direction: "BUY",
+        }),
+      ]);
+      build.settings.maxDailyLossPercent = 5;
+      build.settings.multiPair = {
+        enabled: true,
+        symbols: ["EURUSD", "GBPUSD"],
+        perSymbolOverrides: [],
+        correlationFilter: false,
+        correlationThreshold: 0.7,
+        correlationPeriod: 50,
+        maxTotalPositions: 4,
+        maxPositionsPerPair: 2,
+      };
+      const code = generateMQL5Code(build, "MultiDailyLoss");
+      expect(code).toContain("CloseAllPositionsGlobal()");
+    });
+  });
+
+  describe("SafePositionModify safety", () => {
+    it("generates SafePositionModify with freeze-level guard", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("e1", "ma-crossover", {
+          category: "entry",
+          entryType: "ma-crossover",
+          fastEma: 10,
+          slowEma: 20,
+          direction: "BUY",
+        }),
+        makeNode("be1", "breakeven-stop", {
+          category: "trade-management",
+          managementType: "breakeven-stop",
+          trigger: "PIPS",
+          triggerPips: 20,
+          lockPips: 2,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "BETest");
+      expect(code).toContain("SafePositionModify");
+      expect(code).toContain("SYMBOL_TRADE_FREEZE_LEVEL");
+      expect(code).toContain("PositionModify failed");
+      // Confirm documentation note about deviation
+      expect(code).toContain("deviation/slippage does not apply");
+    });
+  });
 });

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
+import { VerificationBadge, getVerificationLevel } from "@/components/app/verification-badge";
 import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
 interface StrategyPageData {
@@ -229,6 +230,14 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
       : "---";
 
   const chainVerified = chain && chain.length > 0;
+  const brokerVerified =
+    brokerVerification !== null &&
+    brokerVerification.mismatchedCount === 0 &&
+    brokerVerification.evidenceCount > 0;
+  const verificationLevel = getVerificationLevel({
+    chainVerified: !!chainVerified,
+    brokerVerified,
+  });
   const healthConfig = health
     ? HEALTH_COLORS[health.status] || HEALTH_COLORS.INSUFFICIENT_DATA
     : null;
@@ -258,6 +267,9 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
                 variant="expanded"
               />
             )}
+
+            {/* Verification Level Badge */}
+            {verificationLevel && <VerificationBadge level={verificationLevel} />}
 
             {/* Broker Verified badge */}
             {brokerVerification && (

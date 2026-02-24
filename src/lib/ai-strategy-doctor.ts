@@ -7,6 +7,7 @@
 
 import { getAnthropicClient, AI_ANALYSIS_MODEL } from "./anthropic";
 import { logger } from "./logger";
+import { anthropicCircuit, CircuitOpenError } from "./circuit-breaker";
 import type { ParsedMetrics, ParsedDeal } from "./backtest-parser/types";
 
 // ============================================
@@ -106,7 +107,7 @@ After your analysis text, output a JSON block with structured weaknesses:
  */
 export async function analyzeStrategy(
   input: StrategyAnalysisInput
-): Promise<StrategyAnalysisResult> {
+): Promise<StrategyAnalysisResult | null> {
   const anthropic = getAnthropicClient();
   if (!anthropic) {
     throw new Error("AI analysis is not available — ANTHROPIC_API_KEY not configured");
@@ -117,15 +118,27 @@ export async function analyzeStrategy(
 
   const userMessage = buildUserMessage(input, dealSample);
 
-  const response = await anthropic.messages.create(
-    {
-      model: AI_ANALYSIS_MODEL,
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
-    },
-    { timeout: 45000 }
-  );
+  let response;
+  try {
+    response = await anthropicCircuit.execute(() =>
+      anthropic.messages.create(
+        {
+          model: AI_ANALYSIS_MODEL,
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: userMessage }],
+        },
+        { timeout: 45000 }
+      )
+    );
+  } catch (err) {
+    if (err instanceof CircuitOpenError) {
+      logger.warn("AI analysis skipped — circuit breaker open");
+    } else {
+      logger.error({ error: err }, "AI strategy analysis API call failed");
+    }
+    return null;
+  }
 
   // Extract text from response
   const textBlocks = response.content.filter((b) => b.type === "text");
@@ -342,15 +355,27 @@ export async function optimizeStrategy(
   parts.push(`</strategy_data>`);
   parts.push("", "Suggest concrete parameter optimizations based on this data.");
 
-  const response = await anthropic.messages.create(
-    {
-      model: AI_ANALYSIS_MODEL,
-      max_tokens: 2048,
-      system: OPTIMIZER_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: parts.join("\n") }],
-    },
-    { timeout: 45000 }
-  );
+  let response;
+  try {
+    response = await anthropicCircuit.execute(() =>
+      anthropic.messages.create(
+        {
+          model: AI_ANALYSIS_MODEL,
+          max_tokens: 2048,
+          system: OPTIMIZER_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: parts.join("\n") }],
+        },
+        { timeout: 45000 }
+      )
+    );
+  } catch (err) {
+    if (err instanceof CircuitOpenError) {
+      logger.warn("AI optimization skipped — circuit breaker open");
+    } else {
+      logger.error({ error: err }, "AI strategy optimization API call failed");
+    }
+    return [];
+  }
 
   const textBlocks = response.content.filter((b) => b.type === "text");
   const fullText = textBlocks.map((b) => b.text).join("\n");

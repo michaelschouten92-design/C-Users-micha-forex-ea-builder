@@ -34,16 +34,16 @@ export function validateStrategyForExport(
     });
   }
 
-  // 2. Risk management check (warning if no SL/TP blocks)
+  // 2. Risk management check (error if no SL/TP blocks — protects trading capital)
   const hasRiskManagement = nodes.some((n) => {
     const d = n.data as Record<string, unknown>;
     return d.tradingType === "stop-loss" || d.tradingType === "take-profit";
   });
   if (!hasRiskManagement && nodes.length > 0) {
-    warnings.push({
+    errors.push({
       message:
-        "No stop loss or take profit blocks found. Consider adding risk management to protect your account.",
-      severity: "warning",
+        "No stop loss or take profit blocks found. Add risk management to protect your account.",
+      severity: "error",
     });
   }
 
@@ -124,22 +124,36 @@ export function validateStrategyForExport(
       });
     }
 
-    // Indicator periods must be > 0
+    // Indicator periods must be > 0 and <= 1000
     for (const periodField of ["period", "fastPeriod", "slowPeriod", "signalPeriod", "atrPeriod"]) {
-      if (periodField in d && typeof d[periodField] === "number" && d[periodField] === 0) {
+      if (periodField in d && typeof d[periodField] === "number") {
         const fieldLabel = periodField
           .replace(/([A-Z])/g, " $1")
           .replace(/^./, (s: string) => s.toUpperCase());
-        errors.push({
-          nodeId: node.id,
-          message: `${fieldLabel} must be greater than 0.`,
-          severity: "error",
-        });
+        if ((d[periodField] as number) <= 0) {
+          errors.push({
+            nodeId: node.id,
+            message: `${fieldLabel} must be greater than 0.`,
+            severity: "error",
+          });
+        } else if ((d[periodField] as number) > 1000) {
+          errors.push({
+            nodeId: node.id,
+            message: `${fieldLabel} of ${d[periodField]} is too large. Maximum is 1000.`,
+            severity: "error",
+          });
+        }
       }
     }
 
-    // Risk % warning if aggressive
-    if (typeof d.riskPercent === "number" && d.riskPercent > 5) {
+    // Risk % validation
+    if (typeof d.riskPercent === "number" && d.riskPercent > 10) {
+      errors.push({
+        nodeId: node.id,
+        message: `Risk of ${d.riskPercent}% per trade exceeds safe limits. Maximum is 10%.`,
+        severity: "error",
+      });
+    } else if (typeof d.riskPercent === "number" && d.riskPercent > 5) {
       warnings.push({
         nodeId: node.id,
         message: `Risk of ${d.riskPercent}% per trade is aggressive.`,

@@ -23,7 +23,7 @@ export function getAnthropicClient(): Anthropic | null {
     return null;
   }
 
-  client = new Anthropic({ apiKey });
+  client = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 2 });
   return client;
 }
 
