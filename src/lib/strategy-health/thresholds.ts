@@ -70,3 +70,14 @@ export const HEALTH_EVAL_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 
 /** Maximum staleness before on-demand recalculation (milliseconds) */
 export const HEALTH_STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+
+// ============================================
+// STRATEGY LIFECYCLE THRESHOLDS
+// ============================================
+
+/** Consecutive HEALTHY evaluations needed before PROVING → PROVEN */
+export const PROVEN_CONSECUTIVE_HEALTHY = 5;
+/** Minimum total trades before a strategy can become PROVEN */
+export const PROVEN_MIN_TRADES = 30;
+/** Consecutive DEGRADED evaluations that trigger automatic retirement */
+export const RETIRED_CONSECUTIVE_DEGRADED = 5;

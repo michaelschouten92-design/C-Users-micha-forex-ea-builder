@@ -359,6 +359,15 @@ model LiveEAInstance {
 
   strategyVersionId String?
 
+  // Strategy Lifecycle
+  lifecyclePhase    String    @default("NEW")  // NEW | PROVING | PROVEN | RETIRED
+  phaseEnteredAt    DateTime  @default(now())
+  provenAt          DateTime?
+  retiredAt         DateTime?
+  retiredReason     String?   // "drift" | "manual"
+  peakScore         Float     @default(0)
+  peakScoreAt       DateTime?
+
   exportJob      ExportJob        @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   strategyVersion StrategyVersion? @relation(fields: [strategyVersionId], references: [id])

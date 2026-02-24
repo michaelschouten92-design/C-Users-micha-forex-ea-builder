@@ -30,10 +30,17 @@ export async function GET(request: NextRequest, { params }: Props) {
     );
   }
 
-  // Verify ownership
+  // Verify ownership and load lifecycle data
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },
-    select: { id: true },
+    select: {
+      id: true,
+      lifecyclePhase: true,
+      phaseEnteredAt: true,
+      provenAt: true,
+      retiredAt: true,
+      peakScore: true,
+    },
   });
 
   if (!instance) {
@@ -42,5 +49,15 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   const { snapshot, fresh } = await getHealthWithFreshness(instanceId);
 
-  return NextResponse.json({ health: snapshot, fresh });
+  return NextResponse.json({
+    health: snapshot,
+    fresh,
+    lifecycle: {
+      phase: instance.lifecyclePhase,
+      phaseEnteredAt: instance.phaseEnteredAt,
+      provenAt: instance.provenAt,
+      retiredAt: instance.retiredAt,
+      peakScore: instance.peakScore,
+    },
+  });
 }

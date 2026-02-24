@@ -65,6 +65,12 @@ interface StrategyPageData {
     matchedCount: number;
     mismatchedCount: number;
   } | null;
+  lifecycle: {
+    phase: string;
+    provenAt: string | null;
+    retiredAt: string | null;
+    peakScore: number;
+  } | null;
   settings: {
     showEquityCurve: boolean;
     showTradeLog: boolean;
@@ -81,6 +87,12 @@ function formatDuration(seconds: number): string {
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
 }
+
+const LIFECYCLE_BADGE: Record<string, { color: string; label: string }> = {
+  PROVING: { color: "#6366F1", label: "Strategy Proving" },
+  PROVEN: { color: "#10B981", label: "Strategy Proven" },
+  RETIRED: { color: "#EF4444", label: "Edge Expired" },
+};
 
 const HEALTH_COLORS: Record<string, { color: string; label: string }> = {
   HEALTHY: { color: "#10B981", label: "Healthy" },
@@ -200,6 +212,7 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
     instance,
     trackRecord,
     health,
+    lifecycle,
     chain,
     equityCurve,
     metrics,
@@ -247,6 +260,42 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
                   />
                 </svg>
                 Integrity Verified
+              </span>
+            )}
+
+            {/* Lifecycle phase badge */}
+            {lifecycle && lifecycle.phase !== "NEW" && LIFECYCLE_BADGE[lifecycle.phase] && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium"
+                style={{
+                  backgroundColor: `${LIFECYCLE_BADGE[lifecycle.phase].color}15`,
+                  borderColor: `${LIFECYCLE_BADGE[lifecycle.phase].color}25`,
+                  color: LIFECYCLE_BADGE[lifecycle.phase].color,
+                }}
+                title={
+                  lifecycle.phase === "PROVEN" && lifecycle.provenAt
+                    ? `Proven since ${new Date(lifecycle.provenAt).toLocaleDateString()}`
+                    : lifecycle.phase === "RETIRED" && lifecycle.retiredAt
+                      ? `Retired on ${new Date(lifecycle.retiredAt).toLocaleDateString()}`
+                      : undefined
+                }
+              >
+                {lifecycle.phase === "PROVEN" && (
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+                  </svg>
+                )}
+                {LIFECYCLE_BADGE[lifecycle.phase].label}
               </span>
             )}
 

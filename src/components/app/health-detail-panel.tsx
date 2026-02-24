@@ -32,6 +32,21 @@ interface HealthSnapshotData {
   createdAt: string;
 }
 
+interface LifecycleData {
+  phase: "NEW" | "PROVING" | "PROVEN" | "RETIRED";
+  phaseEnteredAt: string;
+  provenAt: string | null;
+  retiredAt: string | null;
+  peakScore: number;
+}
+
+const LIFECYCLE_CONFIG = {
+  NEW: { color: "#7C8DB0", label: "Collecting Data" },
+  PROVING: { color: "#6366F1", label: "Proving" },
+  PROVEN: { color: "#10B981", label: "Proven" },
+  RETIRED: { color: "#EF4444", label: "Edge Expired" },
+} as const;
+
 const MIN_TRADES = 10;
 const MIN_DAYS = 7;
 
@@ -182,8 +197,43 @@ function HealthSparkline({ points }: { points: HistoryPoint[] }) {
   );
 }
 
+function LifecycleBadge({ lifecycle }: { lifecycle: LifecycleData }) {
+  const config = LIFECYCLE_CONFIG[lifecycle.phase];
+  const tooltip =
+    lifecycle.phase === "PROVEN" && lifecycle.provenAt
+      ? `Proven since ${new Date(lifecycle.provenAt).toLocaleDateString()}`
+      : lifecycle.phase === "RETIRED" && lifecycle.retiredAt
+        ? `Retired on ${new Date(lifecycle.retiredAt).toLocaleDateString()}`
+        : undefined;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border"
+      style={{
+        backgroundColor: `${config.color}15`,
+        color: config.color,
+        borderColor: `${config.color}25`,
+      }}
+      title={tooltip}
+    >
+      {lifecycle.phase === "PROVEN" && (
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          />
+        </svg>
+      )}
+      {config.label}
+    </span>
+  );
+}
+
 export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
   const [health, setHealth] = useState<HealthSnapshotData | null>(null);
+  const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -197,6 +247,7 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
         if (healthRes.ok) {
           const data = await healthRes.json();
           setHealth(data.health);
+          if (data.lifecycle) setLifecycle(data.lifecycle);
         }
         if (historyRes.ok) {
           const data = await historyRes.json();
@@ -318,6 +369,7 @@ export function HealthDetailPanel({ instanceId }: HealthDetailPanelProps) {
           >
             {config.label}
           </span>
+          {lifecycle && lifecycle.phase !== "NEW" && <LifecycleBadge lifecycle={lifecycle} />}
           <span className="text-xs text-[#7C8DB0]">
             {scorePct}%
             <span className="text-[10px] ml-1 opacity-70">

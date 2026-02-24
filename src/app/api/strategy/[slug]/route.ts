@@ -56,6 +56,10 @@ export async function GET(request: NextRequest, { params }: Props) {
         totalProfit: true,
         createdAt: true,
         lastHeartbeat: true,
+        lifecyclePhase: true,
+        provenAt: true,
+        retiredAt: true,
+        peakScore: true,
       },
     });
 
@@ -227,6 +231,14 @@ export async function GET(request: NextRequest, { params }: Props) {
               lastUpdated: healthSnapshot.createdAt,
             }
           : null,
+        lifecycle: instance
+          ? {
+              phase: instance.lifecyclePhase,
+              provenAt: instance.provenAt,
+              retiredAt: instance.retiredAt,
+              peakScore: instance.peakScore,
+            }
+          : null,
         chain: {
           length: chainLength,
           checkpointCount,
@@ -258,6 +270,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     instance: null,
     trackRecord: null,
     health: null,
+    lifecycle: null,
     chain: null,
     equityCurve: [],
     metrics: null,
