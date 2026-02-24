@@ -49,9 +49,13 @@ export function extractBaselineMetrics(
   const avgTradesPerDay =
     backtestDurationDays > 0 ? backtestResult.totalTrades / backtestDurationDays : 0;
 
-  // Normalize return to 30-day window for comparison
-  const dailyReturnPct = backtestDurationDays > 0 ? netReturnPct / backtestDurationDays : 0;
-  const returnPct30d = dailyReturnPct * 30;
+  // Normalize return to 30-day window using geometric compounding.
+  // Arithmetic scaling (r/days*30) overestimates baseline for large returns.
+  // Geometric: ((1 + r/100)^(30/days) - 1) * 100
+  const returnPct30d =
+    backtestDurationDays > 0 && Math.abs(netReturnPct) > 0.001
+      ? (Math.pow(1 + netReturnPct / 100, 30 / backtestDurationDays) - 1) * 100
+      : 0;
 
   // Compute annualized volatility from equity curve if available.
   // Uses daily return approximation: total return spread evenly, then annualized.

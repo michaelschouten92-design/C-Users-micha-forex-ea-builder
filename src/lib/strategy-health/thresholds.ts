@@ -56,6 +56,9 @@ export const THRESHOLDS: Record<string, MetricThreshold> = {
   },
 };
 
+/** Trade count at which tolerance bands are at their base (unscaled) values */
+export const REFERENCE_TRADES = 100;
+
 /** Minimum trades required before health assessment is meaningful */
 export const MIN_TRADES_FOR_ASSESSMENT = 10;
 

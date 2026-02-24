@@ -19,9 +19,8 @@ describe("extractBaselineMetrics", () => {
     );
 
     // netReturnPct = (3000/10000)*100 = 30%
-    // dailyReturnPct = 30/90 = 0.333...
-    // returnPct30d = 0.333... * 30 = 10%
-    expect(metrics.returnPct).toBeCloseTo(10, 1);
+    // Geometric: ((1.30)^(30/90) - 1) * 100 = 9.139%
+    expect(metrics.returnPct).toBeCloseTo(9.14, 1);
   });
 
   it("computes avgTradesPerDay correctly", () => {

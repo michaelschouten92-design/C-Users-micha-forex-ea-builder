@@ -4,10 +4,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { triggerAlert } from "@/lib/alerts";
 import { collectLiveMetrics } from "./collector";
 import { computeHealth } from "./scorer";
 import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
-import type { BaselineMetrics, HealthResult } from "./types";
+import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 
 /**
  * Evaluate health for an instance, rate-limited to once per hour.
@@ -34,12 +35,14 @@ export async function evaluateHealthIfDue(instanceId: string): Promise<void> {
  * Returns the health result (also stored in DB).
  */
 export async function evaluateHealth(instanceId: string): Promise<HealthResult> {
-  // Load instance with strategy version info
+  // Load instance with strategy version info + user context for alerts
   const instance = await prisma.liveEAInstance.findUnique({
     where: { id: instanceId },
     select: {
       strategyVersionId: true,
       status: true,
+      userId: true,
+      eaName: true,
     },
   });
 
@@ -63,15 +66,24 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     });
 
     if (backtestBaseline) {
-      // Normalize baseline return to 30-day window
-      const dailyReturnPct =
-        backtestBaseline.backtestDurationDays > 0
-          ? backtestBaseline.netReturnPct / backtestBaseline.backtestDurationDays
-          : 0;
+      // Normalize baseline return to 30-day window using geometric compounding.
+      // Arithmetic scaling (r/days*30) overestimates for large returns.
+      const days = backtestBaseline.backtestDurationDays;
+      const r = backtestBaseline.netReturnPct;
+      const returnPct30d =
+        days > 0 && Math.abs(r) > 0.001 ? (Math.pow(1 + r / 100, 30 / days) - 1) * 100 : 0;
+
+      // Scale baseline DD to 30-day equivalent.
+      // Max drawdown scales roughly with sqrt(observation period).
+      // A 10% DD over 180 days ≈ 10% * sqrt(30/180) ≈ 4.1% over 30 days.
+      // This removes the systematic bias where 30-day live DD always looks
+      // better than the full-backtest baseline DD.
+      const baselineDD = backtestBaseline.maxDrawdownPct;
+      const scaledDD = days > 30 ? baselineDD * Math.sqrt(30 / days) : baselineDD;
 
       baseline = {
-        returnPct: dailyReturnPct * 30,
-        maxDrawdownPct: backtestBaseline.maxDrawdownPct,
+        returnPct: returnPct30d,
+        maxDrawdownPct: scaledDD,
         winRate: backtestBaseline.winRate,
         tradesPerDay: backtestBaseline.avgTradesPerDay,
         sharpeRatio: backtestBaseline.sharpeRatio,
@@ -83,17 +95,38 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
   // Compute health scores
   const result = computeHealth(liveMetrics, baseline);
 
-  // Log status transitions (compare with most recent snapshot)
+  // Detect status transitions and fire alerts on degradation
   const previousSnapshot = await prisma.healthSnapshot.findFirst({
     where: { instanceId },
     orderBy: { createdAt: "desc" },
     select: { status: true },
   });
   if (previousSnapshot && previousSnapshot.status !== result.status) {
+    const prev = previousSnapshot.status as HealthStatusType;
     logger.info(
-      { instanceId, from: previousSnapshot.status, to: result.status, score: result.overallScore },
+      { instanceId, from: prev, to: result.status, score: result.overallScore },
       "Health status changed"
     );
+
+    // Fire alert when health degrades (not on improvement or INSUFFICIENT_DATA)
+    const isDegrading =
+      (prev === "HEALTHY" && (result.status === "WARNING" || result.status === "DEGRADED")) ||
+      (prev === "WARNING" && result.status === "DEGRADED");
+
+    if (isDegrading) {
+      const scoreStr = Math.round(result.overallScore * 100);
+      triggerAlert({
+        userId: instance.userId,
+        instanceId,
+        eaName: instance.eaName,
+        alertType: "HEALTH_DEGRADED",
+        message:
+          `Strategy health changed from ${prev} to ${result.status} (score: ${scoreStr}%). ` +
+          `Check your live performance metrics.`,
+      }).catch((err) => {
+        logger.error({ err, instanceId }, "Failed to trigger health degradation alert");
+      });
+    }
   }
 
   // Store snapshot

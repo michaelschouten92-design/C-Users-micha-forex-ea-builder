@@ -12,17 +12,50 @@ import type {
   HealthStatusType,
   MetricScore,
 } from "./types";
-import { THRESHOLDS, MIN_TRADES_FOR_ASSESSMENT, MIN_DAYS_FOR_ASSESSMENT } from "./thresholds";
+import {
+  THRESHOLDS,
+  MIN_TRADES_FOR_ASSESSMENT,
+  MIN_DAYS_FOR_ASSESSMENT,
+  REFERENCE_TRADES,
+} from "./thresholds";
+
+/**
+ * Compute confidence multiplier for tolerance bands based on sample size.
+ * At low N, bands widen to prevent false alarms from sampling noise.
+ * At REFERENCE_TRADES (100) or above, bands are at their base values.
+ *
+ * Formula: max(1, sqrt(REFERENCE_TRADES / N))
+ *   N=10:  multiplier = 3.16  (very wide — high uncertainty)
+ *   N=30:  multiplier = 1.83
+ *   N=50:  multiplier = 1.41
+ *   N=100: multiplier = 1.00  (base tolerance)
+ *   N=500: multiplier = 1.00  (don't tighten beyond base)
+ */
+function confidenceMultiplier(totalTrades: number): number {
+  if (totalTrades >= REFERENCE_TRADES) return 1.0;
+  return Math.sqrt(REFERENCE_TRADES / Math.max(totalTrades, 1));
+}
 
 /**
  * Score a single metric by comparing live value against baseline.
  *
  * Returns 0.0–1.0 where 1.0 = perfect match, 0.0 = at or beyond alarm threshold.
- * Uses smooth interpolation between tolerance bands.
+ * Uses smooth interpolation between tolerance bands, scaled by sample size.
  */
-function scoreMetric(liveValue: number, baselineValue: number, thresholdKey: string): number {
+function scoreMetric(
+  liveValue: number,
+  baselineValue: number,
+  thresholdKey: string,
+  totalTrades: number
+): number {
   const t = THRESHOLDS[thresholdKey];
   if (!t || baselineValue === 0) return 0.5; // neutral if no baseline
+
+  // Scale tolerance bands wider when sample size is small
+  const cm = confidenceMultiplier(totalTrades);
+  const tolerance = t.tolerance * cm;
+  const warning = t.warning * cm;
+  const alarm = t.alarm * cm;
 
   let deviation: number;
 
@@ -40,17 +73,17 @@ function scoreMetric(liveValue: number, baselineValue: number, thresholdKey: str
   if (deviation <= 0) return 1.0;
 
   // Within tolerance → score 1.0
-  if (deviation <= t.tolerance) return 1.0;
+  if (deviation <= tolerance) return 1.0;
 
   // Between tolerance and warning → interpolate 1.0 → 0.5
-  if (deviation <= t.warning) {
-    const ratio = (deviation - t.tolerance) / (t.warning - t.tolerance);
+  if (deviation <= warning) {
+    const ratio = (deviation - tolerance) / (warning - tolerance);
     return 1.0 - ratio * 0.5;
   }
 
   // Between warning and alarm → interpolate 0.5 → 0.0
-  if (deviation <= t.alarm) {
-    const ratio = (deviation - t.warning) / (t.alarm - t.warning);
+  if (deviation <= alarm) {
+    const ratio = (deviation - warning) / (alarm - warning);
     return 0.5 - ratio * 0.5;
   }
 
@@ -135,10 +168,11 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
   }
 
   const hasBaseline = baseline !== null;
+  const N = live.totalTrades;
 
-  // Score each metric
+  // Score each metric (tolerance bands scale with sample size)
   const returnScore = hasBaseline
-    ? scoreMetric(live.returnPct, baseline.returnPct, "return")
+    ? scoreMetric(live.returnPct, baseline.returnPct, "return", N)
     : scoreMetricAbsolute(live.returnPct, "return");
 
   const baselineVolatility = hasBaseline
@@ -146,19 +180,19 @@ export function computeHealth(live: LiveMetrics, baseline: BaselineMetrics | nul
     : null;
   const volatilityScore =
     baselineVolatility !== null
-      ? scoreMetric(live.volatility, baselineVolatility, "volatility")
+      ? scoreMetric(live.volatility, baselineVolatility, "volatility", N)
       : scoreMetricAbsolute(live.volatility, "volatility");
 
   const drawdownScore = hasBaseline
-    ? scoreMetric(live.maxDrawdownPct, baseline.maxDrawdownPct, "drawdown")
+    ? scoreMetric(live.maxDrawdownPct, baseline.maxDrawdownPct, "drawdown", N)
     : scoreMetricAbsolute(live.maxDrawdownPct, "drawdown");
 
   const winRateScore = hasBaseline
-    ? scoreMetric(live.winRate, baseline.winRate, "winRate")
+    ? scoreMetric(live.winRate, baseline.winRate, "winRate", N)
     : scoreMetricAbsolute(live.winRate, "winRate");
 
   const tradeFrequencyScore = hasBaseline
-    ? scoreMetric(live.tradesPerDay, baseline.tradesPerDay, "tradeFrequency")
+    ? scoreMetric(live.tradesPerDay, baseline.tradesPerDay, "tradeFrequency", N)
     : scoreMetricAbsolute(live.tradesPerDay, "tradeFrequency");
 
   // Weighted average

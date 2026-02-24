@@ -14,8 +14,8 @@ export async function collectLiveMetrics(
 ): Promise<LiveMetrics> {
   const windowStart = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
 
-  // Fetch track record state and closed trades in the window
-  const [state, tradeCloseEvents] = await Promise.all([
+  // Fetch track record state, closed trades, and cashflows in the window
+  const [state, tradeCloseEvents, cashflowEvents] = await Promise.all([
     prisma.trackRecordState.findUnique({
       where: { instanceId },
       select: {
@@ -39,6 +39,14 @@ export async function collectLiveMetrics(
         timestamp: true,
       },
       orderBy: { timestamp: "asc" },
+    }),
+    prisma.trackRecordEvent.findMany({
+      where: {
+        instanceId,
+        eventType: "CASHFLOW",
+        timestamp: { gte: windowStart },
+      },
+      select: { payload: true },
     }),
   ]);
 
@@ -69,8 +77,17 @@ export async function collectLiveMetrics(
   // Calculate return percentage from trades in window
   const totalPnL = closedTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
 
-  // Use initial balance estimate (balance minus total PnL)
-  const estimatedStartBalance = Math.max(state.balance - totalPnL, 1);
+  // Net cashflows in the window (deposits - withdrawals).
+  // Without this, deposits inflate the balance and suppress returnPct.
+  const netCashflow = cashflowEvents.reduce((sum, e) => {
+    const p = e.payload as Record<string, unknown>;
+    const amount = (p.amount as number) || 0;
+    const type = p.type as string;
+    return sum + (type === "DEPOSIT" ? amount : -amount);
+  }, 0);
+
+  // estimatedStartBalance = currentBalance - tradePnL - netCashflows
+  const estimatedStartBalance = Math.max(state.balance - totalPnL - netCashflow, 1);
   const returnPct = (totalPnL / estimatedStartBalance) * 100;
 
   // Calculate daily returns for volatility
