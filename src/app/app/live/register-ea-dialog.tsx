@@ -188,11 +188,11 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
                     <span>
                       Download{" "}
                       <a
-                        href="/downloads/AlgoStudio_Monitor.mq5"
+                        href="/downloads/AlgoStudio_Monitor.ex5"
                         download
                         className="text-[#22D3EE] hover:underline"
                       >
-                        AlgoStudio_Monitor.mq5
+                        AlgoStudio_Monitor.ex5
                       </a>{" "}
                       and place it in your MetaTrader{" "}
                       <code className="text-xs bg-[#0A0118] px-1 rounded">Experts</code> folder.

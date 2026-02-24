@@ -16,6 +16,15 @@
 #property strict
 
 //+------------------------------------------------------------------+
+//| ENUMS                                                            |
+//+------------------------------------------------------------------+
+enum ENUM_MONITOR_MODE
+{
+   MODE_SYMBOL_ONLY  = 0,  // Current Symbol Only
+   MODE_ACCOUNT_WIDE = 1   // Account Wide (all symbols)
+};
+
+//+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                 |
 //+------------------------------------------------------------------+
 input string InpApiKey        = "";              // API Key (from AlgoStudio dashboard)
@@ -27,16 +36,7 @@ input int    InpSnapshotSec   = 300;             // Track-record snapshot interv
 input ENUM_MONITOR_MODE InpMonitorMode = MODE_ACCOUNT_WIDE; // Monitoring Mode
 input string InpMagicNumbers  = "";              // Magic numbers to track (comma-separated, empty=all)
 input string InpCommentFilter = "";              // Comment substring filter (empty=all)
-input bool   InpExcludeManual = false;           // Exclude manual trades (magic=0)
-
-//+------------------------------------------------------------------+
-//| ENUMS                                                            |
-//+------------------------------------------------------------------+
-enum ENUM_MONITOR_MODE
-{
-   MODE_SYMBOL_ONLY  = 0,  // Current Symbol Only
-   MODE_ACCOUNT_WIDE = 1   // Account Wide (all symbols)
-};
+input bool   InpExcludeManual = false;           // Exclude manual trades (magic=0);
 
 //+------------------------------------------------------------------+
 //| CONSTANTS                                                        |
@@ -444,13 +444,13 @@ void PollTradeChanges()
 //+------------------------------------------------------------------+
 //| SHA-256 HASHING (via CryptEncode)                                |
 //+------------------------------------------------------------------+
-string SHA256(string input)
+string SHA256(string text)
 {
    uchar data[];
    uchar key[];
    uchar hash[];
 
-   int len = StringToCharArray(input, data, 0, WHOLE_ARRAY, CP_UTF8);
+   int len = StringToCharArray(text, data, 0, WHOLE_ARRAY, CP_UTF8);
    // Remove null terminator added by StringToCharArray
    if(len > 0) ArrayResize(data, len - 1);
 
