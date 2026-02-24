@@ -50,7 +50,7 @@ export default function PricingPage() {
     },
     {
       q: "What is a Verified Track Record?",
-      a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real \u2014 no screenshot manipulation, no cherry-picking. Pro and Elite users can share a public Verified Strategy Page with their track record.",
+      a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real \u2014 no screenshot manipulation, no cherry-picking. Pro and Elite users get a public Verified Strategy Page to share their track record with investors, prop firms, or anyone who needs proof.",
     },
     {
       q: "What is the Monte Carlo risk calculator?",
@@ -74,7 +74,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, and live monitoring. Elite adds capital protection features: the Strategy Health Monitor with edge degradation alerts, advanced drawdown monitoring, a public Verified Strategy Page, plus 1-on-1 strategy reviews and direct developer support.",
+      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, live monitoring, and a public Verified Strategy Page to share your proof. Elite adds capital protection: the Strategy Health Monitor with edge degradation detection, CUSUM drift analysis, advanced drawdown alerts, an embeddable proof widget, plus 1-on-1 strategy reviews (1/month) and a direct developer channel.",
     },
   ];
 
@@ -101,7 +101,7 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto mt-8 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#0D0117]/50 border border-[rgba(34,211,238,0.15)] rounded-lg px-4 py-3 text-center">
-              <p className="text-xs text-[#64748B] mb-1">Just getting started?</p>
+              <p className="text-xs text-[#64748B] mb-1">Building your first EA?</p>
               <p className="text-sm font-medium text-[#22D3EE]">Start Free</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
@@ -151,11 +151,10 @@ export default function PricingPage() {
                   {(
                     [
                       ["Visual strategy builder", true, true, true],
-                      ["Strategy templates", "All 6", "All 6", "All 6"],
+                      ["Strategy templates", "All 10", "All 10", "All 10"],
                       ["Active projects", "1", "Unlimited", "Unlimited"],
                       ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
-                      ["MQL5 export (MetaTrader 5)", true, true, true],
-                      ["Clean, commented source code", true, true, true],
+                      ["Walk-forward analysis", false, true, true],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -176,13 +175,13 @@ export default function PricingPage() {
                     </tr>
                   ))}
 
-                  {/* Tools & Analysis */}
+                  {/* Analysis & Tools */}
                   <tr className="border-b border-[rgba(79,70,229,0.05)]">
                     <td
                       className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
                       colSpan={4}
                     >
-                      Tools &amp; Analysis
+                      Analysis &amp; Tools
                     </td>
                   </tr>
                   {(
@@ -210,13 +209,13 @@ export default function PricingPage() {
                     </tr>
                   ))}
 
-                  {/* Verification & Tracking */}
+                  {/* Verification & Proof */}
                   <tr className="border-b border-[rgba(79,70,229,0.05)]">
                     <td
                       className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
                       colSpan={4}
                     >
-                      Verification &amp; Tracking
+                      Verification &amp; Proof
                     </td>
                   </tr>
                   {(
@@ -225,7 +224,9 @@ export default function PricingPage() {
                       ["Strategy versioning", false, true, true],
                       ["Verified Track Record", false, true, true],
                       ["Tamper-resistant hash chain", false, true, true],
-                      ["Public Verified Strategy Page", false, false, true],
+                      ["Track Record sharing link", false, true, true],
+                      ["Public Verified Strategy Page", false, true, true],
+                      ["Embeddable proof widget", false, false, true],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -246,22 +247,27 @@ export default function PricingPage() {
                     </tr>
                   ))}
 
-                  {/* Live Monitoring & Protection */}
+                  {/* Live Monitoring */}
                   <tr className="border-b border-[rgba(79,70,229,0.05)]">
                     <td
                       className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
                       colSpan={4}
                     >
-                      Live Monitoring &amp; Protection
+                      Live Monitoring
                     </td>
                   </tr>
                   {(
                     [
                       ["Live EA monitoring dashboard", false, true, true],
+                      ["External EA monitoring", false, true, true],
+                      ["Multi-strategy portfolio view", false, true, true],
+                      ["Email & webhook alerts", false, true, true],
+                      ["Telegram alerts", false, true, true],
                       ["Strategy Health Monitor", false, false, true],
-                      ["Edge degradation alerts", false, false, true],
-                      ["Advanced drawdown monitoring", false, false, true],
-                      ["Multi-strategy portfolio view", false, false, true],
+                      ["Edge degradation detection", false, false, true],
+                      ["CUSUM drift analysis", false, false, true],
+                      ["Advanced drawdown alerts", false, false, true],
+                      ["Pre-retirement warnings", false, false, true],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -293,10 +299,11 @@ export default function PricingPage() {
                   </tr>
                   {(
                     [
+                      ["Community support", true, true, true],
                       ["Priority support", false, true, true],
+                      ["1-on-1 strategy review", false, false, "1/month"],
+                      ["Direct developer channel", false, false, true],
                       ["Priority feature requests", false, false, true],
-                      ["1-on-1 strategy review session", false, false, true],
-                      ["Direct developer support", false, false, true],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -384,8 +391,8 @@ export default function PricingPage() {
                   "Build in under 5 minutes",
                   "Instant rebuilds, no extra cost",
                   "Verified track record built-in",
-                  "Strategy Identity & versioning",
-                  "Live monitoring dashboard",
+                  "Public Verified Strategy Page",
+                  "Live monitoring + alerts",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <CheckIcon className="w-4 h-4" />
@@ -439,16 +446,16 @@ export default function PricingPage() {
             <div className="grid sm:grid-cols-3 gap-4">
               {[
                 {
-                  metric: "Return drift",
-                  desc: "Spots declining returns vs. backtest expectations",
+                  metric: "CUSUM drift analysis",
+                  desc: "Statistically detects when your strategy's edge is shifting",
                 },
                 {
-                  metric: "Drawdown alerts",
-                  desc: "Warns when max drawdown exceeds historical norms",
+                  metric: "Advanced drawdown alerts",
+                  desc: "Warns when drawdown exceeds historical norms (% and absolute)",
                 },
                 {
-                  metric: "Edge degradation",
-                  desc: "Detects when win rate or trade frequency shifts",
+                  metric: "Pre-retirement warnings",
+                  desc: "Alerts before automatic strategy retirement kicks in",
                 },
               ].map((item) => (
                 <div

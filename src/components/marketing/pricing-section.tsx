@@ -122,7 +122,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <h3 className="text-xl font-semibold text-white">Free</h3>
           </div>
           <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
-            Learn &amp; Explore
+            Build &amp; Test
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
@@ -138,11 +138,12 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Visual strategy builder",
-              "All 6 strategy templates",
+              "All 10 strategy templates",
               "1 active project",
               "3 MQL5 exports per month",
               "Monte Carlo risk calculator",
               "Backtest health scoring",
+              "Strategy journal",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -153,8 +154,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Traders exploring automated strategies for the first
-              time.
+              <strong>Perfect for:</strong> Traders building and testing their first automated
+              strategy.
             </p>
           </div>
 
@@ -181,7 +182,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             </h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
-            Build &amp; Run
+            Build, Verify &amp; Run
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -216,19 +217,20 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Go from idea to live trading with full verification
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Unlimited strategies, verified track records, and live monitoring. Everything you need
-            to build and run EAs with confidence.
+            Unlimited strategies, verified track records, live monitoring, and proof sharing.
+            Everything you need to build, verify, and run EAs with confidence.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Unlimited projects & exports",
-              "MQL5 code export",
-              "MT5 Strategy Tester optimization",
               "Strategy Identity & versioning",
               "Verified Track Record",
+              "Public Verified Strategy Page",
               "Live EA monitoring dashboard",
-              "Strategy journal & tracking",
+              "External EA monitoring",
+              "Walk-forward analysis",
+              "Email, webhook & Telegram alerts",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -262,7 +264,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <h3 className="text-xl font-semibold text-white">Elite</h3>
           </div>
           <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1">
-            Protect Capital
+            Protect &amp; Prove
           </p>
           <div className="mt-4">
             {elitePrice ? (
@@ -297,21 +299,22 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Know when your edge is fading before your account does
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Everything in Pro, plus advanced health monitoring and capital protection tools. Built
-            for traders who manage real money.
+            Everything in Pro, plus continuous health monitoring, drift detection, and capital
+            protection tools. Built for traders managing real money.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Everything in Pro",
               "Strategy Health Monitor",
-              "Edge degradation alerts",
-              "Advanced drawdown monitoring",
-              "Multi-strategy portfolio overview",
-              "Verified Strategy Page (public)",
-              "1-on-1 strategy review session",
+              "Edge degradation detection",
+              "CUSUM drift analysis",
+              "Advanced drawdown alerts",
+              "Pre-retirement warnings",
+              "Embeddable proof widget",
+              "1-on-1 strategy review (1/month)",
+              "Direct developer channel",
               "Priority feature requests",
-              "Direct developer support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon className="w-5 h-5 text-[#A78BFA]" />

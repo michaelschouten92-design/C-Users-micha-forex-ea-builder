@@ -171,10 +171,10 @@ export function SubscriptionPanel({
             )}
             <p className="text-sm text-[#94A3B8]">
               {tier === "FREE"
-                ? "Upgrade for unlimited projects, unlimited exports, and priority support."
+                ? "Upgrade for unlimited projects, verified track records, and live monitoring."
                 : tier === "PRO"
-                  ? "Unlimited MQL5 exports. Upgrade to Elite for 1-on-1 strategy reviews and direct developer support."
-                  : "You have access to all features including unlimited MQL5 exports."}
+                  ? "Unlimited exports, verified track records, and live monitoring. Upgrade to Elite for the Strategy Health Monitor with edge degradation detection."
+                  : "You have access to all features including the Strategy Health Monitor and capital protection tools."}
             </p>
           </div>
 
@@ -372,7 +372,7 @@ export function SubscriptionPanel({
             )}
             {tier === "FREE" && exportLimit !== Infinity && exportPercentage < 80 && (
               <p className="text-xs text-[#64748B] mt-1">
-                Free plan: 1 export per month. Resets on the 1st.
+                Free plan: 3 exports per month. Resets on the 1st.
               </p>
             )}
           </div>
@@ -382,16 +382,17 @@ export function SubscriptionPanel({
         {tier === "FREE" && (
           <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
             <p className="text-xs text-[#A78BFA]">
-              <span className="font-medium">Upgrade to unlock:</span> Unlimited projects, unlimited
-              exports and priority support
+              <span className="font-medium">Upgrade to unlock:</span> Unlimited projects & exports,
+              verified track records, live EA monitoring, and priority support
             </p>
           </div>
         )}
         {tier === "PRO" && (
           <div className="mt-4 p-3 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.2)] rounded-lg">
             <p className="text-xs text-[#A78BFA]">
-              <span className="font-medium">Elite includes:</span> 1-on-1 strategy review sessions,
-              priority feature requests, direct developer support, and weekly Elite members call
+              <span className="font-medium">Elite includes:</span> Strategy Health Monitor, edge
+              degradation detection, CUSUM drift analysis, advanced drawdown alerts, embeddable
+              proof widget, 1-on-1 strategy review (1/month), and direct developer channel
             </p>
           </div>
         )}
@@ -412,9 +413,9 @@ export function SubscriptionPanel({
                 <h3 className="text-lg font-semibold text-white mb-3">Downgrade to Pro?</h3>
                 <p className="text-sm text-[#94A3B8] mb-4">
                   You&apos;ll lose Elite features including Strategy Health Monitor, edge
-                  degradation alerts, AI Strategy Optimizer, 1-on-1 strategy reviews, and the weekly
-                  Elite members call. Your plan will change to Pro immediately with prorated credit
-                  for unused time.
+                  degradation alerts, advanced drawdown monitoring, 1-on-1 strategy reviews, and
+                  direct developer support. Your plan will change to Pro immediately with prorated
+                  credit for unused time.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button

@@ -27,12 +27,12 @@ export async function POST(request: NextRequest, { params }: Props) {
   }
 
   const tier = await getCachedTier(session.user.id);
-  if (tier !== "ELITE") {
+  if (tier === "FREE") {
     return NextResponse.json(
       apiError(
         ErrorCode.PLAN_REQUIRED,
-        "Verified Strategy Page requires Elite",
-        "Upgrade to Elite to create a public Verified Strategy Page and share your verified track record."
+        "Verified Strategy Page requires Pro or Elite",
+        "Upgrade to Pro to create a public Verified Strategy Page and share your verified track record."
       ),
       { status: 403 }
     );
@@ -102,12 +102,12 @@ export async function GET(request: NextRequest, { params }: Props) {
   }
 
   const tier = await getCachedTier(session.user.id);
-  if (tier !== "ELITE") {
+  if (tier === "FREE") {
     return NextResponse.json(
       apiError(
         ErrorCode.PLAN_REQUIRED,
-        "Verified Strategy Page requires Elite",
-        "Upgrade to Elite to access Verified Strategy Page settings."
+        "Verified Strategy Page requires Pro or Elite",
+        "Upgrade to Pro to access Verified Strategy Page settings."
       ),
       { status: 403 }
     );
