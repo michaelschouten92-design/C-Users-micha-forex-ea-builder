@@ -30,12 +30,12 @@ const DashIcon = ({ className = "w-5 h-5 text-[#334155]" }: { className?: string
 export default function PricingPage() {
   const faqItems = [
     {
-      q: "How much does it cost to build an MT5 Expert Advisor?",
-      a: "With AlgoStudio, you can build your first EA for free. Pro starts at \u20ac39/month for unlimited projects and exports. Compare this to hiring an MQL5 developer, which typically costs \u20ac200\u2013\u20ac1,000+ per EA, plus additional fees for every change request.",
+      q: "How much does it cost to evaluate and verify a strategy?",
+      a: "Evaluation is free — upload a backtest and get an instant Health Score and Monte Carlo validation at no cost. Pro starts at \u20ac39/month for verified track records, live monitoring, and proof sharing. Compare this to building manual tracking spreadsheets or hiring a quant analyst to review your strategy.",
     },
     {
-      q: "Do I need coding experience?",
-      a: "No. AlgoStudio is a no-code MT5 bot builder. You pick a strategy template, adjust settings like risk percentage and stop loss, and export a ready-to-use .mq5 file. No MQL5 or any other programming knowledge required.",
+      q: "Do I need coding experience to use AlgoStudio?",
+      a: "No. You can upload an existing backtest and get a full evaluation without writing a single line of code. If you want to build a new strategy, the visual builder lets you pick a template, adjust settings, and export a ready-to-use .mq5 file — no MQL5 or programming knowledge required.",
     },
     {
       q: "Does this work with any MT5 broker?",
@@ -43,7 +43,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the Strategy Health Monitor?",
-      a: "The Strategy Health Monitor (Elite only) continuously compares your live trading performance against your backtest baseline. It scores 5 key metrics \u2014 return, volatility, drawdown, win rate, and trade frequency \u2014 and alerts you when your strategy\u2019s edge begins to degrade. Think of it as an early warning system for your capital.",
+      a: "The Strategy Health Monitor continuously compares your live trading performance against your backtest baseline. It scores 5 key metrics \u2014 return, volatility, drawdown, win rate, and trade frequency \u2014 and alerts you when your strategy\u2019s edge begins to degrade. As your strategy progresses through its lifecycle (NEW \u2192 PROVING \u2192 PROVEN \u2192 RETIRED), the monitor helps you decide when to scale up or step back.",
     },
     {
       q: "What is a Verified Track Record?",
@@ -71,7 +71,7 @@ export default function PricingPage() {
     },
     {
       q: "What is the difference between Pro and Elite?",
-      a: "Pro gives you everything you need to build, verify, and run live strategies: unlimited exports, Strategy Identity, Verified Track Record, live monitoring, and a public Verified Strategy Page to share your proof. Elite adds capital protection: the Strategy Health Monitor with edge degradation detection, CUSUM drift analysis, advanced drawdown alerts, an embeddable proof widget, plus 1-on-1 strategy reviews (1/month) and a direct developer channel.",
+      a: "Pro gives you everything you need to verify and monitor live strategies: Verified Track Record, live monitoring dashboard, Strategy Identity, proof sharing, and unlimited projects. Elite adds capital protection: the Strategy Health Monitor with edge degradation detection, CUSUM drift analysis, advanced drawdown alerts, an embeddable proof widget, plus 1-on-1 strategy reviews (1/month) and a direct developer channel.",
     },
   ];
 
@@ -84,11 +84,11 @@ export default function PricingPage() {
         {/* ================================================================ */}
         <div className="text-center mb-6">
           <h1 className="text-4xl md:text-5xl font-bold text-white mt-4 leading-tight">
-            Choose your level of strategy intelligence
+            From first evaluation to verified portfolio
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            From first evaluation to verified, health-monitored portfolio. Every plan gives you
-            strategy intelligence — choose the depth that matches your stage.
+            Every plan includes strategy evaluation. Choose the depth of verification and monitoring
+            that matches where you are.
           </p>
         </div>
 
@@ -98,11 +98,11 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto mt-8 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#0D0117]/50 border border-[rgba(34,211,238,0.15)] rounded-lg px-4 py-3 text-center">
-              <p className="text-xs text-[#64748B] mb-1">Testing a strategy?</p>
+              <p className="text-xs text-[#64748B] mb-1">Evaluating a strategy?</p>
               <p className="text-sm font-medium text-[#22D3EE]">Start Free</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
-              <p className="text-xs text-[#64748B] mb-1">Trading live?</p>
+              <p className="text-xs text-[#64748B] mb-1">Verifying live performance?</p>
               <p className="text-sm font-medium text-[#A78BFA]">Go Pro</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3 text-center">
@@ -136,56 +136,21 @@ export default function PricingPage() {
                   </tr>
                 </thead>
                 <tbody className="text-[#94A3B8]">
-                  {/* Builder & Export */}
+                  {/* Evaluation & Analysis */}
                   <tr className="border-b border-[rgba(79,70,229,0.05)]">
                     <td
                       className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider"
                       colSpan={4}
                     >
-                      Builder &amp; Export
+                      Evaluation &amp; Analysis
                     </td>
                   </tr>
                   {(
                     [
-                      ["Visual strategy builder", true, true, true],
-                      ["Strategy templates", "All 10", "All 10", "All 10"],
-                      ["Active projects", "1", "Unlimited", "Unlimited"],
-                      ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
-                      ["Walk-forward analysis", false, true, true],
-                    ] as [string, string | boolean, string | boolean, string | boolean][]
-                  ).map(([feature, free, pro, elite]) => (
-                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
-                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
-                      {[free, pro, elite].map((val, i) => (
-                        <td key={i} className="py-3 px-4 text-center">
-                          {typeof val === "boolean" ? (
-                            val ? (
-                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
-                            ) : (
-                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
-                            )
-                          ) : (
-                            <span className="text-[#CBD5E1]">{val}</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-
-                  {/* Analysis & Tools */}
-                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
-                    <td
-                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
-                      colSpan={4}
-                    >
-                      Analysis &amp; Tools
-                    </td>
-                  </tr>
-                  {(
-                    [
-                      ["Monte Carlo risk calculator", true, true, true],
                       ["Backtest health scoring", true, true, true],
+                      ["Monte Carlo risk calculator", true, true, true],
                       ["Strategy journal", true, true, true],
+                      ["Walk-forward analysis", false, true, true],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
@@ -265,6 +230,41 @@ export default function PricingPage() {
                       ["CUSUM drift analysis", false, false, true],
                       ["Advanced drawdown alerts", false, false, true],
                       ["Pre-retirement warnings", false, false, true],
+                    ] as [string, string | boolean, string | boolean, string | boolean][]
+                  ).map(([feature, free, pro, elite]) => (
+                    <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">
+                      <td className="py-3 px-4 text-[#CBD5E1]">{feature}</td>
+                      {[free, pro, elite].map((val, i) => (
+                        <td key={i} className="py-3 px-4 text-center">
+                          {typeof val === "boolean" ? (
+                            val ? (
+                              <CheckIcon className="w-4 h-4 text-[#22D3EE] mx-auto" />
+                            ) : (
+                              <DashIcon className="w-4 h-4 text-[#334155] mx-auto" />
+                            )
+                          ) : (
+                            <span className="text-[#CBD5E1]">{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+
+                  {/* Strategy Builder */}
+                  <tr className="border-b border-[rgba(79,70,229,0.05)]">
+                    <td
+                      className="py-2 px-4 text-[#64748B] text-xs font-semibold uppercase tracking-wider pt-6"
+                      colSpan={4}
+                    >
+                      Strategy Builder
+                    </td>
+                  </tr>
+                  {(
+                    [
+                      ["Visual strategy builder", true, true, true],
+                      ["Strategy templates", "All 10", "All 10", "All 10"],
+                      ["Active projects", "1", "Unlimited", "Unlimited"],
+                      ["MQL5 exports per month", "3", "Unlimited", "Unlimited"],
                     ] as [string, string | boolean, string | boolean, string | boolean][]
                   ).map(([feature, free, pro, elite]) => (
                     <tr key={feature as string} className="border-b border-[rgba(79,70,229,0.1)]">

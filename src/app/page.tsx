@@ -11,12 +11,12 @@ import { LifecycleDemo } from "@/components/marketing/lifecycle-demo";
 export const metadata: Metadata = {
   title: "AlgoStudio — Strategy Intelligence for Algorithmic Traders",
   description:
-    "Evaluate, verify, and monitor MT5 trading strategies. Health scoring, Monte Carlo simulation, verified track records, and edge degradation detection. Start free.",
+    "Evaluate, monitor, and verify MT5 trading strategies. Upload a backtest for an instant health score, track live performance, and build a verified track record. Free to start.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "AlgoStudio — Know Where Your Strategy Stands",
     description:
-      "Evaluate, verify, and monitor MT5 trading strategies. Health scoring, Monte Carlo simulation, verified track records, and edge degradation detection. Start free.",
+      "Evaluate, monitor, and verify MT5 trading strategies. Upload a backtest for an instant health score, track live performance, and build a verified track record. Free to start.",
   },
 };
 
@@ -32,7 +32,7 @@ export default async function Home() {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
     description:
-      "Strategy intelligence platform for algorithmic traders. Evaluate, verify, and monitor MT5 trading strategies with health scoring, Monte Carlo simulation, and verified track records.",
+      "Strategy evaluation and verification platform for algorithmic traders. Health scoring, live performance monitoring, verified track records, and edge degradation detection for MT5 strategies.",
     url: "https://algo-studio.com",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
@@ -44,12 +44,12 @@ export default async function Home() {
       offerCount: 3,
     },
     featureList: [
-      "No-code visual strategy builder for MT5",
       "Strategy Health Score with 7-dimension scoring",
-      "One-click Monte Carlo validation",
       "Verified Track Record with immutable hash chain",
-      "Live strategy monitoring dashboard",
+      "Live strategy monitoring with edge degradation detection",
+      "One-click Monte Carlo validation",
       "Strategy Lifecycle management (NEW → PROVING → PROVEN → RETIRED)",
+      "No-code visual strategy builder for MT5",
     ],
   };
 
@@ -226,7 +226,7 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
             {[
               { number: "12,400+", label: "Strategies Analyzed" },
-              { number: "1,000+", label: "Simulations per Validation" },
+              { number: "5-Dimension", label: "Health Scoring" },
               { number: "2.1M+", label: "Trades Verified" },
               { number: "847+", label: "Verified Track Records" },
             ].map((stat, i) => (
@@ -273,21 +273,21 @@ export default async function Home() {
           {/* Left — Copy */}
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Your strategy <span className="text-[#22D3EE]">command center.</span>
+              Continuous evaluation. <span className="text-[#22D3EE]">Instant clarity.</span>
             </h2>
             <ul className="space-y-4 mb-8">
               {[
                 {
-                  title: "Health score dimensions",
-                  desc: "7 weighted metrics give you an instant read on strategy quality.",
+                  title: "Real-time health scoring",
+                  desc: "Your strategy's health across 7 dimensions — updated with every trade.",
                 },
                 {
-                  title: "CUSUM drift detection",
-                  desc: "Statistical change-point detection catches edge degradation early.",
+                  title: "Edge degradation alerts",
+                  desc: "Know the moment your strategy's edge starts fading — before your account does.",
                 },
                 {
-                  title: "Verified hash chain",
-                  desc: "Every trade is cryptographically recorded. No edits, no deletions.",
+                  title: "Tamper-proof track record",
+                  desc: "Every trade cryptographically sealed. Share proof anyone can verify.",
                 },
               ].map((item) => (
                 <li key={item.title} className="flex items-start gap-3">
@@ -437,26 +437,6 @@ export default async function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                title: "Your code is yours.",
-                desc: "Standalone MQL5, zero dependency.",
-                icon: (
-                  <svg
-                    className="w-8 h-8 text-[#22D3EE]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                    />
-                  </svg>
-                ),
-              },
-              {
                 title: "Track records can\u2019t be faked.",
                 desc: "Cryptographic hash chain, third-party verifiable.",
                 icon: (
@@ -496,6 +476,26 @@ export default async function Home() {
                   </svg>
                 ),
               },
+              {
+                title: "Your code stays yours.",
+                desc: "Standalone MQL5, zero dependency.",
+                icon: (
+                  <svg
+                    className="w-8 h-8 text-[#22D3EE]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                    />
+                  </svg>
+                ),
+              },
             ].map((item) => (
               <div
                 key={item.title}
@@ -520,8 +520,8 @@ export default async function Home() {
               Free to evaluate. Pro to verify and monitor.
             </h2>
             <p className="text-sm text-[#94A3B8]">
-              Upload backtests and receive Health Scores for free. Unlock Verified Track Records,
-              live monitoring, and edge detection on Pro.
+              Upload a backtest and get your Health Score for free. Go Pro for verified track
+              records, live monitoring, and edge detection.
             </p>
           </div>
           <PricingSection showHeader={false} />

@@ -80,10 +80,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
     <div>
       {showHeader && (
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-4">Choose how you want to trade</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Choose your verification depth</h2>
           <p className="text-[#94A3B8]">
-            From your first EA to a fully monitored portfolio. Start free, upgrade when you&apos;re
-            ready.
+            From first evaluation to verified portfolio. Start free, upgrade when you&apos;re ready.
           </p>
         </div>
       )}
@@ -122,27 +121,28 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <h3 className="text-xl font-semibold text-white">Free</h3>
           </div>
           <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
-            Build &amp; Test
+            Evaluate
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Build your first EA and see what&apos;s possible
+            Evaluate your strategy and see where it stands
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Full visual builder access. Build and export your first strategy with no commitment.
+            Upload a backtest or build a strategy. Get an instant health score and Monte Carlo
+            validation — no commitment.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
+              "Backtest health scoring",
+              "Monte Carlo risk calculator",
               "Visual strategy builder",
               "All 10 strategy templates",
               "1 active project",
               "3 MQL5 exports per month",
-              "Monte Carlo risk calculator",
-              "Backtest health scoring",
               "Strategy journal",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -154,8 +154,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Traders building and testing their first automated
-              strategy.
+              <strong>Perfect for:</strong> Traders evaluating a strategy before committing capital.
             </p>
           </div>
 
@@ -163,7 +162,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             href="/login?mode=register&redirect=/app/evaluate"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Upload Backtest — Free
+            Evaluate Your Strategy — Free
           </Link>
           <p className="mt-2 text-center text-xs text-[#64748B]">No credit card required.</p>
         </div>
@@ -182,7 +181,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             </h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
-            Build, Verify &amp; Run
+            Verify &amp; Monitor
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -214,23 +213,23 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Go from idea to live trading with full verification
+            Verify live performance and build a proven track record
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Unlimited strategies, verified track records, live monitoring, and proof sharing.
-            Everything you need to build, verify, and run EAs with confidence.
+            Verified track records, live monitoring, and proof sharing. Everything you need to
+            verify and run strategies with confidence.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Unlimited projects & exports",
-              "Strategy Identity & versioning",
               "Verified Track Record",
               "Public Verified Strategy Page",
               "Live EA monitoring dashboard",
               "External EA monitoring",
-              "Walk-forward analysis",
               "Email, webhook & Telegram alerts",
+              "Strategy Identity & versioning",
+              "Unlimited projects & exports",
+              "Walk-forward analysis",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
@@ -242,8 +241,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Active traders who build, verify, and run multiple
-              strategies live.
+              <strong>Perfect for:</strong> Live traders who need verified performance and
+              continuous monitoring.
             </p>
           </div>
 
@@ -252,7 +251,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !proPrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
-            {loadingPlan === "PRO" ? "Loading..." : "Start Building EAs"}
+            {loadingPlan === "PRO" ? "Loading..." : "Start Verifying"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
