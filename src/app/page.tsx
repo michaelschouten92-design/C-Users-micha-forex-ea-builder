@@ -113,10 +113,10 @@ export default async function Home() {
                 Get Your Strategy Evaluated — Free
               </Link>
               <Link
-                href="/product/how-it-works"
+                href="/sample-evaluation"
                 className="inline-flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors py-3.5"
               >
-                See how it works
+                See a sample evaluation
                 <svg
                   className="w-4 h-4"
                   fill="none"

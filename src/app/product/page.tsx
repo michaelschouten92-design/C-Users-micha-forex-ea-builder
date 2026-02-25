@@ -152,10 +152,10 @@ export default function ProductPage() {
                 Start Your First Evaluation — Free
               </Link>
               <Link
-                href="/product/how-it-works"
+                href="/sample-evaluation"
                 className="w-full sm:w-auto border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] px-8 py-3.5 rounded-lg font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
               >
-                See How It Works
+                See a Sample Evaluation
               </Link>
             </div>
           </section>

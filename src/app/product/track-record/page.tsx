@@ -5,6 +5,7 @@ import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
+import { VerificationBadge } from "@/components/app/verification-badge";
 
 export const metadata: Metadata = {
   title: "Verified Track Record — Cryptographic Proof Built Into Every EA You Build | AlgoStudio",
@@ -263,10 +264,17 @@ export default function TrackRecordPage() {
               matches your needs.
             </p>
 
+            {/* Badge preview strip */}
+            <div className="flex items-center justify-center gap-4 mb-10 flex-wrap">
+              <VerificationBadge level="L1" />
+              <VerificationBadge level="L2" />
+              <VerificationBadge level="L3" />
+            </div>
+
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  level: "L1",
+                  level: "L1" as const,
                   title: "Ledger Integrity",
                   description:
                     "Hash chain replay verification. Every event is re-hashed from the genesis event forward, confirming the chain is intact and no events were added, removed, or modified.",
@@ -278,7 +286,7 @@ export default function TrackRecordPage() {
                   ],
                 },
                 {
-                  level: "L2",
+                  level: "L2" as const,
                   title: "Broker Corroboration",
                   description:
                     "Cross-references your recorded trades with data from your broker. Confirms that trades in the ledger actually occurred on a real trading account with matching details.",
@@ -290,7 +298,7 @@ export default function TrackRecordPage() {
                   ],
                 },
                 {
-                  level: "L3",
+                  level: "L3" as const,
                   title: "Notarized",
                   description:
                     "External timestamping and notarization for the highest level of assurance. Provides third-party proof that the record existed at a specific point in time.",
@@ -308,12 +316,7 @@ export default function TrackRecordPage() {
                   className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <span
-                      className={`text-xs font-mono font-bold px-2.5 py-1 rounded border ${item.badge}`}
-                    >
-                      {item.level}
-                    </span>
-                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                    <VerificationBadge level={item.level} />
                     {item.comingSoon && (
                       <span className="text-[10px] text-[#64748B] border border-[#64748B]/30 rounded-full px-2 py-0.5">
                         Coming Soon
@@ -565,6 +568,14 @@ export default function TrackRecordPage() {
 
             <p className="text-center text-xs text-[#64748B] mt-4">
               Example visualization. Actual data from your strategies.
+            </p>
+            <p className="text-center mt-3">
+              <Link
+                href="/sample-evaluation"
+                className="text-sm text-[#A78BFA] font-medium hover:underline"
+              >
+                See a full sample evaluation &rarr;
+              </Link>
             </p>
           </section>
         </div>
