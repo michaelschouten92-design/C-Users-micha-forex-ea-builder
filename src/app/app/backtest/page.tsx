@@ -288,7 +288,7 @@ export default function BacktestPage() {
           >
             &larr; Back to Dashboard
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Strategy Health Check</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Strategy Evaluation</h1>
           <p className="text-[#7C8DB0] mt-2">
             Upload your MT5 Strategy Tester report and instantly know if your strategy is robust.
           </p>
@@ -506,7 +506,7 @@ export default function BacktestPage() {
 
             {/* Validate Strategy CTA */}
             <Link
-              href={`/app/backtest/${result.runId}/validate`}
+              href={`/app/evaluate/${result.runId}/validate`}
               className="block bg-gradient-to-r from-[rgba(34,211,238,0.1)] to-[rgba(79,70,229,0.15)] border border-[rgba(34,211,238,0.25)] rounded-xl p-5 hover:border-[rgba(34,211,238,0.4)] transition-all group"
             >
               <div className="flex items-center justify-between">
@@ -592,7 +592,7 @@ export default function BacktestPage() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {item.runId && (
                       <Link
-                        href={`/app/backtest/${item.runId}`}
+                        href={`/app/evaluate/${item.runId}`}
                         className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
                       >
                         View

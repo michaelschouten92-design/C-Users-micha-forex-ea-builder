@@ -63,14 +63,14 @@ const platformModules = [
     title: "Backtest Health Check",
     description:
       "Upload your MT5 HTML report. Get an instant 0-100 health score across 7 weighted dimensions: profit factor, drawdown, trade count, expected payoff, win rate, Sharpe, and recovery factor.",
-    href: "/app/backtest",
+    href: "/app/evaluate",
   },
   {
     color: "#A78BFA",
     title: "AI Strategy Doctor",
     description:
       "AI-powered analysis of your full trade history. Identifies weaknesses, overfitting signals, market dependency risks, and live trading readiness with actionable recommendations.",
-    href: "/app/backtest",
+    href: "/app/evaluate",
   },
   {
     color: "#F59E0B",
@@ -146,7 +146,7 @@ export default function ProductPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/login?mode=register&redirect=/app/backtest"
+                href="/login?mode=register&redirect=/app/evaluate"
                 className="w-full sm:w-auto bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
               >
                 Start Your First Evaluation — Free

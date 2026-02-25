@@ -11,7 +11,7 @@ export function CTASection({
   title,
   description,
   ctaText = "Get Your Strategy Evaluated — Free",
-  ctaHref = "/login?mode=register&redirect=/app/backtest",
+  ctaHref = "/login?mode=register&redirect=/app/evaluate",
 }: CTASectionProps) {
   return (
     <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">

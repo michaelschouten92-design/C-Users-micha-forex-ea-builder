@@ -160,7 +160,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </div>
 
           <Link
-            href="/login?mode=register&redirect=/app/backtest"
+            href="/login?mode=register&redirect=/app/evaluate"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
             Upload Backtest — Free

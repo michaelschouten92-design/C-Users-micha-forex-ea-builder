@@ -81,10 +81,10 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
               />
             </svg>
-            EA Builder
+            Build
           </Link>
           <Link
-            href="/app/backtest"
+            href="/app/evaluate"
             onClick={() => setOpen(false)}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
           >
@@ -96,10 +96,10 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            Upload Backtest
+            Evaluate
           </Link>
           <Link
-            href="/app/live"
+            href="/app/monitor"
             onClick={() => setOpen(false)}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
           >
@@ -111,10 +111,10 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Track Record
+            Monitor
           </Link>
           <Link
-            href="/app/risk-calculator"
+            href="/app/risk"
             onClick={() => setOpen(false)}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
           >
@@ -126,7 +126,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
               />
             </svg>
-            Risk Calculator
+            Risk
           </Link>
           <Link
             href="/app/settings"
@@ -147,7 +147,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            Account
+            Settings
           </Link>
           <div className="border-t border-[rgba(79,70,229,0.15)] mt-1 pt-1">
             <form action="/api/auth/signout" method="POST">

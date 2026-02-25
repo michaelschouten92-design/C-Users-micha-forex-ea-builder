@@ -46,7 +46,7 @@ export function SiteNav() {
             Sign in
           </Link>
           <Link
-            href="/login?mode=register&redirect=/app/backtest"
+            href="/login?mode=register&redirect=/app/evaluate"
             className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >
             Get Evaluated — Free

@@ -1,10 +1,12 @@
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
+import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
+import { MonitorTabs } from "./monitor-tabs";
 
 export default async function LiveEADashboardPage() {
   const session = await auth();
@@ -63,7 +65,7 @@ export default async function LiveEADashboardPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Live EA Monitoring</h1>
+          <h1 className="text-2xl font-bold text-white mb-3">Strategy Monitor</h1>
           <p className="text-[#94A3B8] mb-6">
             Monitor your Expert Advisors in real-time with live dashboards, trade tracking, and
             performance analytics. Available on Pro and Elite plans.
@@ -110,87 +112,45 @@ export default async function LiveEADashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <nav
-        role="navigation"
-        aria-label="App navigation"
-        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
-              <span className="text-xs text-[#A78BFA] font-medium tracking-wider uppercase hidden sm:inline">
-                Trading Studio
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-[#CBD5E1] hidden sm:inline">{session.user.email}</span>
-              <span
-                className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                  tier === "ELITE"
-                    ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/50"
-                    : tier === "PRO"
-                      ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
-                      : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
-                }`}
-              >
-                {tier}
-              </span>
-              <Link
-                href="/app"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/app/live"
-                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200"
-              >
-                Track Record
-              </Link>
-              <Link
-                href="/app/settings"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-              >
-                Account
-              </Link>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/login" });
-                }}
-              >
-                <button
-                  type="submit"
-                  className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-                >
-                  Sign Out
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNav
+        activeItem="monitor"
+        session={session}
+        tier={tier}
+        firstProjectId={null}
+        monitorStatus={
+          eaInstances.length === 0
+            ? undefined
+            : eaInstances.some((ea) => ea.strategyStatus === "EDGE_DEGRADED")
+              ? "critical"
+              : eaInstances.some((ea) => ea.strategyStatus === "UNSTABLE")
+                ? "warning"
+                : "healthy"
+        }
+      />
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Track Record" }]} />
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Monitor" }]} />
 
-        <LiveDashboardClient initialData={serializedInstances} tier={tier} />
+        <MonitorTabs>
+          <LiveDashboardClient initialData={serializedInstances} tier={tier} />
 
-        {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
-        {(() => {
-          const symbols = [
-            ...new Set(
-              eaInstances.map((ea) => ea.symbol).filter((s): s is string => s !== null && s !== "")
-            ),
-          ];
-          if (symbols.length < 2) return null;
-          return (
-            <div className="mt-6">
-              <PortfolioHeatmap symbols={symbols} />
-            </div>
-          );
-        })()}
+          {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
+          {(() => {
+            const symbols = [
+              ...new Set(
+                eaInstances
+                  .map((ea) => ea.symbol)
+                  .filter((s): s is string => s !== null && s !== "")
+              ),
+            ];
+            if (symbols.length < 2) return null;
+            return (
+              <div className="mt-6">
+                <PortfolioHeatmap symbols={symbols} />
+              </div>
+            );
+          })()}
+        </MonitorTabs>
       </main>
     </div>
   );

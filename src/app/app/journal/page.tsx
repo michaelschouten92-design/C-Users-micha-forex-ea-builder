@@ -288,7 +288,15 @@ function PnLBreakdown({ entries }: { entries: JournalEntry[] }) {
   );
 }
 
+export function JournalContent() {
+  return <JournalInner embedded />;
+}
+
 export default function JournalPage() {
+  return <JournalInner embedded={false} />;
+}
+
+function JournalInner({ embedded }: { embedded: boolean }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -416,6 +424,450 @@ export default function JournalPage() {
     setEditMetadata((entry.metadata as JournalMetadata) ?? {});
   }
 
+  const content = (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Trade Journal</h1>
+          <p className="mt-1 text-sm text-[#94A3B8]">
+            Track your strategies from backtest to live. Compare performance across stages.
+          </p>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      {entries.length > 0 && <SummaryStats entries={entries} />}
+
+      {/* P&L Breakdown */}
+      {entries.length > 0 && <PnLBreakdown entries={entries} />}
+
+      {/* Filters */}
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <label htmlFor="status-filter" className="text-sm text-[#CBD5E1]">
+            Status:
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
+          >
+            <option value="">All</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+              />
+            </svg>
+            {showFilters ? "Hide Filters" : "More Filters"}
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="flex items-end gap-3 flex-wrap bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
+            {uniqueSymbols.length > 0 && (
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                  Symbol
+                </label>
+                <select
+                  value={symbolFilter}
+                  onChange={(e) => {
+                    setSymbolFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
+                >
+                  <option value="">All Symbols</option>
+                  {uniqueSymbols.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                From
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                To
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setSymbolFilter("");
+                setDateFrom("");
+                setDateTo("");
+                setStatusFilter("");
+                setPage(1);
+              }}
+              className="px-3 py-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Journal Table */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center h-48 gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4F46E5]" />
+          <p className="text-sm text-[#7C8DB0]">Loading...</p>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="text-center py-16">
+          <svg
+            className="w-12 h-12 mx-auto text-[#4F46E5]/30 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p className="text-[#94A3B8] text-lg font-medium">No journal entries yet</p>
+          <p className="text-[#7C8DB0] text-sm mt-1">
+            Journal entries will appear here once you start tracking your strategies.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {entries.map((entry) => {
+            const meta = (entry.metadata as JournalMetadata) ?? {};
+            const isEditing = editingId === entry.id;
+
+            return (
+              <div
+                key={entry.id}
+                className={`rounded-xl p-6 transition-all duration-200 ${
+                  isEditing
+                    ? "bg-[#1A0626]/80 border-2 border-[#4F46E5] shadow-[0_0_16px_rgba(79,70,229,0.2)]"
+                    : "bg-[#1A0626] border border-[rgba(79,70,229,0.2)]"
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-white font-semibold">{entry.project.name}</h3>
+                    {isEditing && (
+                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/30">
+                        Editing
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${getStatusBadgeClass(entry.status)}`}
+                    >
+                      {entry.status}
+                    </span>
+                    {meta.symbol && (
+                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#22D3EE]/15 text-[#22D3EE] border border-[#22D3EE]/30">
+                        {meta.symbol}
+                      </span>
+                    )}
+                    {meta.setupQuality && <StarRating value={meta.setupQuality} readonly />}
+                    {entry.instance && (
+                      <span className="text-xs text-[#7C8DB0]">via {entry.instance.eaName}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={entry.status}
+                      onChange={(e) => handleStatusChange(entry.id, e.target.value)}
+                      className="text-xs rounded bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      disabled={deletingId === entry.id}
+                      className="text-xs text-[#EF4444]/60 hover:text-[#EF4444] transition-colors disabled:opacity-30"
+                      title="Delete entry"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Review badges (read-only when not editing) */}
+                {!isEditing && (meta.entryReason || meta.exitReason) && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {meta.entryReason && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]">
+                        Entry:{" "}
+                        {ENTRY_REASONS.find((r) => r.value === meta.entryReason)?.label ??
+                          meta.entryReason}
+                      </span>
+                    )}
+                    {meta.exitReason && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#22D3EE] border border-[rgba(34,211,238,0.2)]">
+                        Exit:{" "}
+                        {EXIT_REASONS.find((r) => r.value === meta.exitReason)?.label ??
+                          meta.exitReason}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Comparison Grid */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
+                      Metric
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-[#CBD5E1]">Net Profit</p>
+                      <p className="text-[#CBD5E1]">Win Rate</p>
+                      <p className="text-[#CBD5E1]">Sharpe Ratio</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-[#A78BFA] mb-2">
+                      Backtest
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-[#CBD5E1]">{formatCurrency(entry.backtestProfit)}</p>
+                      <p className="text-[#CBD5E1]">{formatMetric(entry.backtestWinRate, "%")}</p>
+                      <p className="text-[#CBD5E1]">{formatMetric(entry.backtestSharpe)}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-[#22D3EE] mb-2">Live</p>
+                    <div className="space-y-2 text-sm">
+                      <p className={getMetricColor(entry.backtestProfit, entry.liveProfit)}>
+                        {formatCurrency(entry.liveProfit)}
+                      </p>
+                      <p className={getMetricColor(entry.backtestWinRate, entry.liveWinRate)}>
+                        {formatMetric(entry.liveWinRate, "%")}
+                      </p>
+                      <p className={getMetricColor(entry.backtestSharpe, entry.liveSharpe)}>
+                        {formatMetric(entry.liveSharpe)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes & Structured Review */}
+                <div className="border-t border-[rgba(79,70,229,0.15)] pt-3">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      {/* Structured review fields */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                            Entry Reason
+                          </label>
+                          <select
+                            value={editMetadata.entryReason ?? ""}
+                            onChange={(e) =>
+                              setEditMetadata({
+                                ...editMetadata,
+                                entryReason: e.target.value || undefined,
+                              })
+                            }
+                            className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
+                          >
+                            <option value="">-- Select --</option>
+                            {ENTRY_REASONS.map((r) => (
+                              <option key={r.value} value={r.value}>
+                                {r.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                            Exit Reason
+                          </label>
+                          <select
+                            value={editMetadata.exitReason ?? ""}
+                            onChange={(e) =>
+                              setEditMetadata({
+                                ...editMetadata,
+                                exitReason: e.target.value || undefined,
+                              })
+                            }
+                            className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
+                          >
+                            <option value="">-- Select --</option>
+                            {EXIT_REASONS.map((r) => (
+                              <option key={r.value} value={r.value}>
+                                {r.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                            Setup Quality
+                          </label>
+                          <StarRating
+                            value={editMetadata.setupQuality ?? 0}
+                            onChange={(v) =>
+                              setEditMetadata({
+                                ...editMetadata,
+                                setupQuality: v,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                          Symbol
+                        </label>
+                        <input
+                          type="text"
+                          value={editMetadata.symbol ?? ""}
+                          onChange={(e) =>
+                            setEditMetadata({
+                              ...editMetadata,
+                              symbol: e.target.value.toUpperCase() || undefined,
+                            })
+                          }
+                          placeholder="e.g. EURUSD"
+                          className="w-40 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
+                        />
+                      </div>
+                      <textarea
+                        value={editNotesValue}
+                        onChange={(e) => setEditNotesValue(e.target.value)}
+                        maxLength={5000}
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#475569] focus:outline-none focus:ring-1 focus:ring-[#4F46E5] transition-colors resize-none"
+                        placeholder="Add notes about this strategy..."
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveEntry(entry.id)}
+                          disabled={savingNotes}
+                          className="px-3 py-1 text-xs font-medium text-white bg-[#4F46E5] rounded hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
+                        >
+                          {savingNotes ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-3 py-1 text-xs text-[#94A3B8] hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => startEditing(entry)}
+                      className="text-sm text-left w-full"
+                    >
+                      {entry.notes ? (
+                        <p className="text-[#94A3B8] whitespace-pre-wrap">{entry.notes}</p>
+                      ) : (
+                        <p className="text-[#475569] italic">
+                          Click to add notes and review details...
+                        </p>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between mt-3 text-[10px] text-[#475569]">
+                  <span>Started {new Date(entry.startedAt).toLocaleDateString()}</span>
+                  <span>Updated {new Date(entry.updatedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 text-xs text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-30 transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-xs text-[#7C8DB0]">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 text-xs text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-30 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <div className="min-h-screen">
       <nav
@@ -443,10 +895,10 @@ export default function JournalPage() {
                 Dashboard
               </Link>
               <Link
-                href="/app/live"
+                href="/app/monitor"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
-                Track Record
+                Monitor
               </Link>
             </div>
           </div>
@@ -457,444 +909,7 @@ export default function JournalPage() {
         <AppBreadcrumbs
           items={[{ label: "Dashboard", href: "/app" }, { label: "Trade Journal" }]}
         />
-
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Trade Journal</h1>
-            <p className="mt-1 text-sm text-[#94A3B8]">
-              Track your strategies from backtest to live. Compare performance across stages.
-            </p>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        {entries.length > 0 && <SummaryStats entries={entries} />}
-
-        {/* P&L Breakdown */}
-        {entries.length > 0 && <PnLBreakdown entries={entries} />}
-
-        {/* Filters */}
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <label htmlFor="status-filter" className="text-sm text-[#CBD5E1]">
-              Status:
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
-            >
-              <option value="">All</option>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-              {showFilters ? "Hide Filters" : "More Filters"}
-            </button>
-          </div>
-
-          {showFilters && (
-            <div className="flex items-end gap-3 flex-wrap bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
-              {uniqueSymbols.length > 0 && (
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                    Symbol
-                  </label>
-                  <select
-                    value={symbolFilter}
-                    onChange={(e) => {
-                      setSymbolFilter(e.target.value);
-                      setPage(1);
-                    }}
-                    className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
-                  >
-                    <option value="">All Symbols</option>
-                    {uniqueSymbols.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                  From
-                </label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => {
-                    setDateFrom(e.target.value);
-                    setPage(1);
-                  }}
-                  className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                  To
-                </label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => {
-                    setDateTo(e.target.value);
-                    setPage(1);
-                  }}
-                  className="rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#4F46E5] transition-colors"
-                />
-              </div>
-              <button
-                onClick={() => {
-                  setSymbolFilter("");
-                  setDateFrom("");
-                  setDateTo("");
-                  setStatusFilter("");
-                  setPage(1);
-                }}
-                className="px-3 py-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Journal Table */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4F46E5]" />
-            <p className="text-sm text-[#7C8DB0]">Loading...</p>
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="text-center py-16">
-            <svg
-              className="w-12 h-12 mx-auto text-[#4F46E5]/30 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <p className="text-[#94A3B8] text-lg font-medium">No journal entries yet</p>
-            <p className="text-[#7C8DB0] text-sm mt-1">
-              Journal entries will appear here once you start tracking your strategies.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {entries.map((entry) => {
-              const meta = (entry.metadata as JournalMetadata) ?? {};
-              const isEditing = editingId === entry.id;
-
-              return (
-                <div
-                  key={entry.id}
-                  className={`rounded-xl p-6 transition-all duration-200 ${
-                    isEditing
-                      ? "bg-[#1A0626]/80 border-2 border-[#4F46E5] shadow-[0_0_16px_rgba(79,70,229,0.2)]"
-                      : "bg-[#1A0626] border border-[rgba(79,70,229,0.2)]"
-                  }`}
-                >
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-white font-semibold">{entry.project.name}</h3>
-                      {isEditing && (
-                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/30">
-                          Editing
-                        </span>
-                      )}
-                      <span
-                        className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${getStatusBadgeClass(entry.status)}`}
-                      >
-                        {entry.status}
-                      </span>
-                      {meta.symbol && (
-                        <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#22D3EE]/15 text-[#22D3EE] border border-[#22D3EE]/30">
-                          {meta.symbol}
-                        </span>
-                      )}
-                      {meta.setupQuality && <StarRating value={meta.setupQuality} readonly />}
-                      {entry.instance && (
-                        <span className="text-xs text-[#7C8DB0]">via {entry.instance.eaName}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={entry.status}
-                        onChange={(e) => handleStatusChange(entry.id, e.target.value)}
-                        className="text-xs rounded bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
-                      >
-                        {STATUS_OPTIONS.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        disabled={deletingId === entry.id}
-                        className="text-xs text-[#EF4444]/60 hover:text-[#EF4444] transition-colors disabled:opacity-30"
-                        title="Delete entry"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Review badges (read-only when not editing) */}
-                  {!isEditing && (meta.entryReason || meta.exitReason) && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {meta.entryReason && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]">
-                          Entry:{" "}
-                          {ENTRY_REASONS.find((r) => r.value === meta.entryReason)?.label ??
-                            meta.entryReason}
-                        </span>
-                      )}
-                      {meta.exitReason && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#22D3EE] border border-[rgba(34,211,238,0.2)]">
-                          Exit:{" "}
-                          {EXIT_REASONS.find((r) => r.value === meta.exitReason)?.label ??
-                            meta.exitReason}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Comparison Grid */}
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
-                        Metric
-                      </p>
-                      <div className="space-y-2 text-sm">
-                        <p className="text-[#CBD5E1]">Net Profit</p>
-                        <p className="text-[#CBD5E1]">Win Rate</p>
-                        <p className="text-[#CBD5E1]">Sharpe Ratio</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#A78BFA] mb-2">
-                        Backtest
-                      </p>
-                      <div className="space-y-2 text-sm">
-                        <p className="text-[#CBD5E1]">{formatCurrency(entry.backtestProfit)}</p>
-                        <p className="text-[#CBD5E1]">{formatMetric(entry.backtestWinRate, "%")}</p>
-                        <p className="text-[#CBD5E1]">{formatMetric(entry.backtestSharpe)}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#22D3EE] mb-2">
-                        Live
-                      </p>
-                      <div className="space-y-2 text-sm">
-                        <p className={getMetricColor(entry.backtestProfit, entry.liveProfit)}>
-                          {formatCurrency(entry.liveProfit)}
-                        </p>
-                        <p className={getMetricColor(entry.backtestWinRate, entry.liveWinRate)}>
-                          {formatMetric(entry.liveWinRate, "%")}
-                        </p>
-                        <p className={getMetricColor(entry.backtestSharpe, entry.liveSharpe)}>
-                          {formatMetric(entry.liveSharpe)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Notes & Structured Review */}
-                  <div className="border-t border-[rgba(79,70,229,0.15)] pt-3">
-                    {isEditing ? (
-                      <div className="space-y-3">
-                        {/* Structured review fields */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                              Entry Reason
-                            </label>
-                            <select
-                              value={editMetadata.entryReason ?? ""}
-                              onChange={(e) =>
-                                setEditMetadata({
-                                  ...editMetadata,
-                                  entryReason: e.target.value || undefined,
-                                })
-                              }
-                              className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
-                            >
-                              <option value="">-- Select --</option>
-                              {ENTRY_REASONS.map((r) => (
-                                <option key={r.value} value={r.value}>
-                                  {r.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                              Exit Reason
-                            </label>
-                            <select
-                              value={editMetadata.exitReason ?? ""}
-                              onChange={(e) =>
-                                setEditMetadata({
-                                  ...editMetadata,
-                                  exitReason: e.target.value || undefined,
-                                })
-                              }
-                              className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
-                            >
-                              <option value="">-- Select --</option>
-                              {EXIT_REASONS.map((r) => (
-                                <option key={r.value} value={r.value}>
-                                  {r.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                              Setup Quality
-                            </label>
-                            <StarRating
-                              value={editMetadata.setupQuality ?? 0}
-                              onChange={(v) =>
-                                setEditMetadata({
-                                  ...editMetadata,
-                                  setupQuality: v,
-                                })
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                            Symbol
-                          </label>
-                          <input
-                            type="text"
-                            value={editMetadata.symbol ?? ""}
-                            onChange={(e) =>
-                              setEditMetadata({
-                                ...editMetadata,
-                                symbol: e.target.value.toUpperCase() || undefined,
-                              })
-                            }
-                            placeholder="e.g. EURUSD"
-                            className="w-40 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white px-3 py-1.5 text-xs focus:outline-none focus:border-[#4F46E5] transition-colors"
-                          />
-                        </div>
-                        <textarea
-                          value={editNotesValue}
-                          onChange={(e) => setEditNotesValue(e.target.value)}
-                          maxLength={5000}
-                          rows={3}
-                          className="w-full px-3 py-2 text-sm bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#475569] focus:outline-none focus:ring-1 focus:ring-[#4F46E5] transition-colors resize-none"
-                          placeholder="Add notes about this strategy..."
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleSaveEntry(entry.id)}
-                            disabled={savingNotes}
-                            className="px-3 py-1 text-xs font-medium text-white bg-[#4F46E5] rounded hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
-                          >
-                            {savingNotes ? "Saving..." : "Save"}
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="px-3 py-1 text-xs text-[#94A3B8] hover:text-white transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => startEditing(entry)}
-                        className="text-sm text-left w-full"
-                      >
-                        {entry.notes ? (
-                          <p className="text-[#94A3B8] whitespace-pre-wrap">{entry.notes}</p>
-                        ) : (
-                          <p className="text-[#475569] italic">
-                            Click to add notes and review details...
-                          </p>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between mt-3 text-[10px] text-[#475569]">
-                    <span>Started {new Date(entry.startedAt).toLocaleDateString()}</span>
-                    <span>Updated {new Date(entry.updatedAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-6">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 text-xs text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-30 transition-colors"
-                >
-                  Previous
-                </button>
-                <span className="text-xs text-[#7C8DB0]">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-3 py-1.5 text-xs text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-30 transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        {content}
       </main>
     </div>
   );

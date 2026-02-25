@@ -1,16 +1,14 @@
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CreateProjectButton } from "./components/create-project-button";
 import { ProjectList } from "./components/project-list";
 import { EmailVerificationBanner } from "./components/email-verification-banner";
-import { NotificationCenter } from "@/components/app/notification-center";
-import { MobileNavMenu } from "./components/mobile-nav-menu";
+import { AppNav } from "@/components/app/app-nav";
 import { generateDailyInsights, getPortfolioStatus } from "@/lib/daily-insights";
 import { OnboardingHero } from "./components/onboarding-hero";
 import { OnboardingChecklist } from "./components/onboarding-checklist";
-import { StatusIntroCard } from "./components/status-intro-card";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -110,83 +108,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Navigation */}
-      <nav
-        role="navigation"
-        aria-label="Dashboard navigation"
-        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
-              <span className="text-xs text-[#A78BFA] font-medium tracking-wider uppercase hidden sm:inline">
-                Command Center
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/app/backtest"
-                className="text-sm px-3 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg transition-colors font-medium hidden sm:inline-block"
-              >
-                Upload Backtest
-              </Link>
-              <span className="text-sm text-[#CBD5E1] hidden md:inline">{session.user.email}</span>
-              <span
-                className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                  tier === "ELITE"
-                    ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/50"
-                    : tier === "PRO"
-                      ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
-                      : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
-                }`}
-              >
-                {tier}
-              </span>
-              <NotificationCenter />
-              <Link
-                href={projects.length > 0 ? `/app/projects/${projects[0].id}` : "/app"}
-                className="text-sm text-[#22D3EE] font-medium transition-colors duration-200 hidden sm:inline"
-              >
-                EA Builder
-              </Link>
-              <Link
-                href="/app/live"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
-              >
-                Track Record
-              </Link>
-              <Link
-                href="/app/risk-calculator"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
-              >
-                Risk Calc
-              </Link>
-              <Link
-                href="/app/settings"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 hidden sm:inline"
-              >
-                Account
-              </Link>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/login" });
-                }}
-                className="hidden sm:block"
-              >
-                <button
-                  type="submit"
-                  className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
-                >
-                  Sign Out
-                </button>
-              </form>
-              <MobileNavMenu firstProjectId={projects.length > 0 ? projects[0].id : null} />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNav
+        session={session}
+        tier={tier}
+        firstProjectId={projects.length > 0 ? projects[0].id : null}
+        monitorStatus={
+          liveEAs.length === 0
+            ? undefined
+            : liveEAs.some((ea) => ea.strategyStatus === "EDGE_DEGRADED")
+              ? "critical"
+              : liveEAs.some((ea) => ea.strategyStatus === "UNSTABLE")
+                ? "warning"
+                : "healthy"
+        }
+      />
 
       {user && !user.emailVerified && <EmailVerificationBanner />}
 
@@ -224,16 +159,16 @@ export default async function DashboardPage() {
                     {liveEAs.filter((e) => e.status === "ONLINE").length} active EA
                     {liveEAs.filter((e) => e.status === "ONLINE").length !== 1
                       ? "s"
-                      : ""} &middot; {recentBacktests.length} backtest
+                      : ""} &middot; {recentBacktests.length} evaluation
                     {recentBacktests.length !== 1 ? "s" : ""} &middot; {projects.length} project
                     {projects.length !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <Link
-                  href="/app/backtest"
+                  href="/app/evaluate"
                   className="sm:hidden text-sm px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg transition-colors font-medium text-center"
                 >
-                  Upload Backtest
+                  Evaluate Strategy
                 </Link>
               </div>
             </div>
@@ -253,9 +188,58 @@ export default async function DashboardPage() {
             )}
 
             {/* ====================================== */}
-            {/* Strategy Status Introduction (first live EAs) */}
+            {/* Strategy Status Summary */}
             {/* ====================================== */}
-            {hasLiveStrategies && <StatusIntroCard />}
+            {hasLiveStrategies &&
+              (() => {
+                const counts = liveEAs.reduce(
+                  (acc, ea) => {
+                    const s = ea.strategyStatus as string;
+                    if (s === "CONSISTENT") acc.consistent++;
+                    else if (s === "MONITORING") acc.monitoring++;
+                    else if (s === "TESTING") acc.testing++;
+                    else if (s === "UNSTABLE") acc.unstable++;
+                    else if (s === "EDGE_DEGRADED") acc.degraded++;
+                    else acc.inactive++;
+                    return acc;
+                  },
+                  {
+                    consistent: 0,
+                    monitoring: 0,
+                    testing: 0,
+                    unstable: 0,
+                    degraded: 0,
+                    inactive: 0,
+                  }
+                );
+                const items = [
+                  { label: "Consistent", count: counts.consistent, color: "#10B981" },
+                  { label: "Monitoring", count: counts.monitoring, color: "#6366F1" },
+                  { label: "Testing", count: counts.testing, color: "#A78BFA" },
+                  { label: "Unstable", count: counts.unstable, color: "#F59E0B" },
+                  { label: "Degraded", count: counts.degraded, color: "#EF4444" },
+                  { label: "Inactive", count: counts.inactive, color: "#7C8DB0" },
+                ].filter((i) => i.count > 0);
+
+                return (
+                  <div className="mb-8 flex flex-wrap items-center gap-3 px-4 py-3 bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl">
+                    <span className="text-xs text-[#7C8DB0] font-medium mr-1">Strategies:</span>
+                    {items.map((item) => (
+                      <span
+                        key={item.label}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium"
+                        style={{ color: item.color }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        {item.count} {item.label}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
 
             {/* ====================================== */}
             {/* Daily Insights */}
@@ -315,102 +299,120 @@ export default async function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Live Strategies</h3>
                   <Link
-                    href="/app/live"
+                    href="/app/monitor"
                     className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
                   >
                     View All &rarr;
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {liveEAs.slice(0, 6).map((ea) => (
-                    <div
-                      key={ea.id}
-                      className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-white truncate">{ea.eaName}</span>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${(() => {
-                            const s = ea.strategyStatus;
-                            if (s === "CONSISTENT")
-                              return "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25";
-                            if (s === "MONITORING")
-                              return "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/25";
-                            if (s === "TESTING")
-                              return "bg-[#A78BFA]/10 text-[#A78BFA] border-[#A78BFA]/25";
-                            if (s === "UNSTABLE")
-                              return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/25";
-                            if (s === "EDGE_DEGRADED")
-                              return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25";
-                            return "bg-[#7C8DB0]/10 text-[#7C8DB0] border-[#7C8DB0]/25";
-                          })()}`}
-                        >
+                  {[...liveEAs]
+                    .sort((a, b) => {
+                      const priority: Record<string, number> = {
+                        EDGE_DEGRADED: 0,
+                        UNSTABLE: 1,
+                        TESTING: 2,
+                        MONITORING: 3,
+                        CONSISTENT: 4,
+                        INACTIVE: 5,
+                      };
+                      return (
+                        (priority[a.strategyStatus ?? "INACTIVE"] ?? 5) -
+                        (priority[b.strategyStatus ?? "INACTIVE"] ?? 5)
+                      );
+                    })
+                    .slice(0, 6)
+                    .map((ea) => (
+                      <div
+                        key={ea.id}
+                        className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-white truncate">
+                            {ea.eaName}
+                          </span>
                           <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{
-                              backgroundColor:
-                                ea.strategyStatus === "CONSISTENT"
-                                  ? "#10B981"
-                                  : ea.strategyStatus === "MONITORING"
-                                    ? "#6366F1"
-                                    : ea.strategyStatus === "TESTING"
-                                      ? "#A78BFA"
-                                      : ea.strategyStatus === "UNSTABLE"
-                                        ? "#F59E0B"
-                                        : ea.strategyStatus === "EDGE_DEGRADED"
-                                          ? "#EF4444"
-                                          : "#7C8DB0",
-                            }}
-                          />
-                          {ea.strategyStatus === "CONSISTENT"
-                            ? "Consistent"
-                            : ea.strategyStatus === "MONITORING"
-                              ? "Monitoring"
-                              : ea.strategyStatus === "TESTING"
-                                ? "Testing"
-                                : ea.strategyStatus === "UNSTABLE"
-                                  ? "Unstable"
-                                  : ea.strategyStatus === "EDGE_DEGRADED"
-                                    ? "Degraded"
-                                    : "Inactive"}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-[#64748b]">Symbol</span>
-                          <p className="text-[#CBD5E1]">{ea.symbol || "—"}</p>
-                        </div>
-                        <div>
-                          <span className="text-[#64748b]">Profit</span>
-                          <p
-                            className={
-                              (ea.totalProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"
-                            }
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${(() => {
+                              const s = ea.strategyStatus;
+                              if (s === "CONSISTENT")
+                                return "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25";
+                              if (s === "MONITORING")
+                                return "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/25";
+                              if (s === "TESTING")
+                                return "bg-[#A78BFA]/10 text-[#A78BFA] border-[#A78BFA]/25";
+                              if (s === "UNSTABLE")
+                                return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/25";
+                              if (s === "EDGE_DEGRADED")
+                                return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25";
+                              return "bg-[#7C8DB0]/10 text-[#7C8DB0] border-[#7C8DB0]/25";
+                            })()}`}
                           >
-                            ${(ea.totalProfit ?? 0).toFixed(2)}
-                          </p>
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  ea.strategyStatus === "CONSISTENT"
+                                    ? "#10B981"
+                                    : ea.strategyStatus === "MONITORING"
+                                      ? "#6366F1"
+                                      : ea.strategyStatus === "TESTING"
+                                        ? "#A78BFA"
+                                        : ea.strategyStatus === "UNSTABLE"
+                                          ? "#F59E0B"
+                                          : ea.strategyStatus === "EDGE_DEGRADED"
+                                            ? "#EF4444"
+                                            : "#7C8DB0",
+                              }}
+                            />
+                            {ea.strategyStatus === "CONSISTENT"
+                              ? "Consistent"
+                              : ea.strategyStatus === "MONITORING"
+                                ? "Monitoring"
+                                : ea.strategyStatus === "TESTING"
+                                  ? "Testing"
+                                  : ea.strategyStatus === "UNSTABLE"
+                                    ? "Unstable"
+                                    : ea.strategyStatus === "EDGE_DEGRADED"
+                                      ? "Degraded"
+                                      : "Inactive"}
+                          </span>
                         </div>
-                        <div>
-                          <span className="text-[#64748b]">Trades</span>
-                          <p className="text-[#CBD5E1]">{ea.totalTrades}</p>
-                        </div>
-                        <div>
-                          <span className="text-[#64748b]">Status</span>
-                          <p
-                            className={
-                              ea.status === "ONLINE"
-                                ? "text-[#22C55E]"
-                                : ea.status === "ERROR"
-                                  ? "text-[#EF4444]"
-                                  : "text-[#64748b]"
-                            }
-                          >
-                            {ea.status}
-                          </p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-[#64748b]">Symbol</span>
+                            <p className="text-[#CBD5E1]">{ea.symbol || "—"}</p>
+                          </div>
+                          <div>
+                            <span className="text-[#64748b]">Profit</span>
+                            <p
+                              className={
+                                (ea.totalProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"
+                              }
+                            >
+                              ${(ea.totalProfit ?? 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[#64748b]">Trades</span>
+                            <p className="text-[#CBD5E1]">{ea.totalTrades}</p>
+                          </div>
+                          <div>
+                            <span className="text-[#64748b]">Status</span>
+                            <p
+                              className={
+                                ea.status === "ONLINE"
+                                  ? "text-[#22C55E]"
+                                  : ea.status === "ERROR"
+                                    ? "text-[#EF4444]"
+                                    : "text-[#64748b]"
+                              }
+                            >
+                              {ea.status}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
@@ -421,9 +423,9 @@ export default async function DashboardPage() {
             {recentBacktests.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Recent Backtests</h3>
+                  <h3 className="text-lg font-semibold text-white">Recent Evaluations</h3>
                   <Link
-                    href="/app/backtest"
+                    href="/app/evaluate"
                     className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
                   >
                     View All &rarr;
@@ -433,7 +435,7 @@ export default async function DashboardPage() {
                   {recentBacktests.slice(0, 6).map((bt) => (
                     <Link
                       key={bt.id}
-                      href={`/app/backtest/${bt.id}`}
+                      href={`/app/evaluate/${bt.id}`}
                       className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 hover:border-[rgba(79,70,229,0.3)] transition-colors"
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -495,17 +497,17 @@ export default async function DashboardPage() {
             {/* ====================================== */}
             {recentBacktests.length === 0 && (
               <Link
-                href="/app/backtest"
+                href="/app/evaluate"
                 className="block mb-8 p-6 bg-gradient-to-r from-[rgba(79,70,229,0.15)] to-[rgba(34,211,238,0.1)] border border-[rgba(79,70,229,0.25)] rounded-xl hover:border-[rgba(34,211,238,0.4)] transition-all duration-200 group"
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
-                      Upload Your First Backtest
+                      Evaluate Your First Strategy
                     </h3>
                     <p className="text-xs text-[#7C8DB0] mt-1">
-                      Upload an MT5 Strategy Tester report and get an instant health score, AI
-                      analysis, and validation.
+                      Upload an MT5 report and get a full strategy evaluation — health score, AI
+                      analysis, and stress test.
                     </p>
                   </div>
                   <span className="text-[#94A3B8] group-hover:text-[#22D3EE] transition-colors shrink-0 ml-4">

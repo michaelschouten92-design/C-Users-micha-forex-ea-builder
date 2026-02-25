@@ -85,13 +85,13 @@ export function OnboardingHero() {
           },
           {
             step: "2",
-            label: "Health Check",
+            label: "Evaluate",
             desc: "Get an instant quality score for your strategy",
             color: "#A78BFA",
           },
           {
             step: "3",
-            label: "Go Live",
+            label: "Monitor",
             desc: "Deploy to MetaTrader 5 and start tracking",
             color: "#4F46E5",
           },
@@ -238,7 +238,7 @@ export function OnboardingHero() {
           </p>
 
           <Link
-            href="/app/backtest"
+            href="/app/evaluate"
             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] transition-all font-medium text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -41,6 +41,42 @@ const nextConfig: NextConfig = {
         destination: "/product/how-it-works",
         permanent: true,
       },
+      // App restructuring redirects
+      {
+        source: "/app/backtest",
+        destination: "/app/evaluate",
+        permanent: true,
+      },
+      {
+        source: "/app/backtest/:id",
+        destination: "/app/evaluate/:id",
+        permanent: true,
+      },
+      {
+        source: "/app/backtest/:id/validate",
+        destination: "/app/evaluate/:id/validate",
+        permanent: true,
+      },
+      {
+        source: "/app/live",
+        destination: "/app/monitor",
+        permanent: true,
+      },
+      {
+        source: "/app/journal",
+        destination: "/app/monitor",
+        permanent: true,
+      },
+      {
+        source: "/app/risk-calculator",
+        destination: "/app/risk",
+        permanent: true,
+      },
+      {
+        source: "/app/risk-dashboard",
+        destination: "/app/risk",
+        permanent: true,
+      },
     ];
   },
   // Security + caching headers

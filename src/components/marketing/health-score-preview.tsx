@@ -112,7 +112,7 @@ export function HealthScorePreview() {
                   Sign up free to see your full evaluation
                 </p>
                 <Link
-                  href="/login?mode=register&redirect=/app/backtest"
+                  href="/login?mode=register&redirect=/app/evaluate"
                   className="inline-block bg-[#4F46E5] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
                 >
                   Get Your Strategy Evaluated — Free

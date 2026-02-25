@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
+import { AppNav } from "@/components/app/app-nav";
 import { SubscriptionPanel } from "../components/subscription-panel";
 import { SettingsContent } from "./settings-content";
 
@@ -48,32 +48,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen">
-      <nav
-        role="navigation"
-        aria-label="App navigation"
-        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3">
-              <Link
-                href="/app"
-                className="text-xl font-bold text-white hover:text-[#A78BFA] transition-colors"
-              >
-                AlgoStudio
-              </Link>
-              <span className="text-[#7C8DB0]">/</span>
-              <span className="text-[#94A3B8]">Account</span>
-            </div>
-            <Link href="/app" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <AppNav activeItem="settings" session={session} tier={tier} firstProjectId={null} />
 
       <main id="main-content" className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
-        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Account" }]} />
+        <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Settings" }]} />
         <h1 className="text-2xl font-bold text-white mb-8">Account Settings</h1>
 
         <SubscriptionPanel

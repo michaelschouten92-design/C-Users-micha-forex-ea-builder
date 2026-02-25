@@ -434,7 +434,7 @@ export default function ValidatePage() {
       <div className="min-h-screen bg-[#0A0118]">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
           <p className="text-[#EF4444] mb-4">{error || "Backtest not found"}</p>
-          <Link href="/app/backtest" className="text-sm text-[#A78BFA] hover:text-[#22D3EE]">
+          <Link href="/app/evaluate" className="text-sm text-[#A78BFA] hover:text-[#22D3EE]">
             &larr; Back to Backtests
           </Link>
         </div>
@@ -450,7 +450,7 @@ export default function ValidatePage() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/app/backtest"
+            href="/app/evaluate"
             className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtests
@@ -637,7 +637,7 @@ export default function ValidatePage() {
             {/* Re-run with different params */}
             <div className="text-center">
               <Link
-                href="/app/risk-calculator"
+                href="/app/risk"
                 className="text-xs text-[#7C8DB0] hover:text-[#A78BFA] transition-colors"
               >
                 Want to adjust parameters? Use the full Monte Carlo calculator &rarr;

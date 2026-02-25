@@ -72,7 +72,7 @@ export default function AboutPage() {
                 Your strategy has a status. Find out what it is.
               </p>
               <Link
-                href="/login?mode=register&redirect=/app/backtest"
+                href="/login?mode=register&redirect=/app/evaluate"
                 className="inline-block mt-4 bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
               >
                 Get Your Strategy Evaluated — Free

@@ -74,18 +74,18 @@ export function OnboardingChecklist({
           ? "Your first strategy is ready."
           : "Pick a template or upload an MT5 backtest report.",
       completed: hasProjects || hasBacktests,
-      href: hasProjects && firstProjectId ? `/app/projects/${firstProjectId}` : "/app/backtest",
+      href: hasProjects && firstProjectId ? `/app/projects/${firstProjectId}` : "/app/evaluate",
       cta: hasProjects ? "Open Builder" : "Get Started",
     },
     {
       id: "health",
-      label: "Review your health score",
+      label: "Review your evaluation",
       description: hasBacktests
         ? "See how your strategy scores across 5 key metrics."
         : "Upload a backtest report to get an instant health analysis.",
       completed: hasBacktests,
-      href: "/app/backtest",
-      cta: hasBacktests ? "View Score" : "Upload Backtest",
+      href: "/app/evaluate",
+      cta: hasBacktests ? "View Score" : "Evaluate",
     },
     {
       id: "export",
@@ -99,7 +99,7 @@ export function OnboardingChecklist({
     },
     {
       id: "live",
-      label: "Go live and build your track record",
+      label: "Go live and start monitoring",
       description:
         tier === "FREE"
           ? "Upgrade to Pro to start tracking live performance."
@@ -107,7 +107,7 @@ export function OnboardingChecklist({
             ? "Your strategy is live. Track record building in progress."
             : "Deploy your EA and start building a verified track record.",
       completed: hasLiveEAs,
-      href: tier === "FREE" ? "/pricing" : "/app/live",
+      href: tier === "FREE" ? "/pricing" : "/app/monitor",
       cta: tier === "FREE" ? "See Plans" : hasLiveEAs ? "View Dashboard" : "Set Up",
     },
   ];

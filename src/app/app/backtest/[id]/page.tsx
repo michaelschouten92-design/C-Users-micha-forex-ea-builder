@@ -240,7 +240,7 @@ export default function BacktestDetailPage() {
       const res = await fetch(`/api/backtest/${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Backtest deleted");
-        router.push("/app/backtest");
+        router.push("/app/evaluate");
       } else {
         toast.error("Failed to delete");
       }
@@ -264,7 +264,7 @@ export default function BacktestDetailPage() {
       <div className="min-h-screen bg-[#0A0118]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <Link
-            href="/app/backtest"
+            href="/app/evaluate"
             className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtest
@@ -283,7 +283,7 @@ export default function BacktestDetailPage() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/app/backtest"
+            href="/app/evaluate"
             className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtest
@@ -597,7 +597,7 @@ export default function BacktestDetailPage() {
 
           {/* Validate Strategy CTA */}
           <Link
-            href={`/app/backtest/${id}/validate`}
+            href={`/app/evaluate/${id}/validate`}
             className="block bg-gradient-to-r from-[rgba(34,211,238,0.1)] to-[rgba(79,70,229,0.15)] border border-[rgba(34,211,238,0.25)] rounded-xl p-5 hover:border-[rgba(34,211,238,0.4)] transition-all group"
           >
             <div className="flex items-center justify-between">
@@ -641,6 +641,35 @@ export default function BacktestDetailPage() {
               </svg>
             </div>
           </Link>
+
+          {/* Evaluation → Live Bridge */}
+          <div className="flex items-center gap-3 px-5 py-3.5 bg-[#1A0626]/60 border border-[rgba(79,70,229,0.1)] rounded-xl">
+            <svg
+              className="w-4 h-4 text-[#A78BFA] flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+            <p className="text-xs text-[#94A3B8]">
+              <span className="text-[#A78BFA] font-medium">Next: </span>
+              Deploy this strategy live to begin the evaluation lifecycle. New strategies start at{" "}
+              <span className="text-[#A78BFA] font-medium">Testing</span> status and progress as
+              they build a track record.
+            </p>
+            <Link
+              href="/app/monitor"
+              className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors font-medium whitespace-nowrap flex-shrink-0"
+            >
+              Set Up &rarr;
+            </Link>
+          </div>
 
           {/* Action Bar */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

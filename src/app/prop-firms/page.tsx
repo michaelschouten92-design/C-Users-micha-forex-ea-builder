@@ -223,7 +223,7 @@ export default function PropFirmsPage() {
               you fund a challenge.
             </p>
             <Link
-              href="/login?mode=register&redirect=/app/backtest"
+              href="/login?mode=register&redirect=/app/evaluate"
               className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
             >
               Get Your Prop Strategy Evaluated — Free

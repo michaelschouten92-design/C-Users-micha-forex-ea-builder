@@ -61,7 +61,7 @@ export function generateDailyInsights(
       icon: "upload",
       message: "No strategies yet — upload a backtest to get started",
       detail: "Upload your MT5 Strategy Tester report and get an instant health score.",
-      linkHref: "/app/backtest",
+      linkHref: "/app/evaluate",
       linkLabel: "Upload Backtest",
     });
     return insights;
@@ -82,7 +82,7 @@ export function generateDailyInsights(
       icon: "alert",
       message: `${errorEAs.length} EA${errorEAs.length > 1 ? "s" : ""} reporting errors: ${names}`,
       detail: "Check your terminal and EA logs for details.",
-      linkHref: "/app/live",
+      linkHref: "/app/monitor",
       linkLabel: "View Live EAs",
     });
   }
@@ -101,7 +101,7 @@ export function generateDailyInsights(
       icon: "offline",
       message: `${staleOffline.length} EA${staleOffline.length > 1 ? "s" : ""} offline for 24+ hours`,
       detail: "Check if your terminal is running and the EA is attached.",
-      linkHref: "/app/live",
+      linkHref: "/app/monitor",
       linkLabel: "View Live EAs",
     });
   }
@@ -118,7 +118,7 @@ export function generateDailyInsights(
       icon: "alert",
       message: `${degradedStrategies.length} strategy${degradedStrategies.length > 1 ? "s have" : " has"} degraded edge — review performance`,
       detail: names,
-      linkHref: "/app/live",
+      linkHref: "/app/monitor",
       linkLabel: "View Strategies",
     });
   }
@@ -137,7 +137,7 @@ export function generateDailyInsights(
       type: "warning",
       icon: "weak",
       message: `${unstableStrategies.length === 1 ? `Strategy ${names}` : `${unstableStrategies.length} strategies`} showing warning signs`,
-      linkHref: "/app/live",
+      linkHref: "/app/monitor",
       linkLabel: "Review",
     });
   }
@@ -207,7 +207,7 @@ export function generateDailyInsights(
       icon: "upload",
       message: "You have projects but no backtests — validate your strategies",
       detail: "Upload a backtest report to get a health score and AI analysis.",
-      linkHref: "/app/backtest",
+      linkHref: "/app/evaluate",
       linkLabel: "Upload Backtest",
     });
   }

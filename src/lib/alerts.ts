@@ -77,7 +77,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       sendPushNotification(userId, {
         title: `AlgoStudio: ${alertType}`,
         body: `${eaName} — ${message}`,
-        url: "/app/live",
+        url: "/app/monitor",
         tag: `${alertType}-${instanceId}`,
       }).catch((err) => {
         log.error({ err, channel }, "Alert delivery failed");
