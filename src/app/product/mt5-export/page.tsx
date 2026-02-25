@@ -6,7 +6,7 @@ import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
 import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "MQL5 Export — Build & Export Expert Advisors | AlgoStudio",
+  title: "MQL5 Export — Clean Code You Own | AlgoStudio",
   description:
     "AlgoStudio's EA builder exports clean, well-commented MQL5 source code. No dependencies. Compatible with any MT5 broker. Learn what you get and how it works.",
   alternates: { canonical: "/product/mt5-export" },
@@ -186,8 +186,8 @@ export default function MT5ExportPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Build your first EA"
-        description="Pick a template, export clean MQL5 code, and validate with objective data. Free — no credit card required."
+        title="Export your EA, then evaluate it"
+        description="Pick a template, export clean MQL5 code, backtest in MT5, and upload for instant health scoring. Free — no credit card required."
       />
 
       <Footer />

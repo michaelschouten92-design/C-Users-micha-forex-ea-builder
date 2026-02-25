@@ -208,7 +208,7 @@ export default function StrategyIdentityPage() {
 
       <CTASection
         title="Give your strategies an identity"
-        description="Permanent IDs, full version history, and complete auditability for every strategy you build. Start with a free account."
+        description="Permanent IDs, full version history, and complete auditability for every strategy you evaluate. Start with a free account."
       />
 
       <Footer />

@@ -110,6 +110,9 @@ export default function VsEaBuilderPage() {
                     ],
                     ["Web-based", "Yes — works in browser", "Desktop application"],
                     ["Updates", "Automatic, always latest version", "Manual download"],
+                    ["Health scoring", "Yes — automated Strategy Health Score", "No"],
+                    ["Verified track record", "Yes — cryptographic proof chain", "No"],
+                    ["Edge degradation alerts", "Yes — CUSUM drift detection", "No"],
                   ].map(([feature, algo, ea]) => (
                     <tr key={feature} className="border-b border-[rgba(79,70,229,0.1)]">
                       <td className="py-3 px-4 text-[#CBD5E1] font-medium">{feature}</td>
@@ -286,9 +289,8 @@ export default function VsEaBuilderPage() {
       <FAQSection questions={faqItems} />
 
       <CTASection
-        title="Try AlgoStudio Free"
-        description="Build your first EA in under 5 minutes. No credit card, no installation required."
-        ctaText="Start Building Free"
+        title="See the difference for yourself"
+        description="Upload a backtest and get your Strategy Health Score in under 2 minutes. No credit card required."
       />
 
       <Footer />
