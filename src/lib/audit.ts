@@ -43,7 +43,9 @@ export type AuditEventType =
   | "admin.subscription_extended"
   | "admin.bulk_email_sent"
   | "admin.bootstrap_promotion"
-  | "admin.downgrade_warning";
+  | "admin.downgrade_warning"
+  | "admin.incident_create"
+  | "admin.incident_update";
 
 interface AuditLogEntry {
   userId: string | null;

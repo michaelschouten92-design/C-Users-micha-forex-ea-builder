@@ -42,6 +42,18 @@ interface UserDetail {
     errorMessage: string | null;
     project: { name: string };
   }[];
+  liveEAs: {
+    id: string;
+    eaName: string;
+    symbol: string | null;
+    status: string;
+    lifecyclePhase: string;
+    strategyStatus: string;
+    totalTrades: number;
+    totalProfit: number;
+    lastHeartbeat: string | null;
+    healthSnapshots: { overallScore: number; status: string }[];
+  }[];
   auditLogs: {
     id: string;
     eventType: string;
@@ -56,6 +68,12 @@ const STATUS_BADGE: Record<string, string> = {
   FAILED: "text-red-400",
   QUEUED: "text-yellow-400",
   RUNNING: "text-blue-400",
+};
+
+const EA_STATUS_DOT: Record<string, string> = {
+  ONLINE: "#10B981",
+  OFFLINE: "#64748B",
+  ERROR: "#EF4444",
 };
 
 interface UserDetailModalProps {
@@ -549,6 +567,103 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* Live Strategies */}
+            <section>
+              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+                Live Strategies ({user.liveEAs?.length ?? 0})
+              </h3>
+              {!user.liveEAs || user.liveEAs.length === 0 ? (
+                <div className="text-[#7C8DB0] text-sm">No live strategies</div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Name</th>
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Symbol</th>
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Status</th>
+                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Health</th>
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Strategy</th>
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">
+                          Lifecycle
+                        </th>
+                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Trades</th>
+                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Profit</th>
+                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">
+                          Heartbeat
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {user.liveEAs.map((ea) => {
+                        const health = ea.healthSnapshots?.[0];
+                        return (
+                          <tr key={ea.id} className="border-b border-[rgba(79,70,229,0.1)]">
+                            <td className="px-3 py-2 text-white">{ea.eaName}</td>
+                            <td className="px-3 py-2 text-[#A78BFA] font-mono text-xs">
+                              {ea.symbol || "-"}
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: EA_STATUS_DOT[ea.status] || "#64748B" }}
+                                />
+                                <span className="text-[#CBD5E1] text-xs">{ea.status}</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {health ? (
+                                <span
+                                  className={
+                                    health.status === "HEALTHY"
+                                      ? "text-emerald-400"
+                                      : health.status === "WARNING"
+                                        ? "text-yellow-400"
+                                        : health.status === "DEGRADED"
+                                          ? "text-red-400"
+                                          : "text-[#94A3B8]"
+                                  }
+                                >
+                                  {health.overallScore.toFixed(0)}
+                                </span>
+                              ) : (
+                                <span className="text-[#7C8DB0]">-</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-[#CBD5E1] text-xs">
+                              {ea.strategyStatus}
+                            </td>
+                            <td className="px-3 py-2 text-[#CBD5E1] text-xs">
+                              {ea.lifecyclePhase}
+                            </td>
+                            <td className="px-3 py-2 text-right text-[#CBD5E1]">
+                              {ea.totalTrades}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span
+                                className={
+                                  ea.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"
+                                }
+                              >
+                                {ea.totalProfit >= 0 ? "+" : ""}
+                                {ea.totalProfit.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-[#94A3B8] text-xs">
+                              {ea.lastHeartbeat
+                                ? new Date(ea.lastHeartbeat).toLocaleString()
+                                : "Never"}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

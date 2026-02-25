@@ -14,6 +14,10 @@ import { LiveEAsTab } from "./components/live-eas-tab";
 import { PlanLimitsTab } from "./components/plan-limits-tab";
 import { SystemHealthTab } from "./components/system-health-tab";
 import { UserDetailModal } from "./components/user-detail-modal";
+import { HealthRadar } from "./components/health-radar";
+import { StrategyDistributionPanel } from "./components/strategy-distribution-panel";
+import { AttentionQueue } from "./components/attention-queue";
+import { IncidentsTab } from "./components/incidents-tab";
 
 interface UserData {
   id: string;
@@ -157,7 +161,7 @@ export default function AdminPage() {
   const [denied, setDenied] = useState(false);
   const [needsOtp, setNeedsOtp] = useState(false);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [extraStats, setExtraStats] = useState<AdminStats | null>(null);
 
@@ -292,10 +296,19 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Health Radar — always visible */}
+        <HealthRadar />
+
         {/* Tab navigation */}
         <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Tab content */}
+        {activeTab === "dashboard" && (
+          <div className="space-y-6">
+            <StrategyDistributionPanel />
+            <AttentionQueue />
+          </div>
+        )}
         {activeTab === "users" && (
           <UsersTab
             users={users}
@@ -312,6 +325,7 @@ export default function AdminPage() {
         {activeTab === "live-eas" && <LiveEAsTab />}
         {activeTab === "plan-limits" && <PlanLimitsTab />}
         {activeTab === "system-health" && <SystemHealthTab />}
+        {activeTab === "incidents" && <IncidentsTab />}
       </main>
 
       {/* User detail modal */}

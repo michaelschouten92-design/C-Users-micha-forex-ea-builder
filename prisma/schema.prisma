@@ -369,7 +369,7 @@ model LiveEAInstance {
   peakScoreAt       DateTime?
 
   // Strategy Status (computed, cached)
-  strategyStatus          String    @default("TESTING")  // VERIFIED | MONITORING | TESTING | UNSTABLE | EDGE_DEGRADED | INACTIVE
+  strategyStatus          String    @default("TESTING")  // CONSISTENT | MONITORING | TESTING | UNSTABLE | EDGE_DEGRADED | INACTIVE
   strategyStatusUpdatedAt DateTime?
 
   exportJob      ExportJob?       @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
@@ -957,4 +957,27 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ============================================
+// ADMIN INCIDENTS
+// ============================================
+
+model AdminIncident {
+  id          String    @id @default(cuid())
+  severity    String    // "critical" | "high" | "warning" | "info"
+  category    String    // "ea_silent" | "strategy_degraded" | "export_failure" | "system" | "manual"
+  title       String
+  description String?   @db.Text
+  sourceType  String?   // "LiveEAInstance" | "HealthSnapshot" | "ExportJob"
+  sourceId    String?
+  status      String    @default("open") // "open" | "acknowledged" | "resolved"
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, severity, createdAt])
+  @@index([category, createdAt])
+  @@index([sourceType, sourceId])
 }

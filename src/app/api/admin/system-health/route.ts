@@ -88,6 +88,40 @@ export async function GET() {
       eaStatusMap[e.status] = e._count;
     }
 
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    // Monitoring: silent EAs (ONLINE but no heartbeat for 10+ min)
+    const silentEAs = await prisma.liveEAInstance.count({
+      where: {
+        status: "ONLINE",
+        deletedAt: null,
+        lastHeartbeat: { lt: tenMinAgo },
+      },
+    });
+
+    // Monitoring: degraded strategies (latest snapshot = DEGRADED)
+    const degradedStrategies = await prisma.healthSnapshot.findMany({
+      where: { status: "DEGRADED" },
+      distinct: ["instanceId"],
+      orderBy: { createdAt: "desc" },
+      select: { instanceId: true },
+    });
+
+    // Verification: stale chains (ONLINE instances where TrackRecordState.updatedAt < 48h ago)
+    const staleChains = await prisma.trackRecordState.count({
+      where: {
+        updatedAt: { lt: fortyEightHoursAgo },
+        instance: { status: "ONLINE", deletedAt: null },
+      },
+    });
+
+    // Jobs: failed exports in last hour
+    const failedRecent = await prisma.exportJob.count({
+      where: { status: "FAILED", createdAt: { gte: oneHourAgo } },
+    });
+
     return NextResponse.json(
       {
         services: {
@@ -108,6 +142,16 @@ export async function GET() {
           online: eaStatusMap.ONLINE || 0,
           offline: eaStatusMap.OFFLINE || 0,
           error: eaStatusMap.ERROR || 0,
+        },
+        monitoring: {
+          silentEAs,
+          degradedStrategies: degradedStrategies.length,
+        },
+        verification: {
+          staleChains,
+        },
+        jobs: {
+          failedRecent,
         },
       },
       { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" } }

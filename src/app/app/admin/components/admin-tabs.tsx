@@ -1,6 +1,7 @@
 "use client";
 
 export type AdminTab =
+  | "dashboard"
   | "users"
   | "audit"
   | "revenue"
@@ -9,9 +10,11 @@ export type AdminTab =
   | "announcements"
   | "live-eas"
   | "plan-limits"
-  | "system-health";
+  | "system-health"
+  | "incidents";
 
 const TABS: { id: AdminTab; label: string; icon: string }[] = [
+  { id: "dashboard", label: "Dashboard", icon: "\uD83C\uDFE0" },
   { id: "users", label: "Users", icon: "\uD83D\uDC65" },
   { id: "audit", label: "Audit Log", icon: "\uD83D\uDCCB" },
   { id: "revenue", label: "Revenue", icon: "\uD83D\uDCB0" },
@@ -21,6 +24,7 @@ const TABS: { id: AdminTab; label: string; icon: string }[] = [
   { id: "live-eas", label: "Live EAs", icon: "\uD83D\uDCE1" },
   { id: "plan-limits", label: "Plan Limits", icon: "\u2699\uFE0F" },
   { id: "system-health", label: "System Health", icon: "\uD83D\uDFE2" },
+  { id: "incidents", label: "Incidents", icon: "\uD83D\uDEA8" },
 ];
 
 interface AdminTabsProps {

@@ -56,6 +56,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             orderBy: { createdAt: "desc" },
             take: 20,
           },
+          liveEAs: {
+            where: { deletedAt: null },
+            select: {
+              id: true,
+              eaName: true,
+              symbol: true,
+              status: true,
+              lifecyclePhase: true,
+              strategyStatus: true,
+              totalTrades: true,
+              totalProfit: true,
+              lastHeartbeat: true,
+              healthSnapshots: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { overallScore: true, status: true },
+              },
+            },
+            orderBy: { updatedAt: "desc" },
+          },
         },
       }),
       prisma.auditLog.findMany({
