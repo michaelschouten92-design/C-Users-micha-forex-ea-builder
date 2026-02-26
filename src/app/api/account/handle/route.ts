@@ -13,33 +13,53 @@ const handleSchema = z.object({
 });
 
 const RESERVED_HANDLES = new Set([
+  // Core app routes
   "admin",
   "api",
   "app",
+  "auth",
+  // Auth pages
+  "login",
+  "register",
+  "forgot-password",
+  "reset-password",
+  "verify",
+  // App sections
   "proof",
   "hub",
   "verified",
-  "login",
-  "register",
+  "strategy",
+  "shared",
+  "embed",
   "settings",
+  "status",
+  "u",
+  // Public pages
   "pricing",
+  "product",
   "about",
   "contact",
   "docs",
   "blog",
-  "support",
-  "strategy",
-  "shared",
-  "embed",
-  "u",
-  "trader",
+  "faq",
+  "terms",
+  "privacy",
+  "roadmap",
+  "templates",
+  "coaching",
+  "prop-firms",
+  "compare-platforms",
+  "sample-evaluation",
+  "trading-strategy-templates-mt5",
+  // Hub sort tabs
   "top-robust",
   "rising",
   "low-drawdown",
-  "status",
-  "terms",
-  "privacy",
-  "faq",
+  // Generic reserved
+  "support",
+  "trader",
+  "dashboard",
+  "checkout",
 ]);
 
 /** GET /api/account/handle — get current handle */

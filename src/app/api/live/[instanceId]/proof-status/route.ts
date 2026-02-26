@@ -59,12 +59,12 @@ export async function GET(
 
   // Gather ladder computation inputs
   // BacktestRun connects via BacktestUpload.projectId → StrategyIdentity.projectId
-  const [bestBacktest, trackRecordState, healthSnapshot, thresholdOverrides] = await Promise.all([
+  const [latestBacktest, trackRecordState, healthSnapshot, thresholdOverrides] = await Promise.all([
     prisma.backtestRun.findFirst({
       where: {
         upload: { projectId: identity.projectId },
       },
-      orderBy: { healthScore: "desc" },
+      orderBy: { createdAt: "desc" },
       select: {
         healthScore: true,
         validationResult: true,
@@ -73,7 +73,7 @@ export async function GET(
     }),
     prisma.trackRecordState.findUnique({
       where: { instanceId },
-      select: { lastSeqNo: true, lastEventHash: true, totalTrades: true },
+      select: { lastSeqNo: true, lastEventHash: true, totalTrades: true, maxDrawdownPct: true },
     }),
     prisma.healthSnapshot.findFirst({
       where: { instanceId },
@@ -87,8 +87,8 @@ export async function GET(
 
   // Parse Monte Carlo survival
   let monteCarloSurvival: number | null = null;
-  if (bestBacktest?.validationResult && typeof bestBacktest.validationResult === "object") {
-    const vr = bestBacktest.validationResult as Record<string, unknown>;
+  if (latestBacktest?.validationResult && typeof latestBacktest.validationResult === "object") {
+    const vr = latestBacktest.validationResult as Record<string, unknown>;
     if (typeof vr.survivalRate === "number") {
       monteCarloSurvival = vr.survivalRate;
     }
@@ -108,18 +108,30 @@ export async function GET(
   const liveTrades = trackRecordState?.totalTrades ?? 0;
   const liveDays = Math.floor((Date.now() - instance!.createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Score collapse: check if health score ever dropped below stability threshold
+  let scoreCollapsed = false;
+  const stabilityThreshold = thresholds.PROVEN_MIN_SCORE_STABILITY / 100; // overallScore is 0–1
+  const collapsedSnapshot = await prisma.healthSnapshot.findFirst({
+    where: {
+      instanceId,
+      overallScore: { lt: stabilityThreshold },
+    },
+    select: { id: true },
+  });
+  scoreCollapsed = collapsedSnapshot !== null;
+
   const ladderInput = {
-    hasBacktest: bestBacktest !== null,
-    backtestHealthScore: bestBacktest?.healthScore ?? null,
+    hasBacktest: latestBacktest !== null,
+    backtestHealthScore: latestBacktest?.healthScore ?? null,
     monteCarloSurvival,
-    backtestTrades: bestBacktest?.totalTrades ?? 0,
+    backtestTrades: latestBacktest?.totalTrades ?? 0,
     hasLiveChain: trackRecordState !== null,
     liveTrades,
     chainIntegrity,
     liveDays,
     liveHealthScore: healthSnapshot?.overallScore ?? null,
-    liveMaxDrawdownPct: null,
-    scoreCollapsed: false,
+    liveMaxDrawdownPct: trackRecordState?.maxDrawdownPct ?? null,
+    scoreCollapsed,
   };
 
   const level = computeLadderLevel(ladderInput, thresholds);
@@ -136,7 +148,7 @@ export async function GET(
     isPublic: page.isPublic,
     ladderLevel: level,
     ladderMeta: { label: meta.label, color: meta.color, description: meta.description },
-    healthScore: bestBacktest?.healthScore ?? null,
+    healthScore: latestBacktest?.healthScore ?? null,
     liveTrades,
     liveDays,
     chainIntegrity,

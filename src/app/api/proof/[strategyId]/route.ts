@@ -69,12 +69,12 @@ export async function GET(request: NextRequest, { params }: Props) {
     select: { handle: true },
   });
 
-  // Load best backtest run for this project
+  // Load latest backtest run for this project (most recent evaluation)
   const backtestRun = await prisma.backtestRun.findFirst({
     where: {
       upload: { projectId: project.id },
     },
-    orderBy: { healthScore: "desc" },
+    orderBy: { createdAt: "desc" },
     select: {
       healthScore: true,
       healthStatus: true,
@@ -87,6 +87,7 @@ export async function GET(request: NextRequest, { params }: Props) {
       winRate: true,
       scoreBreakdown: true,
       validationResult: true,
+      createdAt: true,
     },
   });
 
@@ -257,6 +258,29 @@ export async function GET(request: NextRequest, { params }: Props) {
     ? (Date.now() - new Date(instanceData.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     : null;
 
+  // Chain integrity: verify event count matches lastSeqNo (no gaps)
+  let chainIntegrity = false;
+  if (trackRecord && (trackRecord.lastSeqNo ?? 0) > 0 && page.pinnedInstanceId) {
+    const eventCount = await prisma.trackRecordEvent.count({
+      where: { instanceId: page.pinnedInstanceId },
+    });
+    chainIntegrity = eventCount === trackRecord.lastSeqNo;
+  }
+
+  // Score collapse: check if health score ever dropped below stability threshold
+  let scoreCollapsed = false;
+  if (page.pinnedInstanceId) {
+    const stabilityThreshold = thresholds.PROVEN_MIN_SCORE_STABILITY / 100; // overallScore is 0–1
+    const collapsedSnapshot = await prisma.healthSnapshot.findFirst({
+      where: {
+        instanceId: page.pinnedInstanceId,
+        overallScore: { lt: stabilityThreshold },
+      },
+      select: { id: true },
+    });
+    scoreCollapsed = collapsedSnapshot !== null;
+  }
+
   const ladderInput: LadderInput = {
     hasBacktest: backtestRun !== null,
     backtestHealthScore: backtestRun?.healthScore ?? null,
@@ -264,11 +288,11 @@ export async function GET(request: NextRequest, { params }: Props) {
     backtestTrades: backtestRun?.totalTrades ?? 0,
     hasLiveChain: trackRecord !== null && (trackRecord.lastSeqNo ?? 0) > 0,
     liveTrades: trackRecord?.totalTrades ?? 0,
-    chainIntegrity: true, // assume valid for display; full verification is on-demand
+    chainIntegrity,
     liveDays: liveDaysRaw !== null ? Math.floor(liveDaysRaw) : null,
     liveHealthScore: liveHealth?.overallScore ?? null,
     liveMaxDrawdownPct: trackRecord?.maxDrawdownPct ?? null,
-    scoreCollapsed: false, // TODO: track this historically
+    scoreCollapsed,
   };
 
   const ladderLevel = computeLadderLevel(ladderInput, thresholds);
@@ -302,12 +326,41 @@ export async function GET(request: NextRequest, { params }: Props) {
       label: ladderMeta.label,
       color: ladderMeta.color,
       description: ladderMeta.description,
+      criteria: {
+        VALIDATED: {
+          label: "Validated",
+          requirements: [
+            `Backtest health score >= ${thresholds.VALIDATED_MIN_SCORE}/100`,
+            `Monte Carlo survival rate >= ${(thresholds.VALIDATED_MIN_SURVIVAL * 100).toFixed(0)}%`,
+            `Minimum ${thresholds.MIN_TRADES_VALIDATION} backtest trades`,
+          ],
+        },
+        VERIFIED: {
+          label: "Verified",
+          requirements: [
+            "All Validated requirements met",
+            `Minimum ${thresholds.MIN_LIVE_TRADES_VERIFIED} live trades recorded`,
+            "Live trade hash chain active with no gaps",
+          ],
+        },
+        PROVEN: {
+          label: "Proven",
+          requirements: [
+            "All Verified requirements met",
+            `Live trading for >= ${thresholds.MIN_LIVE_DAYS_PROVEN} days`,
+            `Max drawdown <= ${thresholds.PROVEN_MAX_DRAWDOWN_PCT}%`,
+            `Health score stability maintained above ${thresholds.PROVEN_MIN_SCORE_STABILITY}%`,
+            "No score collapse events",
+          ],
+        },
+      },
     },
     backtestHealth: backtestRun
       ? {
           score: backtestRun.healthScore,
           status: backtestRun.healthStatus,
           breakdown: backtestRun.scoreBreakdown,
+          evaluatedAt: backtestRun.createdAt,
           stats: {
             profitFactor: backtestRun.profitFactor,
             maxDrawdownPct: backtestRun.maxDrawdownPct,
@@ -342,5 +395,75 @@ export async function GET(request: NextRequest, { params }: Props) {
       showTradeLog: page.showTradeLog,
       showHealthStatus: page.showHealthStatus,
     },
+    freshness: buildFreshnessWarnings(
+      liveHealth?.lastUpdated ?? null,
+      instanceData?.lastHeartbeat ?? null,
+      instanceData?.status ?? null,
+      backtestRun?.createdAt ?? null
+    ),
   });
+}
+
+const HEALTH_STALE_MS = 48 * 60 * 60 * 1000; // 48 hours
+const EA_OFFLINE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const BACKTEST_STALE_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+function buildFreshnessWarnings(
+  healthLastUpdated: Date | null,
+  lastHeartbeat: Date | null,
+  eaStatus: string | null,
+  backtestDate: Date | null
+): {
+  warnings: Array<{ type: string; message: string }>;
+  healthSnapshotAge: number | null;
+  backtestAge: number | null;
+} {
+  const now = Date.now();
+  const warnings: Array<{ type: string; message: string }> = [];
+
+  const healthSnapshotAge = healthLastUpdated ? now - new Date(healthLastUpdated).getTime() : null;
+
+  const backtestAge = backtestDate ? now - new Date(backtestDate).getTime() : null;
+
+  // Health data staleness
+  if (healthSnapshotAge !== null && healthSnapshotAge > HEALTH_STALE_MS) {
+    const days = Math.floor(healthSnapshotAge / (24 * 60 * 60 * 1000));
+    warnings.push({
+      type: "health_stale",
+      message: `Health data has not been updated for ${days} day${days !== 1 ? "s" : ""}`,
+    });
+  }
+
+  // EA connectivity
+  if (lastHeartbeat) {
+    const hbAge = now - new Date(lastHeartbeat).getTime();
+    if (hbAge > EA_OFFLINE_MS) {
+      const days = Math.floor(hbAge / (24 * 60 * 60 * 1000));
+      warnings.push({
+        type: "ea_disconnected",
+        message: `Strategy has been disconnected for ${days} day${days !== 1 ? "s" : ""}`,
+      });
+    }
+  } else if (eaStatus !== null) {
+    // Has an instance but no heartbeat ever
+    warnings.push({
+      type: "ea_disconnected",
+      message: "Strategy has never sent live data",
+    });
+  }
+
+  // Backtest staleness
+  if (backtestAge !== null && backtestAge > BACKTEST_STALE_MS) {
+    const days = Math.floor(backtestAge / (24 * 60 * 60 * 1000));
+    warnings.push({
+      type: "backtest_stale",
+      message: `Backtest evaluation is ${days} days old`,
+    });
+  }
+
+  return {
+    warnings,
+    healthSnapshotAge: healthSnapshotAge !== null ? Math.floor(healthSnapshotAge / 1000) : null,
+    backtestAge: backtestAge !== null ? Math.floor(backtestAge / 1000) : null,
+  };
 }

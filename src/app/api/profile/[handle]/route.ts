@@ -82,10 +82,10 @@ export async function GET(request: NextRequest, { params }: Props) {
   for (const page of pages) {
     const projectId = page.strategyIdentity.project.id;
 
-    // Best backtest
+    // Latest backtest (most recent evaluation)
     const backtest = await prisma.backtestRun.findFirst({
       where: { upload: { projectId } },
-      orderBy: { healthScore: "desc" },
+      orderBy: { createdAt: "desc" },
       select: { healthScore: true, totalTrades: true, validationResult: true },
     });
 

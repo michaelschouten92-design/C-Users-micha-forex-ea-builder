@@ -4,6 +4,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import {
+  computeLadderLevel,
+  mergeThresholds,
+  LADDER_RANK,
+  type LadderInput,
+} from "@/lib/proof/ladder";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -78,6 +84,66 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   // Generate slug from strategy ID
   const slug = identity.strategyId.toLowerCase();
+
+  // Gate: require VALIDATED ladder level before allowing public exposure
+  if (validation.data.isPublic === true) {
+    // Check if the existing page is already public — skip revalidation if no change
+    const existingPage = await prisma.verifiedStrategyPage.findUnique({
+      where: { strategyIdentityId: identity.id },
+      select: { isPublic: true },
+    });
+
+    if (!existingPage?.isPublic) {
+      // Compute current ladder level to verify VALIDATED threshold
+      const [latestBacktest, thresholdOverrides] = await Promise.all([
+        prisma.backtestRun.findFirst({
+          where: { upload: { projectId: id } },
+          orderBy: { createdAt: "desc" },
+          select: { healthScore: true, validationResult: true, totalTrades: true },
+        }),
+        prisma.proofThreshold.findMany({ select: { key: true, value: true } }),
+      ]);
+
+      const thresholds = mergeThresholds(thresholdOverrides);
+
+      let monteCarloSurvival: number | null = null;
+      if (latestBacktest?.validationResult && typeof latestBacktest.validationResult === "object") {
+        const vr = latestBacktest.validationResult as Record<string, unknown>;
+        if (typeof vr.survivalRate === "number") {
+          monteCarloSurvival = vr.survivalRate;
+        }
+      }
+
+      const ladderInput: LadderInput = {
+        hasBacktest: latestBacktest !== null,
+        backtestHealthScore: latestBacktest?.healthScore ?? null,
+        monteCarloSurvival,
+        backtestTrades: latestBacktest?.totalTrades ?? 0,
+        hasLiveChain: false,
+        liveTrades: 0,
+        chainIntegrity: false,
+        liveDays: null,
+        liveHealthScore: null,
+        liveMaxDrawdownPct: null,
+        scoreCollapsed: false,
+      };
+
+      const level = computeLadderLevel(ladderInput, thresholds);
+
+      if (LADDER_RANK[level] < LADDER_RANK.VALIDATED) {
+        return NextResponse.json(
+          apiError(
+            ErrorCode.VALIDATION_FAILED,
+            "Strategy must be VALIDATED before publishing",
+            `Your strategy is currently "${level}". To publish a public proof page, your latest backtest must have ` +
+              `a health score >= ${thresholds.VALIDATED_MIN_SCORE}, Monte Carlo survival >= ${(thresholds.VALIDATED_MIN_SURVIVAL * 100).toFixed(0)}%, ` +
+              `and >= ${thresholds.MIN_TRADES_VALIDATION} trades.`
+          ),
+          { status: 422 }
+        );
+      }
+    }
+  }
 
   const page = await prisma.verifiedStrategyPage.upsert({
     where: { strategyIdentityId: identity.id },

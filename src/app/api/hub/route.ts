@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     const backtest = await prisma.backtestRun.findFirst({
       where: { upload: { projectId } },
-      orderBy: { healthScore: "desc" },
+      orderBy: { createdAt: "desc" },
       select: {
         healthScore: true,
         totalTrades: true,
