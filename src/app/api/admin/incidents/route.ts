@@ -87,7 +87,9 @@ export async function POST(request: Request) {
       eventType: "admin.incident_create",
       resourceType: "AdminIncident",
       resourceId: incident.id,
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: incident_create");
+    });
 
     return NextResponse.json(incident, { status: 201 });
   } catch (error) {

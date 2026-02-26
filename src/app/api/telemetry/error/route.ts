@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { sendEAAlertEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const errorSchema = z.object({
@@ -58,7 +59,9 @@ export async function POST(request: NextRequest) {
         instance.user.email,
         instance.eaName,
         `Your EA "${instance.eaName}" has entered ERROR state: ${message.substring(0, 300)}`
-      ).catch(() => {});
+      ).catch((err) => {
+        logger.error({ err, instanceId: auth.instanceId }, "Failed to send EA error alert email");
+      });
 
       if (instance.user.webhookUrl) {
         fireWebhook(instance.user.webhookUrl, {
@@ -69,7 +72,9 @@ export async function POST(request: NextRequest) {
             message: message.substring(0, 300),
             status: "ERROR",
           },
-        }).catch(() => {});
+        }).catch((err) => {
+          logger.error({ err, instanceId: auth.instanceId }, "Failed to fire error webhook");
+        });
       }
     }
 

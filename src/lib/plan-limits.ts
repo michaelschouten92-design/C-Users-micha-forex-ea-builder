@@ -17,6 +17,18 @@ interface CacheEntry {
 const tierCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 15 * 1000; // 15 seconds — short TTL for quick tier change propagation
 
+// Periodic eviction of expired entries to prevent unbounded memory growth
+const EVICTION_INTERVAL_MS = 60 * 1000; // every 60 seconds
+const evictionTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of tierCache) {
+    if (entry.expiresAt <= now) tierCache.delete(key);
+  }
+}, EVICTION_INTERVAL_MS);
+if (typeof evictionTimer === "object" && "unref" in evictionTimer) {
+  evictionTimer.unref();
+}
+
 /** Resolve the effective tier from raw subscription data (pure logic, no DB call). */
 export function resolveTier(
   subscription: {

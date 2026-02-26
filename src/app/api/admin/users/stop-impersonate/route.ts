@@ -27,7 +27,9 @@ export async function POST() {
         session.user.id,
         session.user.email ?? "unknown"
       )
-      .catch(() => {});
+      .catch((err) => {
+        logger.error({ err }, "Audit log failed: impersonation_stop");
+      });
 
     return NextResponse.json({ stopImpersonation: true });
   } catch (error) {

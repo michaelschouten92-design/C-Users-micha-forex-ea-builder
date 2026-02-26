@@ -79,7 +79,9 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
     apiClient
       .get<{ data: Segment[] }>("/api/admin/segments")
       .then((res) => setSegments(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch segments:", err);
+      });
   }, []);
 
   async function handleSaveSegment() {

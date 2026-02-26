@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { checkRateLimit, publicApiRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(
@@ -53,7 +54,9 @@ export async function GET(
       where: { id: bundle.id },
       data: { accessCount: { increment: 1 } },
     })
-    .catch(() => {});
+    .catch((err) => {
+      logger.error({ err, bundleId: bundle.id }, "Failed to increment embed access count");
+    });
 
   const inst = bundle.instance;
 

@@ -119,7 +119,9 @@ export async function POST(request: Request) {
       userId: adminCheck.session.user.id,
       eventType: "admin.bulk_email_sent" as AuditEventType,
       metadata: { subject, targetType, totalTargets: emails.length, sent, failed: failed.length },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: bulk_email");
+    });
 
     return NextResponse.json({ sent, failed: failed.length, total: emails.length });
   } catch (error) {

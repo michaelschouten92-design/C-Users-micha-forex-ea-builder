@@ -132,51 +132,69 @@ export async function POST(request: NextRequest) {
       const periodEnd = subRaw.current_period_end as number;
 
       // Create a Subscription Schedule from the existing subscription
-      const schedule = await getStripe().subscriptionSchedules.create({
-        from_subscription: subscription.stripeSubId,
-      });
+      // Wrapped in try-catch to rollback Stripe schedule if DB update fails
+      let scheduleId: string | null = null;
+      try {
+        const schedule = await getStripe().subscriptionSchedules.create({
+          from_subscription: subscription.stripeSubId,
+        });
+        scheduleId = schedule.id;
 
-      // Determine the billing interval from the current subscription item
-      const currentPrice = currentItem.price;
-      const billingInterval = currentPrice.recurring?.interval ?? "month";
-      const billingIntervalCount = currentPrice.recurring?.interval_count ?? 1;
+        // Determine the billing interval from the current subscription item
+        const currentPrice = currentItem.price;
+        const billingInterval = currentPrice.recurring?.interval ?? "month";
+        const billingIntervalCount = currentPrice.recurring?.interval_count ?? 1;
 
-      // Update the schedule with two phases:
-      // Phase 1: current tier until period end
-      // Phase 2: new (downgraded) tier for one billing cycle, then release
-      await getStripe().subscriptionSchedules.update(schedule.id, {
-        end_behavior: "release",
-        phases: [
-          {
-            items: [{ price: currentItem.price.id, quantity: 1 }],
-            start_date: periodStart,
-            end_date: periodEnd,
-          },
-          {
-            items: [{ price: newPriceId, quantity: 1 }],
-            duration: {
-              interval: billingInterval as "day" | "week" | "month" | "year",
-              interval_count: billingIntervalCount,
+        // Update the schedule with two phases:
+        // Phase 1: current tier until period end
+        // Phase 2: new (downgraded) tier for one billing cycle, then release
+        await getStripe().subscriptionSchedules.update(schedule.id, {
+          end_behavior: "release",
+          phases: [
+            {
+              items: [{ price: currentItem.price.id, quantity: 1 }],
+              start_date: periodStart,
+              end_date: periodEnd,
             },
-          },
-        ],
-      });
+            {
+              items: [{ price: newPriceId, quantity: 1 }],
+              duration: {
+                interval: billingInterval as "day" | "week" | "month" | "year",
+                interval_count: billingIntervalCount,
+              },
+            },
+          ],
+        });
 
-      // Store the schedule in our DB
-      await prisma.subscription.update({
-        where: { id: subscription.id },
-        data: {
-          scheduledDowngradeTier: plan,
-          stripeScheduleId: schedule.id,
-        },
-      });
+        // Store the schedule in our DB
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            scheduledDowngradeTier: plan,
+            stripeScheduleId: schedule.id,
+          },
+        });
+      } catch (scheduleErr) {
+        // Rollback: release the Stripe schedule if it was created but DB update failed
+        if (scheduleId) {
+          await getStripe()
+            .subscriptionSchedules.release(scheduleId)
+            .catch((releaseErr) => {
+              log.error(
+                { err: releaseErr, scheduleId },
+                "Failed to rollback Stripe schedule after DB error"
+              );
+            });
+        }
+        throw scheduleErr;
+      }
 
       invalidateSubscriptionCache(session.user.id);
 
       const effectiveDate = new Date(periodEnd * 1000).toISOString();
 
       log.info(
-        { from: currentTier, to: plan, interval, scheduleId: schedule.id, effectiveDate },
+        { from: currentTier, to: plan, interval, scheduleId, effectiveDate },
         "Downgrade scheduled at period end via Subscription Schedule"
       );
 

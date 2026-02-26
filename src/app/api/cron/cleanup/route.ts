@@ -190,7 +190,9 @@ async function handleCleanup(request: NextRequest) {
       for (const sub of warningCandidates) {
         if (isTimedOut()) break;
         const settingsUrl = `${env.AUTH_URL}/app/settings`;
-        sendDowngradeWarningEmail(sub.user.email, sub.tier, 7, settingsUrl).catch(() => {});
+        sendDowngradeWarningEmail(sub.user.email, sub.tier, 7, settingsUrl).catch((err) => {
+          log.error({ err, email: sub.user.email }, "Failed to send downgrade warning email");
+        });
         warningsSent++;
       }
     }

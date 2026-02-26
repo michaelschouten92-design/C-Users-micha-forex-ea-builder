@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Run guild join and role sync in the background (fire-and-forget)
-    onboardDiscordUser(session.user.id, discordUser.id, tokenData.access_token).catch(() => {});
+    onboardDiscordUser(session.user.id, discordUser.id, tokenData.access_token).catch((err) => {
+      log.error({ err, userId: session.user.id }, "Failed to onboard Discord user");
+    });
 
     log.info(
       { userId: session.user.id, discordId: discordUser.id },

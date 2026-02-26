@@ -84,7 +84,9 @@ export function ExportsTab() {
     apiClient
       .get<{ data: DailyStat[] }>("/api/admin/exports/daily-stats")
       .then((res) => setDailyStats(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch daily export stats:", err);
+      });
   }, []);
 
   const totalPages = Math.ceil(total / limit);

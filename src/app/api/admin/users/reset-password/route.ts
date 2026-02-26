@@ -96,7 +96,9 @@ export async function POST(request: Request) {
       resourceType: "user",
       resourceId: user.id,
       metadata: { targetEmail: email },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err, resourceId: user.id }, "Audit log failed: password_reset_triggered");
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

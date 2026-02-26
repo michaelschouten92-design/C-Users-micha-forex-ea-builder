@@ -98,7 +98,9 @@ export async function POST(request: Request) {
             tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier)
               ? audit.subscriptionUpgrade
               : audit.subscriptionDowngrade;
-          auditFn(user.id, previousTier, tier).catch(() => {});
+          auditFn(user.id, previousTier, tier).catch((err) => {
+            logger.error({ err }, "Audit log failed: bulk_upgrade");
+          });
 
           updated++;
         })

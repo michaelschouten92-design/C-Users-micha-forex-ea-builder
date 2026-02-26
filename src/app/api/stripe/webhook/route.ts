@@ -63,7 +63,10 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
 }
 
 // Optional IP allowlist for webhook endpoint (defense-in-depth)
-const STRIPE_WEBHOOK_IPS = process.env.STRIPE_WEBHOOK_IPS?.split(",") ?? [];
+const STRIPE_WEBHOOK_IPS =
+  process.env.STRIPE_WEBHOOK_IPS?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean) ?? [];
 
 export async function POST(request: NextRequest) {
   // Optional IP allowlist check (only active when STRIPE_WEBHOOK_IPS env var is set)
@@ -211,7 +214,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error) {
     // Remove idempotency claim so Stripe can retry this event
-    await prisma.webhookEvent.delete({ where: { eventId: event.id } }).catch(() => {});
+    await prisma.webhookEvent.delete({ where: { eventId: event.id } }).catch((deleteErr) => {
+      log.error(
+        { err: deleteErr, eventId: event.id },
+        "Failed to clean up webhook idempotency record"
+      );
+    });
 
     log.error(
       { error: extractErrorDetails(error), eventType: event.type },

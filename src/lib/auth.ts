@@ -234,14 +234,22 @@ providers.push(
             })
             .then(() => {
               const verifyUrl = `${env.AUTH_URL}/api/auth/verify-email?token=${verifyToken}`;
-              sendVerificationEmail(email, verifyUrl).catch(() => {});
+              sendVerificationEmail(email, verifyUrl).catch((err) => {
+                authLog.error({ err, email }, "Failed to send verification email");
+              });
               // Send welcome email with verify link included
-              sendWelcomeEmail(email, `${env.AUTH_URL}/app`, verifyUrl).catch(() => {});
+              sendWelcomeEmail(email, `${env.AUTH_URL}/app`, verifyUrl).catch((err) => {
+                authLog.error({ err, email }, "Failed to send welcome email");
+              });
             })
-            .catch(() => {});
+            .catch((err) => {
+              authLog.error({ err, email }, "Failed to create email verification token");
+            });
 
           // Notify admin of new signup (fire-and-forget)
-          sendNewUserNotificationEmail(email, "credentials").catch(() => {});
+          sendNewUserNotificationEmail(email, "credentials").catch((err) => {
+            authLog.error({ err }, "Failed to send new user notification email");
+          });
 
           return {
             id: user.id,
@@ -287,7 +295,9 @@ providers.push(
                 where: { id: existingUser.id },
                 data: { passwordHash: upgraded, passwordChangedAt: new Date() },
               })
-              .catch(() => {});
+              .catch((err) => {
+                authLog.error({ err, userId: existingUser.id }, "Failed to rehash password");
+              });
           }
 
           return {
@@ -345,7 +355,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               "OAuth sign-in rejected: email already linked to another account"
             );
             // Notify the existing account owner (fire-and-forget)
-            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch((err) => {
+              authLog.error(
+                { err, provider: account.provider },
+                "Failed to send OAuth link rejected email"
+              );
+            });
             return false;
           } else {
             // Generate unique referral code for new OAuth user
@@ -390,10 +405,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             _isNewUser = true;
 
             // Send welcome email (fire-and-forget)
-            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
+              authLog.error({ err, email: user.email }, "Failed to send welcome email (Google)");
+            });
 
             // Notify admin of new signup (fire-and-forget)
-            sendNewUserNotificationEmail(user.email, "google").catch(() => {});
+            sendNewUserNotificationEmail(user.email, "google").catch((err) => {
+              authLog.error({ err }, "Failed to send new user notification email (Google)");
+            });
           }
         }
 
@@ -425,7 +444,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               { email: normalizedEmail.substring(0, 3) + "***", provider: account.provider },
               "OAuth sign-in rejected: email already linked to another account"
             );
-            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch((err) => {
+              authLog.error(
+                { err, provider: account.provider },
+                "Failed to send OAuth link rejected email (Discord)"
+              );
+            });
             return false;
           } else {
             const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
@@ -467,8 +491,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
 
-            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
-            sendNewUserNotificationEmail(user.email, "discord").catch(() => {});
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
+              authLog.error({ err, email: user.email }, "Failed to send welcome email (Discord)");
+            });
+            sendNewUserNotificationEmail(user.email, "discord").catch((err) => {
+              authLog.error({ err }, "Failed to send new user notification email (Discord)");
+            });
           }
         } else {
           // Existing user — update Discord tokens and ID
@@ -519,7 +547,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               { email: normalizedEmail.substring(0, 3) + "***", provider: account.provider },
               "OAuth sign-in rejected: email already linked to another account"
             );
-            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch(() => {});
+            sendOAuthLinkRejectedEmail(normalizedEmail, account.provider).catch((err) => {
+              authLog.error(
+                { err, provider: account.provider },
+                "Failed to send OAuth link rejected email (GitHub)"
+              );
+            });
             return false;
           } else {
             const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
@@ -558,8 +591,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
 
-            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch(() => {});
-            sendNewUserNotificationEmail(user.email, "github").catch(() => {});
+            sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
+              authLog.error({ err, email: user.email }, "Failed to send welcome email (GitHub)");
+            });
+            sendNewUserNotificationEmail(user.email, "github").catch((err) => {
+              authLog.error({ err }, "Failed to send new user notification email (GitHub)");
+            });
           }
         }
 
@@ -579,7 +616,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               where: { id: user.id },
               data: { lastLoginAt: new Date() },
             })
-            .catch(() => {});
+            .catch((err) => {
+              authLog.error({ err, userId: user.id }, "Failed to update lastLoginAt");
+            });
         }
       }
 

@@ -92,7 +92,9 @@ export async function GET(request: NextRequest) {
         where: { scheduledAt: { lte: now }, active: false },
         data: { active: true },
       })
-      .catch(() => {});
+      .catch((err) => {
+        logger.error({ err }, "Failed to activate scheduled announcements");
+      });
 
     return NextResponse.json({
       data: filtered.map(({ segment, segmentId, ...rest }) => rest),

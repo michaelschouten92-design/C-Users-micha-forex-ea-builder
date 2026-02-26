@@ -115,7 +115,9 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
         userId: session.user.id,
         eventType: "admin.bootstrap_promotion",
         metadata: { email: adminUser.email, method: "ADMIN_EMAIL_env" },
-      }).catch(() => {});
+      }).catch((err) => {
+        logger.error({ err }, "Audit log failed: bootstrap_promotion");
+      });
       logger.info({ userId: session.user.id }, "Auto-promoted admin user via ADMIN_EMAIL");
     } catch (err) {
       logger.error({ err, userId: session.user.id }, "Failed to auto-promote admin user");

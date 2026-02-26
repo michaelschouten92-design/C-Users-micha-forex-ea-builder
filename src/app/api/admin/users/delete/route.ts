@@ -114,7 +114,9 @@ export async function POST(request: Request) {
     );
 
     // Send confirmation email (fire-and-forget)
-    sendAccountDeletedEmail(email).catch(() => {});
+    sendAccountDeletedEmail(email).catch((err) => {
+      logger.error({ err }, "Email send failed: admin user deletion");
+    });
 
     return NextResponse.json({ success: true, email });
   } catch (error) {

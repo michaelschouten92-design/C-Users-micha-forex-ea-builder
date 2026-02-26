@@ -86,7 +86,9 @@ export async function POST(request: Request) {
       resourceType: "user",
       resourceId: user.id,
       metadata: { targetEmail: email, reason },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err, resourceId: user.id }, "Audit log failed: user_suspend");
+    });
 
     return NextResponse.json({ success: true, user });
   } catch (error) {

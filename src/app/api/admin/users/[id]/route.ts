@@ -171,7 +171,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       eventType: "admin.user_notes_update" as AuditEventType,
       resourceType: "user",
       resourceId: id,
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err, resourceId: id }, "Audit log failed: user_notes_update");
+    });
 
     return NextResponse.json(user);
   } catch (error) {

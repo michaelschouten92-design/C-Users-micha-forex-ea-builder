@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import {
   publicApiRateLimiter,
   checkRateLimit,
@@ -58,7 +59,9 @@ export async function GET(request: NextRequest, { params }: Props) {
       where: { id: shared.id },
       data: { accessCount: { increment: 1 } },
     })
-    .catch(() => {});
+    .catch((err) => {
+      logger.error({ err, bundleId: shared.id }, "Failed to increment shared bundle access count");
+    });
 
   return NextResponse.json({
     bundle: shared.bundleJson,

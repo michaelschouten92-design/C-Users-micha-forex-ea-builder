@@ -37,7 +37,9 @@ export function AnnouncementBanner() {
       .then((data) => {
         if (Array.isArray(data.data)) setAnnouncements(data.data);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch announcements:", err);
+      });
   }, []);
 
   function dismiss(id: string) {

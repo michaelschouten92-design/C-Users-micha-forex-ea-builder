@@ -94,7 +94,9 @@ export async function POST(request: Request) {
       resourceType: "subscription",
       resourceId: user.subscription.id,
       metadata: { targetEmail: email, days, newEnd: newEnd.toISOString() },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: extend_subscription");
+    });
 
     return NextResponse.json({ success: true, newEnd: newEnd.toISOString() });
   } catch (error) {

@@ -84,7 +84,9 @@ export async function POST(request: Request) {
       resourceType: "segment",
       resourceId: segment.id,
       metadata: { name },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: segment operation");
+    });
 
     return NextResponse.json({
       ...segment,
@@ -129,7 +131,9 @@ export async function DELETE(request: Request) {
       eventType: "admin.segment_delete" as AuditEventType,
       resourceType: "segment",
       resourceId: id,
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: segment operation");
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

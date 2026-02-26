@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { fireWebhook } from "@/lib/webhook";
 import { checkNewTradeAlerts } from "@/lib/alerts";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const tradeSchema = z.object({
@@ -83,7 +84,9 @@ export async function POST(request: NextRequest) {
             openPrice,
             closePrice: closePrice ?? null,
           },
-        }).catch(() => {});
+        }).catch((err) => {
+          logger.error({ err, instanceId: auth.instanceId }, "Failed to fire trade webhook");
+        });
       }
 
       // Check user-configured new trade alerts (fire-and-forget)
@@ -94,7 +97,9 @@ export async function POST(request: NextRequest) {
         symbol,
         type,
         profit
-      ).catch(() => {});
+      ).catch((err) => {
+        logger.error({ err, instanceId: auth.instanceId }, "Failed to check new trade alerts");
+      });
     }
 
     return NextResponse.json({ success: true });

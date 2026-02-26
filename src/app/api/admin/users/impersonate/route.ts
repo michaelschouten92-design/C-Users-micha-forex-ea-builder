@@ -75,7 +75,9 @@ export async function POST(request: Request) {
     // Audit log
     audit
       .impersonationStart(adminCheck.session.user.id, targetUser.id, targetUser.email)
-      .catch(() => {});
+      .catch((err) => {
+        logger.error({ err, targetUserId: targetUser.id }, "Audit log failed: impersonation_start");
+      });
 
     return NextResponse.json({
       impersonate: {

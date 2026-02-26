@@ -8,6 +8,7 @@
  * - Cashflow-adjusted: balance jumps without trades → deposit/withdrawal → HWM adjusted
  */
 
+import { logger } from "@/lib/logger";
 import type { TrackRecordRunningState, OpenPosition } from "./types";
 
 /**
@@ -154,9 +155,9 @@ export function updateStateOnSessionStart(state: TrackRecordRunningState, balanc
     if (drift > 0.5) {
       // >50% drift is suspicious but could be a large deposit/withdrawal
       // Log warning but don't reject — the CASHFLOW event should follow
-      console.warn(
-        `TrackRecord: SESSION_START balance drift ${(drift * 100).toFixed(1)}%: ` +
-          `expected ~${state.balance.toFixed(2)}, got ${balance.toFixed(2)}`
+      logger.warn(
+        { drift: drift * 100, expected: state.balance, got: balance },
+        "TrackRecord: SESSION_START balance drift detected"
       );
     }
   }

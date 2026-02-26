@@ -87,7 +87,9 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
     apiClient
       .get<AdminSummary>("/api/admin/audit-logs/admin-summary")
       .then(setAdminSummary)
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch admin summary:", err);
+      });
   }, []);
 
   const totalPages = Math.ceil(total / limit);

@@ -108,7 +108,9 @@ export async function PUT(request: Request) {
       eventType: "admin.plan_limits_update",
       resourceType: "plan_limit",
       metadata: { tier, maxProjects, maxExportsPerMonth, canExportMQL5 },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: plan_limits_update");
+    });
 
     return NextResponse.json(config);
   } catch (error) {

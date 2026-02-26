@@ -298,7 +298,9 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit failed export (fire-and-forget to avoid masking the original error)
     if (session?.user?.id) {
       const details = extractErrorDetails(error);
-      audit.exportFailed(session.user.id, id, details.message ?? "Unknown error").catch(() => {});
+      audit.exportFailed(session.user.id, id, details.message ?? "Unknown error").catch((err) => {
+        log.error({ err, projectId: id }, "Audit log failed: export_failed");
+      });
     }
 
     return NextResponse.json(

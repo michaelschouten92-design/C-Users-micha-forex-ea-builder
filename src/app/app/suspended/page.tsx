@@ -14,7 +14,9 @@ export default function SuspendedPage() {
     apiClient
       .get<{ suspendedReason: string | null }>(`/api/auth/suspended-info`)
       .then((res) => setReason(res.suspendedReason))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch suspended info:", err);
+      });
   }, [session]);
 
   return (

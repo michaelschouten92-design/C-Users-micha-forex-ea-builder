@@ -66,7 +66,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       resourceType: "AdminIncident",
       resourceId: id,
       metadata: { newStatus: validation.data.status },
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.error({ err }, "Audit log failed: incident_update");
+    });
 
     return NextResponse.json(incident);
   } catch (error) {

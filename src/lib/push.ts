@@ -74,6 +74,8 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
   });
 
   if (expiredIds.length > 0) {
-    await prisma.pushSubscription.deleteMany({ where: { id: { in: expiredIds } } }).catch(() => {});
+    await prisma.pushSubscription.deleteMany({ where: { id: { in: expiredIds } } }).catch((err) => {
+      log.error({ err, count: expiredIds.length }, "Failed to clean up expired push subscriptions");
+    });
   }
 }

@@ -153,16 +153,22 @@ export function LiveEAsTab() {
     apiClient
       .get<PerformanceData>("/api/admin/live-eas/performance")
       .then(setPerformance)
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch live EA performance:", err);
+      });
     // Fetch alert rules and recent alerts
     apiClient
       .get<{ data: AlertRule[] }>("/api/admin/ea-alerts")
       .then((res) => setAlertRules(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch alert rules:", err);
+      });
     apiClient
       .get<{ data: TriggeredAlert[] }>("/api/admin/ea-alerts/triggered?acknowledged=false&limit=10")
       .then((res) => setRecentAlerts(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch recent alerts:", err);
+      });
   }, []);
 
   const totalPages = Math.ceil(total / pageSize);
