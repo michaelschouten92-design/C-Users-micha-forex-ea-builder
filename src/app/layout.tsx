@@ -26,23 +26,23 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
-    default: "AlgoStudio — No-Code MT5 Bot Builder | Expert Advisor Generator",
+    default: "AlgoStudio — The Proof Layer for Algorithmic Trading",
     template: "%s | AlgoStudio",
   },
   description:
-    "Build MT5 Expert Advisors without coding. Pick a strategy template, customize risk management, and export clean MQL5 code. Free no-code MT5 bot builder for forex and prop firm traders.",
+    "Verify your trading strategy with cryptographic proof. Upload a backtest for instant health scoring, validate with Monte Carlo analysis, and build a tamper-proof live track record anyone can audit.",
   openGraph: {
-    title: "AlgoStudio — No-Code MT5 Bot Builder",
+    title: "AlgoStudio — Proof > Backtests",
     description:
-      "Turn trading ideas into MT5 bots in minutes. No-code EA builder with proven strategy templates and clean MQL5 export. Works with any broker.",
+      "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification. The trust layer algo trading has been missing.",
     type: "website",
     siteName: "AlgoStudio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AlgoStudio — No-Code MT5 Bot Builder",
+    title: "AlgoStudio — The Proof Layer for Algorithmic Trading",
     description:
-      "Build MT5 Expert Advisors without coding. Strategy templates, clean MQL5 export, works with any MT5 broker. Free to start.",
+      "Verify your trading strategy with cryptographic proof. Tamper-proof track records, Monte Carlo validation, and independent auditing. Free to start.",
   },
 };
 
@@ -53,7 +53,7 @@ const organizationJsonLd = {
   url: process.env.AUTH_URL || "https://algo-studio.com",
   logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
   description:
-    "No-code platform for building, testing, and exporting MetaTrader 5 Expert Advisors with a visual strategy builder.",
+    "The proof layer for algorithmic trading. Verify strategies with cryptographic track records, Monte Carlo validation, and independent auditing.",
   foundingDate: "2025",
   sameAs: [],
 };
