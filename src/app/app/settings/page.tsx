@@ -61,6 +61,12 @@ export default async function SettingsPage() {
           exportCount={exportCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
+          scheduledDowngradeTier={
+            subscription?.scheduledDowngradeTier === "PRO" ||
+            subscription?.scheduledDowngradeTier === "ELITE"
+              ? subscription.scheduledDowngradeTier
+              : null
+          }
         />
 
         <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />

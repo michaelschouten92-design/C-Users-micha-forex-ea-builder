@@ -16,6 +16,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 
 const tierOrder = { FREE: 0, PRO: 1, ELITE: 2 } as const;
 
@@ -107,26 +108,127 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unable to find subscription item" }, { status: 500 });
     }
 
-    // Update the subscription with the new price
     const isDowngrade = tierOrder[plan] < tierOrder[currentTier];
 
-    await getStripe().subscriptions.update(subscription.stripeSubId, {
-      items: [{ id: currentItem.id, price: newPriceId }],
-      proration_behavior: "create_prorations",
-    });
+    if (isDowngrade) {
+      // --- DOWNGRADE: Schedule tier change at period end via Subscription Schedules ---
 
-    log.info(
-      { from: currentTier, to: plan, interval, isDowngrade },
-      "Plan changed via Stripe subscription update"
-    );
+      // Check for existing pending downgrade
+      if (subscription.scheduledDowngradeTier === plan) {
+        return NextResponse.json(
+          { error: `A downgrade to ${PLANS[plan].name} is already scheduled` },
+          { status: 400 }
+        );
+      }
 
-    // Stripe will fire customer.subscription.updated webhook which handles:
-    // - DB tier update
-    // - Email notification
-    // - Discord role sync
-    // - Audit logging
+      // If there's a pending downgrade to a different tier, release it first
+      if (subscription.stripeScheduleId) {
+        await getStripe().subscriptionSchedules.release(subscription.stripeScheduleId);
+      }
 
-    return NextResponse.json({ success: true });
+      // Get current period timestamps from the Stripe subscription
+      const subRaw = stripeSub as unknown as Record<string, unknown>;
+      const periodStart = subRaw.current_period_start as number;
+      const periodEnd = subRaw.current_period_end as number;
+
+      // Create a Subscription Schedule from the existing subscription
+      const schedule = await getStripe().subscriptionSchedules.create({
+        from_subscription: subscription.stripeSubId,
+      });
+
+      // Determine the billing interval from the current subscription item
+      const currentPrice = currentItem.price;
+      const billingInterval = currentPrice.recurring?.interval ?? "month";
+      const billingIntervalCount = currentPrice.recurring?.interval_count ?? 1;
+
+      // Update the schedule with two phases:
+      // Phase 1: current tier until period end
+      // Phase 2: new (downgraded) tier for one billing cycle, then release
+      await getStripe().subscriptionSchedules.update(schedule.id, {
+        end_behavior: "release",
+        phases: [
+          {
+            items: [{ price: currentItem.price.id, quantity: 1 }],
+            start_date: periodStart,
+            end_date: periodEnd,
+          },
+          {
+            items: [{ price: newPriceId, quantity: 1 }],
+            duration: {
+              interval: billingInterval as "day" | "week" | "month" | "year",
+              interval_count: billingIntervalCount,
+            },
+          },
+        ],
+      });
+
+      // Store the schedule in our DB
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          scheduledDowngradeTier: plan,
+          stripeScheduleId: schedule.id,
+        },
+      });
+
+      invalidateSubscriptionCache(session.user.id);
+
+      const effectiveDate = new Date(periodEnd * 1000).toISOString();
+
+      log.info(
+        { from: currentTier, to: plan, interval, scheduleId: schedule.id, effectiveDate },
+        "Downgrade scheduled at period end via Subscription Schedule"
+      );
+
+      return NextResponse.json({ success: true, scheduled: true, effectiveDate });
+    } else {
+      // --- UPGRADE: Immediate plan switch with prorations ---
+
+      // If a pending downgrade schedule exists, release it first
+      if (subscription.stripeScheduleId) {
+        await getStripe().subscriptionSchedules.release(subscription.stripeScheduleId);
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            scheduledDowngradeTier: null,
+            stripeScheduleId: null,
+          },
+        });
+
+        // After releasing the schedule, re-retrieve the subscription
+        // since the schedule release may have modified it
+        const freshSub = await getStripe().subscriptions.retrieve(subscription.stripeSubId);
+        const freshItem = freshSub.items.data[0];
+        if (!freshItem) {
+          return NextResponse.json({ error: "Unable to find subscription item" }, { status: 500 });
+        }
+
+        await getStripe().subscriptions.update(subscription.stripeSubId, {
+          items: [{ id: freshItem.id, price: newPriceId }],
+          proration_behavior: "create_prorations",
+        });
+      } else {
+        await getStripe().subscriptions.update(subscription.stripeSubId, {
+          items: [{ id: currentItem.id, price: newPriceId }],
+          proration_behavior: "create_prorations",
+        });
+      }
+
+      invalidateSubscriptionCache(session.user.id);
+
+      log.info(
+        { from: currentTier, to: plan, interval, isDowngrade: false },
+        "Plan upgraded via Stripe subscription update"
+      );
+
+      // Stripe will fire customer.subscription.updated webhook which handles:
+      // - DB tier update
+      // - Email notification
+      // - Discord role sync
+      // - Audit logging
+
+      return NextResponse.json({ success: true });
+    }
   } catch (error) {
     const details = extractErrorDetails(error);
     log.error({ error: details }, "Change plan error");

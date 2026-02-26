@@ -13,6 +13,7 @@ type SubscriptionPanelProps = {
   exportCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
+  scheduledDowngradeTier?: "PRO" | "ELITE" | null;
 };
 
 export function SubscriptionPanel({
@@ -22,10 +23,14 @@ export function SubscriptionPanel({
   exportCount,
   hasStripeSubscription,
   currentPeriodEnd,
+  scheduledDowngradeTier,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
   const [cancelPeriodEnd, setCancelPeriodEnd] = useState<string | null>(null);
+  const [pendingDowngrade, setPendingDowngrade] = useState<"PRO" | "ELITE" | null>(
+    scheduledDowngradeTier ?? null
+  );
   const plan = PLANS[tier];
 
   const projectLimit = plan.limits.maxProjects;
@@ -71,14 +76,43 @@ export function SubscriptionPanel({
         showError(data.error || "Failed to change plan. Please try again.");
         return;
       }
-      showSuccess("Plan changed to Pro", "Your account has been updated with prorated credit.");
-      // Reload to reflect the new tier
-      window.location.reload();
+      const data = await res.json();
+      if (data.scheduled) {
+        setPendingDowngrade("PRO");
+        showSuccess(
+          "Downgrade scheduled",
+          `Your plan will change to Pro on ${data.effectiveDate ? formatDate(data.effectiveDate) : "the end of your billing period"}. You have full Elite access until then.`
+        );
+      } else {
+        showSuccess("Plan changed to Pro", "Your account has been updated.");
+        window.location.reload();
+      }
     } catch {
       showError("Failed to change plan. Please try again.");
     } finally {
       setLoading(false);
       setConfirmAction(null);
+    }
+  }
+
+  async function handleCancelDowngrade() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/cancel-downgrade", {
+        method: "POST",
+        headers: getCsrfHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || "Failed to cancel downgrade. Please try again.");
+        return;
+      }
+      setPendingDowngrade(null);
+      showSuccess("Downgrade cancelled", "Your current plan will continue.");
+    } catch {
+      showError("Failed to cancel downgrade. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -169,6 +203,30 @@ export function SubscriptionPanel({
                 </p>
               </div>
             )}
+            {pendingDowngrade && !cancelPeriodEnd && (
+              <div className="mt-2 p-3 bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.3)] rounded-lg">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-[#F59E0B]">
+                    Your plan will change to{" "}
+                    <span className="font-medium">{PLANS[pendingDowngrade].name}</span>
+                    {currentPeriodEnd && (
+                      <>
+                        {" "}
+                        on <span className="font-medium">{formatDate(currentPeriodEnd)}</span>
+                      </>
+                    )}
+                    . You have full {PLANS[tier].name} access until then.
+                  </p>
+                  <button
+                    onClick={handleCancelDowngrade}
+                    disabled={loading}
+                    className="flex-shrink-0 text-xs text-white bg-[rgba(245,158,11,0.3)] hover:bg-[rgba(245,158,11,0.5)] px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Keep Current Plan
+                  </button>
+                </div>
+              </div>
+            )}
             <p className="text-sm text-[#94A3B8]">
               {tier === "FREE"
                 ? "Upgrade for unlimited projects, verified track records, and live monitoring."
@@ -216,7 +274,7 @@ export function SubscriptionPanel({
                 {tier === "ELITE" && hasStripeSubscription && (
                   <button
                     onClick={() => setConfirmAction("downgrade")}
-                    disabled={loading || !!cancelPeriodEnd}
+                    disabled={loading || !!cancelPeriodEnd || !!pendingDowngrade}
                     className="inline-flex items-center gap-2 border border-[rgba(245,158,11,0.5)] text-[#F59E0B] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(245,158,11,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,10 +470,11 @@ export function SubscriptionPanel({
               <>
                 <h3 className="text-lg font-semibold text-white mb-3">Downgrade to Pro?</h3>
                 <p className="text-sm text-[#94A3B8] mb-4">
-                  You&apos;ll lose Elite features including Strategy Health Monitor, edge
-                  degradation alerts, advanced drawdown monitoring, 1-on-1 strategy reviews, and
-                  direct developer support. Your plan will change to Pro immediately with prorated
-                  credit for unused time.
+                  Your plan will change to Pro at the end of your billing period
+                  {currentPeriodEnd && <> ({formatDate(currentPeriodEnd)})</>}. You&apos;ll keep
+                  full Elite access until then, including Strategy Health Monitor, edge degradation
+                  alerts, advanced drawdown monitoring, 1-on-1 strategy reviews, and direct
+                  developer support. No data will be deleted.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
@@ -447,7 +506,7 @@ export function SubscriptionPanel({
                         />
                       </svg>
                     )}
-                    Downgrade to Pro
+                    Schedule Downgrade
                   </button>
                 </div>
               </>

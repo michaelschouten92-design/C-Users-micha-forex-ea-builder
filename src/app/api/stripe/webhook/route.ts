@@ -192,6 +192,19 @@ export async function POST(request: NextRequest) {
         await handleDisputeClosed(dispute);
         break;
       }
+
+      case "subscription_schedule.completed": {
+        const schedule = event.data.object as Stripe.SubscriptionSchedule;
+        await handleScheduleCompleted(schedule);
+        break;
+      }
+
+      case "subscription_schedule.canceled":
+      case "subscription_schedule.released": {
+        const schedule = event.data.object as Stripe.SubscriptionSchedule;
+        await handleScheduleCancelledOrReleased(schedule);
+        break;
+      }
     }
 
     log.info({ eventType: event.type, eventId: event.id }, "Webhook processed successfully");
@@ -392,8 +405,16 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   // Use transaction with row-level locking to prevent concurrent webhook race conditions
   const result = await prisma.$transaction(async (tx) => {
     // Lock the subscription row to prevent concurrent updates
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string; tier: string }>>`
-      SELECT id, "userId", tier FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{
+        id: string;
+        userId: string;
+        tier: string;
+        scheduledDowngradeTier: string | null;
+        stripeScheduleId: string | null;
+      }>
+    >`
+      SELECT id, "userId", tier, "scheduledDowngradeTier", "stripeScheduleId" FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
@@ -406,6 +427,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     const userSubscription = rows[0];
     const previousTier = userSubscription.tier;
 
+    // Clear pending downgrade fields if the new tier matches the scheduled target
+    // (meaning the schedule completed and Stripe transitioned the subscription)
+    const shouldClearSchedule =
+      userSubscription.scheduledDowngradeTier === tier || !userSubscription.scheduledDowngradeTier;
+
     await tx.subscription.update({
       where: { id: userSubscription.id },
       data: {
@@ -415,6 +441,10 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
         hadPaidPlan: true,
+        ...(shouldClearSchedule && {
+          scheduledDowngradeTier: null,
+          stripeScheduleId: null,
+        }),
       },
     });
 
@@ -478,6 +508,8 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
         stripeSubId: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        scheduledDowngradeTier: null,
+        stripeScheduleId: null,
       },
     });
 
@@ -721,6 +753,54 @@ async function handleInvoiceUncollectible(invoice: Stripe.Invoice) {
     log.warn(
       { userId, customerId, invoiceId: invoice.id },
       "Invoice marked uncollectible — subscription set to unpaid"
+    );
+  }
+}
+
+async function handleScheduleCompleted(schedule: Stripe.SubscriptionSchedule) {
+  // Find the affected user before clearing (for cache invalidation)
+  const sub = await prisma.subscription.findUnique({
+    where: { stripeScheduleId: schedule.id },
+    select: { userId: true },
+  });
+
+  // Safety net: clear stripeScheduleId when the schedule completes
+  const result = await prisma.subscription.updateMany({
+    where: { stripeScheduleId: schedule.id },
+    data: { stripeScheduleId: null },
+  });
+
+  if (result.count > 0 && sub) {
+    invalidateSubscriptionCache(sub.userId);
+    log.info(
+      { scheduleId: schedule.id, userId: sub.userId },
+      "Cleared stripeScheduleId after schedule completed"
+    );
+  }
+}
+
+async function handleScheduleCancelledOrReleased(schedule: Stripe.SubscriptionSchedule) {
+  // Find the affected user before clearing fields (for cache invalidation)
+  const sub = await prisma.subscription.findUnique({
+    where: { stripeScheduleId: schedule.id },
+    select: { userId: true },
+  });
+
+  // Clear both tracking fields when schedule is cancelled or released
+  // (handles cases where admin cancels/releases from Stripe Dashboard)
+  const result = await prisma.subscription.updateMany({
+    where: { stripeScheduleId: schedule.id },
+    data: {
+      scheduledDowngradeTier: null,
+      stripeScheduleId: null,
+    },
+  });
+
+  if (result.count > 0 && sub) {
+    invalidateSubscriptionCache(sub.userId);
+    log.info(
+      { scheduleId: schedule.id, userId: sub.userId },
+      "Cleared pending downgrade after schedule cancelled/released"
     );
   }
 }

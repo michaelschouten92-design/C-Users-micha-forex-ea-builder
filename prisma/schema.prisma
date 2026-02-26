@@ -142,6 +142,9 @@ model Subscription {
   currentPeriodEnd   DateTime?
   manualPeriodEnd    DateTime?  // Admin-granted extension override
 
+  scheduledDowngradeTier PlanTier?  // Target tier for pending downgrade (null = none)
+  stripeScheduleId       String?   @unique  // Stripe Subscription Schedule ID
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

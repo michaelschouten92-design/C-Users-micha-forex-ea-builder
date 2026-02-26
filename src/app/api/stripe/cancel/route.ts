@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
+import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -46,6 +47,24 @@ export async function POST() {
     const isActive = subscription.status === "active" || subscription.status === "trialing";
     if (!isActive) {
       return NextResponse.json({ error: "Your subscription is not active" }, { status: 400 });
+    }
+
+    // If a pending downgrade schedule exists, release it before cancelling
+    // A schedule and cancel_at_period_end can conflict — cancellation takes priority
+    if (subscription.stripeScheduleId) {
+      await getStripe().subscriptionSchedules.release(subscription.stripeScheduleId);
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          scheduledDowngradeTier: null,
+          stripeScheduleId: null,
+        },
+      });
+      invalidateSubscriptionCache(session.user.id);
+      log.info(
+        { scheduleId: subscription.stripeScheduleId },
+        "Released pending downgrade schedule before cancellation"
+      );
     }
 
     // Set cancel_at_period_end so the user keeps access until billing period ends
