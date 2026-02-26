@@ -97,6 +97,7 @@ export async function GET(
       equity: true,
       drawdown: true,
     },
+    take: 10000,
   });
 
   // Build status change timeline from heartbeat gaps

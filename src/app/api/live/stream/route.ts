@@ -29,6 +29,13 @@ export async function GET(request: Request): Promise<Response> {
   const encoder = new TextEncoder();
   let lastCheck = new Date();
 
+  // Pre-load instance IDs for efficient index-based filtering in poll queries
+  const userInstances = await prisma.liveEAInstance.findMany({
+    where: { userId, deletedAt: null },
+    select: { id: true },
+  });
+  const instanceIds = userInstances.map((i) => i.id);
+
   const stream = new ReadableStream({
     async start(controller) {
       // Send initial full state
@@ -85,12 +92,12 @@ export async function GET(request: Request): Promise<Response> {
           const since = lastCheck;
           lastCheck = new Date();
 
-          const userInstanceFilter = { userId, deletedAt: null };
+          if (instanceIds.length === 0) return;
 
-          // Check for new heartbeats
+          // Check for new heartbeats (direct instanceId filter for index efficiency)
           const newHeartbeats = await prisma.eAHeartbeat.findMany({
             where: {
-              instance: userInstanceFilter,
+              instanceId: { in: instanceIds },
               createdAt: { gt: since },
             },
             include: {
@@ -110,6 +117,7 @@ export async function GET(request: Request): Promise<Response> {
               },
             },
             orderBy: { createdAt: "asc" },
+            take: 100,
           });
 
           if (newHeartbeats.length > 0) {
@@ -145,10 +153,11 @@ export async function GET(request: Request): Promise<Response> {
           // Check for new trades
           const newTrades = await prisma.eATrade.findMany({
             where: {
-              instance: userInstanceFilter,
+              instanceId: { in: instanceIds },
               createdAt: { gt: since },
             },
             orderBy: { createdAt: "asc" },
+            take: 100,
           });
 
           for (const trade of newTrades) {
@@ -169,10 +178,11 @@ export async function GET(request: Request): Promise<Response> {
           // Check for new errors
           const newErrors = await prisma.eAError.findMany({
             where: {
-              instance: userInstanceFilter,
+              instanceId: { in: instanceIds },
               createdAt: { gt: since },
             },
             orderBy: { createdAt: "asc" },
+            take: 50,
           });
 
           for (const error of newErrors) {

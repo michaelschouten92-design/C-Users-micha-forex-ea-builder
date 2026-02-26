@@ -38,6 +38,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
   if (configs.length === 0) return;
 
   const now = new Date();
+  const triggeredIds: string[] = [];
 
   for (const config of configs) {
     // Rate limit: skip if triggered within the last 15 minutes
@@ -48,11 +49,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       }
     }
 
-    // Update lastTriggered timestamp
-    await prisma.eAAlertConfig.update({
-      where: { id: config.id },
-      data: { lastTriggered: now },
-    });
+    triggeredIds.push(config.id);
 
     const channel = config.channel;
     if (channel === "EMAIL") {
@@ -111,6 +108,14 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     }
 
     log.info({ alertType, channel: config.channel, instanceId }, "Alert triggered");
+  }
+
+  // Batch update lastTriggered for all triggered configs (avoids N+1 UPDATE)
+  if (triggeredIds.length > 0) {
+    await prisma.eAAlertConfig.updateMany({
+      where: { id: { in: triggeredIds } },
+      data: { lastTriggered: now },
+    });
   }
 }
 
@@ -261,17 +266,18 @@ export async function checkDailyLossAlerts(
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const todayTrades = await prisma.eATrade.findMany({
+  const agg = await prisma.eATrade.aggregate({
     where: {
       instanceId,
       closeTime: { gte: startOfDay },
     },
-    select: { profit: true },
+    _sum: { profit: true },
+    _count: true,
   });
 
-  if (todayTrades.length === 0) return;
+  if (agg._count === 0) return;
 
-  const dailyPnl = todayTrades.reduce((sum, t) => sum + t.profit, 0);
+  const dailyPnl = agg._sum.profit ?? 0;
   if (dailyPnl >= 0) return;
 
   const dailyLossPct = Math.abs(dailyPnl); // Simplified: use absolute value
@@ -316,17 +322,18 @@ export async function checkWeeklyLossAlerts(
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const weekTrades = await prisma.eATrade.findMany({
+  const agg = await prisma.eATrade.aggregate({
     where: {
       instanceId,
       closeTime: { gte: startOfWeek },
     },
-    select: { profit: true },
+    _sum: { profit: true },
+    _count: true,
   });
 
-  if (weekTrades.length === 0) return;
+  if (agg._count === 0) return;
 
-  const weeklyPnl = weekTrades.reduce((sum, t) => sum + t.profit, 0);
+  const weeklyPnl = agg._sum.profit ?? 0;
   if (weeklyPnl >= 0) return;
 
   const weeklyLoss = Math.abs(weeklyPnl);

@@ -6,7 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { logAuditEvent } from "@/lib/audit";
 import type { AuditEventType } from "@/lib/audit";
-import { sendBulkAdminEmail } from "@/lib/email";
+import { enqueueNotification } from "@/lib/outbox";
 import { getUserEmailsBySegment } from "@/lib/segment-filter";
 import { checkContentType, safeReadJson } from "@/lib/validations";
 import {
@@ -89,41 +89,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Batch send with concurrency limit of 5 and delay between batches
-    let sent = 0;
-    const failed: string[] = [];
-    const BATCH_SIZE = 5;
+    // Enqueue all emails via outbox (processed by cron, avoids request timeout)
+    const adminUserId = adminCheck.session.user.id;
+    let enqueued = 0;
 
-    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-      const batch = emails.slice(i, i + BATCH_SIZE);
-      const results = await Promise.allSettled(
-        batch.map((email) => sendBulkAdminEmail(email, subject, message))
-      );
-
-      for (let j = 0; j < results.length; j++) {
-        if (results[j].status === "fulfilled") {
-          sent++;
-        } else {
-          failed.push(batch[j]);
-        }
-      }
-
-      // Rate limit: 200ms delay between batches to avoid overwhelming Resend API
-      if (i + BATCH_SIZE < emails.length) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
+    for (const email of emails) {
+      await enqueueNotification({
+        userId: adminUserId,
+        channel: "EMAIL",
+        destination: email,
+        subject,
+        payload: { html: message },
+      });
+      enqueued++;
     }
 
     // Audit log
     logAuditEvent({
-      userId: adminCheck.session.user.id,
+      userId: adminUserId,
       eventType: "admin.bulk_email_sent" as AuditEventType,
-      metadata: { subject, targetType, totalTargets: emails.length, sent, failed: failed.length },
+      metadata: { subject, targetType, totalTargets: emails.length, enqueued },
     }).catch((err) => {
       logger.error({ err }, "Audit log failed: bulk_email");
     });
 
-    return NextResponse.json({ sent, failed: failed.length, total: emails.length });
+    return NextResponse.json({ enqueued, total: emails.length });
   } catch (error) {
     logger.error({ error }, "Failed to send bulk email");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

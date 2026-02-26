@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const { errorCode, message, context } = parsed.data;
 
-    // Atomic: create error record + read instance + update status in a single transaction
+    // Atomic: create error record + read instance + update status + cap old errors
     const instance = await prisma.$transaction(async (tx) => {
       await tx.eAError.create({
         data: {
@@ -35,6 +35,20 @@ export async function POST(request: NextRequest) {
           context: context ?? null,
         },
       });
+
+      // Cap errors per instance: keep only the most recent 500
+      const oldErrors = await tx.eAError.findMany({
+        where: { instanceId: auth.instanceId },
+        orderBy: { createdAt: "desc" },
+        skip: 500,
+        take: 100,
+        select: { id: true },
+      });
+      if (oldErrors.length > 0) {
+        await tx.eAError.deleteMany({
+          where: { id: { in: oldErrors.map((e) => e.id) } },
+        });
+      }
 
       const inst = await tx.liveEAInstance.findUnique({
         where: { id: auth.instanceId },

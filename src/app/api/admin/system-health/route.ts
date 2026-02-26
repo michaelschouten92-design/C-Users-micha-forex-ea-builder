@@ -102,12 +102,12 @@ export async function GET() {
     });
 
     // Monitoring: degraded strategies (latest snapshot = DEGRADED)
-    const degradedStrategies = await prisma.healthSnapshot.findMany({
-      where: { status: "DEGRADED" },
-      distinct: ["instanceId"],
-      orderBy: { createdAt: "desc" },
-      select: { instanceId: true },
-    });
+    // Use raw count with subquery instead of unbounded findMany
+    const [{ count: degradedCount }] = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(DISTINCT "instanceId") as count
+      FROM "HealthSnapshot"
+      WHERE status = 'DEGRADED'
+    `;
 
     // Verification: stale chains (ONLINE instances where TrackRecordState.updatedAt < 48h ago)
     const staleChains = await prisma.trackRecordState.count({
@@ -145,7 +145,7 @@ export async function GET() {
         },
         monitoring: {
           silentEAs,
-          degradedStrategies: degradedStrategies.length,
+          degradedStrategies: Number(degradedCount),
         },
         verification: {
           staleChains,

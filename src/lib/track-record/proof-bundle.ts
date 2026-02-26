@@ -28,10 +28,7 @@ export async function generateProofBundle(
   fromSeqNo?: number,
   toSeqNo?: number
 ): Promise<ProofBundle> {
-  // Generate the investor report (includes replay)
-  const report = await generateInvestorReport(instanceId, fromSeqNo, toSeqNo);
-
-  // Load raw events for the bundle
+  // Load events once and share with report generator (avoids double-loading)
   const whereClause: Record<string, unknown> = { instanceId };
   if (fromSeqNo != null || toSeqNo != null) {
     whereClause.seqNo = {};
@@ -42,7 +39,11 @@ export async function generateProofBundle(
   const dbEvents = await prisma.trackRecordEvent.findMany({
     where: whereClause,
     orderBy: { seqNo: "asc" },
+    take: 100_000,
   });
+
+  // Generate the investor report, passing pre-loaded events to avoid re-querying
+  const report = await generateInvestorReport(instanceId, fromSeqNo, toSeqNo, dbEvents);
 
   const events = dbEvents.map((e) => ({
     seqNo: e.seqNo,

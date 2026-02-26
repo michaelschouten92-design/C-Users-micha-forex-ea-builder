@@ -98,9 +98,13 @@ export async function POST(request: NextRequest) {
 
   try {
     // All state reads + writes inside one interactive transaction to prevent races.
-    // Serializable isolation ensures no concurrent reader sees stale state.
+    // RepeatableRead + FOR UPDATE provides per-instance locking without cross-instance conflicts.
     const result = await prisma.$transaction(
       async (tx) => {
+        // Acquire row-level lock on this instance's state row (prevents concurrent writes
+        // to the same instance while allowing parallel ingests for different instances)
+        await tx.$queryRaw`SELECT 1 FROM "TrackRecordState" WHERE "instanceId" = ${instanceId} FOR UPDATE`;
+
         // Load or create state (inside transaction — locked against concurrent writes)
         let dbState = await tx.trackRecordState.findUnique({
           where: { instanceId },
@@ -266,7 +270,7 @@ export async function POST(request: NextRequest) {
           },
         };
       },
-      { isolationLevel: "Serializable" }
+      { isolationLevel: "RepeatableRead" }
     );
 
     // Fire-and-forget: evaluate health after trade closes (outside tx)

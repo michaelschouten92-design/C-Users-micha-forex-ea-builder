@@ -45,7 +45,15 @@ import {
 export async function generateInvestorReport(
   instanceId: string,
   fromSeqNo?: number,
-  toSeqNo?: number
+  toSeqNo?: number,
+  preloadedEvents?: Array<{
+    seqNo: number;
+    eventType: string;
+    eventHash: string;
+    prevHash: string;
+    timestamp: Date;
+    payload: unknown;
+  }>
 ): Promise<InvestorReport> {
   // Load instance metadata
   const instance = await prisma.liveEAInstance.findUniqueOrThrow({
@@ -61,18 +69,24 @@ export async function generateInvestorReport(
     },
   });
 
-  // Load events
-  const whereClause: Record<string, unknown> = { instanceId };
-  if (fromSeqNo != null || toSeqNo != null) {
-    whereClause.seqNo = {};
-    if (fromSeqNo != null) (whereClause.seqNo as Record<string, unknown>).gte = fromSeqNo;
-    if (toSeqNo != null) (whereClause.seqNo as Record<string, unknown>).lte = toSeqNo;
-  }
+  // Load events (use preloaded if available to avoid double-loading in proof bundles)
+  let dbEvents: typeof preloadedEvents & { length: number };
+  if (preloadedEvents) {
+    dbEvents = preloadedEvents;
+  } else {
+    const whereClause: Record<string, unknown> = { instanceId };
+    if (fromSeqNo != null || toSeqNo != null) {
+      whereClause.seqNo = {};
+      if (fromSeqNo != null) (whereClause.seqNo as Record<string, unknown>).gte = fromSeqNo;
+      if (toSeqNo != null) (whereClause.seqNo as Record<string, unknown>).lte = toSeqNo;
+    }
 
-  const dbEvents = await prisma.trackRecordEvent.findMany({
-    where: whereClause,
-    orderBy: { seqNo: "asc" },
-  });
+    dbEvents = await prisma.trackRecordEvent.findMany({
+      where: whereClause,
+      orderBy: { seqNo: "asc" },
+      take: 100_000,
+    });
+  }
 
   if (dbEvents.length === 0) {
     throw new Error("No events found for this instance in the specified range");

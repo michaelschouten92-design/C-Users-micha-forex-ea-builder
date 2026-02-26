@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
   let skipped = 0;
   let errors = 0;
 
+  // Timeout guard: stop processing 5s before Vercel's 60s limit
+  const deadline = Date.now() + 55_000;
+
   // Find users with live instances or public proofs
   const users = await prisma.user.findMany({
     where: {
@@ -57,17 +60,51 @@ export async function POST(request: NextRequest) {
       email: true,
       handle: true,
     },
+    take: 500,
   });
 
   log.info({ userCount: users.length }, "Starting weekly edge reports");
 
+  // Pre-load all instances for these users (avoids N+1)
+  const allInstances = await prisma.liveEAInstance.findMany({
+    where: { userId: { in: users.map((u) => u.id) }, deletedAt: null },
+    select: { id: true, userId: true, eaName: true, status: true },
+  });
+  const instancesByUser = new Map<string, typeof allInstances>();
+  for (const inst of allInstances) {
+    const list = instancesByUser.get(inst.userId) ?? [];
+    list.push(inst);
+    instancesByUser.set(inst.userId, list);
+  }
+
+  // Pre-load latest + week-ago health snapshots for all instances (avoids N+1)
+  const allInstanceIds = allInstances.map((i) => i.id);
+  const [latestSnapshots, previousSnapshots] = await Promise.all([
+    prisma.healthSnapshot.findMany({
+      where: { instanceId: { in: allInstanceIds } },
+      distinct: ["instanceId"],
+      orderBy: { createdAt: "desc" },
+      select: { instanceId: true, overallScore: true, status: true },
+    }),
+    prisma.healthSnapshot.findMany({
+      where: { instanceId: { in: allInstanceIds }, createdAt: { lte: oneWeekAgo } },
+      distinct: ["instanceId"],
+      orderBy: { createdAt: "desc" },
+      select: { instanceId: true, overallScore: true, status: true },
+    }),
+  ]);
+
+  const latestMap = new Map(latestSnapshots.map((s) => [s.instanceId, s]));
+  const previousMap = new Map(previousSnapshots.map((s) => [s.instanceId, s]));
+
   for (const user of users) {
+    if (Date.now() > deadline) {
+      log.warn({ sent, skipped, errors }, "Weekly report deadline reached, stopping");
+      break;
+    }
+
     try {
-      // Health score changes: compare latest vs one week ago
-      const instances = await prisma.liveEAInstance.findMany({
-        where: { userId: user.id, deletedAt: null },
-        select: { id: true, eaName: true, status: true },
-      });
+      const instances = instancesByUser.get(user.id) ?? [];
 
       const healthChanges: Array<{
         eaName: string;
@@ -83,18 +120,8 @@ export async function POST(request: NextRequest) {
       }> = [];
 
       for (const inst of instances) {
-        const [latest, previous] = await Promise.all([
-          prisma.healthSnapshot.findFirst({
-            where: { instanceId: inst.id },
-            orderBy: { createdAt: "desc" },
-            select: { overallScore: true, status: true },
-          }),
-          prisma.healthSnapshot.findFirst({
-            where: { instanceId: inst.id, createdAt: { lte: oneWeekAgo } },
-            orderBy: { createdAt: "desc" },
-            select: { overallScore: true, status: true },
-          }),
-        ]);
+        const latest = latestMap.get(inst.id);
+        const previous = previousMap.get(inst.id);
 
         if (latest) {
           const currentScore = Math.round(latest.overallScore * 100);

@@ -5,6 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { generateProofBundle } from "@/lib/track-record/proof-bundle";
+import {
+  exportRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 type Props = {
   params: Promise<{ instanceId: string }>;
@@ -15,6 +21,14 @@ export async function GET(request: NextRequest, { params }: Props) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit(exportRateLimiter, `tr-report:${session.user.id}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
   }
 
   const tier = await getCachedTier(session.user.id);

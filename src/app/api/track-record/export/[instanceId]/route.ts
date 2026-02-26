@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { generateVerifiedExport } from "@/lib/track-record/export";
+import {
+  exportRateLimiter,
+  checkRateLimit,
+  formatRateLimitError,
+  createRateLimitHeaders,
+} from "@/lib/rate-limit";
 
 type Props = {
   params: Promise<{ instanceId: string }>;
@@ -13,6 +19,14 @@ export async function GET(request: NextRequest, { params }: Props) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = await checkRateLimit(exportRateLimiter, `tr-export:${session.user.id}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
   }
 
   const { instanceId } = await params;

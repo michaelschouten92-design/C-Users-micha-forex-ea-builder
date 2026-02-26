@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeMetrics } from "@/lib/track-record/metrics";
+import {
+  publicApiRateLimiter,
+  checkRateLimit,
+  getClientIp,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -8,6 +15,15 @@ type Props = {
 
 // GET /api/strategy/[slug] — public strategy page data (no auth required)
 export async function GET(request: NextRequest, { params }: Props) {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(publicApiRateLimiter, `strategy:${ip}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: formatRateLimitError(rl) },
+      { status: 429, headers: createRateLimitHeaders(rl) }
+    );
+  }
+
   const { slug } = await params;
 
   const page = await prisma.verifiedStrategyPage.findUnique({
@@ -157,6 +173,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         where: { instanceId: instance.id, eventType: "BROKER_EVIDENCE" },
         orderBy: { seqNo: "asc" },
         select: { payload: true, timestamp: true },
+        take: 5000,
       });
 
       let brokerVerification = null;
@@ -168,6 +185,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           },
           orderBy: { seqNo: "asc" },
           select: { eventType: true, payload: true, timestamp: true },
+          take: 10000,
         });
 
         let matchedCount = 0;
