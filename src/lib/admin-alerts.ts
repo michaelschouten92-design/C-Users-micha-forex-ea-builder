@@ -19,34 +19,48 @@ interface RaiseIncidentParams {
 
 /**
  * Create an AdminIncident record with deduplication.
+ * Uses a serializable transaction to prevent concurrent cron runs from
+ * creating duplicate incidents for the same source.
  * If severity is "critical", enqueue an email to ADMIN_EMAIL via the outbox.
  */
 export async function raiseAdminIncident(params: RaiseIncidentParams): Promise<void> {
   try {
-    // Deduplication: skip if an open incident already exists for the same source
-    if (params.sourceType && params.sourceId) {
-      const existing = await prisma.adminIncident.findFirst({
-        where: {
-          sourceType: params.sourceType,
-          sourceId: params.sourceId,
-          category: params.category,
-          status: "open",
-        },
-        select: { id: true },
-      });
-      if (existing) return;
-    }
+    // Deduplication + create in a serializable transaction to prevent concurrent races
+    const sourceType = params.sourceType ?? null;
+    const sourceId = params.sourceId ?? null;
 
-    await prisma.adminIncident.create({
-      data: {
-        severity: params.severity,
-        category: params.category,
-        title: params.title,
-        description: params.details ?? null,
-        sourceType: params.sourceType ?? null,
-        sourceId: params.sourceId ?? null,
+    const created = await prisma.$transaction(
+      async (tx) => {
+        // Check for existing open incident with same source
+        if (sourceType && sourceId) {
+          const existing = await tx.adminIncident.findFirst({
+            where: {
+              sourceType,
+              sourceId,
+              category: params.category,
+              status: "open",
+            },
+            select: { id: true },
+          });
+          if (existing) return false;
+        }
+
+        await tx.adminIncident.create({
+          data: {
+            severity: params.severity,
+            category: params.category,
+            title: params.title,
+            description: params.details ?? null,
+            sourceType,
+            sourceId,
+          },
+        });
+        return true;
       },
-    });
+      { isolationLevel: "Serializable" }
+    );
+
+    if (!created) return;
 
     // Critical incidents: notify admin by email via the outbox
     if (params.severity === "critical") {

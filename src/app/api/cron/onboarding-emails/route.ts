@@ -61,6 +61,12 @@ async function handleOnboardingEmails(request: NextRequest) {
       const batch = day1Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
         batch.map(async (user) => {
+          // Set idempotency marker FIRST — if enqueue fails it's silent,
+          // but the marker prevents re-queuing on next cron run
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { onboardingDay1SentAt: now },
+          });
           await enqueueNotification({
             userId: user.id,
             channel: "EMAIL",
@@ -69,10 +75,6 @@ async function handleOnboardingEmails(request: NextRequest) {
             payload: {
               html: `<p>Welcome to AlgoStudio! Ready to build your first trading strategy?</p><p><a href="${appUrl}">Get started now</a></p>`,
             },
-          });
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { onboardingDay1SentAt: now },
           });
         })
       );
@@ -104,6 +106,11 @@ async function handleOnboardingEmails(request: NextRequest) {
       const batch = day3Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
         batch.map(async (user) => {
+          // Set idempotency marker FIRST — same rationale as day 1
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { onboardingDay3SentAt: now },
+          });
           await enqueueNotification({
             userId: user.id,
             channel: "EMAIL",
@@ -112,10 +119,6 @@ async function handleOnboardingEmails(request: NextRequest) {
             payload: {
               html: `<p>You've been building on AlgoStudio — ready to take the next step?</p><p><a href="${pricingUrl}">See pricing &amp; export options</a></p>`,
             },
-          });
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { onboardingDay3SentAt: now },
           });
         })
       );

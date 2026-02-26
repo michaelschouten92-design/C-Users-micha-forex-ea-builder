@@ -31,41 +31,46 @@ export async function GET() {
       }),
     ]);
 
-    // Compute per-instance trade stats using aggregate queries (not loading all rows)
-    const perInstanceStats = await Promise.all(
-      instances.map(async (inst) => {
-        const [agg, winCount] = await Promise.all([
-          prisma.eATrade.aggregate({
-            where: { instanceId: inst.id, closeTime: { not: null } },
-            _count: true,
-            _sum: { profit: true },
-            _avg: { profit: true },
-          }),
-          prisma.eATrade.count({
-            where: { instanceId: inst.id, closeTime: { not: null }, profit: { gt: 0 } },
-          }),
-        ]);
-        const closedCount = agg._count;
-        const winRate = closedCount > 0 ? (winCount / closedCount) * 100 : 0;
-        return {
-          id: inst.id,
-          eaName: inst.eaName,
-          symbol: inst.symbol,
-          userEmail: inst.user.email,
-          totalTrades: inst.totalTrades,
-          totalProfit: inst.totalProfit,
-          winRate: Math.round(winRate * 10) / 10,
-          avgProfit: agg._avg.profit ? Math.round(agg._avg.profit * 100) / 100 : 0,
-        };
-      })
-    );
+    // Compute per-instance trade stats using 2 groupBy queries (not 2N per-instance queries)
+    const [tradeGrouped, winGrouped] = await Promise.all([
+      prisma.eATrade.groupBy({
+        by: ["instanceId"],
+        where: { closeTime: { not: null } },
+        _count: true,
+        _sum: { profit: true },
+        _avg: { profit: true },
+      }),
+      prisma.eATrade.groupBy({
+        by: ["instanceId"],
+        where: { closeTime: { not: null }, profit: { gt: 0 } },
+        _count: true,
+      }),
+    ]);
 
-    const eaStats = perInstanceStats;
+    const tradeMap = new Map(tradeGrouped.map((g) => [g.instanceId, g]));
+    const winMap = new Map(winGrouped.map((g) => [g.instanceId, g._count]));
 
-    // Sort for top/bottom
+    const eaStats = instances.map((inst) => {
+      const tg = tradeMap.get(inst.id);
+      const closedCount = tg?._count ?? 0;
+      const wins = winMap.get(inst.id) ?? 0;
+      const winRate = closedCount > 0 ? (wins / closedCount) * 100 : 0;
+      return {
+        id: inst.id,
+        eaName: inst.eaName,
+        symbol: inst.symbol,
+        userEmail: inst.user.email,
+        totalTrades: inst.totalTrades,
+        totalProfit: inst.totalProfit,
+        winRate: Math.round(winRate * 10) / 10,
+        avgProfit: tg?._avg?.profit ? Math.round(tg._avg.profit * 100) / 100 : 0,
+      };
+    });
+
+    // Sort for top/bottom (guard against overlap when <10 instances)
     const byProfit = [...eaStats].sort((a, b) => b.totalProfit - a.totalProfit);
     const top5 = byProfit.slice(0, 5);
-    const bottom5 = byProfit.slice(-5).reverse();
+    const bottom5 = byProfit.length > 5 ? byProfit.slice(-5).reverse() : [];
 
     // Overall stats
     const totalClosedTrades = tradeAgg._count;

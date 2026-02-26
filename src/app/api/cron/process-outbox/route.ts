@@ -13,8 +13,30 @@ const BATCH_SIZE = 50;
 const CRON_TIMEOUT_MS = 55_000;
 
 /**
+ * Atomically claim a batch of outbox entries for processing.
+ * Uses raw SQL UPDATE ... RETURNING to prevent concurrent cron runs
+ * from picking up the same entries (no read-then-write race).
+ */
+async function claimOutboxBatch(): Promise<Array<{ id: string }>> {
+  return prisma.$queryRaw<Array<{ id: string }>>`
+    UPDATE "NotificationOutbox"
+    SET status = 'PROCESSING', "updatedAt" = NOW()
+    WHERE id IN (
+      SELECT id FROM "NotificationOutbox"
+      WHERE status IN ('PENDING', 'FAILED')
+        AND "nextRetryAt" <= NOW()
+        AND attempts < "maxAttempts"
+      ORDER BY "nextRetryAt" ASC
+      LIMIT ${BATCH_SIZE}
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id
+  `;
+}
+
+/**
  * Cron endpoint to process the notification outbox.
- * Fetches pending/failed entries and dispatches them to the appropriate channel.
+ * Atomically claims pending/failed entries, then dispatches to the appropriate channel.
  * Runs every 1 minute.
  */
 async function handleProcessOutbox(request: NextRequest) {
@@ -40,26 +62,25 @@ async function handleProcessOutbox(request: NextRequest) {
   let dead = 0;
 
   try {
+    // Atomically claim entries — concurrent cron runs will get disjoint sets
+    const claimed = await claimOutboxBatch();
+    if (claimed.length === 0) {
+      return NextResponse.json({ success: true, sent: 0, failed: 0, dead: 0 });
+    }
+
+    const claimedIds = claimed.map((r) => r.id);
     const entries = await prisma.notificationOutbox.findMany({
-      where: {
-        status: { in: ["PENDING", "FAILED"] },
-        nextRetryAt: { lte: new Date() },
-      },
-      orderBy: { nextRetryAt: "asc" },
-      take: BATCH_SIZE,
+      where: { id: { in: claimedIds } },
     });
 
     for (const entry of entries) {
-      if (Date.now() - startTime > CRON_TIMEOUT_MS) break;
-
-      // Skip if exceeded max attempts
-      if (entry.attempts >= entry.maxAttempts) {
-        await prisma.notificationOutbox.update({
-          where: { id: entry.id },
-          data: { status: "DEAD" },
+      if (Date.now() - startTime > CRON_TIMEOUT_MS) {
+        // Release unclaimed entries back to FAILED so they're retried
+        await prisma.notificationOutbox.updateMany({
+          where: { id: { in: claimedIds }, status: "PROCESSING" },
+          data: { status: "FAILED" },
         });
-        dead++;
-        continue;
+        break;
       }
 
       try {

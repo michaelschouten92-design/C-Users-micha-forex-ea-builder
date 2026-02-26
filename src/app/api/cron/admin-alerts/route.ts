@@ -45,13 +45,24 @@ async function handleAdminAlerts(request: NextRequest) {
 
       const category = categoryMap[item.type] || "system";
 
+      // Map source info: instance-level items use LiveEAInstance,
+      // system-level items use a stable synthetic ID for dedup
+      const sourceType = item.instanceId
+        ? "LiveEAInstance"
+        : item.type === "failed_export"
+          ? "ExportJob"
+          : item.type
+            ? "System"
+            : undefined;
+      const sourceId = item.instanceId ?? item.id;
+
       await raiseAdminIncident({
         severity: item.severity,
         category,
         title: item.title,
         details: item.detail,
-        sourceType: item.instanceId ? "LiveEAInstance" : undefined,
-        sourceId: item.instanceId,
+        sourceType,
+        sourceId,
       });
       created++;
     }

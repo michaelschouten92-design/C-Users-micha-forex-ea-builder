@@ -50,8 +50,8 @@ export async function GET() {
     const degradedInstanceIds = new Set<string>();
 
     for (const snap of degradedSnapshots) {
+      degradedInstanceIds.add(snap.instanceId); // Track regardless of deletedAt for drift dedup
       if (snap.instance.deletedAt) continue;
-      degradedInstanceIds.add(snap.instanceId);
       items.push({
         id: `degraded-${snap.id}`,
         type: "degraded_strategy",

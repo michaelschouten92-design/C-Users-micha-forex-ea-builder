@@ -52,7 +52,7 @@ export async function POST(
 
   logAuditEvent({
     userId: session.user.id,
-    eventType: "live.external_ea_registered", // reuse closest audit type
+    eventType: "live.api_key_rotated",
     resourceType: "live_ea_instance",
     resourceId: instanceId,
     metadata: { action: "key_rotation", eaName: instance.eaName },
