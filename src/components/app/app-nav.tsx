@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { signOut } from "@/lib/auth";
-import { NotificationCenter } from "@/components/app/notification-center";
 import { MobileNavMenu } from "@/app/app/components/mobile-nav-menu";
 
 export type NavItem = "build" | "evaluate" | "monitor" | "risk" | "settings";
@@ -66,7 +65,6 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
             >
               {tier}
             </span>
-            <NotificationCenter />
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.key}
