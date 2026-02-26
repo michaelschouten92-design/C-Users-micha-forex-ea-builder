@@ -3,17 +3,7 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
-
-interface AttentionItem {
-  id: string;
-  type: string;
-  severity: "critical" | "high" | "warning";
-  title: string;
-  detail: string;
-  instanceId?: string;
-  userId?: string;
-  timestamp: string;
-}
+import { getAttentionItems, type AttentionItem } from "@/lib/admin-alerts";
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, warning: 2 };
 
@@ -24,51 +14,13 @@ export async function GET() {
     if (!adminCheck.authorized) return adminCheck.response;
 
     const now = new Date();
-    const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000);
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const items: AttentionItem[] = [];
 
-    // 1. Error EAs → critical
-    const errorEAs = await prisma.liveEAInstance.findMany({
-      where: { status: "ERROR", deletedAt: null },
-      select: { id: true, eaName: true, lastError: true, userId: true, updatedAt: true },
-    });
-    for (const ea of errorEAs) {
-      items.push({
-        id: `error-ea-${ea.id}`,
-        type: "error_ea",
-        severity: "critical",
-        title: `EA in ERROR state: ${ea.eaName}`,
-        detail: ea.lastError || "No error details",
-        instanceId: ea.id,
-        userId: ea.userId,
-        timestamp: ea.updatedAt.toISOString(),
-      });
-    }
+    // Get shared attention items (error EAs, silent EAs, failed exports, outbox dead)
+    const items: AttentionItem[] = await getAttentionItems();
 
-    // 2. Silent EAs → warning (ONLINE but no heartbeat for 10min)
-    const silentEAs = await prisma.liveEAInstance.findMany({
-      where: {
-        status: "ONLINE",
-        deletedAt: null,
-        lastHeartbeat: { lt: tenMinAgo },
-      },
-      select: { id: true, eaName: true, lastHeartbeat: true, userId: true },
-    });
-    for (const ea of silentEAs) {
-      items.push({
-        id: `silent-ea-${ea.id}`,
-        type: "silent_ea",
-        severity: "warning",
-        title: `Silent EA: ${ea.eaName}`,
-        detail: `Last heartbeat: ${ea.lastHeartbeat?.toISOString() ?? "never"}`,
-        instanceId: ea.id,
-        userId: ea.userId,
-        timestamp: ea.lastHeartbeat?.toISOString() ?? new Date().toISOString(),
-      });
-    }
+    // Additional items for the live dashboard (not in cron):
 
-    // 3 & 4. Degraded + drifting strategies → high (run in parallel)
+    // Degraded + drifting strategies → high
     const [degradedSnapshots, driftingSnapshots] = await Promise.all([
       prisma.healthSnapshot.findMany({
         where: { status: "DEGRADED" },
@@ -94,7 +46,9 @@ export async function GET() {
       }),
     ]);
 
+    const existingInstanceIds = new Set(items.filter((i) => i.instanceId).map((i) => i.instanceId));
     const degradedInstanceIds = new Set<string>();
+
     for (const snap of degradedSnapshots) {
       if (snap.instance.deletedAt) continue;
       degradedInstanceIds.add(snap.instanceId);
@@ -112,8 +66,8 @@ export async function GET() {
 
     for (const snap of driftingSnapshots) {
       if (snap.instance.deletedAt) continue;
-      // Avoid duplicating if already in degraded list
       if (degradedInstanceIds.has(snap.instanceId)) continue;
+      if (existingInstanceIds.has(snap.instanceId)) continue;
       items.push({
         id: `drift-${snap.id}`,
         type: "drifting_strategy",
@@ -126,30 +80,7 @@ export async function GET() {
       });
     }
 
-    // 5. Failed exports (last hour) → warning
-    const failedExports = await prisma.exportJob.findMany({
-      where: { status: "FAILED", createdAt: { gte: oneHourAgo } },
-      select: {
-        id: true,
-        errorMessage: true,
-        userId: true,
-        createdAt: true,
-        project: { select: { name: true } },
-      },
-    });
-    for (const exp of failedExports) {
-      items.push({
-        id: `failed-export-${exp.id}`,
-        type: "failed_export",
-        severity: "warning",
-        title: `Failed export: ${exp.project.name}`,
-        detail: exp.errorMessage || "No error details",
-        userId: exp.userId,
-        timestamp: exp.createdAt.toISOString(),
-      });
-    }
-
-    // 6. Export queue backlog (>10) → warning
+    // Export queue backlog (>10) → warning
     const queueDepth = await prisma.exportJob.count({
       where: { status: { in: ["QUEUED", "RUNNING"] } },
     });

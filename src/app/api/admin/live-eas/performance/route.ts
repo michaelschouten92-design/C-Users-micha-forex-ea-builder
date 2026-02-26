@@ -10,16 +10,14 @@ export async function GET() {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
-    // Get all closed trades for performance calculation
+    // Get aggregate trade stats and instances (without loading all trades)
     const [tradeAgg, instances] = await Promise.all([
-      // Aggregate trade stats across all EAs
       prisma.eATrade.aggregate({
         where: { closeTime: { not: null }, instance: { deletedAt: null } },
         _count: true,
         _sum: { profit: true },
         _avg: { profit: true },
       }),
-      // Get instances with trade stats for top/bottom ranking
       prisma.liveEAInstance.findMany({
         where: { totalTrades: { gt: 0 }, deletedAt: null },
         select: {
@@ -29,47 +27,40 @@ export async function GET() {
           totalTrades: true,
           totalProfit: true,
           user: { select: { email: true } },
-          trades: {
-            where: { closeTime: { not: null } },
-            select: { profit: true },
-          },
         },
       }),
     ]);
 
-    // Calculate per-EA stats
-    const eaStats = instances.map((inst) => {
-      const closedTrades = inst.trades;
-      const wins = closedTrades.filter((t) => t.profit > 0).length;
-      const winRate = closedTrades.length > 0 ? (wins / closedTrades.length) * 100 : 0;
-      const profits = closedTrades.map((t) => t.profit);
-      let maxDrawdown = 0;
-      let peak = 0;
-      let runningPnl = 0;
-      for (const p of profits) {
-        runningPnl += p;
-        if (runningPnl > peak) peak = runningPnl;
-        const dd = peak - runningPnl;
-        if (dd > maxDrawdown) maxDrawdown = dd;
-      }
+    // Compute per-instance trade stats using aggregate queries (not loading all rows)
+    const perInstanceStats = await Promise.all(
+      instances.map(async (inst) => {
+        const [agg, winCount] = await Promise.all([
+          prisma.eATrade.aggregate({
+            where: { instanceId: inst.id, closeTime: { not: null } },
+            _count: true,
+            _sum: { profit: true },
+            _avg: { profit: true },
+          }),
+          prisma.eATrade.count({
+            where: { instanceId: inst.id, closeTime: { not: null }, profit: { gt: 0 } },
+          }),
+        ]);
+        const closedCount = agg._count;
+        const winRate = closedCount > 0 ? (winCount / closedCount) * 100 : 0;
+        return {
+          id: inst.id,
+          eaName: inst.eaName,
+          symbol: inst.symbol,
+          userEmail: inst.user.email,
+          totalTrades: inst.totalTrades,
+          totalProfit: inst.totalProfit,
+          winRate: Math.round(winRate * 10) / 10,
+          avgProfit: agg._avg.profit ? Math.round(agg._avg.profit * 100) / 100 : 0,
+        };
+      })
+    );
 
-      return {
-        id: inst.id,
-        eaName: inst.eaName,
-        symbol: inst.symbol,
-        userEmail: inst.user.email,
-        totalTrades: inst.totalTrades,
-        totalProfit: inst.totalProfit,
-        winRate: Math.round(winRate * 10) / 10,
-        avgProfit:
-          closedTrades.length > 0
-            ? Math.round(
-                (closedTrades.reduce((s, t) => s + t.profit, 0) / closedTrades.length) * 100
-              ) / 100
-            : 0,
-        maxDrawdown: Math.round(maxDrawdown * 100) / 100,
-      };
-    });
+    const eaStats = perInstanceStats;
 
     // Sort for top/bottom
     const byProfit = [...eaStats].sort((a, b) => b.totalProfit - a.totalProfit);

@@ -43,6 +43,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
               _count: { select: { versions: true, exports: true } },
             },
             orderBy: { updatedAt: "desc" },
+            take: 50,
           },
           exports: {
             select: {
@@ -75,6 +76,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
               },
             },
             orderBy: { updatedAt: "desc" },
+            take: 50,
           },
         },
       }),

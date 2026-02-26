@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
-import { sendDowngradeWarningEmail, sendRenewalReminderEmail } from "@/lib/email";
+import { sendRenewalReminderEmail } from "@/lib/email";
+import { enqueueNotification } from "@/lib/outbox";
 import { getStripe } from "@/lib/stripe";
 import { env } from "@/lib/env";
 
@@ -184,17 +185,31 @@ async function handleCleanup(request: NextRequest) {
           },
           tier: { not: "FREE" },
         },
-        select: { tier: true, user: { select: { email: true } } },
+        select: { tier: true, userId: true, user: { select: { email: true } } },
       });
 
+      const settingsUrl = `${env.AUTH_URL}/app/settings`;
       for (const sub of warningCandidates) {
         if (isTimedOut()) break;
-        const settingsUrl = `${env.AUTH_URL}/app/settings`;
-        sendDowngradeWarningEmail(sub.user.email, sub.tier, 7, settingsUrl).catch((err) => {
-          log.error({ err, email: sub.user.email }, "Failed to send downgrade warning email");
+        await enqueueNotification({
+          userId: sub.userId,
+          channel: "EMAIL",
+          destination: sub.user.email,
+          subject: `Action Required: Your ${sub.tier} plan is at risk`,
+          payload: {
+            html: `<p>Your subscription is past due. You have <strong>7 days</strong> before your account is downgraded to FREE.</p><p><a href="${settingsUrl}">Update your payment method</a></p>`,
+          },
         });
         warningsSent++;
       }
+    }
+
+    // Clear expired key rotation grace periods
+    if (!isTimedOut()) {
+      await prisma.liveEAInstance.updateMany({
+        where: { keyGracePeriodEnd: { lt: new Date() }, apiKeyHashPrev: { not: null } },
+        data: { apiKeyHashPrev: null, keyGracePeriodEnd: null },
+      });
     }
 
     // Auto-downgrade past_due subscriptions after 14-day grace period

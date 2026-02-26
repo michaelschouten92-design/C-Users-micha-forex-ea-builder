@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
     const sevenDaysFromNow = new Date(Date.now() + 7 * 86_400_000);
 
-    const [users, total, activityCounts] = await Promise.all([
+    const [users, total] = await Promise.all([
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         skip,
@@ -58,15 +58,19 @@ export async function GET(request: Request) {
         },
       }),
       prisma.user.count(),
-      // Batch audit log activity query for last 30 days
-      prisma.auditLog.groupBy({
-        by: ["userId"],
-        where: { createdAt: { gte: thirtyDaysAgo }, userId: { not: null } },
-        _count: true,
-      }),
     ]);
 
-    // Build activity map: userId -> event count in last 30d
+    // Activity counts: only for the current page's users (bounded, not all users)
+    const userIds = users.map((u) => u.id);
+    const activityCounts =
+      userIds.length > 0
+        ? await prisma.auditLog.groupBy({
+            by: ["userId"],
+            where: { createdAt: { gte: thirtyDaysAgo }, userId: { in: userIds } },
+            _count: true,
+          })
+        : [];
+
     const activityMap = new Map<string, number>();
     for (const entry of activityCounts) {
       if (entry.userId) {

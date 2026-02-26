@@ -18,6 +18,9 @@ export function hashApiKey(apiKey: string): string {
  * Verify a telemetry API key and return the instance ID.
  * Returns null if the key is invalid.
  *
+ * Supports key rotation: first checks the current key hash,
+ * then falls back to the previous key hash if still within the grace period.
+ *
  * Security: Each API key maps to exactly one instance via apiKeyHash.
  * This provides per-instance context — a leaked key can only affect
  * the single instance it belongs to, not other instances owned by the same user.
@@ -28,13 +31,29 @@ export async function verifyTelemetryApiKey(
   if (!apiKey || apiKey.length < 32) return null;
 
   const hash = hashApiKey(apiKey);
+
+  // 1. Try current key
   const instance = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: hash },
     select: { id: true, userId: true },
   });
 
-  if (!instance) return null;
-  return { instanceId: instance.id, userId: instance.userId };
+  if (instance) return { instanceId: instance.id, userId: instance.userId };
+
+  // 2. Try previous key (grace period)
+  const gracePeriodInstance = await prisma.liveEAInstance.findFirst({
+    where: {
+      apiKeyHashPrev: hash,
+      keyGracePeriodEnd: { gt: new Date() },
+    },
+    select: { id: true, userId: true },
+  });
+
+  if (gracePeriodInstance) {
+    return { instanceId: gracePeriodInstance.id, userId: gracePeriodInstance.userId };
+  }
+
+  return null;
 }
 
 /**

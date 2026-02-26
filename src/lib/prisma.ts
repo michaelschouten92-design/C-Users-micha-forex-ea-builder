@@ -2,6 +2,11 @@ import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 import { logger } from "./logger";
 
+// Connection pool sizing: set via DATABASE_URL query params.
+// Recommended: ?connection_limit=20&pool_timeout=30
+// Vercel serverless: connection_limit=5 (per-instance, many concurrent instances)
+// See: https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections
+
 const SLOW_QUERY_THRESHOLD_MS = 100;
 
 const globalForPrisma = globalThis as unknown as {

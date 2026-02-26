@@ -55,6 +55,23 @@ async function sendWithRetry(
   return { error: lastError };
 }
 
+/**
+ * Exported version of sendWithRetry for use by the outbox processor.
+ * Accepts a simplified {to, subject, html} interface.
+ */
+export async function sendWithRetryForOutbox(params: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ error: unknown }> {
+  return sendWithRetry({
+    from: FROM_EMAIL,
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+  });
+}
+
 export async function sendEAAlertEmail(to: string, eaName: string, alertMessage: string) {
   if (!resend) {
     log.warn("Email not configured - skipping EA alert email");

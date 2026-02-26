@@ -130,6 +130,7 @@ model User {
   sharedProofBundles SharedProofBundle[]
   backtestUploads    BacktestUpload[]
   pushSubscriptions  PushSubscription[]
+  outboxEntries      NotificationOutbox[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -349,7 +350,10 @@ model LiveEAInstance {
   id            String    @id @default(cuid())
   exportJobId   String?   @unique
   userId        String
-  apiKeyHash    String    @unique
+  apiKeyHash        String    @unique
+  apiKeyHashPrev    String?   // Previous key hash (valid during grace period)
+  keyRotatedAt      DateTime? // When rotation happened
+  keyGracePeriodEnd DateTime? // When previous key stops working
   eaName        String
   symbol        String?
   timeframe     String?
@@ -1031,4 +1035,29 @@ model ProofThreshold {
   label String?         // Human-readable description
 
   @@index([key])
+}
+
+// ============================================
+// NOTIFICATION OUTBOX
+// ============================================
+
+model NotificationOutbox {
+  id          String   @id @default(cuid())
+  userId      String
+  channel     String   // "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH"
+  destination String   // email address, webhook URL, chat ID, etc.
+  subject     String?  // email subject (null for non-email)
+  payload     Json     // channel-specific data
+  status      String   @default("PENDING") // PENDING | SENT | FAILED | DEAD
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  lastError   String?
+  nextRetryAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status, nextRetryAt])
+  @@index([userId, createdAt])
 }

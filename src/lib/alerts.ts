@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendEAAlertEmail } from "@/lib/email";
-import { fireWebhook } from "@/lib/webhook";
-import { sendTelegramAlert } from "@/lib/telegram";
-import { sendPushNotification } from "@/lib/push";
+import { enqueueNotification } from "@/lib/outbox";
 import { decrypt, isEncrypted } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 
@@ -58,40 +55,56 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     });
 
     const channel = config.channel;
-    if (config.channel === "EMAIL") {
-      sendEAAlertEmail(config.user.email, eaName, message).catch((err) => {
-        log.error({ err, channel }, "Alert delivery failed");
+    if (channel === "EMAIL") {
+      const esc = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      await enqueueNotification({
+        userId,
+        channel: "EMAIL",
+        destination: config.user.email,
+        subject: `AlgoStudio Alert: ${alertType} — ${eaName}`,
+        payload: {
+          html: `<h2>EA Alert: ${esc(alertType)}</h2><p><strong>EA:</strong> ${esc(eaName)}</p><p>${esc(message)}</p>`,
+        },
       });
-    } else if (config.channel === "WEBHOOK" && config.webhookUrl) {
-      fireWebhook(config.webhookUrl, {
-        event: "alert",
-        alertType,
-        eaName,
-        instanceId,
-        message,
-        triggeredAt: now.toISOString(),
-      }).catch((err) => {
-        log.error({ err, channel }, "Alert delivery failed");
+    } else if (channel === "WEBHOOK" && config.webhookUrl) {
+      await enqueueNotification({
+        userId,
+        channel: "WEBHOOK",
+        destination: config.webhookUrl,
+        payload: {
+          event: "alert",
+          alertType,
+          eaName,
+          instanceId,
+          message,
+          triggeredAt: now.toISOString(),
+        },
       });
-    } else if (config.channel === "BROWSER_PUSH") {
-      sendPushNotification(userId, {
-        title: `AlgoStudio: ${alertType}`,
-        body: `${eaName} — ${message}`,
-        url: "/app/monitor",
-        tag: `${alertType}-${instanceId}`,
-      }).catch((err) => {
-        log.error({ err, channel }, "Alert delivery failed");
+    } else if (channel === "BROWSER_PUSH") {
+      await enqueueNotification({
+        userId,
+        channel: "BROWSER_PUSH",
+        destination: userId,
+        payload: {
+          title: `AlgoStudio: ${alertType}`,
+          body: `${eaName} — ${message}`,
+          url: "/app/monitor",
+          tag: `${alertType}-${instanceId}`,
+        },
       });
-    } else if (config.channel === "TELEGRAM") {
+    } else if (channel === "TELEGRAM") {
       const rawToken = config.user.telegramBotToken;
       const chatId = config.user.telegramChatId;
       if (rawToken && chatId) {
-        // Decrypt the bot token if it was stored encrypted
         const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
         if (botToken) {
           const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
-          sendTelegramAlert(botToken, chatId, telegramMessage).catch((err) => {
-            log.error({ err, channel }, "Alert delivery failed");
+          await enqueueNotification({
+            userId,
+            channel: "TELEGRAM",
+            destination: chatId,
+            payload: { botToken, message: telegramMessage },
           });
         }
       }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { timingSafeEqual } from "@/lib/csrf";
-import { sendOnboardingDay1Email, sendOnboardingDay3Email } from "@/lib/email";
+import { enqueueNotification } from "@/lib/outbox";
 
 const log = logger.child({ route: "/api/cron/onboarding-emails" });
 
@@ -56,13 +56,20 @@ async function handleOnboardingEmails(request: NextRequest) {
 
     let day1Sent = 0;
     let day1Failed = 0;
-    // Send in concurrent batches of 10 to avoid timeout
     const BATCH_SIZE = 10;
     for (let i = 0; i < day1Users.length; i += BATCH_SIZE) {
       const batch = day1Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
         batch.map(async (user) => {
-          await sendOnboardingDay1Email(user.email, appUrl);
+          await enqueueNotification({
+            userId: user.id,
+            channel: "EMAIL",
+            destination: user.email,
+            subject: "Build your first strategy on AlgoStudio",
+            payload: {
+              html: `<p>Welcome to AlgoStudio! Ready to build your first trading strategy?</p><p><a href="${appUrl}">Get started now</a></p>`,
+            },
+          });
           await prisma.user.update({
             where: { id: user.id },
             data: { onboardingDay1SentAt: now },
@@ -97,7 +104,15 @@ async function handleOnboardingEmails(request: NextRequest) {
       const batch = day3Users.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
         batch.map(async (user) => {
-          await sendOnboardingDay3Email(user.email, pricingUrl);
+          await enqueueNotification({
+            userId: user.id,
+            channel: "EMAIL",
+            destination: user.email,
+            subject: "Ready to export your strategy?",
+            payload: {
+              html: `<p>You've been building on AlgoStudio — ready to take the next step?</p><p><a href="${pricingUrl}">See pricing &amp; export options</a></p>`,
+            },
+          });
           await prisma.user.update({
             where: { id: user.id },
             data: { onboardingDay3SentAt: now },
