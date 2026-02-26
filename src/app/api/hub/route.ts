@@ -79,6 +79,43 @@ export async function GET(request: NextRequest) {
 
   const total = await prisma.verifiedStrategyPage.count({ where: baseWhere });
 
+  // Batch load user handles and backtest data (avoids N+1 queries)
+  const userIds = [...new Set(pages.map((p) => p.strategyIdentity.project.userId))];
+  const projectIds = [...new Set(pages.map((p) => p.strategyIdentity.project.id))];
+
+  const [users, backtestUploads] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, handle: true },
+    }),
+    prisma.backtestUpload.findMany({
+      where: { projectId: { in: projectIds } },
+      select: {
+        projectId: true,
+        runs: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            healthScore: true,
+            totalTrades: true,
+            maxDrawdownPct: true,
+            winRate: true,
+            profitFactor: true,
+            symbol: true,
+            timeframe: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      distinct: ["projectId"],
+    }),
+  ]);
+
+  const handleMap = new Map(users.map((u) => [u.id, u.handle]));
+  const backtestMap = new Map(
+    backtestUploads.filter((u) => u.runs.length > 0).map((u) => [u.projectId!, u.runs[0]])
+  );
+
   // Enrich with backtest data and filter
   const results: Array<{
     strategyId: string;
@@ -98,30 +135,9 @@ export async function GET(request: NextRequest) {
     createdAt: Date;
   }> = [];
 
-  // Batch load user handles
-  const userIds = [...new Set(pages.map((p) => p.strategyIdentity.project.userId))];
-  const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: { id: true, handle: true },
-  });
-  const handleMap = new Map(users.map((u) => [u.id, u.handle]));
-
   for (const p of pages) {
     const projectId = p.strategyIdentity.project.id;
-
-    const backtest = await prisma.backtestRun.findFirst({
-      where: { upload: { projectId } },
-      orderBy: { createdAt: "desc" },
-      select: {
-        healthScore: true,
-        totalTrades: true,
-        maxDrawdownPct: true,
-        winRate: true,
-        profitFactor: true,
-        symbol: true,
-        timeframe: true,
-      },
-    });
+    const backtest = backtestMap.get(projectId);
 
     if (!backtest) continue;
 

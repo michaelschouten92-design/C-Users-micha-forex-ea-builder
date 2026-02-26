@@ -50,6 +50,14 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
     }
 
+    const rateLimitResult = await checkRateLimit(apiRateLimiter, `journal-get:${session.user.id}`);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rateLimitResult)),
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(

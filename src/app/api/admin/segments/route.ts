@@ -27,6 +27,7 @@ export async function GET() {
 
     const segments = await prisma.userSegment.findMany({
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     return NextResponse.json({

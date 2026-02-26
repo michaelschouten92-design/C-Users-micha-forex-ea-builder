@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
+import { sseConnectionRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +15,14 @@ export async function GET(request: Request): Promise<Response> {
   const tier = await getCachedTier(session.user.id);
   if (tier === "FREE") {
     return new Response("Live EA monitoring requires a Pro or Elite subscription", { status: 403 });
+  }
+
+  // Rate limit SSE connections to prevent DB overload from multiple concurrent streams
+  const rl = await checkRateLimit(sseConnectionRateLimiter, `sse:${session.user.id}`);
+  if (!rl.success) {
+    return new Response("Too many stream connections. Please wait before reconnecting.", {
+      status: 429,
+    });
   }
 
   const userId = session.user.id;

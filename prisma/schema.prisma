@@ -409,6 +409,7 @@ model LiveEAInstance {
   @@index([status, lastHeartbeat])
   @@index([exportJobId])
   @@index([strategyVersionId])
+  @@index([apiKeyHashPrev, keyGracePeriodEnd])
 }
 
 model EAHeartbeat {
@@ -447,6 +448,7 @@ model EATrade {
 
   @@unique([instanceId, ticket])
   @@index([instanceId, createdAt])
+  @@index([instanceId, closeTime])
 }
 
 model EAError {
@@ -833,6 +835,7 @@ model HealthSnapshot {
   instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@index([instanceId, createdAt])
+  @@index([instanceId, status])
   @@index([status])
 }
 

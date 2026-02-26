@@ -122,6 +122,7 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
       updatedAt: { lt: oneHourAgo },
     },
     select: { id: true, eaName: true, lastError: true, userId: true, updatedAt: true },
+    take: 200,
   });
   for (const ea of errorEAs) {
     items.push({
@@ -144,6 +145,7 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
       lastHeartbeat: { lt: thirtyMinAgo },
     },
     select: { id: true, eaName: true, lastHeartbeat: true, userId: true },
+    take: 200,
   });
   for (const ea of silentEAs) {
     items.push({
@@ -168,6 +170,7 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
       createdAt: true,
       project: { select: { name: true } },
     },
+    take: 100,
   });
   for (const exp of failedExports) {
     items.push({

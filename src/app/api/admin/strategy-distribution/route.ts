@@ -11,9 +11,10 @@ export async function GET() {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
-    // Get all live (non-deleted) EA instances with their latest health snapshot
+    // Get live (non-deleted) EA instances with their latest health snapshot (capped)
     const instances = await prisma.liveEAInstance.findMany({
       where: { deletedAt: null },
+      take: 5000,
       select: {
         id: true,
         status: true,

@@ -10,11 +10,12 @@ export async function GET() {
     const adminCheck = await checkAdmin();
     if (!adminCheck.authorized) return adminCheck.response;
 
-    // Get latest build versions (one per project)
+    // Get latest build versions (one per project, capped at 5000 for performance)
     const builds = await prisma.buildVersion.findMany({
       distinct: ["projectId"],
       orderBy: { versionNo: "desc" },
       select: { buildJson: true },
+      take: 5000,
     });
 
     // Parse nodes and count types

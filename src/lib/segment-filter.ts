@@ -86,16 +86,45 @@ export async function getUserEmailsBySegment(segmentId: string): Promise<string[
 }
 
 /**
- * Get all user emails that match the given filters
+ * Get all user emails that match the given filters.
+ * Pushes tier and login filters to the database to avoid loading 10K users into memory.
  */
 const MAX_SEGMENT_USERS = 10000; // Safety cap to prevent OOM on large user bases
 
 export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<string[]> {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+  const now = Date.now();
+  const thirtyDaysAgo = new Date(now - 30 * 86_400_000);
+
+  // Build database-level where clause from filters
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: Record<string, any> = {};
+
+  // Tier filter (push to DB)
+  if (filters.tierFilter && filters.tierFilter !== "ALL") {
+    where.subscription = { tier: filters.tierFilter };
+  }
+
+  // Login filter (push to DB)
+  if (filters.loginFilter && filters.loginFilter !== "ALL") {
+    if (filters.loginFilter === "NEVER") {
+      where.lastLoginAt = null;
+    } else if (filters.loginFilter === "7d") {
+      where.lastLoginAt = { gte: new Date(now - 7 * 86_400_000) };
+    } else if (filters.loginFilter === "30d") {
+      where.lastLoginAt = { gte: new Date(now - 30 * 86_400_000) };
+    }
+  }
+
+  // Search query (push to DB)
+  if (filters.searchQuery) {
+    where.email = { contains: filters.searchQuery.toLowerCase(), mode: "insensitive" };
+  }
 
   const [users, activityCounts] = await Promise.all([
     prisma.user.findMany({
+      where,
       select: {
+        id: true,
         email: true,
         lastLoginAt: true,
         subscription: {
@@ -120,12 +149,14 @@ export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<s
     if (entry.userId) activityMap.set(entry.userId, entry._count);
   }
 
+  // Only the churn and activity filters still need JS-side filtering
+  // (tier, login, search already handled by DB)
   return users
     .filter((u) =>
       matchesSegmentFilters(
         {
           ...u,
-          _activityCount: activityMap.get(u.email) ?? 0,
+          _activityCount: activityMap.get(u.id) ?? 0,
         },
         filters
       )

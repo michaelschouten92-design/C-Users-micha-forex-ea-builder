@@ -523,5 +523,15 @@ export const aiOptimizationEliteRateLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
 });
 
+/**
+ * Rate limiter for SSE stream connections
+ * Limits: 5 concurrent connection attempts per minute per user
+ * (prevents database overload from multiple simultaneous streams)
+ */
+export const sseConnectionRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

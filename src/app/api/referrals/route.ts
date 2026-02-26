@@ -47,6 +47,7 @@ export async function GET() {
         },
       },
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
 
     const totalReferrals = referredUsers.length;

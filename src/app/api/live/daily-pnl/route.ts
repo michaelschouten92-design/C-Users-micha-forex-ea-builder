@@ -20,26 +20,27 @@ export async function GET() {
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-  const trades = await prisma.eATrade.findMany({
-    where: {
-      instance: { userId: session.user.id, deletedAt: null },
-      closeTime: { not: null, gte: ninetyDaysAgo },
-    },
-    select: { profit: true, closeTime: true },
-    orderBy: { closeTime: "asc" },
-  });
+  // Aggregate PnL by date in SQL instead of loading all trades into memory
+  const dailyPnl = await prisma.$queryRaw<Array<{ date: string; pnl: number }>>`
+    SELECT
+      DATE("closeTime") AS date,
+      ROUND(CAST(SUM(profit) AS numeric), 2) AS pnl
+    FROM "EATrade"
+    WHERE "instanceId" IN (
+      SELECT id FROM "LiveEAInstance"
+      WHERE "userId" = ${session.user.id} AND "deletedAt" IS NULL
+    )
+    AND "closeTime" IS NOT NULL
+    AND "closeTime" >= ${ninetyDaysAgo}
+    GROUP BY DATE("closeTime")
+    ORDER BY date ASC
+  `;
 
-  // Aggregate by date
-  const dailyMap = new Map<string, number>();
-  for (const trade of trades) {
-    if (!trade.closeTime) continue;
-    const dateKey = trade.closeTime.toISOString().split("T")[0];
-    dailyMap.set(dateKey, (dailyMap.get(dateKey) ?? 0) + trade.profit);
-  }
+  // Format dates as ISO date strings
+  const formatted = dailyPnl.map((row) => ({
+    date: typeof row.date === "string" ? row.date : new Date(row.date).toISOString().split("T")[0],
+    pnl: Number(row.pnl),
+  }));
 
-  const dailyPnl = Array.from(dailyMap.entries())
-    .map(([date, pnl]) => ({ date, pnl: Math.round(pnl * 100) / 100 }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  return NextResponse.json({ dailyPnl });
+  return NextResponse.json({ dailyPnl: formatted });
 }

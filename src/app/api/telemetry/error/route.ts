@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
-import { sendEAAlertEmail } from "@/lib/email";
-import { fireWebhook } from "@/lib/webhook";
+import { enqueueNotification } from "@/lib/outbox";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 
@@ -55,25 +54,30 @@ export async function POST(request: NextRequest) {
 
     // Send email alert if status changed to ERROR (was previously ONLINE or OFFLINE)
     if (instance && instance.status !== "ERROR") {
-      sendEAAlertEmail(
-        instance.user.email,
-        instance.eaName,
-        `Your EA "${instance.eaName}" has entered ERROR state: ${message.substring(0, 300)}`
-      ).catch((err) => {
-        logger.error({ err, instanceId: auth.instanceId }, "Failed to send EA error alert email");
+      enqueueNotification({
+        userId: auth.userId,
+        channel: "EMAIL",
+        destination: instance.user.email,
+        subject: `EA Alert: ${instance.eaName}`,
+        payload: {
+          html: `<p>Your EA "${instance.eaName}" has entered ERROR state: ${message.substring(0, 300)}</p>`,
+        },
       });
 
       if (instance.user.webhookUrl) {
-        fireWebhook(instance.user.webhookUrl, {
-          event: "error",
-          data: {
-            eaName: instance.eaName,
-            errorCode,
-            message: message.substring(0, 300),
-            status: "ERROR",
+        enqueueNotification({
+          userId: auth.userId,
+          channel: "WEBHOOK",
+          destination: instance.user.webhookUrl,
+          payload: {
+            event: "error",
+            data: {
+              eaName: instance.eaName,
+              errorCode,
+              message: message.substring(0, 300),
+              status: "ERROR",
+            },
           },
-        }).catch((err) => {
-          logger.error({ err, instanceId: auth.instanceId }, "Failed to fire error webhook");
         });
       }
     }

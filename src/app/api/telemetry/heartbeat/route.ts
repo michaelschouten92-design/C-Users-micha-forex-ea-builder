@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
-import { sendEAAlertEmail } from "@/lib/email";
-import { fireWebhook } from "@/lib/webhook";
+import { enqueueNotification } from "@/lib/outbox";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "heartbeat" });
@@ -144,20 +143,23 @@ async function processHeartbeatSideEffects(
   data: { symbol?: string; balance: number; equity: number; drawdown: number; totalProfit: number },
   prev: PreviousState
 ): Promise<void> {
-  // Webhook notification
+  // Webhook notification via outbox
   if (prev.user.webhookUrl) {
-    fireWebhook(prev.user.webhookUrl, {
-      event: "heartbeat",
-      data: {
-        eaName: prev.eaName,
-        symbol: data.symbol ?? prev.symbol ?? "",
-        balance: data.balance,
-        equity: data.equity,
-        profit: data.totalProfit,
-        status: "ONLINE",
+    enqueueNotification({
+      userId,
+      channel: "WEBHOOK",
+      destination: prev.user.webhookUrl,
+      payload: {
+        event: "heartbeat",
+        data: {
+          eaName: prev.eaName,
+          symbol: data.symbol ?? prev.symbol ?? "",
+          balance: data.balance,
+          equity: data.equity,
+          profit: data.totalProfit,
+          status: "ONLINE",
+        },
       },
-    }).catch((err) => {
-      log.error({ err, instanceId }, "Heartbeat webhook failed");
     });
   }
 
@@ -165,12 +167,14 @@ async function processHeartbeatSideEffects(
   if (prev.status === "ONLINE" && prev.lastHeartbeat) {
     const elapsed = Date.now() - prev.lastHeartbeat.getTime();
     if (elapsed > ONE_HOUR_MS) {
-      sendEAAlertEmail(
-        prev.user.email,
-        prev.eaName,
-        `Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.`
-      ).catch((err) => {
-        log.error({ err, instanceId }, "Offline recovery email failed");
+      enqueueNotification({
+        userId,
+        channel: "EMAIL",
+        destination: prev.user.email,
+        subject: `EA Alert: ${prev.eaName}`,
+        payload: {
+          html: `<p>Your EA "${prev.eaName}" came back online after being unreachable for ${Math.round(elapsed / 60000)} minutes. Please verify it is operating correctly.</p>`,
+        },
       });
 
       // Trigger user-configured offline alerts (EAAlertConfig system)

@@ -26,6 +26,7 @@ export async function GET() {
         where: { status: "DEGRADED" },
         distinct: ["instanceId"],
         orderBy: { createdAt: "desc" },
+        take: 200,
         select: {
           id: true,
           instanceId: true,
@@ -37,6 +38,7 @@ export async function GET() {
         where: { driftDetected: true },
         distinct: ["instanceId"],
         orderBy: { createdAt: "desc" },
+        take: 200,
         select: {
           id: true,
           instanceId: true,
