@@ -1103,3 +1103,106 @@ export async function sendOAuthLinkRejectedEmail(email: string, provider: string
     log.info({ to: email.substring(0, 3) + "***" }, "OAuth link rejected email sent");
   }
 }
+
+// ============================================
+// WEEKLY EDGE REPORT
+// ============================================
+
+interface WeeklyReportData {
+  healthChanges: Array<{
+    eaName: string;
+    currentScore: number;
+    previousScore: number | null;
+    change: number;
+  }>;
+  statusChanges: Array<{
+    eaName: string;
+    currentStatus: string;
+    previousStatus: string;
+  }>;
+  monitorUrl: string;
+  proofUrl: string;
+}
+
+export async function sendWeeklyEdgeReport(
+  email: string,
+  data: WeeklyReportData
+): Promise<{ error: unknown }> {
+  if (!resend) {
+    log.warn("Email not configured - skipping weekly edge report");
+    return { error: null };
+  }
+
+  const healthRows = data.healthChanges
+    .map((h) => {
+      const arrow = h.change > 0 ? "&#9650;" : h.change < 0 ? "&#9660;" : "&#8212;";
+      const color = h.change > 0 ? "#10B981" : h.change < 0 ? "#EF4444" : "#94A3B8";
+      const prev = h.previousScore !== null ? `${h.previousScore}` : "new";
+      return `<tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid rgba(79,70,229,0.1); color: #ffffff;">${h.eaName}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid rgba(79,70,229,0.1); color: #ffffff; text-align: center;">${prev} &rarr; ${h.currentScore}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid rgba(79,70,229,0.1); color: ${color}; text-align: center;">${arrow} ${Math.abs(h.change)}pts</td>
+      </tr>`;
+    })
+    .join("");
+
+  const statusRows = data.statusChanges
+    .map(
+      (s) =>
+        `<tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid rgba(79,70,229,0.1); color: #ffffff;">${s.eaName}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid rgba(79,70,229,0.1); color: #F59E0B;">${s.previousStatus} &rarr; ${s.currentStatus}</td>
+      </tr>`
+    )
+    .join("");
+
+  return sendWithRetry({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Your Weekly Edge Report — AlgoStudio",
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 560px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 8px 0;">Weekly Edge Report</h1>
+            <p style="margin: 0 0 24px 0; color: #94A3B8; font-size: 14px;">Here&rsquo;s how your strategies performed this week.</p>
+
+            ${
+              data.healthChanges.length > 0
+                ? `<h2 style="color: #A78BFA; font-size: 16px; margin: 0 0 12px 0;">Health Score Changes</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px;">
+                  <thead><tr style="color: #7C8DB0;">
+                    <th style="padding: 8px 12px; text-align: left;">Strategy</th>
+                    <th style="padding: 8px 12px; text-align: center;">Score</th>
+                    <th style="padding: 8px 12px; text-align: center;">Change</th>
+                  </tr></thead>
+                  <tbody>${healthRows}</tbody>
+                </table>`
+                : ""
+            }
+
+            ${
+              data.statusChanges.length > 0
+                ? `<h2 style="color: #A78BFA; font-size: 16px; margin: 0 0 12px 0;">Status Changes</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px;">
+                  <thead><tr style="color: #7C8DB0;">
+                    <th style="padding: 8px 12px; text-align: left;">Strategy</th>
+                    <th style="padding: 8px 12px; text-align: left;">Status</th>
+                  </tr></thead>
+                  <tbody>${statusRows}</tbody>
+                </table>`
+                : ""
+            }
+
+            <div style="text-align: center; padding-top: 16px; border-top: 1px solid rgba(79,70,229,0.2);">
+              <a href="${data.monitorUrl}" style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 14px; margin-right: 8px;">View Monitor</a>
+              <a href="${data.proofUrl}" style="display: inline-block; padding: 12px 24px; background-color: transparent; color: #A78BFA; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 14px; border: 1px solid rgba(79,70,229,0.3);">View Proof</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { HealthDetailPanel } from "@/components/app/health-detail-panel";
+import { ProofPanel } from "@/components/app/proof-panel";
 import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
 import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
@@ -700,6 +701,7 @@ function EACard({
   const [showTradeLog, setShowTradeLog] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
   const [showHealth, setShowHealth] = useState(false);
+  const [showProof, setShowProof] = useState(false);
   const [pauseLoading, setPauseLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -938,6 +940,25 @@ function EACard({
           {showHealth ? "Hide Health" : "Health"}
         </button>
 
+        <button
+          onClick={() => setShowProof(!showProof)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+            showProof
+              ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/30"
+              : "border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)]"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+          </svg>
+          {showProof ? "Hide Proof" : "Proof"}
+        </button>
+
         <div className="flex-1" />
 
         <span className="text-xs text-[#7C8DB0]">
@@ -1012,6 +1033,9 @@ function EACard({
           strategyStatus={(ea.strategyStatus as StrategyStatus) ?? null}
         />
       )}
+
+      {/* Proof Panel (expandable) */}
+      {showProof && <ProofPanel instanceId={ea.id} />}
     </div>
   );
 }

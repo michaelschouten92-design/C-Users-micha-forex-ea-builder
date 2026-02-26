@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { PushNotificationToggle } from "@/components/app/push-notification-toggle";
+import { HandleSetting } from "@/components/app/handle-setting";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 import { ReferralsSection } from "./referrals-section";
@@ -70,6 +71,9 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
           </span>
         </div>
       </div>
+
+      {/* Public Handle */}
+      <HandleSetting />
 
       {/* Push Notifications */}
       <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">

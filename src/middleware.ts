@@ -33,6 +33,16 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ============================================
+  // @HANDLE REWRITE → /u/handle
+  // ============================================
+  if (pathname.startsWith("/@")) {
+    const rest = pathname.slice(2); // strip "/@"
+    const url = request.nextUrl.clone();
+    url.pathname = `/u/${rest}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // ============================================
   // AUTHENTICATION REDIRECTS
   // ============================================
   const isOnApp = pathname.startsWith("/app");

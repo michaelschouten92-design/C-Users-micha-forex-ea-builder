@@ -21,6 +21,14 @@ enum PlanTier {
   ELITE
 }
 
+enum LadderLevel {
+  SUBMITTED
+  VALIDATED
+  VERIFIED
+  PROVEN
+  INSTITUTIONAL
+}
+
 enum ExportType {
   MQ5
   MQ4
@@ -88,6 +96,7 @@ model User {
   passwordChangedAt DateTime? // Set on password change/reset for session invalidation
   emailVerified   Boolean   @default(false)
   emailVerifiedAt    DateTime?
+  handle             String?   @unique  // Public username for proof pages (e.g., /@handle)
   role               UserRole  @default(USER)
   discordId          String?   @unique
   discordAccessToken  String?   // Encrypted with AES-256-GCM
@@ -824,20 +833,23 @@ model HealthSnapshot {
 }
 
 model VerifiedStrategyPage {
-  id                 String   @id @default(cuid())
-  strategyIdentityId String   @unique
-  slug               String   @unique
-  isPublic           Boolean  @default(false)
-  showEquityCurve    Boolean  @default(true)
-  showTradeLog       Boolean  @default(false)
-  showHealthStatus   Boolean  @default(true)
+  id                 String      @id @default(cuid())
+  strategyIdentityId String      @unique
+  slug               String      @unique
+  isPublic           Boolean     @default(false)
+  showEquityCurve    Boolean     @default(true)
+  showTradeLog       Boolean     @default(false)
+  showHealthStatus   Boolean     @default(true)
   pinnedInstanceId   String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  ladderLevel        LadderLevel @default(SUBMITTED)
+  lastLevelComputedAt DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   strategyIdentity StrategyIdentity @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
 
   @@index([slug])
+  @@index([ladderLevel, isPublic])
 }
 
 // ============================================
@@ -983,4 +995,40 @@ model AdminIncident {
   @@index([status, severity, createdAt])
   @@index([category, createdAt])
   @@index([sourceType, sourceId])
+}
+
+// ============================================
+// PROOF ENGINE — EVENT ANALYTICS
+// ============================================
+
+model ProofEventLog {
+  id         String   @id @default(cuid())
+  type       String   // proof_page_view | share_click | proof_link_copy | profile_view | leaderboard_view
+  strategyId String?  // StrategyIdentity.strategyId (not FK — public ID reference)
+  ownerId    String?  // User ID of the strategy/profile owner
+  userId     String?  // Viewer user ID (null if anonymous)
+  sessionId  String   // Anonymous session identifier
+  referrer   String?
+  ipHash     String?  // SHA-256 truncated IP (privacy-safe)
+  userAgent  String?
+  meta       Json?    // Extra context: { channel, filters, type }
+  createdAt  DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([strategyId, type, createdAt])
+  @@index([ownerId, type, createdAt])
+  @@index([createdAt])
+}
+
+// ============================================
+// PROOF ENGINE — CONFIGURABLE THRESHOLDS
+// ============================================
+
+model ProofThreshold {
+  id    String @id @default(cuid())
+  key   String @unique  // e.g., VALIDATED_MIN_SCORE, MIN_TRADES_VALIDATION
+  value Float
+  label String?         // Human-readable description
+
+  @@index([key])
 }
