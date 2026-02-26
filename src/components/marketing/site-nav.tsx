@@ -22,6 +22,12 @@ export function SiteNav() {
         </div>
         <div className="hidden md:flex items-center gap-6">
           <Link
+            href="/verified"
+            className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+          >
+            Verified
+          </Link>
+          <Link
             href="/product"
             className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
           >

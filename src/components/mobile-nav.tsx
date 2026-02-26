@@ -100,6 +100,13 @@ export function MobileNav() {
             className="absolute top-16 left-0 right-0 bg-[#0D0117]/95 backdrop-blur-md border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex flex-col gap-4 z-50"
           >
             <Link
+              href="/verified"
+              onClick={closeAndRestoreFocus}
+              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+            >
+              Verified
+            </Link>
+            <Link
               href="/product"
               onClick={closeAndRestoreFocus}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"

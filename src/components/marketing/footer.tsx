@@ -18,6 +18,14 @@ export function Footer() {
               </li>
               <li>
                 <Link
+                  href="/verified"
+                  className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
+                >
+                  Verified Strategies
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/product/track-record"
                   className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
