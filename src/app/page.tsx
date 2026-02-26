@@ -69,12 +69,13 @@ export default async function Home() {
           {/* Left column — Copy + CTA */}
           <div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Know where your strategy <span className="text-[#A78BFA]">stands.</span>
+              Prove your trading edge{" "}
+              <span className="text-[#A78BFA]">before risking capital.</span>
             </h1>
 
             <p className="text-lg text-[#94A3B8] mb-8 max-w-lg">
-              Upload a backtest or connect a live EA. AlgoStudio evaluates performance, assigns a
-              Strategy Status, and monitors for edge degradation — continuously.
+              Build, validate, verify and monitor algorithmic strategies — so you trade evidence,
+              not backtests.
             </p>
 
             {/* Trust badges */}
