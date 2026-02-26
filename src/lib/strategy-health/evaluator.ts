@@ -16,6 +16,7 @@ import {
 } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
+import * as Sentry from "@sentry/nextjs";
 
 /** Number of recent snapshots to consider for EWMA trend computation */
 const EWMA_WINDOW = 10;
@@ -143,6 +144,9 @@ async function updateLifecyclePhase(
           `It will be automatically retired after ${remaining} more. Review your strategy now.`,
       }).catch((err) => {
         logger.error({ err, instanceId }, "Failed to trigger retirement warning alert");
+        Sentry.captureException(err, {
+          extra: { instanceId, alertType: "STRATEGY_RETIREMENT_WARNING" },
+        });
       });
     }
 
@@ -167,6 +171,7 @@ async function updateLifecyclePhase(
           `The trading edge appears to have expired. Review your strategy or pause live trading.`,
       }).catch((err) => {
         logger.error({ err, instanceId }, "Failed to trigger strategy retired alert");
+        Sentry.captureException(err, { extra: { instanceId, alertType: "STRATEGY_RETIRED" } });
       });
     }
   }
@@ -324,6 +329,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
           `Check your live performance metrics.`,
       }).catch((err) => {
         logger.error({ err, instanceId }, "Failed to trigger health degradation alert");
+        Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_DEGRADED" } });
       });
     }
   }
@@ -345,6 +351,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
         `(score: ${scoreStr}%). Consider pausing live trading.`,
     }).catch((err) => {
       logger.error({ err, instanceId }, "Failed to trigger health critical alert");
+      Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_CRITICAL" } });
     });
   }
 
@@ -388,6 +395,9 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
   // Recompute unified strategy status after health evaluation
   await computeAndCacheStatus(instanceId).catch((err) => {
     logger.error({ err, instanceId }, "Failed to compute strategy status after health eval");
+    Sentry.captureException(err, {
+      extra: { instanceId, context: "post-health-eval status compute" },
+    });
   });
 
   return result;
@@ -414,7 +424,9 @@ export async function getHealthWithFreshness(instanceId: string): Promise<{
         orderBy: { createdAt: "desc" },
       });
       return { snapshot: fresh, fresh: true };
-    } catch {
+    } catch (err) {
+      logger.error({ err, instanceId }, "Initial health evaluation failed");
+      Sentry.captureException(err, { extra: { instanceId, context: "initial-health-eval" } });
       return { snapshot: null, fresh: false };
     }
   }
@@ -424,6 +436,7 @@ export async function getHealthWithFreshness(instanceId: string): Promise<{
     // Stale — recalculate in background (don't block response)
     evaluateHealth(instanceId).catch((err) => {
       logger.error({ err, instanceId }, "Background health evaluation failed");
+      Sentry.captureException(err, { extra: { instanceId, context: "background-health-eval" } });
     });
     return { snapshot: latest, fresh: false };
   }

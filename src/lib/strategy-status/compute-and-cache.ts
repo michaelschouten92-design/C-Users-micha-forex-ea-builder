@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { triggerAlert } from "@/lib/alerts";
 import { logAuditEvent } from "@/lib/audit";
+import * as Sentry from "@sentry/nextjs";
 import {
   resolveStrategyStatus,
   resolveStatusConfidence,
@@ -152,6 +153,9 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
         message: `Strategy status changed from ${previousStatus} to ${newStatus}`,
       }).catch((err) => {
         log.error({ err, instanceId }, "Failed to trigger strategy status change alert");
+        Sentry.captureException(err, {
+          extra: { instanceId, alertType: "STRATEGY_STATUS_CHANGE" },
+        });
       });
     }
 
@@ -168,6 +172,7 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
       },
     }).catch((err) => {
       log.error({ err, instanceId }, "Failed to log strategy status change audit event");
+      Sentry.captureException(err, { extra: { instanceId, context: "strategy-status-audit-log" } });
     });
   }
 

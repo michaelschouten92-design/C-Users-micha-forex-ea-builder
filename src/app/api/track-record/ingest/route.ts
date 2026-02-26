@@ -16,6 +16,7 @@ import { shouldCreateCommitment, buildCommitmentData } from "@/lib/track-record/
 import { validatePayload } from "@/lib/track-record/payload-schemas";
 import { checkRateLimit } from "@/lib/track-record/rate-limiter";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
+import * as Sentry from "@sentry/nextjs";
 
 const ingestSchema = z.object({
   eventType: z.enum([
@@ -270,7 +271,10 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget: evaluate health after trade closes (outside tx)
     if (result.status === 200 && eventType === "TRADE_CLOSE") {
-      evaluateHealthIfDue(instanceId).catch(() => {});
+      evaluateHealthIfDue(instanceId).catch((err) => {
+        logger.error({ err, instanceId }, "Health evaluation failed after trade close");
+        Sentry.captureException(err, { extra: { instanceId, eventType } });
+      });
     }
 
     return NextResponse.json(result.body, { status: result.status });
