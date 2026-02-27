@@ -23,6 +23,7 @@ import { randomBytes, createHash } from "crypto";
 import { encrypt } from "./crypto";
 import { onboardDiscordUser } from "./discord";
 import { logger } from "./logger";
+import * as Sentry from "@sentry/nextjs";
 import type { Provider } from "next-auth/providers";
 
 const authLog = logger.child({ module: "auth" });
@@ -516,7 +517,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const discordAccessToken = account.access_token;
         if (discordAccessToken) {
           onboardDiscordUser(existingUser.id, account.providerAccountId, discordAccessToken).catch(
-            () => {}
+            (err) => {
+              Sentry.captureException(err, {
+                extra: { userId: existingUser.id, context: "onboard-discord-user" },
+              });
+              authLog.error({ err, userId: existingUser.id }, "Failed to onboard Discord user");
+            }
           );
         }
 

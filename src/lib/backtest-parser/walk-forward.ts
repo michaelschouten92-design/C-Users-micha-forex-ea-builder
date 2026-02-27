@@ -126,7 +126,7 @@ export function runWalkForward(
     .filter((d) => d.type !== "balance")
     .sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
 
-  if (tradingDeals.length < numWindows * 5) {
+  if (tradingDeals.length < numWindows * 20) {
     return {
       windows: [],
       consistencyScore: 0,
@@ -205,7 +205,7 @@ export function runWalkForward(
 
   // Weighted composite: PF 50%, Sharpe 30%, WinRate 20%
   const compositeDegradation = avgPFDeg * 0.5 + avgSharpeDeg * 0.3 + avgWRDeg * 0.2;
-  const overfitProbability = Math.min(1, Math.max(0, compositeDegradation / 100));
+  const overfitProbability = 1 / (1 + Math.exp(-0.08 * (compositeDegradation - 40)));
 
   // Verdict
   let verdict: "ROBUST" | "MODERATE" | "OVERFITTED";

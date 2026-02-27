@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { computeMetrics } from "@/lib/track-record/metrics";
 import {
   computeLadderLevel,
@@ -305,8 +306,8 @@ export async function GET(request: NextRequest, { params }: Props) {
         where: { id: page.id },
         data: { ladderLevel, lastLevelComputedAt: new Date() },
       })
-      .catch(() => {
-        /* non-critical */
+      .catch((err) => {
+        logger.warn({ err, pageId: page.id }, "Failed to update ladder level (non-critical)");
       });
   }
 

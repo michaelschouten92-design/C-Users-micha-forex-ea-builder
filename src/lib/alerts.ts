@@ -280,7 +280,7 @@ export async function checkDailyLossAlerts(
   const dailyPnl = agg._sum.profit ?? 0;
   if (dailyPnl >= 0) return;
 
-  const dailyLossPct = Math.abs(dailyPnl); // Simplified: use absolute value
+  const dailyLossAmount = Math.abs(dailyPnl); // Absolute dollar loss value
 
   const configs = await prisma.eAAlertConfig.findMany({
     where: {
@@ -292,7 +292,7 @@ export async function checkDailyLossAlerts(
   });
 
   const lowestExceeded = configs.reduce<number | null>((lowest, config) => {
-    if (config.threshold !== null && dailyLossPct >= config.threshold) {
+    if (config.threshold !== null && dailyLossAmount >= config.threshold) {
       return lowest === null ? config.threshold : Math.min(lowest, config.threshold);
     }
     return lowest;
@@ -304,7 +304,7 @@ export async function checkDailyLossAlerts(
       instanceId,
       eaName,
       alertType: "DAILY_LOSS",
-      message: `Daily loss of $${dailyLossPct.toFixed(2)} exceeded your threshold of $${lowestExceeded}`,
+      message: `Daily loss of $${dailyLossAmount.toFixed(2)} exceeded your threshold of $${lowestExceeded}`,
     });
   }
 }

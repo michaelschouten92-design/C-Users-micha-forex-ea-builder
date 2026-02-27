@@ -174,8 +174,20 @@ async function updateLifecyclePhase(
         Sentry.captureException(err, { extra: { instanceId, alertType: "STRATEGY_RETIRED" } });
       });
     }
+  } else if (currentPhase === "RETIRED") {
+    // RETIRED can transition back to PROVING if strategy shows sustained recovery
+    const consecutiveHealthy = countConsecutiveLeading(result.status, recentSnapshots, "HEALTHY");
+    if (consecutiveHealthy >= PROVEN_CONSECUTIVE_HEALTHY) {
+      updateData.lifecyclePhase = "PROVING";
+      updateData.phaseEnteredAt = new Date();
+      updateData.retiredAt = null;
+      updateData.retiredReason = null;
+      logger.info(
+        { instanceId, from: "RETIRED", to: "PROVING", consecutiveHealthy },
+        "Lifecycle phase transition — strategy recovered from retirement"
+      );
+    }
   }
-  // RETIRED is terminal — no automatic transitions out
 
   if (Object.keys(updateData).length > 0) {
     await prisma.liveEAInstance.update({

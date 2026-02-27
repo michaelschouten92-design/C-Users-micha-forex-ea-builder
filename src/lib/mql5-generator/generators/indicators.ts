@@ -1205,27 +1205,31 @@ export function generateIndicatorCode(node: BuilderNode, index: number, code: Ge
         addCopyBuffer(`${varPrefix}ATRHandle`, 0, copyBars, `${varPrefix}ATRBuffer`, code);
         addCopyBuffer(`${varPrefix}KCEMAHandle`, 0, copyBars, `${varPrefix}KCEMABuffer`, code);
 
-        // Calculate squeeze state: BB inside KC (using confirmed bars [1] and [2])
+        // Calculate squeeze state: BB inside KC
+        // Bar offset: candle_close shifts indices by +1 to use confirmed bars only
+        const bbsShift = bbs.signalMode === "candle_close" ? 1 : 0;
+        const bbsCurr = 1 + bbsShift; // current confirmed bar
+        const bbsPrev = 2 + bbsShift; // previous confirmed bar
         code.onTick.push(`//--- BB Squeeze ${index + 1}: detect squeeze and breakout`);
         code.onTick.push(`{`);
         code.onTick.push(`   double kcMult${index} = MathMax(1.0, InpBBS${index}KCMult);`);
         code.onTick.push(
-          `   double kcUpper2 = ${varPrefix}KCEMABuffer[2] + kcMult${index} * ${varPrefix}ATRBuffer[2];`
+          `   double kcUpper2 = ${varPrefix}KCEMABuffer[${bbsPrev}] + kcMult${index} * ${varPrefix}ATRBuffer[${bbsPrev}];`
         );
         code.onTick.push(
-          `   double kcLower2 = ${varPrefix}KCEMABuffer[2] - kcMult${index} * ${varPrefix}ATRBuffer[2];`
+          `   double kcLower2 = ${varPrefix}KCEMABuffer[${bbsPrev}] - kcMult${index} * ${varPrefix}ATRBuffer[${bbsPrev}];`
         );
         code.onTick.push(
-          `   bool prevSqueeze = ${varPrefix}BBUpper[2] < kcUpper2 && ${varPrefix}BBLower[2] > kcLower2;`
+          `   bool prevSqueeze = ${varPrefix}BBUpper[${bbsPrev}] < kcUpper2 && ${varPrefix}BBLower[${bbsPrev}] > kcLower2;`
         );
         code.onTick.push(
-          `   double kcUpper1 = ${varPrefix}KCEMABuffer[1] + kcMult${index} * ${varPrefix}ATRBuffer[1];`
+          `   double kcUpper1 = ${varPrefix}KCEMABuffer[${bbsCurr}] + kcMult${index} * ${varPrefix}ATRBuffer[${bbsCurr}];`
         );
         code.onTick.push(
-          `   double kcLower1 = ${varPrefix}KCEMABuffer[1] - kcMult${index} * ${varPrefix}ATRBuffer[1];`
+          `   double kcLower1 = ${varPrefix}KCEMABuffer[${bbsCurr}] - kcMult${index} * ${varPrefix}ATRBuffer[${bbsCurr}];`
         );
         code.onTick.push(
-          `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[1] < kcUpper1 && ${varPrefix}BBLower[1] > kcLower1;`
+          `   ${varPrefix}InSqueeze = ${varPrefix}BBUpper[${bbsCurr}] < kcUpper1 && ${varPrefix}BBLower[${bbsCurr}] > kcLower1;`
         );
         code.onTick.push(`   ${varPrefix}WasSqueeze = prevSqueeze;`);
         code.onTick.push(`}`);

@@ -42,6 +42,7 @@ import type {
   NodeTemplate,
 } from "@/types/builder";
 import { DEFAULT_SETTINGS, generateMagicNumber } from "@/types/builder";
+import { CURRENT_VERSION } from "@/lib/migrations";
 
 function HelpButton({ onClick }: { onClick: () => void }) {
   const [glowing, setGlowing] = useState(() => {
@@ -598,7 +599,7 @@ export function StrategyCanvas({
   // Export current strategy as JSON string
   const onExportJson = useCallback(() => {
     const buildJson: BuildJsonSchema = {
-      version: "1.1",
+      version: CURRENT_VERSION,
       nodes: nodes as BuilderNode[],
       edges: edges as BuilderEdge[],
       viewport: { x: 0, y: 0, zoom: 1 },

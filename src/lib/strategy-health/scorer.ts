@@ -278,7 +278,10 @@ export function computeHealth(
   // CUSUM drift detection: compare live expectancy against baseline
   let drift: DriftInfo = noDrift;
   if (hasBaseline && live.tradeReturns.length >= 5) {
-    const expectedMean = baseline.returnPct / Math.max(live.totalTrades, 1);
+    const expectedMean =
+      baseline.tradesPerDay > 0
+        ? baseline.returnPct / 30 / baseline.tradesPerDay
+        : baseline.returnPct / Math.max(live.totalTrades, 1);
     // Estimate std dev from the trade returns
     const mean = live.tradeReturns.reduce((a, b) => a + b, 0) / live.tradeReturns.length;
     const variance =

@@ -34,8 +34,15 @@ function sanitizeHtmlForStorage(html: string): string {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
     .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
+    .replace(/<object\b[^>]*>.*?<\/object>/gi, "")
+    .replace(/<embed\b[^>]*\/?>/gi, "")
+    .replace(/<form\b[^>]*>.*?<\/form>/gi, "")
+    .replace(/<base\b[^>]*\/?>/gi, "")
+    .replace(/<link\b[^>]*\/?>/gi, "")
+    .replace(/<meta\b[^>]*\/?>/gi, "")
     .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/javascript\s*:/gi, "removed:");
+    .replace(/javascript\s*:/gi, "removed:")
+    .replace(/data\s*:\s*text\/html/gi, "removed:");
 }
 
 /** Sanitize a client-provided filename */

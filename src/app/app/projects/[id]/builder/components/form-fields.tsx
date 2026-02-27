@@ -109,14 +109,17 @@ export function NumberField({
           setLocalValue(raw);
           setClampHint(null);
           const num = parseFloat(raw);
-          if (!isNaN(num)) {
-            const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, num));
+          if (Number.isFinite(num)) {
+            const clamped = Math.min(
+              max === Infinity ? Number.MAX_SAFE_INTEGER : max,
+              Math.max(min ?? 0, num)
+            );
             onChange(clamped);
           }
         }}
         onBlur={() => {
           const num = parseFloat(localValue);
-          if (isNaN(num) || localValue === "") {
+          if (!Number.isFinite(num) || localValue === "") {
             setLocalValue(String(min));
             onChange(min);
             setClampHint(`Invalid value — reset to ${min}`);

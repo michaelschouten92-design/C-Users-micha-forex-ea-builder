@@ -16,6 +16,16 @@
 import { createHmac } from "crypto";
 import type { TrackRecordRunningState } from "./types";
 
+/**
+ * Round-half-away-from-zero, matching MQL5 DoubleToString() behavior.
+ * JavaScript's toFixed() uses banker's rounding which can differ.
+ */
+function toFixedMQL(value: number, decimals: number): string {
+  const factor = Math.pow(10, decimals);
+  const rounded = (Math.sign(value) * Math.round(Math.abs(value) * factor)) / factor;
+  return rounded.toFixed(decimals);
+}
+
 const CHECKPOINT_INTERVAL = 100;
 
 /**
@@ -42,17 +52,17 @@ function deriveKey(instanceId: string): string {
  */
 function canonicalizeState(state: TrackRecordRunningState): string {
   const obj = {
-    balance: state.balance.toFixed(2),
-    equity: state.equity.toFixed(2),
-    highWaterMark: state.highWaterMark.toFixed(2),
+    balance: toFixedMQL(state.balance, 2),
+    equity: toFixedMQL(state.equity, 2),
+    highWaterMark: toFixedMQL(state.highWaterMark, 2),
     lastEventHash: state.lastEventHash,
     lastSeqNo: state.lastSeqNo.toString(),
     lossCount: state.lossCount.toString(),
-    maxDrawdown: state.maxDrawdown.toFixed(2),
-    maxDrawdownPct: state.maxDrawdownPct.toFixed(2),
-    totalCommission: state.totalCommission.toFixed(2),
-    totalProfit: state.totalProfit.toFixed(2),
-    totalSwap: state.totalSwap.toFixed(2),
+    maxDrawdown: toFixedMQL(state.maxDrawdown, 2),
+    maxDrawdownPct: toFixedMQL(state.maxDrawdownPct, 2),
+    totalCommission: toFixedMQL(state.totalCommission, 2),
+    totalProfit: toFixedMQL(state.totalProfit, 2),
+    totalSwap: toFixedMQL(state.totalSwap, 2),
     totalTrades: state.totalTrades.toString(),
     winCount: state.winCount.toString(),
   };

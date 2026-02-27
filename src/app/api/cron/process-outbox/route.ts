@@ -62,6 +62,15 @@ async function handleProcessOutbox(request: NextRequest) {
   let dead = 0;
 
   try {
+    // Recovery: reset entries stuck in PROCESSING for >10 minutes (crash recovery)
+    await prisma.notificationOutbox.updateMany({
+      where: {
+        status: "PROCESSING",
+        updatedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+      },
+      data: { status: "FAILED" },
+    });
+
     // Atomically claim entries — concurrent cron runs will get disjoint sets
     const claimed = await claimOutboxBatch();
     if (claimed.length === 0) {

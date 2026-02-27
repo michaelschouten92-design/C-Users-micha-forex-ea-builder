@@ -38,7 +38,10 @@ export async function raiseAdminIncident(params: RaiseIncidentParams): Promise<v
               sourceType,
               sourceId,
               category: params.category,
-              status: "open",
+              OR: [
+                { status: "open" },
+                { status: "resolved", updatedAt: { gt: new Date(Date.now() - 60 * 60 * 1000) } },
+              ],
             },
             select: { id: true },
           });

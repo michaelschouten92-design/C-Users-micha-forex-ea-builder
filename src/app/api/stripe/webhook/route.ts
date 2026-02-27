@@ -14,6 +14,7 @@ import {
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
 import type Stripe from "stripe";
+import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
 
 const log = logger.child({ route: "/api/stripe/webhook" });
@@ -26,9 +27,12 @@ function syncDiscordWithRetry(userId: string, tier: string): void {
   syncDiscordRoleForUser(userId, tier).catch(async (err) => {
     log.error({ err, userId, tier }, "Discord sync failed — retrying once");
     await new Promise((r) => setTimeout(r, 2000));
-    syncDiscordRoleForUser(userId, tier).catch((err2) =>
-      log.error({ err: err2, userId, tier }, "Discord sync retry also failed")
-    );
+    syncDiscordRoleForUser(userId, tier).catch((err2) => {
+      Sentry.captureException(err2, {
+        extra: { userId, tier, context: "discord-sync-retry-failed" },
+      });
+      log.error({ err: err2, userId, tier }, "Discord sync retry also failed");
+    });
   });
 }
 
