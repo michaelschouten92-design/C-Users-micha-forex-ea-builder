@@ -11,14 +11,61 @@ const log = logger.child({ route: "/api/cron/process-outbox" });
 
 const BATCH_SIZE = 50;
 const CRON_TIMEOUT_MS = 55_000;
+const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+
+/**
+ * Outbox Status State Machine
+ *
+ * PENDING ──[claimed by cron]──────────> PROCESSING
+ * FAILED  ──[retry, nextRetryAt due]──> PROCESSING
+ * PROCESSING ──[delivery success]──────> SENT       (terminal)
+ * PROCESSING ──[delivery failure]──────> FAILED
+ * PROCESSING ──[max attempts reached]─> DEAD       (terminal)
+ * PROCESSING ──[stuck >10 min]─────────> FAILED     (crash recovery)
+ * PROCESSING ──[cron timeout]──────────> FAILED     (timeout release)
+ */
+export type OutboxStatus = "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "DEAD";
+
+/**
+ * Centralized single-entry transition: update status + log in one call.
+ * Every outbox state change for a known entry goes through here.
+ */
+export async function transitionOutboxEntry(
+  entryId: string,
+  from: OutboxStatus,
+  to: OutboxStatus,
+  reason: string,
+  extraData?: Record<string, unknown>
+): Promise<void> {
+  await prisma.notificationOutbox.update({
+    where: { id: entryId },
+    data: { status: to, ...extraData },
+  });
+  log.info({ outboxId: entryId, from, to, reason }, "Outbox status transition");
+}
+
+/**
+ * Log transitions for bulk operations where the DB update already happened
+ * atomically (raw SQL UPDATE ... RETURNING).
+ */
+function logBulkTransition(
+  ids: string[],
+  from: OutboxStatus,
+  to: OutboxStatus,
+  reason: string
+): void {
+  for (const id of ids) {
+    log.info({ outboxId: id, from, to, reason }, "Outbox status transition");
+  }
+}
 
 /**
  * Atomically claim a batch of outbox entries for processing.
  * Uses raw SQL UPDATE ... RETURNING to prevent concurrent cron runs
  * from picking up the same entries (no read-then-write race).
  */
-async function claimOutboxBatch(): Promise<Array<{ id: string }>> {
-  return prisma.$queryRaw<Array<{ id: string }>>`
+async function claimOutboxBatch(): Promise<Array<{ id: string; attempts: number }>> {
+  return prisma.$queryRaw<Array<{ id: string; attempts: number }>>`
     UPDATE "NotificationOutbox"
     SET status = 'PROCESSING', "updatedAt" = NOW()
     WHERE id IN (
@@ -30,8 +77,39 @@ async function claimOutboxBatch(): Promise<Array<{ id: string }>> {
       LIMIT ${BATCH_SIZE}
       FOR UPDATE SKIP LOCKED
     )
+    RETURNING id, attempts
+  `;
+}
+
+/**
+ * Atomically recover entries stuck in PROCESSING for >10 minutes.
+ * Uses raw SQL UPDATE ... RETURNING to avoid read-then-write races.
+ */
+async function recoverStuckEntries(): Promise<string[]> {
+  const stuck = await prisma.$queryRaw<Array<{ id: string }>>`
+    UPDATE "NotificationOutbox"
+    SET status = 'FAILED', "updatedAt" = NOW()
+    WHERE status = 'PROCESSING'
+      AND "updatedAt" < ${new Date(Date.now() - STUCK_THRESHOLD_MS)}
     RETURNING id
   `;
+  return stuck.map((r) => r.id);
+}
+
+/**
+ * Atomically release still-processing entries back to FAILED on cron timeout.
+ * Uses raw SQL UPDATE ... RETURNING to avoid read-then-write races.
+ */
+async function releaseOnTimeout(claimedIds: string[]): Promise<string[]> {
+  if (claimedIds.length === 0) return [];
+  const released = await prisma.$queryRaw<Array<{ id: string }>>`
+    UPDATE "NotificationOutbox"
+    SET status = 'FAILED', "updatedAt" = NOW()
+    WHERE id = ANY(${claimedIds}::text[])
+      AND status = 'PROCESSING'
+    RETURNING id
+  `;
+  return released.map((r) => r.id);
 }
 
 /**
@@ -63,18 +141,24 @@ async function handleProcessOutbox(request: NextRequest) {
 
   try {
     // Recovery: reset entries stuck in PROCESSING for >10 minutes (crash recovery)
-    await prisma.notificationOutbox.updateMany({
-      where: {
-        status: "PROCESSING",
-        updatedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
-      },
-      data: { status: "FAILED" },
-    });
+    const recoveredIds = await recoverStuckEntries();
+    if (recoveredIds.length > 0) {
+      logBulkTransition(recoveredIds, "PROCESSING", "FAILED", "crash_recovery_stuck_10m");
+    }
 
     // Atomically claim entries — concurrent cron runs will get disjoint sets
     const claimed = await claimOutboxBatch();
     if (claimed.length === 0) {
       return NextResponse.json({ success: true, sent: 0, failed: 0, dead: 0 });
+    }
+
+    // Log claim transitions (SQL UPDATE already moved them to PROCESSING)
+    for (const row of claimed) {
+      const fromState: OutboxStatus = row.attempts > 0 ? "FAILED" : "PENDING";
+      log.info(
+        { outboxId: row.id, from: fromState, to: "PROCESSING", reason: "claimed_for_delivery" },
+        "Outbox status transition"
+      );
     }
 
     const claimedIds = claimed.map((r) => r.id);
@@ -84,11 +168,11 @@ async function handleProcessOutbox(request: NextRequest) {
 
     for (const entry of entries) {
       if (Date.now() - startTime > CRON_TIMEOUT_MS) {
-        // Release unclaimed entries back to FAILED so they're retried
-        await prisma.notificationOutbox.updateMany({
-          where: { id: { in: claimedIds }, status: "PROCESSING" },
-          data: { status: "FAILED" },
-        });
+        // Release unprocessed entries back to FAILED so they're retried
+        const releasedIds = await releaseOnTimeout(claimedIds);
+        if (releasedIds.length > 0) {
+          logBulkTransition(releasedIds, "PROCESSING", "FAILED", "cron_timeout_release");
+        }
         break;
       }
 
@@ -134,9 +218,8 @@ async function handleProcessOutbox(request: NextRequest) {
         }
 
         if (success) {
-          await prisma.notificationOutbox.update({
-            where: { id: entry.id },
-            data: { status: "SENT", attempts: entry.attempts + 1 },
+          await transitionOutboxEntry(entry.id, "PROCESSING", "SENT", "delivery_success", {
+            attempts: entry.attempts + 1,
           });
           sent++;
         } else {
@@ -146,16 +229,13 @@ async function handleProcessOutbox(request: NextRequest) {
         const newAttempts = entry.attempts + 1;
         const backoffMs = 30_000 * Math.pow(2, newAttempts); // 30s * 2^attempts
         const nextRetry = new Date(Date.now() + backoffMs);
-        const newStatus = newAttempts >= entry.maxAttempts ? "DEAD" : "FAILED";
+        const newStatus: OutboxStatus = newAttempts >= entry.maxAttempts ? "DEAD" : "FAILED";
+        const reason = newStatus === "DEAD" ? "max_attempts_exceeded" : "delivery_failure";
 
-        await prisma.notificationOutbox.update({
-          where: { id: entry.id },
-          data: {
-            status: newStatus,
-            attempts: newAttempts,
-            lastError: err instanceof Error ? err.message : String(err),
-            nextRetryAt: nextRetry,
-          },
+        await transitionOutboxEntry(entry.id, "PROCESSING", newStatus, reason, {
+          attempts: newAttempts,
+          lastError: err instanceof Error ? err.message : String(err),
+          nextRetryAt: nextRetry,
         });
 
         if (newStatus === "DEAD") dead++;
