@@ -257,17 +257,17 @@ describe("Stripe Webhook Handler", () => {
 
       // User has existing subscription row
       mockQueryRaw.mockResolvedValue([
-        { id: "sub_db_1", userId: "cltest12345678901234567", tier: "FREE" },
+        { id: "sub_db_1", userId: "cltest12345678901234567", tier: "FREE", status: "active" },
       ]);
       mockSubscriptionUpdate.mockResolvedValue({});
 
       const response = await POST(makeRequest());
       expect(response.status).toBe(200);
 
-      // Verify subscription was updated with correct data
+      // Verify subscription was updated with correct data via transitionSubscription
       expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: "sub_db_1" },
+          where: { userId: "cltest12345678901234567" },
           data: expect.objectContaining({
             tier: "PRO",
             stripeSubId: "sub_test_123",
@@ -306,7 +306,9 @@ describe("Stripe Webhook Handler", () => {
         customer: "cus_test_123",
       });
       mockConstructEvent.mockReturnValue(event);
-      mockQueryRaw.mockResolvedValue([{ id: "sub_db_1", userId: "user_123" }]);
+      mockQueryRaw.mockResolvedValue([
+        { id: "sub_db_1", userId: "user_123", tier: "PRO", status: "past_due" },
+      ]);
       mockSubscriptionUpdate.mockResolvedValue({});
 
       const response = await POST(makeRequest());
@@ -314,6 +316,7 @@ describe("Stripe Webhook Handler", () => {
 
       expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
+          where: { userId: "user_123" },
           data: expect.objectContaining({
             status: "active",
           }),
@@ -355,7 +358,9 @@ describe("Stripe Webhook Handler", () => {
         customer: "cus_test_123",
       });
       mockConstructEvent.mockReturnValue(event);
-      mockQueryRaw.mockResolvedValue([{ id: "sub_db_1", userId: "user_123" }]);
+      mockQueryRaw.mockResolvedValue([
+        { id: "sub_db_1", userId: "user_123", tier: "PRO", status: "active" },
+      ]);
       mockSubscriptionUpdate.mockResolvedValue({});
 
       const response = await POST(makeRequest());
@@ -363,6 +368,7 @@ describe("Stripe Webhook Handler", () => {
 
       expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
+          where: { userId: "user_123" },
           data: expect.objectContaining({
             tier: "FREE",
             status: "cancelled",
@@ -382,7 +388,9 @@ describe("Stripe Webhook Handler", () => {
         customer: "cus_test_123",
       });
       mockConstructEvent.mockReturnValue(event);
-      mockQueryRaw.mockResolvedValue([{ id: "sub_db_1", userId: "user_123" }]);
+      mockQueryRaw.mockResolvedValue([
+        { id: "sub_db_1", userId: "user_123", tier: "PRO", status: "active" },
+      ]);
       mockSubscriptionUpdate.mockResolvedValue({});
       mockUserFindUnique.mockResolvedValue({ email: "test@example.com" });
 
@@ -391,7 +399,8 @@ describe("Stripe Webhook Handler", () => {
 
       expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { status: "past_due" },
+          where: { userId: "user_123" },
+          data: expect.objectContaining({ status: "past_due" }),
         })
       );
 

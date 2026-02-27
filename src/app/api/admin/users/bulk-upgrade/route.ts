@@ -6,6 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { checkAdmin } from "@/lib/admin";
 import { audit } from "@/lib/audit";
+import { logSubscriptionTransition } from "@/lib/subscription/transitions";
 import { checkContentType, safeReadJson } from "@/lib/validations";
 import {
   adminBulkRateLimiter,
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       // Batch fetch all users in this chunk at once
       const users = await prisma.user.findMany({
         where: { email: { in: chunk } },
-        select: { id: true, email: true, subscription: { select: { tier: true } } },
+        select: { id: true, email: true, subscription: { select: { tier: true, status: true } } },
       });
 
       const userMap = new Map(users.map((u) => [u.email, u]));
@@ -94,13 +95,19 @@ export async function POST(request: Request) {
 
           // Audit the tier change (fire-and-forget)
           const tierOrder = ["FREE", "PRO", "ELITE"];
-          const auditFn =
-            tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier)
-              ? audit.subscriptionUpgrade
-              : audit.subscriptionDowngrade;
+          const isUpgrade = tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier);
+          const auditFn = isUpgrade ? audit.subscriptionUpgrade : audit.subscriptionDowngrade;
           auditFn(user.id, previousTier, tier).catch((err) => {
             logger.error({ err }, "Audit log failed: bulk_upgrade");
           });
+
+          const previousStatus = user.subscription?.status ?? "active";
+          logSubscriptionTransition(
+            user.id,
+            { status: previousStatus, tier: previousTier as "FREE" | "PRO" | "ELITE" },
+            { status: "active", tier },
+            isUpgrade ? "admin_bulk_upgrade" : "admin_bulk_downgrade"
+          );
 
           updated++;
         })

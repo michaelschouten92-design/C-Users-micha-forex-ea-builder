@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { logSubscriptionTransition } from "@/lib/subscription/transitions";
 import { timingSafeEqual } from "@/lib/csrf";
 import { sendRenewalReminderEmail } from "@/lib/email";
 import { enqueueNotification } from "@/lib/outbox";
@@ -217,23 +218,26 @@ async function handleCleanup(request: NextRequest) {
     let downgraded = 0;
 
     if (!isTimedOut()) {
-      // Use updateMany with the same where clause to avoid find-then-update race condition.
-      // This is atomic and prevents concurrent cron runs from double-downgrading.
-      const downgradeResult = await prisma.subscription.updateMany({
-        where: {
-          status: "past_due",
-          currentPeriodEnd: { lt: fourteenDaysAgo },
-          tier: { not: "FREE" },
-          // Also check manualPeriodEnd - if admin extended, respect that
-          OR: [{ manualPeriodEnd: null }, { manualPeriodEnd: { lt: fourteenDaysAgo } }],
-        },
-        data: {
-          tier: "FREE",
-          status: "cancelled",
-          stripeSubId: null,
-        },
-      });
-      downgraded = downgradeResult.count;
+      // Atomic UPDATE...RETURNING to get affected rows for structured transition logging.
+      // Prevents concurrent cron runs from double-downgrading (same atomicity as updateMany).
+      const downgradeRows = await prisma.$queryRaw<Array<{ userId: string; tier: string }>>`
+        UPDATE "Subscription"
+        SET tier = 'FREE', status = 'cancelled', "stripeSubId" = NULL
+        WHERE status = 'past_due'
+          AND "currentPeriodEnd" < ${fourteenDaysAgo}
+          AND tier != 'FREE'
+          AND ("manualPeriodEnd" IS NULL OR "manualPeriodEnd" < ${fourteenDaysAgo})
+        RETURNING "userId", tier
+      `;
+      downgraded = downgradeRows.length;
+      for (const row of downgradeRows) {
+        logSubscriptionTransition(
+          row.userId,
+          { status: "past_due", tier: row.tier as "PRO" | "ELITE" },
+          { status: "cancelled", tier: "FREE" },
+          "auto_downgrade_past_due_14d"
+        );
+      }
       if (downgraded > 0) {
         log.info({ count: downgraded }, "Auto-downgraded past_due subscriptions");
       }

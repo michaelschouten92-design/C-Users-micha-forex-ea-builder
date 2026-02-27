@@ -7,6 +7,7 @@ import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 import { audit } from "@/lib/audit";
 import { checkAdmin } from "@/lib/admin";
 import { syncDiscordRoleForUser } from "@/lib/discord";
+import { logSubscriptionTransition } from "@/lib/subscription/transitions";
 import { checkContentType, safeReadJson } from "@/lib/validations";
 import { features } from "@/lib/env";
 import {
@@ -119,6 +120,14 @@ export async function POST(request: Request) {
     // Log audit event
     const isUpgrade =
       (previousTier === "FREE" && tier !== "FREE") || (previousTier === "PRO" && tier === "ELITE");
+
+    const previousStatus = user.subscription?.status ?? "active";
+    logSubscriptionTransition(
+      user.id,
+      { status: previousStatus, tier: previousTier as "FREE" | "PRO" | "ELITE" },
+      { status: "active", tier },
+      isUpgrade ? "admin_upgrade" : "admin_downgrade"
+    );
 
     if (isUpgrade) {
       await audit.subscriptionUpgrade(user.id, previousTier, tier);

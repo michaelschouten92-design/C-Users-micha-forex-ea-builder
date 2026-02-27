@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { Prisma, type SubscriptionStatus } from "@prisma/client";
+import { Prisma, type PlanTier, type SubscriptionStatus } from "@prisma/client";
 import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
@@ -13,6 +13,7 @@ import {
   sendTrialEndingEmail,
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
+import { mapStripeStatus, transitionSubscription } from "@/lib/subscription/transitions";
 import type Stripe from "stripe";
 import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
@@ -277,33 +278,16 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   }
   const period = getSubscriptionPeriod(stripeSubscription);
 
-  // Map Stripe status to our SubscriptionStatus enum
-  const statusMap: Record<string, SubscriptionStatus> = {
-    active: "active",
-    canceled: "cancelled",
-    incomplete: "incomplete",
-    incomplete_expired: "expired",
-    past_due: "past_due",
-    paused: "paused",
-    trialing: "trialing",
-    unpaid: "unpaid",
-  };
-  if (!statusMap[stripeSubscription.status]) {
-    log.warn(
-      { stripeStatus: stripeSubscription.status, subscriptionId },
-      "Unknown Stripe subscription status encountered in checkout — defaulting to active"
-    );
-  }
-  const mappedStatus: SubscriptionStatus = statusMap[stripeSubscription.status] ?? "active";
+  const mappedStatus = mapStripeStatus(stripeSubscription.status);
 
   // Use transaction with row-level locking to prevent race conditions with concurrent webhooks.
   // FOR UPDATE ensures that if two checkout.session.completed webhooks arrive simultaneously
   // for the same user, the second one blocks until the first commits, preventing double-processing.
   const previousTier = await prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<
-      Array<{ id: string; tier: string; stripeSubId: string | null }>
+      Array<{ id: string; tier: string; status: string; stripeSubId: string | null }>
     >`
-      SELECT id, tier, "stripeSubId" FROM "Subscription"
+      SELECT id, tier, status, "stripeSubId" FROM "Subscription"
       WHERE "userId" = ${userId}
       FOR UPDATE
     `;
@@ -325,18 +309,20 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
     const prev = rows[0].tier;
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: {
-        tier: validatedPlan,
-        status: mappedStatus,
+    await transitionSubscription(
+      tx,
+      userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: mappedStatus, tier: validatedPlan },
+      "stripe_checkout_complete",
+      {
         stripeSubId: subscriptionId,
         stripeCustomerId: customerId,
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
         hadPaidPlan: true,
-      },
-    });
+      }
+    );
 
     return prev;
   });
@@ -393,25 +379,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Map Stripe status to our SubscriptionStatus enum
-  const statusMap: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
-    active: "active",
-    canceled: "cancelled",
-    incomplete: "incomplete",
-    incomplete_expired: "expired",
-    past_due: "past_due",
-    paused: "paused",
-    trialing: "trialing",
-    unpaid: "unpaid",
-  };
-
-  if (!statusMap[subscription.status]) {
-    log.warn(
-      { stripeStatus: subscription.status, subscriptionId: subscription.id },
-      "Unknown Stripe subscription status encountered in update — defaulting to active"
-    );
-  }
-
+  const mappedStatus = mapStripeStatus(subscription.status);
   const period = getSubscriptionPeriod(subscription);
 
   // Use transaction with row-level locking to prevent concurrent webhook race conditions
@@ -422,11 +390,12 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         id: string;
         userId: string;
         tier: string;
+        status: string;
         scheduledDowngradeTier: string | null;
         stripeScheduleId: string | null;
       }>
     >`
-      SELECT id, "userId", tier, "scheduledDowngradeTier", "stripeScheduleId" FROM "Subscription"
+      SELECT id, "userId", tier, status, "scheduledDowngradeTier", "stripeScheduleId" FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
@@ -444,12 +413,17 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     const shouldClearSchedule =
       userSubscription.scheduledDowngradeTier === tier || !userSubscription.scheduledDowngradeTier;
 
-    await tx.subscription.update({
-      where: { id: userSubscription.id },
-      data: {
-        tier,
+    await transitionSubscription(
+      tx,
+      userSubscription.userId,
+      {
+        status: userSubscription.status as SubscriptionStatus,
+        tier: userSubscription.tier as PlanTier,
+      },
+      { status: mappedStatus, tier },
+      "stripe_subscription_update",
+      {
         stripeSubId: subscription.id,
-        status: statusMap[subscription.status] ?? "active",
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
         hadPaidPlan: true,
@@ -457,8 +431,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
           scheduledDowngradeTier: null,
           stripeScheduleId: null,
         }),
-      },
-    });
+      }
+    );
 
     return { userId: userSubscription.userId, previousTier };
   });
@@ -504,26 +478,30 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
   // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
 
     if (!rows.length) return null;
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: {
-        tier: "FREE",
-        status: "cancelled",
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "cancelled", tier: "FREE" },
+      "stripe_subscription_cancelled",
+      {
         stripeSubId: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
         scheduledDowngradeTier: null,
         stripeScheduleId: null,
-      },
-    });
+      }
+    );
 
     return rows[0].userId;
   });
@@ -562,8 +540,10 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
@@ -572,14 +552,17 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       throw new Error(`No subscription found for customer ${customerId} — will retry`);
     }
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: {
-        status: "active",
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "active" },
+      "stripe_payment_succeeded",
+      {
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
-      },
-    });
+      }
+    );
 
     return rows[0].userId;
   });
@@ -601,20 +584,23 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   // Use transaction with row-level locking
   const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
 
     if (!rows.length) return null;
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: {
-        status: "past_due",
-      },
-    });
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "past_due" },
+      "stripe_payment_failed"
+    );
 
     return rows[0].userId;
   });
@@ -713,18 +699,23 @@ async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
 
   // Update subscription status to paused
   const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
 
     if (!rows.length) return null;
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: { status: "paused" },
-    });
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "paused" },
+      "stripe_subscription_paused"
+    );
 
     return rows[0].userId;
   });
@@ -744,18 +735,23 @@ async function handleInvoiceUncollectible(invoice: Stripe.Invoice) {
 
   // Mark subscription as unpaid when invoice is abandoned
   const userId = await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-      SELECT id, "userId" FROM "Subscription"
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
       FOR UPDATE
     `;
 
     if (!rows.length) return null;
 
-    await tx.subscription.update({
-      where: { id: rows[0].id },
-      data: { status: "unpaid" },
-    });
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "unpaid" },
+      "stripe_invoice_uncollectible"
+    );
 
     return rows[0].userId;
   });
@@ -837,18 +833,24 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
     }
 
     const userId = await prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
-        SELECT id, "userId" FROM "Subscription"
+      const rows = await tx.$queryRaw<
+        Array<{ id: string; userId: string; tier: string; status: string }>
+      >`
+        SELECT id, "userId", tier, status FROM "Subscription"
         WHERE "stripeCustomerId" = ${customerId}
         FOR UPDATE
       `;
 
       if (!rows.length) return null;
 
-      await tx.subscription.update({
-        where: { id: rows[0].id },
-        data: { tier: "FREE", status: "cancelled", stripeSubId: null },
-      });
+      await transitionSubscription(
+        tx,
+        rows[0].userId,
+        { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+        { status: "cancelled", tier: "FREE" },
+        "stripe_dispute_lost",
+        { stripeSubId: null }
+      );
 
       return rows[0].userId;
     });

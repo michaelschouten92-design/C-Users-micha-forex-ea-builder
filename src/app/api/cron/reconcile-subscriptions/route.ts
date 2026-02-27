@@ -4,21 +4,15 @@ import { getStripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
+import {
+  mapStripeStatus,
+  transitionSubscription,
+  logSubscriptionTransition,
+} from "@/lib/subscription/transitions";
 import type { SubscriptionStatus } from "@prisma/client";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/cron/reconcile-subscriptions" });
-
-const STRIPE_STATUS_MAP: Record<string, SubscriptionStatus> = {
-  active: "active",
-  canceled: "cancelled",
-  incomplete: "incomplete",
-  incomplete_expired: "expired",
-  past_due: "past_due",
-  paused: "paused",
-  trialing: "trialing",
-  unpaid: "unpaid",
-};
 
 const PRICE_TO_TIER: Record<string, "PRO" | "ELITE"> = {};
 
@@ -111,10 +105,14 @@ async function handleReconcile(request: NextRequest) {
                 { userId: sub.userId, stripeSubId: sub.stripeSubId },
                 "Stripe subscription not found — marking as cancelled"
               );
-              await prisma.subscription.update({
-                where: { id: sub.id },
-                data: { tier: "FREE", status: "cancelled", stripeSubId: null },
-              });
+              await transitionSubscription(
+                prisma,
+                sub.userId,
+                { status: sub.status, tier: sub.tier },
+                { status: "cancelled", tier: "FREE" },
+                "reconcile_stripe_missing",
+                { stripeSubId: null }
+              );
               invalidateSubscriptionCache(sub.userId);
               return { mismatch: true };
             }
@@ -122,7 +120,7 @@ async function handleReconcile(request: NextRequest) {
           }
 
           // Compare status
-          const expectedStatus = STRIPE_STATUS_MAP[stripeSub.status] ?? "active";
+          const expectedStatus = mapStripeStatus(stripeSub.status);
           const priceId = stripeSub.items.data[0]?.price.id;
           const expectedTier = priceId ? PRICE_TO_TIER[priceId] : undefined;
 
@@ -168,10 +166,18 @@ async function handleReconcile(request: NextRequest) {
               { userId: sub.userId, stripeSubId: sub.stripeSubId, updates },
               "Reconciliation mismatch — updating DB"
             );
-            await prisma.subscription.update({
-              where: { id: sub.id },
-              data: updates,
-            });
+            const toState: { status?: SubscriptionStatus; tier?: "PRO" | "ELITE" } = {};
+            if (updates.status) toState.status = updates.status as SubscriptionStatus;
+            if (updates.tier) toState.tier = updates.tier as "PRO" | "ELITE";
+            const { status: _s, tier: _t, ...periodUpdates } = updates;
+            await transitionSubscription(
+              prisma,
+              sub.userId,
+              { status: sub.status, tier: sub.tier },
+              toState,
+              "reconcile_stripe_drift",
+              periodUpdates
+            );
             invalidateSubscriptionCache(sub.userId);
             return { mismatch: true };
           }
