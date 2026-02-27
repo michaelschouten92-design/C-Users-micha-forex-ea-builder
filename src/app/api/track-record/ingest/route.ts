@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
+  } catch (err) {
+    logger.error({ err, instanceId }, "Track record ingest: malformed JSON body");
+    Sentry.captureException(err, { extra: { instanceId, context: "track-record-json-parse" } });
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
