@@ -5,6 +5,25 @@
  * Each insight has a type, message, and severity level.
  */
 
+// ============================================
+// INSIGHTS CONSTANTS
+// ============================================
+
+/** Hours without heartbeat before an EA is flagged as stale/offline.
+ *  24h accommodates weekends and server restarts without false positives. */
+export const STALE_OFFLINE_HOURS = 24;
+
+/** Number of days to look back when filtering "recent" backtest uploads. */
+export const RECENT_BACKTEST_DAYS = 7;
+
+/** Max drawdown percentage that triggers a high-risk warning.
+ *  30% is a commonly cited threshold for unacceptable account risk. */
+export const HIGH_DRAWDOWN_THRESHOLD_PCT = 30;
+
+/** Maximum number of insights returned to the user per request.
+ *  Keeps the dashboard focused on the most actionable items. */
+export const MAX_INSIGHTS = 3;
+
 interface LiveEASummary {
   id: string;
   eaName: string;
@@ -92,14 +111,14 @@ export function generateDailyInsights(
     if (!ea.lastHeartbeat) return true;
     const hoursSinceHeartbeat =
       (Date.now() - new Date(ea.lastHeartbeat).getTime()) / (1000 * 60 * 60);
-    return hoursSinceHeartbeat > 24;
+    return hoursSinceHeartbeat > STALE_OFFLINE_HOURS;
   });
 
   if (staleOffline.length > 0) {
     insights.push({
       type: "warning",
       icon: "offline",
-      message: `${staleOffline.length} EA${staleOffline.length > 1 ? "s" : ""} offline for 24+ hours`,
+      message: `${staleOffline.length} EA${staleOffline.length > 1 ? "s" : ""} offline for ${STALE_OFFLINE_HOURS}+ hours`,
       detail: "Check if your terminal is running and the EA is attached.",
       linkHref: "/app/monitor",
       linkLabel: "View Live EAs",
@@ -131,7 +150,7 @@ export function generateDailyInsights(
     });
   }
 
-  if (unstableStrategies.length > 0 && insights.length < 3) {
+  if (unstableStrategies.length > 0 && insights.length < MAX_INSIGHTS) {
     const names = unstableStrategies.map((ea) => ea.eaName).join(", ");
     insights.push({
       type: "warning",
@@ -159,7 +178,7 @@ export function generateDailyInsights(
   // ========================================
   const recentWeek = recentBacktests.filter((bt) => {
     const daysSince = (Date.now() - new Date(bt.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince <= 7;
+    return daysSince <= RECENT_BACKTEST_DAYS;
   });
 
   // Weak strategies uploaded recently
@@ -187,12 +206,12 @@ export function generateDailyInsights(
   }
 
   // High drawdown warning
-  const highDD = recentBacktests.filter((bt) => bt.maxDrawdownPct > 30);
-  if (highDD.length > 0 && insights.length < 3) {
+  const highDD = recentBacktests.filter((bt) => bt.maxDrawdownPct > HIGH_DRAWDOWN_THRESHOLD_PCT);
+  if (highDD.length > 0 && insights.length < MAX_INSIGHTS) {
     insights.push({
       type: "warning",
       icon: "drawdown",
-      message: `${highDD.length} strategy${highDD.length > 1 ? "s have" : " has"} drawdown above 30%`,
+      message: `${highDD.length} strategy${highDD.length > 1 ? "s have" : " has"} drawdown above ${HIGH_DRAWDOWN_THRESHOLD_PCT}%`,
       detail:
         "High drawdown increases the risk of account blowup. Consider tightening risk management.",
     });
@@ -212,8 +231,7 @@ export function generateDailyInsights(
     });
   }
 
-  // Return top 3 most relevant
-  return insights.slice(0, 3);
+  return insights.slice(0, MAX_INSIGHTS);
 }
 
 /**

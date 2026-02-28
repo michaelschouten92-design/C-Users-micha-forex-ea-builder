@@ -13,6 +13,7 @@ import {
   PROVEN_CONSECUTIVE_HEALTHY,
   PROVEN_MIN_TRADES,
   RETIRED_CONSECUTIVE_DEGRADED,
+  BASELINE_RETURN_DECAY,
 } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
@@ -260,10 +261,12 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       // Arithmetic scaling (r/days*30) overestimates for large returns.
       const days = backtestBaseline.backtestDurationDays;
       const r = backtestBaseline.netReturnPct;
-      // Apply 25% decay factor to account for natural strategy degradation
+      // Apply decay factor to account for natural strategy degradation
       // A live strategy shouldn't be expected to exactly match backtest returns
       const returnPct30d =
-        days > 0 && Math.abs(r) > 0.001 ? (Math.pow(1 + r / 100, 30 / days) - 1) * 100 * 0.75 : 0;
+        days > 0 && Math.abs(r) > 0.001
+          ? (Math.pow(1 + r / 100, 30 / days) - 1) * 100 * BASELINE_RETURN_DECAY
+          : 0;
 
       // Scale baseline DD to 30-day equivalent.
       // Max drawdown scales roughly with sqrt(observation period).

@@ -81,3 +81,54 @@ export const PROVEN_CONSECUTIVE_HEALTHY = 5;
 export const PROVEN_MIN_TRADES = 30;
 /** Consecutive DEGRADED evaluations that trigger automatic retirement */
 export const RETIRED_CONSECUTIVE_DEGRADED = 5;
+
+// ============================================
+// MONITORING: BASELINE NORMALIZATION
+// ============================================
+
+/** Decay applied to backtest returns when setting live expectations.
+ *  0.75 = expect 75% of backtest performance. Accounts for natural
+ *  slippage, spread widening, and overfitting bias in backtests. */
+export const BASELINE_RETURN_DECAY = 0.75;
+
+// ============================================
+// MONITORING: CUSUM DRIFT DETECTION
+// ============================================
+
+/** Minimum trades before CUSUM drift detection activates.
+ *  Below this, sample variance is too noisy for reliable detection. */
+export const CUSUM_MIN_TRADES = 20;
+
+/** CUSUM allowance factor: k = factor × σ.
+ *  At 0.5, CUSUM detects sustained mean shifts of ~1σ magnitude. */
+export const CUSUM_ALLOWANCE_FACTOR = 0.5;
+
+/** CUSUM decision threshold factor: h = factor × σ.
+ *  At k=0.5σ, h=4σ gives ARL₀ ≈ 100+ observations before false alarm. */
+export const CUSUM_DECISION_FACTOR = 4;
+
+// ============================================
+// VERIFICATION: HEALTH STATUS BOUNDARIES
+// ============================================
+
+/** Overall score at or above this = HEALTHY status */
+export const HEALTHY_THRESHOLD = 0.7;
+
+/** Overall score at or above this (but below HEALTHY_THRESHOLD) = WARNING.
+ *  Below this = DEGRADED. */
+export const WARNING_THRESHOLD = 0.4;
+
+/** Hysteresis margin applied to status boundaries.
+ *  Prevents flapping when score oscillates near a threshold:
+ *  degrade requires score < threshold - margin,
+ *  improve requires score > threshold + margin. */
+export const HYSTERESIS_MARGIN = 0.05;
+
+/** Base ± margin for score confidence interval at REFERENCE_TRADES (100).
+ *  Widens as sqrt(REFERENCE_TRADES / N) for smaller samples. */
+export const CONFIDENCE_BASE_MARGIN = 0.1;
+
+/** Minimum trade returns before CUSUM is attempted during scoring.
+ *  Lower than CUSUM_MIN_TRADES because computeCusum handles its own
+ *  minimum internally — this is a cheap pre-check to avoid unnecessary work. */
+export const CUSUM_SCORER_MIN_RETURNS = 5;

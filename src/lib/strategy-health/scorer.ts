@@ -20,6 +20,11 @@ import {
   MIN_TRADES_FOR_ASSESSMENT,
   MIN_DAYS_FOR_ASSESSMENT,
   REFERENCE_TRADES,
+  HEALTHY_THRESHOLD,
+  WARNING_THRESHOLD,
+  HYSTERESIS_MARGIN,
+  CONFIDENCE_BASE_MARGIN,
+  CUSUM_SCORER_MIN_RETURNS,
 } from "./thresholds";
 
 /**
@@ -131,9 +136,6 @@ function scoreMetricAbsolute(liveValue: number, thresholdKey: string): number {
   }
 }
 
-/** Hysteresis margin to prevent status flapping near thresholds */
-const HYSTERESIS_MARGIN = 0.05;
-
 /**
  * Determine health status from overall score with hysteresis.
  *
@@ -147,32 +149,32 @@ function determineStatus(
 ): HealthStatusType {
   // Without previous status, use simple thresholds
   if (!previousStatus || previousStatus === "INSUFFICIENT_DATA") {
-    if (overallScore >= 0.7) return "HEALTHY";
-    if (overallScore >= 0.4) return "WARNING";
+    if (overallScore >= HEALTHY_THRESHOLD) return "HEALTHY";
+    if (overallScore >= WARNING_THRESHOLD) return "WARNING";
     return "DEGRADED";
   }
 
   // Apply hysteresis based on current status
   if (previousStatus === "HEALTHY") {
-    // Must drop below 0.7 - margin to degrade to WARNING
-    if (overallScore < 0.7 - HYSTERESIS_MARGIN) {
-      return overallScore >= 0.4 - HYSTERESIS_MARGIN ? "WARNING" : "DEGRADED";
+    // Must drop below threshold - margin to degrade to WARNING
+    if (overallScore < HEALTHY_THRESHOLD - HYSTERESIS_MARGIN) {
+      return overallScore >= WARNING_THRESHOLD - HYSTERESIS_MARGIN ? "WARNING" : "DEGRADED";
     }
     return "HEALTHY";
   }
 
   if (previousStatus === "WARNING") {
-    // Must rise above 0.7 + margin to improve to HEALTHY
-    if (overallScore >= 0.7 + HYSTERESIS_MARGIN) return "HEALTHY";
-    // Must drop below 0.4 - margin to degrade to DEGRADED
-    if (overallScore < 0.4 - HYSTERESIS_MARGIN) return "DEGRADED";
+    // Must rise above threshold + margin to improve to HEALTHY
+    if (overallScore >= HEALTHY_THRESHOLD + HYSTERESIS_MARGIN) return "HEALTHY";
+    // Must drop below threshold - margin to degrade to DEGRADED
+    if (overallScore < WARNING_THRESHOLD - HYSTERESIS_MARGIN) return "DEGRADED";
     return "WARNING";
   }
 
   // previousStatus === "DEGRADED"
-  // Must rise above 0.4 + margin to improve to WARNING
-  if (overallScore >= 0.4 + HYSTERESIS_MARGIN) {
-    return overallScore >= 0.7 + HYSTERESIS_MARGIN ? "HEALTHY" : "WARNING";
+  // Must rise above threshold + margin to improve to WARNING
+  if (overallScore >= WARNING_THRESHOLD + HYSTERESIS_MARGIN) {
+    return overallScore >= HEALTHY_THRESHOLD + HYSTERESIS_MARGIN ? "HEALTHY" : "WARNING";
   }
   return "DEGRADED";
 }
@@ -187,8 +189,7 @@ function determineStatus(
  *   N=500: ±0.045
  */
 function computeConfidenceInterval(overallScore: number, totalTrades: number): ConfidenceInterval {
-  const BASE_MARGIN = 0.1;
-  const margin = BASE_MARGIN * Math.sqrt(REFERENCE_TRADES / Math.max(totalTrades, 1));
+  const margin = CONFIDENCE_BASE_MARGIN * Math.sqrt(REFERENCE_TRADES / Math.max(totalTrades, 1));
   return {
     lower: Math.max(0, overallScore - margin),
     upper: Math.min(1, overallScore + margin),
@@ -277,7 +278,7 @@ export function computeHealth(
 
   // CUSUM drift detection: compare live expectancy against baseline
   let drift: DriftInfo = noDrift;
-  if (hasBaseline && live.tradeReturns.length >= 5) {
+  if (hasBaseline && live.tradeReturns.length >= CUSUM_SCORER_MIN_RETURNS) {
     const expectedMean =
       baseline.tradesPerDay > 0
         ? baseline.returnPct / 30 / baseline.tradesPerDay

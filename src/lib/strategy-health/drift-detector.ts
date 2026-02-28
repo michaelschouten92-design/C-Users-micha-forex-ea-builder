@@ -15,9 +15,11 @@
  *   k   = allowance parameter (half the shift we want to detect)
  *   h   = decision threshold (CUSUM > h signals drift)
  *
- * We use k = 0.5σ and h = 4σ (standard ARL₀ ≈ 100+ observations
- * before false alarm at these settings).
+ * We use k = CUSUM_ALLOWANCE_FACTOR × σ and h = CUSUM_DECISION_FACTOR × σ
+ * (standard ARL₀ ≈ 100+ observations before false alarm at these settings).
  */
+
+import { CUSUM_MIN_TRADES, CUSUM_ALLOWANCE_FACTOR, CUSUM_DECISION_FACTOR } from "./thresholds";
 
 export interface CusumState {
   /** Cumulative sum statistic (0 = no drift detected) */
@@ -53,7 +55,7 @@ export function computeCusum(
   expectedMean: number,
   stdDev: number
 ): CusumResult {
-  if (tradeReturns.length < 20) {
+  if (tradeReturns.length < CUSUM_MIN_TRADES) {
     return { cusumValue: 0, driftDetected: false, driftSeverity: 0 };
   }
 
@@ -67,11 +69,9 @@ export function computeCusum(
     if (sigma <= 0) sigma = 1; // fallback
   }
 
-  // CUSUM parameters
-  // k = allowance = 0.5σ (detect shifts of 1σ magnitude)
-  // h = decision threshold = 4σ (ARL₀ ≈ 100+, good false alarm rate)
-  const k = 0.5 * sigma;
-  const h = 4 * sigma;
+  // CUSUM parameters (see thresholds.ts for rationale)
+  const k = CUSUM_ALLOWANCE_FACTOR * sigma;
+  const h = CUSUM_DECISION_FACTOR * sigma;
 
   // One-sided lower CUSUM: detect decrease in mean
   let cusumLower = 0;
