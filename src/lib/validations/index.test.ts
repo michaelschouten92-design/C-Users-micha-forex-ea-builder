@@ -7,6 +7,9 @@ import {
   checkoutRequestSchema,
   exportRequestSchema,
   formatZodErrors,
+  isJsonContentType,
+  isBodyTooLarge,
+  parseJsonBody,
 } from "./index";
 import { z } from "zod";
 
@@ -253,6 +256,117 @@ describe("validations", () => {
         expect(errors.some((e) => e.includes("name"))).toBe(true);
         expect(errors.some((e) => e.includes("nested.value"))).toBe(true);
       }
+    });
+  });
+
+  // ============================================
+  // PURE VALIDATION HELPERS
+  // ============================================
+
+  describe("isJsonContentType", () => {
+    it("returns true for application/json", () => {
+      expect(isJsonContentType("application/json")).toBe(true);
+    });
+
+    it("returns true for application/json with charset", () => {
+      expect(isJsonContentType("application/json; charset=utf-8")).toBe(true);
+    });
+
+    it("returns false for null", () => {
+      expect(isJsonContentType(null)).toBe(false);
+    });
+
+    it("returns false for text/plain", () => {
+      expect(isJsonContentType("text/plain")).toBe(false);
+    });
+
+    it("returns false for empty string", () => {
+      expect(isJsonContentType("")).toBe(false);
+    });
+
+    it("returns false for multipart/form-data", () => {
+      expect(isJsonContentType("multipart/form-data")).toBe(false);
+    });
+  });
+
+  describe("isBodyTooLarge", () => {
+    it("returns false when content-length is null", () => {
+      expect(isBodyTooLarge(null)).toBe(false);
+    });
+
+    it("returns false when content-length is within limit", () => {
+      expect(isBodyTooLarge("500", 1024)).toBe(false);
+    });
+
+    it("returns false when content-length equals limit", () => {
+      expect(isBodyTooLarge("1024", 1024)).toBe(false);
+    });
+
+    it("returns true when content-length exceeds limit", () => {
+      expect(isBodyTooLarge("2048", 1024)).toBe(true);
+    });
+
+    it("uses default 1MB limit when maxBytes not specified", () => {
+      const oneMB = 1 * 1024 * 1024;
+      expect(isBodyTooLarge(String(oneMB))).toBe(false);
+      expect(isBodyTooLarge(String(oneMB + 1))).toBe(true);
+    });
+  });
+
+  describe("parseJsonBody", () => {
+    it("parses valid JSON and returns data", () => {
+      const result = parseJsonBody('{"key":"value"}');
+      expect(result).toEqual({ success: true, data: { key: "value" } });
+    });
+
+    it("parses JSON arrays", () => {
+      const result = parseJsonBody("[1,2,3]");
+      expect(result).toEqual({ success: true, data: [1, 2, 3] });
+    });
+
+    it("parses JSON primitives", () => {
+      expect(parseJsonBody("42")).toEqual({ success: true, data: 42 });
+      expect(parseJsonBody('"hello"')).toEqual({ success: true, data: "hello" });
+      expect(parseJsonBody("null")).toEqual({ success: true, data: null });
+      expect(parseJsonBody("true")).toEqual({ success: true, data: true });
+    });
+
+    it("returns error for invalid JSON", () => {
+      const result = parseJsonBody("{not valid json}");
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe("Invalid JSON");
+        expect(result.status).toBe(400);
+      }
+    });
+
+    it("returns error for empty string", () => {
+      const result = parseJsonBody("");
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.status).toBe(400);
+      }
+    });
+
+    it("returns error when body exceeds maxBytes", () => {
+      const largeBody = "x".repeat(100);
+      const result = parseJsonBody(largeBody, 50);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.status).toBe(413);
+        expect(result.error).toContain("Request too large");
+      }
+    });
+
+    it("accepts body at exactly maxBytes", () => {
+      const body = '{"a":1}';
+      const result = parseJsonBody(body, body.length);
+      expect(result).toEqual({ success: true, data: { a: 1 } });
+    });
+
+    it("uses default 1MB limit when maxBytes not specified", () => {
+      const result = parseJsonBody('{"ok":true}');
+      expect(result).toEqual({ success: true, data: { ok: true } });
     });
   });
 });

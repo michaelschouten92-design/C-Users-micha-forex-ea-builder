@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hashIp, getSessionId } from "./events";
+import { hashIp, extractSessionId } from "./events";
 
 // ============================================
 // hashIp
@@ -26,6 +26,12 @@ describe("hashIp", () => {
     expect(result).toMatch(/^[0-9a-f]{16}$/);
   });
 
+  it("handles full IPv6 addresses", () => {
+    const result = hashIp("2001:0db8:85a3:0000:0000:8a2e:0370:7334");
+    expect(result).toHaveLength(16);
+    expect(result).toMatch(/^[0-9a-f]{16}$/);
+  });
+
   it("handles empty string", () => {
     const result = hashIp("");
     expect(result).toHaveLength(16);
@@ -33,37 +39,45 @@ describe("hashIp", () => {
 });
 
 // ============================================
-// getSessionId
+// extractSessionId
 // ============================================
 
-describe("getSessionId", () => {
-  it("returns a string session ID", () => {
-    const mockRequest = {
-      headers: new Headers(),
-    } as unknown as Request;
-
-    const sid = getSessionId(mockRequest);
-    expect(typeof sid).toBe("string");
-    expect(sid.length).toBeGreaterThan(0);
+describe("extractSessionId", () => {
+  it("extracts proof_sid from a cookie header", () => {
+    const sid = extractSessionId("proof_sid=abc123def456");
+    expect(sid).toBe("abc123def456");
   });
 
-  it("extracts session ID from proof_sid cookie", () => {
-    const mockRequest = {
-      headers: new Headers({ cookie: "proof_sid=test-session-123; other=value" }),
-    } as unknown as Request;
-
-    const sid = getSessionId(mockRequest);
+  it("extracts proof_sid when other cookies are present", () => {
+    const sid = extractSessionId("theme=dark; proof_sid=test-session-123; lang=en");
     expect(sid).toBe("test-session-123");
   });
 
-  it("generates new session ID when no cookie", () => {
-    const mockRequest = {
-      headers: new Headers(),
-    } as unknown as Request;
+  it("extracts proof_sid when it is the first cookie", () => {
+    const sid = extractSessionId("proof_sid=first123; other=value");
+    expect(sid).toBe("first123");
+  });
 
-    const sid = getSessionId(mockRequest);
-    expect(sid).toBeTruthy();
-    // Should be a UUID-like format
-    expect(sid.length).toBeGreaterThanOrEqual(10);
+  it("generates a new session ID when cookie header is null", () => {
+    const sid = extractSessionId(null);
+    expect(sid).toHaveLength(24);
+    expect(sid).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  it("generates a new session ID when proof_sid is missing", () => {
+    const sid = extractSessionId("theme=dark; lang=en");
+    expect(sid).toHaveLength(24);
+    expect(sid).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  it("generates a new session ID for empty string", () => {
+    const sid = extractSessionId("");
+    expect(sid).toHaveLength(24);
+    expect(sid).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  it("handles cookie values with hyphens and underscores", () => {
+    const sid = extractSessionId("proof_sid=abc-123_DEF");
+    expect(sid).toBe("abc-123_DEF");
   });
 });

@@ -9,7 +9,7 @@ export {
   type ThresholdKey,
 } from "./ladder";
 
-export { logProofEvent, getSessionId, type ProofEvent, type ProofEventType } from "./events";
+export { logProofEvent, extractSessionId, type ProofEvent, type ProofEventType } from "./events";
 
 export {
   computeTrustScore,

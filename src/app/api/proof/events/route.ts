@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { logProofEvent, getSessionId, type ProofEventType } from "@/lib/proof/events";
+import { logProofEvent, extractSessionId, type ProofEventType } from "@/lib/proof/events";
 import {
   checkRateLimit,
   publicApiRateLimiter,
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { type, strategyId, ownerId, meta } = validation.data;
-  const sessionId = getSessionId(request);
+  const sessionId = extractSessionId(request.headers.get("cookie"));
 
   // Fire and forget — don't block response on DB write
   logProofEvent({

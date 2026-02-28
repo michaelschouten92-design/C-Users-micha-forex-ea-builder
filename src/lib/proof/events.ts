@@ -67,11 +67,11 @@ export async function logProofEvent(event: ProofEvent): Promise<void> {
 }
 
 /**
- * Extract session ID from request cookie or generate a new one.
- * Uses a simple cookie-based approach for anonymous tracking.
+ * Extract session ID from a cookie header string, or generate a new one.
+ * Pure function — no Request dependency.
  */
-export function getSessionId(request: Request): string {
-  const cookie = request.headers.get("cookie") ?? "";
+export function extractSessionId(cookieHeader: string | null): string {
+  const cookie = cookieHeader ?? "";
   const match = cookie.match(/(?:^|;\s*)proof_sid=([a-zA-Z0-9_-]+)/);
   if (match) return match[1];
   // Generate a random session ID

@@ -736,13 +736,56 @@ export type CheckoutRequestInput = z.infer<typeof checkoutRequestSchema>;
 // HELPER FUNCTIONS
 // ============================================
 
+// ============================================
+// PURE VALIDATION HELPERS (no Request/Response)
+// ============================================
+
+/** Pure: is content type JSON? */
+export function isJsonContentType(contentType: string | null): boolean {
+  return contentType !== null && contentType.includes("application/json");
+}
+
+/** Pure: does content-length exceed limit? */
+export function isBodyTooLarge(
+  contentLength: string | null,
+  maxBytes: number = MAX_BODY_SIZE
+): boolean {
+  if (!contentLength) return false;
+  return parseInt(contentLength, 10) > maxBytes;
+}
+
+/** Pure: parse JSON string with size guard. Returns data or error string. */
+export function parseJsonBody(
+  rawBody: string,
+  maxBytes: number = MAX_BODY_SIZE
+): { success: true; data: unknown } | { success: false; error: string; status: number } {
+  if (rawBody.length > maxBytes) {
+    return {
+      success: false,
+      error: `Request too large. Maximum request size is ${Math.round(maxBytes / 1024)}KB`,
+      status: 413,
+    };
+  }
+  try {
+    return { success: true, data: JSON.parse(rawBody) };
+  } catch {
+    return { success: false, error: "Invalid JSON", status: 400 };
+  }
+}
+
+/** Max request body size in bytes (1MB default) */
+const MAX_BODY_SIZE = 1 * 1024 * 1024;
+
+// ============================================
+// HTTP ADAPTER FUNCTIONS (delegate to pure helpers)
+// ============================================
+
 /**
  * Check that Content-Type header is application/json.
  * Returns an error Response if invalid, null if OK.
  */
 export function checkContentType(request: Request): Response | null {
-  const contentType = request.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
+  if (!isJsonContentType(request.headers.get("content-type"))) {
     return Response.json(
       { error: "Content-Type must be application/json", code: "VALIDATION_FAILED" },
       { status: 415 }
@@ -750,9 +793,6 @@ export function checkContentType(request: Request): Response | null {
   }
   return null;
 }
-
-/** Max request body size in bytes (1MB default) */
-const MAX_BODY_SIZE = 1 * 1024 * 1024;
 
 /**
  * Check Content-Length header and reject oversized requests.
@@ -762,8 +802,7 @@ const MAX_BODY_SIZE = 1 * 1024 * 1024;
  * handling untrusted input should also verify the actual body size after reading.
  */
 export function checkBodySize(request: Request, maxBytes: number = MAX_BODY_SIZE): Response | null {
-  const contentLength = request.headers.get("content-length");
-  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+  if (isBodyTooLarge(request.headers.get("content-length"), maxBytes)) {
     return Response.json(
       {
         error: "Request too large",
@@ -785,7 +824,11 @@ export async function safeReadJson(
   maxBytes: number = MAX_BODY_SIZE
 ): Promise<{ data: unknown } | { error: Response }> {
   const rawBody = await request.text();
-  if (rawBody.length > maxBytes) {
+  const result = parseJsonBody(rawBody, maxBytes);
+  if (result.success) {
+    return { data: result.data };
+  }
+  if (result.status === 413) {
     return {
       error: Response.json(
         {
@@ -796,13 +839,9 @@ export async function safeReadJson(
       ),
     };
   }
-  try {
-    return { data: JSON.parse(rawBody) };
-  } catch {
-    return {
-      error: Response.json({ error: "Invalid JSON" }, { status: 400 }),
-    };
-  }
+  return {
+    error: Response.json({ error: "Invalid JSON" }, { status: 400 }),
+  };
 }
 
 export type ValidationResult<T> =
