@@ -387,6 +387,7 @@ model LiveEAInstance {
 
   // Strategy Lifecycle
   lifecyclePhase    String    @default("NEW")  // NEW | PROVING | PROVEN | RETIRED
+  lifecycleState    String    @default("DRAFT")  // DRAFT | BACKTESTED | VERIFIED | LIVE_MONITORING | EDGE_AT_RISK | INVALIDATED
   phaseEnteredAt    DateTime  @default(now())
   provenAt          DateTime?
   retiredAt         DateTime?
