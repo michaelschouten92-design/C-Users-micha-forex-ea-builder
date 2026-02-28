@@ -58,7 +58,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       accountNumber: ea.accountNumber,
       status: ea.status,
       mode: ea.mode,
-      paused: ea.paused,
+      paused: ea.tradingState === "PAUSED",
       lastHeartbeat: ea.lastHeartbeat?.toISOString() ?? null,
       lastError: ea.lastError,
       balance: ea.balance,

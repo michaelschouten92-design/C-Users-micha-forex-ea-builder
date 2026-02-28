@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { getCachedTier } from "@/lib/plan-limits";
+import { logTradingStateTransition } from "@/lib/ea/trading-state";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -45,7 +46,7 @@ export async function PUT(
   // Verify the user owns this instance
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },
-    select: { id: true },
+    select: { id: true, tradingState: true },
   });
 
   if (!instance) {
@@ -54,10 +55,19 @@ export async function PUT(
     });
   }
 
+  const newState = parsed.data.paused ? "PAUSED" : "TRADING";
+
   await prisma.liveEAInstance.update({
     where: { id: instanceId },
-    data: { paused: parsed.data.paused },
+    data: { tradingState: newState },
   });
+
+  logTradingStateTransition(
+    instanceId,
+    instance.tradingState,
+    newState,
+    parsed.data.paused ? "user_pause" : "user_resume"
+  );
 
   return NextResponse.json({ success: true, paused: parsed.data.paused });
 }

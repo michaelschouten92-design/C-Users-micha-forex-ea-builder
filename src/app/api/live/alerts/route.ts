@@ -4,6 +4,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { getCachedTier } from "@/lib/plan-limits";
 import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
+import { logAlertStateTransition } from "@/lib/ea/trading-state";
 import { z } from "zod";
 
 const ALERT_TYPES = [
@@ -70,7 +71,7 @@ export async function GET(): Promise<NextResponse> {
     threshold: c.threshold,
     channel: c.channel,
     webhookUrl: c.webhookUrl,
-    enabled: c.enabled,
+    enabled: c.state === "ACTIVE",
     lastTriggered: c.lastTriggered?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
   }));
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       threshold: threshold ?? null,
       channel,
       webhookUrl: webhookUrl ?? null,
-      enabled,
+      state: enabled ? "ACTIVE" : "DISABLED",
     },
   });
 
@@ -259,7 +260,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   if (updates.threshold !== undefined) updateData.threshold = updates.threshold;
   if (updates.channel !== undefined) updateData.channel = updates.channel;
   if (updates.webhookUrl !== undefined) updateData.webhookUrl = updates.webhookUrl;
-  if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
+  if (updates.enabled !== undefined) {
+    const newState = updates.enabled ? "ACTIVE" : "DISABLED";
+    updateData.state = newState;
+    logAlertStateTransition(
+      id,
+      existing.state as "ACTIVE" | "DISABLED",
+      newState,
+      updates.enabled ? "user_enable" : "user_disable"
+    );
+  }
   if (updates.instanceId !== undefined) updateData.instanceId = updates.instanceId ?? null;
 
   await prisma.eAAlertConfig.update({
