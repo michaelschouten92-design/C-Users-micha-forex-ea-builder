@@ -53,16 +53,6 @@ enum EAMode {
   PAPER
 }
 
-enum EAAlertState {
-  ACTIVE
-  DISABLED
-}
-
-enum EATradingState {
-  TRADING
-  PAUSED
-}
-
 enum HealthStatus {
   HEALTHY
   WARNING
@@ -371,7 +361,7 @@ model LiveEAInstance {
   accountNumber String?
   status        EAStatus  @default(OFFLINE)
   mode          EAMode    @default(LIVE)
-  tradingState  EATradingState @default(TRADING)
+  paused        Boolean   @default(false)
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
@@ -529,7 +519,7 @@ model EAAlertConfig {
   threshold     Float?          // Required for DRAWDOWN and DAILY_LOSS alert types; e.g., 5.0 for 5% drawdown
   channel       String          // "EMAIL" | "WEBHOOK"
   webhookUrl    String?         // for webhook channel
-  state         EAAlertState    @default(ACTIVE)
+  enabled       Boolean         @default(true)
   lastTriggered DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -538,8 +528,8 @@ model EAAlertConfig {
   instance LiveEAInstance?  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, instanceId, alertType, channel])
-  @@index([userId, state])
-  @@index([alertType, state])
+  @@index([userId, enabled])
+  @@index([alertType, enabled])
   @@index([instanceId])
 }
 

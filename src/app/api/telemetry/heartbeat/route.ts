@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       where: { id: auth.instanceId },
       select: {
         status: true,
-        tradingState: true,
+        paused: true,
         lastHeartbeat: true,
         eaName: true,
         symbol: true,
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If the instance is paused, instruct the EA to pause trading
-    const isPaused = previousState?.tradingState === "PAUSED";
+    const isPaused = previousState?.paused ?? false;
     if (isPaused) {
       return NextResponse.json({ success: true, action: "PAUSE" });
     }
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
 interface PreviousState {
   status: string;
-  tradingState: string;
+  paused: boolean;
   lastHeartbeat: Date | null;
   eaName: string;
   symbol: string | null;

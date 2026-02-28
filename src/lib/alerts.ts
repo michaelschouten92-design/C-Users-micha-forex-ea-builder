@@ -27,7 +27,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     where: {
       userId,
       alertType,
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
     include: {
@@ -132,7 +132,7 @@ export async function checkDrawdownAlerts(
     where: {
       userId,
       alertType: "DRAWDOWN",
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
   });
@@ -175,7 +175,7 @@ export async function checkAbsoluteDrawdownAlerts(
     where: {
       userId,
       alertType: "ABSOLUTE_DRAWDOWN",
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
   });
@@ -286,7 +286,7 @@ export async function checkDailyLossAlerts(
     where: {
       userId,
       alertType: "DAILY_LOSS",
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
   });
@@ -342,7 +342,7 @@ export async function checkWeeklyLossAlerts(
     where: {
       userId,
       alertType: "WEEKLY_LOSS",
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
   });
@@ -378,7 +378,7 @@ export async function checkEquityTargetAlerts(
     where: {
       userId,
       alertType: "EQUITY_TARGET",
-      state: "ACTIVE",
+      enabled: true,
       OR: [{ instanceId: null }, { instanceId }],
     },
   });
