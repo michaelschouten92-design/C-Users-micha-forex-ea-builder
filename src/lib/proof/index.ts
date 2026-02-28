@@ -18,3 +18,14 @@ export {
   type TrustScoreResult,
   type ProfileBadge,
 } from "./trust-score";
+
+export {
+  computePreLiveVerdict,
+  extractPreLiveInput,
+  type PreLiveCheckInput,
+  type PreLiveCheckResult,
+  type PreLiveVerdict,
+  type PreLiveReason,
+  type PreLiveAction,
+  type GateResult,
+} from "./pre-live-check";

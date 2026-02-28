@@ -29,6 +29,7 @@ import {
   ensureStrategyIdentity,
   recordStrategyVersion,
 } from "@/lib/strategy-identity";
+import { computePreLiveVerdict, extractPreLiveInput } from "@/lib/proof";
 import type { BuildJsonSchema } from "@/types/builder";
 
 type Props = {
@@ -179,6 +180,33 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
+    // Pre-live verification check — assess deployment readiness from backtest data
+    const latestBacktest = await prisma.backtestRun.findFirst({
+      where: {
+        upload: { projectId: id, userId: session.user.id },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (latestBacktest) {
+      const preLiveInput = extractPreLiveInput(latestBacktest);
+      const preLiveCheck = computePreLiveVerdict(preLiveInput);
+
+      if (preLiveCheck.verdict === "NOT_DEPLOYABLE") {
+        return NextResponse.json(
+          {
+            error: "Strategy does not meet minimum deployment requirements.",
+            details: preLiveCheck.reasons.map((r) => r.message),
+            preLiveCheck,
+          },
+          { status: 422, headers: rateLimitHeaders }
+        );
+      }
+
+      // Attach preLiveCheck to response (stored in closure for later use)
+      (request as unknown as Record<string, unknown>).__preLiveCheck = preLiveCheck;
+    }
+
     // Override magic number for this export if provided
     if (magicNumber) {
       buildJson.settings = { ...buildJson.settings, magicNumber };
@@ -280,6 +308,10 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit successful export
     await audit.exportComplete(session.user.id, project.id, exportJob.id);
 
+    const preLiveCheck = (request as unknown as Record<string, unknown>).__preLiveCheck as
+      | ReturnType<typeof computePreLiveVerdict>
+      | undefined;
+
     return NextResponse.json(
       {
         success: true,
@@ -289,6 +321,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         versionNo: version.versionNo,
         exportType: "MQ5",
         telemetryApiKey,
+        ...(preLiveCheck && { preLiveCheck }),
       },
       { headers: rateLimitHeaders }
     );
