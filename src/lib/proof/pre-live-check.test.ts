@@ -501,3 +501,155 @@ describe("computePreLiveVerdict — Verdict Integration", () => {
     expect(result.verdict).toBe("READY");
   });
 });
+
+// ============================================
+// SCENARIO TESTS
+// ============================================
+
+describe("computePreLiveVerdict — Scenarios", () => {
+  it("strong edge: high metrics across the board → READY with score 100", () => {
+    const result = computePreLiveVerdict(
+      makeInput({
+        healthScore: 92,
+        healthStatus: "ROBUST",
+        totalTrades: 500,
+        profitFactor: 2.4,
+        expectedPayoff: 12.3,
+        maxDrawdownPct: 8,
+        winRate: 0.68,
+        sharpeRatio: 1.8,
+        recoveryFactor: 4.2,
+        warnings: [],
+        monteCarlo: { survivalRate: 0.96, p5: 15, p50: 45, p95: 90 },
+        walkForward: { consistencyScore: 85, overfitProbability: 0.1, verdict: "ROBUST" },
+      })
+    );
+
+    expect(result.verdict).toBe("READY");
+    expect(result.readinessScore).toBe(100);
+    expect(result.reasons).toHaveLength(0);
+    expect(result.actions).toHaveLength(0);
+    expect(result.gateResults.every((g) => g.passed)).toBe(true);
+  });
+
+  it("borderline: passes hard gates, soft weight exactly at threshold → UNCERTAIN", () => {
+    // Monte Carlo null → S1(3) + S2(1) = 4 = UNCERTAIN_WEIGHT_THRESHOLD
+    // All hard gates pass, all other soft gates pass
+    const result = computePreLiveVerdict(
+      makeInput({
+        healthScore: 85,
+        healthStatus: "ROBUST",
+        totalTrades: 150,
+        profitFactor: 1.3,
+        expectedPayoff: 2.0,
+        maxDrawdownPct: 20,
+        sharpeRatio: 0.8,
+        recoveryFactor: 1.5,
+        warnings: [],
+        monteCarlo: null,
+        walkForward: { consistencyScore: 60, overfitProbability: 0.3, verdict: "MODERATE" },
+      })
+    );
+
+    expect(result.verdict).toBe("UNCERTAIN");
+    expect(result.gateResults.filter((g) => g.hard && !g.passed)).toHaveLength(0);
+    expect(result.reasons.some((r) => r.type === "MISSING_MONTE_CARLO")).toBe(true);
+    expect(result.readinessScore).toBeGreaterThan(50);
+    expect(result.readinessScore).toBeLessThan(100);
+  });
+
+  it("weak: fails multiple hard gates → NOT_DEPLOYABLE with low score", () => {
+    const result = computePreLiveVerdict(
+      makeInput({
+        healthScore: 35,
+        healthStatus: "WEAK",
+        totalTrades: 40,
+        profitFactor: 0.7,
+        expectedPayoff: -3.2,
+        maxDrawdownPct: 55,
+        winRate: 0.35,
+        sharpeRatio: -0.2,
+        recoveryFactor: 0.3,
+        warnings: ["Martingale detected", "Outlier profit skew"],
+        monteCarlo: { survivalRate: 0.3, p5: -20, p50: -5, p95: 10 },
+        walkForward: { consistencyScore: 25, overfitProbability: 0.8, verdict: "OVERFITTED" },
+      })
+    );
+
+    expect(result.verdict).toBe("NOT_DEPLOYABLE");
+    expect(result.readinessScore).toBe(0);
+    const failedHard = result.gateResults.filter((g) => g.hard && !g.passed);
+    expect(failedHard.length).toBe(5);
+    expect(result.reasons.every((r) => r.severity === "error")).toBe(true);
+  });
+
+  it("low trade count: only 30 trades → NOT_DEPLOYABLE, suggests extending backtest", () => {
+    const result = computePreLiveVerdict(
+      makeInput({
+        totalTrades: 30,
+        // All other metrics are strong
+        healthScore: 80,
+        healthStatus: "ROBUST",
+        profitFactor: 1.6,
+        expectedPayoff: 4.0,
+      })
+    );
+
+    expect(result.verdict).toBe("NOT_DEPLOYABLE");
+    expect(result.gateResults.find((g) => g.gate === "H1")?.passed).toBe(false);
+    expect(result.reasons.some((r) => r.type === "INSUFFICIENT_TRADES")).toBe(true);
+    expect(result.actions.some((a) => a.label === "Extend backtest")).toBe(true);
+    // Only H1 fails — other hard gates pass
+    const failedHard = result.gateResults.filter((g) => g.hard && !g.passed);
+    expect(failedHard).toHaveLength(1);
+  });
+
+  it("high drawdown: 45% drawdown → soft gate triggers UNCERTAIN", () => {
+    const result = computePreLiveVerdict(
+      makeInput({
+        maxDrawdownPct: 45,
+        // Hard gates all pass
+        healthScore: 70,
+        healthStatus: "MODERATE",
+        totalTrades: 200,
+        profitFactor: 1.4,
+        expectedPayoff: 3.0,
+        // Other soft gates configured so only S6(2) + S8(1) fail (total 3 < 4)
+        // But need to push over threshold: also null sharpe adds nothing (skipped)
+        // S6=2 + S8=1 (below 80) = 3... still READY unless we add more
+        // Make monteCarlo null to push over: S1(3)+S2(1)+S6(2)+S8(1) = 7
+        monteCarlo: null,
+      })
+    );
+
+    expect(result.verdict).toBe("UNCERTAIN");
+    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(false);
+    expect(result.reasons.some((r) => r.type === "EXCESSIVE_DRAWDOWN")).toBe(true);
+  });
+
+  it("Monte Carlo instability: low survival + negative p5 → UNCERTAIN", () => {
+    const result = computePreLiveVerdict(
+      makeInput({
+        // Hard gates pass
+        healthScore: 82,
+        healthStatus: "ROBUST",
+        totalTrades: 300,
+        profitFactor: 1.5,
+        expectedPayoff: 4.0,
+        // Monte Carlo shows instability
+        monteCarlo: { survivalRate: 0.45, p5: -12, p50: 8, p95: 35 },
+        // Walk-forward is fine
+        walkForward: { consistencyScore: 70, overfitProbability: 0.2, verdict: "ROBUST" },
+      })
+    );
+
+    expect(result.verdict).toBe("UNCERTAIN");
+    // S1(3) + S2(1) = 4 failed weight → meets threshold
+    expect(result.gateResults.find((g) => g.gate === "S1")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S2")?.passed).toBe(false);
+    expect(result.reasons.some((r) => r.type === "LOW_SURVIVAL_RATE")).toBe(true);
+    expect(result.reasons.some((r) => r.type === "NEGATIVE_P5_RETURN")).toBe(true);
+    // Hard gates all pass
+    expect(result.gateResults.filter((g) => g.hard && !g.passed)).toHaveLength(0);
+  });
+});
