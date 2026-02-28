@@ -17,6 +17,8 @@ import {
 } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
+import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import * as Sentry from "@sentry/nextjs";
 
 /** Number of recent snapshots to consider for EWMA trend computation */
@@ -80,6 +82,7 @@ async function updateLifecyclePhase(
   instanceId: string,
   instance: {
     lifecyclePhase: string;
+    lifecycleState: string;
     peakScore: number;
     userId: string;
     eaName: string;
@@ -161,6 +164,13 @@ async function updateLifecyclePhase(
         "Lifecycle phase transition — strategy retired due to edge drift"
       );
 
+      await performLifecycleTransition(
+        instanceId,
+        instance.lifecycleState as StrategyLifecycleState,
+        "EDGE_AT_RISK",
+        "drift"
+      );
+
       // Fire retirement alert
       triggerAlert({
         userId: instance.userId,
@@ -186,6 +196,13 @@ async function updateLifecyclePhase(
       logger.info(
         { instanceId, from: "RETIRED", to: "PROVING", consecutiveHealthy },
         "Lifecycle phase transition — strategy recovered from retirement"
+      );
+
+      await performLifecycleTransition(
+        instanceId,
+        instance.lifecycleState as StrategyLifecycleState,
+        "LIVE_MONITORING",
+        "recovery"
       );
     }
   }
@@ -232,6 +249,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       userId: true,
       eaName: true,
       lifecyclePhase: true,
+      lifecycleState: true,
       peakScore: true,
       totalTrades: true,
     },

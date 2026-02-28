@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { z } from "zod";
+import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 
 type Props = {
   params: Promise<{ instanceId: string }>;
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },
-    select: { id: true, lifecyclePhase: true },
+    select: { id: true, lifecyclePhase: true, lifecycleState: true },
   });
 
   if (!instance) {
@@ -108,6 +110,13 @@ export async function POST(request: NextRequest, { params }: Props) {
       status: 400,
     });
   }
+
+  await performLifecycleTransition(
+    instanceId,
+    instance.lifecycleState as StrategyLifecycleState,
+    "INVALIDATED",
+    "manual"
+  );
 
   await prisma.liveEAInstance.update({
     where: { id: instanceId },
