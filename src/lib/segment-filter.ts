@@ -1,5 +1,15 @@
 import { prisma } from "./prisma";
 
+// ============================================
+// SEGMENT FILTER CONSTANTS
+// ============================================
+
+/** Milliseconds in one calendar day (24 × 60 × 60 × 1000). */
+export const MS_PER_DAY = 86_400_000;
+
+/** Minimum audit-log actions in the last 30 days to count a user as "active". */
+export const ACTIVE_USER_MIN_ACTIONS = 3;
+
 interface SegmentFilters {
   tierFilter?: string;
   loginFilter?: string;
@@ -31,15 +41,16 @@ export function matchesSegmentFilters(user: UserForFilter, filters: SegmentFilte
     if (filters.loginFilter === "NEVER") {
       if (user.lastLoginAt) return false;
     } else if (filters.loginFilter === "7d") {
-      if (!user.lastLoginAt || now - user.lastLoginAt.getTime() > 7 * 86_400_000) return false;
+      if (!user.lastLoginAt || now - user.lastLoginAt.getTime() > 7 * MS_PER_DAY) return false;
     } else if (filters.loginFilter === "30d") {
-      if (!user.lastLoginAt || now - user.lastLoginAt.getTime() > 30 * 86_400_000) return false;
+      if (!user.lastLoginAt || now - user.lastLoginAt.getTime() > 30 * MS_PER_DAY) return false;
     }
   }
 
   // Activity filter
   if (filters.activityFilter && filters.activityFilter !== "ALL") {
-    const activityStatus = (user._activityCount ?? 0) >= 3 ? "active" : "inactive";
+    const activityStatus =
+      (user._activityCount ?? 0) >= ACTIVE_USER_MIN_ACTIONS ? "active" : "inactive";
     if (activityStatus !== filters.activityFilter) return false;
   }
 
@@ -50,8 +61,8 @@ export function matchesSegmentFilters(user: UserForFilter, filters: SegmentFilte
     if (tier === "FREE" || status !== "active") return false;
 
     const periodEnd = user.subscription?.currentPeriodEnd;
-    const thirtyDaysAgo = new Date(now - 30 * 86_400_000);
-    const sevenDaysFromNow = new Date(now + 7 * 86_400_000);
+    const thirtyDaysAgo = new Date(now - 30 * MS_PER_DAY);
+    const sevenDaysFromNow = new Date(now + 7 * MS_PER_DAY);
     const expiresWithin7d = periodEnd && periodEnd <= sevenDaysFromNow;
     const noRecentLogin = !user.lastLoginAt || user.lastLoginAt < thirtyDaysAgo;
     if (!expiresWithin7d && !noRecentLogin) return false;
@@ -93,7 +104,7 @@ const MAX_SEGMENT_USERS = 10000; // Safety cap to prevent OOM on large user base
 
 export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<string[]> {
   const now = Date.now();
-  const thirtyDaysAgo = new Date(now - 30 * 86_400_000);
+  const thirtyDaysAgo = new Date(now - 30 * MS_PER_DAY);
 
   // Build database-level where clause from filters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,9 +120,9 @@ export async function getUserEmailsByFilters(filters: SegmentFilters): Promise<s
     if (filters.loginFilter === "NEVER") {
       where.lastLoginAt = null;
     } else if (filters.loginFilter === "7d") {
-      where.lastLoginAt = { gte: new Date(now - 7 * 86_400_000) };
+      where.lastLoginAt = { gte: new Date(now - 7 * MS_PER_DAY) };
     } else if (filters.loginFilter === "30d") {
-      where.lastLoginAt = { gte: new Date(now - 30 * 86_400_000) };
+      where.lastLoginAt = { gte: new Date(now - 30 * MS_PER_DAY) };
     }
   }
 

@@ -9,6 +9,52 @@ export interface StrategyPreset {
   buildJson: BuildJsonSchema;
 }
 
+// ============================================
+// PRESET TRADING DEFAULTS
+// ============================================
+
+/** Base magic number — each preset adds its own offset (1, 2, …). */
+export const PRESET_MAGIC_BASE = 300_000;
+
+/** Default fixed lot size for preset strategies. */
+export const DEFAULT_FIXED_LOT = 0.1;
+
+/** Risk per trade as percentage of account balance. */
+export const DEFAULT_RISK_PERCENT = 1;
+
+/** Minimum lot size (MT5 micro lot). */
+export const DEFAULT_MIN_LOT = 0.01;
+
+/** Maximum lot size cap. */
+export const DEFAULT_MAX_LOT = 10;
+
+/** Pending order offset in pips. */
+export const DEFAULT_PENDING_OFFSET_PIPS = 10;
+
+/** Fixed stop-loss distance in pips (fallback when ATR unavailable). */
+export const DEFAULT_SL_FIXED_PIPS = 50;
+
+/** Stop-loss as percentage of balance (for PERCENT SL method). */
+export const DEFAULT_SL_PERCENT = 1;
+
+/** ATR multiplier for stop-loss placement. */
+export const DEFAULT_SL_ATR_MULTIPLIER = 1.5;
+
+/** ATR lookback period for SL/TP calculation. */
+export const DEFAULT_ATR_PERIOD = 14;
+
+/** Fixed take-profit distance in pips (fallback when ATR unavailable). */
+export const DEFAULT_TP_FIXED_PIPS = 100;
+
+/** Reward-to-risk ratio for take-profit. */
+export const DEFAULT_TP_RISK_REWARD = 2;
+
+/** ATR multiplier for take-profit placement. */
+export const DEFAULT_TP_ATR_MULTIPLIER = 3;
+
+/** Maximum simultaneous open trades per preset. */
+export const DEFAULT_MAX_OPEN_TRADES = 1;
+
 const now = new Date().toISOString();
 const meta = { createdAt: now, updatedAt: now };
 
@@ -48,22 +94,22 @@ function tradingNodes() {
         category: "trading" as const,
         tradingType: "place-buy" as const,
         method: "RISK_PERCENT" as const,
-        fixedLot: 0.1,
-        riskPercent: 1,
-        minLot: 0.01,
-        maxLot: 10,
+        fixedLot: DEFAULT_FIXED_LOT,
+        riskPercent: DEFAULT_RISK_PERCENT,
+        minLot: DEFAULT_MIN_LOT,
+        maxLot: DEFAULT_MAX_LOT,
         orderType: "MARKET" as const,
-        pendingOffset: 10,
+        pendingOffset: DEFAULT_PENDING_OFFSET_PIPS,
         slMethod: "ATR_BASED" as const,
-        slFixedPips: 50,
-        slPercent: 1,
-        slAtrMultiplier: 1.5,
-        slAtrPeriod: 14,
+        slFixedPips: DEFAULT_SL_FIXED_PIPS,
+        slPercent: DEFAULT_SL_PERCENT,
+        slAtrMultiplier: DEFAULT_SL_ATR_MULTIPLIER,
+        slAtrPeriod: DEFAULT_ATR_PERIOD,
         tpMethod: "RISK_REWARD" as const,
-        tpFixedPips: 100,
-        tpRiskRewardRatio: 2,
-        tpAtrMultiplier: 3,
-        tpAtrPeriod: 14,
+        tpFixedPips: DEFAULT_TP_FIXED_PIPS,
+        tpRiskRewardRatio: DEFAULT_TP_RISK_REWARD,
+        tpAtrMultiplier: DEFAULT_TP_ATR_MULTIPLIER,
+        tpAtrPeriod: DEFAULT_ATR_PERIOD,
       },
     },
     {
@@ -75,22 +121,22 @@ function tradingNodes() {
         category: "trading" as const,
         tradingType: "place-sell" as const,
         method: "RISK_PERCENT" as const,
-        fixedLot: 0.1,
-        riskPercent: 1,
-        minLot: 0.01,
-        maxLot: 10,
+        fixedLot: DEFAULT_FIXED_LOT,
+        riskPercent: DEFAULT_RISK_PERCENT,
+        minLot: DEFAULT_MIN_LOT,
+        maxLot: DEFAULT_MAX_LOT,
         orderType: "MARKET" as const,
-        pendingOffset: 10,
+        pendingOffset: DEFAULT_PENDING_OFFSET_PIPS,
         slMethod: "ATR_BASED" as const,
-        slFixedPips: 50,
-        slPercent: 1,
-        slAtrMultiplier: 1.5,
-        slAtrPeriod: 14,
+        slFixedPips: DEFAULT_SL_FIXED_PIPS,
+        slPercent: DEFAULT_SL_PERCENT,
+        slAtrMultiplier: DEFAULT_SL_ATR_MULTIPLIER,
+        slAtrPeriod: DEFAULT_ATR_PERIOD,
         tpMethod: "RISK_REWARD" as const,
-        tpFixedPips: 100,
-        tpRiskRewardRatio: 2,
-        tpAtrMultiplier: 3,
-        tpAtrPeriod: 14,
+        tpFixedPips: DEFAULT_TP_FIXED_PIPS,
+        tpRiskRewardRatio: DEFAULT_TP_RISK_REWARD,
+        tpAtrMultiplier: DEFAULT_TP_ATR_MULTIPLIER,
+        tpAtrPeriod: DEFAULT_ATR_PERIOD,
       },
     },
   ];
@@ -146,9 +192,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300001,
+        magicNumber: PRESET_MAGIC_BASE + 1,
         comment: "Range Breakout",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -208,9 +254,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300002,
+        magicNumber: PRESET_MAGIC_BASE + 2,
         comment: "EMA Crossover",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -270,9 +316,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300003,
+        magicNumber: PRESET_MAGIC_BASE + 3,
         comment: "Trend Pullback",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -309,9 +355,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300004,
+        magicNumber: PRESET_MAGIC_BASE + 4,
         comment: "RSI Reversal",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -348,9 +394,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300006,
+        magicNumber: PRESET_MAGIC_BASE + 6,
         comment: "MACD Crossover",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -387,9 +433,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300007,
+        magicNumber: PRESET_MAGIC_BASE + 7,
         comment: "RSI/MACD Divergence",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -426,9 +472,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300008,
+        magicNumber: PRESET_MAGIC_BASE + 8,
         comment: "Bollinger Bands",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -463,9 +509,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300009,
+        magicNumber: PRESET_MAGIC_BASE + 9,
         comment: "ADX Trend Strength",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -505,9 +551,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300010,
+        magicNumber: PRESET_MAGIC_BASE + 10,
         comment: "Stochastic Reversal",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,
@@ -543,9 +589,9 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
       viewport: { x: 0, y: 0, zoom: 0.8 },
       metadata: meta,
       settings: {
-        magicNumber: 300011,
+        magicNumber: PRESET_MAGIC_BASE + 11,
         comment: "Ichimoku Cloud",
-        maxOpenTrades: 1,
+        maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
       },
     } as BuildJsonSchema,

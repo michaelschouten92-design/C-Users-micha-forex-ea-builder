@@ -8,6 +8,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logger } from "./logger";
 
+// ============================================
+// CLIENT CONSTANTS
+// ============================================
+
+/** Request timeout in ms — generous enough for large completions. */
+export const ANTHROPIC_TIMEOUT_MS = 30_000;
+
+/** Max automatic retries on transient failures (429, 5xx). */
+export const ANTHROPIC_MAX_RETRIES = 2;
+
 let client: Anthropic | null = null;
 
 /**
@@ -23,7 +33,11 @@ export function getAnthropicClient(): Anthropic | null {
     return null;
   }
 
-  client = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 2 });
+  client = new Anthropic({
+    apiKey,
+    timeout: ANTHROPIC_TIMEOUT_MS,
+    maxRetries: ANTHROPIC_MAX_RETRIES,
+  });
   return client;
 }
 
