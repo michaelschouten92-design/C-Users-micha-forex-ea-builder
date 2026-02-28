@@ -25,7 +25,7 @@ interface EAInstanceData {
   accountNumber: string | null;
   status: "ONLINE" | "OFFLINE" | "ERROR";
   mode: "LIVE" | "PAPER";
-  paused: boolean;
+  tradingState: "TRADING" | "PAUSED";
   lastHeartbeat: string | null;
   lastError: string | null;
   balance: number | null;
@@ -62,7 +62,7 @@ interface AlertConfig {
   threshold: number | null;
   channel: string;
   webhookUrl: string | null;
-  enabled: boolean;
+  alertState: "ACTIVE" | "DISABLED";
   lastTriggered: string | null;
   createdAt: string;
 }
@@ -695,7 +695,7 @@ function EACard({
 }: {
   ea: EAInstanceData;
   statusChanged: boolean;
-  onTogglePause: (instanceId: string, paused: boolean) => void;
+  onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
   onDelete: (instanceId: string) => void;
 }) {
   const [showTradeLog, setShowTradeLog] = useState(false);
@@ -712,7 +712,7 @@ function EACard({
 
   async function handleTogglePause(): Promise<void> {
     setPauseLoading(true);
-    onTogglePause(ea.id, !ea.paused);
+    onTogglePause(ea.id, ea.tradingState === "TRADING" ? "PAUSED" : "TRADING");
     setPauseLoading(false);
   }
 
@@ -757,7 +757,7 @@ function EACard({
           {ea.strategyStatus && (
             <StrategyStatusBadge status={ea.strategyStatus as StrategyStatus} variant="compact" />
           )}
-          {ea.paused && (
+          {ea.tradingState === "PAUSED" && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paused
             </span>
@@ -854,12 +854,12 @@ function EACard({
           onClick={handleTogglePause}
           disabled={pauseLoading}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            ea.paused
+            ea.tradingState === "PAUSED"
               ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
               : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
           } disabled:opacity-50`}
         >
-          {ea.paused ? (
+          {ea.tradingState === "PAUSED" ? (
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -884,7 +884,7 @@ function EACard({
               />
             </svg>
           )}
-          {ea.paused ? "Resume" : "Pause"}
+          {ea.tradingState === "PAUSED" ? "Resume" : "Pause"}
         </button>
 
         <button
@@ -1165,7 +1165,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
     const body: Record<string, unknown> = {
       alertType: newAlertType,
       channel: newChannel,
-      enabled: true,
+      alertState: "ACTIVE" as const,
     };
 
     if (newInstanceId) {
@@ -1218,14 +1218,17 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
     setSaving(false);
   }
 
-  async function handleToggleAlert(alertId: string, enabled: boolean): Promise<void> {
+  async function handleToggleAlert(
+    alertId: string,
+    alertState: "ACTIVE" | "DISABLED"
+  ): Promise<void> {
     const res = await fetch("/api/live/alerts", {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({ id: alertId, enabled }),
+      body: JSON.stringify({ id: alertId, alertState }),
     });
     if (res.ok) {
-      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, enabled } : a)));
+      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, alertState } : a)));
     }
   }
 
@@ -1384,7 +1387,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
                 <div
                   key={alert.id}
                   className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-                    alert.enabled
+                    alert.alertState === "ACTIVE"
                       ? "bg-[rgba(79,70,229,0.05)] border-[rgba(79,70,229,0.15)]"
                       : "bg-[#0A0118]/50 border-[rgba(79,70,229,0.08)] opacity-60"
                   }`}
@@ -1414,15 +1417,20 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
                   </div>
                   <div className="flex items-center gap-2 ml-3">
                     <button
-                      onClick={() => handleToggleAlert(alert.id, !alert.enabled)}
+                      onClick={() =>
+                        handleToggleAlert(
+                          alert.id,
+                          alert.alertState === "ACTIVE" ? "DISABLED" : "ACTIVE"
+                        )
+                      }
                       className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${
-                        alert.enabled ? "bg-[#10B981]" : "bg-[#374151]"
+                        alert.alertState === "ACTIVE" ? "bg-[#10B981]" : "bg-[#374151]"
                       }`}
-                      title={alert.enabled ? "Disable" : "Enable"}
+                      title={alert.alertState === "ACTIVE" ? "Disable" : "Enable"}
                     >
                       <span
                         className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${
-                          alert.enabled ? "translate-x-4" : "translate-x-0"
+                          alert.alertState === "ACTIVE" ? "translate-x-4" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -1576,17 +1584,22 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
     }
   }, [processUpdate]);
 
-  async function handleTogglePause(instanceId: string, paused: boolean): Promise<void> {
+  async function handleTogglePause(
+    instanceId: string,
+    tradingState: "TRADING" | "PAUSED"
+  ): Promise<void> {
     const res = await fetch(`/api/live/${instanceId}/pause`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({ paused }),
+      body: JSON.stringify({ tradingState }),
     });
 
     if (res.ok) {
-      setEaInstances((prev) => prev.map((ea) => (ea.id === instanceId ? { ...ea, paused } : ea)));
+      setEaInstances((prev) =>
+        prev.map((ea) => (ea.id === instanceId ? { ...ea, tradingState } : ea))
+      );
       const ea = eaInstances.find((e) => e.id === instanceId);
-      const action = paused ? "paused" : "resumed";
+      const action = tradingState === "PAUSED" ? "paused" : "resumed";
       showSuccess(`${ea?.eaName ?? "EA"} ${action}`);
     } else {
       showError("Failed to update EA", "Please try again.");
@@ -1623,7 +1636,7 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
         alertType: "DRAWDOWN",
         threshold,
         channel: "EMAIL",
-        enabled: true,
+        alertState: "ACTIVE",
       }),
     });
 

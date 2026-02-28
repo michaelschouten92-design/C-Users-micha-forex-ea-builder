@@ -25,7 +25,7 @@ const createAlertSchema = z.object({
   threshold: z.number().finite().min(0).max(100).optional().nullable(),
   channel: z.enum(CHANNELS),
   webhookUrl: z.string().url().optional().nullable(),
-  enabled: z.boolean().default(true),
+  alertState: z.enum(["ACTIVE", "DISABLED"]).default("ACTIVE"),
 });
 
 const updateAlertSchema = z.object({
@@ -35,7 +35,7 @@ const updateAlertSchema = z.object({
   threshold: z.number().finite().min(0).max(100).optional().nullable(),
   channel: z.enum(CHANNELS).optional(),
   webhookUrl: z.string().url().optional().nullable(),
-  enabled: z.boolean().optional(),
+  alertState: z.enum(["ACTIVE", "DISABLED"]).optional(),
 });
 
 const deleteAlertSchema = z.object({
@@ -72,7 +72,7 @@ export async function GET(): Promise<NextResponse> {
     threshold: c.threshold,
     channel: c.channel,
     webhookUrl: c.webhookUrl,
-    enabled: c.state === "ACTIVE",
+    alertState: c.state,
     lastTriggered: c.lastTriggered?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
   }));
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { alertType, threshold, channel, webhookUrl, enabled, instanceId } = parsed.data;
+  const { alertType, threshold, channel, webhookUrl, alertState, instanceId } = parsed.data;
 
   // Validate webhook URL is provided when channel is WEBHOOK
   if (channel === "WEBHOOK" && !webhookUrl) {
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       threshold: threshold ?? null,
       channel,
       webhookUrl: webhookUrl ?? null,
-      state: enabled ? "ACTIVE" : "DISABLED",
+      state: alertState,
     },
   });
 
@@ -264,13 +264,12 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   if (updates.instanceId !== undefined) updateData.instanceId = updates.instanceId ?? null;
 
   // State change goes through transition function — zero direct mutation
-  if (updates.enabled !== undefined) {
-    const newState: EAAlertState = updates.enabled ? "ACTIVE" : "DISABLED";
+  if (updates.alertState !== undefined) {
     await transitionAlertState(
       id,
       existing.state as EAAlertState,
-      newState,
-      updates.enabled ? "user_enable" : "user_disable"
+      updates.alertState,
+      updates.alertState === "ACTIVE" ? "user_enable" : "user_disable"
     );
   }
 

@@ -57,7 +57,7 @@ export async function GET(request: Request): Promise<Response> {
           accountNumber: inst.accountNumber,
           status: inst.status,
           mode: inst.mode,
-          paused: inst.tradingState === "PAUSED",
+          tradingState: inst.tradingState,
           lastHeartbeat: inst.lastHeartbeat?.toISOString() ?? null,
           lastError: inst.lastError,
           balance: inst.balance,
@@ -137,7 +137,7 @@ export async function GET(request: Request): Promise<Response> {
                     totalTrades: hb.instance.totalTrades,
                     totalProfit: hb.instance.totalProfit,
                     status: hb.instance.status,
-                    paused: hb.instance.tradingState === "PAUSED",
+                    tradingState: hb.instance.tradingState,
                     lastHeartbeat: hb.instance.lastHeartbeat?.toISOString() ?? null,
                     lastError: hb.instance.lastError,
                     heartbeat: {

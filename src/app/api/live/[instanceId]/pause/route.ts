@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 const pauseSchema = z.object({
-  paused: z.boolean(),
+  tradingState: z.enum(["TRADING", "PAUSED"]),
 });
 
 export async function PUT(
@@ -55,14 +55,14 @@ export async function PUT(
     });
   }
 
-  const newState = parsed.data.paused ? "PAUSED" : "TRADING";
+  const newState = parsed.data.tradingState;
 
   await transitionTradingState(
     instanceId,
     instance.tradingState,
     newState,
-    parsed.data.paused ? "user_pause" : "user_resume"
+    newState === "PAUSED" ? "user_pause" : "user_resume"
   );
 
-  return NextResponse.json({ success: true, paused: parsed.data.paused });
+  return NextResponse.json({ success: true, tradingState: newState });
 }
