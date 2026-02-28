@@ -1,5 +1,5 @@
 /**
- * AI Strategy Doctor — Analyzes backtest results using Claude.
+ * AI Strategy Insights — Analyzes backtest results using Claude.
  *
  * Takes parsed backtest metrics and a sample of trades, sends them to Claude
  * for deep analysis, and returns structured findings.
@@ -75,8 +75,8 @@ Look for: too-perfect metrics, suspiciously high win rates (>80%), very few trad
 ### Market Dependency
 Assess: how dependent the strategy is on specific market conditions, trending vs ranging behavior, news sensitivity, spread sensitivity.
 
-### Live Trading Readiness
-Give a clear verdict: READY, NEEDS_WORK, or NOT_RECOMMENDED with reasoning.
+### Key Takeaways
+Summarize the most important findings — what the trader should focus on improving and what further validation steps (Monte Carlo, walk-forward) would strengthen confidence.
 
 ## Output Format Rules
 - Be direct and honest — traders need truth, not encouragement

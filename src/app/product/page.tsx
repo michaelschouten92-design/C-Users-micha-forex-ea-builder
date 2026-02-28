@@ -35,7 +35,7 @@ const pipelineSteps = [
     label: "Validate",
     title: "Strategy Validation",
     description:
-      "AI Strategy Doctor analyzes weaknesses and overfitting signals. One-click Monte Carlo runs 1,000 simulations to stress-test your edge before going live.",
+      "AI Strategy Insights analyzes weaknesses and overfitting signals. One-click Monte Carlo runs 1,000 simulations to stress-test your edge before going live.",
     features: [
       "AI-powered weakness analysis",
       "Monte Carlo survival probability",
@@ -67,9 +67,9 @@ const platformModules = [
   },
   {
     color: "#A78BFA",
-    title: "AI Strategy Doctor",
+    title: "AI Strategy Insights",
     description:
-      "AI-powered analysis of your full trade history. Identifies weaknesses, overfitting signals, market dependency risks, and live trading readiness with actionable recommendations.",
+      "AI-powered analysis of your full trade history. Identifies weaknesses, overfitting signals, market dependency risks, and risk patterns with actionable recommendations.",
     href: "/app/evaluate",
   },
   {
