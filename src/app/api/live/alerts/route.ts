@@ -4,6 +4,8 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { getCachedTier } from "@/lib/plan-limits";
 import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
+import { transitionAlertState } from "@/lib/ea/trading-state";
+import type { EAAlertState } from "@/lib/ea/trading-state";
 import { z } from "zod";
 
 const ALERT_TYPES = [
@@ -70,7 +72,7 @@ export async function GET(): Promise<NextResponse> {
     threshold: c.threshold,
     channel: c.channel,
     webhookUrl: c.webhookUrl,
-    enabled: c.enabled,
+    enabled: c.state === "ACTIVE",
     lastTriggered: c.lastTriggered?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
   }));
@@ -172,7 +174,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       threshold: threshold ?? null,
       channel,
       webhookUrl: webhookUrl ?? null,
-      enabled,
+      state: enabled ? "ACTIVE" : "DISABLED",
     },
   });
 
@@ -259,13 +261,25 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   if (updates.threshold !== undefined) updateData.threshold = updates.threshold;
   if (updates.channel !== undefined) updateData.channel = updates.channel;
   if (updates.webhookUrl !== undefined) updateData.webhookUrl = updates.webhookUrl;
-  if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
   if (updates.instanceId !== undefined) updateData.instanceId = updates.instanceId ?? null;
 
-  await prisma.eAAlertConfig.update({
-    where: { id },
-    data: updateData,
-  });
+  // State change goes through transition function — zero direct mutation
+  if (updates.enabled !== undefined) {
+    const newState: EAAlertState = updates.enabled ? "ACTIVE" : "DISABLED";
+    await transitionAlertState(
+      id,
+      existing.state as EAAlertState,
+      newState,
+      updates.enabled ? "user_enable" : "user_disable"
+    );
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await prisma.eAAlertConfig.update({
+      where: { id },
+      data: updateData,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

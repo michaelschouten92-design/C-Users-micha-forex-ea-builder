@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { getCachedTier } from "@/lib/plan-limits";
-import { logTradingStateTransition } from "@/lib/ea/trading-state";
+import { transitionTradingState } from "@/lib/ea/trading-state";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -57,13 +57,7 @@ export async function PUT(
 
   const newState = parsed.data.paused ? "PAUSED" : "TRADING";
 
-  // Dual-write: keep paused boolean in sync until it is removed
-  await prisma.liveEAInstance.update({
-    where: { id: instanceId },
-    data: { paused: parsed.data.paused, tradingState: newState },
-  });
-
-  logTradingStateTransition(
+  await transitionTradingState(
     instanceId,
     instance.tradingState,
     newState,

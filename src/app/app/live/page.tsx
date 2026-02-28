@@ -90,7 +90,7 @@ export default async function LiveEADashboardPage() {
     broker: ea.broker,
     accountNumber: ea.accountNumber,
     status: ea.status,
-    paused: ea.paused,
+    paused: ea.tradingState === "PAUSED",
     lastHeartbeat: ea.lastHeartbeat?.toISOString() ?? null,
     lastError: ea.lastError,
     balance: ea.balance,

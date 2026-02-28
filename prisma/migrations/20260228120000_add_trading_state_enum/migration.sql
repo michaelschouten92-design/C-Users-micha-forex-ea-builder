@@ -6,3 +6,6 @@ ALTER TABLE "LiveEAInstance" ADD COLUMN "tradingState" "EATradingState" NOT NULL
 
 -- Backfill from existing boolean
 UPDATE "LiveEAInstance" SET "tradingState" = 'PAUSED' WHERE "paused" = true;
+
+-- Drop legacy boolean
+ALTER TABLE "LiveEAInstance" DROP COLUMN "paused";
