@@ -48,6 +48,11 @@ enum EAStatus {
   ERROR
 }
 
+enum EATradingState {
+  TRADING
+  PAUSED
+}
+
 enum EAMode {
   LIVE
   PAPER
@@ -361,7 +366,8 @@ model LiveEAInstance {
   accountNumber String?
   status        EAStatus  @default(OFFLINE)
   mode          EAMode    @default(LIVE)
-  paused        Boolean   @default(false)
+  paused        Boolean        @default(false)
+  tradingState  EATradingState @default(TRADING)
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
