@@ -7,7 +7,7 @@ interface ProofEvent {
   createdAt: string;
   type: string;
   sessionId: string | null;
-  meta: Record<string, unknown> | null;
+  payload: Record<string, unknown> | null;
 }
 
 const inputClass =
@@ -169,7 +169,7 @@ function ProofEventsForm() {
                         {evt.sessionId ?? "\u2014"}
                       </td>
                       <td className="py-2">
-                        {evt.meta ? (
+                        {evt.payload ? (
                           <button
                             type="button"
                             onClick={() => toggleExpand(i)}
@@ -180,9 +180,9 @@ function ProofEventsForm() {
                         ) : (
                           <span className="text-[#475569]">null</span>
                         )}
-                        {expanded.has(i) && evt.meta && (
+                        {expanded.has(i) && evt.payload && (
                           <pre className="mt-2 p-2 bg-[#0F0318] rounded text-[#CBD5E1] overflow-x-auto">
-                            {JSON.stringify(evt.meta, null, 2)}
+                            {JSON.stringify(evt.payload, null, 2)}
                           </pre>
                         )}
                       </td>

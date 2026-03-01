@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
       select: { createdAt: true, type: true, sessionId: true, meta: true },
     });
 
-    return NextResponse.json({ data: events });
+    return NextResponse.json({
+      data: events.map(({ meta, ...rest }) => ({ ...rest, payload: meta })),
+    });
   } catch (err) {
     log.error({ err, strategyId }, "Failed to fetch proof events");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

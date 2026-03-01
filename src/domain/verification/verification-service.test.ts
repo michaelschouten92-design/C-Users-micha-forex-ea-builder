@@ -31,6 +31,7 @@ describe("runVerification", () => {
     expect(result.lifecycleState).toBe("VERIFIED");
     expect(result.transitioned).toBe(true);
     expect(result.verdictResult.verdict).toBe("READY");
+    expect(result.verdictResult.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
   });
 
   it("UNCERTAIN + BACKTESTED → stays BACKTESTED", async () => {

@@ -76,7 +76,7 @@ describe("GET /api/internal/proof-events", () => {
     expect(json.code).toBe("VALIDATION_FAILED");
   });
 
-  it("returns proof events on success", async () => {
+  it("returns proof events on success with meta renamed to payload", async () => {
     const mockEvents = [
       {
         createdAt: new Date().toISOString(),
@@ -92,13 +92,62 @@ describe("GET /api/internal/proof-events", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json.data).toEqual(mockEvents);
+    expect(json.data).toEqual([
+      {
+        createdAt: mockEvents[0].createdAt,
+        type: "VERIFICATION_STARTED",
+        sessionId: "sess_1",
+        payload: { foo: "bar" },
+      },
+    ]);
+    expect(json.data[0]).not.toHaveProperty("meta");
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { strategyId: "strat_1" },
         orderBy: { createdAt: "desc" },
         take: 50,
         select: { createdAt: true, type: true, sessionId: true, meta: true },
+      })
+    );
+  });
+
+  it("returns contract-shaped payload keys for verification events", async () => {
+    const contractPayload = {
+      eventType: "VERIFICATION_RUN_COMPLETED",
+      strategyId: "strat_contract",
+      strategyVersion: 2,
+      verdict: "READY",
+      reasonCodes: ["ALL_CHECKS_PASSED"],
+      thresholdsHash: "sha256:abc123",
+      recordId: "rec_001",
+      timestamp: "2026-01-01T00:00:00.000Z",
+    };
+    const mockEvents = [
+      {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        type: "VERIFICATION_RUN_COMPLETED",
+        sessionId: "sess_contract",
+        meta: contractPayload,
+      },
+    ];
+    mockFindMany.mockResolvedValueOnce(mockEvents);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest({ strategyId: "strat_contract" }, TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    const payload = json.data[0].payload;
+    expect(payload).toEqual(
+      expect.objectContaining({
+        eventType: "VERIFICATION_RUN_COMPLETED",
+        strategyId: "strat_contract",
+        strategyVersion: 2,
+        verdict: "READY",
+        reasonCodes: ["ALL_CHECKS_PASSED"],
+        thresholdsHash: expect.any(String),
+        recordId: expect.any(String),
+        timestamp: expect.any(String),
       })
     );
   });
