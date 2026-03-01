@@ -40,6 +40,10 @@ const PAYLOAD_WHITELIST = new Set([
   "strategyId",
   "strategyVersion",
   "timestamp",
+  "tradeSnapshotHash",
+  "tradeFactCount",
+  "snapshotRange",
+  "dataSources",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */

@@ -176,4 +176,46 @@ describe("POST /api/internal/verify", () => {
     expect(res.status).toBe(429);
     expect(json.code).toBe("RATE_LIMITED");
   });
+
+  it("schema accepts optional backtestRunId", async () => {
+    mockRunVerification.mockResolvedValueOnce({
+      verdictResult: {
+        verdict: "UNCERTAIN",
+        reasonCodes: [],
+        scores: {},
+        thresholdsUsed: {},
+        warnings: [],
+      },
+      lifecycleState: "BACKTESTED",
+      decision: { kind: "NO_TRANSITION", reason: "verdict_uncertain" },
+    });
+
+    const { POST } = await import("./route");
+    const body = { ...validBody(), backtestRunId: "run_abc123" };
+    const res = await POST(makeRequest(body, TEST_API_KEY));
+
+    expect(res.status).toBe(200);
+  });
+
+  it("backtestRunId is passed through to runVerification", async () => {
+    mockRunVerification.mockResolvedValueOnce({
+      verdictResult: {
+        verdict: "UNCERTAIN",
+        reasonCodes: [],
+        scores: {},
+        thresholdsUsed: {},
+        warnings: [],
+      },
+      lifecycleState: "BACKTESTED",
+      decision: { kind: "NO_TRANSITION", reason: "verdict_uncertain" },
+    });
+
+    const { POST } = await import("./route");
+    const body = { ...validBody(), backtestRunId: "run_xyz789" };
+    await POST(makeRequest(body, TEST_API_KEY));
+
+    expect(mockRunVerification).toHaveBeenCalledWith(
+      expect.objectContaining({ backtestRunId: "run_xyz789" })
+    );
+  });
 });

@@ -30,6 +30,7 @@ const verifyRequestSchema = z.object({
   currentLifecycleState: z.enum(LIFECYCLE_STATES),
   tradeHistory: z.array(z.record(z.unknown())),
   backtestParameters: z.record(z.unknown()),
+  backtestRunId: z.string().optional(),
 });
 
 function authenticateInternal(request: NextRequest): boolean {
@@ -74,8 +75,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { strategyId, strategyVersion, currentLifecycleState, tradeHistory, backtestParameters } =
-    validation.data;
+  const {
+    strategyId,
+    strategyVersion,
+    currentLifecycleState,
+    tradeHistory,
+    backtestParameters,
+    backtestRunId,
+  } = validation.data;
 
   try {
     const result = await runVerification({
@@ -84,6 +91,7 @@ export async function POST(request: NextRequest) {
       currentLifecycleState,
       tradeHistory,
       backtestParameters,
+      backtestRunId,
     });
 
     return NextResponse.json(result);
