@@ -113,14 +113,14 @@ describe("computeVerdict", () => {
       expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
     });
 
-    it("composite=0.75 (exact threshold) → READY + ALL_CHECKS_PASSED", () => {
-      const result = computeVerdict(makeInput(100, 0.75));
+    it("composite at exact threshold → READY + ALL_CHECKS_PASSED", () => {
+      const result = computeVerdict(makeInput(100, VERIFICATION.READY_CONFIDENCE_THRESHOLD));
       expect(result.verdict).toBe("READY");
       expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
     });
 
-    it("composite=0.74 (just below) → UNCERTAIN + COMPOSITE_IN_UNCERTAIN_BAND", () => {
-      const result = computeVerdict(makeInput(100, 0.74));
+    it("composite just below threshold → UNCERTAIN + COMPOSITE_IN_UNCERTAIN_BAND", () => {
+      const result = computeVerdict(makeInput(100, VERIFICATION.READY_CONFIDENCE_THRESHOLD - 0.01));
       expect(result.verdict).toBe("UNCERTAIN");
       expect(result.reasonCodes).toEqual(["COMPOSITE_IN_UNCERTAIN_BAND"]);
     });
