@@ -44,7 +44,7 @@ interface VerifyResponse {
     warnings: string[];
   };
   lifecycleState: string;
-  transitioned: boolean;
+  decision?: { kind: string; from?: string; to?: string; reason?: string };
 }
 
 const VERDICT_STYLES: Record<string, string> = {
@@ -385,8 +385,11 @@ function VerifyForm() {
             <div className="text-sm text-white">
               State: <span className="font-mono text-[#22D3EE]">{result.lifecycleState}</span>
               <span className="mx-3 text-[#475569]">|</span>
-              Transitioned:{" "}
-              <span className="font-mono text-[#22D3EE]">{String(result.transitioned)}</span>
+              Decision:{" "}
+              <span className="font-mono text-[#22D3EE]">{result.decision?.kind ?? "—"}</span>
+              {result.decision?.reason && (
+                <span className="ml-1 text-[#7C8DB0]">({result.decision.reason})</span>
+              )}
             </div>
           </div>
 

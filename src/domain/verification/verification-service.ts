@@ -12,6 +12,16 @@ import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "verification" });
 
+/** Pure domain value object — replaces boolean flags for lifecycle decisions. */
+export type TransitionDecision =
+  | {
+      kind: "TRANSITION";
+      from: StrategyLifecycleState;
+      to: StrategyLifecycleState;
+      reason: string;
+    }
+  | { kind: "NO_TRANSITION"; reason: string };
+
 export interface RunVerificationParams {
   strategyId: string;
   strategyVersion: number;
@@ -24,16 +34,44 @@ export interface RunVerificationParams {
 export interface RunVerificationResult {
   verdictResult: VerificationResult;
   lifecycleState: StrategyLifecycleState;
-  transitioned: boolean;
+  decision: TransitionDecision;
 }
 
 /**
- * Orchestrates verdict computation and lifecycle transition.
+ * Pure decision: should we transition the lifecycle?
+ * No IO — safe to call before persistence.
+ */
+function decideTransition(
+  verdict: VerificationResult["verdict"],
+  currentState: StrategyLifecycleState
+): TransitionDecision {
+  if (verdict === "READY" && currentState === "BACKTESTED") {
+    return {
+      kind: "TRANSITION",
+      from: "BACKTESTED",
+      to: "VERIFIED",
+      reason: "verification_passed",
+    };
+  }
+
+  if (verdict !== "READY") {
+    return { kind: "NO_TRANSITION", reason: `verdict_${verdict.toLowerCase()}` };
+  }
+
+  return {
+    kind: "NO_TRANSITION",
+    reason: `state_not_eligible:${currentState}`,
+  };
+}
+
+/**
+ * Orchestrates verdict computation, proof persistence, and lifecycle transition.
  *
- * Calls the pure `computeVerdict`, checks if the strategy is eligible
- * for BACKTESTED → VERIFIED transition, and validates via the pure
- * `transitionLifecycle()` guard. No DB writes — the caller is
- * responsible for persistence.
+ * Ordering guarantee: the lifecycle transition result
+ * (decision.kind="TRANSITION", lifecycleState="VERIFIED") is only
+ * constructed AFTER proof ledger persistence succeeds. If persistence
+ * fails, no transitioned result ever exists — the error propagates
+ * to the caller (fail-closed).
  */
 export async function runVerification(
   params: RunVerificationParams
@@ -56,29 +94,10 @@ export async function runVerification(
   };
 
   const verdictResult = computeVerdict(input);
+  const decision = decideTransition(verdictResult.verdict, currentLifecycleState);
 
-  let result: RunVerificationResult;
-
-  if (verdictResult.verdict === "READY" && currentLifecycleState === "BACKTESTED") {
-    const newState = applyLifecycleTransition(
-      strategyId,
-      strategyVersion,
-      currentLifecycleState,
-      "VERIFIED",
-      "verification_passed"
-    );
-    result = { verdictResult, lifecycleState: newState, transitioned: true };
-  } else {
-    result = {
-      verdictResult,
-      lifecycleState: currentLifecycleState,
-      transitioned: false,
-    };
-  }
-
-  // Event persistence policy: fail-closed for all verdicts.
-  // Verification results are only trustworthy if the audit trail is intact.
-  // Both events are written in a single atomic transaction — no partial commits.
+  // Persist proof events BEFORE finalizing the lifecycle result.
+  // The transitioned result must never exist unless the audit trail is intact.
   const recordId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
@@ -97,7 +116,7 @@ export async function runVerification(
         timestamp,
       },
       passedPayload:
-        verdictResult.verdict === "READY"
+        decision.kind === "TRANSITION"
           ? {
               eventType: "VERIFICATION_PASSED",
               strategyId,
@@ -109,11 +128,23 @@ export async function runVerification(
     });
   } catch (err) {
     log.error(
-      { err, recordId, timestamp, strategyId, strategyVersion },
+      { err, recordId, timestamp, strategyId, strategyVersion, decision },
       "Failed to persist verification events"
     );
     throw err;
   }
 
-  return result;
+  // Lifecycle transition only applied after proof persistence succeeded.
+  if (decision.kind === "TRANSITION") {
+    const newState = applyLifecycleTransition(
+      strategyId,
+      strategyVersion,
+      decision.from,
+      decision.to,
+      decision.reason
+    );
+    return { verdictResult, lifecycleState: newState, decision };
+  }
+
+  return { verdictResult, lifecycleState: currentLifecycleState, decision };
 }

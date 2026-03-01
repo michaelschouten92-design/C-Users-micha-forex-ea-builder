@@ -101,7 +101,7 @@ describe("POST /api/internal/verify", () => {
     expect(json.details).toBeDefined();
   });
 
-  it("returns verdictResult, lifecycleState, and transitioned on success", async () => {
+  it("returns verdictResult, lifecycleState, and decision on success", async () => {
     const mockResult = {
       verdictResult: {
         strategyId: "strat_1",
@@ -129,7 +129,7 @@ describe("POST /api/internal/verify", () => {
         warnings: [],
       },
       lifecycleState: "BACKTESTED",
-      transitioned: false,
+      decision: { kind: "NO_TRANSITION", reason: "verdict_uncertain" },
     };
     mockRunVerification.mockResolvedValueOnce(mockResult);
 
@@ -140,7 +140,7 @@ describe("POST /api/internal/verify", () => {
     expect(res.status).toBe(200);
     expect(json.verdictResult.verdict).toBe("UNCERTAIN");
     expect(json.lifecycleState).toBe("BACKTESTED");
-    expect(json.transitioned).toBe(false);
+    expect(json.decision).toEqual({ kind: "NO_TRANSITION", reason: "verdict_uncertain" });
     expect(mockRunVerification).toHaveBeenCalledWith(
       expect.objectContaining({
         strategyId: "strat_1",

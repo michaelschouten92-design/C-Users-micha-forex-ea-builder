@@ -34,7 +34,12 @@ describe("runVerification", () => {
     });
 
     expect(result.lifecycleState).toBe("VERIFIED");
-    expect(result.transitioned).toBe(true);
+    expect(result.decision).toEqual({
+      kind: "TRANSITION",
+      from: "BACKTESTED",
+      to: "VERIFIED",
+      reason: "verification_passed",
+    });
     expect(result.verdictResult.verdict).toBe("READY");
     expect(result.verdictResult.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
   });
@@ -49,7 +54,10 @@ describe("runVerification", () => {
     });
 
     expect(result.lifecycleState).toBe("BACKTESTED");
-    expect(result.transitioned).toBe(false);
+    expect(result.decision).toEqual({
+      kind: "NO_TRANSITION",
+      reason: "verdict_uncertain",
+    });
     expect(result.verdictResult.verdict).toBe("UNCERTAIN");
   });
 
@@ -63,7 +71,10 @@ describe("runVerification", () => {
     });
 
     expect(result.lifecycleState).toBe("BACKTESTED");
-    expect(result.transitioned).toBe(false);
+    expect(result.decision).toEqual({
+      kind: "NO_TRANSITION",
+      reason: "verdict_not_deployable",
+    });
     expect(result.verdictResult.verdict).toBe("NOT_DEPLOYABLE");
   });
 
@@ -78,7 +89,10 @@ describe("runVerification", () => {
     });
 
     expect(result.lifecycleState).toBe("DRAFT");
-    expect(result.transitioned).toBe(false);
+    expect(result.decision).toEqual({
+      kind: "NO_TRANSITION",
+      reason: "state_not_eligible:DRAFT",
+    });
   });
 
   it("non-READY calls appendVerificationRunProof without passedPayload", async () => {
@@ -203,6 +217,46 @@ describe("runVerification", () => {
         intermediateResults: { robustnessScores: { composite: 1.0 } },
       })
     ).rejects.toThrow("DB write failed");
+  });
+
+  it("READY persistence failure never produces a transitioned result", async () => {
+    mockAppendVerificationRunProof.mockRejectedValueOnce(new Error("DB write failed"));
+
+    let leaked: unknown = undefined;
+    try {
+      leaked = await runVerification({
+        strategyId: "strat_no_leak",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 1.0 } },
+      });
+    } catch {
+      // expected
+    }
+
+    // The function must throw — no result should ever be returned
+    expect(leaked).toBeUndefined();
+  });
+
+  it("non-READY persistence failure never produces a result", async () => {
+    mockAppendVerificationRunProof.mockRejectedValueOnce(new Error("DB write failed"));
+
+    let leaked: unknown = undefined;
+    try {
+      leaked = await runVerification({
+        strategyId: "strat_no_leak_2",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+    } catch {
+      // expected
+    }
+
+    expect(leaked).toBeUndefined();
   });
 
   it("single atomic call means no partial-commit risk", async () => {
