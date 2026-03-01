@@ -458,6 +458,15 @@ export const internalProofEventsRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal trade CSV import endpoint
+ * Limits: 10 requests per minute per IP (lower than verify — import is heavier)
+ */
+export const internalTradeImportRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */
