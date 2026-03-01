@@ -1081,6 +1081,34 @@ model ProofThreshold {
 }
 
 // ============================================
+// TRADE FACT STORE — Append-Only
+// ============================================
+
+model TradeFact {
+  id           String   @id @default(cuid())
+  strategyId   String                    // Logical FK to StrategyIdentity.strategyId
+  source       String                    // "BACKTEST" | "LIVE" (future-proof)
+  sourceRunId  String?                   // BacktestRun.id (nullable for future LIVE source)
+  sourceTicket Int                       // ParsedDeal.ticket (MT5 ticket number)
+  symbol       String
+  direction    String                    // "BUY" | "SELL" (normalized from ParsedDeal.type)
+  volume       Float
+  openPrice    Float
+  closePrice   Float?                    // null for open positions (future LIVE)
+  sl           Float?
+  tp           Float?
+  profit       Float                     // Net P&L in account currency
+  executedAt   DateTime                  // Normalized from ParsedDeal.openTime
+  ingestedAt   DateTime @default(now())
+  comment      String?
+
+  @@unique([strategyId, source, sourceTicket])
+  @@index([strategyId, executedAt])
+  @@index([strategyId, source])
+  @@index([sourceRunId])
+}
+
+// ============================================
 // NOTIFICATION OUTBOX
 // ============================================
 
