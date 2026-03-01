@@ -4,10 +4,17 @@ import type {
   VerificationResult,
   TradeRecord,
   BacktestParameters,
+  ReasonCode,
 } from "./types";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import { applyLifecycleTransition } from "@/lib/strategy-lifecycle/lifecycle-transition";
 import { appendVerificationRunProof } from "@/lib/proof/events";
+import {
+  loadActiveConfigWithFallback,
+  NoActiveConfigError,
+  ConfigIntegrityError,
+} from "./config-loader";
+import type { ConfigSource } from "./config-loader";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "verification" });
@@ -65,7 +72,50 @@ function decideTransition(
 }
 
 /**
+ * Build a NOT_DEPLOYABLE result for governance failures (missing or tampered config).
+ * No thresholds are available — all scores are null/zero.
+ */
+function buildGovernanceFailureResult(
+  strategyId: string,
+  strategyVersion: number,
+  reasonCode: ReasonCode
+): VerificationResult {
+  return {
+    strategyId,
+    strategyVersion,
+    verdict: "NOT_DEPLOYABLE",
+    reasonCodes: [reasonCode],
+    scores: {
+      composite: 0,
+      walkForwardDegradationPct: null,
+      walkForwardOosSampleSize: null,
+      monteCarloRuinProbability: null,
+      sampleSize: 0,
+    },
+    thresholdsUsed: {
+      configVersion: "unknown",
+      thresholdsHash: "unknown",
+      minTradeCount: 0,
+      readyConfidenceThreshold: 0,
+      notDeployableThreshold: 0,
+      maxSharpeDegradationPct: 0,
+      extremeSharpeDegradationPct: 0,
+      minOosTradeCount: 0,
+      ruinProbabilityCeiling: 0,
+      monteCarloIterations: 0,
+    },
+    warnings: [],
+  };
+}
+
+/**
  * Orchestrates verdict computation, proof persistence, and lifecycle transition.
+ *
+ * Governance enforcement:
+ *   - Missing ACTIVE config → NOT_DEPLOYABLE + CONFIG_SNAPSHOT_MISSING
+ *   - Tampered config hash  → NOT_DEPLOYABLE + CONFIG_HASH_MISMATCH
+ *   - Both still write a VERIFICATION_RUN_COMPLETED proof event.
+ *   - DB connectivity errors propagate as exceptions (route returns 500).
  *
  * Ordering guarantee: the lifecycle transition result
  * (decision.kind="TRANSITION", lifecycleState="VERIFIED") is only
@@ -85,19 +135,59 @@ export async function runVerification(
     intermediateResults,
   } = params;
 
-  const input: VerificationInput = {
-    strategyId,
-    strategyVersion,
-    tradeHistory,
-    backtestParameters,
-    intermediateResults,
-  };
+  // --- Phase 1: Load config (may fail with governance error) ---
+  let verdictResult: VerificationResult;
+  let configVersion: string | null;
+  let thresholdsHash: string | null;
+  let configSource: ConfigSource | "missing";
 
-  const verdictResult = computeVerdict(input);
+  try {
+    const loaded = await loadActiveConfigWithFallback();
+    configSource = loaded.source;
+
+    const input: VerificationInput = {
+      strategyId,
+      strategyVersion,
+      tradeHistory,
+      backtestParameters,
+      intermediateResults,
+    };
+
+    verdictResult = computeVerdict(input, loaded.config);
+    configVersion = verdictResult.thresholdsUsed.configVersion;
+    thresholdsHash = verdictResult.thresholdsUsed.thresholdsHash;
+  } catch (err) {
+    if (err instanceof NoActiveConfigError) {
+      log.warn({ strategyId, strategyVersion }, "No ACTIVE config — returning NOT_DEPLOYABLE");
+      verdictResult = buildGovernanceFailureResult(
+        strategyId,
+        strategyVersion,
+        "CONFIG_SNAPSHOT_MISSING"
+      );
+      configVersion = null;
+      thresholdsHash = null;
+      configSource = "missing";
+    } else if (err instanceof ConfigIntegrityError) {
+      log.error(
+        { strategyId, strategyVersion, details: err.details },
+        "Config integrity failure — returning NOT_DEPLOYABLE"
+      );
+      verdictResult = buildGovernanceFailureResult(
+        strategyId,
+        strategyVersion,
+        "CONFIG_HASH_MISMATCH"
+      );
+      configVersion = null;
+      thresholdsHash = null;
+      configSource = "missing";
+    } else {
+      throw err; // DB connectivity etc. → 500
+    }
+  }
+
   const decision = decideTransition(verdictResult.verdict, currentLifecycleState);
 
-  // Persist proof events BEFORE finalizing the lifecycle result.
-  // The transitioned result must never exist unless the audit trail is intact.
+  // --- Phase 2: Persist proof events BEFORE finalizing lifecycle result ---
   const recordId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
@@ -111,7 +201,9 @@ export async function runVerification(
         strategyVersion,
         verdict: verdictResult.verdict,
         reasonCodes: verdictResult.reasonCodes,
-        thresholdsHash: verdictResult.thresholdsUsed.thresholdsHash,
+        configVersion,
+        thresholdsHash,
+        configSource,
         recordId,
         timestamp,
       },
@@ -134,7 +226,7 @@ export async function runVerification(
     throw err;
   }
 
-  // Lifecycle transition only applied after proof persistence succeeded.
+  // --- Phase 3: Lifecycle transition (only after proof persistence succeeded) ---
   if (decision.kind === "TRANSITION") {
     const newState = applyLifecycleTransition(
       strategyId,

@@ -94,6 +94,11 @@ enum SubscriptionStatus {
   paused
 }
 
+enum VerificationConfigStatus {
+  ACTIVE
+  DEPRECATED
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -1041,6 +1046,25 @@ model ProofEventLog {
   @@index([sessionId, sequence])
   @@index([ownerId, type, createdAt])
   @@index([createdAt])
+}
+
+// ============================================
+// VERIFICATION — CONFIG GOVERNANCE
+// ============================================
+
+model VerificationConfig {
+  id              String                   @id @default(cuid())
+  configVersion   String                   @unique // "1.0.0", "1.1.0", etc.
+  thresholdsHash  String                   @unique // SHA-256 of canonical threshold JSON
+  snapshot        Json                             // { configVersion, thresholds, thresholdsHash }
+  status          VerificationConfigStatus @default(ACTIVE)
+  activatedAt     DateTime                 @default(now())
+  deprecatedAt    DateTime?
+  activatedBy     String                   @default("system")
+
+  // Partial unique index enforced in migration SQL (max one ACTIVE)
+  @@index([status])
+  @@index([thresholdsHash])
 }
 
 // ============================================

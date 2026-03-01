@@ -1,14 +1,65 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runVerification } from "./verification-service";
 
-const { mockAppendVerificationRunProof } = vi.hoisted(() => ({
-  mockAppendVerificationRunProof: vi.fn().mockResolvedValue({
-    runCompleted: { sequence: 1, eventHash: "a".repeat(64), type: "VERIFICATION_RUN_COMPLETED" },
-  }),
-}));
+const {
+  mockAppendVerificationRunProof,
+  mockLoadActiveConfigWithFallback,
+  MockNoActiveConfigError,
+  MockConfigIntegrityError,
+} = vi.hoisted(() => {
+  // Inline the snapshot to avoid referencing hoisted imports
+  const snapshot = {
+    configVersion: "1.0.0",
+    thresholds: {
+      minTradeCount: 30,
+      readyConfidenceThreshold: 0.75,
+      notDeployableThreshold: 0.45,
+      maxSharpeDegradationPct: 40,
+      extremeSharpeDegradationPct: 80,
+      minOosTradeCount: 20,
+      ruinProbabilityCeiling: 0.15,
+      monteCarloIterations: 10_000,
+    },
+    thresholdsHash: "placeholder",
+  };
+
+  class MockNoActiveConfigError extends Error {
+    constructor() {
+      super("No ACTIVE VerificationConfig found in database");
+      this.name = "NoActiveConfigError";
+    }
+  }
+
+  class MockConfigIntegrityError extends Error {
+    details: { expected: string; actual: string };
+    constructor(message: string, details: { expected: string; actual: string }) {
+      super(message);
+      this.name = "ConfigIntegrityError";
+      this.details = details;
+    }
+  }
+
+  return {
+    mockAppendVerificationRunProof: vi.fn().mockResolvedValue({
+      runCompleted: { sequence: 1, eventHash: "a".repeat(64), type: "VERIFICATION_RUN_COMPLETED" },
+    }),
+    mockLoadActiveConfigWithFallback: vi.fn().mockResolvedValue({
+      config: snapshot,
+      source: "db",
+    }),
+    MockNoActiveConfigError,
+    MockConfigIntegrityError,
+  };
+});
 
 vi.mock("@/lib/proof/events", () => ({
   appendVerificationRunProof: mockAppendVerificationRunProof,
+}));
+
+vi.mock("./config-loader", () => ({
+  loadActiveConfigWithFallback: mockLoadActiveConfigWithFallback,
+  NoActiveConfigError: MockNoActiveConfigError,
+  ConfigIntegrityError: MockConfigIntegrityError,
 }));
 
 function makeTrades(count: number): Record<string, unknown>[] {
@@ -17,9 +68,26 @@ function makeTrades(count: number): Record<string, unknown>[] {
 
 describe("runVerification", () => {
   beforeEach(() => {
-    mockAppendVerificationRunProof.mockClear();
+    vi.clearAllMocks();
     mockAppendVerificationRunProof.mockResolvedValue({
       runCompleted: { sequence: 1, eventHash: "a".repeat(64), type: "VERIFICATION_RUN_COMPLETED" },
+    });
+    mockLoadActiveConfigWithFallback.mockResolvedValue({
+      config: {
+        configVersion: "1.0.0",
+        thresholds: {
+          minTradeCount: 30,
+          readyConfidenceThreshold: 0.75,
+          notDeployableThreshold: 0.45,
+          maxSharpeDegradationPct: 40,
+          extremeSharpeDegradationPct: 80,
+          minOosTradeCount: 20,
+          ruinProbabilityCeiling: 0.15,
+          monteCarloIterations: 10_000,
+        },
+        thresholdsHash: "placeholder",
+      },
+      source: "db",
     });
   });
 
@@ -118,6 +186,8 @@ describe("runVerification", () => {
         verdict: "UNCERTAIN",
         reasonCodes: expect.any(Array),
         thresholdsHash: expect.any(String),
+        configVersion: expect.any(String),
+        configSource: "db",
         recordId: expect.any(String),
         timestamp: expect.any(String),
       })
@@ -177,6 +247,8 @@ describe("runVerification", () => {
         verdict: "READY",
         reasonCodes: expect.any(Array),
         thresholdsHash: expect.any(String),
+        configVersion: expect.any(String),
+        configSource: "db",
       })
     );
 
@@ -275,5 +347,183 @@ describe("runVerification", () => {
 
     // Exactly one atomic call — no separate calls that could partially succeed
     expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+  });
+
+  describe("governance enforcement", () => {
+    it("missing ACTIVE config → NOT_DEPLOYABLE + CONFIG_SNAPSHOT_MISSING", async () => {
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(new MockNoActiveConfigError());
+
+      const result = await runVerification({
+        strategyId: "strat_gov_1",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 1.0 } },
+      });
+
+      expect(result.verdictResult.verdict).toBe("NOT_DEPLOYABLE");
+      expect(result.verdictResult.reasonCodes).toEqual(["CONFIG_SNAPSHOT_MISSING"]);
+      expect(result.lifecycleState).toBe("BACKTESTED");
+      expect(result.decision).toEqual({
+        kind: "NO_TRANSITION",
+        reason: "verdict_not_deployable",
+      });
+    });
+
+    it("missing config still writes proof event with configSource='missing'", async () => {
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(new MockNoActiveConfigError());
+
+      await runVerification({
+        strategyId: "strat_gov_2",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+
+      expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+
+      expect(payload.configVersion).toBeNull();
+      expect(payload.thresholdsHash).toBeNull();
+      expect(payload.configSource).toBe("missing");
+      expect(payload.verdict).toBe("NOT_DEPLOYABLE");
+      expect(payload.reasonCodes).toEqual(["CONFIG_SNAPSHOT_MISSING"]);
+      expect(payload.passedPayload).toBeUndefined();
+    });
+
+    it("config hash mismatch → NOT_DEPLOYABLE + CONFIG_HASH_MISMATCH", async () => {
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(
+        new MockConfigIntegrityError("hash mismatch", {
+          expected: "a".repeat(64),
+          actual: "b".repeat(64),
+        })
+      );
+
+      const result = await runVerification({
+        strategyId: "strat_gov_3",
+        strategyVersion: 2,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 1.0 } },
+      });
+
+      expect(result.verdictResult.verdict).toBe("NOT_DEPLOYABLE");
+      expect(result.verdictResult.reasonCodes).toEqual(["CONFIG_HASH_MISMATCH"]);
+      expect(result.lifecycleState).toBe("BACKTESTED");
+      expect(result.decision).toEqual({
+        kind: "NO_TRANSITION",
+        reason: "verdict_not_deployable",
+      });
+    });
+
+    it("hash mismatch still writes proof event with configSource='missing'", async () => {
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(
+        new MockConfigIntegrityError("tampered", {
+          expected: "a".repeat(64),
+          actual: "b".repeat(64),
+        })
+      );
+
+      await runVerification({
+        strategyId: "strat_gov_4",
+        strategyVersion: 2,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+
+      expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+
+      expect(payload.configVersion).toBeNull();
+      expect(payload.thresholdsHash).toBeNull();
+      expect(payload.configSource).toBe("missing");
+      expect(payload.verdict).toBe("NOT_DEPLOYABLE");
+      expect(payload.reasonCodes).toEqual(["CONFIG_HASH_MISMATCH"]);
+    });
+
+    it("governance failure never triggers lifecycle transition", async () => {
+      // Even with READY-eligible params, config failure overrides to NOT_DEPLOYABLE
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(new MockNoActiveConfigError());
+
+      const result = await runVerification({
+        strategyId: "strat_gov_5",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 1.0 } },
+      });
+
+      // Must NOT transition — governance failure overrides everything
+      expect(result.decision.kind).toBe("NO_TRANSITION");
+      expect(result.lifecycleState).toBe("BACKTESTED");
+    });
+
+    it("DB connectivity error still throws (route returns 500)", async () => {
+      mockLoadActiveConfigWithFallback.mockRejectedValueOnce(new Error("Connection refused"));
+
+      await expect(
+        runVerification({
+          strategyId: "strat_gov_6",
+          strategyVersion: 1,
+          currentLifecycleState: "BACKTESTED",
+          tradeHistory: makeTrades(100),
+          backtestParameters: {},
+        })
+      ).rejects.toThrow("Connection refused");
+
+      // No proof event written for infra failures
+      expect(mockAppendVerificationRunProof).not.toHaveBeenCalled();
+    });
+
+    it("proof payload includes configSource='db' on normal path", async () => {
+      await runVerification({
+        strategyId: "strat_gov_7",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.configSource).toBe("db");
+      expect(payload.configVersion).toEqual(expect.any(String));
+      expect(payload.thresholdsHash).toEqual(expect.any(String));
+    });
+
+    it("proof payload includes configSource='fallback' when fallback used", async () => {
+      mockLoadActiveConfigWithFallback.mockResolvedValueOnce({
+        config: {
+          configVersion: "1.0.0",
+          thresholds: {
+            minTradeCount: 30,
+            readyConfidenceThreshold: 0.75,
+            notDeployableThreshold: 0.45,
+            maxSharpeDegradationPct: 40,
+            extremeSharpeDegradationPct: 80,
+            minOosTradeCount: 20,
+            ruinProbabilityCeiling: 0.15,
+            monteCarloIterations: 10_000,
+          },
+          thresholdsHash: "fallback-hash",
+        },
+        source: "fallback",
+      });
+
+      await runVerification({
+        strategyId: "strat_gov_8",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.configSource).toBe("fallback");
+    });
   });
 });

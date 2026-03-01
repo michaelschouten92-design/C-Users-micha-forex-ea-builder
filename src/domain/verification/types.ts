@@ -10,7 +10,9 @@ export type ReasonCode =
   | "INCOMPLETE_ANALYSIS"
   | "ALL_CHECKS_PASSED"
   | "COMPOSITE_IN_UNCERTAIN_BAND"
-  | "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE";
+  | "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE"
+  | "CONFIG_SNAPSHOT_MISSING"
+  | "CONFIG_HASH_MISMATCH";
 
 /** Placeholder — expanded as analysis stages are added (D1+). */
 export type TradeRecord = Record<string, unknown>;
