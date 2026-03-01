@@ -12,6 +12,7 @@
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { PROOF_GENESIS_HASH, computeProofEventHash } from "./chain";
 
 const log = logger.child({ service: "proof-events" });
 
@@ -67,15 +68,15 @@ export async function logProofEvent(event: ProofEvent): Promise<void> {
 }
 
 /**
- * Append a domain event to the proof event log.
- * Used by verification and other system processes.
- * Errors propagate to the caller.
+ * Append a domain event to the proof event log with hash chaining.
+ * Uses a Serializable transaction to ensure monotonic sequencing.
+ * Errors propagate to the caller (fail-closed).
  */
 export async function appendProofEvent(
   strategyId: string,
   type: string,
   payload: Record<string, unknown>
-): Promise<void> {
+): Promise<{ sequence: number; eventHash: string }> {
   const recordId = payload.recordId;
   if (typeof recordId !== "string") {
     throw new Error(
@@ -83,14 +84,157 @@ export async function appendProofEvent(
     );
   }
 
-  await prisma.proofEventLog.create({
-    data: {
-      type,
-      strategyId,
-      sessionId: recordId,
-      meta: payload as Record<string, string>,
+  return prisma.$transaction(
+    async (tx) => {
+      // Find the current chain head for this recordId (stored in sessionId).
+      // Chain scope is per verification-run, not per strategy.
+      const head = await tx.proofEventLog.findFirst({
+        where: { sessionId: recordId, sequence: { not: null } },
+        orderBy: { sequence: "desc" },
+        select: { sequence: true, eventHash: true },
+      });
+
+      const sequence = (head?.sequence ?? 0) + 1;
+      const prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
+
+      const eventHash = computeProofEventHash({
+        sequence,
+        strategyId,
+        type,
+        recordId,
+        prevEventHash,
+        payload,
+      });
+
+      await tx.proofEventLog.create({
+        data: {
+          type,
+          strategyId,
+          sessionId: recordId,
+          meta: payload as Record<string, string>,
+          sequence,
+          eventHash,
+          prevEventHash,
+        },
+      });
+
+      return { sequence, eventHash };
     },
-  });
+    { isolationLevel: "Serializable" }
+  );
+}
+
+/** Return shape for each event written by appendVerificationRunProof. */
+export interface ProofEventRecord {
+  sequence: number;
+  eventHash: string;
+  type: string;
+}
+
+/** Params for the atomic verification-run proof append. */
+export interface AppendVerificationRunParams {
+  strategyId: string;
+  recordId: string; // stored in ProofEventLog.sessionId
+  runCompletedPayload: Record<string, unknown>;
+  passedPayload?: Record<string, unknown>; // only provided when READY
+}
+
+/**
+ * Atomically append one or two proof events for a verification run.
+ *
+ * Uses a single Serializable transaction so that either all events
+ * are committed or none are — no partial-commit window.
+ *
+ *   seq 1: VERIFICATION_RUN_COMPLETED  (always)
+ *   seq 2: VERIFICATION_PASSED         (only when passedPayload provided)
+ *
+ * Both events share the same recordId chain (sessionId).
+ * Errors propagate to the caller (fail-closed).
+ */
+export async function appendVerificationRunProof(
+  params: AppendVerificationRunParams
+): Promise<{ runCompleted: ProofEventRecord; passed?: ProofEventRecord }> {
+  const { strategyId, recordId, runCompletedPayload, passedPayload } = params;
+
+  return prisma.$transaction(
+    async (tx) => {
+      // Find chain head for this recordId (sessionId)
+      const head = await tx.proofEventLog.findFirst({
+        where: { sessionId: recordId, sequence: { not: null } },
+        orderBy: { sequence: "desc" },
+        select: { sequence: true, eventHash: true },
+      });
+
+      let sequence = (head?.sequence ?? 0) + 1;
+      let prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
+
+      // 1. Insert VERIFICATION_RUN_COMPLETED
+      const runCompletedHash = computeProofEventHash({
+        sequence,
+        strategyId,
+        type: "VERIFICATION_RUN_COMPLETED",
+        recordId,
+        prevEventHash,
+        payload: runCompletedPayload,
+      });
+
+      await tx.proofEventLog.create({
+        data: {
+          type: "VERIFICATION_RUN_COMPLETED",
+          strategyId,
+          sessionId: recordId,
+          meta: runCompletedPayload as Record<string, string>,
+          sequence,
+          eventHash: runCompletedHash,
+          prevEventHash,
+        },
+      });
+
+      const runCompleted: ProofEventRecord = {
+        sequence,
+        eventHash: runCompletedHash,
+        type: "VERIFICATION_RUN_COMPLETED",
+      };
+
+      // 2. If READY, insert VERIFICATION_PASSED chained to the previous event
+      if (!passedPayload) {
+        return { runCompleted };
+      }
+
+      sequence += 1;
+      prevEventHash = runCompletedHash;
+
+      const passedHash = computeProofEventHash({
+        sequence,
+        strategyId,
+        type: "VERIFICATION_PASSED",
+        recordId,
+        prevEventHash,
+        payload: passedPayload,
+      });
+
+      await tx.proofEventLog.create({
+        data: {
+          type: "VERIFICATION_PASSED",
+          strategyId,
+          sessionId: recordId,
+          meta: passedPayload as Record<string, string>,
+          sequence,
+          eventHash: passedHash,
+          prevEventHash,
+        },
+      });
+
+      const passed: ProofEventRecord = {
+        sequence,
+        eventHash: passedHash,
+        type: "VERIFICATION_PASSED",
+      };
+
+      return { runCompleted, passed };
+    },
+    { isolationLevel: "Serializable" }
+  );
 }
 
 /**

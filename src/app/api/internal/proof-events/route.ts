@@ -10,6 +10,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
+import { verifyProofChain, type StoredProofEvent } from "@/lib/proof/chain";
 
 const log = logger.child({ route: "/api/internal/proof-events" });
 
@@ -54,17 +55,61 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const verify = request.nextUrl.searchParams.get("verify") === "true";
+  const recordId = request.nextUrl.searchParams.get("recordId");
+
   try {
     const events = await prisma.proofEventLog.findMany({
       where: { strategyId },
       orderBy: { createdAt: "desc" },
       take: limit,
-      select: { createdAt: true, type: true, sessionId: true, meta: true },
+      select: {
+        createdAt: true,
+        type: true,
+        sessionId: true,
+        meta: true,
+        sequence: true,
+        eventHash: true,
+        prevEventHash: true,
+      },
     });
 
-    return NextResponse.json({
-      data: events.map(({ meta, ...rest }) => ({ ...rest, payload: meta })),
+    const data = events.map(({ meta, ...rest }) => ({ ...rest, payload: meta }));
+
+    if (!verify) {
+      return NextResponse.json({ data });
+    }
+
+    if (!recordId) {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "verify=true requires recordId parameter"),
+        { status: 400 }
+      );
+    }
+
+    // Fetch all chained events for this recordId in sequence order.
+    // Chain scope is per verification-run recordId (stored in sessionId).
+    const chainedEvents = await prisma.proofEventLog.findMany({
+      where: { sessionId: recordId, sequence: { not: null } },
+      orderBy: { sequence: "asc" },
+      select: {
+        sequence: true,
+        strategyId: true,
+        type: true,
+        sessionId: true,
+        eventHash: true,
+        prevEventHash: true,
+        meta: true,
+        createdAt: true,
+      },
     });
+
+    const chainVerification = verifyProofChain(
+      chainedEvents as unknown as StoredProofEvent[],
+      recordId
+    );
+
+    return NextResponse.json({ data, chainVerification });
   } catch (err) {
     log.error({ err, strategyId }, "Failed to fetch proof events");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

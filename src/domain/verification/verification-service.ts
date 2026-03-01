@@ -7,7 +7,7 @@ import type {
 } from "./types";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import { applyLifecycleTransition } from "@/lib/strategy-lifecycle/lifecycle-transition";
-import { appendProofEvent } from "@/lib/proof/events";
+import { appendVerificationRunProof } from "@/lib/proof/events";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "verification" });
@@ -78,51 +78,41 @@ export async function runVerification(
 
   // Event persistence policy: fail-closed for all verdicts.
   // Verification results are only trustworthy if the audit trail is intact.
+  // Both events are written in a single atomic transaction — no partial commits.
   const recordId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
   try {
-    await appendProofEvent(strategyId, "VERIFICATION_RUN_COMPLETED", {
-      eventType: "VERIFICATION_RUN_COMPLETED",
+    await appendVerificationRunProof({
       strategyId,
-      strategyVersion,
-      verdict: verdictResult.verdict,
-      reasonCodes: verdictResult.reasonCodes,
-      thresholdsHash: verdictResult.thresholdsUsed.thresholdsHash,
       recordId,
-      timestamp,
+      runCompletedPayload: {
+        eventType: "VERIFICATION_RUN_COMPLETED",
+        strategyId,
+        strategyVersion,
+        verdict: verdictResult.verdict,
+        reasonCodes: verdictResult.reasonCodes,
+        thresholdsHash: verdictResult.thresholdsUsed.thresholdsHash,
+        recordId,
+        timestamp,
+      },
+      passedPayload:
+        verdictResult.verdict === "READY"
+          ? {
+              eventType: "VERIFICATION_PASSED",
+              strategyId,
+              strategyVersion,
+              recordId,
+              timestamp,
+            }
+          : undefined,
     });
   } catch (err) {
     log.error(
-      {
-        err,
-        eventType: "VERIFICATION_RUN_COMPLETED",
-        recordId,
-        timestamp,
-        strategyId,
-        strategyVersion,
-      },
-      "Failed to persist verification event"
+      { err, recordId, timestamp, strategyId, strategyVersion },
+      "Failed to persist verification events"
     );
     throw err;
-  }
-
-  if (verdictResult.verdict === "READY") {
-    try {
-      await appendProofEvent(strategyId, "VERIFICATION_PASSED", {
-        eventType: "VERIFICATION_PASSED",
-        strategyId,
-        strategyVersion,
-        recordId,
-        timestamp,
-      });
-    } catch (err) {
-      log.error(
-        { err, eventType: "VERIFICATION_PASSED", recordId, timestamp, strategyId, strategyVersion },
-        "Failed to persist verification event"
-      );
-      throw err;
-    }
   }
 
   return result;

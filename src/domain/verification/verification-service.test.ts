@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runVerification } from "./verification-service";
 
-const { mockAppendProofEvent } = vi.hoisted(() => ({
-  mockAppendProofEvent: vi.fn().mockResolvedValue(undefined),
+const { mockAppendVerificationRunProof } = vi.hoisted(() => ({
+  mockAppendVerificationRunProof: vi.fn().mockResolvedValue({
+    runCompleted: { sequence: 1, eventHash: "a".repeat(64), type: "VERIFICATION_RUN_COMPLETED" },
+  }),
 }));
 
 vi.mock("@/lib/proof/events", () => ({
-  appendProofEvent: mockAppendProofEvent,
+  appendVerificationRunProof: mockAppendVerificationRunProof,
 }));
 
 function makeTrades(count: number): Record<string, unknown>[] {
@@ -15,7 +17,10 @@ function makeTrades(count: number): Record<string, unknown>[] {
 
 describe("runVerification", () => {
   beforeEach(() => {
-    mockAppendProofEvent.mockClear();
+    mockAppendVerificationRunProof.mockClear();
+    mockAppendVerificationRunProof.mockResolvedValue({
+      runCompleted: { sequence: 1, eventHash: "a".repeat(64), type: "VERIFICATION_RUN_COMPLETED" },
+    });
   });
 
   it("READY + BACKTESTED → VERIFIED", async () => {
@@ -76,7 +81,7 @@ describe("runVerification", () => {
     expect(result.transitioned).toBe(false);
   });
 
-  it("RUN_COMPLETED is written for any verdict", async () => {
+  it("non-READY calls appendVerificationRunProof without passedPayload", async () => {
     await runVerification({
       strategyId: "strat_5",
       strategyVersion: 2,
@@ -85,10 +90,13 @@ describe("runVerification", () => {
       backtestParameters: {},
     });
 
-    expect(mockAppendProofEvent).toHaveBeenCalledTimes(1);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
-      "strat_5",
-      "VERIFICATION_RUN_COMPLETED",
+    expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+    const params = mockAppendVerificationRunProof.mock.calls[0][0];
+
+    expect(params.strategyId).toBe("strat_5");
+    expect(params.recordId).toEqual(expect.any(String));
+    expect(params.passedPayload).toBeUndefined();
+    expect(params.runCompletedPayload).toEqual(
       expect.objectContaining({
         eventType: "VERIFICATION_RUN_COMPLETED",
         strategyId: "strat_5",
@@ -102,7 +110,7 @@ describe("runVerification", () => {
     );
   });
 
-  it("READY writes both events in correct order", async () => {
+  it("READY calls appendVerificationRunProof with passedPayload", async () => {
     await runVerification({
       strategyId: "strat_6",
       strategyVersion: 1,
@@ -112,12 +120,20 @@ describe("runVerification", () => {
       intermediateResults: { robustnessScores: { composite: 1.0 } },
     });
 
-    expect(mockAppendProofEvent).toHaveBeenCalledTimes(2);
-    expect(mockAppendProofEvent.mock.calls[0][1]).toBe("VERIFICATION_RUN_COMPLETED");
-    expect(mockAppendProofEvent.mock.calls[1][1]).toBe("VERIFICATION_PASSED");
+    expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+    const params = mockAppendVerificationRunProof.mock.calls[0][0];
+
+    expect(params.passedPayload).toBeDefined();
+    expect(params.passedPayload).toEqual(
+      expect.objectContaining({
+        eventType: "VERIFICATION_PASSED",
+        strategyId: "strat_6",
+        strategyVersion: 1,
+      })
+    );
   });
 
-  it("payload contains required fields and recordId is stable across both events", async () => {
+  it("recordId and timestamp are stable across both payloads", async () => {
     await runVerification({
       strategyId: "strat_7",
       strategyVersion: 3,
@@ -127,11 +143,15 @@ describe("runVerification", () => {
       intermediateResults: { robustnessScores: { composite: 1.0 } },
     });
 
-    const runPayload = mockAppendProofEvent.mock.calls[0][2] as Record<string, unknown>;
-    const passedPayload = mockAppendProofEvent.mock.calls[1][2] as Record<string, unknown>;
+    const params = mockAppendVerificationRunProof.mock.calls[0][0];
+    const runPayload = params.runCompletedPayload;
+    const passedPayload = params.passedPayload;
 
-    // recordId and timestamp must be identical across both events
-    expect(runPayload.recordId).toBe(passedPayload.recordId);
+    // recordId param matches both payloads
+    expect(runPayload.recordId).toBe(params.recordId);
+    expect(passedPayload.recordId).toBe(params.recordId);
+
+    // timestamp is identical across both payloads
     expect(runPayload.timestamp).toBe(passedPayload.timestamp);
 
     // RUN_COMPLETED has all contract fields
@@ -143,8 +163,6 @@ describe("runVerification", () => {
         verdict: "READY",
         reasonCodes: expect.any(Array),
         thresholdsHash: expect.any(String),
-        recordId: expect.any(String),
-        timestamp: expect.any(String),
       })
     );
 
@@ -154,14 +172,12 @@ describe("runVerification", () => {
         eventType: "VERIFICATION_PASSED",
         strategyId: "strat_7",
         strategyVersion: 3,
-        recordId: expect.any(String),
-        timestamp: expect.any(String),
       })
     );
   });
 
-  it("throws when event persistence fails (non-READY)", async () => {
-    mockAppendProofEvent.mockRejectedValueOnce(new Error("DB write failed"));
+  it("throws when atomic persistence fails (non-READY)", async () => {
+    mockAppendVerificationRunProof.mockRejectedValueOnce(new Error("DB write failed"));
 
     await expect(
       runVerification({
@@ -174,10 +190,8 @@ describe("runVerification", () => {
     ).rejects.toThrow("DB write failed");
   });
 
-  it("throws when event persistence fails (READY)", async () => {
-    mockAppendProofEvent
-      .mockResolvedValueOnce(undefined) // RUN_COMPLETED succeeds
-      .mockRejectedValueOnce(new Error("DB write failed")); // VERIFICATION_PASSED fails
+  it("throws when atomic persistence fails (READY)", async () => {
+    mockAppendVerificationRunProof.mockRejectedValueOnce(new Error("DB write failed"));
 
     await expect(
       runVerification({
@@ -191,8 +205,8 @@ describe("runVerification", () => {
     ).rejects.toThrow("DB write failed");
   });
 
-  it("does not attempt VERIFICATION_PASSED if RUN_COMPLETED fails (READY)", async () => {
-    mockAppendProofEvent.mockRejectedValueOnce(new Error("DB write failed"));
+  it("single atomic call means no partial-commit risk", async () => {
+    mockAppendVerificationRunProof.mockRejectedValueOnce(new Error("Serialization failure"));
 
     await expect(
       runVerification({
@@ -203,14 +217,9 @@ describe("runVerification", () => {
         backtestParameters: {},
         intermediateResults: { robustnessScores: { composite: 1.0 } },
       })
-    ).rejects.toThrow("DB write failed");
+    ).rejects.toThrow("Serialization failure");
 
-    // Only RUN_COMPLETED was attempted; VERIFICATION_PASSED was never called
-    expect(mockAppendProofEvent).toHaveBeenCalledTimes(1);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
-      "strat_fail_3",
-      "VERIFICATION_RUN_COMPLETED",
-      expect.any(Object)
-    );
+    // Exactly one atomic call — no separate calls that could partially succeed
+    expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
   });
 });

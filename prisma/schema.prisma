@@ -1020,20 +1020,25 @@ model AdminIncident {
 // ============================================
 
 model ProofEventLog {
-  id         String   @id @default(cuid())
-  type       String   // proof_page_view | share_click | proof_link_copy | profile_view | leaderboard_view
-  strategyId String?  // StrategyIdentity.strategyId (not FK — public ID reference)
-  ownerId    String?  // User ID of the strategy/profile owner
-  userId     String?  // Viewer user ID (null if anonymous)
-  sessionId  String   // Anonymous session identifier
-  referrer   String?
-  ipHash     String?  // SHA-256 truncated IP (privacy-safe)
-  userAgent  String?
-  meta       Json?    // Extra context: { channel, filters, type }
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  type          String   // proof_page_view | share_click | proof_link_copy | profile_view | leaderboard_view
+  strategyId    String?  // StrategyIdentity.strategyId (not FK — public ID reference)
+  ownerId       String?  // User ID of the strategy/profile owner
+  userId        String?  // Viewer user ID (null if anonymous)
+  sessionId     String   // Analytics: anonymous session ID. Ledger events: verification-run recordId (chain partition key).
+  referrer      String?
+  ipHash        String?  // SHA-256 truncated IP (privacy-safe)
+  userAgent     String?
+  meta          Json?    // Extra context: { channel, filters, type }
+  createdAt     DateTime @default(now())
+  sequence      Int?     // Monotonic per recordId/sessionId (null = unchained analytics)
+  eventHash     String?  // SHA-256 of canonical event
+  prevEventHash String?  // Previous event's hash (GENESIS for seq=1)
 
+  @@unique([sessionId, sequence])
   @@index([type, createdAt])
   @@index([strategyId, type, createdAt])
+  @@index([sessionId, sequence])
   @@index([ownerId, type, createdAt])
   @@index([createdAt])
 }

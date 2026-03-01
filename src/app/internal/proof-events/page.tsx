@@ -8,6 +8,16 @@ interface ProofEvent {
   type: string;
   sessionId: string | null;
   payload: Record<string, unknown> | null;
+  sequence: number | null;
+  eventHash: string | null;
+  prevEventHash: string | null;
+}
+
+interface ChainVerification {
+  valid: boolean;
+  chainLength: number;
+  breakAtSequence?: number;
+  error?: string;
 }
 
 const inputClass =
@@ -19,11 +29,14 @@ function ProofEventsForm() {
   const [strategyId, setStrategyId] = useState("");
   const [internalApiKey, setInternalApiKey] = useState("");
   const [limit, setLimit] = useState("");
+  const [verifyChain, setVerifyChain] = useState(false);
+  const [recordId, setRecordId] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<ProofEvent[] | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [chainVerification, setChainVerification] = useState<ChainVerification | null>(null);
 
   function toggleExpand(index: number) {
     setExpanded((prev) => {
@@ -42,12 +55,19 @@ function ProofEventsForm() {
     setError(null);
     setEvents(null);
     setExpanded(new Set());
+    setChainVerification(null);
     setLoading(true);
 
     try {
       const params = new URLSearchParams({ strategyId });
       if (limit.trim()) {
         params.set("limit", limit.trim());
+      }
+      if (verifyChain) {
+        params.set("verify", "true");
+        if (recordId.trim()) {
+          params.set("recordId", recordId.trim());
+        }
       }
 
       const res = await fetch(`/api/internal/proof-events?${params.toString()}`, {
@@ -70,6 +90,9 @@ function ProofEventsForm() {
       }
 
       setEvents(json.data as ProofEvent[]);
+      if (json.chainVerification) {
+        setChainVerification(json.chainVerification as ChainVerification);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -121,6 +144,35 @@ function ProofEventsForm() {
           />
         </div>
 
+        {/* Verify hash chain */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="verifyChain"
+            checked={verifyChain}
+            onChange={(e) => setVerifyChain(e.target.checked)}
+            className="accent-[#4F46E5]"
+          />
+          <label htmlFor="verifyChain" className="text-xs text-[#7C8DB0]">
+            Verify hash chain
+          </label>
+        </div>
+
+        {/* Record ID for verification */}
+        {verifyChain && (
+          <div>
+            <label className={labelClass}>Record ID (required for verify)</label>
+            <input
+              type="text"
+              value={recordId}
+              onChange={(e) => setRecordId(e.target.value)}
+              className={inputClass}
+              placeholder="e.g. a1b2c3d4-e5f6-..."
+              required={verifyChain}
+            />
+          </div>
+        )}
+
         {/* Submit */}
         <button
           type="submit"
@@ -138,6 +190,21 @@ function ProofEventsForm() {
         )}
       </form>
 
+      {/* Chain verification banner */}
+      {chainVerification && (
+        <div
+          className={`p-3 rounded-lg text-sm font-medium ${
+            chainVerification.valid
+              ? "bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E]"
+              : "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]"
+          }`}
+        >
+          {chainVerification.valid
+            ? `CHAIN VALID \u2014 ${chainVerification.chainLength} event${chainVerification.chainLength !== 1 ? "s" : ""}`
+            : `CHAIN BROKEN \u2014 break at seq #${chainVerification.breakAtSequence}${chainVerification.error ? `: ${chainVerification.error}` : ""}`}
+        </div>
+      )}
+
       {/* Results table */}
       {events && (
         <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-2">
@@ -152,19 +219,30 @@ function ProofEventsForm() {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b border-[rgba(79,70,229,0.2)] text-[#7C8DB0] uppercase tracking-wider">
+                    <th className="py-2 pr-4">Seq</th>
                     <th className="py-2 pr-4">Created At</th>
                     <th className="py-2 pr-4">Type</th>
-                    <th className="py-2 pr-4">Session ID</th>
+                    <th className="py-2 pr-4">Hash</th>
+                    <th className="py-2 pr-4">Record ID</th>
                     <th className="py-2">Payload</th>
                   </tr>
                 </thead>
                 <tbody>
                   {events.map((evt, i) => (
                     <tr key={i} className="border-b border-[rgba(79,70,229,0.1)] align-top">
+                      <td className="py-2 pr-4 text-[#A78BFA] font-mono">
+                        {evt.sequence ?? "\u2014"}
+                      </td>
                       <td className="py-2 pr-4 text-[#94A3B8] font-mono whitespace-nowrap">
                         {new Date(evt.createdAt).toLocaleString()}
                       </td>
                       <td className="py-2 pr-4 text-white font-mono">{evt.type}</td>
+                      <td
+                        className="py-2 pr-4 text-[#94A3B8] font-mono"
+                        title={evt.eventHash ?? undefined}
+                      >
+                        {evt.eventHash ? evt.eventHash.slice(0, 12) : "\u2014"}
+                      </td>
                       <td className="py-2 pr-4 text-[#94A3B8] font-mono">
                         {evt.sessionId ?? "\u2014"}
                       </td>

@@ -83,6 +83,9 @@ describe("GET /api/internal/proof-events", () => {
         type: "VERIFICATION_STARTED",
         sessionId: "sess_1",
         meta: { foo: "bar" },
+        sequence: null,
+        eventHash: null,
+        prevEventHash: null,
       },
     ];
     mockFindMany.mockResolvedValueOnce(mockEvents);
@@ -98,6 +101,9 @@ describe("GET /api/internal/proof-events", () => {
         type: "VERIFICATION_STARTED",
         sessionId: "sess_1",
         payload: { foo: "bar" },
+        sequence: null,
+        eventHash: null,
+        prevEventHash: null,
       },
     ]);
     expect(json.data[0]).not.toHaveProperty("meta");
@@ -106,7 +112,15 @@ describe("GET /api/internal/proof-events", () => {
         where: { strategyId: "strat_1" },
         orderBy: { createdAt: "desc" },
         take: 50,
-        select: { createdAt: true, type: true, sessionId: true, meta: true },
+        select: {
+          createdAt: true,
+          type: true,
+          sessionId: true,
+          meta: true,
+          sequence: true,
+          eventHash: true,
+          prevEventHash: true,
+        },
       })
     );
   });
@@ -128,6 +142,9 @@ describe("GET /api/internal/proof-events", () => {
         type: "VERIFICATION_RUN_COMPLETED",
         sessionId: "sess_contract",
         meta: contractPayload,
+        sequence: 1,
+        eventHash: "abc123",
+        prevEventHash: "0".repeat(64),
       },
     ];
     mockFindMany.mockResolvedValueOnce(mockEvents);
@@ -177,5 +194,73 @@ describe("GET /api/internal/proof-events", () => {
 
     expect(res.status).toBe(429);
     expect(json.code).toBe("RATE_LIMITED");
+  });
+
+  it("includes chain fields in response", async () => {
+    const mockEvents = [
+      {
+        createdAt: new Date().toISOString(),
+        type: "VERIFICATION_RUN_COMPLETED",
+        sessionId: "rec_001",
+        meta: { recordId: "rec_001" },
+        sequence: 1,
+        eventHash: "a".repeat(64),
+        prevEventHash: "0".repeat(64),
+      },
+    ];
+    mockFindMany.mockResolvedValueOnce(mockEvents);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest({ strategyId: "strat_1" }, TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.data[0]).toHaveProperty("sequence", 1);
+    expect(json.data[0]).toHaveProperty("eventHash", "a".repeat(64));
+    expect(json.data[0]).toHaveProperty("prevEventHash", "0".repeat(64));
+  });
+
+  it("returns chainVerification when verify=true with recordId", async () => {
+    // First call: main event list
+    mockFindMany.mockResolvedValueOnce([]);
+    // Second call: chained events for verification
+    mockFindMany.mockResolvedValueOnce([]);
+
+    const { GET } = await import("./route");
+    const res = await GET(
+      makeRequest({ strategyId: "strat_1", verify: "true", recordId: "rec_001" }, TEST_API_KEY)
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).toHaveProperty("chainVerification");
+    expect(json.chainVerification).toEqual({ valid: true, chainLength: 0 });
+
+    // Verify the chain query filters by sessionId (recordId), not strategyId
+    const chainCall = mockFindMany.mock.calls[1][0];
+    expect(chainCall.where).toEqual({ sessionId: "rec_001", sequence: { not: null } });
+    expect(chainCall.orderBy).toEqual({ sequence: "asc" });
+  });
+
+  it("returns 400 when verify=true but recordId is missing", async () => {
+    mockFindMany.mockResolvedValueOnce([]);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest({ strategyId: "strat_1", verify: "true" }, TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("does not include chainVerification when verify is absent", async () => {
+    mockFindMany.mockResolvedValueOnce([]);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest({ strategyId: "strat_1" }, TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json).not.toHaveProperty("chainVerification");
   });
 });
