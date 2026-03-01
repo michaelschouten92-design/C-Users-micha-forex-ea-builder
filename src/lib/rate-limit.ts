@@ -467,6 +467,15 @@ export const internalTradeImportRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal webhook ingest endpoint
+ * Limits: 30 requests per minute per IP (higher than import-csv — webhooks may batch-fire)
+ */
+export const internalWebhookIngestRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */

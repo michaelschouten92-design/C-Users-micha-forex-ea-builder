@@ -120,6 +120,7 @@ export const CSRF_EXCLUDED_ROUTES = [
   "/api/track-record/", // Monitor EA POSTs with X-EA-Key, not browser cookies
   "/api/internal/verify", // Uses x-internal-api-key header auth, not session cookies
   "/api/internal/proof-events", // Uses x-internal-api-key header auth, not session cookies
+  "/api/internal/trades/", // import-csv + webhook-ingest use API key / HMAC auth, not browser cookies
 ];
 
 /**
