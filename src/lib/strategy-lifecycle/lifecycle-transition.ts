@@ -5,10 +5,10 @@ const log = logger.child({ module: "strategy-lifecycle" });
 
 export function applyLifecycleTransition(
   strategyId: string,
+  strategyVersion: number,
   from: StrategyLifecycleState,
   to: StrategyLifecycleState,
-  reason: string,
-  strategyVersion?: number
+  reason: string
 ): StrategyLifecycleState {
   transitionLifecycle(from, to); // throws on invalid
   log.info({ strategyId, strategyVersion, from, to, reason }, "Lifecycle state transition");

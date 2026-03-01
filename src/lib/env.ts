@@ -65,6 +65,9 @@ const envSchema = z.object({
   // Cron secret (optional in dev, required in prod)
   CRON_SECRET: z.string().optional(),
 
+  // Internal API key (optional — for machine-to-machine internal endpoints)
+  INTERNAL_API_KEY: z.string().min(32).optional(),
+
   // Discord OAuth (optional - for Discord login + guild management)
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
@@ -303,6 +306,7 @@ function validateEnv() {
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
       CRON_SECRET: undefined,
+      INTERNAL_API_KEY: undefined,
       DISCORD_CLIENT_ID: undefined,
       DISCORD_CLIENT_SECRET: undefined,
       DISCORD_BOT_TOKEN: undefined,
@@ -367,6 +371,7 @@ function validateEnv() {
         UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
         UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
         CRON_SECRET: process.env.CRON_SECRET,
+        INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
         DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
         DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,

@@ -440,6 +440,15 @@ export const verifyRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal verify endpoint
+ * Limits: 20 requests per minute per IP
+ */
+export const internalVerifyRateLimiter = createRateLimiter({
+  limit: 20,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */

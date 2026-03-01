@@ -86,3 +86,26 @@ Key file: `src/lib/subscription/transitions.ts`. Commit: `d37ecb1`.
 - Outbox and subscription state changes produce queryable audit trails (`from`, `to`, `reason` fields) for debugging delivery and billing issues.
 - Invalid subscription transitions are detected and warned on, catching webhook ordering bugs without blocking Stripe reconciliation.
 - New state-changing modules must follow the same pattern: centralized transition function with structured logging and a documented state machine.
+
+## ADR-003: Lifecycle Module Is the Single Transition Owner
+
+**Status:** Accepted
+**Date:** 2026-03-01
+
+### Context
+
+`verification-service.ts` was calling the pure `transitionLifecycle()` guard and then logging the transition itself, duplicating transition logging across callers and violating CONTRIBUTING.md §3 (state machine ownership) and §4 (UI-independent domain logic).
+
+### Decisions
+
+1. **Lifecycle ownership.** All lifecycle state transitions are owned exclusively by `src/lib/strategy-lifecycle/`. Two functions cover the two scopes:
+   - `applyLifecycleTransition(strategyId, strategyVersion, from, to, reason)` — synchronous, no DB writes, returns the new state. Used by domain services (e.g. verification).
+   - `performLifecycleTransition(instanceId, from, to, reason)` — async, persists to DB. Used by API routes and health evaluation.
+
+2. **Verification as orchestrator.** `verification-service.ts` calls `computeVerdict()` for the pure decision, then delegates the BACKTESTED → VERIFIED transition to `applyLifecycleTransition`. It never directly mutates lifecycle state or emits transition logs.
+
+### Consequences
+
+- No module outside `src/lib/strategy-lifecycle/` may directly assign lifecycle state or emit lifecycle transition logs.
+- All strategy-scoped transition logs include `{ strategyId, strategyVersion, from, to, reason }`. Instance-scoped logs include `{ instanceId, from, to, reason }`.
+- The pure guard `transitionLifecycle()` in `transitions.ts` remains unchanged — it is an internal detail of the lifecycle module, not called by external consumers.

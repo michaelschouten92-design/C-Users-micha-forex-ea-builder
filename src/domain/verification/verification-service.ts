@@ -7,6 +7,10 @@ import type {
 } from "./types";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import { applyLifecycleTransition } from "@/lib/strategy-lifecycle/lifecycle-transition";
+import { appendProofEvent } from "@/lib/proof/events";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ module: "verification" });
 
 export interface RunVerificationParams {
   strategyId: string;
@@ -31,7 +35,9 @@ export interface RunVerificationResult {
  * `transitionLifecycle()` guard. No DB writes — the caller is
  * responsible for persistence.
  */
-export function runVerification(params: RunVerificationParams): RunVerificationResult {
+export async function runVerification(
+  params: RunVerificationParams
+): Promise<RunVerificationResult> {
   const {
     strategyId,
     strategyVersion,
@@ -51,20 +57,73 @@ export function runVerification(params: RunVerificationParams): RunVerificationR
 
   const verdictResult = computeVerdict(input);
 
+  let result: RunVerificationResult;
+
   if (verdictResult.verdict === "READY" && currentLifecycleState === "BACKTESTED") {
     const newState = applyLifecycleTransition(
       strategyId,
-      "BACKTESTED",
+      strategyVersion,
+      currentLifecycleState,
       "VERIFIED",
-      "verification_passed",
-      strategyVersion
+      "verification_passed"
     );
-    return { verdictResult, lifecycleState: newState, transitioned: true };
+    result = { verdictResult, lifecycleState: newState, transitioned: true };
+  } else {
+    result = {
+      verdictResult,
+      lifecycleState: currentLifecycleState,
+      transitioned: false,
+    };
   }
 
-  return {
-    verdictResult,
-    lifecycleState: currentLifecycleState,
-    transitioned: false,
-  };
+  // Event persistence policy: fail-closed for all verdicts.
+  // Verification results are only trustworthy if the audit trail is intact.
+  const recordId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+
+  try {
+    await appendProofEvent(strategyId, "VERIFICATION_RUN_COMPLETED", {
+      eventType: "VERIFICATION_RUN_COMPLETED",
+      strategyId,
+      strategyVersion,
+      verdict: verdictResult.verdict,
+      reasonCodes: verdictResult.reasonCodes,
+      thresholdsHash: verdictResult.thresholdsUsed.thresholdsHash,
+      recordId,
+      timestamp,
+    });
+  } catch (err) {
+    log.error(
+      {
+        err,
+        eventType: "VERIFICATION_RUN_COMPLETED",
+        recordId,
+        timestamp,
+        strategyId,
+        strategyVersion,
+      },
+      "Failed to persist verification event"
+    );
+    throw err;
+  }
+
+  if (verdictResult.verdict === "READY") {
+    try {
+      await appendProofEvent(strategyId, "VERIFICATION_PASSED", {
+        eventType: "VERIFICATION_PASSED",
+        strategyId,
+        strategyVersion,
+        recordId,
+        timestamp,
+      });
+    } catch (err) {
+      log.error(
+        { err, eventType: "VERIFICATION_PASSED", recordId, timestamp, strategyId, strategyVersion },
+        "Failed to persist verification event"
+      );
+      throw err;
+    }
+  }
+
+  return result;
 }

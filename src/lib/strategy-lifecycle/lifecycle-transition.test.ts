@@ -20,10 +20,10 @@ describe("applyLifecycleTransition", () => {
   it("valid BACKTESTED → VERIFIED returns new state and logs", () => {
     const result = applyLifecycleTransition(
       "strat_1",
+      3,
       "BACKTESTED",
       "VERIFIED",
-      "verification_passed",
-      3
+      "verification_passed"
     );
 
     expect(result).toBe("VERIFIED");
@@ -41,20 +41,26 @@ describe("applyLifecycleTransition", () => {
 
   it("invalid DRAFT → INVALIDATED throws", () => {
     expect(() =>
-      applyLifecycleTransition("strat_2", "DRAFT", "INVALIDATED", "bad_transition")
+      applyLifecycleTransition("strat_2", 1, "DRAFT", "INVALIDATED", "bad_transition")
     ).toThrow("Invalid lifecycle transition: DRAFT → INVALIDATED");
 
     expect(mockInfo).not.toHaveBeenCalled();
   });
 
-  it("valid DRAFT → BACKTESTED logs correct payload without strategyVersion", () => {
-    const result = applyLifecycleTransition("strat_3", "DRAFT", "BACKTESTED", "backtest_complete");
+  it("valid DRAFT → BACKTESTED logs correct payload", () => {
+    const result = applyLifecycleTransition(
+      "strat_3",
+      2,
+      "DRAFT",
+      "BACKTESTED",
+      "backtest_complete"
+    );
 
     expect(result).toBe("BACKTESTED");
     expect(mockInfo).toHaveBeenCalledWith(
       {
         strategyId: "strat_3",
-        strategyVersion: undefined,
+        strategyVersion: 2,
         from: "DRAFT",
         to: "BACKTESTED",
         reason: "backtest_complete",

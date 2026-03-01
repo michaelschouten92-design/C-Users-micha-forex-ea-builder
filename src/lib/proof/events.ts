@@ -67,6 +67,33 @@ export async function logProofEvent(event: ProofEvent): Promise<void> {
 }
 
 /**
+ * Append a domain event to the proof event log.
+ * Used by verification and other system processes.
+ * Errors propagate to the caller.
+ */
+export async function appendProofEvent(
+  strategyId: string,
+  type: string,
+  payload: Record<string, unknown>
+): Promise<void> {
+  const recordId = payload.recordId;
+  if (typeof recordId !== "string") {
+    throw new Error(
+      `appendProofEvent requires payload.recordId to be a string, got ${typeof recordId}`
+    );
+  }
+
+  await prisma.proofEventLog.create({
+    data: {
+      type,
+      strategyId,
+      sessionId: recordId,
+      meta: payload as Record<string, string>,
+    },
+  });
+}
+
+/**
  * Extract session ID from a cookie header string, or generate a new one.
  * Pure function — no Request dependency.
  */
