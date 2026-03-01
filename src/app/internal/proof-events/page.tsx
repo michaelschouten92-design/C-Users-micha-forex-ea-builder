@@ -44,6 +44,10 @@ const PAYLOAD_WHITELIST = new Set([
   "tradeFactCount",
   "snapshotRange",
   "dataSources",
+  "source",
+  "backtestRunId",
+  "insertedCount",
+  "skippedCount",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */
