@@ -449,6 +449,15 @@ export const internalVerifyRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal proof events endpoint
+ * Limits: 30 requests per minute per IP
+ */
+export const internalProofEventsRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */
