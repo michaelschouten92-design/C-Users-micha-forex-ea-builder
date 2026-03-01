@@ -34,7 +34,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { timingSafeEqual } from "@/lib/csrf";
-import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   checkRateLimit,
@@ -44,13 +43,11 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 import { checkContentType, safeReadJson, validate, formatZodErrors } from "@/lib/validations";
-import { parseCsvDeals, CsvParseError } from "@/domain/trade-ingest/csv/parse-csv-deals";
-import { ingestTradeFactsFromDeals, buildTradeSnapshot } from "@/domain/trade-ingest";
-import { TradeFactValidationError } from "@/domain/trade-ingest";
-import { prisma } from "@/lib/prisma";
-import { appendProofEvent } from "@/lib/proof/events";
-
-const log = logger.child({ route: "/api/internal/trades/import-csv" });
+import {
+  runCsvIngestPipeline,
+  CsvParseError,
+  TradeFactValidationError,
+} from "@/domain/trade-ingest/csv/run-csv-ingest-pipeline";
 
 const importCsvSchema = z.object({
   strategyId: z.string().min(1),
@@ -106,94 +103,33 @@ export async function POST(request: NextRequest) {
   const { strategyId, source, csv, backtestRunId, symbolFallback, initialBalance } =
     validation.data;
 
-  // Step 1: Parse CSV → ParsedDeal[]
-  let deals;
   try {
-    deals = parseCsvDeals(csv);
+    const result = await runCsvIngestPipeline({
+      strategyId,
+      source,
+      csv,
+      backtestRunId,
+      symbolFallback,
+      initialBalance,
+    });
+    return NextResponse.json({
+      ...result,
+      ...(backtestRunId && { backtestRunId }),
+    });
   } catch (err) {
     if (err instanceof CsvParseError) {
       return NextResponse.json(apiError(ErrorCode.PARSE_FAILED, "CSV parse failed", err.details), {
         status: 400,
       });
     }
-    throw err;
-  }
-
-  // Step 2: Validate + ingest (fail-closed)
-  let ingestResult;
-  try {
-    ingestResult = await ingestTradeFactsFromDeals({
-      strategyId,
-      source,
-      sourceRunId: backtestRunId ?? `csv-import-${Date.now()}`,
-      deals,
-      symbolFallback: symbolFallback ?? "",
-    });
-  } catch (err) {
     if (err instanceof TradeFactValidationError) {
       return NextResponse.json(
         apiError(ErrorCode.VALIDATION_FAILED, "Trade validation failed", err.violations),
         { status: 400 }
       );
     }
-    log.error({ err, strategyId }, "Trade ingest failed");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
       status: 500,
     });
   }
-
-  // Step 3: Build snapshot from all facts for this strategy
-  let snapshotHash: string;
-  let tradeFactCount: number;
-  try {
-    const facts = await prisma.tradeFact.findMany({
-      where: { strategyId },
-      orderBy: [{ executedAt: "asc" }, { id: "asc" }],
-    });
-
-    if (facts.length === 0) {
-      return NextResponse.json(
-        apiError(ErrorCode.VALIDATION_FAILED, "No trade facts found after ingest"),
-        { status: 400 }
-      );
-    }
-
-    const snapshot = buildTradeSnapshot(facts, initialBalance);
-    snapshotHash = snapshot.snapshotHash;
-    tradeFactCount = snapshot.factCount;
-  } catch (err) {
-    log.error({ err, strategyId }, "Snapshot build failed");
-    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
-      status: 500,
-    });
-  }
-
-  // Step 4: Write proof ledger event (fail-closed)
-  const recordId = crypto.randomUUID();
-  try {
-    await appendProofEvent(strategyId, "TRADE_FACTS_INGESTED", {
-      recordId,
-      strategyId,
-      source,
-      backtestRunId: backtestRunId ?? null,
-      insertedCount: ingestResult.inserted,
-      skippedCount: ingestResult.skippedDuplicates,
-      tradeFactCount,
-      tradeSnapshotHash: snapshotHash,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    log.error({ err, strategyId, recordId }, "Failed to persist proof event for trade ingest");
-    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
-      status: 500,
-    });
-  }
-
-  return NextResponse.json({
-    insertedCount: ingestResult.inserted,
-    skippedCount: ingestResult.skippedDuplicates,
-    tradeFactCount,
-    tradeSnapshotHash: snapshotHash,
-    ...(backtestRunId && { backtestRunId }),
-  });
 }

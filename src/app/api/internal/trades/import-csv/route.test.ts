@@ -3,45 +3,33 @@ import { NextRequest } from "next/server";
 
 const TEST_API_KEY = "test-internal-api-key-that-is-at-least-32-chars";
 
-const mockIngestTradeFactsFromDeals = vi.fn();
-const mockBuildTradeSnapshot = vi.fn();
+const mockRunCsvIngestPipeline = vi.fn();
 
-vi.mock("@/domain/trade-ingest/csv/parse-csv-deals", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/domain/trade-ingest/csv/parse-csv-deals")>();
-  return {
-    ...actual,
-    parseCsvDeals: actual.parseCsvDeals,
-    CsvParseError: actual.CsvParseError,
-  };
-});
-
-vi.mock("@/domain/trade-ingest", () => ({
-  ingestTradeFactsFromDeals: (...args: unknown[]) => mockIngestTradeFactsFromDeals(...args),
-  buildTradeSnapshot: (...args: unknown[]) => mockBuildTradeSnapshot(...args),
-  TradeFactValidationError: class extends Error {
+// Mock the shared pipeline — the route only calls this
+vi.mock("@/domain/trade-ingest/csv/run-csv-ingest-pipeline", async () => {
+  // CsvParseError is a real class used for instanceof checks
+  class CsvParseError extends Error {
+    details: string[];
+    constructor(message: string, details: string[]) {
+      super(message);
+      this.name = "CsvParseError";
+      this.details = details;
+    }
+  }
+  class TradeFactValidationError extends Error {
     violations: string[];
     constructor(message: string, _ticket: number, violations: string[]) {
       super(message);
       this.name = "TradeFactValidationError";
       this.violations = violations;
     }
-  },
-}));
-
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    tradeFact: {
-      findMany: vi.fn().mockResolvedValue([
-        { id: "fact_1", profit: 50, executedAt: new Date("2025-01-15"), source: "BACKTEST" },
-        { id: "fact_2", profit: -30, executedAt: new Date("2025-01-16"), source: "BACKTEST" },
-      ]),
-    },
-  },
-}));
-
-vi.mock("@/lib/proof/events", () => ({
-  appendProofEvent: vi.fn().mockResolvedValue(undefined),
-}));
+  }
+  return {
+    runCsvIngestPipeline: (...args: unknown[]) => mockRunCsvIngestPipeline(...args),
+    CsvParseError,
+    TradeFactValidationError,
+  };
+});
 
 vi.mock("@/lib/csrf", () => ({
   timingSafeEqual: (a: string, b: string) => a === b,
@@ -94,17 +82,12 @@ describe("POST /api/internal/trades/import-csv", () => {
       remaining: 9,
       resetAt: new Date(),
     });
-    mockIngestTradeFactsFromDeals.mockResolvedValue({
-      inserted: 2,
-      skippedDuplicates: 0,
-    });
-    mockBuildTradeSnapshot.mockReturnValue({
-      snapshotHash: "abc123hash",
-      tradePnls: [50.25, -30.5],
-      initialBalance: 10000,
-      factCount: 2,
-      range: { earliest: "2025-01-15T00:00:00.000Z", latest: "2025-01-16T00:00:00.000Z" },
-      dataSources: ["BACKTEST"],
+    mockRunCsvIngestPipeline.mockResolvedValue({
+      insertedCount: 2,
+      skippedCount: 0,
+      tradeFactCount: 2,
+      tradeSnapshotHash: "abc123hash",
+      recordId: "00000000-0000-0000-0000-000000000001",
     });
   });
 
@@ -152,15 +135,45 @@ describe("POST /api/internal/trades/import-csv", () => {
     expect(json.details).toBeDefined();
   });
 
-  it("returns 400 for invalid CSV", async () => {
+  it("returns 400 for CsvParseError from pipeline", async () => {
+    const { CsvParseError } = await import("@/domain/trade-ingest/csv/run-csv-ingest-pipeline");
+    mockRunCsvIngestPipeline.mockRejectedValueOnce(
+      new CsvParseError("bad csv", ["missing ticket column"])
+    );
+
     const { POST } = await import("./route");
-    const body = { ...validBody(), csv: "bad,headers,only\n1,2,3" };
-    const res = await POST(makeRequest(body, TEST_API_KEY));
+    const res = await POST(makeRequest(validBody(), TEST_API_KEY));
     const json = await res.json();
 
     expect(res.status).toBe(400);
     expect(json.code).toBe("PARSE_FAILED");
     expect(json.details).toBeDefined();
+  });
+
+  it("returns 400 for TradeFactValidationError from pipeline", async () => {
+    const { TradeFactValidationError } =
+      await import("@/domain/trade-ingest/csv/run-csv-ingest-pipeline");
+    mockRunCsvIngestPipeline.mockRejectedValueOnce(
+      new TradeFactValidationError("bad deal", 1001, ["negative volume"])
+    );
+
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest(validBody(), TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("returns 500 for unexpected pipeline errors", async () => {
+    mockRunCsvIngestPipeline.mockRejectedValueOnce(new Error("DB connection lost"));
+
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest(validBody(), TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json.code).toBe("INTERNAL_ERROR");
   });
 
   it("happy path returns snapshotHash and counts", async () => {
@@ -173,22 +186,6 @@ describe("POST /api/internal/trades/import-csv", () => {
     expect(json.skippedCount).toBe(0);
     expect(json.tradeFactCount).toBe(2);
     expect(json.tradeSnapshotHash).toBe("abc123hash");
-  });
-
-  it("passes parsed deals to ingestTradeFactsFromDeals", async () => {
-    const { POST } = await import("./route");
-    await POST(makeRequest(validBody(), TEST_API_KEY));
-
-    expect(mockIngestTradeFactsFromDeals).toHaveBeenCalledWith(
-      expect.objectContaining({
-        strategyId: "strat_1",
-        source: "BACKTEST",
-        deals: expect.arrayContaining([
-          expect.objectContaining({ ticket: 1001, type: "buy" }),
-          expect.objectContaining({ ticket: 1002, type: "sell" }),
-        ]),
-      })
-    );
   });
 
   it("includes backtestRunId in response when provided", async () => {
@@ -210,34 +207,18 @@ describe("POST /api/internal/trades/import-csv", () => {
     expect(json.backtestRunId).toBeUndefined();
   });
 
-  it("passes symbolFallback to ingest when provided", async () => {
+  it("passes correct params to pipeline", async () => {
     const { POST } = await import("./route");
-    const body = { ...validBody(), symbolFallback: "GBPUSD" };
+    const body = { ...validBody(), backtestRunId: "run_1", symbolFallback: "GBPUSD" };
     await POST(makeRequest(body, TEST_API_KEY));
 
-    expect(mockIngestTradeFactsFromDeals).toHaveBeenCalledWith(
-      expect.objectContaining({
-        symbolFallback: "GBPUSD",
-      })
-    );
-  });
-
-  it("writes proof event on successful import", async () => {
-    const { appendProofEvent } = await import("@/lib/proof/events");
-    const { POST } = await import("./route");
-    await POST(makeRequest(validBody(), TEST_API_KEY));
-
-    expect(appendProofEvent).toHaveBeenCalledWith(
-      "strat_1",
-      "TRADE_FACTS_INGESTED",
-      expect.objectContaining({
-        strategyId: "strat_1",
-        source: "BACKTEST",
-        insertedCount: 2,
-        skippedCount: 0,
-        tradeFactCount: 2,
-        tradeSnapshotHash: "abc123hash",
-      })
-    );
+    expect(mockRunCsvIngestPipeline).toHaveBeenCalledWith({
+      strategyId: "strat_1",
+      source: "BACKTEST",
+      csv: VALID_CSV,
+      backtestRunId: "run_1",
+      symbolFallback: "GBPUSD",
+      initialBalance: 10000,
+    });
   });
 });
