@@ -2,12 +2,15 @@ import { computeVerdict } from "./compute-verdict";
 import { VERIFICATION } from "./constants";
 import type { VerificationInput } from "./types";
 
-function makeInput(tradeCount: number): VerificationInput {
+function makeInput(tradeCount: number, composite?: number): VerificationInput {
   return {
     strategyId: "strat-1",
     strategyVersion: 1,
     tradeHistory: Array.from({ length: tradeCount }, () => ({})),
     backtestParameters: {},
+    ...(composite !== undefined && {
+      intermediateResults: { robustnessScores: { composite } },
+    }),
   };
 }
 
@@ -100,6 +103,39 @@ describe("computeVerdict", () => {
     it("does not warn on D0 rejection", () => {
       const result = computeVerdict(makeInput(10));
       expect(result.warnings).toHaveLength(0);
+    });
+  });
+
+  describe("D4 — READY path", () => {
+    it("composite=1.0 at MIN_TRADE_COUNT → READY + ALL_CHECKS_PASSED", () => {
+      const result = computeVerdict(makeInput(VERIFICATION.MIN_TRADE_COUNT, 1.0));
+      expect(result.verdict).toBe("READY");
+      expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
+    });
+
+    it("composite=0.75 (exact threshold) → READY + ALL_CHECKS_PASSED", () => {
+      const result = computeVerdict(makeInput(100, 0.75));
+      expect(result.verdict).toBe("READY");
+      expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
+    });
+
+    it("composite=0.74 (just below) → UNCERTAIN + COMPOSITE_IN_UNCERTAIN_BAND", () => {
+      const result = computeVerdict(makeInput(100, 0.74));
+      expect(result.verdict).toBe("UNCERTAIN");
+      expect(result.reasonCodes).toEqual(["COMPOSITE_IN_UNCERTAIN_BAND"]);
+    });
+
+    it("composite=0 (no intermediateResults) → UNCERTAIN (backwards compat)", () => {
+      const result = computeVerdict(makeInput(100));
+      expect(result.verdict).toBe("UNCERTAIN");
+      expect(result.reasonCodes).toEqual(["COMPOSITE_IN_UNCERTAIN_BAND"]);
+    });
+
+    it("READY result has correct composite in scores", () => {
+      const result = computeVerdict(makeInput(100, 0.85));
+      expect(result.verdict).toBe("READY");
+      expect(result.scores.composite).toBe(0.85);
+      expect(result.scores.sampleSize).toBe(100);
     });
   });
 

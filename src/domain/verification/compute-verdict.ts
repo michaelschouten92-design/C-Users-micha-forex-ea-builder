@@ -65,23 +65,60 @@ export function computeVerdict(input: VerificationInput): VerificationResult {
   }
 
   // --- D1–D3: Not yet implemented (future PRs) ---
-  // Without analysis stages, composite is 0 and no flags are raised.
+  // Without analysis stages, no flags are raised.
+
+  const composite = input.intermediateResults?.robustnessScores?.composite ?? 0;
 
   // Near-minimum sample warning
   if (sampleSize < VERIFICATION.MIN_TRADE_COUNT * 2) {
     warnings.push("Sample size near minimum threshold");
   }
 
-  // --- D4/D5: No NOT_DEPLOYABLE or UNCERTAIN flags, composite is 0 → UNCERTAIN ---
-  reasonCodes.push("COMPOSITE_IN_UNCERTAIN_BAND");
+  // --- D4: Verdict decision (contract §5 accumulation rules) ---
+  const hasNotDeployable = reasonCodes.some((rc) =>
+    (
+      [
+        "INSUFFICIENT_DATA",
+        "WALK_FORWARD_DEGRADATION_EXTREME",
+        "RUIN_PROBABILITY_EXCEEDED",
+        "COMPOSITE_BELOW_MINIMUM",
+        "COMPUTATION_FAILED",
+        "INVALID_SCORE",
+      ] as ReasonCode[]
+    ).includes(rc)
+  );
+
+  const hasUncertain = reasonCodes.some((rc) =>
+    (
+      [
+        "INCOMPLETE_ANALYSIS",
+        "COMPOSITE_IN_UNCERTAIN_BAND",
+        "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE",
+      ] as ReasonCode[]
+    ).includes(rc)
+  );
+
+  let verdict: VerificationResult["verdict"];
+
+  if (hasNotDeployable) {
+    verdict = "NOT_DEPLOYABLE";
+  } else if (hasUncertain) {
+    verdict = "UNCERTAIN";
+  } else if (composite >= VERIFICATION.READY_CONFIDENCE_THRESHOLD) {
+    verdict = "READY";
+    reasonCodes.push("ALL_CHECKS_PASSED");
+  } else {
+    verdict = "UNCERTAIN";
+    reasonCodes.push("COMPOSITE_IN_UNCERTAIN_BAND");
+  }
 
   return {
     strategyId,
     strategyVersion,
-    verdict: "UNCERTAIN",
+    verdict,
     reasonCodes,
     scores: {
-      composite: 0,
+      composite,
       walkForwardDegradationPct: null,
       walkForwardOosSampleSize: null,
       monteCarloRuinProbability: null,

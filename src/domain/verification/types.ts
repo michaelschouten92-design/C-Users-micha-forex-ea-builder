@@ -23,6 +23,10 @@ export interface VerificationInput {
   strategyVersion: number;
   tradeHistory: TradeRecord[];
   backtestParameters: BacktestParameters;
+  /** Pre-computed stage results. Omitted stages treated as not-yet-run. */
+  intermediateResults?: {
+    robustnessScores?: { composite: number };
+  };
 }
 
 export interface VerificationResult {
