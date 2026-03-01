@@ -118,6 +118,7 @@ export const CSRF_EXCLUDED_ROUTES = [
   "/api/stripe/webhook", // Uses Stripe signature verification
   "/api/telemetry/", // EA bot clients use X-EA-Key, not browser cookies
   "/api/track-record/", // Monitor EA POSTs with X-EA-Key, not browser cookies
+  "/api/internal/verify", // Uses x-internal-api-key header auth, not session cookies
 ];
 
 /**
