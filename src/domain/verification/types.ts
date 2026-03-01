@@ -12,7 +12,8 @@ export type ReasonCode =
   | "COMPOSITE_IN_UNCERTAIN_BAND"
   | "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE"
   | "CONFIG_SNAPSHOT_MISSING"
-  | "CONFIG_HASH_MISMATCH";
+  | "CONFIG_HASH_MISMATCH"
+  | "SNAPSHOT_BUILD_FAILED";
 
 /** Placeholder — expanded as analysis stages are added (D1+). */
 export type TradeRecord = Record<string, unknown>;

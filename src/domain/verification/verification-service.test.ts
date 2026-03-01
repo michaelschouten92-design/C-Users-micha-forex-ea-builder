@@ -6,6 +6,10 @@ const {
   mockLoadActiveConfigWithFallback,
   MockNoActiveConfigError,
   MockConfigIntegrityError,
+  mockPrisma,
+  mockIngestTradeFactsFromDeals,
+  mockBuildTradeSnapshot,
+  mockDeriveIntermediateResults,
 } = vi.hoisted(() => {
   // Inline the snapshot to avoid referencing hoisted imports
   const snapshot = {
@@ -49,6 +53,32 @@ const {
     }),
     MockNoActiveConfigError,
     MockConfigIntegrityError,
+    mockPrisma: {
+      tradeFact: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      backtestRun: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          trades: [],
+          symbol: "EURUSD",
+          initialDeposit: 10000,
+        }),
+      },
+    },
+    mockIngestTradeFactsFromDeals: vi.fn().mockResolvedValue({ inserted: 0, skippedDuplicates: 0 }),
+    mockBuildTradeSnapshot: vi.fn().mockReturnValue({
+      snapshotHash: "abc123",
+      tradePnls: [100, -50, 200],
+      initialBalance: 10000,
+      factCount: 3,
+      range: { earliest: "2025-01-01T00:00:00.000Z", latest: "2025-01-03T00:00:00.000Z" },
+      dataSources: ["BACKTEST"],
+    }),
+    mockDeriveIntermediateResults: vi.fn().mockReturnValue({
+      monteCarlo: { tradePnls: [100, -50, 200], initialBalance: 10000 },
+      walkForward: { sharpeDegradationPct: 25, outOfSampleTradeCount: 30 },
+    }),
   };
 });
 
@@ -60,6 +90,16 @@ vi.mock("./config-loader", () => ({
   loadActiveConfigWithFallback: mockLoadActiveConfigWithFallback,
   NoActiveConfigError: MockNoActiveConfigError,
   ConfigIntegrityError: MockConfigIntegrityError,
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: mockPrisma,
+}));
+
+vi.mock("@/domain/trade-ingest", () => ({
+  ingestTradeFactsFromDeals: mockIngestTradeFactsFromDeals,
+  buildTradeSnapshot: mockBuildTradeSnapshot,
+  deriveIntermediateResults: mockDeriveIntermediateResults,
 }));
 
 function makeTrades(count: number): Record<string, unknown>[] {
@@ -574,6 +614,129 @@ describe("runVerification", () => {
 
       const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
       expect(payload.configSource).toBe("fallback");
+    });
+  });
+
+  describe("Phase 0 — TradeFact ingest + snapshot", () => {
+    it("backtestRunId triggers TradeFact ingest + snapshot build", async () => {
+      const mockFacts = [
+        { id: "f1", profit: 100, executedAt: new Date("2025-01-15T10:00:00Z"), source: "BACKTEST" },
+      ];
+      mockPrisma.tradeFact.count.mockResolvedValue(0);
+      mockPrisma.tradeFact.findMany.mockResolvedValue(mockFacts);
+      mockPrisma.backtestRun.findUniqueOrThrow.mockResolvedValue({
+        trades: [
+          {
+            ticket: 1,
+            type: "buy",
+            volume: 0.1,
+            price: 1.12,
+            profit: 100,
+            openTime: "2025-01-15T10:00:00Z",
+          },
+        ],
+        symbol: "EURUSD",
+        initialDeposit: 10000,
+      });
+
+      const result = await runVerification({
+        strategyId: "strat_phase0_1",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        backtestRunId: "run_123",
+      });
+
+      expect(mockIngestTradeFactsFromDeals).toHaveBeenCalledWith(
+        expect.objectContaining({
+          strategyId: "strat_phase0_1",
+          source: "BACKTEST",
+          sourceRunId: "run_123",
+        })
+      );
+      expect(mockBuildTradeSnapshot).toHaveBeenCalled();
+      expect(mockDeriveIntermediateResults).toHaveBeenCalled();
+      expect(result.verdictResult).toBeDefined();
+    });
+
+    it("proof payload includes tradeSnapshotHash when backtestRunId provided", async () => {
+      mockPrisma.tradeFact.count.mockResolvedValue(5);
+      mockPrisma.tradeFact.findMany.mockResolvedValue([
+        { id: "f1", profit: 100, executedAt: new Date("2025-01-15T10:00:00Z"), source: "BACKTEST" },
+      ]);
+      mockPrisma.backtestRun.findUniqueOrThrow.mockResolvedValue({
+        initialDeposit: 10000,
+      });
+
+      await runVerification({
+        strategyId: "strat_phase0_2",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        backtestRunId: "run_456",
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.tradeSnapshotHash).toBe("abc123");
+      expect(payload.tradeFactCount).toBe(3);
+      expect(payload.snapshotRange).toEqual({
+        earliest: "2025-01-01T00:00:00.000Z",
+        latest: "2025-01-03T00:00:00.000Z",
+      });
+      expect(payload.dataSources).toEqual(["BACKTEST"]);
+    });
+
+    it("proof payload omits snapshot fields when no backtestRunId", async () => {
+      await runVerification({
+        strategyId: "strat_phase0_3",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.tradeSnapshotHash).toBeUndefined();
+      expect(payload.tradeFactCount).toBeUndefined();
+      expect(payload.snapshotRange).toBeUndefined();
+      expect(payload.dataSources).toBeUndefined();
+    });
+
+    it("snapshot build failure → SNAPSHOT_BUILD_FAILED + NOT_DEPLOYABLE", async () => {
+      mockPrisma.tradeFact.count.mockRejectedValue(new Error("DB connection failed"));
+
+      const result = await runVerification({
+        strategyId: "strat_phase0_4",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        backtestRunId: "run_fail",
+      });
+
+      expect(result.verdictResult.verdict).toBe("NOT_DEPLOYABLE");
+      expect(result.verdictResult.reasonCodes).toEqual(["SNAPSHOT_BUILD_FAILED"]);
+      expect(result.lifecycleState).toBe("BACKTESTED");
+      expect(result.decision.kind).toBe("NO_TRANSITION");
+    });
+
+    it("backward compat: no backtestRunId → existing behavior unchanged", async () => {
+      const result = await runVerification({
+        strategyId: "strat_phase0_5",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 1.0 } },
+      });
+
+      // Should work exactly as before — no TradeFact calls
+      expect(mockPrisma.tradeFact.count).not.toHaveBeenCalled();
+      expect(mockIngestTradeFactsFromDeals).not.toHaveBeenCalled();
+      expect(mockBuildTradeSnapshot).not.toHaveBeenCalled();
+      expect(result.verdictResult.verdict).toBe("READY");
     });
   });
 });

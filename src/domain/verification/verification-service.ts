@@ -17,6 +17,14 @@ import {
 } from "./config-loader";
 import type { ConfigSource } from "./config-loader";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+import {
+  ingestTradeFactsFromDeals,
+  buildTradeSnapshot,
+  deriveIntermediateResults,
+} from "@/domain/trade-ingest";
+import type { TradeSnapshot } from "@/domain/trade-ingest";
+import type { ParsedDeal } from "@/lib/backtest-parser/types";
 
 const log = logger.child({ module: "verification" });
 
@@ -48,6 +56,7 @@ export interface RunVerificationParams {
   tradeHistory: TradeRecord[];
   backtestParameters: BacktestParameters;
   intermediateResults?: VerificationInput["intermediateResults"];
+  backtestRunId?: string;
 }
 
 export interface RunVerificationResult {
@@ -146,8 +155,78 @@ export async function runVerification(
     currentLifecycleState,
     tradeHistory,
     backtestParameters,
-    intermediateResults,
+    backtestRunId,
   } = params;
+  let { intermediateResults } = params;
+
+  // --- Phase 0: Load/ingest TradeFacts + derive intermediate results ---
+  let snapshot: TradeSnapshot | undefined;
+
+  if (backtestRunId) {
+    try {
+      // Check if TradeFacts already exist for this run
+      const existingCount = await prisma.tradeFact.count({
+        where: { strategyId, sourceRunId: backtestRunId },
+      });
+
+      if (existingCount === 0) {
+        // Load BacktestRun and ingest deals
+        const backtestRun = await prisma.backtestRun.findUniqueOrThrow({
+          where: { id: backtestRunId },
+          select: { trades: true, symbol: true, initialDeposit: true },
+        });
+
+        await ingestTradeFactsFromDeals({
+          strategyId,
+          source: "BACKTEST",
+          sourceRunId: backtestRunId,
+          deals: backtestRun.trades as unknown as ParsedDeal[],
+          symbolFallback: backtestRun.symbol,
+        });
+      }
+
+      // Load all TradeFacts for this strategy, ordered for deterministic snapshot
+      const facts = await prisma.tradeFact.findMany({
+        where: { strategyId },
+        orderBy: [{ executedAt: "asc" }, { id: "asc" }],
+      });
+
+      // Load initialDeposit from BacktestRun
+      const run = await prisma.backtestRun.findUniqueOrThrow({
+        where: { id: backtestRunId },
+        select: { initialDeposit: true },
+      });
+
+      snapshot = buildTradeSnapshot(facts, run.initialDeposit);
+
+      // Derive MC + WF data server-side (overrides any client-supplied values)
+      const derived = deriveIntermediateResults(facts, run.initialDeposit);
+      intermediateResults = {
+        ...intermediateResults,
+        monteCarlo: derived.monteCarlo,
+        walkForward: derived.walkForward,
+      };
+    } catch (err) {
+      log.error(
+        { err, strategyId, backtestRunId },
+        "Phase 0: TradeFact ingest/snapshot build failed — returning NOT_DEPLOYABLE"
+      );
+
+      const verdictResult = buildGovernanceFailureResult(
+        strategyId,
+        strategyVersion,
+        "SNAPSHOT_BUILD_FAILED"
+      );
+      const decision = decideTransition(verdictResult.verdict, currentLifecycleState);
+
+      return {
+        verdictResult,
+        lifecycleState: currentLifecycleState,
+        decision,
+        configSource: "missing",
+      };
+    }
+  }
 
   // --- Phase 1: Load config (may fail with governance error) ---
   let verdictResult: VerificationResult;
@@ -235,6 +314,12 @@ export async function runVerification(
         ...(mcSeed !== undefined && {
           monteCarloSeed: mcSeed,
           monteCarloIterations: verdictResult.thresholdsUsed.monteCarloIterations,
+        }),
+        ...(snapshot && {
+          tradeSnapshotHash: snapshot.snapshotHash,
+          tradeFactCount: snapshot.factCount,
+          snapshotRange: snapshot.range,
+          dataSources: snapshot.dataSources,
         }),
       },
       passedPayload:
