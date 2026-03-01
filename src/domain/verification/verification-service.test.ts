@@ -349,6 +349,56 @@ describe("runVerification", () => {
     expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
   });
 
+  describe("D2 — Monte Carlo seed + proof payload", () => {
+    it("proof payload includes monteCarloSeed when MC data provided", async () => {
+      await runVerification({
+        strategyId: "strat_mc_1",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: {
+          robustnessScores: { composite: 0.9 },
+          monteCarlo: {
+            tradePnls: [100, 200, 300, 150, 250],
+            initialBalance: 1000,
+          },
+        },
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.monteCarloSeed).toEqual(expect.any(Number));
+      expect(payload.monteCarloIterations).toBe(10_000);
+    });
+
+    it("seed is deterministic for same recordId + thresholdsHash", async () => {
+      // Import deriveMonteCarloSeed to test determinism directly
+      const { deriveMonteCarloSeed } = await import("./verification-service");
+      const seed1 = deriveMonteCarloSeed("record-abc", "hash-xyz");
+      const seed2 = deriveMonteCarloSeed("record-abc", "hash-xyz");
+      expect(seed1).toBe(seed2);
+
+      // Different inputs → different seeds
+      const seed3 = deriveMonteCarloSeed("record-def", "hash-xyz");
+      expect(seed1).not.toBe(seed3);
+    });
+
+    it("proof payload omits monteCarloSeed when no MC data", async () => {
+      await runVerification({
+        strategyId: "strat_mc_2",
+        strategyVersion: 1,
+        currentLifecycleState: "BACKTESTED",
+        tradeHistory: makeTrades(100),
+        backtestParameters: {},
+        intermediateResults: { robustnessScores: { composite: 0.9 } },
+      });
+
+      const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
+      expect(payload.monteCarloSeed).toBeUndefined();
+      expect(payload.monteCarloIterations).toBeUndefined();
+    });
+  });
+
   describe("governance enforcement", () => {
     it("missing ACTIVE config → NOT_DEPLOYABLE + CONFIG_SNAPSHOT_MISSING", async () => {
       mockLoadActiveConfigWithFallback.mockRejectedValueOnce(new MockNoActiveConfigError());

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { computeVerdict } from "./compute-verdict";
 import type {
   VerificationInput,
@@ -18,6 +19,17 @@ import type { ConfigSource } from "./config-loader";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ module: "verification" });
+
+/**
+ * Derive a deterministic 32-bit seed for Monte Carlo simulation.
+ * Same recordId + thresholdsHash → same seed → identical MC results.
+ */
+export function deriveMonteCarloSeed(recordId: string, thresholdsHash: string): number {
+  const hash = createHash("sha256")
+    .update(recordId + thresholdsHash, "utf8")
+    .digest("hex");
+  return parseInt(hash.slice(0, 8), 16);
+}
 
 /** Pure domain value object — replaces boolean flags for lifecycle decisions. */
 export type TransitionDecision =
@@ -42,6 +54,8 @@ export interface RunVerificationResult {
   verdictResult: VerificationResult;
   lifecycleState: StrategyLifecycleState;
   decision: TransitionDecision;
+  configSource: ConfigSource | "missing";
+  monteCarloSeed?: number;
 }
 
 /**
@@ -140,6 +154,10 @@ export async function runVerification(
   let configVersion: string | null;
   let thresholdsHash: string | null;
   let configSource: ConfigSource | "missing";
+  let mcSeed: number | undefined;
+
+  // Generate recordId early so we can derive the MC seed before computeVerdict.
+  const recordId = crypto.randomUUID();
 
   try {
     const loaded = await loadActiveConfigWithFallback();
@@ -153,7 +171,16 @@ export async function runVerification(
       intermediateResults,
     };
 
-    verdictResult = computeVerdict(input, loaded.config);
+    // Derive MC seed when monteCarlo data is provided
+    if (intermediateResults?.monteCarlo) {
+      mcSeed = deriveMonteCarloSeed(recordId, loaded.config.thresholdsHash);
+    }
+
+    verdictResult = computeVerdict(
+      input,
+      loaded.config,
+      mcSeed !== undefined ? { monteCarloSeed: mcSeed } : undefined
+    );
     configVersion = verdictResult.thresholdsUsed.configVersion;
     thresholdsHash = verdictResult.thresholdsUsed.thresholdsHash;
   } catch (err) {
@@ -188,7 +215,6 @@ export async function runVerification(
   const decision = decideTransition(verdictResult.verdict, currentLifecycleState);
 
   // --- Phase 2: Persist proof events BEFORE finalizing lifecycle result ---
-  const recordId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
   try {
@@ -206,6 +232,10 @@ export async function runVerification(
         configSource,
         recordId,
         timestamp,
+        ...(mcSeed !== undefined && {
+          monteCarloSeed: mcSeed,
+          monteCarloIterations: verdictResult.thresholdsUsed.monteCarloIterations,
+        }),
       },
       passedPayload:
         decision.kind === "TRANSITION"
@@ -235,8 +265,20 @@ export async function runVerification(
       decision.to,
       decision.reason
     );
-    return { verdictResult, lifecycleState: newState, decision };
+    return {
+      verdictResult,
+      lifecycleState: newState,
+      decision,
+      configSource,
+      monteCarloSeed: mcSeed,
+    };
   }
 
-  return { verdictResult, lifecycleState: currentLifecycleState, decision };
+  return {
+    verdictResult,
+    lifecycleState: currentLifecycleState,
+    decision,
+    configSource,
+    monteCarloSeed: mcSeed,
+  };
 }

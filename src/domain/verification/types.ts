@@ -28,6 +28,18 @@ export interface VerificationInput {
   /** Pre-computed stage results. Omitted stages treated as not-yet-run. */
   intermediateResults?: {
     robustnessScores?: { composite: number };
+    walkForward?: {
+      /** Percentage degradation of Sharpe ratio from IS to OOS (positive = worse OOS). */
+      sharpeDegradationPct: number;
+      /** Number of trades in the out-of-sample portion. */
+      outOfSampleTradeCount: number;
+    };
+    monteCarlo?: {
+      /** Dollar PnL per trade from backtest. */
+      tradePnls: number[];
+      /** Starting equity for simulation paths. */
+      initialBalance: number;
+    };
   };
 }
 

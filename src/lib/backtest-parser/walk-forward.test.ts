@@ -49,8 +49,8 @@ describe("runWalkForward", () => {
   });
 
   it("daily Sharpe > 0 for consistently profitable deals", () => {
-    // All profitable deals spread across 30 days
-    const deals = makeSyntheticDeals(50, { profitRange: [10, 100] });
+    // All profitable deals — need >= numWindows*20 (=100) to pass the minimum gate
+    const deals = makeSyntheticDeals(150, { profitRange: [10, 100] });
     const result = runWalkForward(deals, 10000, { numWindows: 5 });
 
     // At least some windows should have positive Sharpe

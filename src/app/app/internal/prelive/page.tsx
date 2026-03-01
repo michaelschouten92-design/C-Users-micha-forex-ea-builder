@@ -44,7 +44,9 @@ interface VerifyResponse {
     warnings: string[];
   };
   lifecycleState: string;
-  decision?: { kind: string; from?: string; to?: string; reason?: string };
+  decision: { kind: string; from?: string; to?: string; reason?: string };
+  configSource: "db" | "fallback" | "missing";
+  monteCarloSeed?: number;
 }
 
 const VERDICT_STYLES: Record<string, string> = {
@@ -130,6 +132,21 @@ function tryParseJson(
   } catch {
     return { ok: false, error: `${fieldName}: Invalid JSON` };
   }
+}
+
+/** Infer D1 tier from reason codes and scores — avoids adding tier to the API surface. */
+function inferD1Tier(res: VerifyResponse): string {
+  const codes = res.verdictResult.reasonCodes;
+  const deg = res.verdictResult.scores.walkForwardDegradationPct;
+  const oos = res.verdictResult.scores.walkForwardOosSampleSize;
+  const t = res.verdictResult.thresholdsUsed;
+  if (deg === null) return "—";
+  if (codes.includes("WALK_FORWARD_DEGRADATION_EXTREME")) {
+    if (deg > t.extremeSharpeDegradationPct) return "D1c (extreme)";
+    return "D1a (moderate + sufficient OOS)";
+  }
+  if (codes.includes("WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE")) return "D1b (moderate + thin OOS)";
+  return `pass (${deg}% <= ${t.maxSharpeDegradationPct}%${oos !== null ? `, OOS=${oos}` : ""})`;
 }
 
 function VerifyForm() {
@@ -385,9 +402,8 @@ function VerifyForm() {
             <div className="text-sm text-white">
               State: <span className="font-mono text-[#22D3EE]">{result.lifecycleState}</span>
               <span className="mx-3 text-[#475569]">|</span>
-              Decision:{" "}
-              <span className="font-mono text-[#22D3EE]">{result.decision?.kind ?? "—"}</span>
-              {result.decision?.reason && (
+              Decision: <span className="font-mono text-[#22D3EE]">{result.decision.kind}</span>
+              {result.decision.reason && (
                 <span className="ml-1 text-[#7C8DB0]">({result.decision.reason})</span>
               )}
             </div>
@@ -405,6 +421,120 @@ function VerifyForm() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Verification Details */}
+          <div>
+            <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider mb-2">
+              Verification Details
+            </h3>
+            <div className="space-y-3">
+              {/* Config */}
+              <div className="bg-[#0F0318] rounded p-3 space-y-1.5">
+                <h4 className="text-xs text-[#A78BFA] font-medium">Config</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-xs">
+                  <div>
+                    <span className="text-[#7C8DB0]">configVersion: </span>
+                    <span className="text-white font-mono">
+                      {result.verdictResult.thresholdsUsed.configVersion}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[#7C8DB0]">configSource: </span>
+                    <span className="text-white font-mono">{result.configSource}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#7C8DB0]">thresholdsHash: </span>
+                    <span
+                      className="text-white font-mono"
+                      title={result.verdictResult.thresholdsUsed.thresholdsHash}
+                    >
+                      {result.verdictResult.thresholdsUsed.thresholdsHash.slice(0, 16)}&hellip;
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* D1 Walk-Forward */}
+              <div className="bg-[#0F0318] rounded p-3 space-y-1.5">
+                <h4 className="text-xs text-[#A78BFA] font-medium">D1 Walk-Forward Degradation</h4>
+                {result.verdictResult.scores.walkForwardDegradationPct !== null ? (
+                  <div className="space-y-1.5 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      <div>
+                        <span className="text-[#7C8DB0]">degradation: </span>
+                        <span className="text-white font-mono">
+                          {result.verdictResult.scores.walkForwardDegradationPct}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#7C8DB0]">OOS trades: </span>
+                        <span className="text-white font-mono">
+                          {result.verdictResult.scores.walkForwardOosSampleSize ?? "—"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#7C8DB0]">max: </span>
+                        <span className="text-white font-mono">
+                          {result.verdictResult.thresholdsUsed.maxSharpeDegradationPct}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#7C8DB0]">extreme: </span>
+                        <span className="text-white font-mono">
+                          {result.verdictResult.thresholdsUsed.extremeSharpeDegradationPct}%
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[#7C8DB0]">tier: </span>
+                      <span className="text-white font-mono">{inferD1Tier(result)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#475569]">Not evaluated (no walk-forward data)</p>
+                )}
+              </div>
+
+              {/* D2 Monte Carlo */}
+              <div className="bg-[#0F0318] rounded p-3 space-y-1.5">
+                <h4 className="text-xs text-[#A78BFA] font-medium">D2 Monte Carlo Ruin</h4>
+                {result.verdictResult.scores.monteCarloRuinProbability !== null ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    <div>
+                      <span className="text-[#7C8DB0]">ruinProbability: </span>
+                      <span
+                        className={`font-mono ${result.verdictResult.scores.monteCarloRuinProbability > result.verdictResult.thresholdsUsed.ruinProbabilityCeiling ? "text-red-400" : "text-white"}`}
+                      >
+                        {result.verdictResult.scores.monteCarloRuinProbability.toFixed(4)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#7C8DB0]">ceiling: </span>
+                      <span className="text-white font-mono">
+                        {result.verdictResult.thresholdsUsed.ruinProbabilityCeiling}
+                      </span>
+                    </div>
+                    {result.verdictResult.thresholdsUsed.monteCarloIterations != null && (
+                      <div>
+                        <span className="text-[#7C8DB0]">iterations: </span>
+                        <span className="text-white font-mono">
+                          {result.verdictResult.thresholdsUsed.monteCarloIterations.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {result.monteCarloSeed != null && (
+                      <div>
+                        <span className="text-[#7C8DB0]">seed: </span>
+                        <span className="text-white font-mono">{result.monteCarloSeed}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#475569]">Not evaluated (no MC data or seed)</p>
+                )}
+              </div>
             </div>
           </div>
 

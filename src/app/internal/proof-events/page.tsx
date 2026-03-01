@@ -20,6 +20,165 @@ interface ChainVerification {
   error?: string;
 }
 
+const VERDICT_STYLES: Record<string, string> = {
+  READY: "text-emerald-400",
+  UNCERTAIN: "text-amber-400",
+  NOT_DEPLOYABLE: "text-red-400",
+};
+
+/** Keys safe to display for any event payload. */
+const PAYLOAD_WHITELIST = new Set([
+  "eventType",
+  "verdict",
+  "reasonCodes",
+  "configVersion",
+  "configSource",
+  "thresholdsHash",
+  "monteCarloSeed",
+  "monteCarloIterations",
+  "recordId",
+  "strategyId",
+  "strategyVersion",
+  "timestamp",
+]);
+
+/** Keys explicitly excluded — never shown even in "details" view. */
+const PAYLOAD_BLOCKLIST = new Set(["ipHash", "userAgent", "referrer", "userId", "sessionId"]);
+
+const MAX_STRING_LEN = 80;
+const MAX_ARRAY_DISPLAY = 10;
+
+/** Render a single payload value with capping for large strings/arrays. */
+function renderValue(value: unknown): string {
+  if (value == null) return "null";
+  if (typeof value === "string") {
+    return value.length > MAX_STRING_LEN ? value.slice(0, MAX_STRING_LEN) + "\u2026" : value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    if (value.length <= MAX_ARRAY_DISPLAY) return JSON.stringify(value);
+    const preview = JSON.stringify(value.slice(0, MAX_ARRAY_DISPLAY));
+    return preview.slice(0, -1) + `, \u2026 (${value.length} items)]`;
+  }
+  const s = JSON.stringify(value);
+  return s.length > MAX_STRING_LEN ? s.slice(0, MAX_STRING_LEN) + "\u2026" : s;
+}
+
+/**
+ * Filter a payload to whitelisted keys only, redacting blocked keys.
+ * Unknown keys (not in whitelist or blocklist) are shown as "[redacted]".
+ */
+function filterPayload(payload: Record<string, unknown>): { key: string; display: string }[] {
+  const entries: { key: string; display: string }[] = [];
+  for (const [key, value] of Object.entries(payload)) {
+    if (PAYLOAD_BLOCKLIST.has(key)) continue;
+    if (PAYLOAD_WHITELIST.has(key)) {
+      entries.push({ key, display: renderValue(value) });
+    } else {
+      entries.push({ key, display: "[redacted]" });
+    }
+  }
+  return entries;
+}
+
+function isRunCompletedPayload(
+  type: string,
+  payload: Record<string, unknown> | null
+): payload is Record<string, unknown> {
+  return type === "VERIFICATION_RUN_COMPLETED" && payload !== null;
+}
+
+function RunCompletedSummary({ payload }: { payload: Record<string, unknown> }) {
+  const verdict = payload.verdict as string | undefined;
+  const reasonCodes = payload.reasonCodes as string[] | undefined;
+  const configVersion = payload.configVersion as string | null | undefined;
+  const configSource = payload.configSource as string | undefined;
+  const thresholdsHash = payload.thresholdsHash as string | null | undefined;
+  const mcSeed = payload.monteCarloSeed as number | undefined;
+  const mcIter = payload.monteCarloIterations as number | undefined;
+
+  return (
+    <div className="space-y-1 text-xs">
+      {verdict && (
+        <div>
+          <span className="text-[#7C8DB0]">verdict: </span>
+          <span className={`font-mono font-bold ${VERDICT_STYLES[verdict] ?? "text-white"}`}>
+            {verdict}
+          </span>
+        </div>
+      )}
+      {reasonCodes && (
+        <div>
+          <span className="text-[#7C8DB0]">reasons: </span>
+          <span className="text-white font-mono">{reasonCodes.join(", ")}</span>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+        {configVersion != null && (
+          <div>
+            <span className="text-[#7C8DB0]">configVersion: </span>
+            <span className="text-white font-mono">{configVersion}</span>
+          </div>
+        )}
+        {configSource && (
+          <div>
+            <span className="text-[#7C8DB0]">configSource: </span>
+            <span className="text-white font-mono">{configSource}</span>
+          </div>
+        )}
+        {thresholdsHash != null && (
+          <div>
+            <span className="text-[#7C8DB0]">thresholdsHash: </span>
+            <span className="text-white font-mono" title={thresholdsHash}>
+              {thresholdsHash.slice(0, 12)}&hellip;
+            </span>
+          </div>
+        )}
+      </div>
+      {(mcSeed != null || mcIter != null) && (
+        <div className="flex gap-x-4">
+          {mcSeed != null && (
+            <div>
+              <span className="text-[#7C8DB0]">mcSeed: </span>
+              <span className="text-white font-mono">{mcSeed}</span>
+            </div>
+          )}
+          {mcIter != null && (
+            <div>
+              <span className="text-[#7C8DB0]">mcIterations: </span>
+              <span className="text-white font-mono">{mcIter.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Whitelisted detail rows for any payload (non-RUN_COMPLETED events, or expanded RUN_COMPLETED). */
+function SafePayloadDetails({ payload }: { payload: Record<string, unknown> }) {
+  const rows = filterPayload(payload);
+  if (rows.length === 0) {
+    return <span className="text-[#475569] text-xs">empty payload</span>;
+  }
+  return (
+    <div className="mt-2 p-2 bg-[#0F0318] rounded text-xs overflow-x-auto space-y-0.5">
+      {rows.map(({ key, display }) => (
+        <div key={key}>
+          <span className="text-[#7C8DB0]">{key}: </span>
+          <span
+            className={`font-mono ${display === "[redacted]" ? "text-[#475569] italic" : "text-[#CBD5E1]"}`}
+          >
+            {display}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const inputClass =
   "w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors";
 
@@ -224,7 +383,7 @@ function ProofEventsForm() {
                     <th className="py-2 pr-4">Type</th>
                     <th className="py-2 pr-4">Hash</th>
                     <th className="py-2 pr-4">Record ID</th>
-                    <th className="py-2">Payload</th>
+                    <th className="py-2">Summary</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -247,21 +406,31 @@ function ProofEventsForm() {
                         {evt.sessionId ?? "\u2014"}
                       </td>
                       <td className="py-2">
-                        {evt.payload ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpand(i)}
-                            className="text-[#22D3EE] hover:text-[#67E8F9] transition-colors"
-                          >
-                            {expanded.has(i) ? "collapse" : "expand"}
-                          </button>
+                        {isRunCompletedPayload(evt.type, evt.payload) ? (
+                          <div>
+                            <RunCompletedSummary payload={evt.payload} />
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(i)}
+                              className="mt-1 text-[#22D3EE] hover:text-[#67E8F9] transition-colors text-xs"
+                            >
+                              {expanded.has(i) ? "hide details" : "show details"}
+                            </button>
+                            {expanded.has(i) && <SafePayloadDetails payload={evt.payload} />}
+                          </div>
+                        ) : evt.payload ? (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(i)}
+                              className="text-[#22D3EE] hover:text-[#67E8F9] transition-colors"
+                            >
+                              {expanded.has(i) ? "collapse" : "expand"}
+                            </button>
+                            {expanded.has(i) && <SafePayloadDetails payload={evt.payload} />}
+                          </div>
                         ) : (
                           <span className="text-[#475569]">null</span>
-                        )}
-                        {expanded.has(i) && evt.payload && (
-                          <pre className="mt-2 p-2 bg-[#0F0318] rounded text-[#CBD5E1] overflow-x-auto">
-                            {JSON.stringify(evt.payload, null, 2)}
-                          </pre>
                         )}
                       </td>
                     </tr>

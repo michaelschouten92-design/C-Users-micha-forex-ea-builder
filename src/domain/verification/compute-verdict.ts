@@ -1,9 +1,16 @@
 import type { VerificationInput, VerificationResult, ReasonCode } from "./types";
 import type { VerificationThresholdsSnapshot } from "./config-snapshot";
+import { evaluateWalkForwardDegradation } from "./rules/walk-forward";
+import { evaluateMonteCarloRuin } from "./rules/monte-carlo-ruin";
+
+export interface ComputeVerdictOptions {
+  monteCarloSeed?: number;
+}
 
 export function computeVerdict(
   input: VerificationInput,
-  config: VerificationThresholdsSnapshot
+  config: VerificationThresholdsSnapshot,
+  options?: ComputeVerdictOptions
 ): VerificationResult {
   const { strategyId, strategyVersion, tradeHistory } = input;
   const sampleSize = tradeHistory.length;
@@ -17,6 +24,10 @@ export function computeVerdict(
     thresholdsHash: config.thresholdsHash,
     ...thresholds,
   };
+
+  // Mutable scores — stages populate their fields as they run.
+  let walkForwardDegradationPct: number | null = null;
+  let walkForwardOosSampleSize: number | null = null;
 
   // --- D0: MIN_TRADE_COUNT gate (short-circuits all subsequent rules) ---
   if (sampleSize < thresholds.minTradeCount) {
@@ -38,8 +49,57 @@ export function computeVerdict(
     };
   }
 
-  // --- D1–D3: Not yet implemented (future PRs) ---
-  // Without analysis stages, no flags are raised.
+  // --- D1: Walk-Forward Degradation (3-tier guard) ---
+  // Runs only when walk-forward stage results are provided.
+  // Omitted stage = not-yet-run; no flag raised.
+  const wf = input.intermediateResults?.walkForward;
+  if (wf) {
+    // Validate walk-forward input completeness
+    if (
+      !Number.isFinite(wf.sharpeDegradationPct) ||
+      !Number.isFinite(wf.outOfSampleTradeCount) ||
+      wf.outOfSampleTradeCount < 0
+    ) {
+      reasonCodes.push("INVALID_SCORE");
+    } else {
+      try {
+        const d1 = evaluateWalkForwardDegradation(wf, thresholds);
+        walkForwardDegradationPct = d1.measured.sharpeDegradationPct;
+        walkForwardOosSampleSize = d1.measured.outOfSampleTradeCount;
+        if (d1.reasonCode) {
+          reasonCodes.push(d1.reasonCode);
+        }
+      } catch {
+        // Defense-in-depth: unexpected error in D1 evaluation → fail-closed
+        reasonCodes.push("COMPUTATION_FAILED");
+      }
+    }
+  }
+
+  // --- D2: Monte Carlo Ruin Probability ---
+  let monteCarloRuinProbability: number | null = null;
+
+  const mc = input.intermediateResults?.monteCarlo;
+  if (mc && options?.monteCarloSeed !== undefined) {
+    if (
+      !Number.isFinite(mc.initialBalance) ||
+      mc.initialBalance <= 0 ||
+      mc.tradePnls.length === 0 ||
+      mc.tradePnls.some((p) => !Number.isFinite(p))
+    ) {
+      reasonCodes.push("INVALID_SCORE");
+    } else {
+      try {
+        const d2 = evaluateMonteCarloRuin(mc, thresholds, options.monteCarloSeed);
+        monteCarloRuinProbability = d2.measured.ruinProbability;
+        if (d2.reasonCode) reasonCodes.push(d2.reasonCode);
+      } catch {
+        reasonCodes.push("COMPUTATION_FAILED");
+      }
+    }
+  }
+
+  // --- D3: Not yet implemented (future PRs) ---
 
   const composite = input.intermediateResults?.robustnessScores?.composite ?? 0;
 
@@ -49,6 +109,7 @@ export function computeVerdict(
   }
 
   // --- D4: Verdict decision (contract §5 accumulation rules) ---
+  // Non-shortcircuiting: all reason codes accumulated above feed into verdict.
   const hasNotDeployable = reasonCodes.some((rc) =>
     (
       [
@@ -93,9 +154,9 @@ export function computeVerdict(
     reasonCodes,
     scores: {
       composite,
-      walkForwardDegradationPct: null,
-      walkForwardOosSampleSize: null,
-      monteCarloRuinProbability: null,
+      walkForwardDegradationPct,
+      walkForwardOosSampleSize,
+      monteCarloRuinProbability,
       sampleSize,
     },
     thresholdsUsed,
