@@ -57,11 +57,16 @@ interface VerificationInput {
   strategyVersion: number;
   tradeHistory: TradeRecord[];
   backtestParameters: BacktestParameters;
+  intermediateResults?: {
+    robustnessScores?: { composite: number };
+  };
 }
 ```
 
 All inputs are plain data. No `Request` objects, no React context, no framework types.
 The adapter layer (PR#5) assembles this from whatever source format the caller provides.
+
+`intermediateResults` is optional enrichment — see §4.4.
 
 ---
 
@@ -110,6 +115,19 @@ If any stage is missing or returned a partial result:
 A stage "produced results" means: all fields in the stage interface are present,
 finite, and non-negative. `NaN`, `Infinity`, negative values, or missing fields
 fail the completeness check.
+
+### Pre-computed Stage Scores (`intermediateResults`)
+
+The runner/adapter layer may attach pre-computed stage scores to `VerificationInput`
+via the optional `intermediateResults` field. This allows the pure decision function
+to consume scores without computing them itself.
+
+Rules:
+
+- `intermediateResults` is **not** a required base input. Callers may omit it entirely.
+- When omitted, the decision function treats all stage scores as not-yet-run (defaults apply, e.g., `composite` defaults to `0`).
+- When present, the decision function reads values directly and must still behave deterministically — same `intermediateResults` always produces the same verdict.
+- Only the runner/adapter layer populates `intermediateResults`. The pure function never writes to it.
 
 ---
 
