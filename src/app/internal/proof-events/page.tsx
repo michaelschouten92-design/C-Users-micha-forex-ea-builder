@@ -69,6 +69,23 @@ const PAYLOAD_WHITELIST = new Set([
   "action",
   "note",
   "lifecycleState",
+  // Incident events
+  "incidentId",
+  "severity",
+  "escalationCount",
+  "closeReason",
+  "ackDeadlineAt",
+  "invalidateDeadlineAt",
+  // Integrity check events
+  "chainsChecked",
+  "chainsValid",
+  "snapshotsChecked",
+  "snapshotsValid",
+  "failureCount",
+  "checkType",
+  "computedHash",
+  "storedHash",
+  "breakAtSequence",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */
@@ -436,6 +453,139 @@ function AlertOutboxPanel({ internalApiKey }: { internalApiKey: string }) {
   );
 }
 
+function IncidentPanel({ internalApiKey }: { internalApiKey: string }) {
+  const [counts, setCounts] = useState<{
+    open: number;
+    acknowledged: number;
+    escalated: number;
+    overdueAck: number;
+  } | null>(null);
+  const [processResult, setProcessResult] = useState<{
+    escalated: number;
+    autoInvalidated: number;
+    errors: string[];
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function fetchCounts() {
+    try {
+      const res = await fetch("/api/internal/incidents/process", {
+        headers: { "x-internal-api-key": internalApiKey },
+      });
+      if (!res.ok) {
+        setError(`Failed to fetch counts: ${res.status}`);
+        return;
+      }
+      setCounts(await res.json());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    }
+  }
+
+  async function handleProcess() {
+    setProcessResult(null);
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/internal/incidents/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": internalApiKey,
+        },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        setError(json.error || `Error ${res.status}`);
+        return;
+      }
+      const result = await res.json();
+      setProcessResult(result);
+      await fetchCounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchCounts();
+  }, []);
+
+  return (
+    <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-3">
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Incidents</h3>
+
+      {counts && (
+        <div className="flex flex-wrap gap-4 text-xs">
+          <div>
+            <span className="text-[#7C8DB0]">Open: </span>
+            <span className="text-white font-mono">{counts.open}</span>
+          </div>
+          <div>
+            <span className="text-[#7C8DB0]">Acknowledged: </span>
+            <span className="text-white font-mono">{counts.acknowledged}</span>
+          </div>
+          <div>
+            <span className="text-[#7C8DB0]">Escalated: </span>
+            <span className="text-white font-mono">{counts.escalated}</span>
+          </div>
+          <div>
+            <span className={`${counts.overdueAck > 0 ? "text-amber-400" : "text-[#7C8DB0]"}`}>
+              Overdue ACK:{" "}
+            </span>
+            <span
+              className={`font-mono ${counts.overdueAck > 0 ? "text-amber-400 font-bold" : "text-white"}`}
+            >
+              {counts.overdueAck}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleProcess}
+        className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+      >
+        {loading ? "Processing\u2026" : "Process Incidents"}
+      </button>
+
+      {processResult && (
+        <div
+          className={`p-3 rounded-lg text-xs ${
+            processResult.errors.length > 0
+              ? "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]"
+              : "bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E]"
+          }`}
+        >
+          <div>
+            Escalated: {processResult.escalated}, Auto-invalidated: {processResult.autoInvalidated}
+          </div>
+          {processResult.errors.length > 0 && (
+            <div className="mt-1">
+              Errors:{" "}
+              {processResult.errors.map((e, i) => (
+                <div key={i}>{e}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 rounded-lg text-xs bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProofEventsForm() {
   const [strategyId, setStrategyId] = useState("");
   const [internalApiKey, setInternalApiKey] = useState("");
@@ -713,6 +863,9 @@ function ProofEventsForm() {
 
       {/* Alert outbox panel — visible when API key is set */}
       {internalApiKey.trim() && <AlertOutboxPanel internalApiKey={internalApiKey} />}
+
+      {/* Incident panel — visible when API key is set */}
+      {internalApiKey.trim() && <IncidentPanel internalApiKey={internalApiKey} />}
     </div>
   );
 }
