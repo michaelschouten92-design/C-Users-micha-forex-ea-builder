@@ -49,6 +49,13 @@ vi.mock("@/lib/proof/events", () => ({
   appendProofEvent: (...args: unknown[]) => mockAppendProofEvent(...args),
 }));
 
+vi.mock("@/domain/monitoring/trigger", () => ({
+  triggerMonitoringAfterIngest: vi.fn().mockResolvedValue({
+    triggered: true,
+    reason: "OK",
+  }),
+}));
+
 vi.mock("@/lib/logger", () => ({
   logger: { child: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }) },
 }));
