@@ -668,5 +668,14 @@ export const internalStrategyTrendsRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal audit replay endpoint
+ * Limits: 30 requests per minute per IP (heavier computation)
+ */
+export const internalAuditReplayRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

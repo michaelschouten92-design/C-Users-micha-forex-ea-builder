@@ -106,6 +106,8 @@ const PAYLOAD_WHITELIST = new Set([
   "computedHash",
   "storedHash",
   "breakAtSequence",
+  // Audit replay events
+  "mode",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */
