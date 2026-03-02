@@ -24,10 +24,19 @@ vi.mock("@/domain/trade-ingest/csv/run-csv-ingest-pipeline", async () => {
       this.violations = violations;
     }
   }
+  class StrategyHaltedError extends Error {
+    strategyId: string;
+    constructor(strategyId: string) {
+      super(`Strategy ${strategyId} is halted`);
+      this.name = "StrategyHaltedError";
+      this.strategyId = strategyId;
+    }
+  }
   return {
     runCsvIngestPipeline: (...args: unknown[]) => mockRunCsvIngestPipeline(...args),
     CsvParseError,
     TradeFactValidationError,
+    StrategyHaltedError,
   };
 });
 
