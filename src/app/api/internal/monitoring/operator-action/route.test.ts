@@ -3,8 +3,10 @@ import { NextRequest } from "next/server";
 
 const TEST_API_KEY = "test-internal-api-key-that-is-at-least-32-chars";
 
-const mockAppendProofEvent = vi.fn();
+const mockAppendProofEventInTx = vi.fn();
 const mockLiveEAInstanceFindFirst = vi.fn();
+const mockTransaction = vi.fn();
+const mockIncidentUpdateMany = vi.fn();
 
 vi.mock("@/lib/csrf", () => ({
   timingSafeEqual: (a: string, b: string) => a === b,
@@ -22,6 +24,7 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: (...args: unknown[]) => mockTransaction(...args),
     liveEAInstance: {
       findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
     },
@@ -29,7 +32,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/proof/events", () => ({
-  appendProofEvent: (...args: unknown[]) => mockAppendProofEvent(...args),
+  appendProofEventInTx: (_tx: unknown, ...args: unknown[]) => mockAppendProofEventInTx(...args),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -75,7 +78,18 @@ describe("POST /api/internal/monitoring/operator-action", () => {
       id: "inst_1",
       lifecycleState: "EDGE_AT_RISK",
     });
-    mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
+    mockAppendProofEventInTx.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
+    mockIncidentUpdateMany.mockResolvedValue({ count: 1 });
+
+    // $transaction executes callback with mock tx
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
+      const tx = {
+        incident: {
+          updateMany: (...args: unknown[]) => mockIncidentUpdateMany(...args),
+        },
+      };
+      return fn(tx);
+    });
   });
 
   it("rejects requests without API key (401)", async () => {
@@ -159,7 +173,7 @@ describe("POST /api/internal/monitoring/operator-action", () => {
 
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
       "strat_1",
       "OPERATOR_ACKNOWLEDGED_RISK",
       expect.objectContaining({
@@ -170,6 +184,28 @@ describe("POST /api/internal/monitoring/operator-action", () => {
         lifecycleState: "EDGE_AT_RISK",
       })
     );
+  });
+
+  it("ACK updates incident to ACKNOWLEDGED", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest(validBody({ action: "ACK" }), TEST_API_KEY));
+
+    expect(res.status).toBe(200);
+    expect(mockIncidentUpdateMany).toHaveBeenCalledWith({
+      where: { strategyId: "strat_1", status: { in: ["OPEN", "ESCALATED"] } },
+      data: { status: "ACKNOWLEDGED" },
+    });
+  });
+
+  it("ACK with no open incident still succeeds", async () => {
+    mockIncidentUpdateMany.mockResolvedValue({ count: 0 });
+
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest(validBody({ action: "ACK" }), TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
   });
 
   it("ACK on INVALIDATED: success, proof event written", async () => {
@@ -184,21 +220,21 @@ describe("POST /api/internal/monitoring/operator-action", () => {
 
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
       "strat_1",
       "OPERATOR_ACKNOWLEDGED_RISK",
       expect.objectContaining({ lifecycleState: "INVALIDATED" })
     );
   });
 
-  it("HALT on EDGE_AT_RISK: success, proof event written", async () => {
+  it("HALT on EDGE_AT_RISK: success, proof event written, no incident update", async () => {
     const { POST } = await import("./route");
     const res = await POST(makeRequest(validBody({ action: "HALT" }), TEST_API_KEY));
     const json = await res.json();
 
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
       "strat_1",
       "OPERATOR_REQUESTED_HALT",
       expect.objectContaining({
@@ -206,6 +242,8 @@ describe("POST /api/internal/monitoring/operator-action", () => {
         action: "HALT",
       })
     );
+    // HALT does not update incident
+    expect(mockIncidentUpdateMany).not.toHaveBeenCalled();
   });
 
   it("HALT on INVALIDATED: rejected (400)", async () => {
@@ -229,7 +267,7 @@ describe("POST /api/internal/monitoring/operator-action", () => {
 
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
-    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
       "strat_1",
       "OPERATOR_OVERRIDE_REQUESTED",
       expect.objectContaining({ action: "OVERRIDE_REQUEST" })
@@ -275,7 +313,7 @@ describe("POST /api/internal/monitoring/operator-action", () => {
   });
 
   it("proof event write failure returns 500", async () => {
-    mockAppendProofEvent.mockRejectedValue(new Error("DB write failed"));
+    mockTransaction.mockRejectedValue(new Error("DB write failed"));
 
     const { POST } = await import("./route");
     const res = await POST(makeRequest(validBody(), TEST_API_KEY));

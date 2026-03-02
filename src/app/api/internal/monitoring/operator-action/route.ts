@@ -12,7 +12,7 @@ import {
 } from "@/lib/rate-limit";
 import { checkContentType, safeReadJson, validate, formatZodErrors } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
-import { appendProofEvent } from "@/lib/proof/events";
+import { appendProofEventInTx } from "@/lib/proof/events";
 
 const log = logger.child({ route: "/api/internal/monitoring/operator-action" });
 
@@ -112,18 +112,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Append proof event
+  // Append proof event + update incident (if ACK) — atomic tx
   const proofEventType = ACTION_TO_PROOF_EVENT[action];
   try {
-    await appendProofEvent(strategyId, proofEventType, {
-      eventType: proofEventType,
-      recordId,
-      strategyId,
-      action,
-      note: note ?? null,
-      lifecycleState: instance.lifecycleState,
-      timestamp: new Date().toISOString(),
-    });
+    await prisma.$transaction(
+      async (tx) => {
+        await appendProofEventInTx(tx, strategyId, proofEventType, {
+          eventType: proofEventType,
+          recordId,
+          strategyId,
+          action,
+          note: note ?? null,
+          lifecycleState: instance.lifecycleState,
+          timestamp: new Date().toISOString(),
+        });
+
+        // ACK updates any open/escalated incident to ACKNOWLEDGED
+        if (action === "ACK") {
+          await tx.incident.updateMany({
+            where: { strategyId, status: { in: ["OPEN", "ESCALATED"] } },
+            data: { status: "ACKNOWLEDGED" },
+          });
+        }
+      },
+      { isolationLevel: "Serializable" }
+    );
   } catch (err) {
     log.error({ err, strategyId, action }, "Failed to write operator action proof event");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
