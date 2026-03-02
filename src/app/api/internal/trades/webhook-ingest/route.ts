@@ -42,6 +42,7 @@ import {
   runCsvIngestPipeline,
   CsvParseError,
   TradeFactValidationError,
+  StrategyHaltedError,
 } from "@/domain/trade-ingest/csv/run-csv-ingest-pipeline";
 
 const ingestSchema = z.object({
@@ -122,6 +123,11 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof StrategyHaltedError) {
+      return NextResponse.json(apiError(ErrorCode.STRATEGY_HALTED, "Strategy is halted"), {
+        status: 409,
+      });
+    }
     if (err instanceof CsvParseError) {
       return NextResponse.json(apiError(ErrorCode.PARSE_FAILED, "CSV parse failed", err.details), {
         status: 400,

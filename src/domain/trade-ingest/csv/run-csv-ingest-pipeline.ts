@@ -15,6 +15,7 @@ import {
   buildTradeSnapshot,
   TradeFactValidationError,
 } from "@/domain/trade-ingest";
+import { StrategyHaltedError } from "@/domain/trade-ingest/errors";
 import { prisma } from "@/lib/prisma";
 import { appendProofEvent } from "@/lib/proof/events";
 import { triggerMonitoringAfterIngest } from "@/domain/monitoring/trigger";
@@ -25,6 +26,7 @@ const log = logger.child({ service: "csv-ingest-pipeline" });
 // Re-export error types so callers can import from one place
 export { CsvParseError } from "./parse-csv-deals";
 export { TradeFactValidationError } from "@/domain/trade-ingest";
+export { StrategyHaltedError } from "@/domain/trade-ingest/errors";
 
 export interface CsvIngestParams {
   strategyId: string;
@@ -57,6 +59,17 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
 
   // Step 1: Parse CSV → ParsedDeal[]
   const deals = parseCsvDeals(csv);
+
+  // Guard: reject LIVE ingest when strategy is halted
+  if (source === "LIVE") {
+    const instance = await prisma.liveEAInstance.findFirst({
+      where: { strategyVersion: { strategyIdentity: { strategyId } } },
+      select: { operatorHold: true },
+    });
+    if (instance?.operatorHold === "HALTED") {
+      throw new StrategyHaltedError(strategyId);
+    }
+  }
 
   // Step 2: Validate + ingest (fail-closed)
   const ingestResult = await ingestTradeFactsFromDeals({

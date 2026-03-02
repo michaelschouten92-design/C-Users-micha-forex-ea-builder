@@ -5,6 +5,7 @@ const mockIngestTradeFactsFromDeals = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
 const mockFindMany = vi.fn();
 const mockAppendProofEvent = vi.fn();
+const mockLiveEAInstanceFindFirst = vi.fn();
 
 vi.mock("./parse-csv-deals", () => {
   class CsvParseError extends Error {
@@ -41,6 +42,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     tradeFact: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
+    },
+    liveEAInstance: {
+      findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
     },
   },
 }));
@@ -84,6 +88,7 @@ describe("runCsvIngestPipeline", () => {
       factCount: 2,
     });
     mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "NONE" });
   });
 
   async function importPipeline() {
@@ -178,5 +183,29 @@ describe("runCsvIngestPipeline", () => {
 
     const call = mockIngestTradeFactsFromDeals.mock.calls[0][0];
     expect(call.sourceRunId).toMatch(/^csv-import-\d+$/);
+  });
+
+  it("rejects LIVE ingest when strategy is halted", async () => {
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "HALTED" });
+
+    const run = await importPipeline();
+    await expect(run({ ...baseParams, source: "LIVE" })).rejects.toThrow(
+      "Strategy strat_1 is halted"
+    );
+
+    // No writes should have happened
+    expect(mockIngestTradeFactsFromDeals).not.toHaveBeenCalled();
+    expect(mockAppendProofEvent).not.toHaveBeenCalled();
+  });
+
+  it("allows BACKTEST ingest even when halted", async () => {
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "HALTED" });
+
+    const run = await importPipeline();
+    const result = await run({ ...baseParams, source: "BACKTEST" });
+
+    expect(result.insertedCount).toBe(2);
+    // liveEAInstance.findFirst should NOT be called for BACKTEST
+    expect(mockLiveEAInstanceFindFirst).not.toHaveBeenCalled();
   });
 });
