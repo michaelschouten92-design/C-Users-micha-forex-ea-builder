@@ -112,7 +112,14 @@ function IncidentCard({ data }: { data: OverviewData["incidents"] }) {
             <tbody>
               {data.rows.map((r) => (
                 <tr key={r.id} className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-2 pr-3 font-mono text-[#A78BFA]">{r.id.slice(0, 10)}</td>
+                  <td className="py-2 pr-3 font-mono">
+                    <Link
+                      href={`/internal/incidents/${r.id}`}
+                      className="text-[#A78BFA] hover:text-[#22D3EE] underline transition-colors"
+                    >
+                      {r.id.slice(0, 10)}
+                    </Link>
+                  </td>
                   <td className="py-2 pr-3 font-mono text-white">{r.strategyId}</td>
                   <td className="py-2 pr-3">
                     <span
@@ -170,7 +177,14 @@ function OverrideCard({ data }: { data: OverviewData["overrides"] }) {
             <tbody>
               {data.rows.map((r) => (
                 <tr key={r.id} className="border-b border-[rgba(79,70,229,0.1)]">
-                  <td className="py-2 pr-3 font-mono text-[#A78BFA]">{r.id.slice(0, 10)}</td>
+                  <td className="py-2 pr-3 font-mono">
+                    <Link
+                      href={`/internal/overrides/${r.id}`}
+                      className="text-[#A78BFA] hover:text-[#22D3EE] underline transition-colors"
+                    >
+                      {r.id.slice(0, 10)}
+                    </Link>
+                  </td>
                   <td className="py-2 pr-3 font-mono text-white">{r.strategyId}</td>
                   <td className="py-2 pr-3">
                     <span

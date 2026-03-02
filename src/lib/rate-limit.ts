@@ -623,5 +623,23 @@ export const internalOpsOverviewRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal incident drilldown endpoint
+ * Limits: 60 requests per minute per IP (read-only detail view)
+ */
+export const internalIncidentDrilldownRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
+ * Rate limiter for internal override drilldown endpoint
+ * Limits: 60 requests per minute per IP (read-only detail view)
+ */
+export const internalOverrideDrilldownRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };
