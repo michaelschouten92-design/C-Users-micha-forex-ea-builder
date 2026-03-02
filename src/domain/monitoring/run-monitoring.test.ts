@@ -370,7 +370,7 @@ describe("runMonitoring", () => {
       "MONITORING_RUN_COMPLETED",
       expect.objectContaining({
         monitoringVerdict: null,
-        reasons: ["No LIVE TradeFacts found for strategy"],
+        reasons: ["NO_LIVE_DATA"],
       })
     );
 
@@ -425,10 +425,7 @@ describe("runMonitoring", () => {
   });
 
   // ── Config missing monitoringThresholds ─────────────────────────
-  it("config without monitoringThresholds: throws and marks run FAILED", async () => {
-    // If a v1 config somehow reaches the monitoring path, the assertion
-    // in run-monitoring throws (fail-closed). Config-loader enforces
-    // monitoringThresholds for v2+ via ConfigIntegrityError.
+  it("config without monitoringThresholds: returns AT_RISK with MONITORING_CONFIG_INVALID", async () => {
     mockLoadActiveConfigWithFallback.mockResolvedValue({
       config: {
         configVersion: "1.0.0",
@@ -439,13 +436,28 @@ describe("runMonitoring", () => {
     });
 
     const run = await importRunMonitoring();
-    await expect(run(params)).rejects.toThrow(/missing monitoringThresholds/);
+    const result = await run(params);
 
+    // Graceful fail-closed: AT_RISK with stable reason code
+    expect(result.verdict).toBe("AT_RISK");
+    expect(result.reasons).toEqual(["MONITORING_CONFIG_INVALID"]);
+
+    // Run marked FAILED with diagnostic in errorMessage
     expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           status: "FAILED",
+          errorMessage: expect.stringContaining("missing monitoringThresholds"),
         }),
+      })
+    );
+
+    // Proof event gets stable reason code, not raw diagnostic
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "MONITORING_RUN_COMPLETED",
+      expect.objectContaining({
+        reasons: ["MONITORING_CONFIG_INVALID"],
       })
     );
   });

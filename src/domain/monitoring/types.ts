@@ -48,3 +48,19 @@ export interface MonitoringEvaluationResult {
   reasons: MonitoringReasonCode[];
   ruleResults: RuleResult[];
 }
+
+/**
+ * Typed error for monitoring-specific config invalidity.
+ *
+ * Thrown when a loaded config is structurally invalid for monitoring
+ * (e.g., missing monitoringThresholds). Carries a stable reasonCode
+ * for deterministic recording in proof events and MonitoringRun rows.
+ */
+export class MonitoringConfigError extends Error {
+  readonly reasonCode = "MONITORING_CONFIG_INVALID" as const;
+
+  constructor(diagnostic: string) {
+    super(diagnostic);
+    this.name = "MonitoringConfigError";
+  }
+}

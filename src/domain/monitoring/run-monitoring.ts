@@ -33,6 +33,7 @@ import {
   computeCurrentLosingStreak,
   computeDaysSinceLastTrade,
 } from "./live-metrics";
+import { MonitoringConfigError } from "./types";
 import type { MonitoringVerdict } from "./types";
 
 const log = logger.child({ service: "monitoring-run" });
@@ -108,27 +109,36 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       configSource = loaded.source;
 
       // Config-loader enforces monitoringThresholds for v2+ via ConfigIntegrityError.
-      // This assertion guards against unexpected v1 configs reaching the monitoring path.
+      // This guard catches unexpected v1 configs reaching the monitoring path.
       if (!loaded.config.monitoringThresholds) {
-        throw new Error(
-          `Config ${configVersion} missing monitoringThresholds — monitoring requires v2.0.0+`
-        );
+        throw new MonitoringConfigError(`Config ${configVersion} missing monitoringThresholds`);
       }
       monitoringThresholds = loaded.config.monitoringThresholds;
     } catch (err) {
-      if (err instanceof NoActiveConfigError || err instanceof ConfigIntegrityError) {
-        // Config unavailable — fail the run, still write proof if possible
-        const errorMessage =
+      if (
+        err instanceof NoActiveConfigError ||
+        err instanceof ConfigIntegrityError ||
+        err instanceof MonitoringConfigError
+      ) {
+        // Config unavailable or invalid — fail the run with a stable reason code.
+        const reasonCode =
+          err instanceof MonitoringConfigError
+            ? err.reasonCode // "MONITORING_CONFIG_INVALID"
+            : "CONFIG_UNAVAILABLE";
+
+        const diagnostic =
           err instanceof ConfigIntegrityError
             ? `Config integrity error: ${err.message}`
-            : "No active monitoring config";
+            : err instanceof MonitoringConfigError
+              ? err.message
+              : "No active monitoring config";
 
-        await failRun(run.id, recordId, strategyId, errorMessage);
+        await failRun(run.id, recordId, strategyId, reasonCode, diagnostic);
         return {
           runId: run.id,
           recordId,
           verdict: "AT_RISK",
-          reasons: ["CONFIG_UNAVAILABLE"],
+          reasons: [reasonCode],
           tradeSnapshotHash: null,
           liveFactCount: 0,
         };
@@ -144,7 +154,13 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
 
     if (liveFacts.length === 0) {
       // No live facts — cannot evaluate, mark FAILED
-      await failRun(run.id, recordId, strategyId, "No LIVE TradeFacts found for strategy");
+      await failRun(
+        run.id,
+        recordId,
+        strategyId,
+        "NO_LIVE_DATA",
+        "No LIVE TradeFacts found for strategy"
+      );
       return {
         runId: run.id,
         recordId,
@@ -299,14 +315,17 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
 }
 
 /**
- * Mark a run as FAILED with a specific error message.
- * Attempts to write a MONITORING_RUN_COMPLETED proof event with the failure reason.
+ * Mark a run as FAILED.
+ *
+ * @param reasonCode  Stable code recorded in proof event reasons (e.g. "CONFIG_UNAVAILABLE").
+ * @param diagnostic  Human-readable detail stored in MonitoringRun.errorMessage (bounded, non-sensitive).
  */
 async function failRun(
   runId: string,
   recordId: string,
   strategyId: string,
-  errorMessage: string
+  reasonCode: string,
+  diagnostic: string
 ): Promise<void> {
   // Best-effort proof event for failed runs
   try {
@@ -315,7 +334,7 @@ async function failRun(
       recordId,
       strategyId,
       monitoringVerdict: null,
-      reasons: [errorMessage],
+      reasons: [reasonCode],
       ruleResults: [],
       tradeSnapshotHash: null,
       liveFactCount: 0,
@@ -333,7 +352,7 @@ async function failRun(
     data: {
       status: "FAILED",
       completedAt: new Date(),
-      errorMessage,
+      errorMessage: diagnostic,
     },
   });
 }
