@@ -4,12 +4,21 @@
 
 export type MonitoringVerdict = "HEALTHY" | "AT_RISK" | "INVALIDATED";
 
+export type MonitoringReasonCode =
+  | "MONITORING_DRAWDOWN_BREACH"
+  | "MONITORING_SHARPE_DEGRADATION"
+  | "MONITORING_LOSS_STREAK"
+  | "MONITORING_INACTIVITY"
+  | "MONITORING_CUSUM_DRIFT"
+  | "MONITORING_BASELINE_MISSING"
+  | "MONITORING_INVALID_INPUT";
+
 export interface RuleResult {
   ruleId: string;
-  passed: boolean;
+  status: "PASS" | "AT_RISK" | "INVALIDATED";
+  reasonCode: MonitoringReasonCode | null;
   measured: number;
   threshold: number;
-  severity: "INFO" | "WARNING" | "CRITICAL";
   message: string;
 }
 
@@ -18,13 +27,24 @@ export interface RuleResult {
  */
 export interface MonitoringContext {
   strategyId: string;
+  configVersion: string;
   liveFactCount: number;
   snapshotHash: string;
-  configVersion: string;
+  // Live metrics (computed from TradeFacts)
+  liveMaxDrawdownPct: number;
+  liveRollingSharpe: number;
+  currentLosingStreak: number;
+  daysSinceLastTrade: number;
+  // Baselines (from BacktestBaseline)
+  baselineMaxDrawdownPct: number | null;
+  baselineSharpeRatio: number | null;
+  baselineMissing: boolean;
+  // CUSUM (from HealthSnapshots)
+  consecutiveDriftSnapshots: number;
 }
 
 export interface MonitoringEvaluationResult {
   verdict: MonitoringVerdict;
-  reasons: string[];
+  reasons: MonitoringReasonCode[];
   ruleResults: RuleResult[];
 }
