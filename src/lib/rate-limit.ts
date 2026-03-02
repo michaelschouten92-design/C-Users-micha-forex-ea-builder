@@ -578,5 +578,14 @@ export const sseConnectionRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal notification processor
+ * Limits: 5 invocations per minute per IP
+ */
+export const internalNotificationProcessRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

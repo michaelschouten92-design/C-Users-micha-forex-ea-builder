@@ -31,6 +31,10 @@ describe("shouldProtectRoute", () => {
     expect(shouldProtectRoute("/api/internal/trades/webhook-ingest")).toBe(false);
   });
 
+  it("returns false for internal notification process routes", () => {
+    expect(shouldProtectRoute("/api/internal/notifications/process")).toBe(false);
+  });
+
   it("returns false for non-API routes", () => {
     expect(shouldProtectRoute("/app")).toBe(false);
     expect(shouldProtectRoute("/login")).toBe(false);

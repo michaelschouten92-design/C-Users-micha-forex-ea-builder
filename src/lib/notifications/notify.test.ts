@@ -123,3 +123,63 @@ describe("notifyTransition", () => {
     await expect(notifyTransition(mockAlert)).resolves.toBeUndefined();
   });
 });
+
+describe("deliverTransitionAlert", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.NOTIFY_WEBHOOK_URL;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("throws on non-2xx response", async () => {
+    process.env.NOTIFY_WEBHOOK_URL = "https://hooks.example.com/alert";
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+
+    const { deliverTransitionAlert } = await import("./notify");
+    await expect(deliverTransitionAlert(mockAlert)).rejects.toThrow("Webhook returned 503");
+  });
+
+  it("throws on network error", async () => {
+    process.env.NOTIFY_WEBHOOK_URL = "https://hooks.example.com/alert";
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const { deliverTransitionAlert } = await import("./notify");
+    await expect(deliverTransitionAlert(mockAlert)).rejects.toThrow("ECONNREFUSED");
+  });
+
+  it("does not throw when URL is not configured", async () => {
+    const { deliverTransitionAlert } = await import("./notify");
+    await expect(deliverTransitionAlert(mockAlert)).resolves.toBeUndefined();
+  });
+
+  it("sends correct payload on success", async () => {
+    process.env.NOTIFY_WEBHOOK_URL = "https://hooks.example.com/alert";
+    let capturedBody: string | undefined;
+    globalThis.fetch = vi.fn().mockImplementation((_url, opts) => {
+      capturedBody = opts?.body;
+      return Promise.resolve({ ok: true, status: 200 });
+    });
+
+    const { deliverTransitionAlert } = await import("./notify");
+    await deliverTransitionAlert(mockAlert);
+
+    const parsed = JSON.parse(capturedBody!);
+    expect(parsed).toEqual({
+      event: "lifecycle_transition",
+      strategyId: "strat_abc",
+      fromState: "LIVE_MONITORING",
+      toState: "EDGE_AT_RISK",
+      monitoringVerdict: "AT_RISK",
+      reasonCodes: ["DRAWDOWN_BREACH"],
+      tradeSnapshotHash: "snap_hash_123",
+      configVersion: "2.0.0",
+      thresholdsHash: "thresh_hash_456",
+      recordId: "rec_xyz",
+    });
+  });
+});
