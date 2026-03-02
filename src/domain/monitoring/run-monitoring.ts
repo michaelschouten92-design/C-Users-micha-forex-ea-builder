@@ -107,21 +107,12 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       thresholdsHash = loaded.config.thresholdsHash;
       configSource = loaded.source;
 
+      // Config-loader enforces monitoringThresholds for v2+ via ConfigIntegrityError.
+      // This assertion guards against unexpected v1 configs reaching the monitoring path.
       if (!loaded.config.monitoringThresholds) {
-        await failRun(
-          run.id,
-          recordId,
-          strategyId,
-          "Config missing monitoringThresholds — upgrade to v2.0.0+"
+        throw new Error(
+          `Config ${configVersion} missing monitoringThresholds — monitoring requires v2.0.0+`
         );
-        return {
-          runId: run.id,
-          recordId,
-          verdict: "AT_RISK",
-          reasons: ["CONFIG_UNAVAILABLE"],
-          tradeSnapshotHash: null,
-          liveFactCount: 0,
-        };
       }
       monitoringThresholds = loaded.config.monitoringThresholds;
     } catch (err) {

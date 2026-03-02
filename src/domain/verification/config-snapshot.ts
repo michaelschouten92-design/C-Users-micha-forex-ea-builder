@@ -46,6 +46,15 @@ export interface SnapshotVerificationResult {
 }
 
 /**
+ * Returns true if the configVersion is 2.x or later.
+ * Used to enforce structural requirements (e.g., monitoringThresholds must be present).
+ */
+export function isV2OrLater(configVersion: string): boolean {
+  const major = parseInt(configVersion.split(".")[0], 10);
+  return Number.isFinite(major) && major >= 2;
+}
+
+/**
  * Deterministic JSON — keys sorted alphabetically, compact.
  * Equivalent to stableJSON in proof/chain.ts but local to avoid
  * coupling domain code to proof infrastructure.
@@ -120,10 +129,22 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
 /**
  * Verify a snapshot's integrity by recomputing the hash from its thresholds.
  * Returns whether the stored hash matches, plus both values for diagnostics.
+ *
+ * For configVersion >= 2.0.0, monitoringThresholds MUST be present.
+ * A v2+ snapshot without monitoring thresholds is a structural integrity failure.
  */
 export function verifyConfigSnapshot(
   snapshot: VerificationThresholdsSnapshot
 ): SnapshotVerificationResult {
+  // Structural check: v2+ requires monitoringThresholds
+  if (isV2OrLater(snapshot.configVersion) && !snapshot.monitoringThresholds) {
+    return {
+      valid: false,
+      expected: snapshot.thresholdsHash,
+      actual: `STRUCTURAL:monitoringThresholds required for v${snapshot.configVersion}`,
+    };
+  }
+
   const actual = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
   return {
     valid: actual === snapshot.thresholdsHash,

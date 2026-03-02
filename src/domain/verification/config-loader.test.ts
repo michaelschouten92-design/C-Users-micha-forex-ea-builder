@@ -113,6 +113,69 @@ describe("config-loader", () => {
         );
       }
     });
+
+    it("throws ConfigIntegrityError when v2 snapshot is missing monitoringThresholds", async () => {
+      const snapshot = buildConfigSnapshot();
+      // Simulate a v2 snapshot stored without monitoringThresholds
+      const strippedSnapshot = {
+        configVersion: "2.0.0",
+        thresholds: snapshot.thresholds,
+        thresholdsHash: snapshot.thresholdsHash,
+        // monitoringThresholds intentionally omitted
+      };
+      mockFindFirst.mockResolvedValue({
+        id: "clx_1",
+        configVersion: "2.0.0",
+        thresholdsHash: snapshot.thresholdsHash,
+        snapshot: strippedSnapshot,
+        status: "ACTIVE",
+      });
+
+      const { loadActiveConfig, ConfigIntegrityError } = await import("./config-loader");
+      await expect(loadActiveConfig()).rejects.toThrow(ConfigIntegrityError);
+      await expect(loadActiveConfig()).rejects.toThrow(/missing monitoringThresholds/);
+    });
+
+    it("loads v1 snapshot without monitoringThresholds successfully", async () => {
+      const v1Hash = computeThresholdsHash({
+        minTradeCount: 30,
+        readyConfidenceThreshold: 0.75,
+        notDeployableThreshold: 0.45,
+        maxSharpeDegradationPct: 40,
+        extremeSharpeDegradationPct: 80,
+        minOosTradeCount: 20,
+        ruinProbabilityCeiling: 0.15,
+        monteCarloIterations: 10_000,
+      });
+      const v1Snapshot = {
+        configVersion: "1.0.0",
+        thresholds: {
+          minTradeCount: 30,
+          readyConfidenceThreshold: 0.75,
+          notDeployableThreshold: 0.45,
+          maxSharpeDegradationPct: 40,
+          extremeSharpeDegradationPct: 80,
+          minOosTradeCount: 20,
+          ruinProbabilityCeiling: 0.15,
+          monteCarloIterations: 10_000,
+        },
+        thresholdsHash: v1Hash,
+      };
+      mockFindFirst.mockResolvedValue({
+        id: "clx_v1",
+        configVersion: "1.0.0",
+        thresholdsHash: v1Hash,
+        snapshot: v1Snapshot,
+        status: "ACTIVE",
+      });
+
+      const { loadActiveConfig } = await import("./config-loader");
+      const result = await loadActiveConfig();
+
+      expect(result.source).toBe("db");
+      expect(result.config.configVersion).toBe("1.0.0");
+      expect(result.config.monitoringThresholds).toBeUndefined();
+    });
   });
 
   describe("loadActiveConfigWithFallback", () => {

@@ -425,7 +425,10 @@ describe("runMonitoring", () => {
   });
 
   // ── Config missing monitoringThresholds ─────────────────────────
-  it("config without monitoringThresholds: returns AT_RISK", async () => {
+  it("config without monitoringThresholds: throws and marks run FAILED", async () => {
+    // If a v1 config somehow reaches the monitoring path, the assertion
+    // in run-monitoring throws (fail-closed). Config-loader enforces
+    // monitoringThresholds for v2+ via ConfigIntegrityError.
     mockLoadActiveConfigWithFallback.mockResolvedValue({
       config: {
         configVersion: "1.0.0",
@@ -436,10 +439,15 @@ describe("runMonitoring", () => {
     });
 
     const run = await importRunMonitoring();
-    const result = await run(params);
+    await expect(run(params)).rejects.toThrow(/missing monitoringThresholds/);
 
-    expect(result.verdict).toBe("AT_RISK");
-    expect(result.reasons).toEqual(["CONFIG_UNAVAILABLE"]);
+    expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+        }),
+      })
+    );
   });
 
   // ── Snapshot build failure ────────────────────────────────────────

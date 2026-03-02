@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { computeThresholdsHash, buildConfigSnapshot } from "./config-snapshot";
+import { computeThresholdsHash, buildConfigSnapshot, isV2OrLater } from "./config-snapshot";
 import type { VerificationThresholdsSnapshot } from "./config-snapshot";
 
 export type ConfigSource = "db" | "fallback";
@@ -54,6 +54,15 @@ export async function loadActiveConfig(): Promise<LoadedConfig> {
   }
 
   const snapshot = row.snapshot as unknown as VerificationThresholdsSnapshot;
+
+  // Structural check: v2+ configs MUST include monitoringThresholds
+  if (isV2OrLater(snapshot.configVersion) && !snapshot.monitoringThresholds) {
+    throw new ConfigIntegrityError(
+      `VerificationConfig ${row.configVersion} missing monitoringThresholds — v2+ requires monitoring governance`,
+      { expected: "monitoringThresholds present", actual: "monitoringThresholds missing" }
+    );
+  }
+
   const recomputed = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
 
   if (recomputed !== row.thresholdsHash) {
