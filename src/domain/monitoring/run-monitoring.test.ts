@@ -97,6 +97,7 @@ vi.mock("./constants", () => ({
     MAX_LOSING_STREAK: 10,
     MAX_INACTIVITY_DAYS: 14,
     CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
+    RECOVERY_RUNS_REQUIRED: 3,
   },
 }));
 
@@ -127,6 +128,7 @@ const MONITORING_THRESHOLDS = {
   maxLosingStreak: 10,
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
+  recoveryRunsRequired: 3,
 };
 
 // ── Defaults ──────────────────────────────────────────────────────────
@@ -138,7 +140,7 @@ function setupDefaults() {
 
   mockLoadActiveConfigWithFallback.mockResolvedValue({
     config: {
-      configVersion: "2.0.0",
+      configVersion: "2.1.0",
       thresholdsHash: "th_hash",
       monitoringThresholds: MONITORING_THRESHOLDS,
     },
@@ -221,7 +223,7 @@ describe("runMonitoring", () => {
         monitoringVerdict: "HEALTHY",
         tradeSnapshotHash: "live_snap_hash",
         liveFactCount: 2,
-        configVersion: "2.0.0",
+        configVersion: "2.1.0",
         thresholdsHash: "th_hash",
         liveMaxDrawdownPct: 5.0,
         liveRollingSharpe: 1.2,
@@ -264,7 +266,7 @@ describe("runMonitoring", () => {
     expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
       expect.objectContaining({
         strategyId: "strat_1",
-        configVersion: "2.0.0",
+        configVersion: "2.1.0",
         liveFactCount: 2,
         snapshotHash: "live_snap_hash",
         liveMaxDrawdownPct: 5.0,

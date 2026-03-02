@@ -29,6 +29,7 @@ export interface MonitoringThresholds {
   maxLosingStreak: number;
   maxInactivityDays: number;
   cusumDriftConsecutiveSnapshots: number;
+  recoveryRunsRequired: number;
 }
 
 /** Immutable snapshot of a config version — anchors every verification run. */
@@ -116,6 +117,7 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     maxLosingStreak: MONITORING.MAX_LOSING_STREAK,
     maxInactivityDays: MONITORING.MAX_INACTIVITY_DAYS,
     cusumDriftConsecutiveSnapshots: MONITORING.CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS,
+    recoveryRunsRequired: MONITORING.RECOVERY_RUNS_REQUIRED,
   };
 
   return {

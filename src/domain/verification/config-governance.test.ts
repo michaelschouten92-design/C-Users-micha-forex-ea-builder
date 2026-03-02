@@ -29,7 +29,7 @@ describe("VerificationConfig governance", () => {
 
     // Snapshot has the expected shape
     expect(snapshot).toEqual({
-      configVersion: "2.0.0",
+      configVersion: "2.1.0",
       thresholds: expect.objectContaining({
         minTradeCount: 30,
         readyConfidenceThreshold: 0.75,
@@ -46,6 +46,7 @@ describe("VerificationConfig governance", () => {
         maxLosingStreak: 10,
         maxInactivityDays: 14,
         cusumDriftConsecutiveSnapshots: 3,
+        recoveryRunsRequired: 3,
       }),
       thresholdsHash: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
@@ -84,7 +85,7 @@ describe("VerificationConfig governance", () => {
     });
 
     expect(activeConfigs).toHaveLength(1);
-    expect(activeConfigs[0].configVersion).toBe("2.0.0");
+    expect(activeConfigs[0].configVersion).toBe("2.1.0");
     expect(activeConfigs[0].status).toBe("ACTIVE");
   });
 
@@ -101,7 +102,7 @@ describe("VerificationConfig governance", () => {
 
     const { prisma } = await import("@/lib/prisma");
     const config = await prisma.verificationConfig.findUnique({
-      where: { configVersion: "2.0.0" },
+      where: { configVersion: "2.1.0" },
     });
 
     expect(config).toBeDefined();
@@ -126,7 +127,7 @@ describe("VerificationConfig governance", () => {
     await expect(
       prisma.verificationConfig.create({
         data: {
-          configVersion: "2.0.0",
+          configVersion: "2.1.0",
           thresholdsHash: "new_hash",
           snapshot: {},
           status: "ACTIVE",

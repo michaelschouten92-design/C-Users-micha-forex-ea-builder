@@ -23,4 +23,6 @@ export const MONITORING = {
   MAX_INACTIVITY_DAYS: 14,
   /** Consecutive HealthSnapshots with driftDetected=true */
   CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
+  /** Consecutive HEALTHY runs required to recover from EDGE_AT_RISK */
+  RECOVERY_RUNS_REQUIRED: 3,
 } as const;

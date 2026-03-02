@@ -9,12 +9,13 @@ const baseThresholds: MonitoringThresholds = {
   maxLosingStreak: 10,
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
+  recoveryRunsRequired: 3,
 };
 
 /** All-pass context: everything within limits */
 const healthyCtx: MonitoringContext = {
   strategyId: "strat_1",
-  configVersion: "2.0.0",
+  configVersion: "2.1.0",
   liveFactCount: 50,
   snapshotHash: "abc123",
   liveMaxDrawdownPct: 5,

@@ -118,14 +118,14 @@ describe("config-loader", () => {
       const snapshot = buildConfigSnapshot();
       // Simulate a v2 snapshot stored without monitoringThresholds
       const strippedSnapshot = {
-        configVersion: "2.0.0",
+        configVersion: "2.1.0",
         thresholds: snapshot.thresholds,
         thresholdsHash: snapshot.thresholdsHash,
         // monitoringThresholds intentionally omitted
       };
       mockFindFirst.mockResolvedValue({
         id: "clx_1",
-        configVersion: "2.0.0",
+        configVersion: "2.1.0",
         thresholdsHash: snapshot.thresholdsHash,
         snapshot: strippedSnapshot,
         status: "ACTIVE",
