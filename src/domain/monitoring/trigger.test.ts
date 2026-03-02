@@ -2,10 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockRunMonitoring = vi.fn();
 const mockIsMonitoringCooldownExpired = vi.fn();
+const mockLiveEAInstanceFindFirst = vi.fn();
 
 vi.mock("./run-monitoring", () => ({
   runMonitoring: (...args: unknown[]) => mockRunMonitoring(...args),
   isMonitoringCooldownExpired: (...args: unknown[]) => mockIsMonitoringCooldownExpired(...args),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    liveEAInstance: {
+      findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+    },
+  },
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -17,6 +26,7 @@ vi.mock("@/lib/logger", () => ({
 describe("triggerMonitoringAfterIngest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "NONE" });
   });
 
   async function importTrigger() {
@@ -70,5 +80,28 @@ describe("triggerMonitoringAfterIngest", () => {
 
     const trigger = await importTrigger();
     await expect(trigger("strat_1")).rejects.toThrow("DB crash");
+  });
+
+  it("skips monitoring when operator hold is HALTED", async () => {
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "HALTED" });
+
+    const trigger = await importTrigger();
+    const result = await trigger("strat_1");
+
+    expect(result).toEqual({ triggered: false, reason: "OPERATOR_HALTED" });
+    expect(mockRunMonitoring).not.toHaveBeenCalled();
+    expect(mockIsMonitoringCooldownExpired).not.toHaveBeenCalled();
+  });
+
+  it("proceeds when operator hold is NONE", async () => {
+    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "NONE" });
+    mockIsMonitoringCooldownExpired.mockResolvedValue(true);
+    mockRunMonitoring.mockResolvedValue(fakeResult);
+
+    const trigger = await importTrigger();
+    const result = await trigger("strat_1");
+
+    expect(result).toEqual({ triggered: true, reason: "OK", result: fakeResult });
+    expect(mockRunMonitoring).toHaveBeenCalled();
   });
 });

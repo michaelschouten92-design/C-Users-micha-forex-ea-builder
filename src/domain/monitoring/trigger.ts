@@ -6,6 +6,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 import { runMonitoring, isMonitoringCooldownExpired } from "./run-monitoring";
 import type { RunMonitoringResult } from "./run-monitoring";
 
@@ -29,6 +30,16 @@ export interface TriggerMonitoringResult {
 export async function triggerMonitoringAfterIngest(
   strategyId: string
 ): Promise<TriggerMonitoringResult> {
+  // Check operator hold — skip monitoring entirely when HALTED
+  const instance = await prisma.liveEAInstance.findFirst({
+    where: { strategyVersion: { strategyIdentity: { strategyId } } },
+    select: { operatorHold: true },
+  });
+  if (instance?.operatorHold === "HALTED") {
+    log.info({ strategyId }, "Monitoring skipped: operator hold HALTED");
+    return { triggered: false, reason: "OPERATOR_HALTED" };
+  }
+
   // Check cooldown
   const cooldownExpired = await isMonitoringCooldownExpired(strategyId);
   if (!cooldownExpired) {
