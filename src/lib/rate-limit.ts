@@ -587,5 +587,23 @@ export const internalNotificationProcessRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal incident processor
+ * Limits: 5 invocations per minute per IP
+ */
+export const internalIncidentProcessRateLimiter = createRateLimiter({
+  limit: 5,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
+ * Rate limiter for internal integrity check
+ * Limits: 3 invocations per 5 minutes per IP
+ */
+export const internalIntegrityCheckRateLimiter = createRateLimiter({
+  limit: 3,
+  windowMs: 5 * 60 * 1000, // 5 minutes
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };

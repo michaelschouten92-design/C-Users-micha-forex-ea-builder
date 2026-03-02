@@ -35,6 +35,14 @@ describe("shouldProtectRoute", () => {
     expect(shouldProtectRoute("/api/internal/notifications/process")).toBe(false);
   });
 
+  it("returns false for internal incident process routes", () => {
+    expect(shouldProtectRoute("/api/internal/incidents/process")).toBe(false);
+  });
+
+  it("returns false for internal integrity check routes", () => {
+    expect(shouldProtectRoute("/api/internal/integrity/run")).toBe(false);
+  });
+
   it("returns false for non-API routes", () => {
     expect(shouldProtectRoute("/app")).toBe(false);
     expect(shouldProtectRoute("/login")).toBe(false);

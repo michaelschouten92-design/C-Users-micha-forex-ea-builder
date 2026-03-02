@@ -123,6 +123,8 @@ export const CSRF_EXCLUDED_ROUTES = [
   "/api/internal/trades/", // import-csv + webhook-ingest use API key / HMAC auth, not browser cookies
   "/api/internal/monitoring/", // Uses x-internal-api-key header auth, not session cookies
   "/api/internal/notifications/", // Uses x-internal-api-key header auth, not session cookies
+  "/api/internal/incidents/", // Uses x-internal-api-key header auth, not session cookies
+  "/api/internal/integrity/", // Uses x-internal-api-key header auth, not session cookies
 ];
 
 /**
