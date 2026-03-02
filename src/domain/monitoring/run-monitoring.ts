@@ -319,12 +319,13 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
         timestamp,
       });
 
-      // Mutate lifecycle state
+      // Mutate lifecycle state (source: "monitoring" enforces additional prohibitions)
       await performLifecycleTransition(
         instance.instanceId,
         transitionDecision.from as StrategyLifecycleState,
         transitionDecision.to as StrategyLifecycleState,
-        transitionDecision.reason
+        transitionDecision.reason,
+        "monitoring"
       );
 
       transition = {

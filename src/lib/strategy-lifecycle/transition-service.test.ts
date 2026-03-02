@@ -85,8 +85,83 @@ describe("performLifecycleTransition", () => {
     await performLifecycleTransition("inst_5", "BACKTESTED", "VERIFIED", "verification_passed");
 
     expect(mockInfo).toHaveBeenCalledWith(
-      { instanceId: "inst_5", from: "BACKTESTED", to: "VERIFIED", reason: "verification_passed" },
+      expect.objectContaining({
+        instanceId: "inst_5",
+        from: "BACKTESTED",
+        to: "VERIFIED",
+        reason: "verification_passed",
+      }),
       "Lifecycle state transition"
     );
+  });
+
+  // ── Monitoring source prohibition ─────────────────────────────────
+  it('rejects LIVE_MONITORING → INVALIDATED when source is "monitoring"', async () => {
+    await expect(
+      performLifecycleTransition(
+        "inst_6",
+        "LIVE_MONITORING",
+        "INVALIDATED",
+        "monitoring_verdict",
+        "monitoring"
+      )
+    ).rejects.toThrow("Monitoring cannot transition LIVE_MONITORING → INVALIDATED");
+
+    // No DB write
+    expect(mockInstanceUpdate).not.toHaveBeenCalled();
+  });
+
+  it('allows LIVE_MONITORING → INVALIDATED when source is "operator"', async () => {
+    await performLifecycleTransition(
+      "inst_7",
+      "LIVE_MONITORING",
+      "INVALIDATED",
+      "manual_retirement",
+      "operator"
+    );
+
+    expect(mockInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: "inst_7" },
+      data: { lifecycleState: "INVALIDATED" },
+    });
+  });
+
+  it("allows LIVE_MONITORING → INVALIDATED when source is omitted (backward compat)", async () => {
+    await performLifecycleTransition("inst_8", "LIVE_MONITORING", "INVALIDATED", "legacy_call");
+
+    expect(mockInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: "inst_8" },
+      data: { lifecycleState: "INVALIDATED" },
+    });
+  });
+
+  it('allows EDGE_AT_RISK → INVALIDATED when source is "monitoring"', async () => {
+    await performLifecycleTransition(
+      "inst_9",
+      "EDGE_AT_RISK",
+      "INVALIDATED",
+      "monitoring_invalidation",
+      "monitoring"
+    );
+
+    expect(mockInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: "inst_9" },
+      data: { lifecycleState: "INVALIDATED" },
+    });
+  });
+
+  it('allows LIVE_MONITORING → EDGE_AT_RISK when source is "monitoring"', async () => {
+    await performLifecycleTransition(
+      "inst_10",
+      "LIVE_MONITORING",
+      "EDGE_AT_RISK",
+      "monitoring_at_risk",
+      "monitoring"
+    );
+
+    expect(mockInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: "inst_10" },
+      data: { lifecycleState: "EDGE_AT_RISK" },
+    });
   });
 });
