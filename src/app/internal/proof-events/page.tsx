@@ -59,6 +59,12 @@ const PAYLOAD_WHITELIST = new Set([
   "daysSinceLastTrade",
   "baselineMissing",
   "consecutiveDriftSnapshots",
+  // Lifecycle transition events
+  "from",
+  "to",
+  "triggeringReasons",
+  "consecutiveHealthyRuns",
+  "transitionDecision",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */

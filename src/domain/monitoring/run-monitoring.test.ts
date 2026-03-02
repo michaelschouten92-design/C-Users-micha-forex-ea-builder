@@ -4,13 +4,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockMonitoringRunCreate = vi.fn();
 const mockMonitoringRunUpdate = vi.fn();
 const mockMonitoringRunFindFirst = vi.fn();
+const mockMonitoringRunFindMany = vi.fn();
 const mockTradeFactFindMany = vi.fn();
 const mockBacktestBaselineFindFirst = vi.fn();
 const mockHealthSnapshotFindMany = vi.fn();
+const mockLiveEAInstanceFindFirst = vi.fn();
 const mockAppendProofEvent = vi.fn();
 const mockLoadActiveConfigWithFallback = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
+const mockPerformLifecycleTransition = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
 vi.mock("@prisma/client", () => {
@@ -36,6 +39,7 @@ vi.mock("@/lib/prisma", () => ({
       create: (...args: unknown[]) => mockMonitoringRunCreate(...args),
       update: (...args: unknown[]) => mockMonitoringRunUpdate(...args),
       findFirst: (...args: unknown[]) => mockMonitoringRunFindFirst(...args),
+      findMany: (...args: unknown[]) => mockMonitoringRunFindMany(...args),
     },
     tradeFact: {
       findMany: (...args: unknown[]) => mockTradeFactFindMany(...args),
@@ -45,6 +49,9 @@ vi.mock("@/lib/prisma", () => ({
     },
     healthSnapshot: {
       findMany: (...args: unknown[]) => mockHealthSnapshotFindMany(...args),
+    },
+    liveEAInstance: {
+      findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
     },
   },
 }));
@@ -87,6 +94,10 @@ vi.mock("@/domain/trade-ingest", () => ({
 
 vi.mock("./evaluate-monitoring", () => ({
   evaluateMonitoring: (...args: unknown[]) => mockEvaluateMonitoring(...args),
+}));
+
+vi.mock("@/lib/strategy-lifecycle/transition-service", () => ({
+  performLifecycleTransition: (...args: unknown[]) => mockPerformLifecycleTransition(...args),
 }));
 
 vi.mock("./constants", () => ({
@@ -176,6 +187,12 @@ function setupDefaults() {
   });
 
   mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
+
+  // Default: no LiveEAInstance → no transition attempted
+  mockLiveEAInstanceFindFirst.mockResolvedValue(null);
+  // Default: no previous runs → consecutive healthy = 0
+  mockMonitoringRunFindMany.mockResolvedValue([]);
+  mockPerformLifecycleTransition.mockResolvedValue(undefined);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -214,7 +231,7 @@ describe("runMonitoring", () => {
       })
     );
 
-    // 3. Proof event written with live metrics
+    // 3. Proof event written with live metrics + transitionDecision
     expect(mockAppendProofEvent).toHaveBeenCalledWith(
       "strat_1",
       "MONITORING_RUN_COMPLETED",
@@ -231,6 +248,8 @@ describe("runMonitoring", () => {
         daysSinceLastTrade: 1,
         baselineMissing: false,
         consecutiveDriftSnapshots: 0,
+        transitionDecision: { type: "NO_TRANSITION", reason: "no_instance" },
+        consecutiveHealthyRuns: 0,
       })
     );
 
@@ -553,6 +572,255 @@ describe("runMonitoring", () => {
 
     const run = await importRunMonitoring();
     await expect(run(params)).rejects.toThrow("Connection refused");
+  });
+
+  // ── Lifecycle transitions ──────────────────────────────────────────
+
+  const FAKE_INSTANCE_ID = "inst_1";
+
+  function setupInstanceAndVerdict(
+    lifecycleState: string,
+    verdict: "HEALTHY" | "AT_RISK" | "INVALIDATED",
+    reasons: string[] = [],
+    previousRuns: { verdict: string }[] = []
+  ) {
+    mockLiveEAInstanceFindFirst.mockResolvedValue({
+      id: FAKE_INSTANCE_ID,
+      lifecycleState,
+    });
+    mockEvaluateMonitoring.mockReturnValue({
+      verdict,
+      reasons,
+      ruleResults: [],
+    });
+    mockMonitoringRunFindMany.mockResolvedValue(previousRuns);
+  }
+
+  it("LIVE_MONITORING + AT_RISK → STRATEGY_EDGE_AT_RISK proof event, then performLifecycleTransition", async () => {
+    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    // Transition proof event written
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "STRATEGY_EDGE_AT_RISK",
+      expect.objectContaining({
+        eventType: "STRATEGY_EDGE_AT_RISK",
+        recordId: FAKE_UUID,
+        from: "LIVE_MONITORING",
+        to: "EDGE_AT_RISK",
+        triggeringReasons: ["MONITORING_DRAWDOWN_BREACH"],
+      })
+    );
+
+    // Lifecycle mutation after proof event
+    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
+      FAKE_INSTANCE_ID,
+      "LIVE_MONITORING",
+      "EDGE_AT_RISK",
+      expect.stringContaining("MONITORING_DRAWDOWN_BREACH")
+    );
+
+    // Result includes transition
+    expect(result.transition).toEqual({
+      from: "LIVE_MONITORING",
+      to: "EDGE_AT_RISK",
+      proofEventType: "STRATEGY_EDGE_AT_RISK",
+    });
+  });
+
+  it("EDGE_AT_RISK + INVALIDATED → STRATEGY_INVALIDATED proof event, then transition", async () => {
+    setupInstanceAndVerdict("EDGE_AT_RISK", "INVALIDATED", ["MONITORING_CUSUM_DRIFT"]);
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "STRATEGY_INVALIDATED",
+      expect.objectContaining({
+        from: "EDGE_AT_RISK",
+        to: "INVALIDATED",
+      })
+    );
+
+    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
+      FAKE_INSTANCE_ID,
+      "EDGE_AT_RISK",
+      "INVALIDATED",
+      expect.stringContaining("INVALIDATED")
+    );
+
+    expect(result.transition).toEqual({
+      from: "EDGE_AT_RISK",
+      to: "INVALIDATED",
+      proofEventType: "STRATEGY_INVALIDATED",
+    });
+  });
+
+  it("EDGE_AT_RISK + HEALTHY with >= N consecutive → STRATEGY_RECOVERED, then transition", async () => {
+    // 2 previous HEALTHY runs + current = 3 (>= recoveryRunsRequired)
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "HEALTHY",
+      [],
+      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+    );
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "STRATEGY_RECOVERED",
+      expect.objectContaining({
+        from: "EDGE_AT_RISK",
+        to: "LIVE_MONITORING",
+        consecutiveHealthyRuns: 3,
+      })
+    );
+
+    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
+      FAKE_INSTANCE_ID,
+      "EDGE_AT_RISK",
+      "LIVE_MONITORING",
+      expect.stringContaining("3 consecutive healthy runs")
+    );
+
+    expect(result.transition).toEqual({
+      from: "EDGE_AT_RISK",
+      to: "LIVE_MONITORING",
+      proofEventType: "STRATEGY_RECOVERED",
+    });
+  });
+
+  it("EDGE_AT_RISK + HEALTHY with < N consecutive → no transition event", async () => {
+    // 1 previous HEALTHY run + current = 2 (< 3 recoveryRunsRequired)
+    setupInstanceAndVerdict("EDGE_AT_RISK", "HEALTHY", [], [{ verdict: "HEALTHY" }]);
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    // Only MONITORING_RUN_COMPLETED proof event, no transition event
+    expect(mockAppendProofEvent).toHaveBeenCalledTimes(1);
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "MONITORING_RUN_COMPLETED",
+      expect.objectContaining({
+        transitionDecision: expect.objectContaining({
+          type: "NO_TRANSITION",
+          reason: "recovering",
+        }),
+      })
+    );
+
+    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(result.transition).toBeUndefined();
+  });
+
+  it("LIVE_MONITORING + INVALIDATED → no transition (must pass through EDGE_AT_RISK)", async () => {
+    setupInstanceAndVerdict("LIVE_MONITORING", "INVALIDATED", ["MONITORING_CUSUM_DRIFT"]);
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    // Only MONITORING_RUN_COMPLETED proof event
+    expect(mockAppendProofEvent).toHaveBeenCalledTimes(1);
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "MONITORING_RUN_COMPLETED",
+      expect.objectContaining({
+        transitionDecision: expect.objectContaining({
+          type: "NO_TRANSITION",
+          reason: "must_pass_through_edge_at_risk",
+        }),
+      })
+    );
+
+    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(result.transition).toBeUndefined();
+  });
+
+  it("no instance found → no transition attempted", async () => {
+    mockLiveEAInstanceFindFirst.mockResolvedValue(null);
+    mockEvaluateMonitoring.mockReturnValue({
+      verdict: "AT_RISK",
+      reasons: ["MONITORING_DRAWDOWN_BREACH"],
+      ruleResults: [],
+    });
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(result.transition).toBeUndefined();
+  });
+
+  it("transition proof event failure → error propagates, run FAILED, no lifecycle mutation", async () => {
+    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+
+    // First call (MONITORING_RUN_COMPLETED) succeeds, second call (STRATEGY_EDGE_AT_RISK) fails
+    mockAppendProofEvent
+      .mockResolvedValueOnce({ sequence: 1, eventHash: "eh_1" })
+      .mockRejectedValueOnce(new Error("Proof write failed"));
+
+    const run = await importRunMonitoring();
+    await expect(run(params)).rejects.toThrow("Proof write failed");
+
+    // Lifecycle was NOT mutated
+    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+
+    // Run marked FAILED
+    expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: "Proof write failed",
+        }),
+      })
+    );
+  });
+
+  it("+1 counting: consecutive healthy runs reset to 0 when current verdict is not HEALTHY", async () => {
+    // 3 previous HEALTHY runs, but current is AT_RISK → consecutive = 0
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+    );
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "MONITORING_RUN_COMPLETED",
+      expect.objectContaining({
+        consecutiveHealthyRuns: 0,
+      })
+    );
+  });
+
+  it("MONITORING_RUN_COMPLETED proof includes transitionDecision for TRANSITION", async () => {
+    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "MONITORING_RUN_COMPLETED",
+      expect.objectContaining({
+        transitionDecision: expect.objectContaining({
+          type: "TRANSITION",
+          from: "LIVE_MONITORING",
+          to: "EDGE_AT_RISK",
+        }),
+      })
+    );
   });
 });
 

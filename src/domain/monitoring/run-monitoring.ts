@@ -9,9 +9,8 @@
  *   1d. Load CUSUM drift from HealthSnapshots
  *   2.  Evaluate monitoring rules (5 deterministic rules)
  *   3.  Write MONITORING_RUN_COMPLETED proof event (fail-closed)
+ *   3b. Lifecycle transition: decide → proof event → mutate (fail-closed)
  *   4.  Persist MonitoringRun row with outcome
- *
- * Does NOT mutate lifecycle state — that comes in a future step.
  */
 
 import { Prisma } from "@prisma/client";
@@ -35,6 +34,10 @@ import {
 } from "./live-metrics";
 import { MonitoringConfigError } from "./types";
 import type { MonitoringVerdict } from "./types";
+import { decideMonitoringTransition } from "./decide-monitoring-transition";
+import type { TransitionDecision } from "./decide-monitoring-transition";
+import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 
 const log = logger.child({ service: "monitoring-run" });
 
@@ -50,6 +53,7 @@ export interface RunMonitoringResult {
   reasons: string[];
   tradeSnapshotHash: string | null;
   liveFactCount: number;
+  transition?: { from: string; to: string; proofEventType: string };
 }
 
 /**
@@ -244,7 +248,26 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       monitoringThresholds
     );
 
-    // Phase 3: Write proof event (fail-closed)
+    // Phase 2b: Compute transition decision (before proof event, so it's included)
+    const instance = await resolveInstanceForStrategy(strategyId);
+    let transitionDecision: TransitionDecision = { type: "NO_TRANSITION", reason: "no_instance" };
+    let consecutiveHealthyRuns = 0;
+
+    if (instance) {
+      const dbConsecutive = await countConsecutiveHealthyRuns(strategyId);
+      // +1 counting: current run not yet persisted, add 1 if current is HEALTHY
+      consecutiveHealthyRuns = evalResult.verdict === "HEALTHY" ? dbConsecutive + 1 : 0;
+
+      transitionDecision = decideMonitoringTransition({
+        currentLifecycleState: instance.lifecycleState,
+        monitoringVerdict: evalResult.verdict,
+        reasons: evalResult.reasons,
+        consecutiveHealthyRuns,
+        recoveryRunsRequired: monitoringThresholds.recoveryRunsRequired,
+      });
+    }
+
+    // Phase 3: Write MONITORING_RUN_COMPLETED proof event (fail-closed)
     const timestamp = new Date().toISOString();
     await appendProofEvent(strategyId, "MONITORING_RUN_COMPLETED", {
       eventType: "MONITORING_RUN_COMPLETED",
@@ -265,8 +288,51 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       daysSinceLastTrade,
       baselineMissing,
       consecutiveDriftSnapshots,
+      transitionDecision: {
+        type: transitionDecision.type,
+        ...(transitionDecision.type === "TRANSITION"
+          ? { from: transitionDecision.from, to: transitionDecision.to }
+          : {}),
+        reason: transitionDecision.reason,
+      },
+      consecutiveHealthyRuns,
       timestamp,
     });
+
+    // Phase 3b: Lifecycle transition — proof event → mutation (fail-closed)
+    let transition: { from: string; to: string; proofEventType: string } | undefined;
+
+    if (transitionDecision.type === "TRANSITION" && instance) {
+      // Write transition proof event FIRST — if this fails, no lifecycle mutation
+      await appendProofEvent(strategyId, transitionDecision.proofEventType, {
+        eventType: transitionDecision.proofEventType,
+        recordId,
+        strategyId,
+        from: transitionDecision.from,
+        to: transitionDecision.to,
+        triggeringReasons: evalResult.reasons,
+        consecutiveHealthyRuns,
+        tradeSnapshotHash: snapshot.snapshotHash,
+        liveFactCount: snapshot.factCount,
+        configVersion,
+        thresholdsHash,
+        timestamp,
+      });
+
+      // Mutate lifecycle state
+      await performLifecycleTransition(
+        instance.instanceId,
+        transitionDecision.from as StrategyLifecycleState,
+        transitionDecision.to as StrategyLifecycleState,
+        transitionDecision.reason
+      );
+
+      transition = {
+        from: transitionDecision.from,
+        to: transitionDecision.to,
+        proofEventType: transitionDecision.proofEventType,
+      };
+    }
 
     // Phase 4: Mark run as COMPLETED
     await prisma.monitoringRun.update({
@@ -291,6 +357,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       reasons: evalResult.reasons,
       tradeSnapshotHash: snapshot.snapshotHash,
       liveFactCount: snapshot.factCount,
+      transition,
     };
   } catch (err) {
     // Any uncaught error — mark run as FAILED
@@ -312,6 +379,49 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
 
     throw err;
   }
+}
+
+/**
+ * Resolve the LiveEAInstance for a strategy.
+ * Returns instanceId + current lifecycleState, or null if no instance exists.
+ */
+async function resolveInstanceForStrategy(
+  strategyId: string
+): Promise<{ instanceId: string; lifecycleState: string } | null> {
+  const instance = await prisma.liveEAInstance.findFirst({
+    where: {
+      strategyVersion: {
+        strategyIdentity: { strategyId },
+      },
+    },
+    select: { id: true, lifecycleState: true },
+  });
+  if (!instance) return null;
+  return { instanceId: instance.id, lifecycleState: instance.lifecycleState };
+}
+
+/**
+ * Count consecutive HEALTHY monitoring runs (most recent first).
+ * Only counts already-persisted COMPLETED runs — the current run is NOT yet persisted.
+ * Bounded to 20 rows for efficiency.
+ */
+async function countConsecutiveHealthyRuns(strategyId: string): Promise<number> {
+  const recentRuns = await prisma.monitoringRun.findMany({
+    where: {
+      strategyId,
+      status: "COMPLETED",
+    },
+    orderBy: { completedAt: "desc" },
+    take: 20,
+    select: { verdict: true },
+  });
+
+  let count = 0;
+  for (const run of recentRuns) {
+    if (run.verdict === "HEALTHY") count++;
+    else break;
+  }
+  return count;
 }
 
 /**
