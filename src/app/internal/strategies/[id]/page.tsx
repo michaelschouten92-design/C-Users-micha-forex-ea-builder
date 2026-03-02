@@ -45,6 +45,20 @@ interface OverrideRow {
   recordId: string;
 }
 
+interface TimelineItem {
+  type: string;
+  ts: string;
+  title: string;
+  severity: "INFO" | "WARN" | "CRITICAL";
+  ref: {
+    incidentId?: string;
+    overrideId?: string;
+    runId?: string;
+    recordId?: string;
+  };
+  details: Record<string, unknown>;
+}
+
 interface OverviewData {
   strategyId: string;
   instance: InstanceData | null;
@@ -371,12 +385,116 @@ function OverridesCard({ overrides }: { overrides: OverrideRow[] }) {
   );
 }
 
+const SEVERITY_ICON: Record<string, string> = {
+  INFO: "\u25CB", // ○
+  WARN: "\u25C6", // ◆
+  CRITICAL: "\u25CF", // ●
+};
+
+const SEVERITY_COLOR: Record<string, string> = {
+  INFO: "text-[#94A3B8]",
+  WARN: "text-amber-400",
+  CRITICAL: "text-red-400",
+};
+
+const TYPE_LABEL_COLOR: Record<string, string> = {
+  MONITORING_RUN: "bg-[rgba(79,70,229,0.2)] text-[#A78BFA]",
+  INCIDENT: "bg-[rgba(239,68,68,0.15)] text-red-400",
+  OVERRIDE: "bg-[rgba(234,179,8,0.15)] text-amber-400",
+  HOLD: "bg-[rgba(239,68,68,0.2)] text-red-300",
+  LIFECYCLE: "bg-[rgba(34,197,94,0.15)] text-emerald-400",
+};
+
+function timelineLink(item: TimelineItem): string | null {
+  if (item.ref.incidentId) return `/internal/incidents/${item.ref.incidentId}`;
+  if (item.ref.overrideId) return `/internal/overrides/${item.ref.overrideId}`;
+  return null;
+}
+
+function TimelineCard({ timeline, loading }: { timeline: TimelineItem[]; loading: boolean }) {
+  return (
+    <div className={cardClass}>
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">
+        Timeline {!loading && `(${timeline.length})`}
+      </h3>
+      {loading ? (
+        <p className="text-xs text-[#64748B]">Loading timeline...</p>
+      ) : timeline.length > 0 ? (
+        <div className="space-y-0">
+          {timeline.map((item, i) => {
+            const link = timelineLink(item);
+            return (
+              <div
+                key={i}
+                className="flex items-start gap-3 py-2 border-b border-[rgba(79,70,229,0.08)] last:border-b-0"
+              >
+                {/* Severity icon + vertical line */}
+                <div className="flex flex-col items-center pt-0.5">
+                  <span className={`text-sm ${SEVERITY_COLOR[item.severity]}`}>
+                    {SEVERITY_ICON[item.severity]}
+                  </span>
+                  {i < timeline.length - 1 && (
+                    <div className="w-px flex-1 bg-[rgba(79,70,229,0.15)] mt-1" />
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-mono uppercase ${TYPE_LABEL_COLOR[item.type] ?? "bg-[rgba(79,70,229,0.2)] text-[#A78BFA]"}`}
+                    >
+                      {item.type.replace("_", " ")}
+                    </span>
+                    {link ? (
+                      <Link
+                        href={link}
+                        className="text-xs text-white hover:text-[#22D3EE] underline transition-colors"
+                      >
+                        {item.title}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-white">{item.title}</span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-[#64748B] font-mono mt-0.5">
+                    {formatTime(item.ts)}
+                  </div>
+                  {/* Inline details */}
+                  {Object.keys(item.details).length > 0 && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-0 mt-1">
+                      {Object.entries(item.details).map(([key, val]) =>
+                        val != null ? (
+                          <span key={key} className="text-[10px]">
+                            <span className="text-[#7C8DB0]">{key}: </span>
+                            <span className="text-[#CBD5E1] font-mono">
+                              {Array.isArray(val) ? val.join(", ") : String(val)}
+                            </span>
+                          </span>
+                        ) : null
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-[#64748B]">No timeline events found.</p>
+      )}
+    </div>
+  );
+}
+
 export default function StrategyCommandCenterPage() {
   const { id: strategyId } = useParams<{ id: string }>();
   const [apiKey, setApiKey] = useState("");
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
 
   async function fetchOverview() {
     setError(null);
@@ -396,10 +514,32 @@ export default function StrategyCommandCenterPage() {
         return;
       }
       setData(await res.json());
+      // Fetch timeline in parallel after overview succeeds
+      fetchTimeline();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchTimeline() {
+    setTimelineLoading(true);
+    try {
+      const res = await fetch(
+        `/api/internal/strategies/${encodeURIComponent(strategyId)}/timeline?limit=50`,
+        {
+          headers: { "x-internal-api-key": apiKey },
+        }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setTimeline(json.timeline ?? []);
+      }
+    } catch {
+      // Timeline is non-critical — silently fail
+    } finally {
+      setTimelineLoading(false);
     }
   }
 
@@ -475,6 +615,7 @@ export default function StrategyCommandCenterPage() {
             <MonitoringRunsCard runs={data.latestMonitoringRuns} />
             <IncidentsCard incidents={data.incidents} />
             <OverridesCard overrides={data.overrides} />
+            <TimelineCard timeline={timeline} loading={timelineLoading} />
           </div>
         )}
       </main>

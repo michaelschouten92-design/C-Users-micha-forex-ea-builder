@@ -650,5 +650,14 @@ export const internalOverrideDrilldownRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal strategy timeline endpoint
+ * Limits: 60 requests per minute per IP (read-only feed)
+ */
+export const internalStrategyTimelineRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };
