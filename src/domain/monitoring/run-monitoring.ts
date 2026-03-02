@@ -41,6 +41,7 @@ import { decideMonitoringTransition } from "./decide-monitoring-transition";
 import type { TransitionDecision } from "./decide-monitoring-transition";
 import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
+import { buildIncidentData } from "@/domain/incidents/open-incident";
 const log = logger.child({ service: "monitoring-run" });
 
 export interface RunMonitoringParams {
@@ -400,6 +401,102 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
               },
             },
           });
+
+          // g. Incident management — atomic with transition
+          if (transitionDecision.to === "EDGE_AT_RISK") {
+            // Open incident
+            const incidentData = buildIncidentData({
+              strategyId,
+              severity: "AT_RISK",
+              triggerRecordId: recordId,
+              reasonCodes: evalResult.reasons,
+              snapshotHash: snapshot.snapshotHash,
+              configVersion,
+              thresholdsHash,
+              ackDeadlineMinutes: monitoringThresholds.ackDeadlineMinutes,
+              autoInvalidateMinutes: monitoringThresholds.autoInvalidateMinutes,
+              now: new Date(),
+            });
+            try {
+              const incident = await tx.incident.create({ data: incidentData });
+
+              await appendProofEventInTx(tx, strategyId, "INCIDENT_OPENED", {
+                eventType: "INCIDENT_OPENED",
+                recordId,
+                strategyId,
+                incidentId: incident.id,
+                severity: incidentData.severity,
+                reasonCodes: evalResult.reasons,
+                ackDeadlineAt: incidentData.ackDeadlineAt.toISOString(),
+                invalidateDeadlineAt: incidentData.invalidateDeadlineAt?.toISOString() ?? null,
+                configVersion,
+                thresholdsHash,
+                timestamp,
+              });
+
+              await tx.alertOutbox.create({
+                data: {
+                  eventType: "incident_opened",
+                  dedupeKey: `incident_opened:${incident.id}`,
+                  payload: {
+                    strategyId,
+                    incidentId: incident.id,
+                    severity: incidentData.severity,
+                    reasonCodes: evalResult.reasons,
+                    ackDeadlineAt: incidentData.ackDeadlineAt.toISOString(),
+                  },
+                },
+              });
+            } catch (incidentErr) {
+              if (
+                incidentErr instanceof Prisma.PrismaClientKnownRequestError &&
+                incidentErr.code === "P2002"
+              ) {
+                log.warn({ strategyId }, "Incident already exists for strategy (P2002)");
+              } else {
+                throw incidentErr;
+              }
+            }
+          } else if (
+            transitionDecision.to === "LIVE_MONITORING" ||
+            transitionDecision.to === "INVALIDATED"
+          ) {
+            // Close incident on recovery or invalidation
+            const openIncident = await tx.incident.findFirst({
+              where: { strategyId, status: { not: "CLOSED" } },
+            });
+            if (openIncident) {
+              const closeReason =
+                transitionDecision.to === "LIVE_MONITORING" ? "RECOVERED" : "INVALIDATED";
+              await tx.incident.update({
+                where: { id: openIncident.id },
+                data: { status: "CLOSED", closedAt: new Date(), closeReason },
+              });
+
+              await appendProofEventInTx(tx, strategyId, "INCIDENT_CLOSED", {
+                eventType: "INCIDENT_CLOSED",
+                recordId,
+                strategyId,
+                incidentId: openIncident.id,
+                closeReason,
+                configVersion,
+                thresholdsHash,
+                timestamp,
+              });
+
+              await tx.alertOutbox.create({
+                data: {
+                  eventType: "incident_closed",
+                  dedupeKey: `incident_closed:${openIncident.id}`,
+                  payload: {
+                    strategyId,
+                    incidentId: openIncident.id,
+                    closeReason,
+                  },
+                },
+              });
+            }
+          }
         }
 
         return { consecutiveHealthyRuns, transition };

@@ -16,6 +16,9 @@ const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
 const mockPerformLifecycleTransitionInTx = vi.fn();
 const mockAlertOutboxCreate = vi.fn();
+const mockIncidentCreate = vi.fn();
+const mockIncidentFindFirst = vi.fn();
+const mockIncidentUpdate = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
 vi.mock("@prisma/client", () => {
@@ -205,6 +208,9 @@ function setupDefaults() {
   mockMonitoringRunFindMany.mockResolvedValue([]);
   mockPerformLifecycleTransitionInTx.mockResolvedValue(undefined);
   mockAlertOutboxCreate.mockResolvedValue({ id: "alert_1" });
+  mockIncidentCreate.mockResolvedValue({ id: "incident_1" });
+  mockIncidentFindFirst.mockResolvedValue(null);
+  mockIncidentUpdate.mockResolvedValue({});
 
   // $transaction executes callback with a mock tx that reuses the same mock handles
   mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
@@ -218,6 +224,11 @@ function setupDefaults() {
       },
       alertOutbox: {
         create: (...args: unknown[]) => mockAlertOutboxCreate(...args),
+      },
+      incident: {
+        create: (...args: unknown[]) => mockIncidentCreate(...args),
+        findFirst: (...args: unknown[]) => mockIncidentFindFirst(...args),
+        update: (...args: unknown[]) => mockIncidentUpdate(...args),
       },
     };
     return fn(tx);
@@ -951,7 +962,8 @@ describe("runMonitoring", () => {
     const run = await importRunMonitoring();
     await run(params);
 
-    expect(mockAlertOutboxCreate).toHaveBeenCalledTimes(1);
+    // lifecycle_transition + incident_opened = 2 alerts
+    expect(mockAlertOutboxCreate).toHaveBeenCalledTimes(2);
     expect(mockAlertOutboxCreate).toHaveBeenCalledWith({
       data: {
         eventType: "lifecycle_transition",
@@ -1000,6 +1012,150 @@ describe("runMonitoring", () => {
         }),
       })
     );
+  });
+
+  // ── Incident management ──────────────────────────────────────────────
+
+  it("EDGE_AT_RISK transition creates incident + proof event + alert", async () => {
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
+    // First alertOutbox call is for lifecycle_transition, let it succeed
+    mockAlertOutboxCreate.mockResolvedValue({ id: "alert_1" });
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    // Incident created
+    expect(mockIncidentCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        strategyId: "strat_1",
+        status: "OPEN",
+        severity: "AT_RISK",
+        triggerRecordId: FAKE_UUID,
+        reasonCodes: ["MONITORING_DRAWDOWN_BREACH"],
+      }),
+    });
+
+    // INCIDENT_OPENED proof event
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "INCIDENT_OPENED",
+      expect.objectContaining({
+        eventType: "INCIDENT_OPENED",
+        incidentId: "incident_1",
+        severity: "AT_RISK",
+      })
+    );
+
+    // incident_opened alert enqueued
+    expect(mockAlertOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: "incident_opened",
+        dedupeKey: "incident_opened:incident_1",
+      }),
+    });
+  });
+
+  it("recovery transition closes incident + proof event + alert", async () => {
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "HEALTHY",
+      [],
+      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+    );
+    mockIncidentFindFirst.mockResolvedValue({ id: "incident_existing", strategyId: "strat_1" });
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    // Incident closed with RECOVERED
+    expect(mockIncidentUpdate).toHaveBeenCalledWith({
+      where: { id: "incident_existing" },
+      data: expect.objectContaining({
+        status: "CLOSED",
+        closeReason: "RECOVERED",
+      }),
+    });
+
+    // INCIDENT_CLOSED proof event
+    expect(mockAppendProofEvent).toHaveBeenCalledWith(
+      "strat_1",
+      "INCIDENT_CLOSED",
+      expect.objectContaining({
+        eventType: "INCIDENT_CLOSED",
+        incidentId: "incident_existing",
+        closeReason: "RECOVERED",
+      })
+    );
+
+    // incident_closed alert enqueued
+    expect(mockAlertOutboxCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: "incident_closed",
+        dedupeKey: "incident_closed:incident_existing",
+      }),
+    });
+  });
+
+  it("invalidation transition closes incident with INVALIDATED reason", async () => {
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "INVALIDATED",
+      ["MONITORING_CUSUM_DRIFT"],
+      [{ verdict: "INVALIDATED" }]
+    );
+    mockIncidentFindFirst.mockResolvedValue({ id: "incident_existing", strategyId: "strat_1" });
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockIncidentUpdate).toHaveBeenCalledWith({
+      where: { id: "incident_existing" },
+      data: expect.objectContaining({
+        status: "CLOSED",
+        closeReason: "INVALIDATED",
+      }),
+    });
+  });
+
+  it("no incident created when no transition occurs", async () => {
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockIncidentCreate).not.toHaveBeenCalled();
+    expect(mockIncidentFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("P2002 on incident create logs warning but does not roll back", async () => {
+    const { Prisma } = await import("@prisma/client");
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
+    mockIncidentCreate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+        code: "P2002",
+        clientVersion: "5.0.0",
+        meta: { target: ["strategyId"] },
+      })
+    );
+
+    const run = await importRunMonitoring();
+    // Should not throw — P2002 is caught gracefully
+    const result = await run(params);
+
+    // Transition still recorded
+    expect(result.transition).toEqual({
+      from: "LIVE_MONITORING",
+      to: "EDGE_AT_RISK",
+      proofEventType: "STRATEGY_EDGE_AT_RISK",
+    });
   });
 });
 
