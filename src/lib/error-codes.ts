@@ -38,6 +38,9 @@ export const ErrorCode = {
   PARSE_FAILED: "PARSE_FAILED",
   ANALYSIS_EXISTS: "ANALYSIS_EXISTS",
 
+  // Operator hold
+  STRATEGY_HALTED: "STRATEGY_HALTED",
+
   // Service availability
   AI_UNAVAILABLE: "AI_UNAVAILABLE",
 
