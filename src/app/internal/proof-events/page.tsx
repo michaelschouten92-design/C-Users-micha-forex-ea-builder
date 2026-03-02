@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ProofEvent {
   createdAt: string;
@@ -329,6 +329,113 @@ function OperatorActionPanel({
   );
 }
 
+function AlertOutboxPanel({ internalApiKey }: { internalApiKey: string }) {
+  const [counts, setCounts] = useState<{ pending: number; failed: number; sending: number } | null>(
+    null
+  );
+  const [processResult, setProcessResult] = useState<{
+    processed: number;
+    sent: number;
+    failed: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function fetchCounts() {
+    try {
+      const res = await fetch("/api/internal/notifications/process", {
+        headers: { "x-internal-api-key": internalApiKey },
+      });
+      if (!res.ok) {
+        setError(`Failed to fetch counts: ${res.status}`);
+        return;
+      }
+      setCounts(await res.json());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    }
+  }
+
+  async function handleProcess() {
+    setProcessResult(null);
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/internal/notifications/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": internalApiKey,
+        },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        setError(json.error || `Error ${res.status}`);
+        return;
+      }
+      const result = await res.json();
+      setProcessResult(result);
+      await fetchCounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Fetch counts on mount
+
+  useEffect(() => {
+    fetchCounts();
+  }, []);
+
+  return (
+    <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-3">
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Alert Outbox</h3>
+
+      {counts && (
+        <div className="flex gap-4 text-xs">
+          <div>
+            <span className="text-[#7C8DB0]">Pending: </span>
+            <span className="text-white font-mono">{counts.pending}</span>
+          </div>
+          <div>
+            <span className="text-[#7C8DB0]">Failed: </span>
+            <span className="text-white font-mono">{counts.failed}</span>
+          </div>
+          <div>
+            <span className="text-[#7C8DB0]">Sending: </span>
+            <span className="text-white font-mono">{counts.sending}</span>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleProcess}
+        className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+      >
+        {loading ? "Processing\u2026" : "Process Now"}
+      </button>
+
+      {processResult && (
+        <div className="p-3 rounded-lg text-xs bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E]">
+          Processed {processResult.processed}: {processResult.sent} sent, {processResult.failed}{" "}
+          failed
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 rounded-lg text-xs bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProofEventsForm() {
   const [strategyId, setStrategyId] = useState("");
   const [internalApiKey, setInternalApiKey] = useState("");
@@ -603,6 +710,9 @@ function ProofEventsForm() {
           onActionComplete={handleActionComplete}
         />
       )}
+
+      {/* Alert outbox panel — visible when API key is set */}
+      {internalApiKey.trim() && <AlertOutboxPanel internalApiKey={internalApiKey} />}
     </div>
   );
 }
