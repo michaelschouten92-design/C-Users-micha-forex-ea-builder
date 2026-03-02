@@ -1132,3 +1132,29 @@ model NotificationOutbox {
   @@index([status, nextRetryAt])
   @@index([userId, createdAt])
 }
+
+// ============================================
+// MONITORING RUN — Live strategy monitoring
+// ============================================
+
+model MonitoringRun {
+  id                 String   @id @default(cuid())
+  strategyId         String                    // StrategyIdentity.strategyId
+  status             String   @default("PENDING") // PENDING | RUNNING | COMPLETED | FAILED
+  source             String                    // "live_ingest" | "manual"
+  recordId           String   @unique          // UUID — stored as sessionId in ProofEventLog
+  verdict            String?                   // "HEALTHY" | "AT_RISK" | "INVALIDATED"
+  reasons            Json?                     // string[] — reason codes from rules
+  tradeSnapshotHash  String?                   // SHA-256 of live trade snapshot
+  liveFactCount      Int?                      // Number of LIVE TradeFacts at evaluation time
+  configVersion      String?                   // Monitoring config version (e.g. "1.0.0")
+  thresholdsHash     String?                   // SHA-256 of monitoring thresholds
+  configSource       String?                   // "db" | "fallback"
+  errorMessage       String?                   // Populated on FAILED status
+  requestedAt        DateTime @default(now())
+  startedAt          DateTime?
+  completedAt        DateTime?
+
+  @@index([strategyId, requestedAt])
+  @@index([status])
+}
