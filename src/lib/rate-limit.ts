@@ -614,5 +614,14 @@ export const internalIntegrityCheckRateLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000, // 5 minutes
 });
 
+/**
+ * Rate limiter for internal ops overview dashboard
+ * Limits: 30 requests per minute per IP (read-only, higher allowance)
+ */
+export const internalOpsOverviewRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };
