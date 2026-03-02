@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
             return false;
           }
 
-          // Write proof event for auto-invalidation
+          // Write proof events FIRST — fail-closed before any state mutation
           await appendProofEventInTx(tx, incident.strategyId, "INCIDENT_AUTO_INVALIDATED", {
             eventType: "INCIDENT_AUTO_INVALIDATED",
             recordId: incident.id,
@@ -205,17 +205,6 @@ export async function POST(request: NextRequest) {
             timestamp: now.toISOString(),
           });
 
-          // Perform lifecycle transition EDGE_AT_RISK → INVALIDATED
-          await performLifecycleTransitionInTx(
-            tx,
-            instance.id,
-            "EDGE_AT_RISK",
-            "INVALIDATED",
-            "auto_invalidated: deadline exceeded",
-            "system"
-          );
-
-          // Write proof event for strategy invalidation
           await appendProofEventInTx(tx, incident.strategyId, "STRATEGY_INVALIDATED", {
             eventType: "STRATEGY_INVALIDATED",
             recordId: incident.id,
@@ -224,6 +213,16 @@ export async function POST(request: NextRequest) {
             source: "system",
             timestamp: now.toISOString(),
           });
+
+          // Perform lifecycle transition EDGE_AT_RISK → INVALIDATED (after proof)
+          await performLifecycleTransitionInTx(
+            tx,
+            instance.id,
+            "EDGE_AT_RISK",
+            "INVALIDATED",
+            "auto_invalidated: deadline exceeded",
+            "system"
+          );
 
           // Close the incident
           await tx.incident.update({

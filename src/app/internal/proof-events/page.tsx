@@ -74,8 +74,11 @@ const PAYLOAD_WHITELIST = new Set([
   "severity",
   "escalationCount",
   "closeReason",
+  "reason",
   "ackDeadlineAt",
   "invalidateDeadlineAt",
+  "previousAckDeadlineAt",
+  "newAckDeadlineAt",
   // Integrity check events
   "chainsChecked",
   "chainsValid",

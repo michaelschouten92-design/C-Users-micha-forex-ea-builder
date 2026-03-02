@@ -310,6 +310,12 @@ describe("POST /api/internal/incidents/process", () => {
       "system"
     );
 
+    // Proof-first: both proof events must precede lifecycle mutation
+    const proofCallOrders = mockAppendProofEventInTx.mock.invocationCallOrder;
+    const lifecycleCallOrders = (performLifecycleTransitionInTx as ReturnType<typeof vi.fn>).mock
+      .invocationCallOrder;
+    expect(Math.max(...proofCallOrders)).toBeLessThan(Math.min(...lifecycleCallOrders));
+
     // Incident closed
     expect(mockIncidentUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
