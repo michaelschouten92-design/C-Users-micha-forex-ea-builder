@@ -65,6 +65,10 @@ const PAYLOAD_WHITELIST = new Set([
   "triggeringReasons",
   "consecutiveHealthyRuns",
   "transitionDecision",
+  // Operator action events
+  "action",
+  "note",
+  "lifecycleState",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */

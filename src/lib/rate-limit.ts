@@ -476,6 +476,15 @@ export const internalWebhookIngestRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal operator action endpoint
+ * Limits: 10 requests per minute per IP
+ */
+export const internalOperatorActionRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */
