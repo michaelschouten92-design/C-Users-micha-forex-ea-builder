@@ -11,6 +11,7 @@
  * Does NOT mutate lifecycle state — that comes in a future step.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { buildTradeSnapshot } from "@/domain/trade-ingest";
@@ -50,15 +51,32 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
   const { strategyId, source } = params;
   const recordId = crypto.randomUUID();
 
-  // Create PENDING run row
-  const run = await prisma.monitoringRun.create({
-    data: {
-      strategyId,
-      source,
-      recordId,
-      status: "PENDING",
-    },
-  });
+  // Create PENDING run row — partial unique index enforces at most one
+  // active (PENDING/RUNNING) run per strategy. P2002 = already running.
+  let run;
+  try {
+    run = await prisma.monitoringRun.create({
+      data: {
+        strategyId,
+        source,
+        recordId,
+        status: "PENDING",
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      log.info({ strategyId }, "Monitoring run skipped: active run already exists");
+      return {
+        runId: "",
+        recordId,
+        verdict: "HEALTHY",
+        reasons: ["CONCURRENT_RUN_EXISTS"],
+        tradeSnapshotHash: null,
+        liveFactCount: 0,
+      };
+    }
+    throw err;
+  }
 
   // Mark as RUNNING
   await prisma.monitoringRun.update({

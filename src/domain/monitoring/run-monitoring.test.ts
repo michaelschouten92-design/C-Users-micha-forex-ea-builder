@@ -11,6 +11,23 @@ const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
+vi.mock("@prisma/client", () => {
+  class PrismaClientKnownRequestError extends Error {
+    code: string;
+    meta?: Record<string, unknown>;
+    constructor(
+      message: string,
+      opts: { code: string; clientVersion?: string; meta?: Record<string, unknown> }
+    ) {
+      super(message);
+      this.name = "PrismaClientKnownRequestError";
+      this.code = opts.code;
+      this.meta = opts.meta;
+    }
+  }
+  return { Prisma: { PrismaClientKnownRequestError } };
+});
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     monitoringRun: {
@@ -329,6 +346,47 @@ describe("runMonitoring", () => {
       where: { strategyId: "strat_1", source: "LIVE" },
       orderBy: [{ executedAt: "asc" }, { id: "asc" }],
     });
+  });
+
+  // ── Concurrent run protection (P2002) ─────────────────────────────
+  it("returns no-op when a PENDING/RUNNING run already exists (P2002)", async () => {
+    const { Prisma } = await import("@prisma/client");
+    mockMonitoringRunCreate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError(
+        "Unique constraint failed on the fields: (`strategyId`)",
+        { code: "P2002", clientVersion: "5.0.0", meta: { target: ["strategyId"] } }
+      )
+    );
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    expect(result).toEqual({
+      runId: "",
+      recordId: FAKE_UUID,
+      verdict: "HEALTHY",
+      reasons: ["CONCURRENT_RUN_EXISTS"],
+      tradeSnapshotHash: null,
+      liveFactCount: 0,
+    });
+
+    // No further DB calls or proof events
+    expect(mockMonitoringRunUpdate).not.toHaveBeenCalled();
+    expect(mockAppendProofEvent).not.toHaveBeenCalled();
+    expect(mockTradeFactFindMany).not.toHaveBeenCalled();
+  });
+
+  it("re-throws non-P2002 Prisma errors from create", async () => {
+    const { Prisma } = await import("@prisma/client");
+    mockMonitoringRunCreate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Connection refused", {
+        code: "P1001",
+        clientVersion: "5.0.0",
+      })
+    );
+
+    const run = await importRunMonitoring();
+    await expect(run(params)).rejects.toThrow("Connection refused");
   });
 });
 
