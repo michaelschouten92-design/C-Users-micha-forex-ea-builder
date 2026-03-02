@@ -29,7 +29,7 @@ describe("VerificationConfig governance", () => {
 
     // Snapshot has the expected shape
     expect(snapshot).toEqual({
-      configVersion: "1.0.0",
+      configVersion: "2.0.0",
       thresholds: expect.objectContaining({
         minTradeCount: 30,
         readyConfidenceThreshold: 0.75,
@@ -39,6 +39,13 @@ describe("VerificationConfig governance", () => {
         minOosTradeCount: 20,
         ruinProbabilityCeiling: 0.15,
         monteCarloIterations: 10_000,
+      }),
+      monitoringThresholds: expect.objectContaining({
+        drawdownBreachMultiplier: 1.5,
+        sharpeMinRatio: 0.5,
+        maxLosingStreak: 10,
+        maxInactivityDays: 14,
+        cusumDriftConsecutiveSnapshots: 3,
       }),
       thresholdsHash: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
@@ -52,7 +59,7 @@ describe("VerificationConfig governance", () => {
 
   it("thresholdsHash is recomputable from snapshot thresholds", () => {
     const snapshot = buildConfigSnapshot();
-    const recomputed = computeThresholdsHash(snapshot.thresholds);
+    const recomputed = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
     expect(recomputed).toBe(snapshot.thresholdsHash);
   });
 
@@ -77,7 +84,7 @@ describe("VerificationConfig governance", () => {
     });
 
     expect(activeConfigs).toHaveLength(1);
-    expect(activeConfigs[0].configVersion).toBe("1.0.0");
+    expect(activeConfigs[0].configVersion).toBe("2.0.0");
     expect(activeConfigs[0].status).toBe("ACTIVE");
   });
 
@@ -94,14 +101,14 @@ describe("VerificationConfig governance", () => {
 
     const { prisma } = await import("@/lib/prisma");
     const config = await prisma.verificationConfig.findUnique({
-      where: { configVersion: "1.0.0" },
+      where: { configVersion: "2.0.0" },
     });
 
     expect(config).toBeDefined();
 
     // Recompute hash from the stored snapshot's thresholds
     const stored = config!.snapshot as unknown as typeof snapshot;
-    const recomputed = computeThresholdsHash(stored.thresholds);
+    const recomputed = computeThresholdsHash(stored.thresholds, stored.monitoringThresholds);
     expect(recomputed).toBe(config!.thresholdsHash);
   });
 

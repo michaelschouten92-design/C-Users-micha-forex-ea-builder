@@ -5,6 +5,8 @@ const mockMonitoringRunCreate = vi.fn();
 const mockMonitoringRunUpdate = vi.fn();
 const mockMonitoringRunFindFirst = vi.fn();
 const mockTradeFactFindMany = vi.fn();
+const mockBacktestBaselineFindFirst = vi.fn();
+const mockHealthSnapshotFindMany = vi.fn();
 const mockAppendProofEvent = vi.fn();
 const mockLoadActiveConfigWithFallback = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
@@ -37,6 +39,12 @@ vi.mock("@/lib/prisma", () => ({
     },
     tradeFact: {
       findMany: (...args: unknown[]) => mockTradeFactFindMany(...args),
+    },
+    backtestBaseline: {
+      findFirst: (...args: unknown[]) => mockBacktestBaselineFindFirst(...args),
+    },
+    healthSnapshot: {
+      findMany: (...args: unknown[]) => mockHealthSnapshotFindMany(...args),
     },
   },
 }));
@@ -82,7 +90,21 @@ vi.mock("./evaluate-monitoring", () => ({
 }));
 
 vi.mock("./constants", () => ({
-  MONITORING: { CONFIG_VERSION: "1.0.0", COOLDOWN_SECONDS: 300 },
+  MONITORING: {
+    COOLDOWN_SECONDS: 300,
+    DRAWDOWN_BREACH_MULTIPLIER: 1.5,
+    SHARPE_MIN_RATIO: 0.5,
+    MAX_LOSING_STREAK: 10,
+    MAX_INACTIVITY_DAYS: 14,
+    CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
+  },
+}));
+
+vi.mock("./live-metrics", () => ({
+  computeLiveMaxDrawdownPct: () => 5.0,
+  computeSharpe: () => 1.2,
+  computeCurrentLosingStreak: () => 2,
+  computeDaysSinceLastTrade: () => 1,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -99,6 +121,14 @@ vi.mock("@/lib/logger", () => ({
 const FAKE_UUID = "22222222-2222-2222-2222-222222222222";
 const FAKE_RUN_ID = "cuid_run_1";
 
+const MONITORING_THRESHOLDS = {
+  drawdownBreachMultiplier: 1.5,
+  sharpeMinRatio: 0.5,
+  maxLosingStreak: 10,
+  maxInactivityDays: 14,
+  cusumDriftConsecutiveSnapshots: 3,
+};
+
 // ── Defaults ──────────────────────────────────────────────────────────
 function setupDefaults() {
   vi.stubGlobal("crypto", { randomUUID: () => FAKE_UUID });
@@ -108,22 +138,34 @@ function setupDefaults() {
 
   mockLoadActiveConfigWithFallback.mockResolvedValue({
     config: {
-      configVersion: "1.0.0",
+      configVersion: "2.0.0",
       thresholdsHash: "th_hash",
+      monitoringThresholds: MONITORING_THRESHOLDS,
     },
     source: "active",
   });
 
+  const now = new Date();
   mockTradeFactFindMany.mockResolvedValue([
-    { id: "f1", profit: 100 },
-    { id: "f2", profit: -50 },
+    { id: "f1", profit: 100, executedAt: new Date(now.getTime() - 86400000), source: "LIVE" },
+    { id: "f2", profit: -50, executedAt: now, source: "LIVE" },
   ]);
 
   mockBuildTradeSnapshot.mockReturnValue({
     snapshotHash: "live_snap_hash",
+    tradePnls: [100, -50],
+    initialBalance: 10000,
     factCount: 2,
-    range: { from: "2025-01-01", to: "2025-06-01" },
+    range: { earliest: "2025-01-01T00:00:00.000Z", latest: "2025-06-01T00:00:00.000Z" },
+    dataSources: ["LIVE"],
   });
+
+  mockBacktestBaselineFindFirst.mockResolvedValue({
+    maxDrawdownPct: 8,
+    sharpeRatio: 1.5,
+  });
+
+  mockHealthSnapshotFindMany.mockResolvedValue([]);
 
   mockEvaluateMonitoring.mockReturnValue({
     verdict: "HEALTHY",
@@ -170,7 +212,7 @@ describe("runMonitoring", () => {
       })
     );
 
-    // 3. Proof event written
+    // 3. Proof event written with live metrics
     expect(mockAppendProofEvent).toHaveBeenCalledWith(
       "strat_1",
       "MONITORING_RUN_COMPLETED",
@@ -179,8 +221,14 @@ describe("runMonitoring", () => {
         monitoringVerdict: "HEALTHY",
         tradeSnapshotHash: "live_snap_hash",
         liveFactCount: 2,
-        configVersion: "1.0.0",
+        configVersion: "2.0.0",
         thresholdsHash: "th_hash",
+        liveMaxDrawdownPct: 5.0,
+        liveRollingSharpe: 1.2,
+        currentLosingStreak: 2,
+        daysSinceLastTrade: 1,
+        baselineMissing: false,
+        consecutiveDriftSnapshots: 0,
       })
     );
 
@@ -206,6 +254,84 @@ describe("runMonitoring", () => {
       tradeSnapshotHash: "live_snap_hash",
       liveFactCount: 2,
     });
+  });
+
+  // ── evaluateMonitoring called with expanded context + thresholds ──
+  it("passes expanded MonitoringContext and MonitoringThresholds to evaluateMonitoring", async () => {
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        strategyId: "strat_1",
+        configVersion: "2.0.0",
+        liveFactCount: 2,
+        snapshotHash: "live_snap_hash",
+        liveMaxDrawdownPct: 5.0,
+        liveRollingSharpe: 1.2,
+        currentLosingStreak: 2,
+        daysSinceLastTrade: 1,
+        baselineMaxDrawdownPct: 8,
+        baselineSharpeRatio: 1.5,
+        baselineMissing: false,
+        consecutiveDriftSnapshots: 0,
+      }),
+      MONITORING_THRESHOLDS
+    );
+  });
+
+  // ── Baseline missing ──────────────────────────────────────────────
+  it("passes baselineMissing=true when no BacktestBaseline found", async () => {
+    mockBacktestBaselineFindFirst.mockResolvedValue(null);
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baselineMaxDrawdownPct: null,
+        baselineSharpeRatio: null,
+        baselineMissing: true,
+      }),
+      MONITORING_THRESHOLDS
+    );
+  });
+
+  // ── CUSUM drift counting ──────────────────────────────────────────
+  it("counts consecutive drift snapshots correctly", async () => {
+    mockHealthSnapshotFindMany.mockResolvedValue([
+      { driftDetected: true },
+      { driftDetected: true },
+      { driftDetected: false },
+    ]);
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        consecutiveDriftSnapshots: 2,
+      }),
+      MONITORING_THRESHOLDS
+    );
+  });
+
+  it("counts all drift snapshots when all report drift", async () => {
+    mockHealthSnapshotFindMany.mockResolvedValue([
+      { driftDetected: true },
+      { driftDetected: true },
+      { driftDetected: true },
+    ]);
+
+    const run = await importRunMonitoring();
+    await run(params);
+
+    expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        consecutiveDriftSnapshots: 3,
+      }),
+      MONITORING_THRESHOLDS
+    );
   });
 
   // ── Proof event fail-closed ───────────────────────────────────────
@@ -290,6 +416,24 @@ describe("runMonitoring", () => {
         actual: "def",
       })
     );
+
+    const run = await importRunMonitoring();
+    const result = await run(params);
+
+    expect(result.verdict).toBe("AT_RISK");
+    expect(result.reasons).toEqual(["CONFIG_UNAVAILABLE"]);
+  });
+
+  // ── Config missing monitoringThresholds ─────────────────────────
+  it("config without monitoringThresholds: returns AT_RISK", async () => {
+    mockLoadActiveConfigWithFallback.mockResolvedValue({
+      config: {
+        configVersion: "1.0.0",
+        thresholdsHash: "old_hash",
+        // No monitoringThresholds
+      },
+      source: "db",
+    });
 
     const run = await importRunMonitoring();
     const result = await run(params);

@@ -2,11 +2,14 @@
  * Monitoring run orchestrator — executes a single monitoring evaluation.
  *
  * Phases:
- *   0. Load config (reuse verification config-loader)
- *   1. Build LIVE trade snapshot (scoped to source=LIVE)
- *   2. Evaluate monitoring rules (currently stub)
- *   3. Write MONITORING_RUN_COMPLETED proof event (fail-closed)
- *   4. Persist MonitoringRun row with outcome
+ *   0.  Load config (reuse verification config-loader)
+ *   1.  Build LIVE trade snapshot (scoped to source=LIVE)
+ *   1b. Compute live metrics from trade PnLs
+ *   1c. Load baselines from BacktestBaseline
+ *   1d. Load CUSUM drift from HealthSnapshots
+ *   2.  Evaluate monitoring rules (5 deterministic rules)
+ *   3.  Write MONITORING_RUN_COMPLETED proof event (fail-closed)
+ *   4.  Persist MonitoringRun row with outcome
  *
  * Does NOT mutate lifecycle state — that comes in a future step.
  */
@@ -20,9 +23,16 @@ import {
   NoActiveConfigError,
   ConfigIntegrityError,
 } from "@/domain/verification/config-loader";
+import type { MonitoringThresholds } from "@/domain/verification/config-snapshot";
 import { appendProofEvent } from "@/lib/proof/events";
 import { evaluateMonitoring } from "./evaluate-monitoring";
 import { MONITORING } from "./constants";
+import {
+  computeLiveMaxDrawdownPct,
+  computeSharpe,
+  computeCurrentLosingStreak,
+  computeDaysSinceLastTrade,
+} from "./live-metrics";
 import type { MonitoringVerdict } from "./types";
 
 const log = logger.child({ service: "monitoring-run" });
@@ -89,12 +99,31 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     let configVersion: string;
     let thresholdsHash: string;
     let configSource: string;
+    let monitoringThresholds: MonitoringThresholds;
 
     try {
       const loaded = await loadActiveConfigWithFallback();
       configVersion = loaded.config.configVersion;
       thresholdsHash = loaded.config.thresholdsHash;
       configSource = loaded.source;
+
+      if (!loaded.config.monitoringThresholds) {
+        await failRun(
+          run.id,
+          recordId,
+          strategyId,
+          "Config missing monitoringThresholds — upgrade to v2.0.0+"
+        );
+        return {
+          runId: run.id,
+          recordId,
+          verdict: "AT_RISK",
+          reasons: ["CONFIG_UNAVAILABLE"],
+          tradeSnapshotHash: null,
+          liveFactCount: 0,
+        };
+      }
+      monitoringThresholds = loaded.config.monitoringThresholds;
     } catch (err) {
       if (err instanceof NoActiveConfigError || err instanceof ConfigIntegrityError) {
         // Config unavailable — fail the run, still write proof if possible
@@ -140,13 +169,73 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     const LIVE_SNAPSHOT_INITIAL_BALANCE = 10000;
     const snapshot = buildTradeSnapshot(liveFacts, LIVE_SNAPSHOT_INITIAL_BALANCE);
 
-    // Phase 2: Evaluate rules
-    const evalResult = evaluateMonitoring({
-      strategyId,
-      liveFactCount: snapshot.factCount,
-      snapshotHash: snapshot.snapshotHash,
-      configVersion,
+    // Phase 1b: Compute live metrics
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recentPnls = liveFacts
+      .filter((f) => f.executedAt >= thirtyDaysAgo)
+      .sort((a, b) => a.executedAt.getTime() - b.executedAt.getTime())
+      .map((f) => f.profit);
+
+    const liveMaxDrawdownPct = computeLiveMaxDrawdownPct(
+      snapshot.tradePnls,
+      LIVE_SNAPSHOT_INITIAL_BALANCE
+    );
+    const liveRollingSharpe = computeSharpe(recentPnls);
+    const currentLosingStreak = computeCurrentLosingStreak(snapshot.tradePnls);
+    const daysSinceLastTrade = computeDaysSinceLastTrade(
+      new Date(snapshot.range.latest),
+      new Date()
+    );
+
+    // Phase 1c: Load baselines
+    const baseline = await prisma.backtestBaseline.findFirst({
+      where: {
+        strategyVersion: {
+          strategyIdentity: { strategyId },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { maxDrawdownPct: true, sharpeRatio: true },
     });
+    const baselineMissing = !baseline;
+
+    // Phase 1d: Load CUSUM drift from HealthSnapshots
+    const driftSnapshots = await prisma.healthSnapshot.findMany({
+      where: {
+        instance: {
+          strategyVersion: {
+            strategyIdentity: { strategyId },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: monitoringThresholds.cusumDriftConsecutiveSnapshots,
+      select: { driftDetected: true },
+    });
+    let consecutiveDriftSnapshots = 0;
+    for (const snap of driftSnapshots) {
+      if (snap.driftDetected) consecutiveDriftSnapshots++;
+      else break;
+    }
+
+    // Phase 2: Evaluate rules
+    const evalResult = evaluateMonitoring(
+      {
+        strategyId,
+        configVersion,
+        liveFactCount: snapshot.factCount,
+        snapshotHash: snapshot.snapshotHash,
+        liveMaxDrawdownPct,
+        liveRollingSharpe,
+        currentLosingStreak,
+        daysSinceLastTrade,
+        baselineMaxDrawdownPct: baseline?.maxDrawdownPct ?? null,
+        baselineSharpeRatio: baseline?.sharpeRatio ?? null,
+        baselineMissing,
+        consecutiveDriftSnapshots,
+      },
+      monitoringThresholds
+    );
 
     // Phase 3: Write proof event (fail-closed)
     const timestamp = new Date().toISOString();
@@ -163,6 +252,12 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       configVersion,
       thresholdsHash,
       configSource,
+      liveMaxDrawdownPct,
+      liveRollingSharpe,
+      currentLosingStreak,
+      daysSinceLastTrade,
+      baselineMissing,
+      consecutiveDriftSnapshots,
       timestamp,
     });
 

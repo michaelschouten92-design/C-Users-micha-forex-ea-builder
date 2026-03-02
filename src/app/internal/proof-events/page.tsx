@@ -53,6 +53,12 @@ const PAYLOAD_WHITELIST = new Set([
   "reasons",
   "ruleResults",
   "liveFactCount",
+  "liveMaxDrawdownPct",
+  "liveRollingSharpe",
+  "currentLosingStreak",
+  "daysSinceLastTrade",
+  "baselineMissing",
+  "consecutiveDriftSnapshots",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */
