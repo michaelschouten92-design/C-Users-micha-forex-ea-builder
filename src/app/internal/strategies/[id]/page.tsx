@@ -59,6 +59,37 @@ interface TimelineItem {
   details: Record<string, unknown>;
 }
 
+interface TrendsData {
+  strategyId: string;
+  window: number;
+  monitoring: {
+    totalRuns: number;
+    healthyCount: number;
+    atRiskCount: number;
+    invalidatedCount: number;
+    failedCount: number;
+    mostCommonReasons: { reasonCode: string; count: number }[];
+    lastRuns: { completedAt: string | null; verdict: string | null; reasonCodes: string[] }[];
+  };
+  incidents: {
+    openedInWindow: number;
+    escalatedInWindow: number;
+    autoInvalidatedInWindow: number;
+    lastIncident: {
+      id: string;
+      status: string;
+      openedAt: string;
+      closedAt: string | null;
+      closeReason: string | null;
+    } | null;
+  };
+  overrides: {
+    requestedInWindow: number;
+    appliedInWindow: number;
+    expiredInWindow: number;
+  };
+}
+
 interface OverviewData {
   strategyId: string;
   instance: InstanceData | null;
@@ -487,6 +518,156 @@ function TimelineCard({ timeline, loading }: { timeline: TimelineItem[]; loading
   );
 }
 
+function CountStat({ label, count, color }: { label: string; count: number; color?: string }) {
+  return (
+    <div>
+      <span className="text-[#7C8DB0] text-xs">{label}: </span>
+      <span className={`font-mono text-xs font-bold ${color ?? "text-white"}`}>{count}</span>
+    </div>
+  );
+}
+
+function HealthTrendsCard({ trends, loading }: { trends: TrendsData | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className={cardClass}>
+        <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Health Trends</h3>
+        <p className="text-xs text-[#64748B]">Loading trends...</p>
+      </div>
+    );
+  }
+
+  if (!trends) return null;
+
+  const m = trends.monitoring;
+  const inc = trends.incidents;
+  const ov = trends.overrides;
+  const healthPct = m.totalRuns > 0 ? Math.round((m.healthyCount / m.totalRuns) * 100) : 0;
+
+  return (
+    <div className={cardClass}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">
+          Health Trends ({trends.window}d)
+        </h3>
+        {m.totalRuns > 0 && (
+          <span
+            className={`text-xs font-mono font-bold ${
+              healthPct >= 80
+                ? "text-emerald-400"
+                : healthPct >= 50
+                  ? "text-amber-400"
+                  : "text-red-400"
+            }`}
+          >
+            {healthPct}% healthy
+          </span>
+        )}
+      </div>
+
+      {/* Monitoring summary */}
+      <div className="space-y-2">
+        <h4 className="text-[10px] text-[#64748B] uppercase tracking-wider">Monitoring</h4>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <CountStat label="Total runs" count={m.totalRuns} />
+          <CountStat label="Healthy" count={m.healthyCount} color="text-emerald-400" />
+          <CountStat label="At risk" count={m.atRiskCount} color="text-amber-400" />
+          <CountStat label="Invalidated" count={m.invalidatedCount} color="text-red-400" />
+          <CountStat label="Failed" count={m.failedCount} color="text-red-300" />
+        </div>
+
+        {m.mostCommonReasons.length > 0 && (
+          <div>
+            <span className="text-[10px] text-[#64748B] uppercase tracking-wider">Top reasons</span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {m.mostCommonReasons.map((r) => (
+                <span
+                  key={r.reasonCode}
+                  className="text-[10px] bg-[rgba(79,70,229,0.15)] text-[#A78BFA] px-2 py-0.5 rounded font-mono"
+                >
+                  {r.reasonCode} ({r.count})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {m.lastRuns.length > 0 && (
+          <div>
+            <span className="text-[10px] text-[#64748B] uppercase tracking-wider">
+              Last {m.lastRuns.length} runs
+            </span>
+            <div className="flex gap-1 mt-1">
+              {m.lastRuns.map((r, i) => (
+                <span
+                  key={i}
+                  title={`${r.verdict ?? "PENDING"}${r.completedAt ? ` — ${formatTime(r.completedAt)}` : ""}${r.reasonCodes.length > 0 ? `\n${r.reasonCodes.join(", ")}` : ""}`}
+                  className={`inline-block w-4 h-4 rounded-sm text-[8px] font-bold flex items-center justify-center ${
+                    r.verdict === "HEALTHY"
+                      ? "bg-emerald-500/30 text-emerald-400"
+                      : r.verdict === "AT_RISK"
+                        ? "bg-amber-500/30 text-amber-400"
+                        : r.verdict === "INVALIDATED"
+                          ? "bg-red-500/30 text-red-400"
+                          : "bg-[#334155]/50 text-[#64748B]"
+                  }`}
+                >
+                  {r.verdict === "HEALTHY"
+                    ? "\u2713"
+                    : r.verdict === "AT_RISK"
+                      ? "!"
+                      : r.verdict === "INVALIDATED"
+                        ? "\u2717"
+                        : "?"}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Incidents summary */}
+      <div className="space-y-1 pt-2 border-t border-[rgba(79,70,229,0.1)]">
+        <h4 className="text-[10px] text-[#64748B] uppercase tracking-wider">Incidents</h4>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <CountStat label="Opened" count={inc.openedInWindow} />
+          <CountStat
+            label="Escalated"
+            count={inc.escalatedInWindow}
+            color={inc.escalatedInWindow > 0 ? "text-red-400" : undefined}
+          />
+          <CountStat label="Auto-invalidated" count={inc.autoInvalidatedInWindow} />
+        </div>
+        {inc.lastIncident && (
+          <div className="text-xs mt-1">
+            <span className="text-[#7C8DB0]">Last: </span>
+            <Link
+              href={`/internal/incidents/${inc.lastIncident.id}`}
+              className="text-[#A78BFA] hover:text-[#22D3EE] underline transition-colors font-mono"
+            >
+              {inc.lastIncident.id.slice(0, 10)}
+            </Link>
+            <span className="text-[#64748B] ml-2">
+              {inc.lastIncident.status}
+              {inc.lastIncident.closeReason ? ` (${inc.lastIncident.closeReason})` : ""}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Overrides summary */}
+      <div className="space-y-1 pt-2 border-t border-[rgba(79,70,229,0.1)]">
+        <h4 className="text-[10px] text-[#64748B] uppercase tracking-wider">Overrides</h4>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <CountStat label="Requested" count={ov.requestedInWindow} />
+          <CountStat label="Applied" count={ov.appliedInWindow} />
+          <CountStat label="Expired" count={ov.expiredInWindow} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StrategyCommandCenterPage() {
   const { id: strategyId } = useParams<{ id: string }>();
   const [apiKey, setApiKey] = useState("");
@@ -495,6 +676,8 @@ export default function StrategyCommandCenterPage() {
   const [error, setError] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
 
   async function fetchOverview() {
     setError(null);
@@ -514,8 +697,9 @@ export default function StrategyCommandCenterPage() {
         return;
       }
       setData(await res.json());
-      // Fetch timeline in parallel after overview succeeds
+      // Fetch timeline + trends after overview succeeds
       fetchTimeline();
+      fetchTrends();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -540,6 +724,25 @@ export default function StrategyCommandCenterPage() {
       // Timeline is non-critical — silently fail
     } finally {
       setTimelineLoading(false);
+    }
+  }
+
+  async function fetchTrends() {
+    setTrendsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/internal/strategies/${encodeURIComponent(strategyId)}/trends?window=30`,
+        {
+          headers: { "x-internal-api-key": apiKey },
+        }
+      );
+      if (res.ok) {
+        setTrends(await res.json());
+      }
+    } catch {
+      // Trends are non-critical — silently fail
+    } finally {
+      setTrendsLoading(false);
     }
   }
 
@@ -616,6 +819,7 @@ export default function StrategyCommandCenterPage() {
             <IncidentsCard incidents={data.incidents} />
             <OverridesCard overrides={data.overrides} />
             <TimelineCard timeline={timeline} loading={timelineLoading} />
+            <HealthTrendsCard trends={trends} loading={trendsLoading} />
           </div>
         )}
       </main>

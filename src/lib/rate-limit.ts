@@ -659,5 +659,14 @@ export const internalStrategyTimelineRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal strategy trends endpoint
+ * Limits: 60 requests per minute per IP (read-only aggregates)
+ */
+export const internalStrategyTrendsRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };
