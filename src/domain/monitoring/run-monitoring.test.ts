@@ -9,12 +9,12 @@ const mockTradeFactFindMany = vi.fn();
 const mockBacktestBaselineFindFirst = vi.fn();
 const mockHealthSnapshotFindMany = vi.fn();
 const mockLiveEAInstanceFindFirst = vi.fn();
-const mockLiveEAInstanceUpdate = vi.fn();
 const mockTransaction = vi.fn();
 const mockAppendProofEvent = vi.fn();
 const mockLoadActiveConfigWithFallback = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
+const mockPerformLifecycleTransitionInTx = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
 vi.mock("@prisma/client", () => {
@@ -54,7 +54,6 @@ vi.mock("@/lib/prisma", () => ({
     },
     liveEAInstance: {
       findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
-      update: (...args: unknown[]) => mockLiveEAInstanceUpdate(...args),
     },
   },
 }));
@@ -62,6 +61,11 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/proof/events", () => ({
   appendProofEvent: (...args: unknown[]) => mockAppendProofEvent(...args),
   appendProofEventInTx: (_tx: unknown, ...args: unknown[]) => mockAppendProofEvent(...args),
+}));
+
+vi.mock("@/lib/strategy-lifecycle/transition-service", () => ({
+  performLifecycleTransitionInTx: (...args: unknown[]) =>
+    mockPerformLifecycleTransitionInTx(...args),
 }));
 
 vi.mock("@/domain/verification/config-loader", () => {
@@ -190,9 +194,9 @@ function setupDefaults() {
 
   // Default: no LiveEAInstance → no transition attempted
   mockLiveEAInstanceFindFirst.mockResolvedValue(null);
-  mockLiveEAInstanceUpdate.mockResolvedValue({});
   // Default: no previous runs → consecutive healthy = 0
   mockMonitoringRunFindMany.mockResolvedValue([]);
+  mockPerformLifecycleTransitionInTx.mockResolvedValue(undefined);
 
   // $transaction executes callback with a mock tx that reuses the same mock handles
   mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
@@ -203,7 +207,6 @@ function setupDefaults() {
       },
       liveEAInstance: {
         findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
-        update: (...args: unknown[]) => mockLiveEAInstanceUpdate(...args),
       },
     };
     return fn(tx);
@@ -640,11 +643,15 @@ describe("runMonitoring", () => {
       })
     );
 
-    // Lifecycle mutation inside same transaction
-    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
-      where: { id: FAKE_INSTANCE_ID },
-      data: { lifecycleState: "EDGE_AT_RISK" },
-    });
+    // Lifecycle mutation via lifecycle module inside same transaction
+    expect(mockPerformLifecycleTransitionInTx).toHaveBeenCalledWith(
+      expect.anything(), // tx client
+      FAKE_INSTANCE_ID,
+      "LIVE_MONITORING",
+      "EDGE_AT_RISK",
+      expect.stringContaining("MONITORING_DRAWDOWN_BREACH"),
+      "monitoring"
+    );
 
     // All writes in a single Serializable transaction
     expect(mockTransaction).toHaveBeenCalledWith(expect.any(Function), {
@@ -679,10 +686,14 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
-      where: { id: FAKE_INSTANCE_ID },
-      data: { lifecycleState: "INVALIDATED" },
-    });
+    expect(mockPerformLifecycleTransitionInTx).toHaveBeenCalledWith(
+      expect.anything(),
+      FAKE_INSTANCE_ID,
+      "EDGE_AT_RISK",
+      "INVALIDATED",
+      expect.stringContaining("INVALIDATED"),
+      "monitoring"
+    );
 
     expect(result.transition).toEqual({
       from: "EDGE_AT_RISK",
@@ -713,10 +724,14 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
-      where: { id: FAKE_INSTANCE_ID },
-      data: { lifecycleState: "LIVE_MONITORING" },
-    });
+    expect(mockPerformLifecycleTransitionInTx).toHaveBeenCalledWith(
+      expect.anything(),
+      FAKE_INSTANCE_ID,
+      "EDGE_AT_RISK",
+      "LIVE_MONITORING",
+      expect.stringContaining("3 consecutive healthy runs"),
+      "monitoring"
+    );
 
     expect(result.transition).toEqual({
       from: "EDGE_AT_RISK",
@@ -750,7 +765,7 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
+    expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
@@ -778,7 +793,7 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
+    expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
@@ -793,7 +808,7 @@ describe("runMonitoring", () => {
     const run = await importRunMonitoring();
     const result = await run(params);
 
-    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
+    expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
@@ -815,7 +830,7 @@ describe("runMonitoring", () => {
     await expect(run(params)).rejects.toThrow("Proof write failed");
 
     // Lifecycle was NOT mutated
-    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
+    expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
 
     // Run marked FAILED by outer catch (tx rolled back COMPLETED)
     expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
@@ -910,7 +925,7 @@ describe("runMonitoring", () => {
     );
 
     // No lifecycle mutation
-    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
+    expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
   });
 });
 

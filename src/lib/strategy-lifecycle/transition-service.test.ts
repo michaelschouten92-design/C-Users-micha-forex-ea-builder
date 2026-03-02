@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { performLifecycleTransition } from "./transition-service";
+import { performLifecycleTransition, performLifecycleTransitionInTx } from "./transition-service";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -163,5 +163,87 @@ describe("performLifecycleTransition", () => {
       where: { id: "inst_10" },
       data: { lifecycleState: "EDGE_AT_RISK" },
     });
+  });
+});
+
+describe("performLifecycleTransitionInTx", () => {
+  it("uses the provided tx client, not the global prisma", async () => {
+    const mockTxUpdate = vi.fn().mockResolvedValue({});
+    const tx = { liveEAInstance: { update: mockTxUpdate } };
+
+    await performLifecycleTransitionInTx(
+      tx as unknown as Parameters<typeof performLifecycleTransitionInTx>[0],
+      "inst_tx_1",
+      "DRAFT",
+      "BACKTESTED",
+      "backtest_complete"
+    );
+
+    expect(mockTxUpdate).toHaveBeenCalledWith({
+      where: { id: "inst_tx_1" },
+      data: { lifecycleState: "BACKTESTED" },
+    });
+    // Global prisma NOT used
+    expect(mockInstanceUpdate).not.toHaveBeenCalled();
+  });
+
+  it("enforces monitoring prohibition via tx path", async () => {
+    const mockTxUpdate = vi.fn().mockResolvedValue({});
+    const tx = { liveEAInstance: { update: mockTxUpdate } };
+
+    await expect(
+      performLifecycleTransitionInTx(
+        tx as unknown as Parameters<typeof performLifecycleTransitionInTx>[0],
+        "inst_tx_2",
+        "LIVE_MONITORING",
+        "INVALIDATED",
+        "monitoring_verdict",
+        "monitoring"
+      )
+    ).rejects.toThrow("Monitoring cannot transition LIVE_MONITORING → INVALIDATED");
+
+    expect(mockTxUpdate).not.toHaveBeenCalled();
+  });
+
+  it("validates transition rules via tx path", async () => {
+    const mockTxUpdate = vi.fn().mockResolvedValue({});
+    const tx = { liveEAInstance: { update: mockTxUpdate } };
+
+    await expect(
+      performLifecycleTransitionInTx(
+        tx as unknown as Parameters<typeof performLifecycleTransitionInTx>[0],
+        "inst_tx_3",
+        "DRAFT",
+        "INVALIDATED",
+        "bad_transition"
+      )
+    ).rejects.toThrow("Invalid lifecycle transition: DRAFT → INVALIDATED");
+
+    expect(mockTxUpdate).not.toHaveBeenCalled();
+  });
+
+  it("logs transition with structured fields", async () => {
+    const mockTxUpdate = vi.fn().mockResolvedValue({});
+    const tx = { liveEAInstance: { update: mockTxUpdate } };
+
+    await performLifecycleTransitionInTx(
+      tx as unknown as Parameters<typeof performLifecycleTransitionInTx>[0],
+      "inst_tx_4",
+      "LIVE_MONITORING",
+      "EDGE_AT_RISK",
+      "edge_degraded",
+      "monitoring"
+    );
+
+    expect(mockInfo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceId: "inst_tx_4",
+        from: "LIVE_MONITORING",
+        to: "EDGE_AT_RISK",
+        reason: "edge_degraded",
+        source: "monitoring",
+      }),
+      "Lifecycle state transition"
+    );
   });
 });

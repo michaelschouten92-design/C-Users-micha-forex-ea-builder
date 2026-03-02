@@ -39,7 +39,7 @@ import { MonitoringConfigError } from "./types";
 import type { MonitoringVerdict } from "./types";
 import { decideMonitoringTransition } from "./decide-monitoring-transition";
 import type { TransitionDecision } from "./decide-monitoring-transition";
-import { transitionLifecycle } from "@/lib/strategy-lifecycle/transitions";
+import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 
 const log = logger.child({ service: "monitoring-run" });
@@ -347,14 +347,11 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           timestamp,
         });
 
-        // f. Lifecycle transition — proof event → validate → mutate
+        // f. Lifecycle transition — proof event → validate → mutate (via lifecycle module)
         let transition: { from: string; to: string; proofEventType: string } | undefined;
 
         if (transitionDecision.type === "TRANSITION" && instance) {
-          const from = transitionDecision.from as StrategyLifecycleState;
-          const to = transitionDecision.to as StrategyLifecycleState;
-
-          // Write transition proof event
+          // Write transition proof event FIRST — if this fails, no lifecycle mutation
           await appendProofEventInTx(tx, strategyId, transitionDecision.proofEventType, {
             eventType: transitionDecision.proofEventType,
             recordId,
@@ -370,20 +367,15 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             timestamp,
           });
 
-          // Validate transition (defense-in-depth)
-          transitionLifecycle(from, to);
-          // Monitoring prohibition (defense-in-depth — decideMonitoringTransition already prevents this)
-          if (`${from}->${to}` === "LIVE_MONITORING->INVALIDATED") {
-            throw new Error(
-              "Monitoring cannot transition LIVE_MONITORING → INVALIDATED: must pass through EDGE_AT_RISK"
-            );
-          }
-
-          // Mutate lifecycle state
-          await tx.liveEAInstance.update({
-            where: { id: instance.instanceId },
-            data: { lifecycleState: to },
-          });
+          // Validate + mutate via lifecycle module (single ownership of lifecycle mutations)
+          await performLifecycleTransitionInTx(
+            tx,
+            instance.instanceId,
+            transitionDecision.from as StrategyLifecycleState,
+            transitionDecision.to as StrategyLifecycleState,
+            transitionDecision.reason,
+            "monitoring"
+          );
 
           transition = {
             from: transitionDecision.from,
