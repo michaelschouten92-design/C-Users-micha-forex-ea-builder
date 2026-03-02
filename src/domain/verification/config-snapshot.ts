@@ -8,6 +8,7 @@
 
 import { createHash } from "node:crypto";
 import { VERIFICATION } from "./constants";
+import { MONITORING } from "@/domain/monitoring/constants";
 
 /** Threshold fields that participate in hash computation and verification runs. */
 export interface VerificationThresholds {
@@ -21,10 +22,20 @@ export interface VerificationThresholds {
   monteCarloIterations: number;
 }
 
+/** Monitoring threshold fields — governed, included in hash when present. */
+export interface MonitoringThresholds {
+  drawdownBreachMultiplier: number;
+  sharpeMinRatio: number;
+  maxLosingStreak: number;
+  maxInactivityDays: number;
+  cusumDriftConsecutiveSnapshots: number;
+}
+
 /** Immutable snapshot of a config version — anchors every verification run. */
 export interface VerificationThresholdsSnapshot {
   configVersion: string;
   thresholds: VerificationThresholds;
+  monitoringThresholds?: MonitoringThresholds;
   thresholdsHash: string;
 }
 
@@ -50,9 +61,27 @@ function canonicalJSON(obj: Record<string, unknown>): string {
  * Preimage: canonical JSON of threshold fields only (sorted keys).
  * configVersion is intentionally excluded from the hash preimage —
  * it's metadata about the version, not a threshold value.
+ *
+ * When monitoringThresholds is provided, its fields are flattened into
+ * the preimage with a `monitoring_` prefix. canonicalJSON sorts all keys
+ * alphabetically → deterministic. When absent, hash is identical to v1.0.0
+ * (backward compatible).
  */
-export function computeThresholdsHash(thresholds: VerificationThresholds): string {
-  const json = canonicalJSON(thresholds as unknown as Record<string, unknown>);
+export function computeThresholdsHash(
+  thresholds: VerificationThresholds,
+  monitoringThresholds?: MonitoringThresholds
+): string {
+  const preimage: Record<string, unknown> = {
+    ...(thresholds as unknown as Record<string, unknown>),
+  };
+
+  if (monitoringThresholds) {
+    for (const [key, value] of Object.entries(monitoringThresholds)) {
+      preimage[`monitoring_${key}`] = value;
+    }
+  }
+
+  const json = canonicalJSON(preimage);
   return createHash("sha256").update(json, "utf8").digest("hex");
 }
 
@@ -72,10 +101,19 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     monteCarloIterations: VERIFICATION.MONTE_CARLO_ITERATIONS,
   };
 
+  const monitoringThresholds: MonitoringThresholds = {
+    drawdownBreachMultiplier: MONITORING.DRAWDOWN_BREACH_MULTIPLIER,
+    sharpeMinRatio: MONITORING.SHARPE_MIN_RATIO,
+    maxLosingStreak: MONITORING.MAX_LOSING_STREAK,
+    maxInactivityDays: MONITORING.MAX_INACTIVITY_DAYS,
+    cusumDriftConsecutiveSnapshots: MONITORING.CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS,
+  };
+
   return {
     configVersion: VERIFICATION.CONFIG_VERSION,
     thresholds,
-    thresholdsHash: computeThresholdsHash(thresholds),
+    monitoringThresholds,
+    thresholdsHash: computeThresholdsHash(thresholds, monitoringThresholds),
   };
 }
 
@@ -86,7 +124,7 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
 export function verifyConfigSnapshot(
   snapshot: VerificationThresholdsSnapshot
 ): SnapshotVerificationResult {
-  const actual = computeThresholdsHash(snapshot.thresholds);
+  const actual = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
   return {
     valid: actual === snapshot.thresholdsHash,
     expected: snapshot.thresholdsHash,

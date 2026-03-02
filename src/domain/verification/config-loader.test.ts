@@ -108,7 +108,9 @@ describe("config-loader", () => {
         expect(err).toBeInstanceOf(ConfigIntegrityError);
         const integrity = err as InstanceType<typeof ConfigIntegrityError>;
         expect(integrity.details.expected).toBe(snapshot.thresholdsHash);
-        expect(integrity.details.actual).toBe(computeThresholdsHash(tamperedSnapshot.thresholds));
+        expect(integrity.details.actual).toBe(
+          computeThresholdsHash(tamperedSnapshot.thresholds, tamperedSnapshot.monitoringThresholds)
+        );
       }
     });
   });

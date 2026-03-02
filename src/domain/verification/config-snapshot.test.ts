@@ -4,7 +4,7 @@ import {
   buildConfigSnapshot,
   verifyConfigSnapshot,
 } from "./config-snapshot";
-import type { VerificationThresholds } from "./config-snapshot";
+import type { VerificationThresholds, MonitoringThresholds } from "./config-snapshot";
 
 const BASE_THRESHOLDS: VerificationThresholds = {
   minTradeCount: 30,
@@ -15,6 +15,14 @@ const BASE_THRESHOLDS: VerificationThresholds = {
   minOosTradeCount: 20,
   ruinProbabilityCeiling: 0.15,
   monteCarloIterations: 10_000,
+};
+
+const BASE_MONITORING: MonitoringThresholds = {
+  drawdownBreachMultiplier: 1.5,
+  sharpeMinRatio: 0.5,
+  maxLosingStreak: 10,
+  maxInactivityDays: 14,
+  cusumDriftConsecutiveSnapshots: 3,
 };
 
 describe("computeThresholdsHash", () => {
@@ -64,20 +72,57 @@ describe("computeThresholdsHash", () => {
       expect(alteredHash).not.toBe(original);
     }
   });
+
+  it("backward compat: hash without monitoring thresholds matches v1.0.0 behavior", () => {
+    const hashWithout = computeThresholdsHash(BASE_THRESHOLDS);
+    const hashWithUndefined = computeThresholdsHash(BASE_THRESHOLDS, undefined);
+    expect(hashWithout).toBe(hashWithUndefined);
+  });
+
+  it("hash changes when monitoring thresholds are added", () => {
+    const hashWithout = computeThresholdsHash(BASE_THRESHOLDS);
+    const hashWith = computeThresholdsHash(BASE_THRESHOLDS, BASE_MONITORING);
+    expect(hashWith).not.toBe(hashWithout);
+  });
+
+  it("hash changes when any monitoring threshold value changes", () => {
+    const original = computeThresholdsHash(BASE_THRESHOLDS, BASE_MONITORING);
+
+    const mutations: Partial<MonitoringThresholds>[] = [
+      { drawdownBreachMultiplier: 2.0 },
+      { sharpeMinRatio: 0.6 },
+      { maxLosingStreak: 15 },
+      { maxInactivityDays: 7 },
+      { cusumDriftConsecutiveSnapshots: 5 },
+    ];
+
+    for (const mutation of mutations) {
+      const altered = { ...BASE_MONITORING, ...mutation };
+      const alteredHash = computeThresholdsHash(BASE_THRESHOLDS, altered);
+      expect(alteredHash).not.toBe(original);
+    }
+  });
+
+  it("monitoring hash is deterministic with same inputs", () => {
+    const a = computeThresholdsHash(BASE_THRESHOLDS, BASE_MONITORING);
+    const b = computeThresholdsHash(BASE_THRESHOLDS, BASE_MONITORING);
+    expect(a).toBe(b);
+  });
 });
 
 describe("buildConfigSnapshot", () => {
-  it("returns configVersion, thresholds, and thresholdsHash", () => {
+  it("returns configVersion, thresholds, monitoringThresholds, and thresholdsHash", () => {
     const snapshot = buildConfigSnapshot();
 
-    expect(snapshot.configVersion).toBe("1.0.0");
+    expect(snapshot.configVersion).toBe("2.0.0");
     expect(snapshot.thresholds).toEqual(BASE_THRESHOLDS);
+    expect(snapshot.monitoringThresholds).toEqual(BASE_MONITORING);
     expect(snapshot.thresholdsHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it("hash matches recomputation from thresholds", () => {
+  it("hash matches recomputation from thresholds + monitoringThresholds", () => {
     const snapshot = buildConfigSnapshot();
-    const recomputed = computeThresholdsHash(snapshot.thresholds);
+    const recomputed = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
     expect(snapshot.thresholdsHash).toBe(recomputed);
   });
 });
@@ -112,5 +157,19 @@ describe("verifyConfigSnapshot", () => {
     expect(result.valid).toBe(false);
     expect(result.expected).toBe(snapshot.thresholdsHash);
     expect(result.actual).not.toBe(snapshot.thresholdsHash);
+  });
+
+  it("returns invalid when monitoringThresholds are tampered", () => {
+    const snapshot = buildConfigSnapshot();
+    const tampered = {
+      ...snapshot,
+      monitoringThresholds: {
+        ...snapshot.monitoringThresholds!,
+        maxLosingStreak: 999,
+      },
+    };
+    const result = verifyConfigSnapshot(tampered);
+
+    expect(result.valid).toBe(false);
   });
 });

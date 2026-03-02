@@ -54,7 +54,7 @@ export async function loadActiveConfig(): Promise<LoadedConfig> {
   }
 
   const snapshot = row.snapshot as unknown as VerificationThresholdsSnapshot;
-  const recomputed = computeThresholdsHash(snapshot.thresholds);
+  const recomputed = computeThresholdsHash(snapshot.thresholds, snapshot.monitoringThresholds);
 
   if (recomputed !== row.thresholdsHash) {
     throw new ConfigIntegrityError(
