@@ -278,4 +278,18 @@ describe("POST /api/internal/trades/webhook-ingest", () => {
     expect(json.recordId).toBeDefined();
     expect(typeof json.recordId).toBe("string");
   });
+
+  it("returns 409 STRATEGY_HALTED when pipeline throws StrategyHaltedError", async () => {
+    const { StrategyHaltedError } =
+      await import("@/domain/trade-ingest/csv/run-csv-ingest-pipeline");
+    mockRunCsvIngestPipeline.mockRejectedValueOnce(new StrategyHaltedError("strat_1"));
+
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest({ ...validBody(), source: "LIVE" }));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("STRATEGY_HALTED");
+    expect(json.error).toBe("Strategy is halted");
+  });
 });

@@ -230,4 +230,19 @@ describe("POST /api/internal/trades/import-csv", () => {
       initialBalance: 10000,
     });
   });
+
+  it("returns 409 STRATEGY_HALTED when pipeline throws StrategyHaltedError", async () => {
+    const { StrategyHaltedError } =
+      await import("@/domain/trade-ingest/csv/run-csv-ingest-pipeline");
+    mockRunCsvIngestPipeline.mockRejectedValueOnce(new StrategyHaltedError("strat_1"));
+
+    const { POST } = await import("./route");
+    const body = { ...validBody(), source: "LIVE" };
+    const res = await POST(makeRequest(body, TEST_API_KEY));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.code).toBe("STRATEGY_HALTED");
+    expect(json.error).toBe("Strategy is halted");
+  });
 });
