@@ -1134,6 +1134,25 @@ model NotificationOutbox {
 }
 
 // ============================================
+// ALERT OUTBOX — System-level monitoring alerts
+// ============================================
+
+model AlertOutbox {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  status        String   @default("PENDING") // PENDING | SENDING | SENT | FAILED
+  attempts      Int      @default(0)
+  lastError     String?
+  nextAttemptAt DateTime @default(now())
+  eventType     String
+  payload       Json
+  dedupeKey     String   @unique
+
+  @@index([status, nextAttemptAt])
+}
+
+// ============================================
 // MONITORING RUN — Live strategy monitoring
 // ============================================
 
