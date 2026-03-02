@@ -33,4 +33,10 @@ export const MONITORING = {
   ESCALATION_INTERVAL_MINUTES: 120,
   /** Minutes before auto-invalidation (null = disabled) */
   AUTO_INVALIDATE_MINUTES: null as number | null,
+
+  // ── Override governance (included in thresholdsHash) ─────────────
+  /** "SAME_OK" = same operator can approve their own request; "DIFFERENT_REQUIRED" = different operator must approve */
+  OVERRIDE_APPROVAL_POLICY: "DIFFERENT_REQUIRED" as "SAME_OK" | "DIFFERENT_REQUIRED",
+  /** Minutes before an unapplied override expires */
+  OVERRIDE_EXPIRY_MINUTES: 60,
 } as const;

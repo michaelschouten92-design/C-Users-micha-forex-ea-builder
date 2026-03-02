@@ -33,6 +33,8 @@ export interface MonitoringThresholds {
   ackDeadlineMinutes: number;
   escalationIntervalMinutes: number;
   autoInvalidateMinutes: number | null;
+  overrideApprovalPolicy: "SAME_OK" | "DIFFERENT_REQUIRED";
+  overrideExpiryMinutes: number;
 }
 
 /** Immutable snapshot of a config version — anchors every verification run. */
@@ -124,6 +126,8 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     ackDeadlineMinutes: MONITORING.ACK_DEADLINE_MINUTES,
     escalationIntervalMinutes: MONITORING.ESCALATION_INTERVAL_MINUTES,
     autoInvalidateMinutes: MONITORING.AUTO_INVALIDATE_MINUTES,
+    overrideApprovalPolicy: MONITORING.OVERRIDE_APPROVAL_POLICY,
+    overrideExpiryMinutes: MONITORING.OVERRIDE_EXPIRY_MINUTES,
   };
 
   return {

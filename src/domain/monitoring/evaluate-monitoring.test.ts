@@ -13,6 +13,8 @@ const baseThresholds: MonitoringThresholds = {
   ackDeadlineMinutes: 60,
   escalationIntervalMinutes: 120,
   autoInvalidateMinutes: null,
+  overrideApprovalPolicy: "DIFFERENT_REQUIRED",
+  overrideExpiryMinutes: 60,
 };
 
 /** All-pass context: everything within limits */

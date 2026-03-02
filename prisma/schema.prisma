@@ -1183,6 +1183,37 @@ model Incident {
 }
 
 // ============================================
+// OVERRIDE REQUEST — Governed override workflow
+// ============================================
+
+model OverrideRequest {
+  id              String    @id @default(cuid())
+  strategyId      String
+  status          String    @default("PENDING") // PENDING | APPROVED | APPLIED | REJECTED | EXPIRED
+  requestRecordId String                        // Proof event recordId from request
+  requestNote     String?   @db.Text
+  requestedBy     String    @default("operator")
+  requestedAt     DateTime  @default(now())
+  approvedBy      String?                       // "operator" | "system"
+  approvedAt      DateTime?
+  approveNote     String?   @db.Text
+  approveRecordId String?                       // Proof event recordId from approve
+  rejectNote      String?   @db.Text
+  rejectRecordId  String?
+  rejectedAt      DateTime?
+  appliedAt       DateTime?
+  applyRecordId   String?
+  expiredAt       DateTime?
+  expiresAt       DateTime                      // Computed: requestedAt + overrideExpiryMinutes
+  configVersion   String
+  thresholdsHash  String
+  updatedAt       DateTime  @updatedAt
+
+  @@index([strategyId, status])
+  @@index([status, expiresAt])
+}
+
+// ============================================
 // MONITORING RUN — Live strategy monitoring
 // ============================================
 

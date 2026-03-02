@@ -485,6 +485,15 @@ export const internalOperatorActionRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal override endpoints
+ * Limits: 10 requests per minute per IP
+ */
+export const internalOverrideRateLimiter = createRateLimiter({
+  limit: 10,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for public API endpoints (unauthenticated)
  * Limits: 30 requests per minute per IP
  */
