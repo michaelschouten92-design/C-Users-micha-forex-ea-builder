@@ -8,9 +8,12 @@
  *   1c. Load baselines from BacktestBaseline
  *   1d. Load CUSUM drift from HealthSnapshots
  *   2.  Evaluate monitoring rules (5 deterministic rules)
- *   3.  Write MONITORING_RUN_COMPLETED proof event (fail-closed)
- *   3b. Lifecycle transition: decide → proof event → mutate (fail-closed)
- *   4.  Persist MonitoringRun row with outcome
+ *   3+3b+4. Atomic transaction (Serializable):
+ *       - Mark run COMPLETED
+ *       - Resolve instance + count consecutive healthy runs
+ *       - Compute transition decision
+ *       - Write MONITORING_RUN_COMPLETED proof event
+ *       - If TRANSITION: write transition proof event → validate → mutate lifecycle
  */
 
 import { Prisma } from "@prisma/client";
@@ -23,7 +26,7 @@ import {
   ConfigIntegrityError,
 } from "@/domain/verification/config-loader";
 import type { MonitoringThresholds } from "@/domain/verification/config-snapshot";
-import { appendProofEvent } from "@/lib/proof/events";
+import { appendProofEvent, appendProofEventInTx } from "@/lib/proof/events";
 import { evaluateMonitoring } from "./evaluate-monitoring";
 import { MONITORING } from "./constants";
 import {
@@ -36,7 +39,7 @@ import { MonitoringConfigError } from "./types";
 import type { MonitoringVerdict } from "./types";
 import { decideMonitoringTransition } from "./decide-monitoring-transition";
 import type { TransitionDecision } from "./decide-monitoring-transition";
-import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import { transitionLifecycle } from "@/lib/strategy-lifecycle/transitions";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 
 const log = logger.child({ service: "monitoring-run" });
@@ -248,108 +251,151 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       monitoringThresholds
     );
 
-    // Phase 2b: Compute transition decision (before proof event, so it's included)
-    const instance = await resolveInstanceForStrategy(strategyId);
-    let transitionDecision: TransitionDecision = { type: "NO_TRANSITION", reason: "no_instance" };
-    let consecutiveHealthyRuns = 0;
-
-    if (instance) {
-      const dbConsecutive = await countConsecutiveHealthyRuns(strategyId);
-      // +1 counting: current run not yet persisted, add 1 if current is HEALTHY
-      consecutiveHealthyRuns = evalResult.verdict === "HEALTHY" ? dbConsecutive + 1 : 0;
-
-      transitionDecision = decideMonitoringTransition({
-        currentLifecycleState: instance.lifecycleState,
-        monitoringVerdict: evalResult.verdict,
-        reasons: evalResult.reasons,
-        consecutiveHealthyRuns,
-        recoveryRunsRequired: monitoringThresholds.recoveryRunsRequired,
-      });
-    }
-
-    // Phase 3: Write MONITORING_RUN_COMPLETED proof event (fail-closed)
+    // Phase 3+3b+4 (atomic): proof events + lifecycle transition + run COMPLETED.
+    // All writes in a single Serializable transaction — either all commit or none.
     const timestamp = new Date().toISOString();
-    await appendProofEvent(strategyId, "MONITORING_RUN_COMPLETED", {
-      eventType: "MONITORING_RUN_COMPLETED",
-      recordId,
-      strategyId,
-      monitoringVerdict: evalResult.verdict,
-      reasons: evalResult.reasons,
-      ruleResults: evalResult.ruleResults,
-      tradeSnapshotHash: snapshot.snapshotHash,
-      liveFactCount: snapshot.factCount,
-      snapshotRange: snapshot.range,
-      configVersion,
-      thresholdsHash,
-      configSource,
-      liveMaxDrawdownPct,
-      liveRollingSharpe,
-      currentLosingStreak,
-      daysSinceLastTrade,
-      baselineMissing,
-      consecutiveDriftSnapshots,
-      transitionDecision: {
-        type: transitionDecision.type,
-        ...(transitionDecision.type === "TRANSITION"
-          ? { from: transitionDecision.from, to: transitionDecision.to }
-          : {}),
-        reason: transitionDecision.reason,
+
+    const atomicResult = await prisma.$transaction(
+      async (tx) => {
+        // a. Mark run COMPLETED
+        await tx.monitoringRun.update({
+          where: { id: run.id },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+            verdict: evalResult.verdict,
+            reasons: evalResult.reasons,
+            tradeSnapshotHash: snapshot.snapshotHash,
+            liveFactCount: snapshot.factCount,
+            configVersion,
+            thresholdsHash,
+            configSource,
+          },
+        });
+
+        // b. Resolve instance for lifecycle transition
+        const instanceRow = await tx.liveEAInstance.findFirst({
+          where: {
+            strategyVersion: {
+              strategyIdentity: { strategyId },
+            },
+          },
+          select: { id: true, lifecycleState: true },
+        });
+        const instance = instanceRow
+          ? { instanceId: instanceRow.id, lifecycleState: instanceRow.lifecycleState }
+          : null;
+
+        // c. Count consecutive HEALTHY runs (includes current, now COMPLETED — no +1 hack)
+        let consecutiveHealthyRuns = 0;
+        if (instance) {
+          const recentRuns = await tx.monitoringRun.findMany({
+            where: { strategyId, status: "COMPLETED" },
+            orderBy: { completedAt: "desc" },
+            take: 20,
+            select: { verdict: true },
+          });
+          for (const r of recentRuns) {
+            if (r.verdict === "HEALTHY") consecutiveHealthyRuns++;
+            else break;
+          }
+        }
+
+        // d. Compute transition decision
+        let transitionDecision: TransitionDecision = {
+          type: "NO_TRANSITION",
+          reason: "no_instance",
+        };
+        if (instance) {
+          transitionDecision = decideMonitoringTransition({
+            currentLifecycleState: instance.lifecycleState,
+            monitoringVerdict: evalResult.verdict,
+            reasons: evalResult.reasons,
+            consecutiveHealthyRuns,
+            recoveryRunsRequired: monitoringThresholds.recoveryRunsRequired,
+          });
+        }
+
+        // e. Write MONITORING_RUN_COMPLETED proof event
+        await appendProofEventInTx(tx, strategyId, "MONITORING_RUN_COMPLETED", {
+          eventType: "MONITORING_RUN_COMPLETED",
+          recordId,
+          strategyId,
+          monitoringVerdict: evalResult.verdict,
+          reasons: evalResult.reasons,
+          ruleResults: evalResult.ruleResults,
+          tradeSnapshotHash: snapshot.snapshotHash,
+          liveFactCount: snapshot.factCount,
+          snapshotRange: snapshot.range,
+          configVersion,
+          thresholdsHash,
+          configSource,
+          liveMaxDrawdownPct,
+          liveRollingSharpe,
+          currentLosingStreak,
+          daysSinceLastTrade,
+          baselineMissing,
+          consecutiveDriftSnapshots,
+          transitionDecision: {
+            type: transitionDecision.type,
+            ...(transitionDecision.type === "TRANSITION"
+              ? { from: transitionDecision.from, to: transitionDecision.to }
+              : {}),
+            reason: transitionDecision.reason,
+          },
+          consecutiveHealthyRuns,
+          timestamp,
+        });
+
+        // f. Lifecycle transition — proof event → validate → mutate
+        let transition: { from: string; to: string; proofEventType: string } | undefined;
+
+        if (transitionDecision.type === "TRANSITION" && instance) {
+          const from = transitionDecision.from as StrategyLifecycleState;
+          const to = transitionDecision.to as StrategyLifecycleState;
+
+          // Write transition proof event
+          await appendProofEventInTx(tx, strategyId, transitionDecision.proofEventType, {
+            eventType: transitionDecision.proofEventType,
+            recordId,
+            strategyId,
+            from: transitionDecision.from,
+            to: transitionDecision.to,
+            triggeringReasons: evalResult.reasons,
+            consecutiveHealthyRuns,
+            tradeSnapshotHash: snapshot.snapshotHash,
+            liveFactCount: snapshot.factCount,
+            configVersion,
+            thresholdsHash,
+            timestamp,
+          });
+
+          // Validate transition (defense-in-depth)
+          transitionLifecycle(from, to);
+          // Monitoring prohibition (defense-in-depth — decideMonitoringTransition already prevents this)
+          if (`${from}->${to}` === "LIVE_MONITORING->INVALIDATED") {
+            throw new Error(
+              "Monitoring cannot transition LIVE_MONITORING → INVALIDATED: must pass through EDGE_AT_RISK"
+            );
+          }
+
+          // Mutate lifecycle state
+          await tx.liveEAInstance.update({
+            where: { id: instance.instanceId },
+            data: { lifecycleState: to },
+          });
+
+          transition = {
+            from: transitionDecision.from,
+            to: transitionDecision.to,
+            proofEventType: transitionDecision.proofEventType,
+          };
+        }
+
+        return { consecutiveHealthyRuns, transition };
       },
-      consecutiveHealthyRuns,
-      timestamp,
-    });
-
-    // Phase 3b: Lifecycle transition — proof event → mutation (fail-closed)
-    let transition: { from: string; to: string; proofEventType: string } | undefined;
-
-    if (transitionDecision.type === "TRANSITION" && instance) {
-      // Write transition proof event FIRST — if this fails, no lifecycle mutation
-      await appendProofEvent(strategyId, transitionDecision.proofEventType, {
-        eventType: transitionDecision.proofEventType,
-        recordId,
-        strategyId,
-        from: transitionDecision.from,
-        to: transitionDecision.to,
-        triggeringReasons: evalResult.reasons,
-        consecutiveHealthyRuns,
-        tradeSnapshotHash: snapshot.snapshotHash,
-        liveFactCount: snapshot.factCount,
-        configVersion,
-        thresholdsHash,
-        timestamp,
-      });
-
-      // Mutate lifecycle state (source: "monitoring" enforces additional prohibitions)
-      await performLifecycleTransition(
-        instance.instanceId,
-        transitionDecision.from as StrategyLifecycleState,
-        transitionDecision.to as StrategyLifecycleState,
-        transitionDecision.reason,
-        "monitoring"
-      );
-
-      transition = {
-        from: transitionDecision.from,
-        to: transitionDecision.to,
-        proofEventType: transitionDecision.proofEventType,
-      };
-    }
-
-    // Phase 4: Mark run as COMPLETED
-    await prisma.monitoringRun.update({
-      where: { id: run.id },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-        verdict: evalResult.verdict,
-        reasons: evalResult.reasons,
-        tradeSnapshotHash: snapshot.snapshotHash,
-        liveFactCount: snapshot.factCount,
-        configVersion,
-        thresholdsHash,
-        configSource,
-      },
-    });
+      { isolationLevel: "Serializable" }
+    );
 
     return {
       runId: run.id,
@@ -358,7 +404,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       reasons: evalResult.reasons,
       tradeSnapshotHash: snapshot.snapshotHash,
       liveFactCount: snapshot.factCount,
-      transition,
+      transition: atomicResult.transition,
     };
   } catch (err) {
     // Any uncaught error — mark run as FAILED
@@ -380,49 +426,6 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
 
     throw err;
   }
-}
-
-/**
- * Resolve the LiveEAInstance for a strategy.
- * Returns instanceId + current lifecycleState, or null if no instance exists.
- */
-async function resolveInstanceForStrategy(
-  strategyId: string
-): Promise<{ instanceId: string; lifecycleState: string } | null> {
-  const instance = await prisma.liveEAInstance.findFirst({
-    where: {
-      strategyVersion: {
-        strategyIdentity: { strategyId },
-      },
-    },
-    select: { id: true, lifecycleState: true },
-  });
-  if (!instance) return null;
-  return { instanceId: instance.id, lifecycleState: instance.lifecycleState };
-}
-
-/**
- * Count consecutive HEALTHY monitoring runs (most recent first).
- * Only counts already-persisted COMPLETED runs — the current run is NOT yet persisted.
- * Bounded to 20 rows for efficiency.
- */
-async function countConsecutiveHealthyRuns(strategyId: string): Promise<number> {
-  const recentRuns = await prisma.monitoringRun.findMany({
-    where: {
-      strategyId,
-      status: "COMPLETED",
-    },
-    orderBy: { completedAt: "desc" },
-    take: 20,
-    select: { verdict: true },
-  });
-
-  let count = 0;
-  for (const run of recentRuns) {
-    if (run.verdict === "HEALTHY") count++;
-    else break;
-  }
-  return count;
 }
 
 /**

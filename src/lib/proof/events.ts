@@ -68,11 +68,13 @@ export async function logProofEvent(event: ProofEvent): Promise<void> {
 }
 
 /**
- * Append a domain event to the proof event log with hash chaining.
- * Uses a Serializable transaction to ensure monotonic sequencing.
+ * Append a proof event inside an existing Prisma transaction.
+ * Does NOT create its own transaction — the caller controls the tx boundary.
+ * Used by orchestrators that need multiple DB writes + proof events atomically.
  * Errors propagate to the caller (fail-closed).
  */
-export async function appendProofEvent(
+export async function appendProofEventInTx(
+  tx: Pick<typeof prisma, "proofEventLog">,
   strategyId: string,
   type: string,
   payload: Record<string, unknown>
@@ -84,44 +86,54 @@ export async function appendProofEvent(
     );
   }
 
-  return prisma.$transaction(
-    async (tx) => {
-      // Find the current chain head for this recordId (stored in sessionId).
-      // Chain scope is per verification-run, not per strategy.
-      const head = await tx.proofEventLog.findFirst({
-        where: { sessionId: recordId, sequence: { not: null } },
-        orderBy: { sequence: "desc" },
-        select: { sequence: true, eventHash: true },
-      });
+  // Find the current chain head for this recordId (stored in sessionId).
+  // Chain scope is per verification-run, not per strategy.
+  const head = await tx.proofEventLog.findFirst({
+    where: { sessionId: recordId, sequence: { not: null } },
+    orderBy: { sequence: "desc" },
+    select: { sequence: true, eventHash: true },
+  });
 
-      const sequence = (head?.sequence ?? 0) + 1;
-      const prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
+  const sequence = (head?.sequence ?? 0) + 1;
+  const prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
 
-      const eventHash = computeProofEventHash({
-        sequence,
-        strategyId,
-        type,
-        recordId,
-        prevEventHash,
-        payload,
-      });
+  const eventHash = computeProofEventHash({
+    sequence,
+    strategyId,
+    type,
+    recordId,
+    prevEventHash,
+    payload,
+  });
 
-      await tx.proofEventLog.create({
-        data: {
-          type,
-          strategyId,
-          sessionId: recordId,
-          meta: payload as Record<string, string>,
-          sequence,
-          eventHash,
-          prevEventHash,
-        },
-      });
-
-      return { sequence, eventHash };
+  await tx.proofEventLog.create({
+    data: {
+      type,
+      strategyId,
+      sessionId: recordId,
+      meta: payload as Record<string, string>,
+      sequence,
+      eventHash,
+      prevEventHash,
     },
-    { isolationLevel: "Serializable" }
-  );
+  });
+
+  return { sequence, eventHash };
+}
+
+/**
+ * Append a domain event to the proof event log with hash chaining.
+ * Uses a Serializable transaction to ensure monotonic sequencing.
+ * Errors propagate to the caller (fail-closed).
+ */
+export async function appendProofEvent(
+  strategyId: string,
+  type: string,
+  payload: Record<string, unknown>
+): Promise<{ sequence: number; eventHash: string }> {
+  return prisma.$transaction((tx) => appendProofEventInTx(tx, strategyId, type, payload), {
+    isolationLevel: "Serializable",
+  });
 }
 
 /** Return shape for each event written by appendVerificationRunProof. */

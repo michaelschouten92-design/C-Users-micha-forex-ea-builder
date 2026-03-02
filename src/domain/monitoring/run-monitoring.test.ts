@@ -9,11 +9,12 @@ const mockTradeFactFindMany = vi.fn();
 const mockBacktestBaselineFindFirst = vi.fn();
 const mockHealthSnapshotFindMany = vi.fn();
 const mockLiveEAInstanceFindFirst = vi.fn();
+const mockLiveEAInstanceUpdate = vi.fn();
+const mockTransaction = vi.fn();
 const mockAppendProofEvent = vi.fn();
 const mockLoadActiveConfigWithFallback = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
-const mockPerformLifecycleTransition = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
 vi.mock("@prisma/client", () => {
@@ -35,6 +36,7 @@ vi.mock("@prisma/client", () => {
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: (...args: unknown[]) => mockTransaction(...args),
     monitoringRun: {
       create: (...args: unknown[]) => mockMonitoringRunCreate(...args),
       update: (...args: unknown[]) => mockMonitoringRunUpdate(...args),
@@ -52,12 +54,14 @@ vi.mock("@/lib/prisma", () => ({
     },
     liveEAInstance: {
       findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+      update: (...args: unknown[]) => mockLiveEAInstanceUpdate(...args),
     },
   },
 }));
 
 vi.mock("@/lib/proof/events", () => ({
   appendProofEvent: (...args: unknown[]) => mockAppendProofEvent(...args),
+  appendProofEventInTx: (_tx: unknown, ...args: unknown[]) => mockAppendProofEvent(...args),
 }));
 
 vi.mock("@/domain/verification/config-loader", () => {
@@ -94,10 +98,6 @@ vi.mock("@/domain/trade-ingest", () => ({
 
 vi.mock("./evaluate-monitoring", () => ({
   evaluateMonitoring: (...args: unknown[]) => mockEvaluateMonitoring(...args),
-}));
-
-vi.mock("@/lib/strategy-lifecycle/transition-service", () => ({
-  performLifecycleTransition: (...args: unknown[]) => mockPerformLifecycleTransition(...args),
 }));
 
 vi.mock("./constants", () => ({
@@ -190,9 +190,24 @@ function setupDefaults() {
 
   // Default: no LiveEAInstance → no transition attempted
   mockLiveEAInstanceFindFirst.mockResolvedValue(null);
+  mockLiveEAInstanceUpdate.mockResolvedValue({});
   // Default: no previous runs → consecutive healthy = 0
   mockMonitoringRunFindMany.mockResolvedValue([]);
-  mockPerformLifecycleTransition.mockResolvedValue(undefined);
+
+  // $transaction executes callback with a mock tx that reuses the same mock handles
+  mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
+    const tx = {
+      monitoringRun: {
+        update: (...args: unknown[]) => mockMonitoringRunUpdate(...args),
+        findMany: (...args: unknown[]) => mockMonitoringRunFindMany(...args),
+      },
+      liveEAInstance: {
+        findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+        update: (...args: unknown[]) => mockLiveEAInstanceUpdate(...args),
+      },
+    };
+    return fn(tx);
+  });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -578,11 +593,16 @@ describe("runMonitoring", () => {
 
   const FAKE_INSTANCE_ID = "inst_1";
 
+  /**
+   * @param completedRunsInTx All COMPLETED runs visible inside the atomic tx
+   *   (includes the current run, which is marked COMPLETED first).
+   *   Ordered most-recent-first (current run is first element).
+   */
   function setupInstanceAndVerdict(
     lifecycleState: string,
     verdict: "HEALTHY" | "AT_RISK" | "INVALIDATED",
     reasons: string[] = [],
-    previousRuns: { verdict: string }[] = []
+    completedRunsInTx: { verdict: string }[] = []
   ) {
     mockLiveEAInstanceFindFirst.mockResolvedValue({
       id: FAKE_INSTANCE_ID,
@@ -593,11 +613,16 @@ describe("runMonitoring", () => {
       reasons,
       ruleResults: [],
     });
-    mockMonitoringRunFindMany.mockResolvedValue(previousRuns);
+    mockMonitoringRunFindMany.mockResolvedValue(completedRunsInTx);
   }
 
-  it("LIVE_MONITORING + AT_RISK → STRATEGY_EDGE_AT_RISK proof event, then performLifecycleTransition", async () => {
-    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+  it("LIVE_MONITORING + AT_RISK → STRATEGY_EDGE_AT_RISK proof event + lifecycle mutation (atomic)", async () => {
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
 
     const run = await importRunMonitoring();
     const result = await run(params);
@@ -615,13 +640,16 @@ describe("runMonitoring", () => {
       })
     );
 
-    // Lifecycle mutation after proof event
-    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
-      FAKE_INSTANCE_ID,
-      "LIVE_MONITORING",
-      "EDGE_AT_RISK",
-      expect.stringContaining("MONITORING_DRAWDOWN_BREACH")
-    );
+    // Lifecycle mutation inside same transaction
+    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: FAKE_INSTANCE_ID },
+      data: { lifecycleState: "EDGE_AT_RISK" },
+    });
+
+    // All writes in a single Serializable transaction
+    expect(mockTransaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+    });
 
     // Result includes transition
     expect(result.transition).toEqual({
@@ -631,8 +659,13 @@ describe("runMonitoring", () => {
     });
   });
 
-  it("EDGE_AT_RISK + INVALIDATED → STRATEGY_INVALIDATED proof event, then transition", async () => {
-    setupInstanceAndVerdict("EDGE_AT_RISK", "INVALIDATED", ["MONITORING_CUSUM_DRIFT"]);
+  it("EDGE_AT_RISK + INVALIDATED → STRATEGY_INVALIDATED proof event + lifecycle mutation (atomic)", async () => {
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "INVALIDATED",
+      ["MONITORING_CUSUM_DRIFT"],
+      [{ verdict: "INVALIDATED" }]
+    );
 
     const run = await importRunMonitoring();
     const result = await run(params);
@@ -646,12 +679,10 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
-      FAKE_INSTANCE_ID,
-      "EDGE_AT_RISK",
-      "INVALIDATED",
-      expect.stringContaining("INVALIDATED")
-    );
+    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: FAKE_INSTANCE_ID },
+      data: { lifecycleState: "INVALIDATED" },
+    });
 
     expect(result.transition).toEqual({
       from: "EDGE_AT_RISK",
@@ -660,13 +691,13 @@ describe("runMonitoring", () => {
     });
   });
 
-  it("EDGE_AT_RISK + HEALTHY with >= N consecutive → STRATEGY_RECOVERED, then transition", async () => {
-    // 2 previous HEALTHY runs + current = 3 (>= recoveryRunsRequired)
+  it("EDGE_AT_RISK + HEALTHY with >= N consecutive → STRATEGY_RECOVERED + lifecycle mutation (atomic)", async () => {
+    // 3 COMPLETED HEALTHY runs in DB (current + 2 previous, counted inside tx)
     setupInstanceAndVerdict(
       "EDGE_AT_RISK",
       "HEALTHY",
       [],
-      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
     );
 
     const run = await importRunMonitoring();
@@ -682,12 +713,10 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockPerformLifecycleTransition).toHaveBeenCalledWith(
-      FAKE_INSTANCE_ID,
-      "EDGE_AT_RISK",
-      "LIVE_MONITORING",
-      expect.stringContaining("3 consecutive healthy runs")
-    );
+    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith({
+      where: { id: FAKE_INSTANCE_ID },
+      data: { lifecycleState: "LIVE_MONITORING" },
+    });
 
     expect(result.transition).toEqual({
       from: "EDGE_AT_RISK",
@@ -697,8 +726,13 @@ describe("runMonitoring", () => {
   });
 
   it("EDGE_AT_RISK + HEALTHY with < N consecutive → no transition event", async () => {
-    // 1 previous HEALTHY run + current = 2 (< 3 recoveryRunsRequired)
-    setupInstanceAndVerdict("EDGE_AT_RISK", "HEALTHY", [], [{ verdict: "HEALTHY" }]);
+    // 2 COMPLETED HEALTHY in DB (current + 1 previous) — < 3 recoveryRunsRequired
+    setupInstanceAndVerdict(
+      "EDGE_AT_RISK",
+      "HEALTHY",
+      [],
+      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+    );
 
     const run = await importRunMonitoring();
     const result = await run(params);
@@ -716,12 +750,17 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
   it("LIVE_MONITORING + INVALIDATED → no transition (must pass through EDGE_AT_RISK)", async () => {
-    setupInstanceAndVerdict("LIVE_MONITORING", "INVALIDATED", ["MONITORING_CUSUM_DRIFT"]);
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "INVALIDATED",
+      ["MONITORING_CUSUM_DRIFT"],
+      [{ verdict: "INVALIDATED" }]
+    );
 
     const run = await importRunMonitoring();
     const result = await run(params);
@@ -739,7 +778,7 @@ describe("runMonitoring", () => {
       })
     );
 
-    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
@@ -754,14 +793,20 @@ describe("runMonitoring", () => {
     const run = await importRunMonitoring();
     const result = await run(params);
 
-    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
     expect(result.transition).toBeUndefined();
   });
 
   it("transition proof event failure → error propagates, run FAILED, no lifecycle mutation", async () => {
-    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
 
-    // First call (MONITORING_RUN_COMPLETED) succeeds, second call (STRATEGY_EDGE_AT_RISK) fails
+    // First call (MONITORING_RUN_COMPLETED) succeeds, second call (STRATEGY_EDGE_AT_RISK) fails.
+    // Transaction rolls back — neither COMPLETED nor lifecycle mutation persists.
     mockAppendProofEvent
       .mockResolvedValueOnce({ sequence: 1, eventHash: "eh_1" })
       .mockRejectedValueOnce(new Error("Proof write failed"));
@@ -770,9 +815,9 @@ describe("runMonitoring", () => {
     await expect(run(params)).rejects.toThrow("Proof write failed");
 
     // Lifecycle was NOT mutated
-    expect(mockPerformLifecycleTransition).not.toHaveBeenCalled();
+    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
 
-    // Run marked FAILED
+    // Run marked FAILED by outer catch (tx rolled back COMPLETED)
     expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -783,13 +828,19 @@ describe("runMonitoring", () => {
     );
   });
 
-  it("+1 counting: consecutive healthy runs reset to 0 when current verdict is not HEALTHY", async () => {
-    // 3 previous HEALTHY runs, but current is AT_RISK → consecutive = 0
+  it("consecutive healthy runs counted from DB (current AT_RISK breaks streak)", async () => {
+    // Current run AT_RISK is first in DB (most recent), followed by 3 previous HEALTHY
+    // → consecutive = 0 (AT_RISK breaks the streak immediately)
     setupInstanceAndVerdict(
       "EDGE_AT_RISK",
       "AT_RISK",
       ["MONITORING_DRAWDOWN_BREACH"],
-      [{ verdict: "HEALTHY" }, { verdict: "HEALTHY" }, { verdict: "HEALTHY" }]
+      [
+        { verdict: "AT_RISK" },
+        { verdict: "HEALTHY" },
+        { verdict: "HEALTHY" },
+        { verdict: "HEALTHY" },
+      ]
     );
 
     const run = await importRunMonitoring();
@@ -805,7 +856,12 @@ describe("runMonitoring", () => {
   });
 
   it("MONITORING_RUN_COMPLETED proof includes transitionDecision for TRANSITION", async () => {
-    setupInstanceAndVerdict("LIVE_MONITORING", "AT_RISK", ["MONITORING_DRAWDOWN_BREACH"]);
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
 
     const run = await importRunMonitoring();
     await run(params);
@@ -821,6 +877,40 @@ describe("runMonitoring", () => {
         }),
       })
     );
+  });
+
+  // ── Atomicity ────────────────────────────────────────────────────
+
+  it("transaction failure rolls back — run not marked COMPLETED, marked FAILED instead", async () => {
+    setupInstanceAndVerdict(
+      "LIVE_MONITORING",
+      "AT_RISK",
+      ["MONITORING_DRAWDOWN_BREACH"],
+      [{ verdict: "AT_RISK" }]
+    );
+
+    // Simulate transaction-level failure (e.g. Serialization conflict)
+    mockTransaction.mockRejectedValueOnce(new Error("Serialization failure"));
+
+    const run = await importRunMonitoring();
+    await expect(run(params)).rejects.toThrow("Serialization failure");
+
+    // COMPLETED never persisted (tx rolled back)
+    expect(mockMonitoringRunUpdate).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "COMPLETED" }),
+      })
+    );
+
+    // Run marked FAILED by outer catch
+    expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "FAILED" }),
+      })
+    );
+
+    // No lifecycle mutation
+    expect(mockLiveEAInstanceUpdate).not.toHaveBeenCalled();
   });
 });
 
