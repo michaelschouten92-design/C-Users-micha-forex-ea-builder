@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface ProofEvent {
@@ -1211,7 +1211,9 @@ export default function ProofAuditViewPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <ProofEventsForm />
+        <Suspense>
+          <ProofEventsForm />
+        </Suspense>
       </main>
     </div>
   );
