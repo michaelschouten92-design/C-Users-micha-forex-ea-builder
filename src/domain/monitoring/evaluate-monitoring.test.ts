@@ -15,6 +15,7 @@ const baseThresholds: MonitoringThresholds = {
   autoInvalidateMinutes: null,
   overrideApprovalPolicy: "DIFFERENT_REQUIRED",
   overrideExpiryMinutes: 60,
+  overrideSuppressionMinutes: 10,
 };
 
 /** All-pass context: everything within limits */

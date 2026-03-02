@@ -91,7 +91,10 @@ const PAYLOAD_WHITELIST = new Set([
   "expiresAt",
   "overrideApprovalPolicy",
   "overrideExpiryMinutes",
+  "overrideSuppressionMinutes",
   "previousStatus",
+  "closedBy",
+  "suppressedUntil",
   // Integrity check events
   "chainsChecked",
   "chainsValid",

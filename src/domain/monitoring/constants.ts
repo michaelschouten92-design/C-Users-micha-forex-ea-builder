@@ -39,4 +39,6 @@ export const MONITORING = {
   OVERRIDE_APPROVAL_POLICY: "DIFFERENT_REQUIRED" as "SAME_OK" | "DIFFERENT_REQUIRED",
   /** Minutes before an unapplied override expires */
   OVERRIDE_EXPIRY_MINUTES: 60,
+  /** Minutes after override apply during which monitoring is suppressed */
+  OVERRIDE_SUPPRESSION_MINUTES: 10,
 } as const;

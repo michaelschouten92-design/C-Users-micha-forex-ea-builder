@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 const TEST_API_KEY = "test-internal-api-key-that-is-at-least-32-chars";
 
+const mockLoadActiveConfigWithFallback = vi.fn();
 const mockAppendProofEventInTx = vi.fn();
 const mockPerformLifecycleTransitionInTx = vi.fn();
 const mockLiveEAInstanceFindFirst = vi.fn();
@@ -50,6 +51,10 @@ vi.mock("@/lib/strategy-lifecycle/transition-service", () => ({
     mockPerformLifecycleTransitionInTx(...args),
 }));
 
+vi.mock("@/domain/verification/config-loader", () => ({
+  loadActiveConfigWithFallback: (...args: unknown[]) => mockLoadActiveConfigWithFallback(...args),
+}));
+
 vi.mock("@/lib/logger", () => ({
   logger: {
     child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
@@ -84,6 +89,12 @@ describe("POST /api/internal/monitoring/override/apply", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.INTERNAL_API_KEY = TEST_API_KEY;
+    mockLoadActiveConfigWithFallback.mockResolvedValue({
+      config: {
+        monitoringThresholds: { overrideSuppressionMinutes: 10 },
+      },
+      source: "db",
+    });
     mockCheckRateLimit.mockResolvedValue({
       success: true,
       limit: 10,
@@ -286,8 +297,9 @@ describe("POST /api/internal/monitoring/override/apply", () => {
       operatorHold: "NONE",
     });
 
-    // Proof-first: appendProofEventInTx called before state mutations
-    expect(callOrder[0]).toBe("appendProofEventInTx");
+    // Reordered: incident.findFirst before first appendProofEventInTx
+    expect(callOrder[0]).toBe("incident.findFirst");
+    expect(callOrder[1]).toBe("appendProofEventInTx");
 
     // Lifecycle transition — source is the typed TransitionSource "operator"
     expect(mockPerformLifecycleTransitionInTx).toHaveBeenCalledWith(
@@ -298,30 +310,67 @@ describe("POST /api/internal/monitoring/override/apply", () => {
       "operator"
     );
 
-    // Proof event includes appliedBy
+    // OVERRIDE_APPLIED proof includes incidentId, suppressedUntil, overrideSuppressionMinutes
     expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
       "strat_1",
       "OVERRIDE_APPLIED",
-      expect.objectContaining({ appliedBy: "operator_bob" })
-    );
-
-    // Incident was closed with OVERRIDE_APPLIED reason
-    expect(mockIncidentUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: "CLOSED", closeReason: "OVERRIDE_APPLIED" }),
+        appliedBy: "operator_bob",
+        incidentId: "inc_1",
+        suppressedUntil: expect.any(String),
+        overrideSuppressionMinutes: 10,
       })
     );
 
-    // Alert outbox entry created
+    // INCIDENT_CLOSED proof includes closedBy
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
+      "strat_1",
+      "INCIDENT_CLOSED",
+      expect.objectContaining({
+        closedBy: "operator_bob",
+        closeReason: "OVERRIDE_APPLIED",
+      })
+    );
+
+    // Incident was closed with OVERRIDE_APPLIED reason and closedBy
+    expect(mockIncidentUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "CLOSED",
+          closeReason: "OVERRIDE_APPLIED",
+          closedBy: "operator_bob",
+        }),
+      })
+    );
+
+    // monitoringSuppressedUntil set on LiveEAInstance
+    expect(mockLiveEAInstanceUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          operatorHold: "NONE",
+          monitoringSuppressedUntil: expect.any(Date),
+        }),
+      })
+    );
+
+    // Alert outbox includes recordId, operatorId, incidentId, suppressedUntil
     expect(mockAlertOutboxCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ eventType: "override_applied" }),
+        data: expect.objectContaining({
+          eventType: "override_applied",
+          payload: expect.objectContaining({
+            recordId: "rec_abc",
+            operatorId: "operator_bob",
+            incidentId: "inc_1",
+            suppressedUntil: expect.any(String),
+          }),
+        }),
       })
     );
   });
 
   // Test 7: Happy apply without open incident
-  it("happy apply: no open incident (should not fail)", async () => {
+  it("happy apply: no open incident (should not fail), proof payload has incidentId: null", async () => {
     mockIncidentFindFirst.mockResolvedValue(null);
 
     const { POST } = await import("./route");
@@ -331,6 +380,13 @@ describe("POST /api/internal/monitoring/override/apply", () => {
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(mockIncidentUpdate).not.toHaveBeenCalled();
+
+    // OVERRIDE_APPLIED proof payload has incidentId: null
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
+      "strat_1",
+      "OVERRIDE_APPLIED",
+      expect.objectContaining({ incidentId: null })
+    );
   });
 
   // Test 8: Fail-closed

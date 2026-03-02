@@ -14,6 +14,7 @@ import { checkContentType, safeReadJson, validate, formatZodErrors } from "@/lib
 import { prisma } from "@/lib/prisma";
 import { appendProofEventInTx } from "@/lib/proof/events";
 import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
+import { loadActiveConfigWithFallback } from "@/domain/verification/config-loader";
 
 const log = logger.child({ route: "/api/internal/monitoring/override/apply" });
 
@@ -135,9 +136,20 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const { config } = await loadActiveConfigWithFallback();
+  const suppressionMinutes = config.monitoringThresholds?.overrideSuppressionMinutes ?? 10;
+  const suppressedUntil = new Date(now.getTime() + suppressionMinutes * 60_000);
+
   try {
     await prisma.$transaction(
       async (tx) => {
+        // 0. Read incident first (need incidentId for proof payload)
+        const openIncident = await tx.incident.findFirst({
+          where: { strategyId, status: { not: "CLOSED" } },
+        });
+
+        const incidentId = openIncident?.id ?? null;
+
         // 1. Proof event FIRST
         await appendProofEventInTx(tx, strategyId, "OVERRIDE_APPLIED", {
           eventType: "OVERRIDE_APPLIED",
@@ -149,6 +161,9 @@ export async function POST(request: NextRequest) {
           to: "LIVE_MONITORING",
           note: note ?? null,
           timestamp: now.toISOString(),
+          incidentId,
+          suppressedUntil: suppressedUntil.toISOString(),
+          overrideSuppressionMinutes: suppressionMinutes,
         });
 
         // 2. Lifecycle transition
@@ -162,10 +177,6 @@ export async function POST(request: NextRequest) {
         );
 
         // 3. Close open incidents
-        const openIncident = await tx.incident.findFirst({
-          where: { strategyId, status: { not: "CLOSED" } },
-        });
-
         if (openIncident) {
           await appendProofEventInTx(tx, strategyId, "INCIDENT_CLOSED", {
             eventType: "INCIDENT_CLOSED",
@@ -173,6 +184,7 @@ export async function POST(request: NextRequest) {
             strategyId,
             incidentId: openIncident.id,
             closeReason: "OVERRIDE_APPLIED",
+            closedBy: operatorId,
             timestamp: now.toISOString(),
           });
 
@@ -182,6 +194,7 @@ export async function POST(request: NextRequest) {
               status: "CLOSED",
               closedAt: now,
               closeReason: "OVERRIDE_APPLIED",
+              closedBy: operatorId,
             },
           });
         }
@@ -196,10 +209,10 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 5. Clear operatorHold
+        // 5. Clear operatorHold + set suppression window
         await tx.liveEAInstance.update({
           where: { id: instance.id },
-          data: { operatorHold: "NONE" },
+          data: { operatorHold: "NONE", monitoringSuppressedUntil: suppressedUntil },
         });
 
         // 6. Alert outbox
@@ -213,6 +226,10 @@ export async function POST(request: NextRequest) {
               overrideRequestId,
               from: "EDGE_AT_RISK",
               to: "LIVE_MONITORING",
+              recordId,
+              operatorId,
+              incidentId,
+              suppressedUntil: suppressedUntil.toISOString(),
             },
           },
         });

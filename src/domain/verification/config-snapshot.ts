@@ -35,6 +35,7 @@ export interface MonitoringThresholds {
   autoInvalidateMinutes: number | null;
   overrideApprovalPolicy: "SAME_OK" | "DIFFERENT_REQUIRED";
   overrideExpiryMinutes: number;
+  overrideSuppressionMinutes: number;
 }
 
 /** Immutable snapshot of a config version — anchors every verification run. */
@@ -128,6 +129,7 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     autoInvalidateMinutes: MONITORING.AUTO_INVALIDATE_MINUTES,
     overrideApprovalPolicy: MONITORING.OVERRIDE_APPROVAL_POLICY,
     overrideExpiryMinutes: MONITORING.OVERRIDE_EXPIRY_MINUTES,
+    overrideSuppressionMinutes: MONITORING.OVERRIDE_SUPPRESSION_MINUTES,
   };
 
   return {

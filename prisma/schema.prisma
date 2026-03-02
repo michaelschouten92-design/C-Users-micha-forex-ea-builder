@@ -378,6 +378,7 @@ model LiveEAInstance {
   mode          EAMode    @default(LIVE)
   tradingState  EATradingState @default(TRADING)
   operatorHold  String    @default("NONE")  // NONE | HALTED | OVERRIDE_PENDING
+  monitoringSuppressedUntil DateTime?  // Override post-apply suppression window
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
@@ -1174,6 +1175,7 @@ model Incident {
   escalationCount      Int       @default(0)
   closedAt             DateTime?
   closeReason          String?                    // RECOVERED | INVALIDATED | AUTO_INVALIDATED
+  closedBy             String?                    // operatorId who closed (e.g. via override)
   openedAt             DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

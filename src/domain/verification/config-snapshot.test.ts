@@ -34,6 +34,7 @@ const BASE_MONITORING: MonitoringThresholds = {
   autoInvalidateMinutes: null,
   overrideApprovalPolicy: "DIFFERENT_REQUIRED",
   overrideExpiryMinutes: 60,
+  overrideSuppressionMinutes: 10,
 };
 
 describe("computeThresholdsHash", () => {
@@ -111,6 +112,7 @@ describe("computeThresholdsHash", () => {
       { autoInvalidateMinutes: 480 },
       { overrideApprovalPolicy: "SAME_OK" as const },
       { overrideExpiryMinutes: 120 },
+      { overrideSuppressionMinutes: 20 },
     ];
 
     for (const mutation of mutations) {
@@ -131,7 +133,7 @@ describe("buildConfigSnapshot", () => {
   it("returns configVersion, thresholds, monitoringThresholds, and thresholdsHash", () => {
     const snapshot = buildConfigSnapshot();
 
-    expect(snapshot.configVersion).toBe("2.3.1");
+    expect(snapshot.configVersion).toBe("2.3.2");
     expect(snapshot.thresholds).toEqual(BASE_THRESHOLDS);
     expect(snapshot.monitoringThresholds).toEqual(BASE_MONITORING);
     expect(snapshot.thresholdsHash).toMatch(/^[a-f0-9]{64}$/);
@@ -194,7 +196,7 @@ describe("verifyConfigSnapshot", () => {
     const snapshot = buildConfigSnapshot();
     // Simulate stripping monitoringThresholds from a v2 snapshot
     const stripped: VerificationThresholdsSnapshot = {
-      configVersion: "2.3.1",
+      configVersion: "2.3.2",
       thresholds: snapshot.thresholds,
       // monitoringThresholds intentionally missing
       thresholdsHash: snapshot.thresholdsHash,
@@ -210,7 +212,7 @@ describe("verifyConfigSnapshot", () => {
     const snapshot = buildConfigSnapshot();
     const v1StyleHash = computeThresholdsHash(snapshot.thresholds);
     const stripped: VerificationThresholdsSnapshot = {
-      configVersion: "2.3.1",
+      configVersion: "2.3.2",
       thresholds: snapshot.thresholds,
       thresholdsHash: v1StyleHash,
     };

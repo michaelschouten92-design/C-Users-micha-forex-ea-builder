@@ -26,7 +26,10 @@ vi.mock("@/lib/logger", () => ({
 describe("triggerMonitoringAfterIngest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "NONE" });
+    mockLiveEAInstanceFindFirst.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+    });
   });
 
   async function importTrigger() {
@@ -94,12 +97,48 @@ describe("triggerMonitoringAfterIngest", () => {
   });
 
   it("proceeds when operator hold is NONE", async () => {
-    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "NONE" });
+    mockLiveEAInstanceFindFirst.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+    });
     mockIsMonitoringCooldownExpired.mockResolvedValue(true);
     mockRunMonitoring.mockResolvedValue(fakeResult);
 
     const trigger = await importTrigger();
     const result = await trigger("strat_1");
+
+    expect(result).toEqual({ triggered: true, reason: "OK", result: fakeResult });
+    expect(mockRunMonitoring).toHaveBeenCalled();
+  });
+
+  it("skips monitoring when suppression window is active", async () => {
+    const now = new Date("2026-03-02T12:00:00Z");
+    const suppressedUntil = new Date("2026-03-02T12:10:00Z"); // 10 min in the future
+    mockLiveEAInstanceFindFirst.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: suppressedUntil,
+    });
+
+    const trigger = await importTrigger();
+    const result = await trigger("strat_1", now);
+
+    expect(result).toEqual({ triggered: false, reason: "MONITORING_SUPPRESSED" });
+    expect(mockRunMonitoring).not.toHaveBeenCalled();
+    expect(mockIsMonitoringCooldownExpired).not.toHaveBeenCalled();
+  });
+
+  it("proceeds when suppression window has expired", async () => {
+    const now = new Date("2026-03-02T12:15:00Z");
+    const suppressedUntil = new Date("2026-03-02T12:10:00Z"); // 5 min in the past
+    mockLiveEAInstanceFindFirst.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: suppressedUntil,
+    });
+    mockIsMonitoringCooldownExpired.mockResolvedValue(true);
+    mockRunMonitoring.mockResolvedValue(fakeResult);
+
+    const trigger = await importTrigger();
+    const result = await trigger("strat_1", now);
 
     expect(result).toEqual({ triggered: true, reason: "OK", result: fakeResult });
     expect(mockRunMonitoring).toHaveBeenCalled();

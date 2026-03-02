@@ -28,16 +28,26 @@ export interface TriggerMonitoringResult {
  * Errors from the monitoring run propagate — caller decides error handling.
  */
 export async function triggerMonitoringAfterIngest(
-  strategyId: string
+  strategyId: string,
+  now: Date = new Date()
 ): Promise<TriggerMonitoringResult> {
   // Check operator hold — skip monitoring entirely when HALTED
   const instance = await prisma.liveEAInstance.findFirst({
     where: { strategyVersion: { strategyIdentity: { strategyId } } },
-    select: { operatorHold: true },
+    select: { operatorHold: true, monitoringSuppressedUntil: true },
   });
   if (instance?.operatorHold === "HALTED") {
     log.info({ strategyId }, "Monitoring skipped: operator hold HALTED");
     return { triggered: false, reason: "OPERATOR_HALTED" };
+  }
+
+  // Check suppression window (set after override apply)
+  if (instance?.monitoringSuppressedUntil && now < instance.monitoringSuppressedUntil) {
+    log.info(
+      { strategyId, suppressedUntil: instance.monitoringSuppressedUntil },
+      "Monitoring skipped: suppression window active"
+    );
+    return { triggered: false, reason: "MONITORING_SUPPRESSED" };
   }
 
   // Check cooldown

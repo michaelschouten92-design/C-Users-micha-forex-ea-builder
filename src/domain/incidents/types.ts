@@ -1,6 +1,10 @@
 export type IncidentStatus = "OPEN" | "ACKNOWLEDGED" | "ESCALATED" | "CLOSED";
 export type IncidentSeverity = "AT_RISK" | "INVALIDATED";
-export type IncidentCloseReason = "RECOVERED" | "INVALIDATED" | "AUTO_INVALIDATED";
+export type IncidentCloseReason =
+  | "RECOVERED"
+  | "INVALIDATED"
+  | "AUTO_INVALIDATED"
+  | "OVERRIDE_APPLIED";
 
 export interface IncidentOpenParams {
   strategyId: string;
