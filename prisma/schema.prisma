@@ -377,6 +377,7 @@ model LiveEAInstance {
   status        EAStatus  @default(OFFLINE)
   mode          EAMode    @default(LIVE)
   tradingState  EATradingState @default(TRADING)
+  operatorHold  String    @default("NONE")  // NONE | HALTED | OVERRIDE_PENDING
   lastHeartbeat DateTime?
   lastError     String?
   balance       Float?
@@ -426,6 +427,7 @@ model LiveEAInstance {
   @@index([exportJobId])
   @@index([strategyVersionId])
   @@index([apiKeyHashPrev, keyGracePeriodEnd])
+  @@index([operatorHold])
 }
 
 model EAHeartbeat {
