@@ -10,12 +10,15 @@ const baseThresholds: MonitoringThresholds = {
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
   recoveryRunsRequired: 3,
+  ackDeadlineMinutes: 60,
+  escalationIntervalMinutes: 120,
+  autoInvalidateMinutes: null,
 };
 
 /** All-pass context: everything within limits */
 const healthyCtx: MonitoringContext = {
   strategyId: "strat_1",
-  configVersion: "2.1.0",
+  configVersion: "2.2.0",
   liveFactCount: 50,
   snapshotHash: "abc123",
   liveMaxDrawdownPct: 5,

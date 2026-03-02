@@ -30,6 +30,9 @@ export interface MonitoringThresholds {
   maxInactivityDays: number;
   cusumDriftConsecutiveSnapshots: number;
   recoveryRunsRequired: number;
+  ackDeadlineMinutes: number;
+  escalationIntervalMinutes: number;
+  autoInvalidateMinutes: number | null;
 }
 
 /** Immutable snapshot of a config version — anchors every verification run. */
@@ -118,6 +121,9 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     maxInactivityDays: MONITORING.MAX_INACTIVITY_DAYS,
     cusumDriftConsecutiveSnapshots: MONITORING.CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS,
     recoveryRunsRequired: MONITORING.RECOVERY_RUNS_REQUIRED,
+    ackDeadlineMinutes: MONITORING.ACK_DEADLINE_MINUTES,
+    escalationIntervalMinutes: MONITORING.ESCALATION_INTERVAL_MINUTES,
+    autoInvalidateMinutes: MONITORING.AUTO_INVALIDATE_MINUTES,
   };
 
   return {

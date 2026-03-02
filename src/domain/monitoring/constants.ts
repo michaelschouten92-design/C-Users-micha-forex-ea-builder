@@ -25,4 +25,12 @@ export const MONITORING = {
   CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
   /** Consecutive HEALTHY runs required to recover from EDGE_AT_RISK */
   RECOVERY_RUNS_REQUIRED: 3,
+
+  // ── Incident SLA thresholds (included in thresholdsHash) ─────────
+  /** Minutes before operator ACK is expected */
+  ACK_DEADLINE_MINUTES: 60,
+  /** Minutes between escalation notifications */
+  ESCALATION_INTERVAL_MINUTES: 120,
+  /** Minutes before auto-invalidation (null = disabled) */
+  AUTO_INVALIDATE_MINUTES: null as number | null,
 } as const;
