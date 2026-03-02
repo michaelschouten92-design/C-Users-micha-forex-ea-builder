@@ -1153,6 +1153,34 @@ model AlertOutbox {
 }
 
 // ============================================
+// INCIDENT — SLA-tracked monitoring incidents
+// ============================================
+
+model Incident {
+  id                   String    @id @default(cuid())
+  strategyId           String
+  status               String    @default("OPEN") // OPEN | ACKNOWLEDGED | ESCALATED | CLOSED
+  severity             String                     // AT_RISK | INVALIDATED
+  triggerRecordId      String                     // MonitoringRun.recordId that opened this
+  reasonCodes          Json                       // string[] from monitoring evaluation
+  snapshotHash         String?                    // tradeSnapshotHash at open time
+  configVersion        String
+  thresholdsHash       String
+  ackDeadlineAt        DateTime                   // when ACK is expected
+  invalidateDeadlineAt DateTime?                  // null = auto-invalidate disabled
+  lastEscalatedAt      DateTime?
+  escalationCount      Int       @default(0)
+  closedAt             DateTime?
+  closeReason          String?                    // RECOVERED | INVALIDATED | AUTO_INVALIDATED
+  openedAt             DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([strategyId, status])
+  @@index([status, ackDeadlineAt])
+  @@index([status, invalidateDeadlineAt])
+}
+
+// ============================================
 // MONITORING RUN — Live strategy monitoring
 // ============================================
 
