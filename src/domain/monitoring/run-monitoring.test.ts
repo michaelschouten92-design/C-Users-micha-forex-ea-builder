@@ -15,7 +15,7 @@ const mockLoadActiveConfigWithFallback = vi.fn();
 const mockBuildTradeSnapshot = vi.fn();
 const mockEvaluateMonitoring = vi.fn();
 const mockPerformLifecycleTransitionInTx = vi.fn();
-const mockNotifyTransition = vi.fn();
+const mockAlertOutboxCreate = vi.fn();
 
 // ── Module mocks ──────────────────────────────────────────────────────
 vi.mock("@prisma/client", () => {
@@ -67,10 +67,6 @@ vi.mock("@/lib/proof/events", () => ({
 vi.mock("@/lib/strategy-lifecycle/transition-service", () => ({
   performLifecycleTransitionInTx: (...args: unknown[]) =>
     mockPerformLifecycleTransitionInTx(...args),
-}));
-
-vi.mock("@/lib/notifications/notify", () => ({
-  notifyTransition: (...args: unknown[]) => mockNotifyTransition(...args),
 }));
 
 vi.mock("@/domain/verification/config-loader", () => {
@@ -202,7 +198,7 @@ function setupDefaults() {
   // Default: no previous runs → consecutive healthy = 0
   mockMonitoringRunFindMany.mockResolvedValue([]);
   mockPerformLifecycleTransitionInTx.mockResolvedValue(undefined);
-  mockNotifyTransition.mockResolvedValue(undefined);
+  mockAlertOutboxCreate.mockResolvedValue({ id: "alert_1" });
 
   // $transaction executes callback with a mock tx that reuses the same mock handles
   mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
@@ -213,6 +209,9 @@ function setupDefaults() {
       },
       liveEAInstance: {
         findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+      },
+      alertOutbox: {
+        create: (...args: unknown[]) => mockAlertOutboxCreate(...args),
       },
     };
     return fn(tx);
@@ -934,8 +933,8 @@ describe("runMonitoring", () => {
     expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
   });
 
-  // ── Notification wiring ───────────────────────────────────────────────
-  it("calls notifyTransition with correct payload when transition occurs", async () => {
+  // ── Durable alert outbox ─────────────────────────────────────────────
+  it("transition enqueues AlertOutbox row inside tx", async () => {
     setupInstanceAndVerdict(
       "LIVE_MONITORING",
       "AT_RISK",
@@ -946,45 +945,55 @@ describe("runMonitoring", () => {
     const run = await importRunMonitoring();
     await run(params);
 
-    expect(mockNotifyTransition).toHaveBeenCalledTimes(1);
-    expect(mockNotifyTransition).toHaveBeenCalledWith({
-      strategyId: "strat_1",
-      fromState: "LIVE_MONITORING",
-      toState: "EDGE_AT_RISK",
-      monitoringVerdict: "AT_RISK",
-      reasonCodes: ["MONITORING_DRAWDOWN_BREACH"],
-      tradeSnapshotHash: "live_snap_hash",
-      configVersion: "2.1.0",
-      thresholdsHash: "th_hash",
-      recordId: FAKE_UUID,
+    expect(mockAlertOutboxCreate).toHaveBeenCalledTimes(1);
+    expect(mockAlertOutboxCreate).toHaveBeenCalledWith({
+      data: {
+        eventType: "lifecycle_transition",
+        dedupeKey: `lifecycle_transition:${FAKE_UUID}`,
+        payload: {
+          strategyId: "strat_1",
+          fromState: "LIVE_MONITORING",
+          toState: "EDGE_AT_RISK",
+          monitoringVerdict: "AT_RISK",
+          reasonCodes: ["MONITORING_DRAWDOWN_BREACH"],
+          tradeSnapshotHash: "live_snap_hash",
+          configVersion: "2.1.0",
+          thresholdsHash: "th_hash",
+          recordId: FAKE_UUID,
+        },
+      },
     });
   });
 
-  it("does not call notifyTransition when no transition occurs", async () => {
+  it("no transition does not enqueue AlertOutbox", async () => {
     // No instance → no transition
     const run = await importRunMonitoring();
     await run(params);
 
-    expect(mockNotifyTransition).not.toHaveBeenCalled();
+    expect(mockAlertOutboxCreate).not.toHaveBeenCalled();
   });
 
-  it("notification failure does not affect RunMonitoringResult", async () => {
+  it("AlertOutbox create failure rolls back entire transaction", async () => {
     setupInstanceAndVerdict(
       "LIVE_MONITORING",
       "AT_RISK",
       ["MONITORING_DRAWDOWN_BREACH"],
       [{ verdict: "AT_RISK" }]
     );
-    mockNotifyTransition.mockRejectedValue(new Error("webhook failed"));
+    mockAlertOutboxCreate.mockRejectedValue(new Error("DB write failed"));
 
     const run = await importRunMonitoring();
-    const result = await run(params);
+    await expect(run(params)).rejects.toThrow("DB write failed");
 
-    expect(result.transition).toEqual({
-      from: "LIVE_MONITORING",
-      to: "EDGE_AT_RISK",
-      proofEventType: "STRATEGY_EDGE_AT_RISK",
-    });
+    // Run marked FAILED by outer catch (tx rolled back)
+    expect(mockMonitoringRunUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: "DB write failed",
+        }),
+      })
+    );
   });
 });
 

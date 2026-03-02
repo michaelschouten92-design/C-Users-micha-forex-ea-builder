@@ -41,8 +41,6 @@ import { decideMonitoringTransition } from "./decide-monitoring-transition";
 import type { TransitionDecision } from "./decide-monitoring-transition";
 import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
-import { notifyTransition } from "@/lib/notifications/notify";
-
 const log = logger.child({ service: "monitoring-run" });
 
 export interface RunMonitoringParams {
@@ -383,27 +381,31 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             to: transitionDecision.to,
             proofEventType: transitionDecision.proofEventType,
           };
+
+          // Enqueue durable alert — fails → entire tx rolls back → no silent loss
+          await tx.alertOutbox.create({
+            data: {
+              eventType: "lifecycle_transition",
+              dedupeKey: `lifecycle_transition:${recordId}`,
+              payload: {
+                strategyId,
+                fromState: transitionDecision.from,
+                toState: transitionDecision.to,
+                monitoringVerdict: evalResult.verdict,
+                reasonCodes: evalResult.reasons,
+                tradeSnapshotHash: snapshot.snapshotHash,
+                configVersion,
+                thresholdsHash,
+                recordId,
+              },
+            },
+          });
         }
 
         return { consecutiveHealthyRuns, transition };
       },
       { isolationLevel: "Serializable" }
     );
-
-    // Fire-and-forget notification — only after tx committed successfully
-    if (atomicResult.transition) {
-      notifyTransition({
-        strategyId,
-        fromState: atomicResult.transition.from,
-        toState: atomicResult.transition.to,
-        monitoringVerdict: evalResult.verdict,
-        reasonCodes: evalResult.reasons,
-        tradeSnapshotHash: snapshot.snapshotHash,
-        configVersion,
-        thresholdsHash,
-        recordId,
-      }).catch(() => {}); // belt-and-suspenders — notifyTransition already catches
-    }
 
     return {
       runId: run.id,
