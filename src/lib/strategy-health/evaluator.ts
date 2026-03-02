@@ -100,6 +100,20 @@ async function updateLifecyclePhase(
     updateData.peakScoreAt = new Date();
   }
 
+  // Monitoring system owns lifecycle transitions for LIVE_MONITORING and EDGE_AT_RISK states.
+  // Health evaluator still tracks peak scores but must not perform lifecycle transitions
+  // when the strategy is in these states — only MonitoringRun can transition them.
+  const monitoringOwnedStates = ["LIVE_MONITORING", "EDGE_AT_RISK"];
+  if (monitoringOwnedStates.includes(instance.lifecycleState)) {
+    if (Object.keys(updateData).length > 0) {
+      await prisma.liveEAInstance.update({
+        where: { id: instanceId },
+        data: updateData,
+      });
+    }
+    return;
+  }
+
   if (currentPhase === "NEW") {
     // Transition to PROVING once we get a real assessment (not INSUFFICIENT_DATA)
     if (result.status !== "INSUFFICIENT_DATA") {

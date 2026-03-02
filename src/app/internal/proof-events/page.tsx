@@ -48,6 +48,11 @@ const PAYLOAD_WHITELIST = new Set([
   "backtestRunId",
   "insertedCount",
   "skippedCount",
+  // Monitoring events
+  "monitoringVerdict",
+  "reasons",
+  "ruleResults",
+  "liveFactCount",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */

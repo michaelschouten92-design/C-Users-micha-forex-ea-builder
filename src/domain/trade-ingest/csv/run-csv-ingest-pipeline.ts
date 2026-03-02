@@ -17,6 +17,7 @@ import {
 } from "@/domain/trade-ingest";
 import { prisma } from "@/lib/prisma";
 import { appendProofEvent } from "@/lib/proof/events";
+import { triggerMonitoringAfterIngest } from "@/domain/monitoring/trigger";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ service: "csv-ingest-pipeline" });
@@ -96,6 +97,17 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
   } catch (err) {
     log.error({ err, strategyId, recordId }, "Failed to persist proof event for trade ingest");
     throw err;
+  }
+
+  // Step 5: Trigger monitoring run for LIVE ingest (non-blocking for ingest result)
+  // The monitoring run is persisted (not fire-and-forget) but its failure
+  // does not fail the ingest — the ingest proof event is already committed.
+  if (source === "LIVE") {
+    try {
+      await triggerMonitoringAfterIngest(strategyId);
+    } catch (err) {
+      log.error({ err, strategyId }, "Monitoring trigger failed (non-fatal for ingest)");
+    }
   }
 
   return {
