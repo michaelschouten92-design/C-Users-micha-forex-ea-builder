@@ -10,7 +10,7 @@ vi.mock("@/domain/trade-ingest/csv/run-csv-ingest-pipeline", async () => {
   // CsvParseError is a real class used for instanceof checks
   class CsvParseError extends Error {
     details: string[];
-    constructor(message: string, details: string[]) {
+    constructor(message: string, _line: number | null, details: string[]) {
       super(message);
       this.name = "CsvParseError";
       this.details = details;
@@ -138,7 +138,7 @@ describe("POST /api/internal/trades/import-csv", () => {
   it("returns 400 for CsvParseError from pipeline", async () => {
     const { CsvParseError } = await import("@/domain/trade-ingest/csv/run-csv-ingest-pipeline");
     mockRunCsvIngestPipeline.mockRejectedValueOnce(
-      new CsvParseError("bad csv", ["missing ticket column"])
+      new CsvParseError("bad csv", null, ["missing ticket column"])
     );
 
     const { POST } = await import("./route");

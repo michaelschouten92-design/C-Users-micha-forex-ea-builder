@@ -9,7 +9,7 @@ const mockAppendProofEvent = vi.fn();
 vi.mock("./parse-csv-deals", () => {
   class CsvParseError extends Error {
     details: string[];
-    constructor(message: string, details: string[]) {
+    constructor(message: string, _line: number | null, details: string[]) {
       super(message);
       this.name = "CsvParseError";
       this.details = details;
@@ -107,7 +107,7 @@ describe("runCsvIngestPipeline", () => {
   it("propagates CsvParseError from parseCsvDeals", async () => {
     const { CsvParseError } = await import("./parse-csv-deals");
     mockParseCsvDeals.mockImplementation(() => {
-      throw new CsvParseError("bad csv", ["missing ticket"]);
+      throw new CsvParseError("bad csv", null, ["missing ticket"]);
     });
 
     const run = await importPipeline();
