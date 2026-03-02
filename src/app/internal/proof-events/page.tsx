@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface ProofEvent {
   createdAt: string;
@@ -883,7 +884,8 @@ function OverridePanel({
 }
 
 function ProofEventsForm() {
-  const [strategyId, setStrategyId] = useState("");
+  const searchParams = useSearchParams();
+  const [strategyId, setStrategyId] = useState(searchParams.get("strategyId") ?? "");
   const [internalApiKey, setInternalApiKey] = useState("");
   const [limit, setLimit] = useState("");
   const [verifyChain, setVerifyChain] = useState(false);

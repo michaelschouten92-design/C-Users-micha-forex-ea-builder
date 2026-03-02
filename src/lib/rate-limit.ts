@@ -624,6 +624,15 @@ export const internalOpsOverviewRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for internal strategy overview endpoint
+ * Limits: 60 requests per minute per IP (read-only detail view)
+ */
+export const internalStrategyOverviewRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
  * Rate limiter for internal incident drilldown endpoint
  * Limits: 60 requests per minute per IP (read-only detail view)
  */
