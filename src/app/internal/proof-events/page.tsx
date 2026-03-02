@@ -69,6 +69,10 @@ const PAYLOAD_WHITELIST = new Set([
   "action",
   "note",
   "lifecycleState",
+  // Operator hold events
+  "previousHold",
+  "newHold",
+  "actor",
   // Incident events
   "incidentId",
   "severity",
@@ -589,6 +593,120 @@ function IncidentPanel({ internalApiKey }: { internalApiKey: string }) {
   );
 }
 
+function OperatorHoldPanel({
+  strategyId,
+  internalApiKey,
+  onActionComplete,
+}: {
+  strategyId: string;
+  internalApiKey: string;
+  onActionComplete: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionResult, setActionResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  async function handleAction(action: "HALT" | "RESUME") {
+    setActionResult(null);
+    setActionLoading(action);
+
+    try {
+      const res = await fetch("/api/internal/monitoring/operator-hold", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": internalApiKey,
+        },
+        body: JSON.stringify({
+          strategyId,
+          recordId: crypto.randomUUID(),
+          action,
+          ...(note.trim() ? { note: note.trim() } : {}),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        setActionResult({
+          type: "error",
+          message: json.error || `Error ${res.status}`,
+        });
+        return;
+      }
+
+      setActionResult({
+        type: "success",
+        message: `operatorHold → ${json.operatorHold}`,
+      });
+      setNote("");
+      onActionComplete();
+    } catch (err) {
+      setActionResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Network error",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  return (
+    <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-3">
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Operator Hold</h3>
+
+      <div>
+        <label className={labelClass}>Note (optional, max 280 chars)</label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={280}
+          rows={2}
+          className={inputClass}
+          placeholder="Optional operator note..."
+        />
+        <div className="text-right text-xs text-[#64748B] mt-0.5">
+          {280 - note.length} remaining
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={actionLoading !== null}
+          onClick={() => handleAction("HALT")}
+          className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+        >
+          {actionLoading === "HALT" ? "Sending..." : "HALT"}
+        </button>
+        <button
+          type="button"
+          disabled={actionLoading !== null}
+          onClick={() => handleAction("RESUME")}
+          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+        >
+          {actionLoading === "RESUME" ? "Sending..." : "RESUME"}
+        </button>
+      </div>
+
+      {actionResult && (
+        <div
+          className={`p-3 rounded-lg text-xs ${
+            actionResult.type === "success"
+              ? "bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E]"
+              : "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]"
+          }`}
+        >
+          {actionResult.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProofEventsForm() {
   const [strategyId, setStrategyId] = useState("");
   const [internalApiKey, setInternalApiKey] = useState("");
@@ -858,6 +976,15 @@ function ProofEventsForm() {
       {/* Operator action panel — visible when events loaded and credentials present */}
       {events && strategyId.trim() && internalApiKey.trim() && (
         <OperatorActionPanel
+          strategyId={strategyId}
+          internalApiKey={internalApiKey}
+          onActionComplete={handleActionComplete}
+        />
+      )}
+
+      {/* Operator hold panel — HALT/RESUME with proof-first semantics */}
+      {events && strategyId.trim() && internalApiKey.trim() && (
+        <OperatorHoldPanel
           strategyId={strategyId}
           internalApiKey={internalApiKey}
           onActionComplete={handleActionComplete}
