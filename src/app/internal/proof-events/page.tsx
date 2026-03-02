@@ -213,6 +213,122 @@ const inputClass =
 
 const labelClass = "block text-xs text-[#7C8DB0] mb-1";
 
+const OPERATOR_ACTIONS = [
+  { action: "ACK", label: "Acknowledge Risk", color: "bg-amber-600 hover:bg-amber-700" },
+  { action: "HALT", label: "Request Halt", color: "bg-red-600 hover:bg-red-700" },
+  {
+    action: "OVERRIDE_REQUEST",
+    label: "Request Override",
+    color: "bg-orange-600 hover:bg-orange-700",
+  },
+] as const;
+
+function OperatorActionPanel({
+  strategyId,
+  internalApiKey,
+  onActionComplete,
+}: {
+  strategyId: string;
+  internalApiKey: string;
+  onActionComplete: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionResult, setActionResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  async function handleAction(action: string) {
+    setActionResult(null);
+    setActionLoading(action);
+
+    try {
+      const res = await fetch("/api/internal/monitoring/operator-action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-api-key": internalApiKey,
+        },
+        body: JSON.stringify({
+          strategyId,
+          recordId: crypto.randomUUID(),
+          action,
+          ...(note.trim() ? { note: note.trim() } : {}),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        setActionResult({
+          type: "error",
+          message: json.error || `Error ${res.status}`,
+        });
+        return;
+      }
+
+      setActionResult({ type: "success", message: "Action recorded" });
+      setNote("");
+      onActionComplete();
+    } catch (err) {
+      setActionResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Network error",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  return (
+    <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-3">
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Operator Actions</h3>
+
+      <div>
+        <label className={labelClass}>Note (optional, max 280 chars)</label>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={280}
+          rows={2}
+          className={inputClass}
+          placeholder="Optional operator note..."
+        />
+        <div className="text-right text-xs text-[#64748B] mt-0.5">
+          {280 - note.length} remaining
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {OPERATOR_ACTIONS.map(({ action, label, color }) => (
+          <button
+            key={action}
+            type="button"
+            disabled={actionLoading !== null}
+            onClick={() => handleAction(action)}
+            className={`${color} disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors`}
+          >
+            {actionLoading === action ? "Sending..." : label}
+          </button>
+        ))}
+      </div>
+
+      {actionResult && (
+        <div
+          className={`p-3 rounded-lg text-xs ${
+            actionResult.type === "success"
+              ? "bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22C55E]"
+              : "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444]"
+          }`}
+        >
+          {actionResult.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProofEventsForm() {
   const [strategyId, setStrategyId] = useState("");
   const [internalApiKey, setInternalApiKey] = useState("");
@@ -238,6 +354,43 @@ function ProofEventsForm() {
     });
   }
 
+  async function fetchEvents() {
+    const params = new URLSearchParams({ strategyId });
+    if (limit.trim()) {
+      params.set("limit", limit.trim());
+    }
+    if (verifyChain) {
+      params.set("verify", "true");
+      if (recordId.trim()) {
+        params.set("recordId", recordId.trim());
+      }
+    }
+
+    const res = await fetch(`/api/internal/proof-events?${params.toString()}`, {
+      headers: { "x-internal-api-key": internalApiKey },
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        setError("Unauthorized \u2014 check your API key");
+      } else if (res.status === 400) {
+        setError(json.error || "Bad request");
+      } else if (res.status === 429) {
+        setError("Rate limited \u2014 try again shortly");
+      } else {
+        setError(json.error || "Unexpected error");
+      }
+      return;
+    }
+
+    setEvents(json.data as ProofEvent[]);
+    if (json.chainVerification) {
+      setChainVerification(json.chainVerification as ChainVerification);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -247,45 +400,16 @@ function ProofEventsForm() {
     setLoading(true);
 
     try {
-      const params = new URLSearchParams({ strategyId });
-      if (limit.trim()) {
-        params.set("limit", limit.trim());
-      }
-      if (verifyChain) {
-        params.set("verify", "true");
-        if (recordId.trim()) {
-          params.set("recordId", recordId.trim());
-        }
-      }
-
-      const res = await fetch(`/api/internal/proof-events?${params.toString()}`, {
-        headers: { "x-internal-api-key": internalApiKey },
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          setError("Unauthorized \u2014 check your API key");
-        } else if (res.status === 400) {
-          setError(json.error || "Bad request");
-        } else if (res.status === 429) {
-          setError("Rate limited \u2014 try again shortly");
-        } else {
-          setError(json.error || "Unexpected error");
-        }
-        return;
-      }
-
-      setEvents(json.data as ProofEvent[]);
-      if (json.chainVerification) {
-        setChainVerification(json.chainVerification as ChainVerification);
-      }
+      await fetchEvents();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleActionComplete() {
+    fetchEvents().catch(() => {});
   }
 
   return (
@@ -469,6 +593,15 @@ function ProofEventsForm() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Operator action panel — visible when events loaded and credentials present */}
+      {events && strategyId.trim() && internalApiKey.trim() && (
+        <OperatorActionPanel
+          strategyId={strategyId}
+          internalApiKey={internalApiKey}
+          onActionComplete={handleActionComplete}
+        />
       )}
     </div>
   );
