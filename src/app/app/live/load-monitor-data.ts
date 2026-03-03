@@ -1,7 +1,32 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import {
+  computeHeartbeatAnalytics,
+  type HeartbeatEvent,
+  type HeartbeatAnalyticsResult,
+} from "@/domain/heartbeat/heartbeat-analytics";
 
 const log = logger.child({ page: "/app/monitor" });
+
+// ── Types ────────────────────────────────────────────────
+
+export interface AuthorityDecision {
+  action: string;
+  reasonCode: string;
+  decidedAt: string; // ISO-8601
+  strategyId: string;
+}
+
+export interface MonitorData {
+  eaInstances: Awaited<ReturnType<typeof queryEaInstances>>;
+  subscription: Awaited<ReturnType<typeof querySubscription>>;
+  /** Most restrictive authority across all instances. null = fail-closed PAUSE. */
+  authority: AuthorityDecision | null;
+  /** Portfolio-level 24h cadence analytics. null = computation unavailable. */
+  analytics: HeartbeatAnalyticsResult | null;
+}
+
+// ── Helpers ──────────────────────────────────────────────
 
 /**
  * Classify a DB error for structured logging.
@@ -40,14 +65,89 @@ function classifyDbError(err: unknown): {
   return { errorName, errorCode, message, classification };
 }
 
+function queryEaInstances(userId: string) {
+  return prisma.liveEAInstance.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
+    select: {
+      id: true,
+      eaName: true,
+      symbol: true,
+      timeframe: true,
+      broker: true,
+      accountNumber: true,
+      status: true,
+      tradingState: true,
+      lastHeartbeat: true,
+      lastError: true,
+      balance: true,
+      equity: true,
+      openTrades: true,
+      totalTrades: true,
+      totalProfit: true,
+      strategyStatus: true,
+      mode: true,
+      // Governance fields
+      operatorHold: true,
+      monitoringSuppressedUntil: true,
+      lifecycleState: true,
+      trades: {
+        where: { closeTime: { not: null } },
+        select: { profit: true, closeTime: true },
+      },
+      heartbeats: {
+        orderBy: { createdAt: "desc" },
+        take: 200,
+        select: { equity: true, createdAt: true },
+      },
+    },
+  });
+}
+
+function querySubscription(userId: string) {
+  return prisma.subscription.findUnique({
+    where: { userId },
+  });
+}
+
+const AUTHORITY_PRIORITY: Record<string, number> = { STOP: 0, PAUSE: 1, RUN: 2 };
+
+/**
+ * From a list of per-instance decisions, return the most restrictive.
+ * STOP > PAUSE > RUN. Ties broken by most recent.
+ */
+function pickMostRestrictive(
+  decisions: { action: string; reasonCode: string; createdAt: Date; strategyId: string | null }[]
+): AuthorityDecision | null {
+  if (decisions.length === 0) return null;
+
+  const sorted = [...decisions].sort((a, b) => {
+    const pa = AUTHORITY_PRIORITY[a.action] ?? 1;
+    const pb = AUTHORITY_PRIORITY[b.action] ?? 1;
+    if (pa !== pb) return pa - pb; // lower = more restrictive
+    return b.createdAt.getTime() - a.createdAt.getTime(); // more recent first
+  });
+
+  const best = sorted[0];
+  return {
+    action: best.action,
+    reasonCode: best.reasonCode,
+    decidedAt: best.createdAt.toISOString(),
+    strategyId: best.strategyId ?? "",
+  };
+}
+
+// ── Main loader ──────────────────────────────────────────
+
 /**
  * Loads monitor page data from the database.
- * Returns null on any DB error (fail-closed).
+ * Returns null on core DB error (fail-closed).
  *
- * Uses Promise.allSettled to identify which query fails.
+ * Authority and analytics queries are non-critical:
+ * if they fail, the page still renders with PAUSE fallback.
  */
-export async function loadMonitorData(userId: string) {
-  // C) Environment check — boolean only, never log the value
+export async function loadMonitorData(userId: string): Promise<MonitorData | null> {
+  // Environment check — boolean only, never log the value
   const dbUrlPresent =
     typeof process.env.DATABASE_URL === "string" && process.env.DATABASE_URL.length > 0;
   if (!dbUrlPresent) {
@@ -55,53 +155,18 @@ export async function loadMonitorData(userId: string) {
     return null;
   }
 
-  // B) Runtime check
   log.info(
     { step: "load_start", runtime: process.env.NEXT_RUNTIME || "nodejs" },
     "monitor data load starting"
   );
 
   try {
-    // A) Individual query diagnostics via Promise.allSettled
+    // ── Phase 1: Core data (critical — null on failure) ──
     const [eaResult, subResult] = await Promise.allSettled([
-      prisma.liveEAInstance.findMany({
-        where: { userId, deletedAt: null },
-        orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
-        select: {
-          id: true,
-          eaName: true,
-          symbol: true,
-          timeframe: true,
-          broker: true,
-          accountNumber: true,
-          status: true,
-          tradingState: true,
-          lastHeartbeat: true,
-          lastError: true,
-          balance: true,
-          equity: true,
-          openTrades: true,
-          totalTrades: true,
-          totalProfit: true,
-          strategyStatus: true,
-          mode: true,
-          trades: {
-            where: { closeTime: { not: null } },
-            select: { profit: true, closeTime: true },
-          },
-          heartbeats: {
-            orderBy: { createdAt: "desc" },
-            take: 200,
-            select: { equity: true, createdAt: true },
-          },
-        },
-      }),
-      prisma.subscription.findUnique({
-        where: { userId },
-      }),
+      queryEaInstances(userId),
+      querySubscription(userId),
     ]);
 
-    // D) Check each result and classify any failure
     if (eaResult.status === "rejected") {
       const diag = classifyDbError(eaResult.reason);
       log.error(
@@ -132,9 +197,85 @@ export async function loadMonitorData(userId: string) {
       return null;
     }
 
-    log.info({ step: "load_success", eaCount: eaResult.value.length }, "monitor data loaded");
+    const eaInstances = eaResult.value;
+    const subscription = subResult.value;
 
-    return { eaInstances: eaResult.value, subscription: subResult.value };
+    log.info({ step: "load_success", eaCount: eaInstances.length }, "monitor data loaded");
+
+    // ── Phase 2: Authority data (non-critical — null on failure) ──
+    let authority: AuthorityDecision | null = null;
+    let analytics: HeartbeatAnalyticsResult | null = null;
+
+    const instanceIds = eaInstances.map((ea) => ea.id);
+
+    if (instanceIds.length > 0) {
+      try {
+        const windowEnd = new Date();
+        const windowStart = new Date(windowEnd.getTime() - 24 * 60 * 60 * 1000);
+        // Single query: fetch 24h of heartbeat events (used for both authority + analytics)
+        const recentEvents = await prisma.proofEventLog.findMany({
+          where: {
+            type: "HEARTBEAT_DECISION_MADE",
+            strategyId: { in: instanceIds },
+            createdAt: { gte: windowStart },
+          },
+          orderBy: { createdAt: "desc" },
+          select: { strategyId: true, meta: true, createdAt: true },
+          take: 5000, // Safety cap
+        });
+
+        // Extract authority from latest per-instance decisions
+        const latestPerInstance = new Map<
+          string,
+          { action: string; reasonCode: string; createdAt: Date; strategyId: string | null }
+        >();
+        for (const ev of recentEvents) {
+          const sid = ev.strategyId ?? "";
+          if (!latestPerInstance.has(sid)) {
+            const meta = ev.meta as Record<string, unknown> | null;
+            latestPerInstance.set(sid, {
+              action: typeof meta?.action === "string" ? meta.action : "PAUSE",
+              reasonCode:
+                typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+              createdAt: ev.createdAt,
+              strategyId: ev.strategyId,
+            });
+          }
+        }
+        authority = pickMostRestrictive([...latestPerInstance.values()]);
+
+        // Compute portfolio-level analytics
+        const heartbeatEvents: HeartbeatEvent[] = recentEvents.map((ev) => {
+          const meta = ev.meta as Record<string, unknown> | null;
+          return {
+            timestamp: ev.createdAt,
+            action: typeof meta?.action === "string" ? meta.action : "PAUSE",
+            reasonCode:
+              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+          };
+        });
+        analytics = computeHeartbeatAnalytics(
+          heartbeatEvents,
+          windowStart,
+          windowEnd,
+          60_000 // 60s expected cadence
+        );
+      } catch (err) {
+        const diag = classifyDbError(err);
+        log.error(
+          {
+            step: "authority_query_error",
+            errorName: diag.errorName,
+            message: diag.message,
+            classification: diag.classification,
+          },
+          "authority/analytics query failed (non-critical)"
+        );
+        // authority + analytics remain null — page shows PAUSE fallback
+      }
+    }
+
+    return { eaInstances, subscription, authority, analytics };
   } catch (err) {
     // Outer catch for unexpected errors (non-query failures like import errors)
     const diag = classifyDbError(err);

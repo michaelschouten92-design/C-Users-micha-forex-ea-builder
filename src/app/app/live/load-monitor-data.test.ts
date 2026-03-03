@@ -14,6 +14,7 @@ vi.mock("@/lib/logger", () => ({
 
 const mockFindMany = vi.fn();
 const mockFindUnique = vi.fn();
+const mockProofEventFindMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -23,7 +24,16 @@ vi.mock("@/lib/prisma", () => ({
     subscription: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
     },
+    proofEventLog: {
+      findMany: (...args: unknown[]) => mockProofEventFindMany(...args),
+    },
   },
+}));
+
+const mockComputeAnalytics = vi.fn();
+
+vi.mock("@/domain/heartbeat/heartbeat-analytics", () => ({
+  computeHeartbeatAnalytics: (...args: unknown[]) => mockComputeAnalytics(...args),
 }));
 
 describe("loadMonitorData", () => {
@@ -31,6 +41,22 @@ describe("loadMonitorData", () => {
     vi.clearAllMocks();
     // Ensure DATABASE_URL is present for all tests (diagnostic check)
     process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
+    // Default: no proof events, analytics returns fail-closed shape
+    mockProofEventFindMany.mockResolvedValue([]);
+    mockComputeAnalytics.mockReturnValue({
+      windowStart: "",
+      windowEnd: "",
+      windowMs: 0,
+      expectedCadenceMs: 60000,
+      totalEvents: 0,
+      coverageMs: 0,
+      coveragePct: 0,
+      runMs: 0,
+      runPct: 0,
+      cadenceBreached: true,
+      longestGapMs: 0,
+      lastDecision: null,
+    });
   });
 
   it("returns data on successful DB queries", async () => {
@@ -54,6 +80,9 @@ describe("loadMonitorData", () => {
     expect(result).not.toBeNull();
     expect(result!.eaInstances).toEqual(mockInstances);
     expect(result!.subscription).toEqual(mockSub);
+    // Authority and analytics fields present (may be null for no events)
+    expect(result).toHaveProperty("authority");
+    expect(result).toHaveProperty("analytics");
   });
 
   it("returns null on liveEAInstance query failure (fail-closed)", async () => {
@@ -316,10 +345,108 @@ describe("loadMonitorData", () => {
       "mode",
       "trades",
       "heartbeats",
+      // Governance fields required by Command Center
+      "operatorHold",
+      "monitoringSuppressedUntil",
+      "lifecycleState",
     ];
 
     for (const field of requiredFields) {
       expect(select).toHaveProperty(field);
     }
+  });
+
+  // ── Command Center: Authority + Analytics ─────────────
+
+  it("returns authority from proof events when instances exist", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "RUN", reasonCode: "WITHIN_BOUNDS" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+    mockComputeAnalytics.mockReturnValue({
+      coveragePct: 99,
+      runPct: 99,
+      cadenceBreached: false,
+      longestGapMs: 5000,
+      totalEvents: 1,
+    });
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result).not.toBeNull();
+    expect(result!.authority).toEqual({
+      action: "RUN",
+      reasonCode: "WITHIN_BOUNDS",
+      decidedAt: "2025-01-01T12:00:00.000Z",
+      strategyId: "ea_1",
+    });
+    expect(result!.analytics).toEqual(
+      expect.objectContaining({ coveragePct: 99, cadenceBreached: false })
+    );
+  });
+
+  it("returns null authority when no instances exist (skips phase 2)", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result).not.toBeNull();
+    expect(result!.authority).toBeNull();
+    expect(result!.analytics).toBeNull();
+    // proofEventLog should not have been queried
+    expect(mockProofEventFindMany).not.toHaveBeenCalled();
+  });
+
+  it("returns null authority/analytics when proof query fails (fail-closed, non-critical)", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockRejectedValue(new Error("DB timeout on proof query"));
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    // Core data still returned — authority/analytics degrade gracefully
+    expect(result).not.toBeNull();
+    expect(result!.eaInstances).toEqual(mockInstances);
+    expect(result!.authority).toBeNull();
+    expect(result!.analytics).toBeNull();
+  });
+
+  it("picks most restrictive authority across multiple instances (STOP > PAUSE > RUN)", async () => {
+    const mockInstances = [
+      { id: "ea_1", trades: [], heartbeats: [] },
+      { id: "ea_2", trades: [], heartbeats: [] },
+    ];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "RUN", reasonCode: "WITHIN_BOUNDS" },
+        createdAt: new Date("2025-01-01T12:01:00Z"),
+      },
+      {
+        strategyId: "ea_2",
+        meta: { action: "STOP", reasonCode: "HARD_LIMIT_BREACHED" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result).not.toBeNull();
+    expect(result!.authority!.action).toBe("STOP");
+    expect(result!.authority!.reasonCode).toBe("HARD_LIMIT_BREACHED");
   });
 });
