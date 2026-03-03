@@ -23,6 +23,7 @@ describe("explainReasonCode", () => {
       "CONFIG_UNAVAILABLE",
       "COMPUTATION_FAILED",
       "NO_HEARTBEAT_PROOF",
+      "CONTROL_INCONSISTENCY_DETECTED",
     ];
 
     for (const code of CONTRACT_CODES) {
@@ -68,6 +69,7 @@ describe("explainReasonCode", () => {
     expect(explainReasonCode("COMPUTATION_FAILED")).toContain("PAUSE");
     expect(explainReasonCode("NO_INSTANCE")).toContain("PAUSE");
     expect(explainReasonCode("NO_HEARTBEAT_PROOF")).toContain("PAUSE");
+    expect(explainReasonCode("CONTROL_INCONSISTENCY_DETECTED")).toContain("PAUSE");
   });
 
   it("OK reason code mentions authorized", () => {

@@ -13,6 +13,7 @@ import {
 import { checkContentType, safeReadJson, validate, formatZodErrors } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-action";
+import { assertHeartbeatConsistency } from "@/domain/heartbeat/assert-heartbeat-consistency";
 
 const log = logger.child({ route: "/api/internal/heartbeat" });
 
@@ -87,21 +88,41 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
 
-    const decision = decideHeartbeatAction(
-      instance
-        ? {
-            lifecycleState: instance.lifecycleState,
-            operatorHold: instance.operatorHold as "NONE" | "HALTED" | "OVERRIDE_PENDING" | null,
-            monitoringSuppressedUntil: instance.monitoringSuppressedUntil,
-            now,
-          }
-        : null
-    );
+    const heartbeatInput = instance
+      ? {
+          lifecycleState: instance.lifecycleState,
+          operatorHold: instance.operatorHold as "NONE" | "HALTED" | "OVERRIDE_PENDING" | null,
+          monitoringSuppressedUntil: instance.monitoringSuppressedUntil,
+          now,
+        }
+      : null;
 
-    // Structured log — safe fields only (no accountId/instanceTag)
-    log.info({ strategyId, action: decision.action, reasonCode: decision.reasonCode }, "heartbeat");
+    const rawDecision = decideHeartbeatAction(heartbeatInput);
+    const decision = assertHeartbeatConsistency(heartbeatInput, rawDecision);
 
-    // Best-effort proof event
+    // If guard triggered, log structured warning + best-effort proof event
+    if (decision.reasonCode === "CONTROL_INCONSISTENCY_DETECTED") {
+      log.warn(
+        {
+          strategyId,
+          originalAction: rawDecision.action,
+          originalReasonCode: rawDecision.reasonCode,
+          guardedAction: decision.action,
+        },
+        "heartbeat control inconsistency detected"
+      );
+      logControlInconsistencyEvent(strategyId, rawDecision.action, rawDecision.reasonCode).catch(
+        () => {}
+      );
+    } else {
+      // Structured log — safe fields only (no accountId/instanceTag)
+      log.info(
+        { strategyId, action: decision.action, reasonCode: decision.reasonCode },
+        "heartbeat"
+      );
+    }
+
+    // Best-effort proof event for the final decision
     logHeartbeatProofEvent(strategyId, decision.action, decision.reasonCode).catch(() => {});
 
     return NextResponse.json(
@@ -142,6 +163,28 @@ async function logHeartbeatProofEvent(
       strategyId,
       action,
       reasonCode,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    // Best-effort — do not break heartbeat response
+  }
+}
+
+async function logControlInconsistencyEvent(
+  strategyId: string,
+  originalAction: string,
+  originalReasonCode: string
+): Promise<void> {
+  try {
+    const { appendProofEvent } = await import("@/lib/proof/events");
+    await appendProofEvent(strategyId, "HEARTBEAT_CONTROL_INCONSISTENCY", {
+      eventType: "HEARTBEAT_CONTROL_INCONSISTENCY",
+      recordId: crypto.randomUUID(),
+      strategyId,
+      originalAction,
+      originalReasonCode,
+      guardedAction: "PAUSE",
+      guardedReasonCode: "CONTROL_INCONSISTENCY_DETECTED",
       timestamp: new Date().toISOString(),
     });
   } catch {

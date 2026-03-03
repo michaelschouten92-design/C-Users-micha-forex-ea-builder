@@ -16,6 +16,8 @@ const REASON_EXPLAINERS: Record<string, string> = {
   CONFIG_UNAVAILABLE: "Configuration unavailable \u2014 default PAUSE.",
   COMPUTATION_FAILED: "System uncertainty \u2014 default PAUSE.",
   NO_HEARTBEAT_PROOF: "No recorded heartbeat decisions yet \u2014 default PAUSE.",
+  CONTROL_INCONSISTENCY_DETECTED:
+    "Control consistency guard detected a mismatch between state and decision \u2014 forced PAUSE.",
 };
 
 const FALLBACK_EXPLANATION = "Unknown reason code \u2014 default PAUSE.";

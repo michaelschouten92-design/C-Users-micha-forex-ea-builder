@@ -15,7 +15,8 @@ export type HeartbeatReasonCode =
   | "NO_INSTANCE"
   | "CONFIG_UNAVAILABLE"
   | "COMPUTATION_FAILED"
-  | "NO_HEARTBEAT_PROOF";
+  | "NO_HEARTBEAT_PROOF"
+  | "CONTROL_INCONSISTENCY_DETECTED";
 
 /**
  * Compile-time exhaustive check: every HeartbeatReasonCode must appear here.
@@ -32,6 +33,7 @@ const _REASON_CODE_REGISTRY: Record<HeartbeatReasonCode, true> = {
   CONFIG_UNAVAILABLE: true,
   COMPUTATION_FAILED: true,
   NO_HEARTBEAT_PROOF: true,
+  CONTROL_INCONSISTENCY_DETECTED: true,
 };
 
 /** Runtime-accessible list of all HeartbeatReasonCode values. */

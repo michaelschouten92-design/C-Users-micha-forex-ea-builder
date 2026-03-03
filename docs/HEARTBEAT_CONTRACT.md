@@ -108,7 +108,8 @@ type HeartbeatReasonCode =
   | "NO_INSTANCE" // No LiveEAInstance found → PAUSE
   | "CONFIG_UNAVAILABLE" // Reserved for future use → PAUSE
   | "COMPUTATION_FAILED" // DB/computation error → PAUSE
-  | "NO_HEARTBEAT_PROOF"; // No proof events recorded yet (read-model only) → PAUSE
+  | "NO_HEARTBEAT_PROOF" // No proof events recorded yet (read-model only) → PAUSE
+  | "CONTROL_INCONSISTENCY_DETECTED"; // Consistency guard triggered → PAUSE
 ```
 
 Reason codes are **stable strings**. They will not change without a DECISIONS.md entry.
@@ -168,14 +169,38 @@ The server **never** returns RUN when uncertain. The client **must never** assum
 
 ---
 
-## 10. Proof Logging
+## 10. Control Consistency Guard
 
-Every heartbeat decision emits a best-effort `HEARTBEAT_DECISION_MADE` proof event.
-This is observability — proof logging failure does **not** affect the returned decision.
+After `decideHeartbeatAction()` produces a decision, the Control Consistency Guard
+(`assertHeartbeatConsistency`) verifies that the decision is logically consistent
+with the current lifecycle, operator hold, and suppression state.
+
+If an inconsistency is detected:
+
+- The action is overridden to `PAUSE` with `CONTROL_INCONSISTENCY_DETECTED`.
+- A best-effort `HEARTBEAT_CONTROL_INCONSISTENCY` proof event is emitted.
+- A structured warning is logged (safe fields only).
+
+Design rules:
+
+- **Read-side only** — the guard never mutates lifecycle, incidents, or overrides.
+- **Never escalates to STOP** — the guard may only preserve the decision or downgrade to PAUSE.
+- **Pure function** — deterministic, no I/O, no side effects.
+
+This is a defense-in-depth layer. In normal operation, `decideHeartbeatAction()` already
+produces correct decisions. The guard catches impossible states or unexpected bugs.
 
 ---
 
-## 11. Operator Observability (Ops UI)
+## 11. Proof Logging
+
+Every heartbeat decision emits a best-effort `HEARTBEAT_DECISION_MADE` proof event.
+If the consistency guard triggers, an additional `HEARTBEAT_CONTROL_INCONSISTENCY`
+event is emitted. Proof logging failure does **not** affect the returned decision.
+
+---
+
+## 12. Operator Observability (Ops UI)
 
 The Ops UI displays the **latest** heartbeat decision for a strategy via a separate internal
 read-model endpoint (`GET /api/internal/heartbeat/latest`). This endpoint:
