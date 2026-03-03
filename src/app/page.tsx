@@ -24,7 +24,6 @@ const NAV_LINKS = [
 ] as const;
 
 const CTA_HREF = "/register";
-const DOCS_HREF = "/docs";
 
 export default async function HomePage() {
   const session = await auth();
@@ -63,7 +62,9 @@ export default async function HomePage() {
       </nav>
 
       <main>
-        {/* ── A) HERO ── */}
+        {/* ════════════════════════════════════════════════════════════
+            1. HERO
+            ════════════════════════════════════════════════════════════ */}
         <section className="pt-36 pb-20 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
@@ -75,7 +76,7 @@ export default async function HomePage() {
               Backtests do not govern live capital.
               <br className="hidden md:block" />
               AlgoStudio enforces deterministic lifecycle authority when real-world performance
-              diverges from its validated statistical behavior.
+              diverges from validated statistical behavior.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -85,234 +86,322 @@ export default async function HomePage() {
                 Establish Control
               </Link>
               <a
-                href="#architecture"
+                href="#governance"
                 className="px-8 py-3 border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] font-medium rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors text-base"
               >
-                View Architecture
+                See How Governance Works
               </a>
             </div>
           </div>
         </section>
 
-        {/* ── B) THE PROBLEM ── */}
+        {/* ════════════════════════════════════════════════════════════
+            2. THE PROBLEM
+            ════════════════════════════════════════════════════════════ */}
         <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.05)]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-center">
-              Most Strategies Don&apos;t Fail Loudly. They Decay.
+              Backtests Do Not Control Live Risk.
             </h2>
-            <div className="mt-8 text-[#94A3B8] text-lg leading-relaxed space-y-6">
+            <div className="mt-10 space-y-6 text-[#94A3B8] text-lg leading-relaxed">
               <p>
-                Live markets evolve. Edges erode. Regimes shift.
-                <br />
-                Yet most strategies continue trading — not because they remain justified, but
-                because no structural control layer exists.
+                Backtests validate statistical behavior under historical conditions. They establish
+                whether a strategy has an edge — not whether that edge persists in live markets.
               </p>
-              <p>Monitoring notifies. It does not decide.</p>
-              <p className="text-[#CBD5E1] font-medium">The real risk is silent continuation.</p>
+              <p>
+                Live markets introduce structural deviation: regime shifts, liquidity changes,
+                volatility clustering, correlation breakdowns. The assumptions your backtest
+                validated may no longer hold.
+              </p>
+              <p>
+                Most traders respond with dashboards and alerts. They watch metrics. They set
+                thresholds. They receive notifications.
+              </p>
+              <p className="text-[#CBD5E1] font-medium">
+                Alerts do not enforce discipline. They inform discretion — and discretion is what
+                fails under pressure.
+              </p>
+              <p>
+                Without lifecycle authority, live capital continues operating outside validated
+                bounds. Not because the strategy is still justified, but because nothing structural
+                exists to intervene.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ── C) THE SHIFT ── */}
-        <section className="py-20 px-6 bg-[#1A0626]/30">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold">Control Must Be Structural.</h2>
-            <p className="mt-8 text-[#94A3B8] text-lg leading-relaxed">
-              Not emotional. Not discretionary. Not reactive. Structural.
-            </p>
-            <p className="mt-4 text-[#94A3B8] text-lg leading-relaxed">
-              AlgoStudio exists to introduce deterministic lifecycle governance between your
-              strategy and your capital.
-            </p>
-          </div>
-        </section>
-
-        {/* ── D) CONTROL ARCHITECTURE ── */}
-        <section id="architecture" className="py-20 px-6 scroll-mt-16">
+        {/* ════════════════════════════════════════════════════════════
+            3. THE SOLUTION — Deterministic Lifecycle Authority
+            ════════════════════════════════════════════════════════════ */}
+        <section id="governance" className="py-20 px-6 bg-[#1A0626]/30 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14">The Strategy Stack</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Traditional */}
-              <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <span className="text-xs font-medium tracking-wider uppercase text-[#64748B]">
-                  Traditional
-                </span>
-                <div className="mt-6 flex flex-col items-center gap-3">
-                  <span className="text-[#CBD5E1] font-mono text-sm">Strategy</span>
-                  <span className="text-[#64748B]">↓</span>
-                  <span className="text-[#CBD5E1] font-mono text-sm">Broker</span>
-                  <span className="text-[#64748B]">↓</span>
-                  <span className="text-[#CBD5E1] font-mono text-sm">Capital</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-center">
+              Deterministic Lifecycle Authority.
+            </h2>
+            <p className="mt-4 text-[#94A3B8] text-center text-lg max-w-2xl mx-auto">
+              Every strategy under governance operates in one of three execution states. Transitions
+              are rule-based, not discretionary.
+            </p>
+
+            <div className="mt-14 grid md:grid-cols-3 gap-6">
+              {/* RUN */}
+              <div className="rounded-xl border border-[rgba(16,185,129,0.25)] bg-[rgba(16,185,129,0.05)] p-7">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-3 h-3 rounded-full bg-[#10B981]" />
+                  <span className="text-2xl font-bold text-[#10B981]">RUN</span>
                 </div>
-                <p className="mt-6 text-sm text-[#64748B] text-center">No governing authority.</p>
+                <p className="text-sm text-[#CBD5E1] leading-relaxed">
+                  Strategy operates within validated statistical boundaries. All governance
+                  thresholds are satisfied. Execution is permitted.
+                </p>
               </div>
 
-              {/* AlgoStudio Model */}
-              <div className="rounded-xl border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.05)] p-8">
-                <span className="text-xs font-medium tracking-wider uppercase text-[#A78BFA]">
-                  AlgoStudio Model
-                </span>
-                <div className="mt-6 flex flex-col items-center gap-3">
-                  <span className="text-[#CBD5E1] font-mono text-sm">Strategy</span>
-                  <span className="text-[#A78BFA]">↓</span>
-                  <span className="px-4 py-2 rounded-lg border border-[rgba(79,70,229,0.4)] bg-[rgba(79,70,229,0.1)] text-[#A78BFA] font-mono text-sm font-medium">
-                    Control Layer (AlgoStudio)
-                  </span>
-                  <span className="text-[#A78BFA]">↓</span>
-                  <span className="text-[#CBD5E1] font-mono text-sm">Broker</span>
-                  <span className="text-[#A78BFA]">↓</span>
-                  <span className="text-[#CBD5E1] font-mono text-sm">Capital</span>
+              {/* PAUSE */}
+              <div className="rounded-xl border border-[rgba(245,158,11,0.25)] bg-[rgba(245,158,11,0.05)] p-7">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-3 h-3 rounded-full bg-[#F59E0B]" />
+                  <span className="text-2xl font-bold text-[#F59E0B]">PAUSE</span>
                 </div>
-                <p className="mt-6 text-sm text-[#94A3B8] text-center">
-                  The strategy executes. The control layer decides.
+                <p className="text-sm text-[#CBD5E1] leading-relaxed">
+                  Structural deviation detected. Execution temporarily halted pending review. No new
+                  positions opened until governance conditions are restored.
+                </p>
+              </div>
+
+              {/* STOP */}
+              <div className="rounded-xl border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.05)] p-7">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-3 h-3 rounded-full bg-[#EF4444]" />
+                  <span className="text-2xl font-bold text-[#EF4444]">STOP</span>
+                </div>
+                <p className="text-sm text-[#CBD5E1] leading-relaxed">
+                  Strategy invalidated under deterministic rules. Permission to run is revoked.
+                  Lifecycle authority requires explicit re-validation to resume.
                 </p>
               </div>
             </div>
+
+            <p className="mt-10 text-center text-[#64748B] text-sm">
+              Authority is computed from statistical evidence — not discretionary interpretation.
+            </p>
           </div>
         </section>
 
-        {/* ── E) THREE FOUNDATIONS ── */}
-        <section className="py-20 px-6 bg-[#1A0626]/30">
-          <div className="max-w-5xl mx-auto">
+        {/* ════════════════════════════════════════════════════════════
+            4. HOW IT WORKS — 3-Phase Framework
+            ════════════════════════════════════════════════════════════ */}
+        <section className="py-20 px-6">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+              Validation &rarr; Governance &rarr; Control.
+            </h2>
+            <p className="text-[#94A3B8] text-center text-base mb-14 max-w-2xl mx-auto">
+              Three phases. Each builds on the last. Each narrows the gap between backtest
+              assumptions and live reality.
+            </p>
+
             <div className="grid md:grid-cols-3 gap-8">
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <h3 className="text-lg font-bold text-white">Deterministic Authority</h3>
-                <p className="mt-4 text-[#94A3B8] text-sm leading-relaxed">
-                  Explicit RUN / PAUSE / STOP lifecycle decisions — rule-based, not emotional.
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
+                    1
+                  </span>
+                  <h3 className="text-lg font-bold text-white">Validate</h3>
+                </div>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Upload backtests. Score robustness across statistical dimensions. Establish the
+                  governance baseline your strategy will be measured against.
                 </p>
               </div>
+
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <h3 className="text-lg font-bold text-white">Structural Deviation Monitoring</h3>
-                <p className="mt-4 text-[#94A3B8] text-sm leading-relaxed">
-                  Continuous evaluation of live statistical behavior versus validated assumptions.
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
+                    2
+                  </span>
+                  <h3 className="text-lg font-bold text-white">Govern</h3>
+                </div>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Bind live execution to validated thresholds. Monitor structural deviation in real
+                  time. Log governance snapshots for every lifecycle transition.
                 </p>
               </div>
+
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <h3 className="text-lg font-bold text-white">Audit-Grade Verification</h3>
-                <p className="mt-4 text-[#94A3B8] text-sm leading-relaxed">
-                  Cryptographically recorded, reproducible lifecycle decisions.
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
+                    3
+                  </span>
+                  <h3 className="text-lg font-bold text-white">Control</h3>
+                </div>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Automatically enforce lifecycle decisions when deviation occurs. RUN, PAUSE, or
+                  STOP — determined by rules, not by hope.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── F) HOW IT WORKS ── */}
-        <section id="how-it-works" className="py-20 px-6 scroll-mt-16">
+        {/* ════════════════════════════════════════════════════════════
+            5. GOVERNANCE DEPTH PREVIEW
+            ════════════════════════════════════════════════════════════ */}
+        <section className="py-20 px-6 bg-[#1A0626]/30">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14">Governance Depth.</h2>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="rounded-xl border border-[rgba(34,211,238,0.15)] bg-[#0D0117]/60 p-7">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
+                  <h3 className="text-base font-semibold text-white">Free</h3>
+                </div>
+                <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1 mb-4">
+                  Validation Only
+                </p>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Statistical validation, risk simulation, and backtest scoring. No live governance.
+                  No execution authority. No automatic intervention.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.05)] p-7 ring-1 ring-[#4F46E5]/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
+                  <h3 className="text-base font-semibold text-white">Pro</h3>
+                </div>
+                <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1 mb-4">
+                  Strategy-Level Authority
+                </p>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Deterministic execution authority (RUN/PAUSE) over individual live strategies.
+                  Continuous heartbeat monitoring. Governance snapshot logging.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[rgba(167,139,250,0.2)] bg-[#0D0117]/60 p-7">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
+                  <h3 className="text-base font-semibold text-white">Elite</h3>
+                </div>
+                <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1 mb-4">
+                  Full Lifecycle Authority
+                </p>
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Portfolio-level deterministic governance. Full RUN/PAUSE/STOP lifecycle control.
+                  Incident escalation. Cadence analytics. Authority aggregation.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-10 text-center">
+              <Link
+                href="/pricing"
+                className="inline-block px-8 py-3 border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] font-medium rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors text-base"
+              >
+                Explore Governance Depth
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════════
+            6. PROOF & AUDIT
+            ════════════════════════════════════════════════════════════ */}
+        <section className="py-20 px-6">
           <div className="max-w-3xl mx-auto">
-            <div className="space-y-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+              Proof-Bound Decisions.
+            </h2>
+            <p className="mt-4 text-[#94A3B8] text-center text-base max-w-2xl mx-auto mb-12">
+              Every governance decision is structurally recorded. Not as logs — as proof.
+            </p>
+
+            <div className="grid sm:grid-cols-2 gap-5">
               {[
-                "Anchor governance to validated statistical baselines",
-                "Detect structural live deviation",
-                "Enforce lifecycle decisions",
-                "Log every transition",
-              ].map((step, i) => (
-                <div key={i} className="flex gap-6 items-start">
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-sm font-bold text-[#A78BFA]">
-                    {i + 1}
-                  </span>
-                  <p className="text-lg text-[#CBD5E1] pt-1.5">{step}</p>
+                {
+                  title: "Hash-chained proof logs",
+                  desc: "Every lifecycle transition is cryptographically chained. Tamper-evident by construction.",
+                },
+                {
+                  title: "Snapshot-bound verification",
+                  desc: "Governance snapshots are bound to the exact state at the time of decision.",
+                },
+                {
+                  title: "Deterministic replay",
+                  desc: "Any authority decision can be independently verified against its inputs.",
+                },
+                {
+                  title: "No silent lifecycle mutations",
+                  desc: "Every state change is recorded, timestamped, and attributed. Nothing happens off the record.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-6"
+                >
+                  <h3 className="text-sm font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-sm text-[#94A3B8] leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
-            <p className="mt-14 text-center text-[#94A3B8] text-base">
-              Control without auditability is opinion. AlgoStudio provides both.
-            </p>
           </div>
         </section>
 
-        {/* ── G) WHO IT'S FOR ── */}
+        {/* ════════════════════════════════════════════════════════════
+            7. TARGET AUDIENCE
+            ════════════════════════════════════════════════════════════ */}
         <section className="py-20 px-6 bg-[#1A0626]/30">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14">
-              Built for Operators.
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+              Built for Serious Operators.
             </h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <h3 className="text-sm font-medium tracking-wider uppercase text-[#A78BFA] mb-6">
-                  Built for
-                </h3>
-                <ul className="space-y-4 text-[#CBD5E1] text-sm">
-                  <li className="flex gap-3 items-start">
-                    <span className="text-[#A78BFA] mt-0.5">—</span>
-                    Systematic traders running live strategies
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="text-[#A78BFA] mt-0.5">—</span>
-                    Fund managers overseeing algorithmic portfolios
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="text-[#A78BFA] mt-0.5">—</span>
-                    Prop firm traders operating rule-based systems
-                  </li>
-                </ul>
-              </div>
-              <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <h3 className="text-sm font-medium tracking-wider uppercase text-[#64748B] mb-6">
-                  Not designed for
-                </h3>
-                <ul className="space-y-4 text-[#64748B] text-sm">
-                  <li className="flex gap-3 items-start">
-                    <span className="mt-0.5">—</span>
-                    Signal chasing
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="mt-0.5">—</span>
-                    Blind trust in backtests
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="mt-0.5">—</span>
-                    Emotional override of statistical thresholds
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="mt-0.5">—</span>
-                    Discretion over discipline
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <p className="mt-10 text-center text-[#94A3B8] text-base">
+
+            <ul className="space-y-5 max-w-lg mx-auto">
+              {[
+                "Retail quants running systematic strategies",
+                "Prop firm algorithmic traders",
+                "Independent fund managers",
+                "Strategy developers managing external capital",
+              ].map((item) => (
+                <li key={item} className="flex gap-4 items-start text-[#CBD5E1]">
+                  <span className="text-[#A78BFA] mt-0.5 flex-shrink-0">—</span>
+                  <span className="text-base">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-10 text-center text-[#64748B] text-sm">
               If you treat algorithmic trading as infrastructure — you are the intended operator.
             </p>
           </div>
         </section>
 
-        {/* ── H) INSTITUTIONAL CLOSING ── */}
-        <section className="py-20 px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="text-lg md:text-xl text-[#94A3B8] leading-relaxed space-y-6">
-              <p>
-                Execution is not governance. Validation is not authority.
-                <br />
-                Monitoring is not control.
-              </p>
-              <p className="text-[#CBD5E1]">
-                Lifecycle governance is the next standard in algorithmic trading.
-              </p>
-              <p className="text-[#CBD5E1]">AlgoStudio is built for that standard.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── I) FINAL CTA ── */}
+        {/* ════════════════════════════════════════════════════════════
+            8. FINAL CTA
+            ════════════════════════════════════════════════════════════ */}
         <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.1)]">
           <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold">Establish Deterministic Control.</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">
+              Establish Control Before the Market
+              <br className="hidden sm:block" />
+              Decides for You.
+            </h2>
             <p className="mt-4 text-[#94A3B8] text-lg">
-              Start governing your live strategies today.
+              Governance is not optional when capital is live.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href={CTA_HREF}
+                href="/login?redirect=/app/live"
                 className="px-8 py-3 bg-[#4F46E5] text-white font-medium rounded-lg hover:bg-[#6366F1] transition-colors text-base"
               >
-                Create Account
+                Enter the Command Center
               </Link>
               <Link
-                href={DOCS_HREF}
+                href={CTA_HREF}
                 className="px-8 py-3 border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] font-medium rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors text-base"
               >
-                Explore Documentation
+                Start with Validation
               </Link>
             </div>
           </div>

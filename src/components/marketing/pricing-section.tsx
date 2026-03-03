@@ -80,9 +80,10 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
     <div>
       {showHeader && (
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-4">Choose your verification depth</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Choose your governance depth</h2>
           <p className="text-[#94A3B8]">
-            From first evaluation to verified portfolio. Start free, upgrade when you&apos;re ready.
+            From strategy validation to deterministic lifecycle authority. Start free, upgrade when
+            your strategies go live.
           </p>
         </div>
       )}
@@ -121,27 +122,27 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <h3 className="text-xl font-semibold text-white">Free</h3>
           </div>
           <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
-            Evaluate
+            Validate
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Evaluate your strategy and see where it stands
+            Evaluate strategy viability before deployment
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Upload a backtest or build a strategy. Get an instant health score and Monte Carlo
-            validation — no commitment.
+            Statistical validation, risk simulation, and backtest scoring. No live governance, no
+            execution authority, no automatic intervention.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Backtest health scoring",
-              "Monte Carlo risk calculator",
+              "Monte Carlo risk validation",
               "Visual strategy builder",
               "All 10 strategy templates",
-              "1 active project",
+              "1 active strategy",
               "3 MQL5 exports per month",
               "Strategy journal",
             ].map((feature, i) => (
@@ -154,7 +155,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Traders evaluating a strategy before committing capital.
+              <strong>Scope:</strong> Validation only. No lifecycle governance.
             </p>
           </div>
 
@@ -162,7 +163,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             href="/login?mode=register&redirect=/app/evaluate"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Evaluate Your Strategy — Free
+            Start Validation — Free
           </Link>
           <p className="mt-2 text-center text-xs text-[#64748B]">No credit card required.</p>
         </div>
@@ -181,7 +182,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             </h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
-            Verify &amp; Monitor
+            Strategy Authority
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -213,22 +214,23 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Verify live performance and build a proven track record
+            Deterministic lifecycle authority over live strategies
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Verified track records, live monitoring, and proof sharing. Everything you need to
-            verify and run strategies with confidence.
+            Execution authority (RUN/PAUSE), verified track records, continuous structural
+            monitoring, and governance snapshot logging.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Verified Track Record",
-              "Public Verified Strategy Page",
-              "Live EA monitoring dashboard",
-              "External EA monitoring",
-              "Email, webhook & Telegram alerts",
+              "Execution Authority (RUN / PAUSE)",
+              "Continuous heartbeat monitoring",
+              "Structural deviation detection",
+              "Verified Track Record (hash chain)",
               "Strategy Identity & versioning",
-              "Unlimited projects & exports",
+              "Governance snapshot logging",
+              "Email, webhook & Telegram alerts",
+              "Unlimited strategies & exports",
               "Walk-forward analysis",
               "Priority support",
             ].map((feature, i) => (
@@ -241,8 +243,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Live traders who need verified performance and
-              continuous monitoring.
+              <strong>Scope:</strong> Strategy-level governance with deterministic execution
+              authority.
             </p>
           </div>
 
@@ -251,7 +253,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !proPrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
-            {loadingPlan === "PRO" ? "Loading..." : "Start Verifying"}
+            {loadingPlan === "PRO" ? "Loading..." : "Establish Authority"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
@@ -263,7 +265,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             <h3 className="text-xl font-semibold text-white">Elite</h3>
           </div>
           <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1">
-            Protect &amp; Prove
+            Full Lifecycle Authority
           </p>
           <div className="mt-4">
             {elitePrice ? (
@@ -295,25 +297,26 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Know when your edge is fading before your account does
+            Portfolio-level deterministic governance framework
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Everything in Pro, plus continuous health monitoring, drift detection, and capital
-            protection tools. Built for traders managing real money.
+            Everything in Pro, plus full lifecycle control (RUN/PAUSE/STOP), incident escalation,
+            portfolio authority aggregation, and cadence analytics.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Everything in Pro",
-              "Strategy Health Monitor",
-              "Edge degradation detection",
+              "Full lifecycle authority (RUN/PAUSE/STOP)",
+              "Incident escalation framework",
               "CUSUM drift analysis",
-              "Advanced drawdown alerts",
-              "Pre-retirement warnings",
+              "Advanced cadence analytics",
+              "Portfolio authority aggregation",
+              "Edge degradation detection",
+              "Lifecycle state transitions",
               "Embeddable proof widget",
               "1-on-1 strategy review (1/month)",
               "Direct developer channel",
-              "Priority feature requests",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon className="w-5 h-5 text-[#A78BFA]" />
@@ -324,8 +327,8 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Perfect for:</strong> Traders running live capital who need to know when a
-              strategy stops working.
+              <strong>Scope:</strong> Portfolio-level deterministic governance with full lifecycle
+              control.
             </p>
           </div>
 
@@ -334,7 +337,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !elitePrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border-2 border-[#A78BFA] text-white hover:bg-[rgba(167,139,250,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
           >
-            {loadingPlan === "ELITE" ? "Loading..." : "Protect Your Capital"}
+            {loadingPlan === "ELITE" ? "Loading..." : "Establish Full Control"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
