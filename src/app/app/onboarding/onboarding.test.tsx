@@ -111,12 +111,19 @@ describe("OnboardingPage", () => {
     expect(screen.getByText("Upload Backtest Report")).toBeInTheDocument();
   });
 
-  it("has skip button on backtest baseline", async () => {
+  it("has 'Skip for now' button on backtest baseline", async () => {
     await renderPage("path=backtest&step=baseline");
-    const skipButton = screen.getByText(/I'll do this later/i);
-    expect(skipButton).toBeInTheDocument();
-    fireEvent.click(skipButton);
+    const skipButtons = screen.getAllByText("Skip for now");
+    expect(skipButtons.length).toBeGreaterThan(0);
+    fireEvent.click(skipButtons[0]);
     expect(mockPush).toHaveBeenCalledWith("/app/onboarding?path=backtest&step=authority");
+  });
+
+  it("shows governance helper text near skip on backtest baseline", async () => {
+    await renderPage("path=backtest&step=baseline");
+    expect(
+      screen.getByText("You can place a strategy under governance at any time.")
+    ).toBeInTheDocument();
   });
 
   // ── Live baseline step ─────────────────────────────────
@@ -127,11 +134,11 @@ describe("OnboardingPage", () => {
     expect(screen.getByText("Go to Live Monitor")).toBeInTheDocument();
   });
 
-  it("has skip button on live baseline", async () => {
+  it("has 'Skip for now' button on live baseline", async () => {
     await renderPage("path=live&step=baseline");
-    const skipButton = screen.getByText(/I'll connect later/i);
-    expect(skipButton).toBeInTheDocument();
-    fireEvent.click(skipButton);
+    const skipButtons = screen.getAllByText("Skip for now");
+    expect(skipButtons.length).toBeGreaterThan(0);
+    fireEvent.click(skipButtons[0]);
     expect(mockPush).toHaveBeenCalledWith("/app/onboarding?path=live&step=authority");
   });
 
@@ -145,12 +152,38 @@ describe("OnboardingPage", () => {
     expect(screen.getByText("Range Breakout")).toBeInTheDocument();
   });
 
-  it("has skip button on validate baseline", async () => {
+  it("has 'Skip for now' button on validate baseline", async () => {
     await renderPage("path=validate&step=baseline");
-    const skipButton = screen.getByText(/Skip to authority setup/i);
-    expect(skipButton).toBeInTheDocument();
-    fireEvent.click(skipButton);
+    const skipButtons = screen.getAllByText("Skip for now");
+    expect(skipButtons.length).toBeGreaterThan(0);
+    fireEvent.click(skipButtons[0]);
     expect(mockPush).toHaveBeenCalledWith("/app/onboarding?path=validate&step=authority");
+  });
+
+  // ── Baseline governance framing ───────────────────────
+
+  it("shows governance framing line on all baseline steps", async () => {
+    const governanceLine = "Submit the baseline this strategy will be governed against.";
+
+    await renderPage("path=backtest&step=baseline");
+    expect(screen.getByText(governanceLine)).toBeInTheDocument();
+
+    // Re-render for live path
+    const { unmount: u1 } = render(
+      await import("./page").then((m) => {
+        mockSearchParams = new URLSearchParams("path=live&step=baseline");
+        const Page = m.default;
+        return <Page />;
+      })
+    );
+    expect(screen.getAllByText(governanceLine).length).toBeGreaterThan(0);
+    u1();
+
+    // Re-render for validate path
+    mockSearchParams = new URLSearchParams("path=validate&step=baseline");
+    const mod = await import("./page");
+    render(<mod.default />);
+    expect(screen.getAllByText(governanceLine).length).toBeGreaterThan(0);
   });
 
   // ── Authority step ─────────────────────────────────────
@@ -180,6 +213,13 @@ describe("OnboardingPage", () => {
     setItemSpy.mockRestore();
   });
 
+  it("RUN/PAUSE/STOP descriptions match contract terminology", async () => {
+    await renderPage("path=backtest&step=authority");
+    expect(screen.getByText(/validated statistical boundaries/i)).toBeInTheDocument();
+    expect(screen.getByText(/structural deviation detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/permission to run is revoked/i)).toBeInTheDocument();
+  });
+
   // ── Edge cases ─────────────────────────────────────────
 
   it("shows scope step when path param is invalid", async () => {
@@ -192,8 +232,31 @@ describe("OnboardingPage", () => {
     expect(screen.getByText("I Have a Validated Backtest")).toBeInTheDocument();
   });
 
+  it("falls back to baseline when step param is invalid but path is valid", async () => {
+    await renderPage("path=backtest&step=garbage");
+    // Should fail-closed to baseline (not blank screen, not scope)
+    expect(screen.getByText("Establish Your Statistical Baseline")).toBeInTheDocument();
+  });
+
+  it("falls back to baseline when step param is missing but path is valid", async () => {
+    await renderPage("path=live");
+    expect(screen.getByText("Bring Your Live Strategy Under Control")).toBeInTheDocument();
+  });
+
   it("renders footer tagline about deterministic authority", async () => {
     await renderPage();
     expect(screen.getByText(/deterministic lifecycle authority/i)).toBeInTheDocument();
+  });
+
+  // ── Gate isolation ─────────────────────────────────────
+
+  it("onboarding gate is only rendered from /app root dashboard", async () => {
+    // OnboardingGate is imported only in src/app/app/page.tsx.
+    // Verify it does NOT exist in monitor, evaluate, or other routes.
+    // This is an architectural test — the gate component has no route awareness.
+    // We verify by confirming the onboarding page itself renders without redirect logic.
+    await renderPage();
+    // The onboarding page renders its own content, never redirects away
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

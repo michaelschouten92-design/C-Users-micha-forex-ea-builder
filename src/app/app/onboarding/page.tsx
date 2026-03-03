@@ -45,12 +45,19 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const pathParam = searchParams.get("path") as OnboardingPath | null;
-  const stepParam = (searchParams.get("step") as OnboardingStep) || "scope";
+  const pathParam = searchParams.get("path");
+  const stepParam = searchParams.get("step");
 
-  // Derive current step: no path selected = scope
-  const currentPath = pathParam && pathParam in PATH_CONFIG ? pathParam : null;
-  const currentStep: OnboardingStep = currentPath ? stepParam : "scope";
+  // Validate path and step against known values — fail-closed to scope
+  const VALID_STEPS: ReadonlySet<string> = new Set(STEPS);
+  const currentPath: OnboardingPath | null =
+    pathParam && pathParam in PATH_CONFIG ? (pathParam as OnboardingPath) : null;
+  const currentStep: OnboardingStep =
+    currentPath && stepParam && VALID_STEPS.has(stepParam)
+      ? (stepParam as OnboardingStep)
+      : currentPath
+        ? "baseline"
+        : "scope";
 
   const [loadingPreset, setLoadingPreset] = useState<string | null>(null);
 
@@ -315,7 +322,10 @@ function BacktestBaselineStep({ onNext }: { onNext: () => void }) {
         </ol>
       </div>
 
-      <div className="mt-6 flex flex-col sm:flex-row gap-3">
+      <p className="mt-6 mb-3 text-xs text-[#94A3B8]">
+        Submit the baseline this strategy will be governed against.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/app/evaluate"
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] transition-all font-medium text-sm"
@@ -330,15 +340,7 @@ function BacktestBaselineStep({ onNext }: { onNext: () => void }) {
           </svg>
           Upload Backtest Report
         </Link>
-        <button
-          onClick={onNext}
-          className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all text-sm"
-        >
-          I&apos;ll do this later
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        <SkipButton onClick={onNext} />
       </div>
 
       <HelpBox>
@@ -377,7 +379,10 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
         </ol>
       </div>
 
-      <div className="mt-6 flex flex-col sm:flex-row gap-3">
+      <p className="mt-6 mb-3 text-xs text-[#94A3B8]">
+        Submit the baseline this strategy will be governed against.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/app/monitor"
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.25)] text-[#10B981] hover:bg-[rgba(16,185,129,0.15)] hover:border-[rgba(16,185,129,0.4)] transition-all font-medium text-sm"
@@ -392,15 +397,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
           </svg>
           Go to Live Monitor
         </Link>
-        <button
-          onClick={onNext}
-          className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all text-sm"
-        >
-          I&apos;ll connect later
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        <SkipButton onClick={onNext} />
       </div>
 
       <HelpBox>
@@ -433,7 +430,10 @@ function ValidateBaselineStep({
         accentColor="#A78BFA"
       />
 
-      <div className="mt-8 grid sm:grid-cols-2 gap-5">
+      <p className="mt-8 mb-4 text-xs text-[#94A3B8] text-center">
+        Submit the baseline this strategy will be governed against.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-5">
         {/* Option A: Template */}
         <div className="bg-[#1A0626] border border-[rgba(167,139,250,0.2)] rounded-xl p-5">
           <h3 className="text-sm font-semibold text-white mb-1">Start from a template</h3>
@@ -497,15 +497,7 @@ function ValidateBaselineStep({
       </div>
 
       <div className="mt-6 flex justify-end">
-        <button
-          onClick={onNext}
-          className="flex items-center gap-2 px-6 py-3 rounded-lg border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all text-sm"
-        >
-          Skip to authority setup
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        <SkipButton onClick={onNext} />
       </div>
     </div>
   );
@@ -536,17 +528,17 @@ function AuthorityStep({ path, onComplete }: { path: OnboardingPath; onComplete:
           {[
             {
               label: "RUN",
-              desc: "Strategy continues — live behavior is within validated parameters.",
+              desc: "Strategy continues — live behavior remains within validated statistical boundaries.",
               color: "#10B981",
             },
             {
               label: "PAUSE",
-              desc: "Deviation detected — strategy is suspended pending review.",
+              desc: "Structural deviation detected — strategy is temporarily halted pending review.",
               color: "#F59E0B",
             },
             {
               label: "STOP",
-              desc: "Structural breach confirmed — strategy is halted to protect capital.",
+              desc: "Strategy invalidated under deterministic rules — permission to run is revoked to preserve capital.",
               color: "#EF4444",
             },
           ].map((state) => (
@@ -602,6 +594,25 @@ function StepHeader({
       <p className="text-[#94A3B8] text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
         {description}
       </p>
+    </div>
+  );
+}
+
+function SkipButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="flex flex-col items-center sm:items-end gap-1">
+      <button
+        onClick={onClick}
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all text-sm"
+      >
+        Skip for now
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+      <span className="text-[11px] text-[#64748B]">
+        You can place a strategy under governance at any time.
+      </span>
     </div>
   );
 }
