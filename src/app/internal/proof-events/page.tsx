@@ -106,6 +106,11 @@ const PAYLOAD_WHITELIST = new Set([
   "computedHash",
   "storedHash",
   "breakAtSequence",
+  // Control consistency guard events
+  "originalAction",
+  "originalReasonCode",
+  "guardedAction",
+  "guardedReasonCode",
   // Audit replay events
   "mode",
   // Heartbeat events
