@@ -215,3 +215,74 @@ read-model endpoint (`GET /api/internal/heartbeat/latest`). This endpoint:
 
 **This does not change the EA/client contract.** The Ops UI is an internal observability
 surface. EAs continue to poll `POST /api/internal/heartbeat` directly.
+
+---
+
+## 13. Cadence Analytics & Authority Uptime
+
+### Endpoint
+
+`GET /api/internal/heartbeat/analytics`
+
+| Parameter        | Type   | Default    | Range  | Description                 |
+| ---------------- | ------ | ---------- | ------ | --------------------------- |
+| `strategyId`     | string | _required_ | —      | Strategy to analyze         |
+| `windowHours`    | number | 24         | 1–720  | Analysis window in hours    |
+| `cadenceSeconds` | number | 60         | 5–3600 | Expected heartbeat interval |
+
+**Auth:** `x-internal-api-key` header (same as other internal endpoints).
+**Rate limit:** 30 requests/minute per IP.
+
+### Response Shape
+
+```json
+{
+  "strategyId": "strat_abc",
+  "metrics": {
+    "windowStart": "2026-03-02T12:00:00.000Z",
+    "windowEnd": "2026-03-03T12:00:00.000Z",
+    "windowMs": 86400000,
+    "expectedCadenceMs": 60000,
+    "totalEvents": 1440,
+    "coverageMs": 86400000,
+    "coveragePct": 100,
+    "runMs": 82800000,
+    "runPct": 95.83,
+    "cadenceBreached": false,
+    "longestGapMs": 58000,
+    "lastDecision": {
+      "action": "RUN",
+      "reasonCode": "OK",
+      "timestamp": "2026-03-03T11:59:00.000Z"
+    }
+  },
+  "serverTime": "2026-03-03T12:00:00.000Z"
+}
+```
+
+### Metric Definitions
+
+- **coveragePct** — Percentage of the analysis window that has heartbeat evidence.
+  Computed via piecewise-constant signal analysis: each event establishes a segment
+  until the next event (or window end). An "anchor" event before `windowStart` provides
+  continuity for the prefix.
+- **runPct** — Percentage of the window where the last recorded action was `RUN`.
+- **cadenceBreached** — `true` if **any** gap between consecutive events (or from the
+  last event to `windowEnd`) exceeds `expectedCadenceMs`.
+- **longestGapMs** — The longest gap observed in the window (ms).
+- **lastDecision** — The most recent heartbeat decision event overall.
+
+### Fail-Closed Behavior
+
+On database errors, the endpoint returns HTTP 200 with:
+
+- `cadenceBreached: true`, `coveragePct: 0`, `runPct: 0`
+- `failClosed: true` flag to indicate degraded computation
+
+This ensures the Ops UI always renders a conservative (worst-case) view.
+
+### Note
+
+This endpoint is **read-only** — it does not create proof events, mutate lifecycle
+state, or change the EA/client heartbeat contract. All metrics are derived from
+existing `HEARTBEAT_DECISION_MADE` proof events.
