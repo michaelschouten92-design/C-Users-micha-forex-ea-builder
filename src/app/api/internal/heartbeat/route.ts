@@ -14,6 +14,10 @@ import { checkContentType, safeReadJson, validate, formatZodErrors } from "@/lib
 import { prisma } from "@/lib/prisma";
 import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-action";
 import { assertHeartbeatConsistency } from "@/domain/heartbeat/assert-heartbeat-consistency";
+import {
+  buildHeartbeatGovernanceSnapshot,
+  serializeGovernanceSnapshot,
+} from "@/domain/heartbeat/build-governance-snapshot";
 
 const log = logger.child({ route: "/api/internal/heartbeat" });
 
@@ -100,6 +104,12 @@ export async function POST(request: NextRequest) {
     const rawDecision = decideHeartbeatAction(heartbeatInput);
     const decision = assertHeartbeatConsistency(heartbeatInput, rawDecision);
 
+    // Deterministic governance snapshot — derived from the same DB read,
+    // no additional queries. Included in proof events only, never in API response.
+    const governanceSnapshot = serializeGovernanceSnapshot(
+      buildHeartbeatGovernanceSnapshot(heartbeatInput)
+    );
+
     // If guard triggered, log structured warning + best-effort proof event
     if (decision.reasonCode === "CONTROL_INCONSISTENCY_DETECTED") {
       log.warn(
@@ -111,9 +121,12 @@ export async function POST(request: NextRequest) {
         },
         "heartbeat control inconsistency detected"
       );
-      logControlInconsistencyEvent(strategyId, rawDecision.action, rawDecision.reasonCode).catch(
-        () => {}
-      );
+      logControlInconsistencyEvent(
+        strategyId,
+        rawDecision.action,
+        rawDecision.reasonCode,
+        governanceSnapshot
+      ).catch(() => {});
     } else {
       // Structured log — safe fields only (no accountId/instanceTag)
       log.info(
@@ -123,7 +136,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Best-effort proof event for the final decision
-    logHeartbeatProofEvent(strategyId, decision.action, decision.reasonCode).catch(() => {});
+    logHeartbeatProofEvent(
+      strategyId,
+      decision.action,
+      decision.reasonCode,
+      governanceSnapshot
+    ).catch(() => {});
 
     return NextResponse.json(
       {
@@ -153,7 +171,8 @@ export async function POST(request: NextRequest) {
 async function logHeartbeatProofEvent(
   strategyId: string,
   action: string,
-  reasonCode: string
+  reasonCode: string,
+  governanceSnapshot: string
 ): Promise<void> {
   try {
     const { appendProofEvent } = await import("@/lib/proof/events");
@@ -163,6 +182,7 @@ async function logHeartbeatProofEvent(
       strategyId,
       action,
       reasonCode,
+      governanceSnapshot,
       timestamp: new Date().toISOString(),
     });
   } catch {
@@ -173,7 +193,8 @@ async function logHeartbeatProofEvent(
 async function logControlInconsistencyEvent(
   strategyId: string,
   originalAction: string,
-  originalReasonCode: string
+  originalReasonCode: string,
+  governanceSnapshot: string
 ): Promise<void> {
   try {
     const { appendProofEvent } = await import("@/lib/proof/events");
@@ -185,6 +206,7 @@ async function logControlInconsistencyEvent(
       originalReasonCode,
       guardedAction: "PAUSE",
       guardedReasonCode: "CONTROL_INCONSISTENCY_DETECTED",
+      governanceSnapshot,
       timestamp: new Date().toISOString(),
     });
   } catch {
