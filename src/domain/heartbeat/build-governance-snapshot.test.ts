@@ -5,6 +5,7 @@ import {
 } from "./build-governance-snapshot";
 import type { HeartbeatInput } from "./decide-heartbeat-action";
 import { buildConfigSnapshot } from "@/domain/verification/config-snapshot";
+import { computeProofEventHash } from "@/lib/proof/chain";
 
 const NOW = new Date("2026-03-03T12:00:00Z");
 
@@ -156,5 +157,56 @@ describe("serializeGovernanceSnapshot", () => {
     const parsed = JSON.parse(serialized);
     expect(parsed.lifecycleState).toBeNull();
     expect(parsed.operatorHold).toBeNull();
+  });
+
+  it("changing any snapshot field changes the proof event hash", () => {
+    const base = {
+      sequence: 1,
+      strategyId: "strat_1",
+      type: "HEARTBEAT_DECISION_MADE",
+      recordId: "rec_1",
+      prevEventHash: "0".repeat(64),
+    };
+
+    const snapshotA = serializeGovernanceSnapshot(buildHeartbeatGovernanceSnapshot(input()));
+    const snapshotB = serializeGovernanceSnapshot(
+      buildHeartbeatGovernanceSnapshot(input({ operatorHold: "HALTED" }))
+    );
+    const snapshotC = serializeGovernanceSnapshot(
+      buildHeartbeatGovernanceSnapshot(input({ lifecycleState: "INVALIDATED" }))
+    );
+    const snapshotD = serializeGovernanceSnapshot(
+      buildHeartbeatGovernanceSnapshot(
+        input({ monitoringSuppressedUntil: new Date("2026-03-03T13:00:00Z") })
+      )
+    );
+
+    const payloadBase = {
+      eventType: "HEARTBEAT_DECISION_MADE",
+      recordId: "rec_1",
+      strategyId: "strat_1",
+      action: "RUN",
+      reasonCode: "OK",
+      governanceSnapshot: snapshotA,
+      timestamp: "2026-03-03T12:00:00.000Z",
+    };
+
+    const hashA = computeProofEventHash({ ...base, payload: payloadBase });
+    const hashB = computeProofEventHash({
+      ...base,
+      payload: { ...payloadBase, governanceSnapshot: snapshotB },
+    });
+    const hashC = computeProofEventHash({
+      ...base,
+      payload: { ...payloadBase, governanceSnapshot: snapshotC },
+    });
+    const hashD = computeProofEventHash({
+      ...base,
+      payload: { ...payloadBase, governanceSnapshot: snapshotD },
+    });
+
+    // All hashes must be distinct
+    const hashes = new Set([hashA, hashB, hashC, hashD]);
+    expect(hashes.size).toBe(4);
   });
 });
