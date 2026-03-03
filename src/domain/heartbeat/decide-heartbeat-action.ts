@@ -14,7 +14,30 @@ export type HeartbeatReasonCode =
   | "STRATEGY_INVALIDATED"
   | "NO_INSTANCE"
   | "CONFIG_UNAVAILABLE"
-  | "COMPUTATION_FAILED";
+  | "COMPUTATION_FAILED"
+  | "NO_HEARTBEAT_PROOF";
+
+/**
+ * Compile-time exhaustive check: every HeartbeatReasonCode must appear here.
+ * If a new member is added to the union without updating this record,
+ * TypeScript will produce a compile error.
+ */
+const _REASON_CODE_REGISTRY: Record<HeartbeatReasonCode, true> = {
+  OK: true,
+  STRATEGY_HALTED: true,
+  MONITORING_AT_RISK: true,
+  MONITORING_SUPPRESSED: true,
+  STRATEGY_INVALIDATED: true,
+  NO_INSTANCE: true,
+  CONFIG_UNAVAILABLE: true,
+  COMPUTATION_FAILED: true,
+  NO_HEARTBEAT_PROOF: true,
+};
+
+/** Runtime-accessible list of all HeartbeatReasonCode values. */
+export const ALL_HEARTBEAT_REASON_CODES = Object.keys(
+  _REASON_CODE_REGISTRY
+) as HeartbeatReasonCode[];
 
 export interface HeartbeatInput {
   lifecycleState: string | null;

@@ -107,7 +107,8 @@ type HeartbeatReasonCode =
   | "MONITORING_SUPPRESSED" // Time-bounded suppression → PAUSE
   | "NO_INSTANCE" // No LiveEAInstance found → PAUSE
   | "CONFIG_UNAVAILABLE" // Reserved for future use → PAUSE
-  | "COMPUTATION_FAILED"; // DB/computation error → PAUSE
+  | "COMPUTATION_FAILED" // DB/computation error → PAUSE
+  | "NO_HEARTBEAT_PROOF"; // No proof events recorded yet (read-model only) → PAUSE
 ```
 
 Reason codes are **stable strings**. They will not change without a DECISIONS.md entry.
@@ -171,3 +172,21 @@ The server **never** returns RUN when uncertain. The client **must never** assum
 
 Every heartbeat decision emits a best-effort `HEARTBEAT_DECISION_MADE` proof event.
 This is observability — proof logging failure does **not** affect the returned decision.
+
+---
+
+## 11. Operator Observability (Ops UI)
+
+The Ops UI displays the **latest** heartbeat decision for a strategy via a separate internal
+read-model endpoint (`GET /api/internal/heartbeat/latest`). This endpoint:
+
+- Reads the most recent `HEARTBEAT_DECISION_MADE` proof event from the log.
+- Returns the same `action` + `reasonCode` with a `decidedAt` timestamp.
+- Falls back to `PAUSE` + `NO_HEARTBEAT_PROOF` when no decisions have been recorded.
+- Is **read-only** — it never mutates lifecycle, incidents, or overrides.
+
+`HEARTBEAT_DECISION_MADE` events also appear in the strategy timeline feed, rendered as
+`"Heartbeat: ACTION (REASON_CODE)"` with severity derived from the action.
+
+**This does not change the EA/client contract.** The Ops UI is an internal observability
+surface. EAs continue to poll `POST /api/internal/heartbeat` directly.

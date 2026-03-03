@@ -22,7 +22,7 @@ function authenticateInternal(request: NextRequest): boolean {
 
 // ── Types ──────────────────────────────────────────────
 
-type TimelineType = "MONITORING_RUN" | "INCIDENT" | "OVERRIDE" | "HOLD" | "LIFECYCLE";
+type TimelineType = "MONITORING_RUN" | "INCIDENT" | "OVERRIDE" | "HOLD" | "LIFECYCLE" | "HEARTBEAT";
 
 type Severity = "INFO" | "WARN" | "CRITICAL";
 
@@ -50,12 +50,15 @@ const LIFECYCLE_TYPES = [
   "STRATEGY_RECOVERED",
 ] as const;
 
-const PROOF_EVENT_TYPES: string[] = [...HOLD_TYPES, ...LIFECYCLE_TYPES];
+const HEARTBEAT_TYPES = ["HEARTBEAT_DECISION_MADE"] as const;
+
+const PROOF_EVENT_TYPES: string[] = [...HOLD_TYPES, ...LIFECYCLE_TYPES, ...HEARTBEAT_TYPES];
 
 // ── Whitelisted meta keys for proof events ─────────────
 
 const HOLD_META_KEYS = new Set(["previousHold", "newHold", "actor", "note"]);
 const LIFECYCLE_META_KEYS = new Set(["from", "to", "triggeringReasons", "consecutiveHealthyRuns"]);
+const HEARTBEAT_META_KEYS = new Set(["action", "reasonCode"]);
 
 function extractWhitelistedMeta(meta: unknown, allowedKeys: Set<string>): Record<string, unknown> {
   if (!meta || typeof meta !== "object") return {};
@@ -227,6 +230,28 @@ function proofEventToItem(evt: {
   meta: unknown;
 }): TimelineItem {
   const isHold = (HOLD_TYPES as readonly string[]).includes(evt.type);
+  const isHeartbeat = (HEARTBEAT_TYPES as readonly string[]).includes(evt.type);
+
+  // Heartbeat events: derive title from whitelisted meta fields
+  if (isHeartbeat) {
+    const meta = (evt.meta && typeof evt.meta === "object" ? evt.meta : {}) as Record<
+      string,
+      unknown
+    >;
+    const action = typeof meta.action === "string" ? meta.action : "UNKNOWN";
+    const reasonCode = typeof meta.reasonCode === "string" ? meta.reasonCode : "UNKNOWN";
+    const severity: Severity =
+      action === "STOP" ? "CRITICAL" : action === "PAUSE" ? "WARN" : "INFO";
+
+    return {
+      type: "HEARTBEAT",
+      ts: evt.createdAt.toISOString(),
+      title: `Heartbeat: ${action} (${reasonCode})`,
+      severity,
+      ref: { recordId: evt.sessionId },
+      details: extractWhitelistedMeta(evt.meta, HEARTBEAT_META_KEYS),
+    };
+  }
 
   const TITLE_MAP: Record<string, string> = {
     OPERATOR_HALT_APPLIED: "Operator halt applied",

@@ -120,6 +120,83 @@ function isOverdue(deadline: string): boolean {
   return new Date(deadline) < new Date();
 }
 
+interface HeartbeatData {
+  strategyId: string;
+  action: string;
+  reasonCode: string;
+  serverTime: string;
+  decidedAt: string | null;
+}
+
+const ACTION_COLORS: Record<string, string> = {
+  RUN: "text-emerald-400",
+  PAUSE: "text-amber-400",
+  STOP: "text-red-400",
+};
+
+const ACTION_BG: Record<string, string> = {
+  RUN: "bg-emerald-500/20",
+  PAUSE: "bg-amber-500/20",
+  STOP: "bg-red-500/20",
+};
+
+const REASON_EXPLAINERS: Record<string, string> = {
+  OK: "All governance checks passed \u2014 execution authorized.",
+  STRATEGY_HALTED: "Operator HALT is active \u2014 execution must STOP.",
+  STRATEGY_INVALIDATED: "Strategy invalidated \u2014 execution must STOP.",
+  MONITORING_AT_RISK: "Edge at risk \u2014 execution should PAUSE.",
+  MONITORING_SUPPRESSED: "Monitoring suppression window active \u2014 execution should PAUSE.",
+  NO_INSTANCE: "No live instance found \u2014 default PAUSE.",
+  CONFIG_UNAVAILABLE: "Configuration unavailable \u2014 default PAUSE.",
+  COMPUTATION_FAILED: "System uncertainty \u2014 default PAUSE.",
+  NO_HEARTBEAT_PROOF: "No recorded heartbeat decisions yet \u2014 default PAUSE.",
+};
+
+function ExecutionAuthorityCard({
+  heartbeat,
+  loading,
+}: {
+  heartbeat: HeartbeatData | null;
+  loading: boolean;
+}) {
+  return (
+    <div className={cardClass}>
+      <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Execution Authority</h3>
+      {loading ? (
+        <p className="text-xs text-[#64748B]">Loading heartbeat status...</p>
+      ) : heartbeat ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-sm font-bold font-mono px-2 py-0.5 rounded ${ACTION_COLORS[heartbeat.action] ?? "text-white"} ${ACTION_BG[heartbeat.action] ?? ""}`}
+            >
+              {heartbeat.action}
+            </span>
+            <span className="text-xs text-[#94A3B8] font-mono">{heartbeat.reasonCode}</span>
+          </div>
+          <p className="text-xs text-[#CBD5E1]">
+            {REASON_EXPLAINERS[heartbeat.reasonCode] ?? "Unknown reason code \u2014 default PAUSE."}
+          </p>
+          <div className="flex gap-x-5 text-[10px]">
+            {heartbeat.decidedAt && (
+              <span>
+                <span className="text-[#7C8DB0]">Decided: </span>
+                <span className="text-[#CBD5E1] font-mono">{formatTime(heartbeat.decidedAt)}</span>
+              </span>
+            )}
+            <span>
+              <span className="text-[#7C8DB0]">Server time: </span>
+              <span className="text-[#CBD5E1] font-mono">{formatTime(heartbeat.serverTime)}</span>
+            </span>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-[#64748B]">No heartbeat data available.</p>
+      )}
+    </div>
+  );
+}
+
 const LIFECYCLE_COLORS: Record<string, string> = {
   MONITORING: "text-emerald-400",
   EDGE_AT_RISK: "text-amber-400",
@@ -434,6 +511,7 @@ const TYPE_LABEL_COLOR: Record<string, string> = {
   OVERRIDE: "bg-[rgba(234,179,8,0.15)] text-amber-400",
   HOLD: "bg-[rgba(239,68,68,0.2)] text-red-300",
   LIFECYCLE: "bg-[rgba(34,197,94,0.15)] text-emerald-400",
+  HEARTBEAT: "bg-[rgba(34,211,238,0.15)] text-[#22D3EE]",
 };
 
 function timelineLink(item: TimelineItem): string | null {
@@ -678,6 +756,8 @@ export default function StrategyCommandCenterPage() {
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [trends, setTrends] = useState<TrendsData | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(false);
+  const [heartbeat, setHeartbeat] = useState<HeartbeatData | null>(null);
+  const [heartbeatLoading, setHeartbeatLoading] = useState(false);
 
   async function fetchOverview() {
     setError(null);
@@ -697,9 +777,10 @@ export default function StrategyCommandCenterPage() {
         return;
       }
       setData(await res.json());
-      // Fetch timeline + trends after overview succeeds
+      // Fetch timeline + trends + heartbeat after overview succeeds
       fetchTimeline();
       fetchTrends();
+      fetchHeartbeat();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -724,6 +805,41 @@ export default function StrategyCommandCenterPage() {
       // Timeline is non-critical — silently fail
     } finally {
       setTimelineLoading(false);
+    }
+  }
+
+  async function fetchHeartbeat() {
+    setHeartbeatLoading(true);
+    try {
+      const res = await fetch(
+        `/api/internal/heartbeat/latest?strategyId=${encodeURIComponent(strategyId)}`,
+        {
+          headers: { "x-internal-api-key": apiKey },
+        }
+      );
+      if (res.ok) {
+        setHeartbeat(await res.json());
+      } else {
+        // Fail-closed: show PAUSE on error (no error details)
+        setHeartbeat({
+          strategyId,
+          action: "PAUSE",
+          reasonCode: "COMPUTATION_FAILED",
+          serverTime: new Date().toISOString(),
+          decidedAt: null,
+        });
+      }
+    } catch {
+      // Fail-closed: show PAUSE on network error
+      setHeartbeat({
+        strategyId,
+        action: "PAUSE",
+        reasonCode: "COMPUTATION_FAILED",
+        serverTime: new Date().toISOString(),
+        decidedAt: null,
+      });
+    } finally {
+      setHeartbeatLoading(false);
     }
   }
 
@@ -815,6 +931,7 @@ export default function StrategyCommandCenterPage() {
         {data && (
           <div className="space-y-4">
             <InstanceCard instance={data.instance} strategyId={data.strategyId} />
+            <ExecutionAuthorityCard heartbeat={heartbeat} loading={heartbeatLoading} />
             <MonitoringRunsCard runs={data.latestMonitoringRuns} />
             <IncidentsCard incidents={data.incidents} />
             <OverridesCard overrides={data.overrides} />
