@@ -9,12 +9,30 @@ import { AppNav } from "@/components/app/app-nav";
 import { generateDailyInsights, getPortfolioStatus } from "@/lib/daily-insights";
 import { OnboardingGate } from "./components/onboarding-gate";
 import { OnboardingChecklist } from "./components/onboarding-checklist";
+import { shouldRedirectToOnboarding } from "./onboarding-heuristic";
 
 export default async function DashboardPage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login?expired=true");
+  }
+
+  // ── Server-driven onboarding gate (fail-closed) ──────────
+  // Redirect when user has zero strategies OR zero live EAs.
+  // If Prisma throws, fail-closed → redirect to onboarding.
+  let onboardingRedirect: string | null;
+  try {
+    const [strategyCount, liveEACount] = await Promise.all([
+      prisma.project.count({ where: { userId: session.user.id, deletedAt: null } }),
+      prisma.liveEAInstance.count({ where: { userId: session.user.id, deletedAt: null } }),
+    ]);
+    onboardingRedirect = shouldRedirectToOnboarding(strategyCount, liveEACount);
+  } catch {
+    onboardingRedirect = "/app/onboarding?step=scope";
+  }
+  if (onboardingRedirect) {
+    redirect(onboardingRedirect);
   }
 
   const [projects, subscription, user, liveEAs, recentBacktests, exportCount] = await Promise.all([
@@ -299,7 +317,7 @@ export default async function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Live Strategies</h3>
                   <Link
-                    href="/app/monitor"
+                    href="/app/live"
                     className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
                   >
                     View All &rarr;
