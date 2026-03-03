@@ -169,11 +169,11 @@ export default function PricingPage() {
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
               <p className="text-xs text-[#64748B] mb-1">Governing a live strategy?</p>
-              <p className="text-sm font-medium text-[#A78BFA]">Go Control</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Upgrade to Control</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3 text-center">
               <p className="text-xs text-[#64748B] mb-1">Portfolio-level control?</p>
-              <p className="text-sm font-medium text-[#A78BFA]">Go Authority</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Unlock Authority</p>
             </div>
           </div>
         </div>
