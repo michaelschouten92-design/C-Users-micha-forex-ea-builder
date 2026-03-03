@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
@@ -7,6 +6,7 @@ import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
+import { loadMonitorData } from "./load-monitor-data";
 
 export default async function LiveEADashboardPage() {
   const session = await auth();
@@ -15,26 +15,61 @@ export default async function LiveEADashboardPage() {
     redirect("/login?expired=true");
   }
 
-  const [eaInstances, subscription] = await Promise.all([
-    prisma.liveEAInstance.findMany({
-      where: { userId: session.user.id },
-      orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
-      include: {
-        trades: {
-          where: { closeTime: { not: null } },
-          select: { profit: true, closeTime: true },
-        },
-        heartbeats: {
-          orderBy: { createdAt: "desc" },
-          take: 200,
-          select: { equity: true, createdAt: true },
-        },
-      },
-    }),
-    prisma.subscription.findUnique({
-      where: { userId: session.user.id },
-    }),
-  ]);
+  const data = await loadMonitorData(session.user.id);
+
+  // Fail-closed: render degraded state on DB error
+  if (!data) {
+    return (
+      <div className="min-h-screen">
+        <AppNav activeItem="monitor" session={session} tier="FREE" firstProjectId={null} />
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Monitor" }]} />
+          <div className="flex items-center justify-center py-24">
+            <div className="text-center max-w-md">
+              <div className="w-16 h-16 bg-[rgba(245,158,11,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg
+                  className="w-8 h-8 text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-white mb-3">
+                Dashboard temporarily unavailable
+              </h2>
+              <p className="text-[#94A3B8] mb-6">
+                We&apos;re having trouble loading your monitoring data. Please try again in a
+                moment.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Link
+                  href="/app/monitor"
+                  className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+                >
+                  Try Again
+                </Link>
+                <Link
+                  href="/app"
+                  className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                >
+                  Back to Home
+                </Link>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const { eaInstances, subscription } = data;
 
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
