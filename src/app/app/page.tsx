@@ -7,7 +7,7 @@ import { ProjectList } from "./components/project-list";
 import { EmailVerificationBanner } from "./components/email-verification-banner";
 import { AppNav } from "@/components/app/app-nav";
 import { generateDailyInsights, getPortfolioStatus } from "@/lib/daily-insights";
-import { OnboardingHero } from "./components/onboarding-hero";
+import { OnboardingGate } from "./components/onboarding-gate";
 import { OnboardingChecklist } from "./components/onboarding-checklist";
 
 export default async function DashboardPage() {
@@ -130,7 +130,7 @@ export default async function DashboardPage() {
         {/* NEW USER: OnboardingHero */}
         {/* ====================================== */}
         {isNewUser ? (
-          <OnboardingHero />
+          <OnboardingGate />
         ) : (
           <>
             {/* ====================================== */}
