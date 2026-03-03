@@ -27,11 +27,17 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 
 const mockFindFirst = vi.fn();
+const mockProjectCount = vi.fn();
+const mockLiveEAInstanceCount = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     liveEAInstance: {
       findFirst: (...args: unknown[]) => mockFindFirst(...args),
+      count: (...args: unknown[]) => mockLiveEAInstanceCount(...args),
+    },
+    project: {
+      count: (...args: unknown[]) => mockProjectCount(...args),
     },
   },
 }));
@@ -63,6 +69,9 @@ describe("POST /api/internal/heartbeat", () => {
       resetAt: new Date(),
     });
     mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "h" });
+    // Default: authority ready (pass authority guard)
+    mockProjectCount.mockResolvedValue(1);
+    mockLiveEAInstanceCount.mockResolvedValue(1);
   });
 
   it("rejects without API key (401)", async () => {
@@ -107,6 +116,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("returns RUN + OK for healthy instance", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -136,6 +146,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("returns STOP + STRATEGY_INVALIDATED for invalidated instance", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "INVALIDATED",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -151,6 +162,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("returns STOP + STRATEGY_HALTED for halted instance", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
@@ -167,6 +179,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("HALTED overrides INVALIDATED at route level", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "INVALIDATED",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
@@ -209,6 +222,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("logs HEARTBEAT_DECISION_MADE proof event on success", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -235,6 +249,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("still returns 200 when proof event logging fails", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -253,6 +268,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("response always includes strategyId, action, reasonCode, serverTime", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -274,6 +290,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("serverTime is parseable UTC ISO-8601", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -311,6 +328,7 @@ describe("POST /api/internal/heartbeat", () => {
 
     // Test RUN
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -326,6 +344,7 @@ describe("POST /api/internal/heartbeat", () => {
 
     // Test STOP (halted)
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
@@ -352,6 +371,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("sets Cache-Control: no-store on success response", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -378,6 +398,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("does not return instanceTag or accountId in response", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -402,6 +423,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("HEARTBEAT_DECISION_MADE proof event includes governanceSnapshot", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -437,6 +459,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("snapshot matches DB state used in decision", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "EDGE_AT_RISK",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: new Date("2026-03-03T23:00:00Z"),
@@ -473,6 +496,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("snapshot excludes secrets (accountId, instanceTag)", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -500,6 +524,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("snapshot is stable across repeated calls with identical state", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
@@ -520,6 +545,7 @@ describe("POST /api/internal/heartbeat", () => {
 
   it("governanceSnapshot is NOT returned in API response", async () => {
     mockFindFirst.mockResolvedValue({
+      userId: "user-1",
       lifecycleState: "HEALTHY",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,

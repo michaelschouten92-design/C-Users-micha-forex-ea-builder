@@ -18,6 +18,10 @@ import {
   buildHeartbeatGovernanceSnapshot,
   serializeGovernanceSnapshot,
 } from "@/domain/heartbeat/build-governance-snapshot";
+import {
+  evaluateAuthorityReadiness,
+  type AuthorityBlockReason,
+} from "@/domain/heartbeat/authority-readiness";
 
 const log = logger.child({ route: "/api/internal/heartbeat" });
 
@@ -84,11 +88,58 @@ export async function POST(request: NextRequest) {
         },
       },
       select: {
+        userId: true,
         lifecycleState: true,
         operatorHold: true,
         monitoringSuppressedUntil: true,
       },
     });
+
+    // ── EARLY AUTHORITY GUARD (fail-closed) ──────────────────
+    // Authority readiness takes priority over ALL observability logic.
+    // If the user lacks strategies or live instances, PAUSE immediately.
+    if (instance) {
+      let authorityReady = false;
+      let authorityReasons: AuthorityBlockReason[] = [];
+      try {
+        const [strategyCount, liveEACount] = await Promise.all([
+          prisma.project.count({ where: { userId: instance.userId, deletedAt: null } }),
+          prisma.liveEAInstance.count({ where: { userId: instance.userId, deletedAt: null } }),
+        ]);
+        const authority = evaluateAuthorityReadiness(strategyCount, liveEACount);
+        authorityReady = authority.ready;
+        authorityReasons = authority.reasons;
+      } catch {
+        // Fail-closed: DB error → treat as authority uninitialized
+        authorityReasons = ["NO_STRATEGIES", "NO_LIVE_INSTANCE"];
+      }
+
+      if (!authorityReady) {
+        log.info(
+          {
+            strategyId,
+            action: "PAUSE",
+            reasonCode: "AUTHORITY_UNINITIALIZED",
+            authorityReasons,
+          },
+          "heartbeat authority block"
+        );
+
+        logAuthorityBlockEvent(strategyId, authorityReasons).catch(() => {});
+
+        return NextResponse.json(
+          {
+            strategyId,
+            action: "PAUSE",
+            reasonCode: "AUTHORITY_UNINITIALIZED",
+            authorityReasons,
+            serverTime: new Date().toISOString(),
+          },
+          { headers: HEARTBEAT_HEADERS }
+        );
+      }
+    }
+    // ── END AUTHORITY GUARD ──────────────────────────────────
 
     const now = new Date();
 
@@ -207,6 +258,23 @@ async function logControlInconsistencyEvent(
       guardedAction: "PAUSE",
       guardedReasonCode: "CONTROL_INCONSISTENCY_DETECTED",
       governanceSnapshot,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    // Best-effort — do not break heartbeat response
+  }
+}
+
+async function logAuthorityBlockEvent(strategyId: string, reasons: string[]): Promise<void> {
+  try {
+    const { appendProofEvent } = await import("@/lib/proof/events");
+    await appendProofEvent(strategyId, "AUTHORITY_BLOCK", {
+      eventType: "AUTHORITY_BLOCK",
+      recordId: crypto.randomUUID(),
+      strategyId,
+      action: "PAUSE",
+      reasonCode: "AUTHORITY_UNINITIALIZED",
+      reasons,
       timestamp: new Date().toISOString(),
     });
   } catch {

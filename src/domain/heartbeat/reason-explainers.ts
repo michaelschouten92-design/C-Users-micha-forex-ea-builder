@@ -18,6 +18,8 @@ const REASON_EXPLAINERS: Record<string, string> = {
   NO_HEARTBEAT_PROOF: "No recorded heartbeat decisions yet \u2014 default PAUSE.",
   CONTROL_INCONSISTENCY_DETECTED:
     "Control consistency guard detected a mismatch between state and decision \u2014 forced PAUSE.",
+  AUTHORITY_UNINITIALIZED:
+    "Authority not initialized \u2014 user lacks strategies or live instances \u2014 default PAUSE.",
 };
 
 const FALLBACK_EXPLANATION = "Unknown reason code \u2014 default PAUSE.";
