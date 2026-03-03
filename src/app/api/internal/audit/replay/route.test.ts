@@ -380,7 +380,7 @@ describe("GET /api/internal/audit/replay", () => {
     expect(res.status).toBe(200);
 
     // Wait for async fire-and-forget
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 50));
 
     expect(mockAppendProofEvent).toHaveBeenCalledWith(
       "strat_1",

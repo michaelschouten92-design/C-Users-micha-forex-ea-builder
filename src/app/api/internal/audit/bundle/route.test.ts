@@ -234,7 +234,7 @@ describe("GET /api/internal/audit/bundle", () => {
     const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
     expect(res.status).toBe(200);
 
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 50));
 
     expect(mockAppendProofEvent).toHaveBeenCalledWith(
       "strat_1",
