@@ -686,5 +686,14 @@ export const internalHeartbeatRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
 });
 
+/**
+ * Rate limiter for internal heartbeat analytics endpoint
+ * Limits: 30 requests per minute per IP (heavier aggregation)
+ */
+export const internalHeartbeatAnalyticsRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 1000, // 1 minute
+});
+
 // Export types
 export type { RateLimitConfig, RateLimitResult };
