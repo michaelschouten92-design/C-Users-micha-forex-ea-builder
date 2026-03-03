@@ -260,4 +260,66 @@ describe("loadMonitorData", () => {
       })
     );
   });
+
+  // ── Query shape regression tests ──────────────────────
+
+  it("uses explicit select instead of include to avoid fetching sensitive columns", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockFindUnique.mockResolvedValue(null);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    await loadMonitorData("user_123");
+
+    const queryArg = mockFindMany.mock.calls[0][0] as Record<string, unknown>;
+
+    // Must use select, not include
+    expect(queryArg).toHaveProperty("select");
+    expect(queryArg).not.toHaveProperty("include");
+
+    // Must NOT fetch sensitive columns
+    const select = queryArg.select as Record<string, unknown>;
+    expect(select).not.toHaveProperty("apiKeyHash");
+    expect(select).not.toHaveProperty("apiKeyHashPrev");
+    expect(select).not.toHaveProperty("keyRotatedAt");
+    expect(select).not.toHaveProperty("keyGracePeriodEnd");
+    expect(select).not.toHaveProperty("userId");
+  });
+
+  it("selects all fields required by page.tsx serialization", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockFindUnique.mockResolvedValue(null);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    await loadMonitorData("user_123");
+
+    const queryArg = mockFindMany.mock.calls[0][0] as Record<string, unknown>;
+    const select = queryArg.select as Record<string, boolean>;
+
+    // Every field that page.tsx serializes must be in the select
+    const requiredFields = [
+      "id",
+      "eaName",
+      "symbol",
+      "timeframe",
+      "broker",
+      "accountNumber",
+      "status",
+      "tradingState",
+      "lastHeartbeat",
+      "lastError",
+      "balance",
+      "equity",
+      "openTrades",
+      "totalTrades",
+      "totalProfit",
+      "strategyStatus",
+      "mode",
+      "trades",
+      "heartbeats",
+    ];
+
+    for (const field of requiredFields) {
+      expect(select).toHaveProperty(field);
+    }
+  });
 });

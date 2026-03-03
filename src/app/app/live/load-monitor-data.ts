@@ -67,7 +67,24 @@ export async function loadMonitorData(userId: string) {
       prisma.liveEAInstance.findMany({
         where: { userId, deletedAt: null },
         orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
-        include: {
+        select: {
+          id: true,
+          eaName: true,
+          symbol: true,
+          timeframe: true,
+          broker: true,
+          accountNumber: true,
+          status: true,
+          tradingState: true,
+          lastHeartbeat: true,
+          lastError: true,
+          balance: true,
+          equity: true,
+          openTrades: true,
+          totalTrades: true,
+          totalProfit: true,
+          strategyStatus: true,
+          mode: true,
           trades: {
             where: { closeTime: { not: null } },
             select: { profit: true, closeTime: true },
