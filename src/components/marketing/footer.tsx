@@ -158,7 +158,9 @@ export function Footer() {
         <div className="pt-8 border-t border-[rgba(79,70,229,0.1)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-white">AlgoStudio</span>
-            <span className="text-xs text-[#64748B]">The Proof Layer for Algorithmic Trading</span>
+            <span className="text-xs text-[#64748B]">
+              The Control Layer for Algorithmic Trading
+            </span>
           </div>
           <span className="text-sm text-[#64748B]">
             &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.
