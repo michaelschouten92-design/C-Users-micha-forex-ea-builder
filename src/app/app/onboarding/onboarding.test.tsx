@@ -131,7 +131,7 @@ describe("OnboardingPage", () => {
   it("renders live baseline step content", async () => {
     await renderPage("path=live&step=baseline");
     expect(screen.getByText("Bring Your Live Strategy Under Control")).toBeInTheDocument();
-    expect(screen.getByText("Go to Live Monitor")).toBeInTheDocument();
+    expect(screen.getByText("Go to Command Center")).toBeInTheDocument();
   });
 
   it("has 'Skip for now' button on live baseline", async () => {

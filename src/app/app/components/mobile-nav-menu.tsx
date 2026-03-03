@@ -99,7 +99,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
             Evaluate
           </Link>
           <Link
-            href="/app/monitor"
+            href="/app/live"
             onClick={() => setOpen(false)}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
           >
@@ -111,7 +111,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Monitor
+            Command Center
           </Link>
           <Link
             href="/app/risk"

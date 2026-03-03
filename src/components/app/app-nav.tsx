@@ -18,7 +18,7 @@ const NAV_LINKS: {
   href: (firstProjectId: string | null) => string;
 }[] = [
   { key: "build", label: "Build", href: (id) => (id ? `/app/projects/${id}` : "/app") },
-  { key: "monitor", label: "Monitor", href: () => "/app/monitor" },
+  { key: "monitor", label: "Command Center", href: () => "/app/live" },
   { key: "risk", label: "Risk", href: () => "/app/risk" },
   { key: "settings", label: "Settings", href: () => "/app/settings" },
 ];

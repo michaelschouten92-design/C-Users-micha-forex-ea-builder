@@ -54,7 +54,7 @@ export default async function LiveEADashboardPage() {
               </p>
               <div className="flex gap-3 justify-center">
                 <Link
-                  href="/app/monitor"
+                  href="/app/live"
                   className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
                 >
                   Try Again

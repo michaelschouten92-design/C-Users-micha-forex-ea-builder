@@ -384,7 +384,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
-          href="/app/monitor"
+          href="/app/live"
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.25)] text-[#10B981] hover:bg-[rgba(16,185,129,0.15)] hover:border-[rgba(16,185,129,0.4)] transition-all font-medium text-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,7 +395,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
               d="M13 10V3L4 14h7v7l9-11h-7z"
             />
           </svg>
-          Go to Live Monitor
+          Go to Command Center
         </Link>
         <SkipButton onClick={onNext} />
       </div>
