@@ -4,6 +4,8 @@
  * No side effects, no I/O — safe to call from any context.
  */
 
+import type { AuthorityBlockReason } from "./authority-readiness";
+
 export type HeartbeatAction = "RUN" | "PAUSE" | "STOP";
 
 export type HeartbeatReasonCode =
@@ -48,6 +50,8 @@ export interface HeartbeatInput {
   operatorHold: "NONE" | "HALTED" | "OVERRIDE_PENDING" | null;
   monitoringSuppressedUntil: Date | null;
   now: Date;
+  authorityReady: boolean;
+  authorityReasons?: AuthorityBlockReason[];
 }
 
 export interface HeartbeatDecision {
@@ -60,14 +64,15 @@ export interface HeartbeatDecision {
  *
  * Rules are evaluated in strict priority order — first match wins:
  *
- *   1. NO_INSTANCE        → PAUSE  (fail-closed: no state to evaluate)
- *   2. HALTED              → STOP   (operator authority is orthogonal to lifecycle;
- *                                    an explicit HALT always produces STOP regardless
- *                                    of lifecycle state, suppression, or risk flags)
- *   3. INVALIDATED         → STOP   (terminal lifecycle state)
- *   4. EDGE_AT_RISK        → PAUSE  (monitoring detected risk)
- *   5. SUPPRESSED          → PAUSE  (monitoring temporarily suppressed)
- *   6. otherwise           → RUN    (all clear)
+ *   1. NO_INSTANCE             → PAUSE  (fail-closed: no state to evaluate)
+ *   2. AUTHORITY_UNINITIALIZED → PAUSE  (user lacks strategies or live instances)
+ *   3. HALTED                  → STOP   (operator authority is orthogonal to lifecycle;
+ *                                        an explicit HALT always produces STOP regardless
+ *                                        of lifecycle state, suppression, or risk flags)
+ *   4. INVALIDATED             → STOP   (terminal lifecycle state)
+ *   5. EDGE_AT_RISK            → PAUSE  (monitoring detected risk)
+ *   6. SUPPRESSED              → PAUSE  (monitoring temporarily suppressed)
+ *   7. otherwise               → RUN    (all clear)
  *
  * Invariants:
  * - Fail-closed: when in doubt, PAUSE (never RUN on uncertainty).
@@ -81,26 +86,31 @@ export function decideHeartbeatAction(input: HeartbeatInput | null): HeartbeatDe
     return { action: "PAUSE", reasonCode: "NO_INSTANCE" };
   }
 
-  // 2) Operator hold: HALTED overrides everything (orthogonal authority)
+  // 2) Authority not initialized — user lacks strategies or live instances
+  if (!input.authorityReady) {
+    return { action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED" };
+  }
+
+  // 3) Operator hold: HALTED overrides everything (orthogonal authority)
   if (input.operatorHold === "HALTED") {
     return { action: "STOP", reasonCode: "STRATEGY_HALTED" };
   }
 
-  // 3) Terminal lifecycle: invalidated
+  // 4) Terminal lifecycle: invalidated
   if (input.lifecycleState === "INVALIDATED") {
     return { action: "STOP", reasonCode: "STRATEGY_INVALIDATED" };
   }
 
-  // 4) Edge at risk
+  // 5) Edge at risk
   if (input.lifecycleState === "EDGE_AT_RISK") {
     return { action: "PAUSE", reasonCode: "MONITORING_AT_RISK" };
   }
 
-  // 5) Monitoring suppressed (time-bounded)
+  // 6) Monitoring suppressed (time-bounded)
   if (input.monitoringSuppressedUntil && input.now < input.monitoringSuppressedUntil) {
     return { action: "PAUSE", reasonCode: "MONITORING_SUPPRESSED" };
   }
 
-  // 6) All clear
+  // 7) All clear
   return { action: "RUN", reasonCode: "OK" };
 }

@@ -9,6 +9,7 @@ function makeInput(overrides: Partial<HeartbeatInput> = {}): HeartbeatInput {
     operatorHold: "NONE",
     monitoringSuppressedUntil: null,
     now: NOW,
+    authorityReady: true,
     ...overrides,
   };
 }
@@ -32,7 +33,40 @@ describe("decideHeartbeatAction", () => {
     expect(result.action).toBe("PAUSE");
   });
 
-  // ── HALTED (priority 2 — orthogonal operator authority) ─
+  // ── AUTHORITY_UNINITIALIZED (priority 2) ─────────────────
+
+  it("returns PAUSE + AUTHORITY_UNINITIALIZED when authorityReady is false", () => {
+    const result = decideHeartbeatAction(makeInput({ authorityReady: false }));
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED" });
+  });
+
+  it("AUTHORITY_UNINITIALIZED overrides HALTED", () => {
+    const result = decideHeartbeatAction(
+      makeInput({ authorityReady: false, operatorHold: "HALTED" })
+    );
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED" });
+  });
+
+  it("AUTHORITY_UNINITIALIZED overrides INVALIDATED", () => {
+    const result = decideHeartbeatAction(
+      makeInput({ authorityReady: false, lifecycleState: "INVALIDATED" })
+    );
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED" });
+  });
+
+  it("AUTHORITY_UNINITIALIZED overrides EDGE_AT_RISK", () => {
+    const result = decideHeartbeatAction(
+      makeInput({ authorityReady: false, lifecycleState: "EDGE_AT_RISK" })
+    );
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED" });
+  });
+
+  it("authority ready proceeds to normal decision", () => {
+    const result = decideHeartbeatAction(makeInput({ authorityReady: true }));
+    expect(result).toEqual({ action: "RUN", reasonCode: "OK" });
+  });
+
+  // ── HALTED (priority 3 — orthogonal operator authority) ─
 
   it("returns STOP + STRATEGY_HALTED when operatorHold is HALTED", () => {
     const result = decideHeartbeatAction(makeInput({ operatorHold: "HALTED" }));
@@ -73,21 +107,21 @@ describe("decideHeartbeatAction", () => {
     expect(result).toEqual({ action: "STOP", reasonCode: "STRATEGY_HALTED" });
   });
 
-  // ── INVALIDATED (priority 3) ──────────────────────────
+  // ── INVALIDATED (priority 4) ──────────────────────────
 
   it("returns STOP + STRATEGY_INVALIDATED when lifecycle is INVALIDATED", () => {
     const result = decideHeartbeatAction(makeInput({ lifecycleState: "INVALIDATED" }));
     expect(result).toEqual({ action: "STOP", reasonCode: "STRATEGY_INVALIDATED" });
   });
 
-  // ── EDGE_AT_RISK (priority 4) ─────────────────────────
+  // ── EDGE_AT_RISK (priority 5) ─────────────────────────
 
   it("returns PAUSE + MONITORING_AT_RISK when lifecycle is EDGE_AT_RISK", () => {
     const result = decideHeartbeatAction(makeInput({ lifecycleState: "EDGE_AT_RISK" }));
     expect(result).toEqual({ action: "PAUSE", reasonCode: "MONITORING_AT_RISK" });
   });
 
-  // ── SUPPRESSED (priority 5) ───────────────────────────
+  // ── SUPPRESSED (priority 6) ───────────────────────────
 
   it("returns PAUSE + MONITORING_SUPPRESSED when suppression is active", () => {
     const future = new Date("2026-03-03T13:00:00Z");
@@ -106,7 +140,7 @@ describe("decideHeartbeatAction", () => {
     expect(result).toEqual({ action: "RUN", reasonCode: "OK" });
   });
 
-  // ── RUN (priority 6) ─────────────────────────────────
+  // ── RUN (priority 7) ─────────────────────────────────
 
   it("returns RUN + OK for healthy instance with no holds", () => {
     const result = decideHeartbeatAction(makeInput());

@@ -15,6 +15,7 @@ function input(overrides: Partial<HeartbeatInput> = {}): HeartbeatInput {
     operatorHold: "NONE",
     monitoringSuppressedUntil: null,
     now: NOW,
+    authorityReady: true,
     ...overrides,
   };
 }
