@@ -8,6 +8,10 @@ import { timingSafeEqual } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { verifyProofChain, type StoredProofEvent } from "@/lib/proof/chain";
 import { computeThresholdsHash } from "@/domain/verification/config-snapshot";
+import {
+  verifyHeartbeatProofEvent,
+  HEARTBEAT_EVENT_TYPES,
+} from "@/domain/audit/verify-heartbeat-proof";
 
 // ── Auth ─────────────────────────────────────────────────
 
@@ -39,6 +43,14 @@ export const EXTRACTED_KEYS = new Set([
   "dataSources",
   "monteCarloSeed",
   "monteCarloIterations",
+  // Heartbeat proof event fields (safe enums + canonical JSON, no secrets)
+  "governanceSnapshot",
+  "action",
+  "reasonCode",
+  "originalAction",
+  "originalReasonCode",
+  "guardedAction",
+  "guardedReasonCode",
 ]);
 
 export function extractWhitelisted(meta: unknown): Record<string, unknown> {
@@ -203,6 +215,7 @@ export interface ReplayResult {
   extracted: Record<string, unknown>;
   snapshotVerification: VerificationStatus;
   configVerification: VerificationStatus;
+  heartbeatVerification: VerificationStatus;
   events: {
     sequence: number | null;
     type: string;
@@ -215,6 +228,31 @@ export interface ReplayResult {
   /** First strategyId found in chain events (for proof logging). */
   strategyId: string | undefined;
 }
+
+// ── Heartbeat semantic verification ──────────────────────
+
+export function verifyHeartbeatEvents(
+  events: { type: string; meta: unknown }[]
+): VerificationStatus {
+  const heartbeatEvents = events.filter((e) => HEARTBEAT_EVENT_TYPES.has(e.type));
+
+  if (heartbeatEvents.length === 0) {
+    return { status: "NOT_VERIFIABLE", details: "No heartbeat events in chain" };
+  }
+
+  for (const event of heartbeatEvents) {
+    const payload =
+      event.meta && typeof event.meta === "object" ? (event.meta as Record<string, unknown>) : {};
+    const result = verifyHeartbeatProofEvent(event.type, payload);
+    if (!result.ok) {
+      return { status: "FAILED", details: result.failureCode };
+    }
+  }
+
+  return { status: "OK" };
+}
+
+// ── Core replay computation ──────────────────────────────
 
 export async function computeReplay(recordId: string): Promise<ReplayResult> {
   const chainedEvents = await prisma.proofEventLog.findMany({
@@ -261,6 +299,9 @@ export async function computeReplay(recordId: string): Promise<ReplayResult> {
     verifySnapshot(snapshotHash, strategyId, runType),
   ]);
 
+  // Semantic verification of heartbeat proof events (pure, no I/O)
+  const heartbeatVerification = verifyHeartbeatEvents(chainedEvents);
+
   const events = chainedEvents.map((e) => ({
     sequence: e.sequence,
     type: e.type,
@@ -278,6 +319,7 @@ export async function computeReplay(recordId: string): Promise<ReplayResult> {
     extracted,
     snapshotVerification,
     configVerification,
+    heartbeatVerification,
     events,
     strategyId,
   };

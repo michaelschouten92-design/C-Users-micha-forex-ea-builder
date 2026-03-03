@@ -413,4 +413,247 @@ describe("GET /api/internal/audit/replay", () => {
     const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
     expect(res.status).toBe(200);
   });
+
+  // ── Heartbeat verification integration ────────────────
+
+  /**
+   * Canonical governance snapshot string (alphabetical key order).
+   * Matches what serializeGovernanceSnapshot produces.
+   */
+  function canonicalSnapshot(overrides: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      configVersion: "2.3.2",
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      suppressionActive: false,
+      thresholdsHash: "a".repeat(64),
+      ...overrides,
+    });
+  }
+
+  it("heartbeatVerification is OK for valid HEARTBEAT_DECISION_MADE event", async () => {
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_DECISION_MADE",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          eventType: "HEARTBEAT_DECISION_MADE",
+          recordId: "rec_1",
+          strategyId: "strat_1",
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: canonicalSnapshot(),
+          timestamp: "2026-03-03T12:00:00.000Z",
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.heartbeatVerification.status).toBe("OK");
+  });
+
+  it("heartbeatVerification is FAILED for malformed governance snapshot", async () => {
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_DECISION_MADE",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          eventType: "HEARTBEAT_DECISION_MADE",
+          recordId: "rec_1",
+          strategyId: "strat_1",
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: "not-valid-json{",
+          timestamp: "2026-03-03T12:00:00.000Z",
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.heartbeatVerification.status).toBe("FAILED");
+    expect(json.heartbeatVerification.details).toBe("HEARTBEAT_SNAPSHOT_INVALID_JSON");
+  });
+
+  it("heartbeatVerification is FAILED for action inconsistent with snapshot", async () => {
+    // Snapshot shows HALTED but action is RUN
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_DECISION_MADE",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          eventType: "HEARTBEAT_DECISION_MADE",
+          recordId: "rec_1",
+          strategyId: "strat_1",
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: canonicalSnapshot({ operatorHold: "HALTED" }),
+          timestamp: "2026-03-03T12:00:00.000Z",
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.heartbeatVerification.status).toBe("FAILED");
+    expect(json.heartbeatVerification.details).toBe("HEARTBEAT_ACTION_INCONSISTENT");
+  });
+
+  it("heartbeatVerification is NOT_VERIFIABLE for non-heartbeat events", async () => {
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "VERIFICATION_RUN_COMPLETED",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: { strategyId: "strat_1", verdict: "READY" },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    expect(json.heartbeatVerification.status).toBe("NOT_VERIFIABLE");
+  });
+
+  it("heartbeat event whitelisted fields appear in payload", async () => {
+    const snap = canonicalSnapshot();
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_DECISION_MADE",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          eventType: "HEARTBEAT_DECISION_MADE",
+          recordId: "rec_1",
+          strategyId: "strat_1",
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: snap,
+          timestamp: "2026-03-03T12:00:00.000Z",
+          secretField: "should_not_appear",
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    // Whitelisted fields present
+    expect(json.events[0].payload.action).toBe("RUN");
+    expect(json.events[0].payload.reasonCode).toBe("OK");
+    expect(json.events[0].payload.governanceSnapshot).toBe(snap);
+    expect(json.events[0].payload.strategyId).toBe("strat_1");
+
+    // Non-whitelisted fields blocked
+    expect(json.events[0].payload.secretField).toBeUndefined();
+    expect(json.events[0].payload.timestamp).toBeUndefined();
+    expect(json.events[0].payload.eventType).toBeUndefined();
+    expect(json.events[0].payload.recordId).toBeUndefined();
+  });
+
+  it("heartbeat verification does not weaken chain verification", async () => {
+    // Chain verification fails, heartbeat verification should still be reported
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_DECISION_MADE",
+        sessionId: "rec_1",
+        eventHash: "tampered",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: canonicalSnapshot(),
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({
+      valid: false,
+      chainLength: 0,
+      breakAtSequence: 1,
+      error: "hash mismatch",
+    });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    // Chain fails, but heartbeat passes — independent layers
+    expect(json.chain.ok).toBe(false);
+    expect(json.heartbeatVerification.status).toBe("OK");
+  });
+
+  it("valid HEARTBEAT_CONTROL_INCONSISTENCY passes heartbeat verification", async () => {
+    mockProofEventLogFindMany.mockResolvedValue([
+      {
+        sequence: 1,
+        strategyId: "strat_1",
+        type: "HEARTBEAT_CONTROL_INCONSISTENCY",
+        sessionId: "rec_1",
+        eventHash: "hash_1",
+        prevEventHash: "0".repeat(64),
+        meta: {
+          eventType: "HEARTBEAT_CONTROL_INCONSISTENCY",
+          recordId: "rec_1",
+          strategyId: "strat_1",
+          originalAction: "RUN",
+          originalReasonCode: "OK",
+          guardedAction: "PAUSE",
+          guardedReasonCode: "CONTROL_INCONSISTENCY_DETECTED",
+          governanceSnapshot: canonicalSnapshot(),
+          timestamp: "2026-03-03T12:00:00.000Z",
+        },
+        createdAt: new Date(),
+      },
+    ]);
+    mockVerifyProofChain.mockReturnValue({ valid: true, chainLength: 1 });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "rec_1"));
+    const json = await res.json();
+
+    expect(json.heartbeatVerification.status).toBe("OK");
+  });
 });

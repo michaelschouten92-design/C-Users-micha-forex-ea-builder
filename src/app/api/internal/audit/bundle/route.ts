@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         extracted: result.extracted,
         snapshotVerification: result.snapshotVerification,
         configVerification: result.configVerification,
+        heartbeatVerification: result.heartbeatVerification,
       },
       proofEvents: result.events.map((e) => ({
         sequence: e.sequence,
