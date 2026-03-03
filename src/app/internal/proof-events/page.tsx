@@ -108,6 +108,9 @@ const PAYLOAD_WHITELIST = new Set([
   "breakAtSequence",
   // Audit replay events
   "mode",
+  // Heartbeat events
+  "action",
+  "reasonCode",
 ]);
 
 /** Keys explicitly excluded — never shown even in "details" view. */
