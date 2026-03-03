@@ -128,6 +128,28 @@ interface HeartbeatData {
   decidedAt: string | null;
 }
 
+interface HeartbeatAnalyticsMetrics {
+  windowStart: string;
+  windowEnd: string;
+  windowMs: number;
+  expectedCadenceMs: number;
+  totalEvents: number;
+  coverageMs: number;
+  coveragePct: number;
+  runMs: number;
+  runPct: number;
+  cadenceBreached: boolean;
+  longestGapMs: number;
+  lastDecision: { action: string; reasonCode: string; timestamp: string } | null;
+  failClosed?: boolean;
+}
+
+interface HeartbeatAnalyticsData {
+  strategyId: string;
+  metrics: HeartbeatAnalyticsMetrics;
+  serverTime: string;
+}
+
 const ACTION_COLORS: Record<string, string> = {
   RUN: "text-emerald-400",
   PAUSE: "text-amber-400",
@@ -194,6 +216,102 @@ function ExecutionAuthorityCard({
         </div>
       ) : (
         <p className="text-xs text-[#64748B]">No heartbeat data available.</p>
+      )}
+    </div>
+  );
+}
+
+function pctColor(pct: number): string {
+  if (pct >= 95) return "text-emerald-400";
+  if (pct >= 80) return "text-amber-400";
+  return "text-red-400";
+}
+
+function AuthorityUptimeCard({
+  analytics,
+  loading,
+}: {
+  analytics: HeartbeatAnalyticsData | null;
+  loading: boolean;
+}) {
+  const m = analytics?.metrics;
+
+  return (
+    <div className={cardClass}>
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider">Authority Uptime (24h)</h3>
+        <span
+          className="text-[10px] text-[#64748B] cursor-help"
+          title="Coverage = % of window with recorded decisions. RUN = % where authority was RUN."
+        >
+          [?]
+        </span>
+      </div>
+      {loading ? (
+        <p className="text-xs text-[#64748B]">Loading analytics...</p>
+      ) : m ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            <div>
+              <span className="text-[10px] text-[#7C8DB0] uppercase">Coverage </span>
+              <span className={`text-sm font-bold font-mono ${pctColor(m.coveragePct)}`}>
+                {m.coveragePct}%
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] text-[#7C8DB0] uppercase">RUN </span>
+              <span className={`text-sm font-bold font-mono ${pctColor(m.runPct)}`}>
+                {m.runPct}%
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] text-[#7C8DB0] uppercase">Events </span>
+              <span className="text-sm font-mono text-[#CBD5E1]">{m.totalEvents}</span>
+            </div>
+          </div>
+
+          {/* Cadence badge */}
+          <div>
+            {m.cadenceBreached ? (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400">
+                CADENCE BREACH
+              </span>
+            ) : (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                CADENCE OK
+              </span>
+            )}
+            {m.longestGapMs > 0 && (
+              <span className="text-[10px] text-[#64748B] ml-2">
+                longest gap: {Math.round(m.longestGapMs / 1000)}s
+              </span>
+            )}
+          </div>
+
+          {/* Last decision */}
+          {m.lastDecision && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[#7C8DB0]">Last:</span>
+              <span
+                className={`font-mono px-1.5 py-0.5 rounded ${ACTION_COLORS[m.lastDecision.action] ?? "text-white"} ${ACTION_BG[m.lastDecision.action] ?? ""}`}
+              >
+                {m.lastDecision.action}
+              </span>
+              <span className="text-[#94A3B8] font-mono">{m.lastDecision.reasonCode}</span>
+              <span className="text-[10px] text-[#64748B]">
+                {relativeTime(m.lastDecision.timestamp)}
+              </span>
+            </div>
+          )}
+
+          {m.failClosed && (
+            <p className="text-[10px] text-amber-400">
+              Analytics computed in fail-closed mode — data may be incomplete.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-[#64748B]">No analytics data available.</p>
       )}
     </div>
   );
@@ -760,6 +878,8 @@ export default function StrategyCommandCenterPage() {
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [heartbeat, setHeartbeat] = useState<HeartbeatData | null>(null);
   const [heartbeatLoading, setHeartbeatLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<HeartbeatAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   async function fetchOverview() {
     setError(null);
@@ -779,10 +899,11 @@ export default function StrategyCommandCenterPage() {
         return;
       }
       setData(await res.json());
-      // Fetch timeline + trends + heartbeat after overview succeeds
+      // Fetch timeline + trends + heartbeat + analytics after overview succeeds
       fetchTimeline();
       fetchTrends();
       fetchHeartbeat();
+      fetchHeartbeatAnalytics();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -842,6 +963,65 @@ export default function StrategyCommandCenterPage() {
       });
     } finally {
       setHeartbeatLoading(false);
+    }
+  }
+
+  async function fetchHeartbeatAnalytics() {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/internal/heartbeat/analytics?strategyId=${encodeURIComponent(strategyId)}`,
+        {
+          headers: { "x-internal-api-key": apiKey },
+        }
+      );
+      if (res.ok) {
+        setAnalytics(await res.json());
+      } else {
+        // Fail-closed: show breach + 0%
+        setAnalytics({
+          strategyId,
+          metrics: {
+            windowStart: "",
+            windowEnd: "",
+            windowMs: 0,
+            expectedCadenceMs: 0,
+            totalEvents: 0,
+            coverageMs: 0,
+            coveragePct: 0,
+            runMs: 0,
+            runPct: 0,
+            cadenceBreached: true,
+            longestGapMs: 0,
+            lastDecision: null,
+            failClosed: true,
+          },
+          serverTime: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // Fail-closed on network error
+      setAnalytics({
+        strategyId,
+        metrics: {
+          windowStart: "",
+          windowEnd: "",
+          windowMs: 0,
+          expectedCadenceMs: 0,
+          totalEvents: 0,
+          coverageMs: 0,
+          coveragePct: 0,
+          runMs: 0,
+          runPct: 0,
+          cadenceBreached: true,
+          longestGapMs: 0,
+          lastDecision: null,
+          failClosed: true,
+        },
+        serverTime: new Date().toISOString(),
+      });
+    } finally {
+      setAnalyticsLoading(false);
     }
   }
 
@@ -934,6 +1114,17 @@ export default function StrategyCommandCenterPage() {
           <div className="space-y-4">
             <InstanceCard instance={data.instance} strategyId={data.strategyId} />
             <ExecutionAuthorityCard heartbeat={heartbeat} loading={heartbeatLoading} />
+            <AuthorityUptimeCard analytics={analytics} loading={analyticsLoading} />
+
+            {analytics?.metrics.cadenceBreached && (
+              <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-xs flex items-center gap-2">
+                <span className="font-bold">CADENCE BREACH</span>
+                <span className="text-[#94A3B8]">
+                  Heartbeat gap exceeds expected cadence — check EA connectivity.
+                </span>
+              </div>
+            )}
+
             <MonitoringRunsCard runs={data.latestMonitoringRuns} />
             <IncidentsCard incidents={data.incidents} />
             <OverridesCard overrides={data.overrides} />
