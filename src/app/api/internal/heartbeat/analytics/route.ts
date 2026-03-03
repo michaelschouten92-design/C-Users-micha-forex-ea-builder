@@ -14,6 +14,11 @@ import { computeHeartbeatAnalytics, HeartbeatEvent } from "@/domain/heartbeat/he
 
 const log = logger.child({ route: "/api/internal/heartbeat/analytics" });
 
+/** Analytics responses must never be cached. */
+const ANALYTICS_HEADERS = {
+  "Cache-Control": "no-store",
+};
+
 function authenticateInternal(request: NextRequest): boolean {
   const apiKey = request.headers.get("x-internal-api-key");
   const expectedKey = process.env.INTERNAL_API_KEY;
@@ -121,25 +126,31 @@ export async function GET(request: NextRequest) {
       expectedCadenceMs
     );
 
-    return NextResponse.json({
-      strategyId,
-      metrics,
-      serverTime: now.toISOString(),
-    });
+    return NextResponse.json(
+      {
+        strategyId,
+        metrics,
+        serverTime: now.toISOString(),
+      },
+      { headers: ANALYTICS_HEADERS }
+    );
   } catch (err) {
     log.error({ err, strategyId }, "heartbeat analytics computation failed");
 
-    return NextResponse.json({
-      strategyId,
-      metrics: {
-        ...FAIL_CLOSED_METRICS,
-        windowStart: windowStart.toISOString(),
-        windowEnd: windowEnd.toISOString(),
-        windowMs: windowEnd.getTime() - windowStart.getTime(),
-        expectedCadenceMs,
-        failClosed: true,
+    return NextResponse.json(
+      {
+        strategyId,
+        metrics: {
+          ...FAIL_CLOSED_METRICS,
+          windowStart: windowStart.toISOString(),
+          windowEnd: windowEnd.toISOString(),
+          windowMs: windowEnd.getTime() - windowStart.getTime(),
+          expectedCadenceMs,
+          failClosed: true,
+        },
+        serverTime: now.toISOString(),
       },
-      serverTime: now.toISOString(),
-    });
+      { headers: ANALYTICS_HEADERS }
+    );
   }
 }

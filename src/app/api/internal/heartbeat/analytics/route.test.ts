@@ -276,6 +276,32 @@ describe("GET /api/internal/heartbeat/analytics", () => {
     expect(Object.keys(json).sort()).toEqual(["metrics", "serverTime", "strategyId"]);
   });
 
+  // ── Cache-Control ────────────────────────────────────────
+
+  it("sets Cache-Control: no-store on success response", async () => {
+    mockFindMany.mockResolvedValue([
+      {
+        meta: { action: "RUN", reasonCode: "OK" },
+        createdAt: new Date(),
+      },
+    ]);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "strat_1"));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("sets Cache-Control: no-store on fail-closed response", async () => {
+    mockFindMany.mockRejectedValue(new Error("DB crash"));
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(TEST_API_KEY, "strat_1"));
+
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("serverTime is parseable UTC ISO-8601", async () => {
     mockFindMany.mockResolvedValue([]);
 

@@ -215,4 +215,88 @@ describe("computeHeartbeatAnalytics", () => {
     expect(r.runPct).toBe(50);
     expect(r.lastDecision?.action).toBe("PAUSE");
   });
+
+  // ── Gap exactly at cadence boundary → NOT breached ─────
+
+  it("gap exactly equal to cadence is NOT breached (strict >)", () => {
+    // Window exactly 2*CADENCE wide, events at start, +cadence, +2*cadence (=end)
+    const shortEnd = new Date(W_START.getTime() + 2 * CADENCE);
+    const r = computeHeartbeatAnalytics(
+      [ev(W_START.getTime()), ev(W_START.getTime() + CADENCE), ev(shortEnd.getTime())],
+      W_START,
+      shortEnd,
+      CADENCE
+    );
+
+    // All gaps are exactly CADENCE; tail from last event (=windowEnd) is 0
+    expect(r.longestGapMs).toBe(CADENCE);
+    expect(r.cadenceBreached).toBe(false);
+  });
+
+  it("gap one ms over cadence IS breached", () => {
+    const r = computeHeartbeatAnalytics(
+      [ev(W_START.getTime()), ev(W_START.getTime() + CADENCE + 1), ev(W_END.getTime())],
+      W_START,
+      W_END,
+      CADENCE
+    );
+
+    expect(r.longestGapMs).toBeGreaterThan(CADENCE);
+    expect(r.cadenceBreached).toBe(true);
+  });
+
+  // ── Tied timestamps → stable behavior ─────────────────
+
+  it("tied timestamps produce 0ms segment and stable output", () => {
+    const ts = "2026-03-03T12:30:00Z";
+    const r = computeHeartbeatAnalytics(
+      [ev(W_START.getTime(), "RUN", "OK"), ev(ts, "PAUSE", "X"), ev(ts, "RUN", "Y")],
+      W_START,
+      W_END,
+      CADENCE
+    );
+
+    // Coverage should still sum to window (segments: start→ts, ts→ts=0ms, ts→end)
+    expect(r.coverageMs).toBe(HOUR);
+    expect(r.coveragePct).toBe(100);
+    // Determinism
+    const r2 = computeHeartbeatAnalytics(
+      [ev(W_START.getTime(), "RUN", "OK"), ev(ts, "PAUSE", "X"), ev(ts, "RUN", "Y")],
+      W_START,
+      W_END,
+      CADENCE
+    );
+    expect(r).toEqual(r2);
+  });
+
+  // ── Only events before window (anchor only) ────────────
+
+  it("single anchor event before window covers full window", () => {
+    const r = computeHeartbeatAnalytics(
+      [ev("2026-03-03T11:50:00Z", "RUN", "OK")],
+      W_START,
+      W_END,
+      CADENCE
+    );
+
+    expect(r.coverageMs).toBe(HOUR);
+    expect(r.coveragePct).toBe(100);
+    expect(r.runPct).toBe(100);
+    // Gap from anchor (11:50) to windowEnd (13:00) = 70min
+    expect(r.longestGapMs).toBe(70 * MIN);
+    expect(r.cadenceBreached).toBe(true);
+  });
+
+  // ── Percentages bounded [0, 100] ──────────────────────
+
+  it("coveragePct and runPct are always in [0, 100]", () => {
+    // Stress: many events, all at same timestamp
+    const events = Array.from({ length: 100 }, () => ev(W_START.getTime()));
+    const r = computeHeartbeatAnalytics(events, W_START, W_END, CADENCE);
+
+    expect(r.coveragePct).toBeGreaterThanOrEqual(0);
+    expect(r.coveragePct).toBeLessThanOrEqual(100);
+    expect(r.runPct).toBeGreaterThanOrEqual(0);
+    expect(r.runPct).toBeLessThanOrEqual(100);
+  });
 });
