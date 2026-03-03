@@ -5,14 +5,14 @@ import { redirect } from "next/navigation";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio — The Control Layer for Live Algorithmic Strategies",
+  title: "AlgoStudio — The Control Layer for Algorithmic Traders",
   description:
-    "Deterministic lifecycle governance for live algorithmic trading. Enforce RUN/PAUSE/STOP decisions, detect structural deviation, and maintain audit-grade verification.",
+    "Deterministic lifecycle governance for live algorithmic trading. Validate your edge, enforce lifecycle discipline, pause before damage compounds.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "AlgoStudio — The Control Layer for Live Algorithmic Strategies",
+    title: "AlgoStudio — The Control Layer for Algorithmic Traders",
     description:
-      "Deterministic lifecycle governance for live algorithmic trading. Enforce RUN/PAUSE/STOP decisions, detect structural deviation, and maintain audit-grade verification.",
+      "Deterministic lifecycle governance for live algorithmic trading. Validate your edge, enforce lifecycle discipline, pause before damage compounds.",
   },
 };
 
@@ -68,15 +68,16 @@ export default async function HomePage() {
         <section className="pt-36 pb-20 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-              The Control Layer for Live
+              The Control Layer for
               <br />
-              Algorithmic Strategies.
+              Algorithmic Traders.
             </h1>
             <p className="mt-6 text-lg md:text-xl text-[#94A3B8] max-w-3xl mx-auto leading-relaxed">
-              Backtests do not govern live capital.
-              <br className="hidden md:block" />
-              AlgoStudio enforces deterministic lifecycle authority when real-world performance
-              diverges from validated statistical behavior.
+              Validate your edge.
+              <br />
+              Enforce lifecycle discipline.
+              <br />
+              Pause before damage compounds.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -86,45 +87,38 @@ export default async function HomePage() {
                 Establish Control
               </Link>
               <a
-                href="#governance"
+                href="/pricing"
                 className="px-8 py-3 border border-[rgba(79,70,229,0.3)] text-[#CBD5E1] font-medium rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors text-base"
               >
-                See How Governance Works
+                See Governance Depth &rarr;
               </a>
             </div>
           </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            2. THE PROBLEM
+            2. WHY DASHBOARDS AREN'T ENOUGH
             ════════════════════════════════════════════════════════════ */}
         <section className="py-20 px-6 border-t border-[rgba(79,70,229,0.05)]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-center">
-              Backtests Do Not Control Live Risk.
+              Why dashboards aren&apos;t enough
             </h2>
             <div className="mt-10 space-y-6 text-[#94A3B8] text-lg leading-relaxed">
               <p>
-                Backtests validate statistical behavior under historical conditions. They establish
-                whether a strategy has an edge — not whether that edge persists in live markets.
+                Backtests validate statistical behavior.
+                <br />
+                Live markets introduce structural deviation.
               </p>
               <p>
-                Live markets introduce structural deviation: regime shifts, liquidity changes,
-                volatility clustering, correlation breakdowns. The assumptions your backtest
-                validated may no longer hold.
-              </p>
-              <p>
-                Most traders respond with dashboards and alerts. They watch metrics. They set
-                thresholds. They receive notifications.
+                Monitoring shows you what happened.
+                <br />
+                Control decides whether you&apos;re allowed to keep running.
               </p>
               <p className="text-[#CBD5E1] font-medium">
-                Alerts do not enforce discipline. They inform discretion — and discretion is what
-                fails under pressure.
-              </p>
-              <p>
-                Without lifecycle authority, live capital continues operating outside validated
-                bounds. Not because the strategy is still justified, but because nothing structural
-                exists to intervene.
+                AlgoStudio is not a trading bot.
+                <br />
+                It&apos;s a deterministic lifecycle governance framework.
               </p>
             </div>
           </div>
@@ -188,55 +182,34 @@ export default async function HomePage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            4. HOW IT WORKS — 3-Phase Framework
+            4. FROM VALIDATION TO AUTHORITY
             ════════════════════════════════════════════════════════════ */}
         <section className="py-20 px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-              Validation &rarr; Governance &rarr; Control.
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-14">
+              From validation to authority
             </h2>
-            <p className="text-[#94A3B8] text-center text-base mb-14 max-w-2xl mx-auto">
-              Three phases. Each builds on the last. Each narrows the gap between backtest
-              assumptions and live reality.
-            </p>
 
             <div className="grid md:grid-cols-3 gap-8">
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
-                    1
-                  </span>
-                  <h3 className="text-lg font-bold text-white">Validate</h3>
-                </div>
+                <h3 className="text-lg font-bold text-white mb-4">Validation</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Upload backtests. Score robustness across statistical dimensions. Establish the
-                  governance baseline your strategy will be measured against.
+                  Backtests, health scoring, Monte Carlo stress testing.
                 </p>
               </div>
 
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
-                    2
-                  </span>
-                  <h3 className="text-lg font-bold text-white">Govern</h3>
-                </div>
+                <h3 className="text-lg font-bold text-white mb-4">Governance</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Bind live execution to validated thresholds. Monitor structural deviation in real
-                  time. Log governance snapshots for every lifecycle transition.
+                  Deterministic heartbeat, structural deviation detection, fail-closed enforcement.
                 </p>
               </div>
 
               <div className="rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#0D0117]/60 p-8">
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.1)] flex items-center justify-center text-xs font-bold text-[#A78BFA]">
-                    3
-                  </span>
-                  <h3 className="text-lg font-bold text-white">Control</h3>
-                </div>
+                <h3 className="text-lg font-bold text-white mb-4">Authority</h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Automatically enforce lifecycle decisions when deviation occurs. RUN, PAUSE, or
-                  STOP — determined by rules, not by hope.
+                  RUN / PAUSE / STOP lifecycle control, portfolio aggregation, proof-bound
+                  decisions.
                 </p>
               </div>
             </div>
@@ -254,7 +227,7 @@ export default async function HomePage() {
               <div className="rounded-xl border border-[rgba(34,211,238,0.15)] bg-[#0D0117]/60 p-7">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
-                  <h3 className="text-base font-semibold text-white">Free</h3>
+                  <h3 className="text-base font-semibold text-white">Baseline</h3>
                 </div>
                 <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1 mb-4">
                   Validation Only
@@ -268,7 +241,7 @@ export default async function HomePage() {
               <div className="rounded-xl border border-[rgba(79,70,229,0.3)] bg-[rgba(79,70,229,0.05)] p-7 ring-1 ring-[#4F46E5]/20">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
-                  <h3 className="text-base font-semibold text-white">Pro</h3>
+                  <h3 className="text-base font-semibold text-white">Control</h3>
                 </div>
                 <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1 mb-4">
                   Strategy-Level Authority
@@ -282,7 +255,7 @@ export default async function HomePage() {
               <div className="rounded-xl border border-[rgba(167,139,250,0.2)] bg-[#0D0117]/60 p-7">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
-                  <h3 className="text-base font-semibold text-white">Elite</h3>
+                  <h3 className="text-base font-semibold text-white">Authority</h3>
                 </div>
                 <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1 mb-4">
                   Full Lifecycle Authority

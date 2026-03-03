@@ -80,7 +80,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
     <div>
       {showHeader && (
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-4">Choose your governance depth</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Choose Your Governance Depth</h2>
           <p className="text-[#94A3B8]">
             From strategy validation to deterministic lifecycle authority. Start free, upgrade when
             your strategies go live.
@@ -119,10 +119,13 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
-            <h3 className="text-xl font-semibold text-white">Free</h3>
+            <h3 className="text-xl font-semibold text-white">Baseline</h3>
           </div>
           <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
             Validate
+          </p>
+          <p className="mt-2 text-xs text-[#64748B]">
+            For traders who want validation and live clarity.
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
@@ -178,11 +181,14 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
             <h3 className="text-xl font-semibold text-white">
-              <span className="sr-only">Most popular plan - </span>Pro
+              <span className="sr-only">Most popular plan - </span>Control
             </h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
             Strategy Authority
+          </p>
+          <p className="mt-2 text-xs text-[#64748B]">
+            For traders who want deterministic lifecycle enforcement.
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -262,10 +268,13 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
         <div className="bg-[#1A0626] border border-[rgba(167,139,250,0.3)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
-            <h3 className="text-xl font-semibold text-white">Elite</h3>
+            <h3 className="text-xl font-semibold text-white">Authority</h3>
           </div>
           <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1">
             Full Lifecycle Authority
+          </p>
+          <p className="mt-2 text-xs text-[#64748B]">
+            For traders who want full lifecycle command.
           </p>
           <div className="mt-4">
             {elitePrice ? (
@@ -306,7 +315,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Everything in Pro",
+              "Everything in Control",
               "Full lifecycle authority (RUN/PAUSE/STOP)",
               "Incident escalation framework",
               "CUSUM drift analysis",

@@ -103,7 +103,7 @@ const GOVERNANCE_MATRIX: { category: string; rows: MatrixRow[] }[] = [
 const faqItems = [
   {
     q: "How does governance depth differ from feature access?",
-    a: "Governance depth determines the level of deterministic authority enforced over your live strategies — not which buttons you can click. Free validates strategy viability. Pro enforces execution authority (RUN/PAUSE) over individual strategies with continuous monitoring. Elite extends governance to the portfolio level with full lifecycle control (RUN/PAUSE/STOP), incident escalation, and cadence analytics.",
+    a: "Governance depth determines the level of deterministic authority enforced over your live strategies — not which buttons you can click. Baseline validates strategy viability. Control enforces execution authority (RUN/PAUSE) over individual strategies with continuous monitoring. Authority extends governance to the portfolio level with full lifecycle control (RUN/PAUSE/STOP), incident escalation, and cadence analytics.",
   },
   {
     q: "What is Execution Authority?",
@@ -111,7 +111,7 @@ const faqItems = [
   },
   {
     q: "What happens when a structural deviation is detected?",
-    a: "When your strategy's live performance deviates from its statistical baseline beyond configured thresholds, the system transitions the authority signal from RUN to PAUSE. This is deterministic — it happens based on rules, not interpretation. Elite includes CUSUM drift analysis, edge degradation detection, and automatic pre-retirement warnings for deeper structural monitoring.",
+    a: "When your strategy's live performance deviates from its statistical baseline beyond configured thresholds, the system transitions the authority signal from RUN to PAUSE. This is deterministic — it happens based on rules, not interpretation. Authority includes CUSUM drift analysis, edge degradation detection, and automatic pre-retirement warnings for deeper structural monitoring.",
   },
   {
     q: "Does this work with any MT5 broker?",
@@ -119,7 +119,7 @@ const faqItems = [
   },
   {
     q: "What is a Verified Track Record?",
-    a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real — no screenshot manipulation, no cherry-picking. Pro and Elite users get a public Verified Strategy Page to share their governance record with investors, prop firms, or anyone who needs proof.",
+    a: "Every trade your EA makes is recorded in a tamper-resistant hash chain. This creates a cryptographically verified history that proves your results are real — no screenshot manipulation, no cherry-picking. Control and Authority users get a public Verified Strategy Page to share their governance record with investors, prop firms, or anyone who needs proof.",
   },
   {
     q: "What happens to my strategies if I downgrade?",
@@ -134,8 +134,8 @@ const faqItems = [
     a: "All major credit and debit cards (Visa, Mastercard, American Express) through Stripe. All payments are processed securely. We do not store your card details.",
   },
   {
-    q: "What is the difference between Pro and Elite?",
-    a: "Pro provides strategy-level execution authority: RUN/PAUSE governance, continuous heartbeat monitoring, edge degradation detection, verified track records, and governance snapshot logging. Elite extends this to portfolio-level deterministic governance: full RUN/PAUSE/STOP lifecycle control, incident escalation framework, CUSUM drift analysis, cadence analytics with breach detection, audit bundle export, plus 1-on-1 strategy reviews and direct developer access.",
+    q: "What is the difference between Control and Authority?",
+    a: "Control provides strategy-level execution authority: RUN/PAUSE governance, continuous heartbeat monitoring, edge degradation detection, verified track records, and governance snapshot logging. Authority extends this to portfolio-level deterministic governance: full RUN/PAUSE/STOP lifecycle control, incident escalation framework, CUSUM drift analysis, cadence analytics with breach detection, audit bundle export, plus 1-on-1 strategy reviews and direct developer access.",
   },
 ];
 
@@ -151,10 +151,10 @@ export default function PricingPage() {
             ════════════════════════════════════════════════════════ */}
         <div className="text-center mb-6">
           <h1 className="text-4xl md:text-5xl font-bold text-white mt-4 leading-tight">
-            Governance Depth for Live Capital.
+            Choose Your Governance Depth
           </h1>
           <p className="text-[#94A3B8] mt-4 text-lg max-w-2xl mx-auto">
-            Choose the level of deterministic lifecycle authority your strategies operate under.
+            From validation to full lifecycle authority.
           </p>
         </div>
 
@@ -165,15 +165,15 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#0D0117]/50 border border-[rgba(34,211,238,0.15)] rounded-lg px-4 py-3 text-center">
               <p className="text-xs text-[#64748B] mb-1">Validating a strategy?</p>
-              <p className="text-sm font-medium text-[#22D3EE]">Start Free</p>
+              <p className="text-sm font-medium text-[#22D3EE]">Start with Baseline</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-3 text-center ring-1 ring-[#4F46E5]/30">
               <p className="text-xs text-[#64748B] mb-1">Governing a live strategy?</p>
-              <p className="text-sm font-medium text-[#A78BFA]">Go Pro</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Go Control</p>
             </div>
             <div className="bg-[#0D0117]/50 border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3 text-center">
               <p className="text-xs text-[#64748B] mb-1">Portfolio-level control?</p>
-              <p className="text-sm font-medium text-[#A78BFA]">Go Elite</p>
+              <p className="text-sm font-medium text-[#A78BFA]">Go Authority</p>
             </div>
           </div>
         </div>
@@ -184,7 +184,9 @@ export default function PricingPage() {
             GOVERNANCE MATRIX
             ════════════════════════════════════════════════════════ */}
         <div className="mt-20 max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-2">Governance Matrix</h2>
+          <h2 className="text-2xl font-bold text-white text-center mb-2">
+            Governance Capabilities
+          </h2>
           <p className="text-[#94A3B8] text-center text-sm mb-8">
             Governance capability by tier — not feature access.
           </p>
@@ -195,9 +197,9 @@ export default function PricingPage() {
                 <thead>
                   <tr className="border-b border-[rgba(79,70,229,0.2)]">
                     <th className="text-left py-3 px-4 text-[#64748B] font-medium">Capability</th>
-                    <th className="text-center py-3 px-4 text-[#22D3EE] font-medium">Free</th>
-                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Pro</th>
-                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Elite</th>
+                    <th className="text-center py-3 px-4 text-[#22D3EE] font-medium">Baseline</th>
+                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Control</th>
+                    <th className="text-center py-3 px-4 text-[#A78BFA] font-medium">Authority</th>
                   </tr>
                 </thead>
                 <tbody className="text-[#94A3B8]">
@@ -254,7 +256,7 @@ export default function PricingPage() {
             <div className="bg-[#1A0626]/50 border border-[rgba(34,211,238,0.15)] rounded-xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
-                <h3 className="text-sm font-semibold text-white tracking-wide">FREE</h3>
+                <h3 className="text-sm font-semibold text-white tracking-wide">BASELINE</h3>
               </div>
               <p className="text-xs text-[#94A3B8] uppercase tracking-wider mb-3">
                 Validation Only
@@ -272,7 +274,7 @@ export default function PricingPage() {
             <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.25)] rounded-xl p-6 ring-1 ring-[#4F46E5]/20">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
-                <h3 className="text-sm font-semibold text-white tracking-wide">PRO</h3>
+                <h3 className="text-sm font-semibold text-white tracking-wide">CONTROL</h3>
               </div>
               <p className="text-xs text-[#A78BFA] uppercase tracking-wider mb-3">
                 Strategy-Level Authority
@@ -290,7 +292,7 @@ export default function PricingPage() {
             <div className="bg-[#1A0626]/50 border border-[rgba(167,139,250,0.2)] rounded-xl p-6">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
-                <h3 className="text-sm font-semibold text-white tracking-wide">ELITE</h3>
+                <h3 className="text-sm font-semibold text-white tracking-wide">AUTHORITY</h3>
               </div>
               <p className="text-xs text-[#A78BFA] uppercase tracking-wider mb-3">
                 Full Lifecycle Authority

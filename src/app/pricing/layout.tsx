@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — MT5 Bot Builder Plans",
+  title: "Pricing — Choose Your Governance Depth",
   description:
-    "Build MT5 Expert Advisors from free. Compare Free, Pro, and Elite plans. No hidden fees. Cancel anytime. Cheaper than hiring an MQL5 developer.",
+    "From validation to full lifecycle authority. Compare Baseline, Control, and Authority tiers. No hidden fees. Cancel anytime.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -11,8 +11,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "AlgoStudio Pricing",
-  description:
-    "Pricing plans for AlgoStudio no-code MT5 Expert Advisor builder. Free, Pro, and Elite tiers.",
+  description: "Governance depth tiers for AlgoStudio. Baseline, Control, and Authority.",
   mainEntity: {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
