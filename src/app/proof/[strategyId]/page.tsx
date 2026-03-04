@@ -25,10 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const levelMeta = LADDER_META[identity.publicPage.ladderLevel as LadderLevel];
-  const title = `${identity.project.name} — ${levelMeta.label} Strategy | AlgoStudio`;
+  const name = identity.project.name;
+  const title = `${name} — Verified Track Record | AlgoStudio`;
   const description =
     identity.project.description ||
-    `${levelMeta.label} trading strategy ${strategyId} with cryptographically verified performance on AlgoStudio.`;
+    `Independently verified track record for ${name} (${strategyId}). ${levelMeta.label}-level strategy with cryptographic hash-chain audit, structural drift monitoring, and lifecycle governance on AlgoStudio.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com"}/proof/${strategyId}`;
 
   return {

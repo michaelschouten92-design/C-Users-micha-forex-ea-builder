@@ -384,6 +384,19 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           </div>
         </div>
 
+        {/* SEO Intro */}
+        <div className="bg-[#1A0626]/40 border border-[rgba(79,70,229,0.1)] rounded-xl px-5 py-4 mb-6">
+          <p className="text-sm font-semibold text-white mb-2">Verified Strategy Track Record</p>
+          <p className="text-xs text-[#94A3B8] leading-relaxed">
+            This page is an independently verified track record produced by AlgoStudio — a
+            deterministic governance and control layer for algorithmic trading strategies. Every
+            trade is recorded in a cryptographic hash-chain audit log that cannot be modified
+            without detection. Strategies are continuously monitored for structural drift and
+            governed through an automated lifecycle (RUN / PAUSE / STOP) based on predefined risk
+            rules.
+          </p>
+        </div>
+
         {/* Risk Disclaimer */}
         <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-2.5 mb-6">
           <p className="text-[11px] text-[#F59E0B]/80">
@@ -391,238 +404,291 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           </p>
         </div>
 
-        {/* Health Score Section */}
-        {backtestHealth && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white">Health Score</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">{backtestHealth.score}</span>
-                <span className="text-sm text-[#7C8DB0]">/100</span>
-                {healthLabel && (
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: `${healthLabel.color}15`, color: healthLabel.color }}
-                  >
-                    {healthLabel.label}
-                  </span>
-                )}
+        {/* Verified Performance */}
+        <section className="mb-4">
+          <h2 className="text-base font-semibold text-white mb-3">Verified Performance</h2>
+          {backtestHealth ? (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-white">Health Score</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-white">{backtestHealth.score}</span>
+                  <span className="text-sm text-[#7C8DB0]">/100</span>
+                  {healthLabel && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: `${healthLabel.color}15`,
+                        color: healthLabel.color,
+                      }}
+                    >
+                      {healthLabel.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {/* 7 factor breakdown */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.profitFactor.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Max Drawdown</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.maxDrawdownPct.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Win Rate</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.winRate.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Sharpe Ratio</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.sharpeRatio?.toFixed(2) ?? "---"}
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Trades</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.totalTrades.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Expected Payoff</p>
+                  <p className="text-white font-medium">
+                    ${backtestHealth.stats.expectedPayoff.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Recovery Factor</p>
+                  <p className="text-white font-medium">
+                    {backtestHealth.stats.recoveryFactor?.toFixed(2) ?? "---"}
+                  </p>
+                </div>
               </div>
             </div>
-            {/* 7 factor breakdown */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
-                <p className="text-white font-medium">
-                  {backtestHealth.stats.profitFactor.toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Max Drawdown</p>
-                <p className="text-white font-medium">
-                  {backtestHealth.stats.maxDrawdownPct.toFixed(1)}%
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Win Rate</p>
-                <p className="text-white font-medium">{backtestHealth.stats.winRate.toFixed(1)}%</p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Sharpe Ratio</p>
-                <p className="text-white font-medium">
-                  {backtestHealth.stats.sharpeRatio?.toFixed(2) ?? "---"}
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Trades</p>
-                <p className="text-white font-medium">
-                  {backtestHealth.stats.totalTrades.toLocaleString()}
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Expected Payoff</p>
-                <p className="text-white font-medium">
-                  ${backtestHealth.stats.expectedPayoff.toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Recovery Factor</p>
-                <p className="text-white font-medium">
-                  {backtestHealth.stats.recoveryFactor?.toFixed(2) ?? "---"}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Monte Carlo Section */}
-        {monteCarlo && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Monte Carlo Validation</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-                  Survival Rate
-                </p>
-                <p
-                  className={`text-lg font-bold ${monteCarlo.survivalRate >= 0.7 ? "text-[#10B981]" : monteCarlo.survivalRate >= 0.5 ? "text-[#F59E0B]" : "text-[#EF4444]"}`}
-                >
-                  {(monteCarlo.survivalRate * 100).toFixed(0)}%
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-                  P5 (Worst)
-                </p>
-                <p className="text-sm font-medium text-[#EF4444]">
-                  {monteCarlo.p5 >= 0 ? "+" : ""}
-                  {monteCarlo.p5.toFixed(1)}%
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Median</p>
-                <p className="text-sm font-medium text-white">
-                  {monteCarlo.p50 >= 0 ? "+" : ""}
-                  {monteCarlo.p50.toFixed(1)}%
-                </p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-                  P95 (Best)
-                </p>
-                <p className="text-sm font-medium text-[#10B981]">
-                  {monteCarlo.p95 >= 0 ? "+" : ""}
-                  {monteCarlo.p95.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-            <p className="text-[10px] text-[#7C8DB0] mt-2">
-              Based on ~1,000 randomized simulations. Survival rate = % of simulations that remained
-              profitable.
+          ) : (
+            <p className="text-sm text-[#7C8DB0]">
+              Not available yet — no backtest evaluation uploaded.
             </p>
-          </div>
-        )}
+          )}
+        </section>
 
-        {/* Live Track Record Stats */}
-        {trackRecord && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <Stat label="Live Trades" value={trackRecord.totalTrades.toLocaleString()} />
-            <Stat label="Win Rate" value={winRate ? `${winRate}%` : "---"} />
-            <Stat label="Max Drawdown" value={`${trackRecord.maxDrawdownPct.toFixed(1)}%`} />
-            <Stat label="Net Profit" value={`$${trackRecord.totalProfit.toFixed(2)}`} />
-          </div>
-        )}
-
-        {/* Equity Curve */}
-        {equityCurve.length > 1 && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Equity Curve</h2>
-            <MiniEquityCurve points={equityCurve} />
-          </div>
-        )}
-
-        {/* Live Health Breakdown */}
-        {liveHealth && liveHealth.status !== "INSUFFICIENT_DATA" && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-white">Live Health Monitor</h2>
-              <span className="text-xs text-[#7C8DB0]">
-                Score: {Math.round(liveHealth.overallScore * 100)}%
-              </span>
+        {/* Monte Carlo Validation */}
+        <section className="mb-4">
+          <h2 className="text-base font-semibold text-white mb-3">Monte Carlo Validation</h2>
+          {monteCarlo ? (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Survival Rate
+                  </p>
+                  <p
+                    className={`text-lg font-bold ${monteCarlo.survivalRate >= 0.7 ? "text-[#10B981]" : monteCarlo.survivalRate >= 0.5 ? "text-[#F59E0B]" : "text-[#EF4444]"}`}
+                  >
+                    {(monteCarlo.survivalRate * 100).toFixed(0)}%
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    P5 (Worst)
+                  </p>
+                  <p className="text-sm font-medium text-[#EF4444]">
+                    {monteCarlo.p5 >= 0 ? "+" : ""}
+                    {monteCarlo.p5.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Median
+                  </p>
+                  <p className="text-sm font-medium text-white">
+                    {monteCarlo.p50 >= 0 ? "+" : ""}
+                    {monteCarlo.p50.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    P95 (Best)
+                  </p>
+                  <p className="text-sm font-medium text-[#10B981]">
+                    {monteCarlo.p95 >= 0 ? "+" : ""}
+                    {monteCarlo.p95.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+              <p className="text-[10px] text-[#7C8DB0] mt-2">
+                Based on ~1,000 randomized simulations. Survival rate = % of simulations that
+                remained profitable.
+              </p>
             </div>
-            <div className="space-y-2">
-              <ScoreBar label="Return" score={liveHealth.returnScore} />
-              <ScoreBar label="Volatility" score={liveHealth.volatilityScore} />
-              <ScoreBar label="Drawdown" score={liveHealth.drawdownScore} />
-              <ScoreBar label="Win Rate" score={liveHealth.winRateScore} />
-              <ScoreBar label="Trade Frequency" score={liveHealth.tradeFrequencyScore} />
+          ) : (
+            <p className="text-sm text-[#7C8DB0]">
+              Not available yet — Monte Carlo simulation has not been run.
+            </p>
+          )}
+        </section>
+
+        {/* Live Track Record */}
+        <section className="mb-4">
+          <h2 className="text-base font-semibold text-white mb-3">Live Track Record</h2>
+          {trackRecord ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <Stat label="Live Trades" value={trackRecord.totalTrades.toLocaleString()} />
+              <Stat label="Win Rate" value={winRate ? `${winRate}%` : "---"} />
+              <Stat label="Max Drawdown" value={`${trackRecord.maxDrawdownPct.toFixed(1)}%`} />
+              <Stat label="Net Profit" value={`$${trackRecord.totalProfit.toFixed(2)}`} />
             </div>
-            {liveHealth.primaryDriver && (
-              <p className="text-[10px] text-[#F59E0B] mt-2">{liveHealth.primaryDriver}</p>
+          ) : (
+            <p className="text-sm text-[#7C8DB0]">Not available yet — no live data connected.</p>
+          )}
+
+          {/* Equity Curve */}
+          {equityCurve.length > 1 && (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
+              <h3 className="text-sm font-semibold text-white mb-3">Equity Curve</h3>
+              <MiniEquityCurve points={equityCurve} />
+            </div>
+          )}
+        </section>
+
+        {/* Monitoring Status */}
+        <section className="mb-4">
+          <h2 className="text-base font-semibold text-white mb-3">Monitoring Status</h2>
+          {liveHealth && liveHealth.status !== "INSUFFICIENT_DATA" ? (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">Live Health Monitor</h3>
+                <span className="text-xs text-[#7C8DB0]">
+                  Score: {Math.round(liveHealth.overallScore * 100)}%
+                </span>
+              </div>
+              <div className="space-y-2">
+                <ScoreBar label="Return" score={liveHealth.returnScore} />
+                <ScoreBar label="Volatility" score={liveHealth.volatilityScore} />
+                <ScoreBar label="Drawdown" score={liveHealth.drawdownScore} />
+                <ScoreBar label="Win Rate" score={liveHealth.winRateScore} />
+                <ScoreBar label="Trade Frequency" score={liveHealth.tradeFrequencyScore} />
+              </div>
+              {liveHealth.primaryDriver && (
+                <p className="text-[10px] text-[#F59E0B] mt-2">{liveHealth.primaryDriver}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-[#7C8DB0]">Not available yet — no live monitoring data.</p>
+          )}
+
+          {/* Live Risk Metrics */}
+          {liveMetrics && (liveMetrics.sharpeRatio !== 0 || liveMetrics.profitFactor !== 0) && (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
+              <h3 className="text-sm font-semibold text-white mb-3">Live Risk Metrics</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Sharpe</p>
+                  <p className="text-white font-medium">{liveMetrics.sharpeRatio.toFixed(2)}</p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Sortino</p>
+                  <p className="text-white font-medium">{liveMetrics.sortinoRatio.toFixed(2)}</p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Calmar</p>
+                  <p className="text-white font-medium">{liveMetrics.calmarRatio.toFixed(2)}</p>
+                </div>
+                <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                  <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
+                  <p className="text-white font-medium">
+                    {liveMetrics.profitFactor === Infinity
+                      ? "\u221e"
+                      : liveMetrics.profitFactor.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Track Record Verification */}
+        <section className="mb-4">
+          <h2 className="text-base font-semibold text-white mb-3">Track Record Verification</h2>
+          {chain && chain.length > 0 ? (
+            <div className="bg-[#1A0626] border border-[#10B981]/20 rounded-xl p-5 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <svg
+                  className="w-5 h-5 text-[#10B981]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+                <h3 className="text-sm font-semibold text-[#10B981]">Cryptographically Verified</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <p className="text-[#7C8DB0]">Chain Length</p>
+                  <p className="text-white font-medium">{chain.length.toLocaleString()} events</p>
+                </div>
+                <div>
+                  <p className="text-[#7C8DB0]">Latest Hash</p>
+                  <p className="text-white font-mono text-[10px] break-all">
+                    {chain.lastHash?.slice(0, 16)}...
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#7C8DB0]">Last Verification</p>
+                  <p className="text-white font-medium">
+                    {chain.lastVerification
+                      ? new Date(chain.lastVerification).toLocaleDateString()
+                      : "Pending"}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[10px] text-[#7C8DB0] mt-2">
+                Each trade is cryptographically hashed in sequence. The chain cannot be modified
+                without detection.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-[#7C8DB0]">
+              Not available yet — no hash-chain events recorded.
+            </p>
+          )}
+        </section>
+
+        {/* Lifecycle Governance */}
+        <section className="mb-6">
+          <h2 className="text-base font-semibold text-white mb-3">Lifecycle Governance</h2>
+          <div className="bg-[#1A0626]/40 border border-[rgba(79,70,229,0.1)] rounded-xl px-5 py-4">
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              This strategy is governed by AlgoStudio&apos;s automated lifecycle engine. Predefined
+              risk rules can transition the strategy between RUN, PAUSE, and STOP states based on
+              real-time performance. Structural drift detection monitors for deviations from
+              baseline behaviour, and all state transitions are recorded in the audit log.
+            </p>
+            {instance && (
+              <div className="flex items-center gap-3 mt-3 text-xs">
+                <span className="text-[#7C8DB0]">Current phase:</span>
+                <span className="text-white font-medium">{instance.strategyStatus}</span>
+              </div>
             )}
           </div>
-        )}
+        </section>
 
-        {/* Live Risk Metrics */}
-        {liveMetrics && (liveMetrics.sharpeRatio !== 0 || liveMetrics.profitFactor !== 0) && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Live Risk Metrics</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Sharpe</p>
-                <p className="text-white font-medium">{liveMetrics.sharpeRatio.toFixed(2)}</p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Sortino</p>
-                <p className="text-white font-medium">{liveMetrics.sortinoRatio.toFixed(2)}</p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Calmar</p>
-                <p className="text-white font-medium">{liveMetrics.calmarRatio.toFixed(2)}</p>
-              </div>
-              <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
-                <p className="text-white font-medium">
-                  {liveMetrics.profitFactor === Infinity
-                    ? "\u221e"
-                    : liveMetrics.profitFactor.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Chain Integrity (Proof Integrity Section) */}
-        {chain && chain.length > 0 && (
-          <div className="bg-[#1A0626] border border-[#10B981]/20 rounded-xl p-5 mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <svg
-                className="w-5 h-5 text-[#10B981]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-              <h2 className="text-sm font-semibold text-[#10B981]">Cryptographically Verified</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div>
-                <p className="text-[#7C8DB0]">Chain Length</p>
-                <p className="text-white font-medium">{chain.length.toLocaleString()} events</p>
-              </div>
-              <div>
-                <p className="text-[#7C8DB0]">Latest Hash</p>
-                <p className="text-white font-mono text-[10px] break-all">
-                  {chain.lastHash?.slice(0, 16)}...
-                </p>
-              </div>
-              <div>
-                <p className="text-[#7C8DB0]">Last Verification</p>
-                <p className="text-white font-medium">
-                  {chain.lastVerification
-                    ? new Date(chain.lastVerification).toLocaleDateString()
-                    : "Pending"}
-                </p>
-              </div>
-            </div>
-            <p className="text-[10px] text-[#7C8DB0] mt-2">
-              Each trade is cryptographically hashed in sequence. The chain cannot be modified
-              without detection.
-            </p>
-          </div>
-        )}
-
-        {/* CTA */}
+        {/* Footer */}
         <div className="text-center pt-6 border-t border-[rgba(79,70,229,0.1)]">
-          <p className="text-sm text-[#7C8DB0] mb-3">
-            Powered by AlgoStudio — Build, Validate, and Prove Trading Strategies
-          </p>
           <Link
             href="/"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#4F46E5] text-white text-sm font-medium rounded-xl hover:bg-[#4338CA] transition-colors"
@@ -637,6 +703,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               />
             </svg>
           </Link>
+          <p className="text-xs text-[#7C8DB0] mt-4">
+            Powered by{" "}
+            <Link href="/" className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors">
+              AlgoStudio
+            </Link>{" "}
+            &mdash; the governance and control layer for algorithmic trading
+          </p>
         </div>
       </div>
     </div>
