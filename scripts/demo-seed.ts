@@ -33,7 +33,7 @@ function generateStrategyId(projectId: string, createdAt: Date): string {
   const hash = createHash("sha256")
     .update(projectId + createdAt.toISOString())
     .digest("hex");
-  return "AS-" + hash.substring(0, 8);
+  return "AS-" + hash.substring(0, 8).toUpperCase();
 }
 
 // ---------- Seed ----------
