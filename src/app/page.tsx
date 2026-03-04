@@ -93,6 +93,17 @@ export default async function HomePage() {
                 See Governance Depth &rarr;
               </a>
             </div>
+            <div className="mt-5 text-center">
+              <Link
+                href="/p/demo"
+                className="text-sm text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+              >
+                View Example Proof Page &rarr;
+              </Link>
+              <p className="mt-1 text-xs text-[#64748B]">
+                See how AlgoStudio verifies and monitors a strategy in real time.
+              </p>
+            </div>
           </div>
         </section>
 
