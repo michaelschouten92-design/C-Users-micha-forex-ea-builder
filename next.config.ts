@@ -58,13 +58,8 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: "/app/live",
-        destination: "/app/monitor",
-        permanent: true,
-      },
-      {
         source: "/app/journal",
-        destination: "/app/monitor",
+        destination: "/app/live",
         permanent: true,
       },
       {
@@ -77,6 +72,52 @@ const nextConfig: NextConfig = {
         destination: "/app/risk",
         permanent: true,
       },
+      // Marketing consolidation redirects
+      {
+        source: "/compare-platforms",
+        destination: "/product/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/compare-platforms/:slug",
+        destination: "/product/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/templates",
+        destination: "/product/mt5-export",
+        permanent: true,
+      },
+      {
+        source: "/templates/:slug",
+        destination: "/product/mt5-export",
+        permanent: true,
+      },
+      {
+        source: "/trading-strategy-templates-mt5",
+        destination: "/product/mt5-export",
+        permanent: true,
+      },
+      {
+        source: "/low-drawdown",
+        destination: "/verified",
+        permanent: true,
+      },
+      {
+        source: "/top-robust",
+        destination: "/verified",
+        permanent: true,
+      },
+      {
+        source: "/rising",
+        destination: "/verified",
+        permanent: true,
+      },
+      {
+        source: "/coaching/thank-you",
+        destination: "/contact",
+        permanent: true,
+      },
     ];
   },
   // Security + caching headers
@@ -85,7 +126,7 @@ const nextConfig: NextConfig = {
       {
         // Cache public marketing pages (homepage, pricing, templates, product, blog, etc.)
         source:
-          "/(|pricing|templates|templates/:slug*|product|product/:slug*|blog|blog/:slug*|about|faq|contact|privacy|terms|compare/:slug*|trading-strategy-templates-mt5)",
+          "/(|pricing|product|product/:slug*|blog|blog/:slug*|about|faq|contact|privacy|terms|verified)",
         headers: [
           {
             key: "Cache-Control",
