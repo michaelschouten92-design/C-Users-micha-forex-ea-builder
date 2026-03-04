@@ -5,6 +5,7 @@ import {
   type HeartbeatEvent,
   type HeartbeatAnalyticsResult,
 } from "@/domain/heartbeat/heartbeat-analytics";
+import type { AuthorityBlockReason } from "@/domain/heartbeat/authority-readiness";
 
 const log = logger.child({ page: "/app/monitor" });
 
@@ -15,7 +16,7 @@ export interface AuthorityDecision {
   reasonCode: string;
   decidedAt: string; // ISO-8601
   strategyId: string;
-  authorityReasons?: string[];
+  authorityReasons?: AuthorityBlockReason[];
 }
 
 export interface MonitorData {
@@ -64,6 +65,28 @@ function classifyDbError(err: unknown): {
   }
 
   return { errorName, errorCode, message, classification };
+}
+
+const VALID_ACTIONS = new Set(["RUN", "PAUSE", "STOP"]);
+
+/** Normalize meta.action to RUN | PAUSE | STOP; default PAUSE on anything else. */
+function sanitizeAction(value: unknown): string {
+  return typeof value === "string" && VALID_ACTIONS.has(value) ? value : "PAUSE";
+}
+
+const VALID_AUTHORITY_REASONS = new Set<string>(["NO_STRATEGIES", "NO_LIVE_INSTANCE"]);
+
+/** Accept unknown, return at most 2 valid AuthorityBlockReason values. */
+export function sanitizeAuthorityReasons(value: unknown): AuthorityBlockReason[] {
+  if (!Array.isArray(value)) return [];
+  const result: AuthorityBlockReason[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && VALID_AUTHORITY_REASONS.has(item)) {
+      result.push(item as AuthorityBlockReason);
+      if (result.length >= 2) break;
+    }
+  }
+  return result;
 }
 
 function queryEaInstances(userId: string) {
@@ -123,7 +146,7 @@ function pickMostRestrictive(
     reasonCode: string;
     createdAt: Date;
     strategyId: string | null;
-    authorityReasons?: string[];
+    authorityReasons?: AuthorityBlockReason[];
   }[]
 ): AuthorityDecision | null {
   if (decisions.length === 0) return null;
@@ -237,22 +260,31 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
         // Extract authority from latest per-instance decisions
         const latestPerInstance = new Map<
           string,
-          { action: string; reasonCode: string; createdAt: Date; strategyId: string | null }
+          {
+            action: string;
+            reasonCode: string;
+            createdAt: Date;
+            strategyId: string | null;
+            authorityReasons?: AuthorityBlockReason[];
+          }
         >();
         for (const ev of recentEvents) {
           const sid = ev.strategyId ?? "";
           if (!latestPerInstance.has(sid)) {
             const meta = ev.meta as Record<string, unknown> | null;
+            const action = sanitizeAction(meta?.action);
             const reasonCode =
               typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED";
+            const sanitizedReasons =
+              reasonCode === "AUTHORITY_UNINITIALIZED"
+                ? sanitizeAuthorityReasons(meta?.authorityReasons)
+                : [];
             latestPerInstance.set(sid, {
-              action: typeof meta?.action === "string" ? meta.action : "PAUSE",
+              action,
               reasonCode,
               createdAt: ev.createdAt,
               strategyId: ev.strategyId,
-              ...(reasonCode === "AUTHORITY_UNINITIALIZED" && Array.isArray(meta?.authorityReasons)
-                ? { authorityReasons: meta.authorityReasons as string[] }
-                : {}),
+              ...(sanitizedReasons.length > 0 ? { authorityReasons: sanitizedReasons } : {}),
             });
           }
         }
@@ -263,7 +295,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
           const meta = ev.meta as Record<string, unknown> | null;
           return {
             timestamp: ev.createdAt,
-            action: typeof meta?.action === "string" ? meta.action : "PAUSE",
+            action: sanitizeAction(meta?.action),
             reasonCode:
               typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
           };

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { sanitizeAuthorityReasons } from "./load-monitor-data";
 
 const mockLogError = vi.fn();
 const mockLogInfo = vi.fn();
@@ -448,5 +449,107 @@ describe("loadMonitorData", () => {
     expect(result).not.toBeNull();
     expect(result!.authority!.action).toBe("STOP");
     expect(result!.authority!.reasonCode).toBe("HARD_LIMIT_BREACHED");
+  });
+
+  it("sanitizes action to PAUSE for unknown values in meta", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "INVALID_ACTION", reasonCode: "OK" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.authority!.action).toBe("PAUSE");
+  });
+
+  it("sanitizes authorityReasons, filtering invalid values", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: {
+          action: "PAUSE",
+          reasonCode: "AUTHORITY_UNINITIALIZED",
+          authorityReasons: ["NO_STRATEGIES", "INJECTED_VALUE", 42],
+        },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.authority!.authorityReasons).toEqual(["NO_STRATEGIES"]);
+  });
+
+  it("does not include authorityReasons for non-AUTHORITY_UNINITIALIZED codes", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: {
+          action: "RUN",
+          reasonCode: "OK",
+          authorityReasons: ["NO_STRATEGIES"],
+        },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.authority!.authorityReasons).toBeUndefined();
+  });
+});
+
+describe("sanitizeAuthorityReasons", () => {
+  it("returns empty array for non-array input", () => {
+    expect(sanitizeAuthorityReasons(undefined)).toEqual([]);
+    expect(sanitizeAuthorityReasons(null)).toEqual([]);
+    expect(sanitizeAuthorityReasons("NO_STRATEGIES")).toEqual([]);
+    expect(sanitizeAuthorityReasons(42)).toEqual([]);
+    expect(sanitizeAuthorityReasons({})).toEqual([]);
+  });
+
+  it("returns empty array for empty array", () => {
+    expect(sanitizeAuthorityReasons([])).toEqual([]);
+  });
+
+  it("keeps valid AuthorityBlockReason values", () => {
+    expect(sanitizeAuthorityReasons(["NO_STRATEGIES"])).toEqual(["NO_STRATEGIES"]);
+    expect(sanitizeAuthorityReasons(["NO_LIVE_INSTANCE"])).toEqual(["NO_LIVE_INSTANCE"]);
+    expect(sanitizeAuthorityReasons(["NO_STRATEGIES", "NO_LIVE_INSTANCE"])).toEqual([
+      "NO_STRATEGIES",
+      "NO_LIVE_INSTANCE",
+    ]);
+  });
+
+  it("filters out unknown string values", () => {
+    expect(sanitizeAuthorityReasons(["INJECTED"])).toEqual([]);
+    expect(sanitizeAuthorityReasons(["NO_STRATEGIES", "BOGUS", "NO_LIVE_INSTANCE"])).toEqual([
+      "NO_STRATEGIES",
+      "NO_LIVE_INSTANCE",
+    ]);
+  });
+
+  it("filters out non-string values", () => {
+    expect(sanitizeAuthorityReasons([42, null, true, "NO_STRATEGIES"])).toEqual(["NO_STRATEGIES"]);
+  });
+
+  it("caps output at 2 entries", () => {
+    const input = ["NO_STRATEGIES", "NO_LIVE_INSTANCE", "NO_STRATEGIES"];
+    expect(sanitizeAuthorityReasons(input)).toHaveLength(2);
   });
 });
