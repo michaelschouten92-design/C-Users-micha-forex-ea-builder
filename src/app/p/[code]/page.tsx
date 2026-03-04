@@ -1,13 +1,12 @@
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 
 export default async function ProofShortUrl({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
 
   // Direct passthrough for strategy IDs (AS-xxxxxxxx format)
   if (code.toUpperCase().startsWith("AS-")) {
-    redirect(`/proof/${code}`);
+    redirect(`/proof/${code.toUpperCase()}`);
   }
 
   // Slug lookup: find the strategy ID from the VerifiedStrategyPage slug
