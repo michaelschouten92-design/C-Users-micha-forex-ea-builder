@@ -9,7 +9,7 @@ describe("getControlExplanation", () => {
       expect(result).toBeDefined();
       expect(result.title).toBeTruthy();
       expect(result.explanation).toBeTruthy();
-      expect(result.resolution).toBeTruthy();
+      expect(result.resolution.length).toBeGreaterThan(0);
     }
   });
 
@@ -21,14 +21,24 @@ describe("getControlExplanation", () => {
     expect(covered).toHaveLength(ALL_HEARTBEAT_REASON_CODES.length);
   });
 
-  it("every explanation has exactly 3 string fields", () => {
+  it("every resolution item has a text field", () => {
     for (const code of ALL_HEARTBEAT_REASON_CODES) {
       const result = getControlExplanation(code);
-      const keys = Object.keys(result).sort();
-      expect(keys).toEqual(["explanation", "resolution", "title"]);
-      expect(typeof result.title).toBe("string");
-      expect(typeof result.explanation).toBe("string");
-      expect(typeof result.resolution).toBe("string");
+      for (const item of result.resolution) {
+        expect(typeof item.text).toBe("string");
+        expect(item.text.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("all href values are internal paths starting with /", () => {
+    for (const code of ALL_HEARTBEAT_REASON_CODES) {
+      const result = getControlExplanation(code);
+      for (const item of result.resolution) {
+        if (item.href !== undefined) {
+          expect(item.href).toMatch(/^\//);
+        }
+      }
     }
   });
 
@@ -36,36 +46,46 @@ describe("getControlExplanation", () => {
     const result = getControlExplanation("OK");
     expect(result.title).toBe("Execution Authorized");
     expect(result.explanation).toContain("All governance checks passed");
-    expect(result.resolution).toContain("No action required");
+    expect(result.resolution[0].text).toContain("No action required");
   });
 
-  it("returns correct explanation for AUTHORITY_UNINITIALIZED", () => {
+  it("returns correct explanation for AUTHORITY_UNINITIALIZED with deep links", () => {
     const result = getControlExplanation("AUTHORITY_UNINITIALIZED");
     expect(result.title).toBe("Authority Not Initialized");
     expect(result.explanation).toContain("authority system is not yet ready");
-    expect(result.resolution).toContain("Create a strategy");
-    expect(result.resolution).toContain("live EA instance");
+
+    // Must include at least one link to onboarding
+    const hrefs = result.resolution.filter((r) => r.href);
+    expect(hrefs.length).toBeGreaterThanOrEqual(1);
+    expect(hrefs.some((r) => r.href === "/app/onboarding?step=scope")).toBe(true);
   });
 
   it("returns correct explanation for STRATEGY_HALTED", () => {
     const result = getControlExplanation("STRATEGY_HALTED");
     expect(result.title).toBe("Operator Halt Active");
     expect(result.explanation).toContain("HALT override");
-    expect(result.resolution).toContain("Remove the operator hold");
+    expect(result.resolution[0].text).toContain("Remove the operator hold");
   });
 
   it("returns correct explanation for STRATEGY_INVALIDATED", () => {
     const result = getControlExplanation("STRATEGY_INVALIDATED");
     expect(result.title).toBe("Strategy Invalidated");
     expect(result.explanation).toContain("terminal lifecycle state");
-    expect(result.resolution).toContain("permanent state");
+    expect(result.resolution[0].text).toContain("permanent state");
   });
 
   it("returns correct explanation for CONTROL_INCONSISTENCY_DETECTED", () => {
     const result = getControlExplanation("CONTROL_INCONSISTENCY_DETECTED");
     expect(result.title).toBe("Control Inconsistency");
     expect(result.explanation).toContain("consistency guard");
-    expect(result.resolution).toContain("self-correct");
+    expect(result.resolution[0].text).toContain("self-correct");
+  });
+
+  it("NO_INSTANCE includes a link to /app/live", () => {
+    const result = getControlExplanation("NO_INSTANCE");
+    const link = result.resolution.find((r) => r.href === "/app/live");
+    expect(link).toBeDefined();
+    expect(link!.text).toBe("Go to Command Center");
   });
 
   it("is deterministic (identical input → identical output)", () => {
@@ -79,8 +99,8 @@ describe("getControlExplanation", () => {
   it("no explanation contains raw error messages or internal details", () => {
     for (const code of ALL_HEARTBEAT_REASON_CODES) {
       const result = getControlExplanation(code);
-      const combined = `${result.title} ${result.explanation} ${result.resolution}`;
-      // Must not contain stack traces, error codes, or DB references
+      const resolutionText = result.resolution.map((r) => r.text).join(" ");
+      const combined = `${result.title} ${result.explanation} ${resolutionText}`;
       expect(combined).not.toMatch(/Error:/i);
       expect(combined).not.toMatch(/stack/i);
       expect(combined).not.toMatch(/prisma/i);

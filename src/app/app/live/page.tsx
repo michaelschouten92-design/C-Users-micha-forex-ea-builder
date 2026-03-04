@@ -389,7 +389,23 @@ function ControlExplanationPanel({
         <p className="text-xs text-[#7C8DB0] mb-1 uppercase tracking-wider font-medium">
           Resolution
         </p>
-        <p className="text-sm text-[#94A3B8] leading-relaxed">{explanation.resolution}</p>
+        <ul className="space-y-1.5">
+          {explanation.resolution.map((item) => (
+            <li key={item.text} className="flex items-start gap-2 text-sm text-[#94A3B8]">
+              <span className="w-1 h-1 rounded-full bg-[#A78BFA] flex-shrink-0 mt-2" />
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="text-[#A78BFA] underline decoration-[rgba(167,139,250,0.3)] underline-offset-2 hover:text-white transition-colors"
+                >
+                  {item.text}
+                </Link>
+              ) : (
+                <span>{item.text}</span>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {authorityReasons && authorityReasons.length > 0 && (
