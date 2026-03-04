@@ -37,7 +37,7 @@ const CONTROL_EXPLANATIONS: Record<HeartbeatReasonCode, ControlExplanation> = {
     explanation:
       "An operator HALT override is in effect. This is an explicit, manual directive that supersedes all lifecycle and monitoring states.",
     resolution: [
-      { text: "Remove the operator hold from the strategy settings to resume execution." },
+      { text: "Release the operator hold to resume execution", href: "/app/live#operator-hold" },
     ],
   },
   MONITORING_AT_RISK: {

@@ -60,11 +60,12 @@ describe("getControlExplanation", () => {
     expect(hrefs.some((r) => r.href === "/app/onboarding?step=scope")).toBe(true);
   });
 
-  it("returns correct explanation for STRATEGY_HALTED", () => {
+  it("returns correct explanation for STRATEGY_HALTED with deep link", () => {
     const result = getControlExplanation("STRATEGY_HALTED");
     expect(result.title).toBe("Operator Halt Active");
     expect(result.explanation).toContain("HALT override");
-    expect(result.resolution[0].text).toContain("Remove the operator hold");
+    expect(result.resolution[0].text).toContain("Release the operator hold");
+    expect(result.resolution[0].href).toBe("/app/live#operator-hold");
   });
 
   it("returns correct explanation for STRATEGY_INVALIDATED", () => {

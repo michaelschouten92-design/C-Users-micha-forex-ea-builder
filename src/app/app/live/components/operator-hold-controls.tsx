@@ -14,7 +14,10 @@ export function OperatorHoldControls({ instances }: { instances: InstanceHoldInf
   if (instances.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
+    <div
+      id="operator-hold"
+      className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5"
+    >
       <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
         Operator Hold
       </h3>
