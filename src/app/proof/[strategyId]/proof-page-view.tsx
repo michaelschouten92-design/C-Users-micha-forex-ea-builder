@@ -1,7 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+
+interface VerificationData {
+  strategyId: string;
+  snapshotHash: string | null;
+  baselineMetricsHash: string | null;
+  tradeChainHead: string | null;
+  tradeChainLength: number | null;
+  backtestTradeCount: number | null;
+  liveTradeCount: number | null;
+  ladderLevel: string;
+  generatedAt: string;
+}
 
 interface ProofData {
   strategy: {
@@ -179,10 +191,55 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+      className="ml-1.5 inline-flex items-center p-0.5 rounded text-[#7C8DB0] hover:text-white transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? (
+        <svg
+          className="w-3 h-3 text-[#10B981]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export function ProofPageView({ strategyId }: { strategyId: string }) {
   const [data, setData] = useState<ProofData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [verification, setVerification] = useState<VerificationData | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const verificationFetched = useRef(false);
 
   useEffect(() => {
     fetch(`/api/proof/${strategyId}`)
@@ -196,6 +253,33 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "proof_page_view", strategyId }),
     }).catch(() => {});
+  }, [strategyId]);
+
+  useEffect(() => {
+    if (verificationFetched.current) return;
+    verificationFetched.current = true;
+    fetch(`/api/proof/${strategyId}/verification`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setVerification(d ?? null))
+      .catch(() => null);
+  }, [strategyId]);
+
+  const downloadVerification = useCallback(async () => {
+    setDownloadError(null);
+    try {
+      const res = await fetch(`/api/proof/${strategyId}/verification`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${strategyId}-verification.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError("Failed to download verification data. Please try again.");
+    }
   }, [strategyId]);
 
   const getShareUrl = useCallback(() => {
@@ -315,6 +399,23 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{strategy.name}</h1>
+            {/* Verified by AlgoStudio badge */}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#4F46E5]/15 border border-[#4F46E5]/40 text-[#818CF8] text-xs font-semibold">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              Verified by AlgoStudio
+            </span>
             {/* Ladder badge */}
             <span
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold"
@@ -712,6 +813,71 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               Not available yet — no hash-chain events recorded.
             </p>
           )}
+
+          {/* Verification Hashes */}
+          {verification &&
+          (verification.snapshotHash ||
+            verification.baselineMetricsHash ||
+            verification.tradeChainHead) ? (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
+              <h3 className="text-sm font-semibold text-white mb-3">Verification Hashes</h3>
+              <div className="space-y-2 text-xs">
+                {verification.snapshotHash && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Snapshot Hash</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.snapshotHash.slice(0, 16)}...
+                      <CopyButton text={verification.snapshotHash} />
+                    </span>
+                  </div>
+                )}
+                {verification.baselineMetricsHash && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Baseline Hash</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.baselineMetricsHash.slice(0, 16)}...
+                      <CopyButton text={verification.baselineMetricsHash} />
+                    </span>
+                  </div>
+                )}
+                {verification.tradeChainHead && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Trade Chain Head</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.tradeChainHead.slice(0, 16)}...
+                      <CopyButton text={verification.tradeChainHead} />
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : verification !== null ? (
+            <p className="text-sm text-[#7C8DB0] mt-3">Verification hashes not available yet.</p>
+          ) : null}
+
+          {/* Download verification data */}
+          <div className="mt-3">
+            <button
+              onClick={downloadVerification}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+            >
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download verification data (JSON)
+            </button>
+            {downloadError && <p className="text-xs text-[#EF4444] mt-1.5">{downloadError}</p>}
+          </div>
         </section>
 
         {/* Lifecycle Governance */}
