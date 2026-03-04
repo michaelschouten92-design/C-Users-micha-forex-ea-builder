@@ -25,6 +25,8 @@
     "type-check": "tsc --noEmit",
     "validate": "npm run type-check && npm run lint && npm run test:run",
     "analyze": "ANALYZE=true next build",
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "demo:teardown": "tsx scripts/demo-seed.ts --teardown",
     "prepare": "husky"
   },
   "dependencies": {
