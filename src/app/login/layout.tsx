@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   description:
     "Sign in or create an AlgoStudio account. Build MetaTrader 5 & 4 Expert Advisors with our visual strategy builder.",
   alternates: { canonical: "/login" },
+  robots: { index: false, follow: false },
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   description:
     "Create a free AlgoStudio account and start building MetaTrader 5 Expert Advisors with our visual strategy builder. No credit card required.",
   alternates: { canonical: "/register" },
+  robots: { index: false, follow: false },
 };
 
 export default function RegisterLayout({ children }: { children: React.ReactNode }) {
