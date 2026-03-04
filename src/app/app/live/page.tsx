@@ -10,6 +10,7 @@ import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { DecisionTimeline } from "./components/decision-timeline";
 import { DecisionContextPanel } from "./components/decision-context-panel";
 import { OperatorHoldControls } from "./components/operator-hold-controls";
+import { EdgeDriftPanel } from "./components/edge-drift-panel";
 import { selectDecision } from "./select-decision";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
@@ -242,6 +243,17 @@ export default async function LiveEADashboardPage({
                   }))}
                 />
                 <AuthorityUptimeCard analytics={analytics} />
+                <EdgeDriftPanel
+                  instances={eaInstances.map((ea) => ({
+                    id: ea.id,
+                    eaName: ea.eaName,
+                    symbol: ea.symbol,
+                    trades: ea.trades.map((t) => ({
+                      profit: t.profit,
+                      closeTime: t.closeTime?.toISOString() ?? null,
+                    })),
+                  }))}
+                />
               </div>
             </div>
           </section>
