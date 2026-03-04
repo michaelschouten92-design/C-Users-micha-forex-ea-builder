@@ -462,7 +462,7 @@ describe("POST /api/internal/heartbeat", () => {
       userId: "user-1",
       lifecycleState: "EDGE_AT_RISK",
       operatorHold: "HALTED",
-      monitoringSuppressedUntil: new Date("2026-03-03T23:00:00Z"),
+      monitoringSuppressedUntil: new Date("2099-01-01T00:00:00Z"),
     });
 
     const { POST } = await import("./route");

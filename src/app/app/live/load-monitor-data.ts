@@ -15,6 +15,7 @@ export interface AuthorityDecision {
   reasonCode: string;
   decidedAt: string; // ISO-8601
   strategyId: string;
+  authorityReasons?: string[];
 }
 
 export interface MonitorData {
@@ -117,7 +118,13 @@ const AUTHORITY_PRIORITY: Record<string, number> = { STOP: 0, PAUSE: 1, RUN: 2 }
  * STOP > PAUSE > RUN. Ties broken by most recent.
  */
 function pickMostRestrictive(
-  decisions: { action: string; reasonCode: string; createdAt: Date; strategyId: string | null }[]
+  decisions: {
+    action: string;
+    reasonCode: string;
+    createdAt: Date;
+    strategyId: string | null;
+    authorityReasons?: string[];
+  }[]
 ): AuthorityDecision | null {
   if (decisions.length === 0) return null;
 
@@ -134,6 +141,9 @@ function pickMostRestrictive(
     reasonCode: best.reasonCode,
     decidedAt: best.createdAt.toISOString(),
     strategyId: best.strategyId ?? "",
+    ...(best.authorityReasons && best.authorityReasons.length > 0
+      ? { authorityReasons: best.authorityReasons }
+      : {}),
   };
 }
 
@@ -233,12 +243,16 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
           const sid = ev.strategyId ?? "";
           if (!latestPerInstance.has(sid)) {
             const meta = ev.meta as Record<string, unknown> | null;
+            const reasonCode =
+              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED";
             latestPerInstance.set(sid, {
               action: typeof meta?.action === "string" ? meta.action : "PAUSE",
-              reasonCode:
-                typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+              reasonCode,
               createdAt: ev.createdAt,
               strategyId: ev.strategyId,
+              ...(reasonCode === "AUTHORITY_UNINITIALIZED" && Array.isArray(meta?.authorityReasons)
+                ? { authorityReasons: meta.authorityReasons as string[] }
+                : {}),
             });
           }
         }

@@ -8,6 +8,8 @@ import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
+import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
+import type { HeartbeatReasonCode } from "@/domain/heartbeat/decide-heartbeat-action";
 import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
 
 export default async function LiveEADashboardPage() {
@@ -188,9 +190,10 @@ export default async function LiveEADashboardPage() {
         {eaInstances.length > 0 && (
           <section className="mt-6 mb-10">
             <div className="grid lg:grid-cols-3 gap-4">
-              {/* ── Execution Authority (wide left) ── */}
-              <div className="lg:col-span-2">
+              {/* ── Execution Authority + Control Explanation (wide left) ── */}
+              <div className="lg:col-span-2 flex flex-col gap-4">
                 <ExecutionAuthorityCard authority={authority} />
+                <ControlExplanationPanel authority={authority} />
               </div>
 
               {/* ── Governance Context + Authority Uptime (stacked right) ── */}
@@ -314,6 +317,57 @@ function ExecutionAuthorityCard({ authority }: { authority: AuthorityDecision | 
       <span className="inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
         {reasonCode}
       </span>
+    </div>
+  );
+}
+
+const AUTHORITY_REASON_LABELS: Record<string, string> = {
+  NO_STRATEGIES: "No strategies have been created",
+  NO_LIVE_INSTANCE: "No live EA instance is connected",
+};
+
+function ControlExplanationPanel({ authority }: { authority: AuthorityDecision | null }) {
+  const reasonCode = authority?.reasonCode ?? "COMPUTATION_FAILED";
+  const action = authority?.action ?? "PAUSE";
+  const authorityReasons = authority?.authorityReasons;
+
+  const explanation = getControlExplanation(reasonCode as HeartbeatReasonCode);
+  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
+
+  return (
+    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{ backgroundColor: colors.dot }}
+        />
+        <h3 className="text-sm font-medium text-white">{explanation.title}</h3>
+      </div>
+
+      <p className="text-sm text-[#CBD5E1] leading-relaxed mb-3">{explanation.explanation}</p>
+
+      <div className="border-t border-[rgba(79,70,229,0.15)] pt-3">
+        <p className="text-xs text-[#7C8DB0] mb-1 uppercase tracking-wider font-medium">
+          Resolution
+        </p>
+        <p className="text-sm text-[#94A3B8] leading-relaxed">{explanation.resolution}</p>
+      </div>
+
+      {authorityReasons && authorityReasons.length > 0 && (
+        <div className="border-t border-[rgba(79,70,229,0.15)] pt-3 mt-3">
+          <p className="text-xs text-[#7C8DB0] mb-2 uppercase tracking-wider font-medium">
+            Details
+          </p>
+          <ul className="space-y-1.5">
+            {authorityReasons.map((reason) => (
+              <li key={reason} className="flex items-center gap-2 text-sm text-[#94A3B8]">
+                <span className="w-1 h-1 rounded-full bg-[#F59E0B] flex-shrink-0" />
+                {AUTHORITY_REASON_LABELS[reason] ?? reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
