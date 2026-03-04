@@ -4,9 +4,11 @@ import { prisma } from "@/lib/prisma";
 
 function authenticateInternal(request: NextRequest): boolean {
   const apiKey = request.headers.get("x-internal-api-key");
-  const expectedKey = process.env.INTERNAL_API_KEY;
-  if (!expectedKey || !apiKey) return false;
-  return timingSafeEqual(apiKey, expectedKey);
+  if (!apiKey) return false;
+
+  // Accept INTERNAL_API_KEY or CRON_SECRET (the latter is always set in production)
+  const keys = [process.env.INTERNAL_API_KEY, process.env.CRON_SECRET].filter(Boolean) as string[];
+  return keys.some((key) => timingSafeEqual(apiKey, key));
 }
 
 function safeDatabaseFingerprint(): { hostname: string | null; database: string | null } {
