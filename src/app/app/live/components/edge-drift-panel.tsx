@@ -56,8 +56,11 @@ export function EdgeDriftPanel({ instances }: { instances: InstanceForDrift[] })
         ))}
       </div>
 
-      <p className="mt-4 text-[10px] text-[#64748B] leading-relaxed">
+      <p className="mt-3 text-[10px] text-[#64748B] leading-relaxed">
         Informational signal only — does not affect execution authority.
+      </p>
+      <p className="text-[9px] text-[#475569] font-mono mt-1">
+        OK &lt;5% | WARNING &lt;10% | HIGH &ge;10%
       </p>
     </div>
   );
@@ -100,15 +103,16 @@ function InstanceDriftRow({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-[#7C8DB0] text-xs">Live (last {liveResult.needed})</span>
+        <span className="text-[#7C8DB0] text-xs">
+          Live winrate (n={liveResult.sampleSize}/{EDGE_DRIFT_TRADES_N})
+        </span>
         {liveResult.ok ? (
           <span className="font-mono text-xs text-[#CBD5E1]">
             {liveResult.liveWinrate!.toFixed(1)}%
-            <span className="text-[#64748B] ml-1">({liveResult.sampleSize})</span>
           </span>
         ) : (
           <span className="text-[10px] text-[#F59E0B]">
-            Insufficient ({liveResult.sampleSize}/{liveResult.needed})
+            Insufficient (need {EDGE_DRIFT_TRADES_N >= 20 ? "20+" : EDGE_DRIFT_TRADES_N})
           </span>
         )}
       </div>
@@ -118,9 +122,23 @@ function InstanceDriftRow({
         {baselineWinrate !== null ? (
           <span className="font-mono text-xs text-[#CBD5E1]">{baselineWinrate.toFixed(1)}%</span>
         ) : (
-          <span className="text-[11px] font-mono text-[#64748B]">unavailable</span>
+          <span className="text-[10px] text-[#64748B]">
+            unavailable (no backtest baseline attached)
+          </span>
         )}
       </div>
+
+      {drift && (
+        <div className="flex items-center justify-between">
+          <span className="text-[#7C8DB0] text-xs">Drift</span>
+          <span
+            className="font-mono text-xs"
+            style={{ color: (DRIFT_BADGE[drift.status] ?? DRIFT_BADGE.WARNING).color }}
+          >
+            {Math.round(drift.driftPct)}%
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -132,7 +150,7 @@ function DriftBadge({ status, driftPct }: { status: string; driftPct: number }) 
       className="text-[10px] font-medium px-1.5 py-0.5 rounded"
       style={{ color: style.color, backgroundColor: style.bg, border: `1px solid ${style.border}` }}
     >
-      {status} ({driftPct.toFixed(1)}%)
+      {status} ({Math.round(driftPct)}%)
     </span>
   );
 }
