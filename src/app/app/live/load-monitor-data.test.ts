@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { sanitizeAuthorityReasons } from "./load-monitor-data";
+import {
+  sanitizeAuthorityReasons,
+  sanitizeLifecycleState,
+  sanitizeOperatorHold,
+  sanitizeBool,
+  extractDecisionContext,
+} from "./load-monitor-data";
 
 const mockLogError = vi.fn();
 const mockLogInfo = vi.fn();
@@ -635,6 +641,94 @@ describe("loadMonitorData", () => {
 
     expect(result!.authority!.authorityReasons).toBeUndefined();
   });
+
+  // ── Decision Context extraction ────────────────────────
+
+  it("extracts context from governanceSnapshot in recentDecisions", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        id: "evt_ctx",
+        strategyId: "ea_1",
+        meta: {
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: JSON.stringify({
+            configVersion: "1.0",
+            lifecycleState: "LIVE_MONITORING",
+            operatorHold: "NONE",
+            suppressionActive: false,
+            thresholdsHash: "abc",
+          }),
+        },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions[0].context).toEqual({
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      suppressionActive: false,
+    });
+  });
+
+  it("omits context when governanceSnapshot is missing", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        id: "evt_no_snap",
+        strategyId: "ea_1",
+        meta: { action: "RUN", reasonCode: "OK" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions[0].context).toBeUndefined();
+  });
+
+  it("does not leak arbitrary meta keys into context", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        id: "evt_leak",
+        strategyId: "ea_1",
+        meta: {
+          action: "RUN",
+          reasonCode: "OK",
+          governanceSnapshot: JSON.stringify({
+            lifecycleState: "DRAFT",
+            operatorHold: "NONE",
+            suppressionActive: true,
+            secretKey: "should-not-appear",
+            configVersion: "1.0",
+            thresholdsHash: "abc",
+          }),
+        },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    const ctx = result!.recentDecisions[0].context;
+    expect(ctx).toBeDefined();
+    expect(ctx).not.toHaveProperty("secretKey");
+    expect(ctx).not.toHaveProperty("configVersion");
+    expect(ctx).not.toHaveProperty("thresholdsHash");
+  });
 });
 
 describe("sanitizeAuthorityReasons", () => {
@@ -674,5 +768,165 @@ describe("sanitizeAuthorityReasons", () => {
   it("caps output at 2 entries", () => {
     const input = ["NO_STRATEGIES", "NO_LIVE_INSTANCE", "NO_STRATEGIES"];
     expect(sanitizeAuthorityReasons(input)).toHaveLength(2);
+  });
+});
+
+describe("sanitizeLifecycleState", () => {
+  it("accepts valid lifecycle states", () => {
+    expect(sanitizeLifecycleState("DRAFT")).toBe("DRAFT");
+    expect(sanitizeLifecycleState("LIVE_MONITORING")).toBe("LIVE_MONITORING");
+    expect(sanitizeLifecycleState("EDGE_AT_RISK")).toBe("EDGE_AT_RISK");
+    expect(sanitizeLifecycleState("INVALIDATED")).toBe("INVALIDATED");
+    expect(sanitizeLifecycleState("BACKTESTED")).toBe("BACKTESTED");
+    expect(sanitizeLifecycleState("VERIFIED")).toBe("VERIFIED");
+  });
+
+  it("rejects unknown strings", () => {
+    expect(sanitizeLifecycleState("RUNNING")).toBeUndefined();
+    expect(sanitizeLifecycleState("active")).toBeUndefined();
+  });
+
+  it("rejects non-string values", () => {
+    expect(sanitizeLifecycleState(42)).toBeUndefined();
+    expect(sanitizeLifecycleState(null)).toBeUndefined();
+    expect(sanitizeLifecycleState(undefined)).toBeUndefined();
+    expect(sanitizeLifecycleState(true)).toBeUndefined();
+  });
+});
+
+describe("sanitizeOperatorHold", () => {
+  it("accepts valid operator hold values", () => {
+    expect(sanitizeOperatorHold("NONE")).toBe("NONE");
+    expect(sanitizeOperatorHold("HALTED")).toBe("HALTED");
+    expect(sanitizeOperatorHold("OVERRIDE_PENDING")).toBe("OVERRIDE_PENDING");
+  });
+
+  it("preserves explicit null", () => {
+    expect(sanitizeOperatorHold(null)).toBeNull();
+  });
+
+  it("rejects unknown strings", () => {
+    expect(sanitizeOperatorHold("PAUSED")).toBeUndefined();
+    expect(sanitizeOperatorHold("")).toBeUndefined();
+  });
+
+  it("rejects non-string values", () => {
+    expect(sanitizeOperatorHold(42)).toBeUndefined();
+    expect(sanitizeOperatorHold(undefined)).toBeUndefined();
+    expect(sanitizeOperatorHold(true)).toBeUndefined();
+  });
+});
+
+describe("sanitizeBool", () => {
+  it("accepts booleans", () => {
+    expect(sanitizeBool(true)).toBe(true);
+    expect(sanitizeBool(false)).toBe(false);
+  });
+
+  it("rejects non-boolean values", () => {
+    expect(sanitizeBool("true")).toBeUndefined();
+    expect(sanitizeBool(1)).toBeUndefined();
+    expect(sanitizeBool(null)).toBeUndefined();
+    expect(sanitizeBool(undefined)).toBeUndefined();
+  });
+});
+
+describe("extractDecisionContext", () => {
+  const validSnapshot = JSON.stringify({
+    configVersion: "1.0",
+    lifecycleState: "LIVE_MONITORING",
+    operatorHold: "NONE",
+    suppressionActive: false,
+    thresholdsHash: "abc123",
+  });
+
+  it("extracts whitelisted fields from valid governanceSnapshot", () => {
+    const ctx = extractDecisionContext({ governanceSnapshot: validSnapshot });
+    expect(ctx).toEqual({
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      suppressionActive: false,
+    });
+  });
+
+  it("drops invalid lifecycleState", () => {
+    const snap = JSON.stringify({
+      lifecycleState: "BOGUS",
+      operatorHold: "NONE",
+      suppressionActive: true,
+    });
+    const ctx = extractDecisionContext({ governanceSnapshot: snap });
+    expect(ctx).toEqual({ operatorHold: "NONE", suppressionActive: true });
+    expect(ctx).not.toHaveProperty("lifecycleState");
+  });
+
+  it("drops invalid operatorHold", () => {
+    const snap = JSON.stringify({
+      lifecycleState: "DRAFT",
+      operatorHold: "INVALID",
+      suppressionActive: false,
+    });
+    const ctx = extractDecisionContext({ governanceSnapshot: snap });
+    expect(ctx).toEqual({ lifecycleState: "DRAFT", suppressionActive: false });
+    expect(ctx).not.toHaveProperty("operatorHold");
+  });
+
+  it("drops non-boolean suppressionActive", () => {
+    const snap = JSON.stringify({
+      lifecycleState: "DRAFT",
+      operatorHold: null,
+      suppressionActive: "yes",
+    });
+    const ctx = extractDecisionContext({ governanceSnapshot: snap });
+    expect(ctx).toEqual({ lifecycleState: "DRAFT", operatorHold: null });
+    expect(ctx).not.toHaveProperty("suppressionActive");
+  });
+
+  it("returns undefined when all fields are invalid", () => {
+    const snap = JSON.stringify({
+      lifecycleState: 42,
+      operatorHold: true,
+      suppressionActive: "no",
+    });
+    expect(extractDecisionContext({ governanceSnapshot: snap })).toBeUndefined();
+  });
+
+  it("returns undefined when governanceSnapshot is missing", () => {
+    expect(extractDecisionContext({ action: "RUN" })).toBeUndefined();
+    expect(extractDecisionContext(null)).toBeUndefined();
+  });
+
+  it("returns undefined when governanceSnapshot is not valid JSON", () => {
+    expect(extractDecisionContext({ governanceSnapshot: "not-json" })).toBeUndefined();
+  });
+
+  it("does not pass through arbitrary keys from snapshot", () => {
+    const snap = JSON.stringify({
+      lifecycleState: "DRAFT",
+      operatorHold: "NONE",
+      suppressionActive: false,
+      configVersion: "1.0",
+      thresholdsHash: "xyz",
+      secretKey: "should-not-appear",
+    });
+    const ctx = extractDecisionContext({ governanceSnapshot: snap });
+    expect(ctx).toEqual({
+      lifecycleState: "DRAFT",
+      operatorHold: "NONE",
+      suppressionActive: false,
+    });
+    expect(ctx).not.toHaveProperty("configVersion");
+    expect(ctx).not.toHaveProperty("thresholdsHash");
+    expect(ctx).not.toHaveProperty("secretKey");
+  });
+
+  it("preserves null operatorHold", () => {
+    const snap = JSON.stringify({
+      lifecycleState: "VERIFIED",
+      operatorHold: null,
+      suppressionActive: true,
+    });
+    const ctx = extractDecisionContext({ governanceSnapshot: snap });
+    expect(ctx!.operatorHold).toBeNull();
   });
 });

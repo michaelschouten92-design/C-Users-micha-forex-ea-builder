@@ -8,6 +8,7 @@ import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { DecisionTimeline } from "./components/decision-timeline";
+import { DecisionContextPanel } from "./components/decision-context-panel";
 import { selectDecision } from "./select-decision";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
@@ -89,6 +90,9 @@ export default async function LiveEADashboardPage({
     authority,
     params.decision
   );
+  const selectedTimestamp = selectedId
+    ? recentDecisions.find((d) => d.id === selectedId)?.timestamp
+    : authority?.decidedAt;
 
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
@@ -210,6 +214,11 @@ export default async function LiveEADashboardPage({
                   action={selectedDecision.action}
                   reasonCode={selectedDecision.reasonCode}
                   authorityReasons={authority?.authorityReasons}
+                  isHistorical={selectedId !== null}
+                />
+                <DecisionContextPanel
+                  context={selectedDecision.context}
+                  timestamp={selectedTimestamp}
                   isHistorical={selectedId !== null}
                 />
                 <DecisionTimeline events={recentDecisions} selectedId={selectedId} />

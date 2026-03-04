@@ -15,11 +15,18 @@ export interface AuthorityDecision {
   authorityReasons?: AuthorityBlockReason[];
 }
 
+export interface DecisionContext {
+  lifecycleState?: string;
+  operatorHold?: "NONE" | "HALTED" | "OVERRIDE_PENDING" | null;
+  suppressionActive?: boolean;
+}
+
 export interface RecentDecision {
   id: string;
   timestamp: string; // ISO-8601
   action: "RUN" | "PAUSE" | "STOP";
   reasonCode: string;
+  context?: DecisionContext;
 }
 
 export interface MonitorData {
@@ -92,6 +99,73 @@ export function sanitizeAuthorityReasons(value: unknown): AuthorityBlockReason[]
     }
   }
   return result;
+}
+
+// ── Decision context sanitizers ──────────────────────────
+
+const VALID_LIFECYCLE_STATES = new Set([
+  "DRAFT",
+  "BACKTESTED",
+  "VERIFIED",
+  "LIVE_MONITORING",
+  "EDGE_AT_RISK",
+  "INVALIDATED",
+]);
+
+export function sanitizeLifecycleState(value: unknown): string | undefined {
+  return typeof value === "string" && VALID_LIFECYCLE_STATES.has(value) ? value : undefined;
+}
+
+const VALID_OPERATOR_HOLDS = new Set(["NONE", "HALTED", "OVERRIDE_PENDING"]);
+
+export function sanitizeOperatorHold(
+  value: unknown
+): "NONE" | "HALTED" | "OVERRIDE_PENDING" | null | undefined {
+  if (value === null) return null;
+  return typeof value === "string" && VALID_OPERATOR_HOLDS.has(value)
+    ? (value as "NONE" | "HALTED" | "OVERRIDE_PENDING")
+    : undefined;
+}
+
+export function sanitizeBool(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+/**
+ * Parse the governanceSnapshot JSON string from meta and extract
+ * a strict, whitelisted DecisionContext. Returns undefined when
+ * no usable fields are present.
+ */
+export function extractDecisionContext(
+  meta: Record<string, unknown> | null
+): DecisionContext | undefined {
+  if (!meta || typeof meta.governanceSnapshot !== "string") return undefined;
+
+  let snapshot: Record<string, unknown>;
+  try {
+    snapshot = JSON.parse(meta.governanceSnapshot) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+  if (typeof snapshot !== "object" || snapshot === null) return undefined;
+
+  const lifecycleState = sanitizeLifecycleState(snapshot.lifecycleState);
+  const operatorHold = sanitizeOperatorHold(snapshot.operatorHold);
+  const suppressionActive = sanitizeBool(snapshot.suppressionActive);
+
+  if (
+    lifecycleState === undefined &&
+    operatorHold === undefined &&
+    suppressionActive === undefined
+  ) {
+    return undefined;
+  }
+
+  return {
+    ...(lifecycleState !== undefined ? { lifecycleState } : {}),
+    ...(operatorHold !== undefined ? { operatorHold } : {}),
+    ...(suppressionActive !== undefined ? { suppressionActive } : {}),
+  };
 }
 
 function queryEaInstances(userId: string) {
@@ -299,12 +373,14 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
         if (timelineResult.status === "fulfilled") {
           recentDecisions = timelineResult.value.map((ev) => {
             const meta = ev.meta as Record<string, unknown> | null;
+            const context = extractDecisionContext(meta);
             return {
               id: ev.id,
               timestamp: ev.createdAt.toISOString(),
               action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
               reasonCode:
                 typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+              ...(context ? { context } : {}),
             };
           });
         }

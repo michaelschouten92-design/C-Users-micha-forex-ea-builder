@@ -1,12 +1,13 @@
-import type { AuthorityDecision, RecentDecision } from "./load-monitor-data";
+import type { AuthorityDecision, DecisionContext, RecentDecision } from "./load-monitor-data";
 
 /**
- * Shape used by ControlExplanationPanel — the union of what
- * an AuthorityDecision and a RecentDecision can provide.
+ * Shape used by ControlExplanationPanel and DecisionContextPanel —
+ * the union of what an AuthorityDecision and a RecentDecision can provide.
  */
 export interface SelectedDecision {
   action: string;
   reasonCode: string;
+  context?: DecisionContext;
 }
 
 /**
@@ -30,7 +31,11 @@ export function selectDecision(
     const match = recentDecisions.find((d) => d.id === selectedId);
     if (match) {
       return {
-        decision: { action: match.action, reasonCode: match.reasonCode },
+        decision: {
+          action: match.action,
+          reasonCode: match.reasonCode,
+          ...(match.context ? { context: match.context } : {}),
+        },
         selectedId: match.id,
       };
     }

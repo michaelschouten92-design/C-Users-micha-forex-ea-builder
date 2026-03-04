@@ -80,4 +80,32 @@ describe("selectDecision", () => {
     const b = selectDecision(decisions, authority, "evt_2");
     expect(a).toEqual(b);
   });
+
+  it("carries context through when URL-matched decision has context", () => {
+    const withContext: RecentDecision[] = [
+      {
+        id: "evt_ctx",
+        timestamp: "2025-01-01T12:00:00.000Z",
+        action: "PAUSE",
+        reasonCode: "STRATEGY_HALTED",
+        context: {
+          lifecycleState: "EDGE_AT_RISK",
+          operatorHold: "HALTED",
+          suppressionActive: false,
+        },
+      },
+    ];
+    const result = selectDecision(withContext, authority, "evt_ctx");
+    expect(result.decision.context).toEqual({
+      lifecycleState: "EDGE_AT_RISK",
+      operatorHold: "HALTED",
+      suppressionActive: false,
+    });
+    expect(result.selectedId).toBe("evt_ctx");
+  });
+
+  it("authority fallback has no context", () => {
+    const result = selectDecision(decisions, authority, undefined);
+    expect(result.decision.context).toBeUndefined();
+  });
 });
