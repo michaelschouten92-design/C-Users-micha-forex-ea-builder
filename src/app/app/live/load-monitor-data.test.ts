@@ -31,33 +31,13 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-const mockComputeAnalytics = vi.fn();
-
-vi.mock("@/domain/heartbeat/heartbeat-analytics", () => ({
-  computeHeartbeatAnalytics: (...args: unknown[]) => mockComputeAnalytics(...args),
-}));
-
 describe("loadMonitorData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Ensure DATABASE_URL is present for all tests (diagnostic check)
     process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
-    // Default: no proof events, analytics returns fail-closed shape
+    // Default: no proof events
     mockProofEventFindMany.mockResolvedValue([]);
-    mockComputeAnalytics.mockReturnValue({
-      windowStart: "",
-      windowEnd: "",
-      windowMs: 0,
-      expectedCadenceMs: 60000,
-      totalEvents: 0,
-      coverageMs: 0,
-      coveragePct: 0,
-      runMs: 0,
-      runPct: 0,
-      cadenceBreached: true,
-      longestGapMs: 0,
-      lastDecision: null,
-    });
   });
 
   it("returns data on successful DB queries", async () => {
@@ -371,13 +351,6 @@ describe("loadMonitorData", () => {
         createdAt: new Date("2025-01-01T12:00:00Z"),
       },
     ]);
-    mockComputeAnalytics.mockReturnValue({
-      coveragePct: 99,
-      runPct: 99,
-      cadenceBreached: false,
-      longestGapMs: 5000,
-      totalEvents: 1,
-    });
 
     const { loadMonitorData } = await import("./load-monitor-data");
     const result = await loadMonitorData("user_123");
@@ -389,9 +362,8 @@ describe("loadMonitorData", () => {
       decidedAt: "2025-01-01T12:00:00.000Z",
       strategyId: "ea_1",
     });
-    expect(result!.analytics).toEqual(
-      expect.objectContaining({ coveragePct: 99, cadenceBreached: false })
-    );
+    // Analytics delegated to dedicated API; loader returns null
+    expect(result!.analytics).toBeNull();
   });
 
   it("returns null authority when no instances exist (skips phase 2)", async () => {
@@ -406,6 +378,47 @@ describe("loadMonitorData", () => {
     expect(result!.analytics).toBeNull();
     // proofEventLog should not have been queried
     expect(mockProofEventFindMany).not.toHaveBeenCalled();
+  });
+
+  it("uses two bounded queries: distinct-per-instance for authority, take-25 for timeline", async () => {
+    const mockInstances = [
+      { id: "ea_1", trades: [], heartbeats: [] },
+      { id: "ea_2", trades: [], heartbeats: [] },
+    ];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    await loadMonitorData("user_123");
+
+    // Two separate queries instead of one large batch
+    expect(mockProofEventFindMany).toHaveBeenCalledTimes(2);
+
+    const [authorityQuery, timelineQuery] = mockProofEventFindMany.mock.calls.map(
+      (c: unknown[]) => c[0] as Record<string, unknown>
+    );
+
+    // A) Authority query uses distinct to get 1 row per instance
+    expect(authorityQuery).toMatchObject({
+      where: { type: "HEARTBEAT_DECISION_MADE", strategyId: { in: ["ea_1", "ea_2"] } },
+      orderBy: { createdAt: "desc" },
+      distinct: ["strategyId"],
+      take: 2, // min(instanceIds.length, 500)
+    });
+    // No time-window filter — scans only latest per index
+    expect(authorityQuery.where).not.toHaveProperty("createdAt");
+
+    // B) Timeline query takes exactly 25
+    expect(timelineQuery).toMatchObject({
+      where: { type: "HEARTBEAT_DECISION_MADE", strategyId: { in: ["ea_1", "ea_2"] } },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    });
+    // No distinct on timeline
+    expect(timelineQuery).not.toHaveProperty("distinct");
+    // No time-window filter
+    expect(timelineQuery.where).not.toHaveProperty("createdAt");
   });
 
   it("returns null authority/analytics when proof query fails (fail-closed, non-critical)", async () => {

@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import {
-  computeHeartbeatAnalytics,
-  type HeartbeatEvent,
-  type HeartbeatAnalyticsResult,
-} from "@/domain/heartbeat/heartbeat-analytics";
+import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
 import type { AuthorityBlockReason } from "@/domain/heartbeat/authority-readiness";
 
 const log = logger.child({ page: "/app/monitor" });
@@ -244,43 +240,42 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
 
     log.info({ step: "load_success", eaCount: eaInstances.length }, "monitor data loaded");
 
-    // ── Phase 2: Authority data (non-critical — null on failure) ──
+    // ── Phase 2: Authority + Timeline (non-critical — null on failure) ──
     let authority: AuthorityDecision | null = null;
-    let analytics: HeartbeatAnalyticsResult | null = null;
+    const analytics: HeartbeatAnalyticsResult | null = null;
     let recentDecisions: RecentDecision[] = [];
 
     const instanceIds = eaInstances.map((ea) => ea.id);
 
     if (instanceIds.length > 0) {
       try {
-        const windowEnd = new Date();
-        const windowStart = new Date(windowEnd.getTime() - 24 * 60 * 60 * 1000);
-        // Single query: fetch 24h of heartbeat events (used for both authority + analytics)
-        const recentEvents = await prisma.proofEventLog.findMany({
-          where: {
-            type: "HEARTBEAT_DECISION_MADE",
-            strategyId: { in: instanceIds },
-            createdAt: { gte: windowStart },
-          },
-          orderBy: { createdAt: "desc" },
-          select: { id: true, strategyId: true, meta: true, createdAt: true },
-          take: 5000, // Safety cap
-        });
+        const [authorityResult, timelineResult] = await Promise.allSettled([
+          // A) Latest decision per instance (1 row per instance via distinct)
+          prisma.proofEventLog.findMany({
+            where: {
+              type: "HEARTBEAT_DECISION_MADE",
+              strategyId: { in: instanceIds },
+            },
+            orderBy: { createdAt: "desc" },
+            distinct: ["strategyId"],
+            select: { id: true, strategyId: true, createdAt: true, meta: true },
+            take: Math.min(instanceIds.length, 500),
+          }),
+          // B) Recent decisions timeline (last 25 overall)
+          prisma.proofEventLog.findMany({
+            where: {
+              type: "HEARTBEAT_DECISION_MADE",
+              strategyId: { in: instanceIds },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, strategyId: true, createdAt: true, meta: true },
+            take: 25,
+          }),
+        ]);
 
-        // Extract authority from latest per-instance decisions
-        const latestPerInstance = new Map<
-          string,
-          {
-            action: string;
-            reasonCode: string;
-            createdAt: Date;
-            strategyId: string | null;
-            authorityReasons?: AuthorityBlockReason[];
-          }
-        >();
-        for (const ev of recentEvents) {
-          const sid = ev.strategyId ?? "";
-          if (!latestPerInstance.has(sid)) {
+        // A) Authority from latest per-instance decisions
+        if (authorityResult.status === "fulfilled") {
+          const latestDecisions = authorityResult.value.map((ev) => {
             const meta = ev.meta as Record<string, unknown> | null;
             const action = sanitizeAction(meta?.action);
             const reasonCode =
@@ -289,45 +284,30 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
               reasonCode === "AUTHORITY_UNINITIALIZED"
                 ? sanitizeAuthorityReasons(meta?.authorityReasons)
                 : [];
-            latestPerInstance.set(sid, {
+            return {
               action,
               reasonCode,
               createdAt: ev.createdAt,
               strategyId: ev.strategyId,
               ...(sanitizedReasons.length > 0 ? { authorityReasons: sanitizedReasons } : {}),
-            });
-          }
+            };
+          });
+          authority = pickMostRestrictive(latestDecisions);
         }
-        authority = pickMostRestrictive([...latestPerInstance.values()]);
 
-        // Compute portfolio-level analytics
-        const heartbeatEvents: HeartbeatEvent[] = recentEvents.map((ev) => {
-          const meta = ev.meta as Record<string, unknown> | null;
-          return {
-            timestamp: ev.createdAt,
-            action: sanitizeAction(meta?.action),
-            reasonCode:
-              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
-          };
-        });
-        analytics = computeHeartbeatAnalytics(
-          heartbeatEvents,
-          windowStart,
-          windowEnd,
-          60_000 // 60s expected cadence
-        );
-
-        // Recent decisions timeline (already sorted desc, take 25)
-        recentDecisions = recentEvents.slice(0, 25).map((ev) => {
-          const meta = ev.meta as Record<string, unknown> | null;
-          return {
-            id: ev.id,
-            timestamp: ev.createdAt.toISOString(),
-            action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
-            reasonCode:
-              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
-          };
-        });
+        // B) Timeline from last 25 events
+        if (timelineResult.status === "fulfilled") {
+          recentDecisions = timelineResult.value.map((ev) => {
+            const meta = ev.meta as Record<string, unknown> | null;
+            return {
+              id: ev.id,
+              timestamp: ev.createdAt.toISOString(),
+              action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
+              reasonCode:
+                typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+            };
+          });
+        }
       } catch (err) {
         const diag = classifyDbError(err);
         log.error(
@@ -337,9 +317,9 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
             message: diag.message,
             classification: diag.classification,
           },
-          "authority/analytics query failed (non-critical)"
+          "authority/timeline processing failed (non-critical)"
         );
-        // authority + analytics remain null — page shows PAUSE fallback
+        // authority remains null, recentDecisions remains [] — page shows PAUSE fallback
       }
     }
 
