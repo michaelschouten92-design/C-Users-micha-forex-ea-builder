@@ -1,5 +1,7 @@
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { appendProofEventInTx } from "@/lib/proof/events";
 import { transitionLifecycle, type StrategyLifecycleState } from "./transitions";
 
 const log = logger.child({ module: "strategy-lifecycle" });
@@ -65,4 +67,88 @@ export async function performLifecycleTransition(
   source?: TransitionSource
 ): Promise<void> {
   return performLifecycleTransitionInTx(prisma, instanceId, from, to, reason, source);
+}
+
+// ── Operator Hold ────────────────────────────────────────
+
+export type OperatorHoldResult = { ok: true } | { ok: false; code: string };
+
+/**
+ * Set operator hold for a live instance. Governance boundary:
+ * - Verifies instance ownership (userId)
+ * - Validates state transition (NONE↔HALTED only)
+ * - Idempotent (setting same value is ok)
+ * - Proof-first: writes audit event before mutation in serializable tx
+ * - Never throws across boundary; returns structured error codes
+ */
+export async function setOperatorHold({
+  userId,
+  instanceId,
+  hold,
+}: {
+  userId: string;
+  instanceId: string;
+  hold: "HALTED" | "NONE";
+}): Promise<OperatorHoldResult> {
+  // 1) Ownership check
+  const instance = await prisma.liveEAInstance.findFirst({
+    where: { id: instanceId, userId, deletedAt: null },
+    select: { id: true, operatorHold: true, lifecycleState: true },
+  });
+
+  if (!instance) {
+    return { ok: false, code: "NOT_OWNER" };
+  }
+
+  // 2) Idempotency — already in desired state
+  if (instance.operatorHold === hold) {
+    return { ok: true };
+  }
+
+  // 3) Validate transition direction
+  //    HALT:    only from NONE (not from OVERRIDE_PENDING)
+  //    RELEASE: only from HALTED (not from OVERRIDE_PENDING)
+  if (hold === "HALTED" && instance.operatorHold !== "NONE") {
+    return { ok: false, code: "INVALID_TRANSITION" };
+  }
+  if (hold === "NONE" && instance.operatorHold !== "HALTED") {
+    return { ok: false, code: "INVALID_TRANSITION" };
+  }
+
+  // 4) Proof-first mutation in serializable transaction
+  const proofEvent = hold === "HALTED" ? "OPERATOR_HALT_APPLIED" : "OPERATOR_HALT_RELEASED";
+  const recordId = randomUUID();
+
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        await appendProofEventInTx(tx, instanceId, proofEvent, {
+          eventType: proofEvent,
+          recordId,
+          instanceId,
+          previousHold: instance.operatorHold,
+          newHold: hold,
+          requestedBy: userId,
+          lifecycleState: instance.lifecycleState,
+          timestamp: new Date().toISOString(),
+        });
+
+        await tx.liveEAInstance.update({
+          where: { id: instance.id },
+          data: { operatorHold: hold },
+        });
+      },
+      { isolationLevel: "Serializable" }
+    );
+
+    log.info(
+      { instanceId, previousHold: instance.operatorHold, newHold: hold, userId },
+      "Operator hold changed"
+    );
+
+    return { ok: true };
+  } catch (err) {
+    log.error({ err, instanceId, hold }, "Failed to set operator hold");
+    return { ok: false, code: "MUTATION_FAILED" };
+  }
 }

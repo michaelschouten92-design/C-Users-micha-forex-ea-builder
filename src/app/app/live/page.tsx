@@ -9,6 +9,7 @@ import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { DecisionTimeline } from "./components/decision-timeline";
 import { DecisionContextPanel } from "./components/decision-context-panel";
+import { OperatorHoldControls } from "./components/operator-hold-controls";
 import { selectDecision } from "./select-decision";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
@@ -231,6 +232,14 @@ export default async function LiveEADashboardPage({
                   hasSuppression={hasSuppression}
                   lifecycleStates={lifecycleStates}
                   instanceCount={eaInstances.length}
+                />
+                <OperatorHoldControls
+                  instances={eaInstances.map((ea) => ({
+                    id: ea.id,
+                    eaName: ea.eaName,
+                    symbol: ea.symbol,
+                    operatorHold: ea.operatorHold,
+                  }))}
                 />
                 <AuthorityUptimeCard analytics={analytics} />
               </div>

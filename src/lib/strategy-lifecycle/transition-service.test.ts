@@ -1,26 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockInfo } = vi.hoisted(() => ({
+const { mockInfo, mockError } = vi.hoisted(() => ({
   mockInfo: vi.fn(),
+  mockError: vi.fn(),
 }));
 
-const { mockInstanceUpdate } = vi.hoisted(() => ({
+const { mockInstanceUpdate, mockFindFirst, mockTransaction } = vi.hoisted(() => ({
   mockInstanceUpdate: vi.fn().mockResolvedValue({}),
+  mockFindFirst: vi.fn(),
+  mockTransaction: vi.fn(),
+}));
+
+const { mockAppendProofEventInTx } = vi.hoisted(() => ({
+  mockAppendProofEventInTx: vi.fn().mockResolvedValue({ sequence: 1, eventHash: "abc" }),
 }));
 
 vi.mock("@/lib/logger", () => ({
   logger: {
-    child: () => ({ info: mockInfo }),
+    child: () => ({ info: mockInfo, error: mockError }),
   },
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    liveEAInstance: { update: mockInstanceUpdate },
+    liveEAInstance: { update: mockInstanceUpdate, findFirst: mockFindFirst },
+    $transaction: mockTransaction,
   },
 }));
 
-import { performLifecycleTransition, performLifecycleTransitionInTx } from "./transition-service";
+vi.mock("@/lib/proof/events", () => ({
+  appendProofEventInTx: (...args: unknown[]) => mockAppendProofEventInTx(...args),
+}));
+
+import {
+  performLifecycleTransition,
+  performLifecycleTransitionInTx,
+  setOperatorHold,
+} from "./transition-service";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -245,5 +261,224 @@ describe("performLifecycleTransitionInTx", () => {
       }),
       "Lifecycle state transition"
     );
+  });
+});
+
+// ── setOperatorHold ──────────────────────────────────────────────
+
+describe("setOperatorHold", () => {
+  const txUpdate = vi.fn().mockResolvedValue({});
+
+  beforeEach(() => {
+    txUpdate.mockClear();
+    mockAppendProofEventInTx.mockClear();
+    // Default: transaction executes its callback
+    mockTransaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        liveEAInstance: { update: txUpdate },
+        proofEventLog: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+      };
+      return fn(tx);
+    });
+  });
+
+  it("rejects when instance not owned by userId (NOT_OWNER)", async () => {
+    mockFindFirst.mockResolvedValue(null);
+
+    const result = await setOperatorHold({
+      userId: "user_wrong",
+      instanceId: "ea_1",
+      hold: "HALTED",
+    });
+
+    expect(result).toEqual({ ok: false, code: "NOT_OWNER" });
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ea_1", userId: "user_wrong", deletedAt: null },
+      })
+    );
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("is idempotent — setting HALTED when already HALTED returns ok", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "HALTED",
+      lifecycleState: "LIVE_MONITORING",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "HALTED",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("is idempotent — setting NONE when already NONE returns ok", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "NONE",
+      lifecycleState: "LIVE_MONITORING",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "NONE",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("halts instance from NONE state with proof event", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "NONE",
+      lifecycleState: "LIVE_MONITORING",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "HALTED",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
+      expect.anything(),
+      "ea_1",
+      "OPERATOR_HALT_APPLIED",
+      expect.objectContaining({
+        eventType: "OPERATOR_HALT_APPLIED",
+        instanceId: "ea_1",
+        previousHold: "NONE",
+        newHold: "HALTED",
+        requestedBy: "user_1",
+      })
+    );
+
+    expect(txUpdate).toHaveBeenCalledWith({
+      where: { id: "ea_1" },
+      data: { operatorHold: "HALTED" },
+    });
+  });
+
+  it("releases halt from HALTED state with proof event", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "HALTED",
+      lifecycleState: "EDGE_AT_RISK",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "NONE",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
+      expect.anything(),
+      "ea_1",
+      "OPERATOR_HALT_RELEASED",
+      expect.objectContaining({
+        eventType: "OPERATOR_HALT_RELEASED",
+        previousHold: "HALTED",
+        newHold: "NONE",
+      })
+    );
+  });
+
+  it("rejects HALT when operatorHold is OVERRIDE_PENDING", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "OVERRIDE_PENDING",
+      lifecycleState: "EDGE_AT_RISK",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "HALTED",
+    });
+
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects RELEASE when operatorHold is OVERRIDE_PENDING", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "OVERRIDE_PENDING",
+      lifecycleState: "EDGE_AT_RISK",
+    });
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "NONE",
+    });
+
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("returns MUTATION_FAILED when transaction throws", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "NONE",
+      lifecycleState: "LIVE_MONITORING",
+    });
+    mockTransaction.mockRejectedValue(new Error("DB error"));
+
+    const result = await setOperatorHold({
+      userId: "user_1",
+      instanceId: "ea_1",
+      hold: "HALTED",
+    });
+
+    expect(result).toEqual({ ok: false, code: "MUTATION_FAILED" });
+  });
+
+  it("writes proof event before DB update (proof-first ordering)", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "NONE",
+      lifecycleState: "LIVE_MONITORING",
+    });
+
+    const callOrder: string[] = [];
+    mockAppendProofEventInTx.mockImplementation(async () => {
+      callOrder.push("proof");
+      return { sequence: 1, eventHash: "abc" };
+    });
+    txUpdate.mockImplementation(async () => {
+      callOrder.push("update");
+      return {};
+    });
+
+    await setOperatorHold({ userId: "user_1", instanceId: "ea_1", hold: "HALTED" });
+
+    expect(callOrder).toEqual(["proof", "update"]);
+  });
+
+  it("uses serializable isolation level", async () => {
+    mockFindFirst.mockResolvedValue({
+      id: "ea_1",
+      operatorHold: "NONE",
+      lifecycleState: "LIVE_MONITORING",
+    });
+
+    await setOperatorHold({ userId: "user_1", instanceId: "ea_1", hold: "HALTED" });
+
+    expect(mockTransaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+    });
   });
 });
