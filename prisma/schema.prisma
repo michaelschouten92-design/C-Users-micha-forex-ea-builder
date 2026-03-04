@@ -787,6 +787,7 @@ model StrategyVersion {
   strategyIdentity StrategyIdentity  @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
   buildVersion     BuildVersion      @relation(fields: [buildVersionId], references: [id], onDelete: Cascade)
   backtestBaseline BacktestBaseline?
+  binding          StrategyIdentityBinding?
   instances        LiveEAInstance[]
 
   @@unique([strategyIdentityId, fingerprint])
@@ -813,6 +814,18 @@ model BacktestBaseline {
   strategyVersion StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Cascade)
 
   @@index([backtestResultId])
+}
+
+model StrategyIdentityBinding {
+  id                String   @id @default(cuid())
+  strategyVersionId String   @unique
+  snapshotHash      String
+  baselineHash      String?
+  createdAt         DateTime @default(now())
+
+  strategyVersion StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotHash])
 }
 
 model HealthSnapshot {
