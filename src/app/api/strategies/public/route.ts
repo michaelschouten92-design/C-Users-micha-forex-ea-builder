@@ -9,6 +9,7 @@ import {
 } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 /**
  * GET /api/strategies/public — curated list of public verified strategies
@@ -134,5 +135,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ items }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    { items },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
 }

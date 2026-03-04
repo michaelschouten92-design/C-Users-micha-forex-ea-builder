@@ -134,7 +134,7 @@ describe("GET /api/strategies/public", () => {
     const { GET } = await import("./route");
     const res = await GET(makeRequest());
 
-    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
   });
 
   it("filters out strategies with monteCarloSurvival < 70%", async () => {

@@ -131,7 +131,7 @@ describe("GET /api/proof/[strategyId]/verification", () => {
     const { GET } = await import("./route");
     const res = await GET(makeRequest(), makeParams());
 
-    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
   });
 
   it("returns null fields when no binding/chain exists", async () => {

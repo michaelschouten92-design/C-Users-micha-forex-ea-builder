@@ -9,6 +9,7 @@ import {
 } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = { params: Promise<{ strategyId: string }> };
 
@@ -107,6 +108,6 @@ export async function GET(request: NextRequest, { params }: Props) {
       ladderLevel: page.ladderLevel,
       generatedAt: new Date().toISOString(),
     },
-    { headers: { "Cache-Control": "no-store" } }
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
   );
 }
