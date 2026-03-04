@@ -198,8 +198,15 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     }).catch(() => {});
   }, [strategyId]);
 
+  const getShareUrl = useCallback(() => {
+    const slug = data?.strategy.slug;
+    return slug
+      ? `${window.location.origin}/p/${slug}`
+      : `${window.location.origin}/proof/${strategyId}`;
+  }, [strategyId, data]);
+
   const copyLink = useCallback(() => {
-    const url = `${window.location.origin}/proof/${strategyId}`;
+    const url = getShareUrl();
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -209,13 +216,11 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "proof_link_copy", strategyId }),
     }).catch(() => {});
-  }, [strategyId]);
+  }, [strategyId, getShareUrl]);
 
   const shareX = useCallback(() => {
-    const url = `${window.location.origin}/proof/${strategyId}`;
-    const text = data
-      ? `Check out ${data.strategy.name} — ${data.ladder.label} strategy on AlgoStudio`
-      : "Verified trading strategy on AlgoStudio";
+    const url = getShareUrl();
+    const text = "Verified strategy proof (hash-chain + monitoring).";
     window.open(
       `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
       "_blank"
@@ -225,11 +230,11 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "share_click", strategyId, meta: { channel: "x" } }),
     }).catch(() => {});
-  }, [strategyId, data]);
+  }, [strategyId, getShareUrl]);
 
   const shareDiscord = useCallback(() => {
     if (!data) return;
-    const url = `${window.location.origin}/proof/${strategyId}`;
+    const url = getShareUrl();
     const text = `**${data.strategy.name}** — ${data.ladder.label} Strategy\nHealth Score: ${data.backtestHealth?.score ?? "N/A"}/100\n${url}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -240,7 +245,20 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "share_click", strategyId, meta: { channel: "discord" } }),
     }).catch(() => {});
-  }, [strategyId, data]);
+  }, [strategyId, data, getShareUrl]);
+
+  const shareReddit = useCallback(() => {
+    const url = getShareUrl();
+    window.open(
+      `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent("Verified strategy proof page")}`,
+      "_blank"
+    );
+    fetch("/api/proof/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "share_click", strategyId, meta: { channel: "reddit" } }),
+    }).catch(() => {});
+  }, [strategyId, getShareUrl]);
 
   if (loading) {
     return (
@@ -360,28 +378,6 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           {strategy.description && (
             <p className="text-sm text-[#94A3B8] mt-2">{strategy.description}</p>
           )}
-
-          {/* Share actions */}
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={copyLink}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-            <button
-              onClick={shareX}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              Share on X
-            </button>
-            <button
-              onClick={shareDiscord}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              Share to Discord
-            </button>
-          </div>
         </div>
 
         {/* SEO Intro */}
@@ -395,6 +391,56 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             governed through an automated lifecycle (RUN / PAUSE / STOP) based on predefined risk
             rules.
           </p>
+        </div>
+
+        {/* Share this proof */}
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl px-5 py-4 mb-4">
+          <h2 className="text-sm font-semibold text-white mb-3">Share this proof</h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+            >
+              {copied ? "Copied!" : "Copy link"}
+            </button>
+            <button
+              onClick={shareX}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+            >
+              Share on X
+            </button>
+            <button
+              onClick={shareReddit}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+            >
+              Share on Reddit
+            </button>
+            <button
+              onClick={shareDiscord}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+            >
+              Share to Discord
+            </button>
+          </div>
+          <div className="mt-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
+              Why this is credible
+            </p>
+            <ul className="space-y-1 text-xs text-[#94A3B8]">
+              <li className="flex items-start gap-2">
+                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
+                Hash-chain audit log (tamper-evident)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
+                Snapshot-bound strategy identity
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
+                Monitoring + lifecycle governance (RUN / PAUSE / STOP)
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Risk Disclaimer */}
