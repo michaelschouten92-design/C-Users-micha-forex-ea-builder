@@ -6,7 +6,8 @@ import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
-import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
+import { loadMonitorData, type AuthorityDecision, type RecentDecision } from "./load-monitor-data";
+import { DecisionTimeline } from "./components/decision-timeline";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
 import type { HeartbeatReasonCode } from "@/domain/heartbeat/decide-heartbeat-action";
@@ -75,7 +76,7 @@ export default async function LiveEADashboardPage() {
     );
   }
 
-  const { eaInstances, subscription, authority, analytics } = data;
+  const { eaInstances, subscription, authority, analytics, recentDecisions } = data;
 
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
@@ -194,6 +195,7 @@ export default async function LiveEADashboardPage() {
               <div className="lg:col-span-2 flex flex-col gap-4">
                 <ExecutionAuthorityCard authority={authority} />
                 <ControlExplanationPanel authority={authority} />
+                <DecisionTimeline events={recentDecisions} />
               </div>
 
               {/* ── Governance Context + Authority Uptime (stacked right) ── */}

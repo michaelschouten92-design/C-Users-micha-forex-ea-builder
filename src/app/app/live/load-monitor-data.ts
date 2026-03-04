@@ -19,6 +19,12 @@ export interface AuthorityDecision {
   authorityReasons?: AuthorityBlockReason[];
 }
 
+export interface RecentDecision {
+  timestamp: string; // ISO-8601
+  action: "RUN" | "PAUSE" | "STOP";
+  reasonCode: string;
+}
+
 export interface MonitorData {
   eaInstances: Awaited<ReturnType<typeof queryEaInstances>>;
   subscription: Awaited<ReturnType<typeof querySubscription>>;
@@ -26,6 +32,8 @@ export interface MonitorData {
   authority: AuthorityDecision | null;
   /** Portfolio-level 24h cadence analytics. null = computation unavailable. */
   analytics: HeartbeatAnalyticsResult | null;
+  /** Last 25 heartbeat decisions, newest first. Empty on failure. */
+  recentDecisions: RecentDecision[];
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -238,6 +246,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
     // ── Phase 2: Authority data (non-critical — null on failure) ──
     let authority: AuthorityDecision | null = null;
     let analytics: HeartbeatAnalyticsResult | null = null;
+    let recentDecisions: RecentDecision[] = [];
 
     const instanceIds = eaInstances.map((ea) => ea.id);
 
@@ -306,6 +315,17 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
           windowEnd,
           60_000 // 60s expected cadence
         );
+
+        // Recent decisions timeline (already sorted desc, take 25)
+        recentDecisions = recentEvents.slice(0, 25).map((ev) => {
+          const meta = ev.meta as Record<string, unknown> | null;
+          return {
+            timestamp: ev.createdAt.toISOString(),
+            action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
+            reasonCode:
+              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
+          };
+        });
       } catch (err) {
         const diag = classifyDbError(err);
         log.error(
@@ -321,7 +341,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       }
     }
 
-    return { eaInstances, subscription, authority, analytics };
+    return { eaInstances, subscription, authority, analytics, recentDecisions };
   } catch (err) {
     // Outer catch for unexpected errors (non-query failures like import errors)
     const diag = classifyDbError(err);

@@ -491,6 +491,101 @@ describe("loadMonitorData", () => {
     expect(result!.authority!.authorityReasons).toEqual(["NO_STRATEGIES"]);
   });
 
+  // ── Recent Decisions ─────────────────────────────────────
+
+  it("returns recentDecisions sorted desc from proof events", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "RUN", reasonCode: "OK" },
+        createdAt: new Date("2025-01-01T12:02:00Z"),
+      },
+      {
+        strategyId: "ea_1",
+        meta: { action: "PAUSE", reasonCode: "MONITORING_AT_RISK" },
+        createdAt: new Date("2025-01-01T12:01:00Z"),
+      },
+      {
+        strategyId: "ea_1",
+        meta: { action: "STOP", reasonCode: "STRATEGY_HALTED" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions).toHaveLength(3);
+    // Already sorted desc (most recent first)
+    expect(result!.recentDecisions[0].action).toBe("RUN");
+    expect(result!.recentDecisions[0].reasonCode).toBe("OK");
+    expect(result!.recentDecisions[1].action).toBe("PAUSE");
+    expect(result!.recentDecisions[2].action).toBe("STOP");
+    // Timestamps are ISO strings, desc order
+    expect(result!.recentDecisions[0].timestamp > result!.recentDecisions[1].timestamp).toBe(true);
+  });
+
+  it("normalizes invalid action to PAUSE in recentDecisions", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "BOGUS", reasonCode: "OK" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions[0].action).toBe("PAUSE");
+  });
+
+  it("falls back reasonCode to COMPUTATION_FAILED when missing", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockResolvedValue([
+      {
+        strategyId: "ea_1",
+        meta: { action: "RUN" },
+        createdAt: new Date("2025-01-01T12:00:00Z"),
+      },
+    ]);
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions[0].reasonCode).toBe("COMPUTATION_FAILED");
+  });
+
+  it("returns empty recentDecisions when no instances exist", async () => {
+    mockFindMany.mockResolvedValue([]);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions).toEqual([]);
+  });
+
+  it("returns empty recentDecisions on proof query failure", async () => {
+    const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
+    mockFindMany.mockResolvedValue(mockInstances);
+    mockFindUnique.mockResolvedValue({ tier: "PRO" });
+    mockProofEventFindMany.mockRejectedValue(new Error("DB timeout"));
+
+    const { loadMonitorData } = await import("./load-monitor-data");
+    const result = await loadMonitorData("user_123");
+
+    expect(result!.recentDecisions).toEqual([]);
+  });
+
   it("does not include authorityReasons for non-AUTHORITY_UNINITIALIZED codes", async () => {
     const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
     mockFindMany.mockResolvedValue(mockInstances);
