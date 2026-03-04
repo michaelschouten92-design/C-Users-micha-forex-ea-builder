@@ -242,6 +242,12 @@ export default async function LiveEADashboardPage({
                     operatorHold: ea.operatorHold,
                   }))}
                 />
+                <StrategyIdentityCard
+                  instances={eaInstances.map((ea) => ({
+                    eaName: ea.eaName,
+                    strategyId: ea.strategyVersion?.strategyIdentity?.strategyId ?? null,
+                  }))}
+                />
                 <AuthorityUptimeCard analytics={analytics} />
                 <EdgeDriftPanel
                   instances={eaInstances.map((ea) => ({
@@ -575,4 +581,35 @@ function formatGap(ms: number): string {
   if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
   if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
   return `${(ms / 3_600_000).toFixed(1)}h`;
+}
+
+function StrategyIdentityCard({
+  instances,
+}: {
+  instances: { eaName: string; strategyId: string | null }[];
+}) {
+  const withIdentity = instances.filter((ea) => ea.strategyId !== null);
+  if (withIdentity.length === 0) return null;
+
+  return (
+    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
+      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
+        Strategy Identity
+      </h3>
+
+      <div className="space-y-2.5 text-sm">
+        {withIdentity.map((ea) => (
+          <div key={ea.strategyId} className="flex items-center justify-between">
+            <span className="text-[#7C8DB0] truncate mr-2">{ea.eaName}</span>
+            <Link
+              href={`/proof/${ea.strategyId}`}
+              className="text-[11px] font-mono text-[#A78BFA] hover:text-white transition-colors"
+            >
+              {ea.strategyId}
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

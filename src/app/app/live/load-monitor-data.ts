@@ -209,6 +209,9 @@ function queryEaInstances(userId: string) {
           backtestBaseline: {
             select: { winRate: true },
           },
+          strategyIdentity: {
+            select: { strategyId: true },
+          },
         },
       },
     },
