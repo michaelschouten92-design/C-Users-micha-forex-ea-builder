@@ -37,11 +37,87 @@ vi.mock("@/lib/proof/identity-hashing", () => ({
   computeBaselineHash: () => "baseline_hash_def",
 }));
 
-import { bindIdentityToVersion } from "./identity";
+import { bindIdentityToVersion, ensureStrategyIdentity } from "./identity";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+// ── ensureStrategyIdentity ──────────────────────────────
+
+describe("ensureStrategyIdentity", () => {
+  it("returns existing identity without emitting proof event", async () => {
+    const tx = {
+      strategyIdentity: {
+        findUnique: vi.fn().mockResolvedValue({ id: "si_1", strategyId: "AS-existing" }),
+        create: vi.fn(),
+      },
+      proofEventLog: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+    } as unknown as Parameters<typeof ensureStrategyIdentity>[0];
+
+    const result = await ensureStrategyIdentity(tx, "proj_1", "fp_1");
+
+    expect(result).toEqual({ id: "si_1", strategyId: "AS-existing", isNew: false });
+    expect(tx.strategyIdentity.create).not.toHaveBeenCalled();
+    expect(mockAppendProofEventInTx).not.toHaveBeenCalled();
+  });
+
+  it("creates new identity and emits STRATEGY_IDENTITY_CREATED proof event", async () => {
+    const tx = {
+      strategyIdentity: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "si_new", strategyId: "AS-newcode1" }),
+      },
+      proofEventLog: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+    } as unknown as Parameters<typeof ensureStrategyIdentity>[0];
+
+    const result = await ensureStrategyIdentity(tx, "proj_2", "fp_2");
+
+    expect(result.isNew).toBe(true);
+    expect(result.id).toBe("si_new");
+
+    // Proof event emitted exactly once
+    expect(mockAppendProofEventInTx).toHaveBeenCalledTimes(1);
+    expect(mockAppendProofEventInTx).toHaveBeenCalledWith(
+      tx,
+      expect.stringMatching(/^AS-/),
+      "STRATEGY_IDENTITY_CREATED",
+      expect.objectContaining({
+        projectId: "proj_2",
+      })
+    );
+
+    // Proof event payload contains only safe fields
+    const payload = mockAppendProofEventInTx.mock.calls[0][3];
+    expect(Object.keys(payload).sort()).toEqual(["projectId", "recordId", "strategyId"]);
+  });
+
+  it("emits proof event before create (proof-first ordering)", async () => {
+    const callOrder: string[] = [];
+
+    mockAppendProofEventInTx.mockImplementation(async () => {
+      callOrder.push("proof");
+      return { sequence: 1, eventHash: "abc" };
+    });
+
+    const tx = {
+      strategyIdentity: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockImplementation(async () => {
+          callOrder.push("create");
+          return { id: "si_new", strategyId: "AS-newcode1" };
+        }),
+      },
+      proofEventLog: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+    } as unknown as Parameters<typeof ensureStrategyIdentity>[0];
+
+    await ensureStrategyIdentity(tx, "proj_3", "fp_3");
+
+    expect(callOrder).toEqual(["proof", "create"]);
+  });
+});
+
+// ── bindIdentityToVersion ──────────────────────────────
 
 const VERSION_WITH_BASELINE = {
   id: "ver_1",

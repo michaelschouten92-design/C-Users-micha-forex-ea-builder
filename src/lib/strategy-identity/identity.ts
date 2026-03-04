@@ -47,6 +47,13 @@ export async function ensureStrategyIdentity(
   const now = new Date();
   const strategyId = generateStrategyId(projectId, now);
 
+  // Proof event first — record identity minting before mutation
+  await appendProofEventInTx(tx, strategyId, "STRATEGY_IDENTITY_CREATED", {
+    recordId: projectId,
+    strategyId,
+    projectId,
+  });
+
   const identity = await tx.strategyIdentity.create({
     data: {
       projectId,
