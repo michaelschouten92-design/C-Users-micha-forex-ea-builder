@@ -252,6 +252,7 @@ export default async function LiveEADashboardPage({
                       profit: t.profit,
                       closeTime: t.closeTime?.toISOString() ?? null,
                     })),
+                    baselineWinrate: ea.strategyVersion?.backtestBaseline?.winRate ?? null,
                   }))}
                 />
               </div>

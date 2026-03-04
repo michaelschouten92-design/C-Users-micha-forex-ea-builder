@@ -203,6 +203,14 @@ function queryEaInstances(userId: string) {
         take: 200,
         select: { equity: true, createdAt: true },
       },
+      // Edge drift: baseline winrate from validated backtest
+      strategyVersion: {
+        select: {
+          backtestBaseline: {
+            select: { winRate: true },
+          },
+        },
+      },
     },
   });
 }

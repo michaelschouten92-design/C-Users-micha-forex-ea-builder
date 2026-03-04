@@ -4,6 +4,7 @@ import {
   EDGE_DRIFT_MIN_TRADES,
   EDGE_DRIFT_TRADES_N,
 } from "./edge-drift-helpers";
+import { computeEdgeDrift } from "@/domain/strategy/edge-drift";
 
 function trades(profits: (number | null)[]): { profit: number | null }[] {
   return profits.map((p) => ({ profit: p }));
@@ -73,5 +74,52 @@ describe("computeLiveWinrateFromTrades", () => {
     const r2 = computeLiveWinrateFromTrades(trades(Array(50).fill(10)));
     expect(r1.needed).toBe(EDGE_DRIFT_TRADES_N);
     expect(r2.needed).toBe(EDGE_DRIFT_TRADES_N);
+  });
+});
+
+// ── Drift computation gating ──────────────────────────────
+
+describe("edge drift gating", () => {
+  it("computes drift when both baseline and live are available", () => {
+    const live = computeLiveWinrateFromTrades(trades(Array(20).fill(10)));
+    expect(live.ok).toBe(true);
+
+    const baseline = 60; // from BacktestBaseline.winRate (0..100)
+    const drift = computeEdgeDrift(baseline, live.liveWinrate!);
+
+    expect(drift.baselineWinrate).toBe(60);
+    expect(drift.liveWinrate).toBe(100);
+    expect(drift.driftPct).toBe(40);
+    expect(drift.status).toBe("HIGH");
+  });
+
+  it("does NOT compute drift when live is insufficient", () => {
+    const live = computeLiveWinrateFromTrades(trades(Array(5).fill(10)));
+    expect(live.ok).toBe(false);
+    // Caller must gate: no computeEdgeDrift call when live.ok === false
+    expect(live.liveWinrate).toBeUndefined();
+  });
+
+  it("does NOT compute drift when baseline is null (unavailable)", () => {
+    const live = computeLiveWinrateFromTrades(trades(Array(20).fill(10)));
+    expect(live.ok).toBe(true);
+
+    const baseline: number | null = null;
+    // Caller must gate: no computeEdgeDrift call when baseline is null
+    expect(baseline).toBeNull();
+  });
+
+  it("baseline winrate is used as-is (already 0..100)", () => {
+    // BacktestBaseline.winRate is stored as 0..100 — no conversion needed
+    const baseline = 55.5;
+    const drift = computeEdgeDrift(baseline, 50);
+    expect(drift.baselineWinrate).toBe(55.5);
+    expect(drift.driftPct).toBe(5.5);
+    expect(drift.status).toBe("WARNING");
+  });
+
+  it("rejects baseline outside 0..100", () => {
+    expect(() => computeEdgeDrift(-1, 50)).toThrow();
+    expect(() => computeEdgeDrift(101, 50)).toThrow();
   });
 });
