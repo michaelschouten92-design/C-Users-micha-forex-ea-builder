@@ -5,6 +5,9 @@ import { ProofPageView } from "./proof-page-view";
 import { LADDER_META } from "@/lib/proof/ladder";
 import type { LadderLevel } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ strategyId: string }>;
 }
