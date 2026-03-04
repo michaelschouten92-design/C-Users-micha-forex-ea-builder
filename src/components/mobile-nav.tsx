@@ -128,11 +128,11 @@ export function MobileNav() {
               About
             </Link>
             <Link
-              href="/templates"
+              href="/product/mt5-export"
               onClick={closeAndRestoreFocus}
               className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
             >
-              Templates
+              MT5 Export
             </Link>
             <Link
               href="/prop-firms"

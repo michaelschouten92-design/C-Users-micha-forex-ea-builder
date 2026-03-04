@@ -42,10 +42,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/templates"
+                  href="/product/mt5-export"
                   className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
-                  Strategy Templates
+                  MT5 Export
                 </Link>
               </li>
               <li>
@@ -95,10 +95,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/compare-platforms"
+                  href="/product/how-it-works"
                   className="text-sm text-[#94A3B8] hover:text-[#CBD5E1] transition-colors"
                 >
-                  Compare Platforms
+                  How It Works
                 </Link>
               </li>
             </ul>
