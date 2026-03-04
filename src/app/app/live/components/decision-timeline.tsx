@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
 import type { HeartbeatReasonCode } from "@/domain/heartbeat/decide-heartbeat-action";
 import { ALL_HEARTBEAT_REASON_CODES } from "@/domain/heartbeat/decide-heartbeat-action";
@@ -30,7 +31,13 @@ function reasonTitle(reasonCode: string): string {
   return reasonCode;
 }
 
-export function DecisionTimeline({ events }: { events: RecentDecision[] }) {
+export function DecisionTimeline({
+  events,
+  selectedId,
+}: {
+  events: RecentDecision[];
+  selectedId?: string | null;
+}) {
   if (events.length === 0) {
     return (
       <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
@@ -44,9 +51,19 @@ export function DecisionTimeline({ events }: { events: RecentDecision[] }) {
 
   return (
     <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-4">
-        Recent Decisions
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8]">
+          Recent Decisions
+        </h3>
+        {selectedId && (
+          <Link
+            href="/app/live"
+            className="text-[10px] text-[#4F46E5] hover:text-[#6366F1] transition-colors"
+          >
+            Clear selection
+          </Link>
+        )}
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -64,33 +81,57 @@ export function DecisionTimeline({ events }: { events: RecentDecision[] }) {
             </tr>
           </thead>
           <tbody>
-            {events.map((ev, i) => {
+            {events.map((ev) => {
               const badge = ACTION_BADGE[ev.action] ?? ACTION_BADGE.PAUSE;
+              const isSelected = ev.id === selectedId;
               return (
-                <tr key={i} className="border-b border-[rgba(79,70,229,0.08)] last:border-b-0">
-                  <td className="py-2 pr-4 font-mono text-xs text-[#94A3B8] whitespace-nowrap">
-                    {new Date(ev.timestamp).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: false,
-                    })}
+                <tr
+                  key={ev.id}
+                  className={`border-b border-[rgba(79,70,229,0.08)] last:border-b-0 ${
+                    isSelected ? "bg-[rgba(79,70,229,0.12)]" : ""
+                  }`}
+                >
+                  <td className="py-2 pr-4 font-mono text-xs whitespace-nowrap">
+                    <Link
+                      href={`/app/live?decision=${ev.id}`}
+                      className={`hover:text-white transition-colors ${
+                        isSelected ? "text-white" : "text-[#94A3B8]"
+                      }`}
+                    >
+                      {new Date(ev.timestamp).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                      })}
+                    </Link>
                   </td>
                   <td className="py-2 pr-4">
-                    <span
-                      className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded"
-                      style={{
-                        backgroundColor: badge.bg,
-                        border: `1px solid ${badge.border}`,
-                        color: badge.text,
-                      }}
-                    >
-                      {ev.action}
-                    </span>
+                    <Link href={`/app/live?decision=${ev.id}`}>
+                      <span
+                        className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded"
+                        style={{
+                          backgroundColor: badge.bg,
+                          border: `1px solid ${badge.border}`,
+                          color: badge.text,
+                        }}
+                      >
+                        {ev.action}
+                      </span>
+                    </Link>
                   </td>
-                  <td className="py-2 text-[#CBD5E1]">{reasonTitle(ev.reasonCode)}</td>
+                  <td className="py-2">
+                    <Link
+                      href={`/app/live?decision=${ev.id}`}
+                      className={`hover:text-white transition-colors ${
+                        isSelected ? "text-white" : "text-[#CBD5E1]"
+                      }`}
+                    >
+                      {reasonTitle(ev.reasonCode)}
+                    </Link>
+                  </td>
                 </tr>
               );
             })}

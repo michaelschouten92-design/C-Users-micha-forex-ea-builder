@@ -365,6 +365,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_1",
         strategyId: "ea_1",
         meta: { action: "RUN", reasonCode: "WITHIN_BOUNDS" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -432,11 +433,13 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_1",
         strategyId: "ea_1",
         meta: { action: "RUN", reasonCode: "WITHIN_BOUNDS" },
         createdAt: new Date("2025-01-01T12:01:00Z"),
       },
       {
+        id: "proof_2",
         strategyId: "ea_2",
         meta: { action: "STOP", reasonCode: "HARD_LIMIT_BREACHED" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -457,6 +460,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_1",
         strategyId: "ea_1",
         meta: { action: "INVALID_ACTION", reasonCode: "OK" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -475,6 +479,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_1",
         strategyId: "ea_1",
         meta: {
           action: "PAUSE",
@@ -493,22 +498,25 @@ describe("loadMonitorData", () => {
 
   // ── Recent Decisions ─────────────────────────────────────
 
-  it("returns recentDecisions sorted desc from proof events", async () => {
+  it("returns recentDecisions sorted desc with stable ids from proof events", async () => {
     const mockInstances = [{ id: "ea_1", trades: [], heartbeats: [] }];
     mockFindMany.mockResolvedValue(mockInstances);
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "evt_1",
         strategyId: "ea_1",
         meta: { action: "RUN", reasonCode: "OK" },
         createdAt: new Date("2025-01-01T12:02:00Z"),
       },
       {
+        id: "evt_2",
         strategyId: "ea_1",
         meta: { action: "PAUSE", reasonCode: "MONITORING_AT_RISK" },
         createdAt: new Date("2025-01-01T12:01:00Z"),
       },
       {
+        id: "evt_3",
         strategyId: "ea_1",
         meta: { action: "STOP", reasonCode: "STRATEGY_HALTED" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -519,6 +527,10 @@ describe("loadMonitorData", () => {
     const result = await loadMonitorData("user_123");
 
     expect(result!.recentDecisions).toHaveLength(3);
+    // Stable ids from proofEventLog records
+    expect(result!.recentDecisions[0].id).toBe("evt_1");
+    expect(result!.recentDecisions[1].id).toBe("evt_2");
+    expect(result!.recentDecisions[2].id).toBe("evt_3");
     // Already sorted desc (most recent first)
     expect(result!.recentDecisions[0].action).toBe("RUN");
     expect(result!.recentDecisions[0].reasonCode).toBe("OK");
@@ -534,6 +546,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_bogus",
         strategyId: "ea_1",
         meta: { action: "BOGUS", reasonCode: "OK" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -552,6 +565,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_no_reason",
         strategyId: "ea_1",
         meta: { action: "RUN" },
         createdAt: new Date("2025-01-01T12:00:00Z"),
@@ -592,6 +606,7 @@ describe("loadMonitorData", () => {
     mockFindUnique.mockResolvedValue({ tier: "PRO" });
     mockProofEventFindMany.mockResolvedValue([
       {
+        id: "proof_no_auth_reasons",
         strategyId: "ea_1",
         meta: {
           action: "RUN",

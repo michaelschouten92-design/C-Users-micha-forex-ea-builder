@@ -20,6 +20,7 @@ export interface AuthorityDecision {
 }
 
 export interface RecentDecision {
+  id: string;
   timestamp: string; // ISO-8601
   action: "RUN" | "PAUSE" | "STOP";
   reasonCode: string;
@@ -262,7 +263,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
             createdAt: { gte: windowStart },
           },
           orderBy: { createdAt: "desc" },
-          select: { strategyId: true, meta: true, createdAt: true },
+          select: { id: true, strategyId: true, meta: true, createdAt: true },
           take: 5000, // Safety cap
         });
 
@@ -320,6 +321,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
         recentDecisions = recentEvents.slice(0, 25).map((ev) => {
           const meta = ev.meta as Record<string, unknown> | null;
           return {
+            id: ev.id,
             timestamp: ev.createdAt.toISOString(),
             action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
             reasonCode:

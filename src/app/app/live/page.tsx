@@ -6,14 +6,19 @@ import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
-import { loadMonitorData, type AuthorityDecision, type RecentDecision } from "./load-monitor-data";
+import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { DecisionTimeline } from "./components/decision-timeline";
+import { selectDecision } from "./select-decision";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
 import type { HeartbeatReasonCode } from "@/domain/heartbeat/decide-heartbeat-action";
 import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
 
-export default async function LiveEADashboardPage() {
+export default async function LiveEADashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ decision?: string }>;
+}) {
   const session = await auth();
 
   if (!session?.user) {
@@ -77,6 +82,13 @@ export default async function LiveEADashboardPage() {
   }
 
   const { eaInstances, subscription, authority, analytics, recentDecisions } = data;
+
+  const params = await searchParams;
+  const { decision: selectedDecision, selectedId } = selectDecision(
+    recentDecisions,
+    authority,
+    params.decision
+  );
 
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
@@ -194,8 +206,13 @@ export default async function LiveEADashboardPage() {
               {/* ── Execution Authority + Control Explanation (wide left) ── */}
               <div className="lg:col-span-2 flex flex-col gap-4">
                 <ExecutionAuthorityCard authority={authority} />
-                <ControlExplanationPanel authority={authority} />
-                <DecisionTimeline events={recentDecisions} />
+                <ControlExplanationPanel
+                  action={selectedDecision.action}
+                  reasonCode={selectedDecision.reasonCode}
+                  authorityReasons={authority?.authorityReasons}
+                  isHistorical={selectedId !== null}
+                />
+                <DecisionTimeline events={recentDecisions} selectedId={selectedId} />
               </div>
 
               {/* ── Governance Context + Authority Uptime (stacked right) ── */}
@@ -328,11 +345,17 @@ const AUTHORITY_REASON_LABELS: Record<string, string> = {
   NO_LIVE_INSTANCE: "No live EA instance is connected",
 };
 
-function ControlExplanationPanel({ authority }: { authority: AuthorityDecision | null }) {
-  const reasonCode = authority?.reasonCode ?? "COMPUTATION_FAILED";
-  const action = authority?.action ?? "PAUSE";
-  const authorityReasons = authority?.authorityReasons;
-
+function ControlExplanationPanel({
+  action,
+  reasonCode,
+  authorityReasons,
+  isHistorical,
+}: {
+  action: string;
+  reasonCode: string;
+  authorityReasons?: AuthorityDecision["authorityReasons"];
+  isHistorical?: boolean;
+}) {
   const explanation = getControlExplanation(reasonCode as HeartbeatReasonCode);
   const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
 
@@ -344,6 +367,11 @@ function ControlExplanationPanel({ authority }: { authority: AuthorityDecision |
           style={{ backgroundColor: colors.dot }}
         />
         <h3 className="text-sm font-medium text-white">{explanation.title}</h3>
+        {isHistorical && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.25)] text-[#A78BFA]">
+            Historical
+          </span>
+        )}
       </div>
 
       <p className="text-sm text-[#CBD5E1] leading-relaxed mb-3">{explanation.explanation}</p>
