@@ -48,6 +48,11 @@ vi.mock("@/lib/toast", () => ({
   showError: vi.fn(),
 }));
 
+const mockSignOut = vi.fn();
+vi.mock("next-auth/react", () => ({
+  signOut: (...args: unknown[]) => mockSignOut(...args),
+}));
+
 // ── Tests ──────────────────────────────────────────────────
 describe("OnboardingPage", () => {
   beforeEach(() => {
@@ -258,5 +263,29 @@ describe("OnboardingPage", () => {
     await renderPage();
     // The onboarding page renders its own content, never redirects away
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  // ── Sign out exit route (regression) ────────────────────
+
+  it("always shows a Sign Out button on every onboarding step", async () => {
+    // Scope step
+    await renderPage();
+    expect(screen.getByText("Sign Out")).toBeInTheDocument();
+  });
+
+  it("Sign Out button calls signOut with redirect to login", async () => {
+    await renderPage();
+    fireEvent.click(screen.getByText("Sign Out"));
+    expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: "/login" });
+  });
+
+  it("Sign Out button is visible on baseline step (user is mid-onboarding)", async () => {
+    await renderPage("path=backtest&step=baseline");
+    expect(screen.getByText("Sign Out")).toBeInTheDocument();
+  });
+
+  it("Sign Out button is visible on authority step (user is mid-onboarding)", async () => {
+    await renderPage("path=backtest&step=authority");
+    expect(screen.getByText("Sign Out")).toBeInTheDocument();
   });
 });

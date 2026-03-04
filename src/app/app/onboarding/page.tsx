@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { STRATEGY_PRESETS } from "@/lib/strategy-presets";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError } from "@/lib/toast";
@@ -125,6 +126,16 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-12 sm:py-20">
+      {/* ── Sign Out (always accessible) ── */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+        >
+          Sign Out
+        </button>
+      </div>
+
       {/* ── Step Indicator ── */}
       <StepIndicator currentStep={currentStep} currentPath={currentPath} onNavigate={navigate} />
 
