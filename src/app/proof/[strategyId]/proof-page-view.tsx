@@ -15,6 +15,21 @@ interface VerificationData {
   generatedAt: string;
 }
 
+interface ChainStatusData {
+  strategyId: string;
+  status: "PASS" | "FAIL" | "UNKNOWN";
+  checkedAt: string;
+  head: { lastSequence: number; lastEventHashPrefix: string } | null;
+  summary: { scannedFrom: number; scannedTo: number; breaks: number } | null;
+  firstBreak: {
+    sequence: number;
+    expectedPrevHashPrefix: string;
+    actualPrevHashPrefix: string;
+    eventHashPrefix: string;
+  } | null;
+  errorCode?: string;
+}
+
 interface ProofData {
   strategy: {
     name: string;
@@ -239,7 +254,9 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
   const [copied, setCopied] = useState(false);
   const [verification, setVerification] = useState<VerificationData | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [chainStatus, setChainStatus] = useState<ChainStatusData | null>(null);
   const verificationFetched = useRef(false);
+  const chainStatusFetched = useRef(false);
 
   useEffect(() => {
     fetch(`/api/proof/${strategyId}`)
@@ -261,6 +278,15 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     fetch(`/api/proof/${strategyId}/verification`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setVerification(d ?? null))
+      .catch(() => null);
+  }, [strategyId]);
+
+  useEffect(() => {
+    if (chainStatusFetched.current) return;
+    chainStatusFetched.current = true;
+    fetch(`/api/proof/chain/${strategyId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setChainStatus(d ?? null))
       .catch(() => null);
   }, [strategyId]);
 
@@ -860,6 +886,143 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           ) : verification !== null ? (
             <p className="text-sm text-[#7C8DB0] mt-3">Verification hashes not available yet.</p>
           ) : null}
+
+          {/* Proof Chain Integrity */}
+          {chainStatus && (
+            <div
+              className={`bg-[#1A0626] border rounded-xl p-5 mt-3 ${
+                chainStatus.status === "PASS"
+                  ? "border-[#10B981]/20"
+                  : chainStatus.status === "FAIL"
+                    ? "border-[#EF4444]/20"
+                    : "border-[rgba(79,70,229,0.15)]"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                {chainStatus.status === "PASS" ? (
+                  <svg
+                    className="w-5 h-5 text-[#10B981]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+                  </svg>
+                ) : chainStatus.status === "FAIL" ? (
+                  <svg
+                    className="w-5 h-5 text-[#EF4444]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-[#7C8DB0]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                )}
+                <h3
+                  className={`text-sm font-semibold ${
+                    chainStatus.status === "PASS"
+                      ? "text-[#10B981]"
+                      : chainStatus.status === "FAIL"
+                        ? "text-[#EF4444]"
+                        : "text-[#7C8DB0]"
+                  }`}
+                >
+                  Proof Chain:{" "}
+                  {chainStatus.status === "PASS"
+                    ? "Intact"
+                    : chainStatus.status === "FAIL"
+                      ? "Break Detected"
+                      : "Unknown"}
+                </h3>
+              </div>
+
+              {chainStatus.head && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-2">
+                  <div>
+                    <p className="text-[#7C8DB0]">Head Sequence</p>
+                    <p className="text-white font-medium">{chainStatus.head.lastSequence}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#7C8DB0]">Head Hash</p>
+                    <p className="text-white font-mono text-[10px]">
+                      {chainStatus.head.lastEventHashPrefix}...
+                    </p>
+                  </div>
+                  {chainStatus.summary && (
+                    <div>
+                      <p className="text-[#7C8DB0]">Scanned Window</p>
+                      <p className="text-white font-medium">
+                        #{chainStatus.summary.scannedFrom} – #{chainStatus.summary.scannedTo}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {chainStatus.firstBreak && (
+                <div className="bg-[#0A0118]/50 rounded-lg p-3 text-xs mt-2">
+                  <p className="text-[#EF4444] font-medium mb-1">
+                    Break at sequence #{chainStatus.firstBreak.sequence}
+                  </p>
+                  <div className="space-y-0.5 text-[10px]">
+                    <p className="text-[#7C8DB0]">
+                      Expected prev:{" "}
+                      <span className="font-mono text-white">
+                        {chainStatus.firstBreak.expectedPrevHashPrefix}...
+                      </span>
+                    </p>
+                    <p className="text-[#7C8DB0]">
+                      Actual prev:{" "}
+                      <span className="font-mono text-white">
+                        {chainStatus.firstBreak.actualPrevHashPrefix}...
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {chainStatus.errorCode && (
+                <p className="text-[10px] text-[#7C8DB0] mt-2">
+                  Status:{" "}
+                  {chainStatus.errorCode === "NO_CHAIN"
+                    ? "No proof chain recorded yet."
+                    : chainStatus.errorCode === "NO_EVENTS"
+                      ? "Chain head exists but no events found in scan window."
+                      : "Could not verify chain integrity."}
+                </p>
+              )}
+
+              {chainStatus.status === "PASS" && (
+                <p className="text-[10px] text-[#7C8DB0] mt-2">
+                  All events in the scan window have valid hash linkage. No tampering detected.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Download verification data */}
           <div className="mt-3">

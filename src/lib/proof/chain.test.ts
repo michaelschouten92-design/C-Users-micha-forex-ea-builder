@@ -210,6 +210,24 @@ describe("verifyProofChain", () => {
     expect(result.error).toContain("Missing or unexpected sequence");
   });
 
+  it("validates windowed chain with startSequence", () => {
+    const events = buildChain(10);
+    // Take a window of events 6–10
+    const window = events.slice(5);
+    const result = verifyProofChain(window, 6);
+    expect(result).toEqual({ valid: true, chainLength: 5 });
+  });
+
+  it("detects break in windowed chain", () => {
+    const events = buildChain(10);
+    const window = events.slice(5);
+    // Tamper with event at sequence 8 (index 2 in window)
+    window[2].prevEventHash = "deadbeef".repeat(8);
+    const result = verifyProofChain(window, 6);
+    expect(result.valid).toBe(false);
+    expect(result.breakAtSequence).toBe(8);
+  });
+
   it("detects tampered payload", () => {
     const events = buildChain(2);
     // Tamper with meta (payload) — hash will no longer match

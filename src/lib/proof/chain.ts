@@ -80,7 +80,7 @@ export interface StoredProofEvent {
 }
 
 /**
- * Verify an entire proof event chain for a given strategy.
+ * Verify a proof event chain (or window thereof) for a given strategy.
  *
  * Chain scope is per strategyId. Events must be sorted by sequence ascending.
  * Each event's recordId (stored in sessionId) is used for hash computation.
@@ -88,14 +88,24 @@ export interface StoredProofEvent {
  * 1. Sequence continuity (no gaps, no duplicates)
  * 2. prevEventHash linkage (each event points to the previous hash)
  * 3. Recomputed hash matches stored eventHash
+ *
+ * When `startSequence` is provided (windowed verification), the walk starts
+ * at that sequence instead of 1. The first event's prevEventHash is trusted
+ * as the anchor (it cannot be verified without the preceding event).
  */
-export function verifyProofChain(events: StoredProofEvent[]): ProofChainVerificationResult {
+export function verifyProofChain(
+  events: StoredProofEvent[],
+  startSequence?: number
+): ProofChainVerificationResult {
   if (events.length === 0) {
     return { valid: true, chainLength: 0 };
   }
 
-  let expectedSequence = 1;
-  let expectedPrevHash = PROOF_GENESIS_HASH;
+  const start = startSequence ?? 1;
+  let expectedSequence = start;
+  // For windowed verification (start > 1), trust the first event's prevEventHash
+  // as anchor. For full verification (start === 1), use GENESIS.
+  let expectedPrevHash = start > 1 ? events[0].prevEventHash : PROOF_GENESIS_HASH;
 
   for (const event of events) {
     if (event.sequence !== expectedSequence) {
