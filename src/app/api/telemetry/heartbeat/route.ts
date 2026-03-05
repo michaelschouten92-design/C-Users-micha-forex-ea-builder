@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { enqueueNotification } from "@/lib/outbox";
 import { logger } from "@/lib/logger";
+import { apiError, ErrorCode } from "@/lib/error-codes";
 
 const log = logger.child({ module: "heartbeat" });
 import {
@@ -45,7 +46,14 @@ export async function POST(request: NextRequest) {
     const parsed = heartbeatSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid heartbeat data" }, { status: 400 });
+      return NextResponse.json(
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          "Invalid heartbeat data",
+          parsed.error.issues.map((i) => i.message)
+        ),
+        { status: 400 }
+      );
     }
 
     const data = parsed.data;
@@ -123,8 +131,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (err) {
+    log.error({ err, instanceId: auth.instanceId }, "Heartbeat processing failed");
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
 }
 

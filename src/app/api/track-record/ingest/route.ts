@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
+import { apiError, ErrorCode } from "@/lib/error-codes";
 import { TrackRecordEventType } from "@/lib/track-record/types";
 import { verifySingleEvent } from "@/lib/track-record/chain-verifier";
 import { processEvent, stateToDbUpdate, stateFromDb } from "@/lib/track-record/state-manager";
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   // Per-instance rate limiting (100 events/minute)
   const rateLimitError = await checkRateLimit(instanceId);
   if (rateLimitError) {
-    return NextResponse.json({ error: rateLimitError }, { status: 429 });
+    return NextResponse.json(apiError(ErrorCode.RATE_LIMITED, rateLimitError), { status: 429 });
   }
 
   let body: unknown;
@@ -58,13 +59,17 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     logger.error({ err, instanceId }, "Track record ingest: malformed JSON body");
     Sentry.captureException(err, { extra: { instanceId, context: "track-record-json-parse" } });
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON"), { status: 400 });
   }
 
   const validation = ingestSchema.safeParse(body);
   if (!validation.success) {
     return NextResponse.json(
-      { error: "Validation failed", details: validation.error.issues.map((i) => i.message) },
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        "Validation failed",
+        validation.error.issues.map((i) => i.message)
+      ),
       { status: 400 }
     );
   }
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
   // Per-event-type payload validation
   const payloadError = validatePayload(eventType, payload);
   if (payloadError) {
-    return NextResponse.json({ error: payloadError }, { status: 400 });
+    return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, payloadError), { status: 400 });
   }
 
   // Timestamp bounds validation (before entering transaction)
@@ -86,14 +91,17 @@ export async function POST(request: NextRequest) {
 
   if (timestamp > nowSec + MAX_CLOCK_SKEW_SEC) {
     return NextResponse.json(
-      { error: "Timestamp is in the future (max clock skew: 15s)" },
+      apiError(ErrorCode.VALIDATION_FAILED, "Timestamp is in the future (max clock skew: 15s)"),
       { status: 400 }
     );
   }
 
   if (timestamp < nowSec - MAX_AGE_SEC) {
     return NextResponse.json(
-      { error: "Timestamp is older than 30 days. Use CHAIN_RECOVERY for historical events." },
+      apiError(
+        ErrorCode.VALIDATION_FAILED,
+        "Timestamp is older than 30 days. Use CHAIN_RECOVERY for historical events."
+      ),
       { status: 400 }
     );
   }
@@ -129,7 +137,10 @@ export async function POST(request: NextRequest) {
           if (timestamp < instanceCreatedSec - ONE_DAY_SEC) {
             return {
               status: 400 as const,
-              body: { error: "Timestamp is before instance creation date (minus 1 day tolerance)" },
+              body: apiError(
+                ErrorCode.VALIDATION_FAILED,
+                "Timestamp is before instance creation date (minus 1 day tolerance)"
+              ),
             };
           }
         }
@@ -174,9 +185,10 @@ export async function POST(request: NextRequest) {
           }
           return {
             status: 409 as const,
-            body: {
-              error: `Duplicate or past seqNo: ${seqNo}, expected ${dbState.lastSeqNo + 1}`,
-            },
+            body: apiError(
+              ErrorCode.DUPLICATE_EVENT,
+              `Duplicate or past seqNo: ${seqNo}, expected ${dbState.lastSeqNo + 1}`
+            ),
           };
         }
 
@@ -192,8 +204,11 @@ export async function POST(request: NextRequest) {
           return {
             status: 409 as const,
             body: {
-              error: "Chain verification failed",
-              details: verification.error,
+              ...apiError(
+                ErrorCode.CHAIN_VERIFICATION_FAILED,
+                "Chain verification failed",
+                verification.error
+              ),
               lastSeqNo: dbState.lastSeqNo,
               lastEventHash: dbState.lastEventHash,
             },
@@ -288,18 +303,24 @@ export async function POST(request: NextRequest) {
     // Handle unique constraint violation or serialization failure (concurrent write)
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return NextResponse.json(
-        { error: "Duplicate event (concurrent write)", lastSeqNo: seqNo },
+        {
+          ...apiError(ErrorCode.DUPLICATE_EVENT, "Duplicate event (concurrent write)"),
+          lastSeqNo: seqNo,
+        },
         { status: 409 }
       );
     }
     // Prisma serialization failures (P2034) — EA can retry
     if (error instanceof Error && error.message.includes("P2034")) {
-      return NextResponse.json({ error: "Transaction conflict, please retry" }, { status: 409 });
+      return NextResponse.json(
+        apiError(ErrorCode.TRANSACTION_CONFLICT, "Transaction conflict, please retry"),
+        { status: 409 }
+      );
     }
     logger.error(
       { error: error instanceof Error ? error.message : String(error) },
       "Track record ingest error"
     );
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
 }

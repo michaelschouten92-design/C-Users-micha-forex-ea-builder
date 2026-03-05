@@ -148,7 +148,7 @@ describe("POST /api/track-record/ingest", () => {
   });
 
   describe("valid JSON but invalid schema", () => {
-    it("returns 400 with validation details", async () => {
+    it("returns 400 with validation details and code", async () => {
       const { POST } = await import("./route");
       const request = makeRequest({ eventType: "INVALID", seqNo: -1 });
       const response = await POST(request);
@@ -156,7 +156,42 @@ describe("POST /api/track-record/ingest", () => {
       expect(response.status).toBe(400);
       const body = await response.json();
       expect(body.error).toBe("Validation failed");
+      expect(body.code).toBe("VALIDATION_FAILED");
       expect(body.details).toBeDefined();
+    });
+  });
+
+  describe("error response shape", () => {
+    it("malformed JSON has stable {error, code} shape", async () => {
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest("not json"));
+      const body = await response.json();
+      expect(body).toHaveProperty("error");
+      expect(body).toHaveProperty("code");
+      expect(body.code).toBe("INVALID_JSON");
+    });
+
+    it("auth failure returns 401 from authenticateTelemetry", async () => {
+      const { NextResponse } = await import("next/server");
+      mockAuthenticateTelemetry.mockResolvedValue({
+        success: false,
+        response: NextResponse.json(
+          { error: "Missing X-EA-Key header", code: "MISSING_API_KEY" },
+          { status: 401 }
+        ),
+      });
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest({}));
+      expect(response.status).toBe(401);
+    });
+
+    it("rate limit returns 429 with code", async () => {
+      mockCheckRateLimit.mockResolvedValue("Rate limit exceeded");
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest({}));
+      expect(response.status).toBe(429);
+      const body = await response.json();
+      expect(body.code).toBe("RATE_LIMITED");
     });
   });
 });

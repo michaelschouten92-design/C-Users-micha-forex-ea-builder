@@ -4,6 +4,7 @@ import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { fireWebhook } from "@/lib/webhook";
 import { checkNewTradeAlerts } from "@/lib/alerts";
 import { logger } from "@/lib/logger";
+import { apiError, ErrorCode } from "@/lib/error-codes";
 import { z } from "zod";
 
 const tradeSchema = z.object({
@@ -28,7 +29,14 @@ export async function POST(request: NextRequest) {
     const parsed = tradeSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid trade data" }, { status: 400 });
+      return NextResponse.json(
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          "Invalid trade data",
+          parsed.error.issues.map((i) => i.message)
+        ),
+        { status: 400 }
+      );
     }
 
     const { ticket, symbol, type, openPrice, closePrice, lots, profit, openTime, closeTime } =
@@ -103,7 +111,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (err) {
+    logger.error({ err, instanceId: auth.instanceId }, "Trade processing failed");
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
 }
