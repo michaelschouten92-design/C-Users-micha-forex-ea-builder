@@ -1763,6 +1763,14 @@ export function generateEntryLogic(
   // Daily trade limit logic
   const hasDaily = ctx.maxTradesPerDay > 0;
   if (hasDaily) {
+    code.inputs.push({
+      name: "InpMaxTradesPerDay",
+      type: "int",
+      value: ctx.maxTradesPerDay,
+      comment: "Max Trades Per Day (0=unlimited)",
+      isOptimizable: true,
+      group: "Risk Management",
+    });
     code.globalVariables.push("datetime lastTradeDay = 0; // Track current trading day");
     code.globalVariables.push("int tradesToday = 0; // Daily trade counter");
     code.onTick.push("");
@@ -1787,7 +1795,7 @@ export function generateEntryLogic(
     code.onTick.push("");
     code.onTick.push("//--- Execute Entry");
     const entryCondition = hasDaily
-      ? `if(positionsCount < ${ctx.maxOpenTrades} && newBar && tradesToday < ${ctx.maxTradesPerDay})`
+      ? `if(positionsCount < ${ctx.maxOpenTrades} && newBar && tradesToday < InpMaxTradesPerDay)`
       : `if(positionsCount < ${ctx.maxOpenTrades} && newBar)`;
     code.onTick.push(entryCondition);
     code.onTick.push("{");

@@ -142,6 +142,68 @@ function tradingNodes() {
   ];
 }
 
+// Range Breakout buy/sell nodes: FIXED SL/TP for easy Strategy Tester optimization
+function rangeBreakoutTradingNodes() {
+  return [
+    {
+      id: "buy1",
+      type: "place-buy",
+      position: { x: 100, y: 360 },
+      data: {
+        label: "Place Buy",
+        category: "trading" as const,
+        tradingType: "place-buy" as const,
+        method: "RISK_PERCENT" as const,
+        fixedLot: DEFAULT_FIXED_LOT,
+        riskPercent: DEFAULT_RISK_PERCENT,
+        minLot: DEFAULT_MIN_LOT,
+        maxLot: DEFAULT_MAX_LOT,
+        orderType: "MARKET" as const,
+        pendingOffset: DEFAULT_PENDING_OFFSET_PIPS,
+        slMethod: "FIXED" as const,
+        slFixedPips: DEFAULT_SL_FIXED_PIPS,
+        slPercent: DEFAULT_SL_PERCENT,
+        slAtrMultiplier: DEFAULT_SL_ATR_MULTIPLIER,
+        slAtrPeriod: DEFAULT_ATR_PERIOD,
+        tpMethod: "FIXED" as const,
+        tpFixedPips: DEFAULT_TP_FIXED_PIPS,
+        tpRiskRewardRatio: DEFAULT_TP_RISK_REWARD,
+        tpAtrMultiplier: DEFAULT_TP_ATR_MULTIPLIER,
+        tpAtrPeriod: DEFAULT_ATR_PERIOD,
+        optimizableFields: ["slFixedPips", "tpFixedPips"],
+      },
+    },
+    {
+      id: "sell1",
+      type: "place-sell",
+      position: { x: 500, y: 360 },
+      data: {
+        label: "Place Sell",
+        category: "trading" as const,
+        tradingType: "place-sell" as const,
+        method: "RISK_PERCENT" as const,
+        fixedLot: DEFAULT_FIXED_LOT,
+        riskPercent: DEFAULT_RISK_PERCENT,
+        minLot: DEFAULT_MIN_LOT,
+        maxLot: DEFAULT_MAX_LOT,
+        orderType: "MARKET" as const,
+        pendingOffset: DEFAULT_PENDING_OFFSET_PIPS,
+        slMethod: "FIXED" as const,
+        slFixedPips: DEFAULT_SL_FIXED_PIPS,
+        slPercent: DEFAULT_SL_PERCENT,
+        slAtrMultiplier: DEFAULT_SL_ATR_MULTIPLIER,
+        slAtrPeriod: DEFAULT_ATR_PERIOD,
+        tpMethod: "FIXED" as const,
+        tpFixedPips: DEFAULT_TP_FIXED_PIPS,
+        tpRiskRewardRatio: DEFAULT_TP_RISK_REWARD,
+        tpAtrMultiplier: DEFAULT_TP_ATR_MULTIPLIER,
+        tpAtrPeriod: DEFAULT_ATR_PERIOD,
+        optimizableFields: ["slFixedPips", "tpFixedPips"],
+      },
+    },
+  ];
+}
+
 // Shared edges for standalone presets: timing→ind, ind→buy, ind→sell
 function standaloneEdges() {
   return [
@@ -157,7 +219,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
     id: "range-breakout",
     name: "Range Breakout",
     description:
-      "Session range breakout with stop loss and take profit. Uses London session timing, ATR-based stop, 2:1 reward-to-risk.",
+      "Session range breakout with fixed SL/TP, daily trade limit. All key parameters optimizable in MT5 Strategy Tester.",
     tier: "FREE",
     buildJson: {
       version: "1.3",
@@ -182,17 +244,19 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
             breakoutDirection: "BOTH" as const,
             entryMode: "ON_CLOSE" as const,
             bufferPips: 2,
-            minRangePips: 0,
+            minRangePips: 10,
             maxRangePips: 0,
             optimizableFields: [
               "sessionStartHour",
               "sessionStartMinute",
               "sessionEndHour",
               "sessionEndMinute",
+              "bufferPips",
+              "minRangePips",
             ],
           },
         },
-        ...tradingNodes(),
+        ...rangeBreakoutTradingNodes(),
       ],
       edges: standaloneEdges(),
       viewport: { x: 0, y: 0, zoom: 0.8 },
@@ -202,6 +266,7 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
         comment: "Range Breakout",
         maxOpenTrades: DEFAULT_MAX_OPEN_TRADES,
         allowHedging: false,
+        maxTradesPerDay: 3,
       },
     } as BuildJsonSchema,
   },

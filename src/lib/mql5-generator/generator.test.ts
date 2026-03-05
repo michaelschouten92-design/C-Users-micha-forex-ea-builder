@@ -494,6 +494,139 @@ describe("generateMQL5Code", () => {
       expect(code).not.toMatch(/^input int InpRange0EndHour/m);
     });
 
+    it("generates optimizable input for bufferPips and minRangePips when in optimizableFields", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "SESSION",
+          rangeSession: "ASIAN",
+          lookbackCandles: 20,
+          sessionStartHour: 0,
+          sessionStartMinute: 0,
+          sessionEndHour: 8,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "IMMEDIATE",
+          bufferPips: 3,
+          minRangePips: 15,
+          maxRangePips: 0,
+          optimizableFields: ["bufferPips", "minRangePips"],
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/^input double InpRange0Buffer = 3;/m);
+      expect(code).toMatch(/^input double InpRange0MinRange = 15;/m);
+    });
+
+    it("generates input StopLoss and TakeProfit when PlaceBuy uses FIXED with optimizable fields", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "SESSION",
+          rangeSession: "ASIAN",
+          lookbackCandles: 20,
+          sessionStartHour: 0,
+          sessionStartMinute: 0,
+          sessionEndHour: 8,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "IMMEDIATE",
+          bufferPips: 2,
+          minRangePips: 0,
+          maxRangePips: 0,
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+          slMethod: "FIXED_PIPS",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 1.5,
+          tpAtrPeriod: 14,
+          optimizableFields: ["slFixedPips", "tpFixedPips"],
+        }),
+        makeNode("s1", "place-sell", {
+          category: "trading",
+          tradingType: "place-sell",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+          slMethod: "FIXED_PIPS",
+          slFixedPips: 50,
+          slPercent: 1,
+          slAtrMultiplier: 1.5,
+          slAtrPeriod: 14,
+          tpMethod: "FIXED_PIPS",
+          tpFixedPips: 100,
+          tpRiskRewardRatio: 2,
+          tpAtrMultiplier: 1.5,
+          tpAtrPeriod: 14,
+          optimizableFields: ["slFixedPips", "tpFixedPips"],
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // SL and TP should be input (optimizable), not const
+      expect(code).toMatch(/^input double InpStopLoss = 50;/m);
+      expect(code).toMatch(/^input double InpTakeProfit = 100;/m);
+      // Verify they're referenced in the generated logic
+      expect(code).toContain("InpStopLoss");
+      expect(code).toContain("InpTakeProfit");
+    });
+
+    it("generates InpMaxTradesPerDay as input when maxTradesPerDay > 0", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("ind1", "sma", {
+          category: "indicator",
+          indicatorType: "sma",
+          period: 20,
+          appliedPrice: "CLOSE",
+          timeframe: "H1",
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      build.settings.maxTradesPerDay = 3;
+      const code = generateMQL5Code(build, "Test");
+      expect(code).toMatch(/^input int InpMaxTradesPerDay = 3;/m);
+      expect(code).toContain("tradesToday < InpMaxTradesPerDay");
+      expect(code).toContain("tradesToday++");
+    });
+
     it("generates Candlestick Pattern code for engulfing patterns", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),
@@ -2240,8 +2373,9 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("if(today != lastTradeDay)");
       expect(code).toContain("tradesToday = 0;");
 
-      // Should contain daily limit in entry condition
-      expect(code).toContain("tradesToday < 5");
+      // Should contain daily limit input variable and entry condition
+      expect(code).toContain("input int InpMaxTradesPerDay = 5;");
+      expect(code).toContain("tradesToday < InpMaxTradesPerDay");
 
       // Should increment counter after opening a trade
       expect(code).toContain("tradesToday++");
@@ -2259,10 +2393,11 @@ describe("generateMQL5Code", () => {
       expect(code).not.toContain("iTime(_Symbol, PERIOD_D1");
     });
 
-    it("uses the exact maxTradesPerDay value in the condition", () => {
+    it("uses the exact maxTradesPerDay value in the input declaration", () => {
       const build = makeStrategyWithDayLimit(10);
       const code = generateMQL5Code(build, "DayLimit10");
-      expect(code).toContain("tradesToday < 10");
+      expect(code).toContain("input int InpMaxTradesPerDay = 10;");
+      expect(code).toContain("tradesToday < InpMaxTradesPerDay");
     });
 
     it("includes both maxOpenTrades and maxTradesPerDay in entry condition", () => {
@@ -2272,7 +2407,7 @@ describe("generateMQL5Code", () => {
 
       // Should check both limits
       expect(code).toContain("positionsCount < 2");
-      expect(code).toContain("tradesToday < 3");
+      expect(code).toContain("tradesToday < InpMaxTradesPerDay");
       expect(code).toContain("newBar");
     });
 
