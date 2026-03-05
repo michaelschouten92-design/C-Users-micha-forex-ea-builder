@@ -244,73 +244,60 @@ void GetSessionRange(ENUM_TIMEFRAMES tf, int startHour, int startMin, int endHou
 }`);
           }
 
-          // Make custom time window hours optimizable input parameters
-          const isCustomRange =
-            rb.rangeType === "TIME_WINDOW" ||
-            (rb.rangeType === "SESSION" && rb.rangeSession === "CUSTOM");
-          if (isCustomRange) {
-            const rangeGroup = `Range ${index + 1}`;
-            code.inputs.push(
-              createInput(
-                node,
-                "sessionStartHour",
-                `InpRange${index}StartHour`,
-                "int",
-                startHour,
-                `Range ${index + 1} Start Hour`,
-                rangeGroup
-              )
-            );
-            code.inputs.push(
-              createInput(
-                node,
-                "sessionStartMinute",
-                `InpRange${index}StartMin`,
-                "int",
-                startMinute,
-                `Range ${index + 1} Start Minute`,
-                rangeGroup
-              )
-            );
-            code.inputs.push(
-              createInput(
-                node,
-                "sessionEndHour",
-                `InpRange${index}EndHour`,
-                "int",
-                endHour,
-                `Range ${index + 1} End Hour`,
-                rangeGroup
-              )
-            );
-            code.inputs.push(
-              createInput(
-                node,
-                "sessionEndMinute",
-                `InpRange${index}EndMin`,
-                "int",
-                endMinute,
-                `Range ${index + 1} End Minute`,
-                rangeGroup
-              )
-            );
-            code.onTick.push(
-              `GetSessionRange((ENUM_TIMEFRAMES)InpRange${index}Timeframe, InpRange${index}StartHour, InpRange${index}StartMin, InpRange${index}EndHour, InpRange${index}EndMin, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
-            );
-          } else {
-            code.onTick.push(
-              `GetSessionRange((ENUM_TIMEFRAMES)InpRange${index}Timeframe, ${startHour}, ${startMinute}, ${endHour}, ${endMinute}, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
-            );
-          }
+          // Always generate input parameters for timing so users can
+          // toggle them as optimizable in the MT5 Strategy Tester.
+          const rangeGroup = `Range ${index + 1}`;
+          code.inputs.push(
+            createInput(
+              node,
+              "sessionStartHour",
+              `InpRange${index}StartHour`,
+              "int",
+              startHour,
+              `Range ${index + 1} Start Hour`,
+              rangeGroup
+            )
+          );
+          code.inputs.push(
+            createInput(
+              node,
+              "sessionStartMinute",
+              `InpRange${index}StartMin`,
+              "int",
+              startMinute,
+              `Range ${index + 1} Start Minute`,
+              rangeGroup
+            )
+          );
+          code.inputs.push(
+            createInput(
+              node,
+              "sessionEndHour",
+              `InpRange${index}EndHour`,
+              "int",
+              endHour,
+              `Range ${index + 1} End Hour`,
+              rangeGroup
+            )
+          );
+          code.inputs.push(
+            createInput(
+              node,
+              "sessionEndMinute",
+              `InpRange${index}EndMin`,
+              "int",
+              endMinute,
+              `Range ${index + 1} End Minute`,
+              rangeGroup
+            )
+          );
+          code.onTick.push(
+            `GetSessionRange((ENUM_TIMEFRAMES)InpRange${index}Timeframe, InpRange${index}StartHour, InpRange${index}StartMin, InpRange${index}EndHour, InpRange${index}EndMin, ${varPrefix}High, ${varPrefix}Low, ${!useServerTime});`
+          );
 
           // Track range end time for RangeReady check
-          if (isCustomRange) {
-            rangeEndHourExpr = `InpRange${index}EndHour`;
-            rangeEndMinExpr = `InpRange${index}EndMin`;
-          } else {
-            rangeEndHourExpr = String(endHour);
-            rangeEndMinExpr = String(endMinute);
-          }
+          rangeEndHourExpr = `InpRange${index}EndHour`;
+          rangeEndMinExpr = `InpRange${index}EndMin`;
           rangeTimeFunc = useServerTime ? "TimeCurrent()" : "TimeGMT()";
         }
 

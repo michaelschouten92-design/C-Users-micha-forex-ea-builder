@@ -408,6 +408,92 @@ describe("generateMQL5Code", () => {
       expect(code).toContain("SYMBOL_ASK");
     });
 
+    it("generates input declarations for range timing when optimizableFields ON", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "SESSION",
+          rangeSession: "ASIAN",
+          lookbackCandles: 20,
+          sessionStartHour: 0,
+          sessionStartMinute: 0,
+          sessionEndHour: 8,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "IMMEDIATE",
+          bufferPips: 2,
+          minRangePips: 0,
+          maxRangePips: 0,
+          optimizableFields: [
+            "sessionStartHour",
+            "sessionStartMinute",
+            "sessionEndHour",
+            "sessionEndMinute",
+          ],
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // All four timing params should be input (optimizable)
+      expect(code).toMatch(/^input int InpRange0StartHour = 0;/m);
+      expect(code).toMatch(/^input int InpRange0StartMin = 0;/m);
+      expect(code).toMatch(/^input int InpRange0EndHour = 8;/m);
+      expect(code).toMatch(/^input int InpRange0EndMin = 0;/m);
+    });
+
+    it("generates const declarations for range timing when optimizableFields OFF", () => {
+      const build = makeBuild([
+        makeNode("t1", "always", { category: "timing", timingType: "always" }),
+        makeNode("rb1", "range-breakout", {
+          category: "priceaction",
+          priceActionType: "range-breakout",
+          timeframe: "H1",
+          rangeType: "SESSION",
+          rangeSession: "LONDON",
+          lookbackCandles: 20,
+          sessionStartHour: 8,
+          sessionStartMinute: 0,
+          sessionEndHour: 16,
+          sessionEndMinute: 0,
+          breakoutDirection: "BOTH",
+          entryMode: "IMMEDIATE",
+          bufferPips: 2,
+          minRangePips: 0,
+          maxRangePips: 0,
+          // No optimizableFields → all become const
+        }),
+        makeNode("b1", "place-buy", {
+          category: "trading",
+          tradingType: "place-buy",
+          method: "FIXED_LOT",
+          fixedLot: 0.1,
+          riskPercent: 2,
+          minLot: 0.01,
+          maxLot: 100,
+        }),
+      ]);
+      const code = generateMQL5Code(build, "Test");
+      // All four timing params should be const (not optimizable)
+      expect(code).toMatch(/^const int InpRange0StartHour = 8;/m);
+      expect(code).toMatch(/^const int InpRange0StartMin = 0;/m);
+      expect(code).toMatch(/^const int InpRange0EndHour = 16;/m);
+      expect(code).toMatch(/^const int InpRange0EndMin = 0;/m);
+      // Must NOT contain input declarations for these params
+      expect(code).not.toMatch(/^input int InpRange0StartHour/m);
+      expect(code).not.toMatch(/^input int InpRange0EndHour/m);
+    });
+
     it("generates Candlestick Pattern code for engulfing patterns", () => {
       const build = makeBuild([
         makeNode("t1", "always", { category: "timing", timingType: "always" }),

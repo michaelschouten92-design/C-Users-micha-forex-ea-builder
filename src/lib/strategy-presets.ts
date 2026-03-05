@@ -184,6 +184,12 @@ export const STRATEGY_PRESETS: StrategyPreset[] = [
             bufferPips: 2,
             minRangePips: 0,
             maxRangePips: 0,
+            optimizableFields: [
+              "sessionStartHour",
+              "sessionStartMinute",
+              "sessionEndHour",
+              "sessionEndMinute",
+            ],
           },
         },
         ...tradingNodes(),

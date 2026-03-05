@@ -233,6 +233,36 @@ export function RangeBreakoutFields({
         </div>
       )}
 
+      {/* Range timing optimization toggles (all session/time window modes) */}
+      {(data.rangeType === "SESSION" || data.rangeType === "TIME_WINDOW") && (
+        <div className="space-y-0.5">
+          <OptimizableFieldCheckbox
+            fieldName="sessionStartHour"
+            data={data}
+            onChange={onChange}
+            label="Start Hour"
+          />
+          <OptimizableFieldCheckbox
+            fieldName="sessionStartMinute"
+            data={data}
+            onChange={onChange}
+            label="Start Minute"
+          />
+          <OptimizableFieldCheckbox
+            fieldName="sessionEndHour"
+            data={data}
+            onChange={onChange}
+            label="End Hour"
+          />
+          <OptimizableFieldCheckbox
+            fieldName="sessionEndMinute"
+            data={data}
+            onChange={onChange}
+            label="End Minute"
+          />
+        </div>
+      )}
+
       {/* Timezone toggle */}
       <div className="mt-2">
         <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">

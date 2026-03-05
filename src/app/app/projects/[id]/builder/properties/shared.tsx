@@ -9,10 +9,12 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   fieldName,
   data,
   onChange,
+  label,
 }: {
   fieldName: string;
   data: T;
   onChange: (updates: Partial<T>) => void;
+  label?: string;
 }) {
   const visible = useContext(OptimizationVisibleContext);
   if (!visible) return null;
@@ -50,7 +52,7 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
           <path d="M3 3v18h18" />
           <path d="M18 9l-5 5-4-4-3 3" />
         </svg>
-        Optimize in MT5
+        {label ? `${label} — Optimize` : "Optimize in MT5"}
       </span>
     </label>
   );
