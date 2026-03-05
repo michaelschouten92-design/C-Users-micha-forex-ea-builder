@@ -61,7 +61,10 @@ export async function GET(request: NextRequest, { params }: Props) {
   });
 
   if (!identity || !identity.publicPage?.isPublic) {
-    return NextResponse.json({ error: "Strategy not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Strategy not found" },
+      { status: 404, headers: { "Cache-Control": "private, no-store, max-age=0" } }
+    );
   }
 
   const page = identity.publicPage;

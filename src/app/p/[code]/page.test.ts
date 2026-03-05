@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // ── import after mocks ──────────────────────────────────────────────
-import ProofShortUrl from "./page";
+import ProofShortUrl, { dynamic, revalidate } from "./page";
 
 function callPage(code: string) {
   return ProofShortUrl({ params: Promise.resolve({ code }) });
@@ -73,5 +73,11 @@ describe("/p/[code] redirect route", () => {
     expect(mockNotFound).toHaveBeenCalled();
     // Must NOT have called redirect (would leak strategyId)
     expect(mockRedirect).not.toHaveBeenCalledWith(expect.stringContaining("AS-SECRET01"));
+  });
+
+  // Caching exports
+  it("exports force-dynamic and revalidate=0", () => {
+    expect(dynamic).toBe("force-dynamic");
+    expect(revalidate).toBe(0);
   });
 });

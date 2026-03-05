@@ -35,7 +35,7 @@ vi.mock("./proof-page-view", () => ({
   ProofPageView: () => null,
 }));
 
-import ProofPage, { generateMetadata } from "./page";
+import ProofPage, { generateMetadata, dynamic, revalidate } from "./page";
 
 function callPage(strategyId: string) {
   return ProofPage({ params: Promise.resolve({ strategyId }) });
@@ -99,5 +99,11 @@ describe("/proof/[strategyId] page server component", () => {
 
     const meta = await callMetadata("AS-UNKNOWN1");
     expect(meta.title).toBe("Strategy Not Found | AlgoStudio");
+  });
+
+  // Caching exports
+  it("exports force-dynamic and revalidate=0", () => {
+    expect(dynamic).toBe("force-dynamic");
+    expect(revalidate).toBe(0);
   });
 });

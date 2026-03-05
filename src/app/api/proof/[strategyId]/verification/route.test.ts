@@ -84,6 +84,8 @@ describe("GET /api/proof/[strategyId]/verification", () => {
     const res = await GET(makeRequest(), makeParams());
 
     expect(res.status).toBe(404);
+    // 404 must also have Cache-Control to prevent CDN caching
+    expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
   });
 
   it("returns 404 when isPublic is false", async () => {

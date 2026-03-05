@@ -235,6 +235,29 @@ describe("GET /api/proof/[strategyId]", () => {
     expect(res.status).toBe(429);
   });
 
+  // C11b — 404 response also includes Cache-Control (prevent CDN caching 404s)
+  it("includes Cache-Control on 404 responses", async () => {
+    mockIdentityFindUnique.mockResolvedValue(null);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest("AS-UNKNOWN1"), makeParams("AS-UNKNOWN1"));
+
+    expect(res.status).toBe(404);
+    expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
+  });
+
+  // Case-insensitivity: lowercase strategyId is uppercased before DB lookup
+  it("normalizes strategyId to uppercase", async () => {
+    mockPublicIdentity();
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest("as-10f10dca"), makeParams("as-10f10dca"));
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.strategy.strategyId).toBe("AS-10F10DCA");
+  });
+
   // B7 — null states: no backtest, no instance → safe JSON (no crash)
   it("returns safe JSON when no backtest or instance data exists", async () => {
     mockPublicIdentity();
