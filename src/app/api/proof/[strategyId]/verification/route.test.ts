@@ -99,6 +99,37 @@ describe("GET /api/proof/[strategyId]/verification", () => {
     const res = await GET(makeRequest(), makeParams());
 
     expect(res.status).toBe(404);
+    // Must have Cache-Control on 404 too
+    expect(res.headers.get("cache-control")).toBe("private, no-store, max-age=0");
+  });
+
+  // A2b — 404 for non-public uses same error shape as unknown (no enumeration leak)
+  it("returns identical error shape for non-public and unknown strategies", async () => {
+    // Unknown
+    mockFindUnique.mockResolvedValue(null);
+    const { GET } = await import("./route");
+    const unknownRes = await GET(makeRequest("AS-UNKNOWN1"), makeParams("AS-UNKNOWN1"));
+    const unknownJson = await unknownRes.json();
+
+    // Non-public
+    vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      limit: 30,
+      remaining: 29,
+      resetAt: new Date(),
+    });
+    mockFindUnique.mockResolvedValue(
+      makeIdentity({
+        publicPage: { isPublic: false, pinnedInstanceId: null, ladderLevel: "SUBMITTED" },
+      })
+    );
+    const privateRes = await GET(makeRequest("AS-PRIVATE1"), makeParams("AS-PRIVATE1"));
+    const privateJson = await privateRes.json();
+
+    // Same status + same error message (no way to distinguish)
+    expect(unknownRes.status).toBe(privateRes.status);
+    expect(unknownJson.error).toBe(privateJson.error);
   });
 
   it("returns valid verification payload for public strategy", async () => {
@@ -156,5 +187,73 @@ describe("GET /api/proof/[strategyId]/verification", () => {
     expect(json.tradeChainLength).toBeNull();
     expect(json.backtestTradeCount).toBeNull();
     expect(json.liveTradeCount).toBeNull();
+  });
+
+  // A4c — exports force-dynamic and revalidate=0
+  it("exports force-dynamic and revalidate=0", async () => {
+    const mod = await import("./route");
+    expect(mod.dynamic).toBe("force-dynamic");
+    expect(mod.revalidate).toBe(0);
+  });
+
+  // A6 — response does NOT contain internal IDs
+  it("does not leak internal IDs in 200 response", async () => {
+    mockFindUnique.mockResolvedValue(makeIdentity());
+    mockTrackRecordStateFind.mockResolvedValue({ lastEventHash: "hash1", totalTrades: 10 });
+    mockTrackRecordEventCount.mockResolvedValue(50);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(), makeParams());
+
+    const json = await res.json();
+    const raw = JSON.stringify(json);
+    // Must not contain internal field names
+    expect(raw).not.toMatch(/"id"\s*:/);
+    expect(raw).not.toContain("userId");
+    expect(raw).not.toContain("projectId");
+    expect(raw).not.toContain("pinnedInstanceId");
+    expect(raw).not.toContain("inst_1");
+    // Allowed fields only
+    const keys = Object.keys(json);
+    expect(keys.sort()).toEqual([
+      "backtestTradeCount",
+      "baselineMetricsHash",
+      "generatedAt",
+      "ladderLevel",
+      "liveTradeCount",
+      "snapshotHash",
+      "strategyId",
+      "tradeChainHead",
+      "tradeChainLength",
+    ]);
+  });
+
+  // Rate-limit returns 429
+  it("returns 429 when rate-limited", async () => {
+    mockCheckRateLimit.mockResolvedValue({
+      success: false,
+      limit: 30,
+      remaining: 0,
+      resetAt: new Date(),
+    });
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest(), makeParams());
+
+    expect(res.status).toBe(429);
+  });
+
+  // Case-insensitivity
+  it("normalizes strategyId to uppercase", async () => {
+    mockFindUnique.mockResolvedValue(makeIdentity());
+    mockTrackRecordStateFind.mockResolvedValue({ lastEventHash: "h", totalTrades: 1 });
+    mockTrackRecordEventCount.mockResolvedValue(1);
+
+    const { GET } = await import("./route");
+    const res = await GET(makeRequest("as-10f10dca"), makeParams("as-10f10dca"));
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.strategyId).toBe("AS-10F10DCA");
   });
 });
