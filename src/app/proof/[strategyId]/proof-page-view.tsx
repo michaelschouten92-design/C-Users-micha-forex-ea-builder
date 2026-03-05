@@ -291,10 +291,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
   const copyLink = useCallback(() => {
     const url = getShareUrl();
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard
+      ?.writeText(url)
+      ?.then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
     fetch("/api/proof/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -320,10 +323,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     if (!data) return;
     const url = getShareUrl();
     const text = `**${data.strategy.name}** — ${data.ladder.label} Strategy\nHealth Score: ${data.backtestHealth?.score ?? "N/A"}/100\n${url}`;
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard
+      ?.writeText(text)
+      ?.then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
     fetch("/api/proof/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

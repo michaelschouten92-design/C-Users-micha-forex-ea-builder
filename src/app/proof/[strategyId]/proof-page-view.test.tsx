@@ -223,3 +223,299 @@ describe("ProofPageView", () => {
     });
   });
 });
+
+// ── Share Loop Tests ─────────────────────────────────────────────────
+
+describe("ProofPageView — Share Loop", () => {
+  let mockClipboard: { writeText: ReturnType<typeof vi.fn> };
+  let mockWindowOpen: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockClipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
+    Object.defineProperty(navigator, "clipboard", {
+      value: mockClipboard,
+      writable: true,
+      configurable: true,
+    });
+    mockWindowOpen = vi.fn();
+    vi.stubGlobal("open", mockWindowOpen);
+  });
+
+  // A1 — slug exists → share URL uses /p/{slug}
+  it("Copy link uses /p/{slug} when slug exists", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Copy link"));
+
+    await waitFor(() => {
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("/p/demo"));
+    });
+    // Must not contain /proof/ fallback
+    const copiedUrl = mockClipboard.writeText.mock.calls[0][0] as string;
+    expect(copiedUrl).not.toContain("/proof/");
+    // Must have protocol + origin (no double slashes beyond protocol)
+    expect(copiedUrl).toMatch(/^https?:\/\/[^/]+\/p\/demo$/);
+  });
+
+  // A2 — slug missing → share URL falls back to /proof/{strategyId}
+  it("Copy link uses /proof/{strategyId} when slug is empty", async () => {
+    mockFetchResponses(
+      makeProofData({
+        strategy: {
+          name: "No Slug Strategy",
+          description: null,
+          strategyId: "AS-NOSLUG01",
+          slug: "",
+          ownerHandle: null,
+          createdAt: "2025-01-01T00:00:00.000Z",
+          updatedAt: "2025-06-01T00:00:00.000Z",
+          currentVersion: null,
+        },
+      }),
+      makeVerification()
+    );
+    render(<ProofPageView strategyId="AS-NOSLUG01" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Copy link"));
+
+    await waitFor(() => {
+      expect(mockClipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining("/proof/AS-NOSLUG01")
+      );
+    });
+    const copiedUrl = mockClipboard.writeText.mock.calls[0][0] as string;
+    expect(copiedUrl).toMatch(/^https?:\/\/[^/]+\/proof\/AS-NOSLUG01$/);
+  });
+
+  // A3 — no double slashes, protocol present
+  it("share URL has no double slashes beyond protocol", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Copy link"));
+
+    await waitFor(() => {
+      expect(mockClipboard.writeText).toHaveBeenCalled();
+    });
+    const url = mockClipboard.writeText.mock.calls[0][0] as string;
+    // After removing protocol "://", no "//" should remain
+    const afterProtocol = url.replace(/^https?:\/\//, "");
+    expect(afterProtocol).not.toContain("//");
+  });
+
+  // B4 — X share URL uses intent endpoint with proper encoding
+  it("Share on X opens x.com/intent/tweet with encoded url and text", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share on X")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Share on X"));
+
+    expect(mockWindowOpen).toHaveBeenCalledTimes(1);
+    const openedUrl = mockWindowOpen.mock.calls[0][0] as string;
+    expect(openedUrl).toContain("https://x.com/intent/tweet");
+    expect(openedUrl).toContain("text=");
+    expect(openedUrl).toContain("url=");
+    // URL param must be encoded (contains %3A for ":" and %2F for "/")
+    expect(openedUrl).toMatch(/url=[^&]*%3A%2F%2F/);
+    // Must contain the /p/demo slug path encoded
+    expect(openedUrl).toContain(encodeURIComponent("/p/demo"));
+    // Target = _blank
+    expect(mockWindowOpen.mock.calls[0][1]).toBe("_blank");
+  });
+
+  // B5 — Reddit share URL uses submit endpoint with proper encoding
+  it("Share on Reddit opens reddit.com/submit with encoded url + title", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share on Reddit")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Share on Reddit"));
+
+    expect(mockWindowOpen).toHaveBeenCalledTimes(1);
+    const openedUrl = mockWindowOpen.mock.calls[0][0] as string;
+    expect(openedUrl).toContain("https://www.reddit.com/submit");
+    expect(openedUrl).toContain("url=");
+    expect(openedUrl).toContain("title=");
+    // URL param properly encoded
+    expect(openedUrl).toMatch(/url=[^&]*%3A%2F%2F/);
+    // Title is encoded
+    expect(openedUrl).toContain(encodeURIComponent("Verified strategy proof page"));
+  });
+
+  // B6 — Discord share copies formatted message with canonical URL
+  it("Share to Discord copies message with canonical /p/{slug} URL", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share to Discord")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Share to Discord"));
+
+    await waitFor(() => {
+      expect(mockClipboard.writeText).toHaveBeenCalled();
+    });
+    const discordText = mockClipboard.writeText.mock.calls[0][0] as string;
+    // Contains strategy name in bold
+    expect(discordText).toContain("**Demo Strategy**");
+    // Contains the canonical URL with /p/demo
+    expect(discordText).toContain("/p/demo");
+    // Does NOT contain /proof/ fallback
+    expect(discordText).not.toContain("/proof/");
+  });
+
+  // C7 — non-public strategy: share section does not render
+  it("does not render share buttons when API returns null (private strategy)", async () => {
+    mockFetchResponses(null, null, { verificationFails: true });
+    render(<ProofPageView strategyId="AS-PRIVATE1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Strategy Not Found")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Copy link")).not.toBeInTheDocument();
+    expect(screen.queryByText("Share on X")).not.toBeInTheDocument();
+    expect(screen.queryByText("Share on Reddit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Share to Discord")).not.toBeInTheDocument();
+  });
+
+  // C8 — no strategyId leaks in share URLs for private strategies
+  it("does not expose any share URLs for private strategies", async () => {
+    mockFetchResponses(null, null, { verificationFails: true });
+    render(<ProofPageView strategyId="AS-SECRET01" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Strategy Not Found")).toBeInTheDocument();
+    });
+    // No clipboard calls, no window.open calls
+    expect(mockClipboard.writeText).not.toHaveBeenCalled();
+    expect(mockWindowOpen).not.toHaveBeenCalled();
+  });
+
+  // D9 — Clipboard success shows "Copied!"
+  it("shows 'Copied!' after successful clipboard write", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Copy link"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Copied!")).toBeInTheDocument();
+    });
+  });
+
+  // D10 — Clipboard API unavailable does not crash
+  it("does not crash when clipboard API is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    // Should not throw
+    expect(() => fireEvent.click(screen.getByText("Copy link"))).not.toThrow();
+    // "Copied!" should NOT appear since clipboard is unavailable
+    expect(screen.queryByText("Copied!")).not.toBeInTheDocument();
+  });
+
+  // D10 — Clipboard rejection does not crash
+  it("does not crash when clipboard.writeText rejects", async () => {
+    mockClipboard.writeText.mockRejectedValue(new Error("Permission denied"));
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Copy link")).toBeInTheDocument();
+    });
+
+    // Should not throw
+    expect(() => fireEvent.click(screen.getByText("Copy link"))).not.toThrow();
+
+    // Wait a tick for the rejected promise to settle (no unhandled rejection)
+    await waitFor(() => {
+      expect(screen.queryByText("Copied!")).not.toBeInTheDocument();
+    });
+  });
+
+  // D11 — All four share buttons are present and clickable
+  it("renders all four share buttons", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share this proof")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Copy link")).toBeInTheDocument();
+    expect(screen.getByText("Share on X")).toBeInTheDocument();
+    expect(screen.getByText("Share on Reddit")).toBeInTheDocument();
+    expect(screen.getByText("Share to Discord")).toBeInTheDocument();
+  });
+
+  // X and Reddit share also use /p/{slug} (canonical URL consistency)
+  it("X and Reddit share URLs use /p/{slug} not /proof/", async () => {
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share on X")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Share on X"));
+    const xUrl = mockWindowOpen.mock.calls[0][0] as string;
+    expect(xUrl).toContain(encodeURIComponent("/p/demo"));
+    expect(xUrl).not.toContain(encodeURIComponent("/proof/"));
+
+    fireEvent.click(screen.getByText("Share on Reddit"));
+    const redditUrl = mockWindowOpen.mock.calls[1][0] as string;
+    expect(redditUrl).toContain(encodeURIComponent("/p/demo"));
+    expect(redditUrl).not.toContain(encodeURIComponent("/proof/"));
+  });
+
+  // Discord share also does not crash when clipboard unavailable
+  it("Discord share does not crash when clipboard is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+    mockFetchResponses(makeProofData(), makeVerification());
+    render(<ProofPageView strategyId="AS-10F10DCA" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Share to Discord")).toBeInTheDocument();
+    });
+
+    expect(() => fireEvent.click(screen.getByText("Share to Discord"))).not.toThrow();
+  });
+});
