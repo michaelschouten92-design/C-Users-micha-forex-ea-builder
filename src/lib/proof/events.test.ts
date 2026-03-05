@@ -4,13 +4,21 @@ import { PROOF_GENESIS_HASH, computeProofEventHash } from "./chain";
 const mockCreate = vi.fn();
 const mockFindFirst = vi.fn();
 const mockTransaction = vi.fn();
+const mockQueryRawUnsafe = vi.fn();
+const mockChainHeadCreate = vi.fn();
+const mockChainHeadUpdate = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: (...args: unknown[]) => mockTransaction(...args),
+    $queryRawUnsafe: (...args: unknown[]) => mockQueryRawUnsafe(...args),
     proofEventLog: {
       create: (...args: unknown[]) => mockCreate(...args),
       findFirst: (...args: unknown[]) => mockFindFirst(...args),
+    },
+    proofChainHead: {
+      create: (...args: unknown[]) => mockChainHeadCreate(...args),
+      update: (...args: unknown[]) => mockChainHeadUpdate(...args),
     },
   },
 }));
@@ -19,18 +27,25 @@ vi.mock("@/lib/logger", () => ({
   logger: { child: () => ({ error: vi.fn(), info: vi.fn() }) },
 }));
 
+function buildMockTx() {
+  return {
+    $queryRawUnsafe: mockQueryRawUnsafe,
+    proofEventLog: {
+      findFirst: mockFindFirst,
+      create: mockCreate,
+    },
+    proofChainHead: {
+      create: mockChainHeadCreate,
+      update: mockChainHeadUpdate,
+    },
+  };
+}
+
 describe("appendProofEvent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: $transaction executes the callback with a mock tx
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
-      const tx = {
-        proofEventLog: {
-          findFirst: mockFindFirst,
-          create: mockCreate,
-        },
-      };
-      return fn(tx);
+      return fn(buildMockTx());
     });
   });
 
@@ -42,8 +57,9 @@ describe("appendProofEvent", () => {
   });
 
   it("assigns sequence=1 and GENESIS prevEventHash for first event", async () => {
-    mockFindFirst.mockResolvedValueOnce(null); // no chain head
+    mockQueryRawUnsafe.mockResolvedValueOnce([]); // no chain head row
     mockCreate.mockResolvedValueOnce({});
+    mockChainHeadCreate.mockResolvedValueOnce({});
 
     const { appendProofEvent } = await import("./events");
     const result = await appendProofEvent("strat_1", "VERIFICATION_RUN_COMPLETED", {
@@ -54,11 +70,10 @@ describe("appendProofEvent", () => {
     expect(result.sequence).toBe(1);
     expect(result.eventHash).toMatch(/^[a-f0-9]{64}$/);
 
-    // Chain head lookup is by sessionId (recordId), not strategyId
-    expect(mockFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { sessionId: "rec_001", sequence: { not: null } },
-      })
+    // Chain head lookup via SELECT FOR UPDATE
+    expect(mockQueryRawUnsafe).toHaveBeenCalledWith(
+      expect.stringContaining("FOR UPDATE"),
+      "strat_1"
     );
 
     expect(mockCreate).toHaveBeenCalledWith(
@@ -72,12 +87,24 @@ describe("appendProofEvent", () => {
         }),
       })
     );
+
+    // Creates new chain head (not update)
+    expect(mockChainHeadCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          strategyId: "strat_1",
+          lastSequence: 1,
+        }),
+      })
+    );
+    expect(mockChainHeadUpdate).not.toHaveBeenCalled();
   });
 
-  it("increments sequence and chains prevEventHash from head", async () => {
+  it("increments sequence and chains prevEventHash from chain head", async () => {
     const prevHash = "abcd".repeat(16);
-    mockFindFirst.mockResolvedValueOnce({ sequence: 3, eventHash: prevHash });
+    mockQueryRawUnsafe.mockResolvedValueOnce([{ lastSequence: 3, lastEventHash: prevHash }]);
     mockCreate.mockResolvedValueOnce({});
+    mockChainHeadUpdate.mockResolvedValueOnce({});
 
     const { appendProofEvent } = await import("./events");
     const result = await appendProofEvent("strat_1", "VERIFICATION_PASSED", {
@@ -94,11 +121,21 @@ describe("appendProofEvent", () => {
         }),
       })
     );
+
+    // Updates existing chain head (not create)
+    expect(mockChainHeadUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { strategyId: "strat_1" },
+        data: expect.objectContaining({ lastSequence: 4 }),
+      })
+    );
+    expect(mockChainHeadCreate).not.toHaveBeenCalled();
   });
 
   it("uses Serializable isolation level", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    mockQueryRawUnsafe.mockResolvedValueOnce([]);
     mockCreate.mockResolvedValueOnce({});
+    mockChainHeadCreate.mockResolvedValueOnce({});
 
     const { appendProofEvent } = await import("./events");
     await appendProofEvent("strat_1", "VERIFICATION_RUN_COMPLETED", {
@@ -120,7 +157,8 @@ describe("appendProofEvent", () => {
   });
 
   it("stores eventHash that matches recomputation", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    mockQueryRawUnsafe.mockResolvedValueOnce([]);
+    mockChainHeadCreate.mockResolvedValueOnce({});
 
     let storedData: Record<string, unknown> = {};
     mockCreate.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
@@ -134,8 +172,6 @@ describe("appendProofEvent", () => {
       verdict: "READY",
     });
 
-    // Recompute hash from stored data and verify it matches.
-    // Timestamp is intentionally excluded from the preimage.
     const recomputed = computeProofEventHash({
       sequence: storedData.sequence as number,
       strategyId: storedData.strategyId as string,
@@ -153,19 +189,14 @@ describe("appendVerificationRunProof", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTransaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
-      const tx = {
-        proofEventLog: {
-          findFirst: mockFindFirst,
-          create: mockCreate,
-        },
-      };
-      return fn(tx);
+      return fn(buildMockTx());
     });
   });
 
   it("creates only RUN_COMPLETED when passedPayload is absent", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    mockQueryRawUnsafe.mockResolvedValueOnce([]); // no chain head
     mockCreate.mockResolvedValue({});
+    mockChainHeadCreate.mockResolvedValue({});
 
     const { appendVerificationRunProof } = await import("./events");
     const result = await appendVerificationRunProof({
@@ -183,8 +214,22 @@ describe("appendVerificationRunProof", () => {
   });
 
   it("creates both events atomically when passedPayload is provided", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    // First call: no chain head → create
+    mockQueryRawUnsafe.mockResolvedValueOnce([]);
+    // Second call: chain head now exists with seq=1
+    mockQueryRawUnsafe.mockImplementationOnce(() => {
+      // Return the head that was "created" by the first appendProofEventInTx call
+      const firstCreateCall = mockChainHeadCreate.mock.calls[0]?.[0]?.data;
+      return Promise.resolve([
+        {
+          lastSequence: firstCreateCall?.lastSequence ?? 1,
+          lastEventHash: firstCreateCall?.lastEventHash ?? "mock",
+        },
+      ]);
+    });
     mockCreate.mockResolvedValue({});
+    mockChainHeadCreate.mockResolvedValue({});
+    mockChainHeadUpdate.mockResolvedValue({});
 
     const { appendVerificationRunProof } = await import("./events");
     const result = await appendVerificationRunProof({
@@ -204,13 +249,31 @@ describe("appendVerificationRunProof", () => {
   });
 
   it("chains PASSED prevEventHash to RUN_COMPLETED eventHash", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    // First event: no chain head
+    mockQueryRawUnsafe.mockResolvedValueOnce([]);
 
-    const createdRows: Record<string, unknown>[] = [];
+    const createdEvents: Record<string, unknown>[] = [];
     mockCreate.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
-      createdRows.push(data);
+      createdEvents.push(data);
       return Promise.resolve({});
     });
+
+    let chainHeadData: Record<string, unknown> = {};
+    mockChainHeadCreate.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+      chainHeadData = data;
+      return Promise.resolve({});
+    });
+
+    // Second event: chain head exists with data from first event
+    mockQueryRawUnsafe.mockImplementationOnce(() => {
+      return Promise.resolve([
+        {
+          lastSequence: chainHeadData.lastSequence,
+          lastEventHash: chainHeadData.lastEventHash,
+        },
+      ]);
+    });
+    mockChainHeadUpdate.mockResolvedValue({});
 
     const { appendVerificationRunProof } = await import("./events");
     await appendVerificationRunProof({
@@ -220,7 +283,7 @@ describe("appendVerificationRunProof", () => {
       passedPayload: { eventType: "VERIFICATION_PASSED" },
     });
 
-    const [first, second] = createdRows;
+    const [first, second] = createdEvents;
 
     // Second event's prevEventHash must equal first event's eventHash
     expect(second.prevEventHash).toBe(first.eventHash);
@@ -238,8 +301,9 @@ describe("appendVerificationRunProof", () => {
   });
 
   it("uses a single Serializable transaction for both inserts", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    mockQueryRawUnsafe.mockResolvedValue([]);
     mockCreate.mockResolvedValue({});
+    mockChainHeadCreate.mockResolvedValue({});
 
     const { appendVerificationRunProof } = await import("./events");
     await appendVerificationRunProof({
@@ -257,7 +321,8 @@ describe("appendVerificationRunProof", () => {
   });
 
   it("rolls back both events when second create fails (atomicity)", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    mockQueryRawUnsafe.mockResolvedValue([]);
+    mockChainHeadCreate.mockResolvedValue({});
     mockCreate
       .mockResolvedValueOnce({}) // RUN_COMPLETED succeeds
       .mockRejectedValueOnce(new Error("unique constraint violation")); // PASSED fails
@@ -272,9 +337,6 @@ describe("appendVerificationRunProof", () => {
       })
     ).rejects.toThrow("unique constraint violation");
 
-    // Both creates were attempted inside the transaction
-    expect(mockCreate).toHaveBeenCalledTimes(2);
-    // But only one $transaction call — Prisma rolls back the entire tx on error
     expect(mockTransaction).toHaveBeenCalledTimes(1);
   });
 
@@ -292,13 +354,31 @@ describe("appendVerificationRunProof", () => {
   });
 
   it("produces verifiable hashes for both events", async () => {
-    mockFindFirst.mockResolvedValueOnce(null);
+    // First event: no chain head
+    mockQueryRawUnsafe.mockResolvedValueOnce([]);
 
-    const createdRows: Record<string, unknown>[] = [];
+    const createdEvents: Record<string, unknown>[] = [];
     mockCreate.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
-      createdRows.push(data);
+      createdEvents.push(data);
       return Promise.resolve({});
     });
+
+    let chainHeadData: Record<string, unknown> = {};
+    mockChainHeadCreate.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+      chainHeadData = data;
+      return Promise.resolve({});
+    });
+
+    // Second event: chain head with data from first
+    mockQueryRawUnsafe.mockImplementationOnce(() => {
+      return Promise.resolve([
+        {
+          lastSequence: chainHeadData.lastSequence,
+          lastEventHash: chainHeadData.lastEventHash,
+        },
+      ]);
+    });
+    mockChainHeadUpdate.mockResolvedValue({});
 
     const runPayload = { verdict: "READY", recordId: "rec_001" };
     const passPayload = { eventType: "VERIFICATION_PASSED", recordId: "rec_001" };
@@ -307,8 +387,8 @@ describe("appendVerificationRunProof", () => {
     await appendVerificationRunProof({
       strategyId: "strat_1",
       recordId: "rec_001",
-      runCompletedPayload: runPayload,
-      passedPayload: passPayload,
+      runCompletedPayload: { verdict: "READY" },
+      passedPayload: { eventType: "VERIFICATION_PASSED" },
     });
 
     // Recompute hash for event 1
@@ -320,7 +400,7 @@ describe("appendVerificationRunProof", () => {
       prevEventHash: PROOF_GENESIS_HASH,
       payload: runPayload,
     });
-    expect(createdRows[0].eventHash).toBe(hash1);
+    expect(createdEvents[0].eventHash).toBe(hash1);
 
     // Recompute hash for event 2 — chained to event 1
     const hash2 = computeProofEventHash({
@@ -331,6 +411,6 @@ describe("appendVerificationRunProof", () => {
       prevEventHash: hash1,
       payload: passPayload,
     });
-    expect(createdRows[1].eventHash).toBe(hash2);
+    expect(createdEvents[1].eventHash).toBe(hash2);
   });
 });

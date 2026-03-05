@@ -90,10 +90,17 @@ export async function setOperatorHold({
   instanceId: string;
   hold: "HALTED" | "NONE";
 }): Promise<OperatorHoldResult> {
-  // 1) Ownership check
+  // 1) Ownership check — include strategyId for proof chain
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId, deletedAt: null },
-    select: { id: true, operatorHold: true, lifecycleState: true },
+    select: {
+      id: true,
+      operatorHold: true,
+      lifecycleState: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
+    },
   });
 
   if (!instance) {
@@ -118,11 +125,12 @@ export async function setOperatorHold({
   // 4) Proof-first mutation in serializable transaction
   const proofEvent = hold === "HALTED" ? "OPERATOR_HALT_APPLIED" : "OPERATOR_HALT_RELEASED";
   const recordId = randomUUID();
+  const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId ?? instanceId;
 
   try {
     await prisma.$transaction(
       async (tx) => {
-        await appendProofEventInTx(tx, instanceId, proofEvent, {
+        await appendProofEventInTx(tx, strategyId, proofEvent, {
           eventType: proofEvent,
           recordId,
           instanceId,

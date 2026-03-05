@@ -270,7 +270,7 @@ export async function computeReplay(recordId: string): Promise<ReplayResult> {
     },
   });
 
-  const chainResult = verifyProofChain(chainedEvents as unknown as StoredProofEvent[], recordId);
+  const chainResult = verifyProofChain(chainedEvents as unknown as StoredProofEvent[]);
 
   const chain = {
     ok: chainResult.valid,

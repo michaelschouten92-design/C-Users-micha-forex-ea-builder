@@ -80,8 +80,8 @@ describe("computeProofEventHash", () => {
 });
 
 describe("verifyProofChain", () => {
-  const recordId = "rec_run_001";
   const strategyId = "strat_test";
+  const recordId = "rec_run_001";
   const ts = new Date("2026-01-15T10:00:00.000Z");
 
   function buildChain(count: number): StoredProofEvent[] {
@@ -117,26 +117,75 @@ describe("verifyProofChain", () => {
   }
 
   it("returns valid for empty chain", () => {
-    const result = verifyProofChain([], recordId);
+    const result = verifyProofChain([]);
     expect(result).toEqual({ valid: true, chainLength: 0 });
   });
 
   it("validates a single-event chain", () => {
     const events = buildChain(1);
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result).toEqual({ valid: true, chainLength: 1 });
   });
 
   it("validates a multi-event chain", () => {
     const events = buildChain(5);
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result).toEqual({ valid: true, chainLength: 5 });
+  });
+
+  it("validates chain with mixed recordIds (different operations)", () => {
+    const events: StoredProofEvent[] = [];
+    let prevHash = PROOF_GENESIS_HASH;
+
+    // Event 1: from recordId "run_A"
+    const hash1 = computeProofEventHash({
+      sequence: 1,
+      strategyId,
+      type: "MONITORING_RUN_COMPLETED",
+      recordId: "run_A",
+      prevEventHash: prevHash,
+      payload: { recordId: "run_A", verdict: "HEALTHY" },
+    });
+    events.push({
+      sequence: 1,
+      strategyId,
+      type: "MONITORING_RUN_COMPLETED",
+      sessionId: "run_A",
+      eventHash: hash1,
+      prevEventHash: prevHash,
+      meta: { recordId: "run_A", verdict: "HEALTHY" },
+      createdAt: new Date(),
+    });
+    prevHash = hash1;
+
+    // Event 2: from recordId "run_B" (different operation, same chain)
+    const hash2 = computeProofEventHash({
+      sequence: 2,
+      strategyId,
+      type: "VERIFICATION_RUN_COMPLETED",
+      recordId: "run_B",
+      prevEventHash: prevHash,
+      payload: { recordId: "run_B", verdict: "READY" },
+    });
+    events.push({
+      sequence: 2,
+      strategyId,
+      type: "VERIFICATION_RUN_COMPLETED",
+      sessionId: "run_B",
+      eventHash: hash2,
+      prevEventHash: prevHash,
+      meta: { recordId: "run_B", verdict: "READY" },
+      createdAt: new Date(),
+    });
+
+    const result = verifyProofChain(events);
+    expect(result).toEqual({ valid: true, chainLength: 2 });
   });
 
   it("detects tampered eventHash", () => {
     const events = buildChain(3);
     events[1].eventHash = "deadbeef".repeat(8);
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result.valid).toBe(false);
     expect(result.breakAtSequence).toBe(2);
     expect(result.error).toContain("eventHash mismatch");
@@ -145,7 +194,7 @@ describe("verifyProofChain", () => {
   it("detects tampered prevEventHash", () => {
     const events = buildChain(3);
     events[2].prevEventHash = "cafebabe".repeat(8);
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result.valid).toBe(false);
     expect(result.breakAtSequence).toBe(3);
     expect(result.error).toContain("prevEventHash mismatch");
@@ -155,7 +204,7 @@ describe("verifyProofChain", () => {
     const events = buildChain(3);
     // Remove event at sequence 2
     events.splice(1, 1);
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result.valid).toBe(false);
     expect(result.breakAtSequence).toBe(2);
     expect(result.error).toContain("Missing or unexpected sequence");
@@ -165,7 +214,7 @@ describe("verifyProofChain", () => {
     const events = buildChain(2);
     // Tamper with meta (payload) — hash will no longer match
     events[0].meta = { verdict: "TAMPERED" };
-    const result = verifyProofChain(events, recordId);
+    const result = verifyProofChain(events);
     expect(result.valid).toBe(false);
     expect(result.breakAtSequence).toBe(1);
     expect(result.error).toContain("eventHash mismatch");

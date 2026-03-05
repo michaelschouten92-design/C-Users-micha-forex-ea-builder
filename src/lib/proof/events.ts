@@ -10,6 +10,7 @@
  */
 
 import { createHash } from "crypto";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { PROOF_GENESIS_HASH, computeProofEventHash } from "./chain";
@@ -34,6 +35,12 @@ export interface ProofEvent {
   userAgent?: string;
   meta?: Record<string, unknown>;
 }
+
+/** Prisma interactive-transaction client (everything except connection/tx lifecycle methods). */
+type ProofTx = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
 
 /**
  * Hash an IP address for privacy-safe storage.
@@ -71,10 +78,13 @@ export async function logProofEvent(event: ProofEvent): Promise<void> {
  * Append a proof event inside an existing Prisma transaction.
  * Does NOT create its own transaction — the caller controls the tx boundary.
  * Used by orchestrators that need multiple DB writes + proof events atomically.
+ *
+ * Chain scope: per strategyId. Uses ProofChainHead with SELECT FOR UPDATE
+ * for concurrency-safe monotonic sequence allocation.
  * Errors propagate to the caller (fail-closed).
  */
 export async function appendProofEventInTx(
-  tx: Pick<typeof prisma, "proofEventLog">,
+  tx: ProofTx,
   strategyId: string,
   type: string,
   payload: Record<string, unknown>
@@ -86,16 +96,16 @@ export async function appendProofEventInTx(
     );
   }
 
-  // Find the current chain head for this recordId (stored in sessionId).
-  // Chain scope is per verification-run, not per strategy.
-  const head = await tx.proofEventLog.findFirst({
-    where: { sessionId: recordId, sequence: { not: null } },
-    orderBy: { sequence: "desc" },
-    select: { sequence: true, eventHash: true },
-  });
+  // Lock the chain head row (or discover it doesn't exist yet).
+  // SELECT FOR UPDATE prevents concurrent readers from seeing stale state.
+  const heads = await tx.$queryRawUnsafe<Array<{ lastSequence: number; lastEventHash: string }>>(
+    `SELECT "lastSequence", "lastEventHash" FROM "ProofChainHead" WHERE "strategyId" = $1 FOR UPDATE`,
+    strategyId
+  );
 
-  const sequence = (head?.sequence ?? 0) + 1;
-  const prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
+  const headExists = heads.length > 0;
+  const sequence = headExists ? heads[0].lastSequence + 1 : 1;
+  const prevEventHash = headExists ? heads[0].lastEventHash : PROOF_GENESIS_HASH;
 
   const eventHash = computeProofEventHash({
     sequence,
@@ -117,6 +127,18 @@ export async function appendProofEventInTx(
       prevEventHash,
     },
   });
+
+  // Upsert chain head — create if first event, update otherwise
+  if (headExists) {
+    await tx.proofChainHead.update({
+      where: { strategyId },
+      data: { lastSequence: sequence, lastEventHash: eventHash },
+    });
+  } else {
+    await tx.proofChainHead.create({
+      data: { strategyId, lastSequence: sequence, lastEventHash: eventHash },
+    });
+  }
 
   return { sequence, eventHash };
 }
@@ -157,10 +179,10 @@ export interface AppendVerificationRunParams {
  * Uses a single Serializable transaction so that either all events
  * are committed or none are — no partial-commit window.
  *
- *   seq 1: VERIFICATION_RUN_COMPLETED  (always)
- *   seq 2: VERIFICATION_PASSED         (only when passedPayload provided)
+ *   event 1: VERIFICATION_RUN_COMPLETED  (always)
+ *   event 2: VERIFICATION_PASSED         (only when passedPayload provided)
  *
- * Both events share the same recordId chain (sessionId).
+ * Both events are chained in the strategy's proof chain via ProofChainHead.
  * Errors propagate to the caller (fail-closed).
  */
 export async function appendVerificationRunProof(
@@ -170,76 +192,30 @@ export async function appendVerificationRunProof(
 
   return prisma.$transaction(
     async (tx) => {
-      // Find chain head for this recordId (sessionId)
-      const head = await tx.proofEventLog.findFirst({
-        where: { sessionId: recordId, sequence: { not: null } },
-        orderBy: { sequence: "desc" },
-        select: { sequence: true, eventHash: true },
-      });
-
-      let sequence = (head?.sequence ?? 0) + 1;
-      let prevEventHash = head?.eventHash ?? PROOF_GENESIS_HASH;
-
-      // 1. Insert VERIFICATION_RUN_COMPLETED
-      const runCompletedHash = computeProofEventHash({
-        sequence,
-        strategyId,
-        type: "VERIFICATION_RUN_COMPLETED",
+      // Both events share the same recordId — inject it into each payload
+      const runResult = await appendProofEventInTx(tx, strategyId, "VERIFICATION_RUN_COMPLETED", {
+        ...runCompletedPayload,
         recordId,
-        prevEventHash,
-        payload: runCompletedPayload,
-      });
-
-      await tx.proofEventLog.create({
-        data: {
-          type: "VERIFICATION_RUN_COMPLETED",
-          strategyId,
-          sessionId: recordId,
-          meta: runCompletedPayload as Record<string, string>,
-          sequence,
-          eventHash: runCompletedHash,
-          prevEventHash,
-        },
       });
 
       const runCompleted: ProofEventRecord = {
-        sequence,
-        eventHash: runCompletedHash,
+        sequence: runResult.sequence,
+        eventHash: runResult.eventHash,
         type: "VERIFICATION_RUN_COMPLETED",
       };
 
-      // 2. If READY, insert VERIFICATION_PASSED chained to the previous event
       if (!passedPayload) {
         return { runCompleted };
       }
 
-      sequence += 1;
-      prevEventHash = runCompletedHash;
-
-      const passedHash = computeProofEventHash({
-        sequence,
-        strategyId,
-        type: "VERIFICATION_PASSED",
+      const passedResult = await appendProofEventInTx(tx, strategyId, "VERIFICATION_PASSED", {
+        ...passedPayload,
         recordId,
-        prevEventHash,
-        payload: passedPayload,
-      });
-
-      await tx.proofEventLog.create({
-        data: {
-          type: "VERIFICATION_PASSED",
-          strategyId,
-          sessionId: recordId,
-          meta: passedPayload as Record<string, string>,
-          sequence,
-          eventHash: passedHash,
-          prevEventHash,
-        },
       });
 
       const passed: ProofEventRecord = {
-        sequence,
-        eventHash: passedHash,
+        sequence: passedResult.sequence,
+        eventHash: passedResult.eventHash,
         type: "VERIFICATION_PASSED",
       };
 

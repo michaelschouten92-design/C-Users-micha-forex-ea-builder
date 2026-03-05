@@ -1,10 +1,9 @@
 /**
  * Tamper-evident hash chaining for proof events.
  *
- * Chain scope: per verification-run recordId (stored in ProofEventLog.sessionId).
- * Each verification run produces a short chain (1-2 events) with monotonic
- * sequence numbers and SHA-256 hashes that include the previous event's hash,
- * making any tampering detectable.
+ * Chain scope: per strategyId. Each strategy maintains a single chain of
+ * proof events with monotonic sequence numbers and SHA-256 hashes that
+ * include the previous event's hash, making any tampering detectable.
  *
  * Mirrors the track-record canonical.ts + chain-verifier.ts pattern.
  */
@@ -81,18 +80,16 @@ export interface StoredProofEvent {
 }
 
 /**
- * Verify an entire proof event chain for a given recordId.
+ * Verify an entire proof event chain for a given strategy.
  *
- * Chain scope is per verification-run recordId (stored in sessionId).
- * Events must be sorted by sequence ascending. Walks the chain checking:
+ * Chain scope is per strategyId. Events must be sorted by sequence ascending.
+ * Each event's recordId (stored in sessionId) is used for hash computation.
+ * Walks the chain checking:
  * 1. Sequence continuity (no gaps, no duplicates)
  * 2. prevEventHash linkage (each event points to the previous hash)
  * 3. Recomputed hash matches stored eventHash
  */
-export function verifyProofChain(
-  events: StoredProofEvent[],
-  recordId: string
-): ProofChainVerificationResult {
+export function verifyProofChain(events: StoredProofEvent[]): ProofChainVerificationResult {
   if (events.length === 0) {
     return { valid: true, chainLength: 0 };
   }
@@ -123,7 +120,7 @@ export function verifyProofChain(
       sequence: event.sequence,
       strategyId: event.strategyId,
       type: event.type,
-      recordId,
+      recordId: event.sessionId,
       prevEventHash: event.prevEventHash,
       payload: (event.meta as Record<string, unknown>) ?? {},
     });

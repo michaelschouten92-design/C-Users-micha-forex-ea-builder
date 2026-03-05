@@ -1063,6 +1063,16 @@ model ProofEventLog {
   @@index([sessionId, sequence])
   @@index([ownerId, type, createdAt])
   @@index([createdAt])
+  @@index([strategyId, sequence])
+}
+
+// Per-strategy hash chain head — used with SELECT FOR UPDATE
+// to allocate monotonic sequence numbers concurrency-safely.
+model ProofChainHead {
+  strategyId    String   @id
+  lastSequence  Int      @default(0)
+  lastEventHash String   @default("0000000000000000000000000000000000000000000000000000000000000000")
+  updatedAt     DateTime @updatedAt
 }
 
 // ============================================

@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
       chainsChecked++;
 
-      const result = verifyProofChain(events as StoredProofEvent[], run.recordId);
+      const result = verifyProofChain(events as StoredProofEvent[]);
       if (result.valid) {
         chainsValid++;
       } else {

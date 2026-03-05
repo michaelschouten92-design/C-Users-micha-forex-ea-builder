@@ -209,7 +209,7 @@ async function main() {
       createdAt: e.createdAt,
     }));
 
-    const verification = verifyProofChain(chainEvents, recordId);
+    const verification = verifyProofChain(chainEvents);
     if (!verification.valid) {
       console.error(`\nCHAIN VERIFICATION FAILED for recordId=${recordId}: ${verification.error}`);
       console.error(`  Break at sequence: ${verification.breakAtSequence}`);
