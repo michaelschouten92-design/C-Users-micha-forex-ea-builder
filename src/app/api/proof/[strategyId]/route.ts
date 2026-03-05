@@ -16,6 +16,9 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Props = { params: Promise<{ strategyId: string }> };
 
 /**
@@ -311,98 +314,103 @@ export async function GET(request: NextRequest, { params }: Props) {
       });
   }
 
-  return NextResponse.json({
-    strategy: {
-      name: project.name,
-      description: project.description,
-      strategyId: identity.strategyId,
-      slug: page.slug,
-      ownerHandle: owner?.handle ?? null,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt,
-      currentVersion: identity.versions[0] ?? null,
-    },
-    ladder: {
-      level: ladderLevel,
-      label: ladderMeta.label,
-      color: ladderMeta.color,
-      description: ladderMeta.description,
-      criteria: {
-        VALIDATED: {
-          label: "Validated",
-          requirements: [
-            `Backtest health score >= ${thresholds.VALIDATED_MIN_SCORE}/100`,
-            `Monte Carlo survival rate >= ${(thresholds.VALIDATED_MIN_SURVIVAL * 100).toFixed(0)}%`,
-            `Minimum ${thresholds.MIN_TRADES_VALIDATION} backtest trades`,
-          ],
-        },
-        VERIFIED: {
-          label: "Verified",
-          requirements: [
-            "All Validated requirements met",
-            `Minimum ${thresholds.MIN_LIVE_TRADES_VERIFIED} live trades recorded`,
-            "Live trade hash chain active with no gaps",
-          ],
-        },
-        PROVEN: {
-          label: "Proven",
-          requirements: [
-            "All Verified requirements met",
-            `Live trading for >= ${thresholds.MIN_LIVE_DAYS_PROVEN} days`,
-            `Max drawdown <= ${thresholds.PROVEN_MAX_DRAWDOWN_PCT}%`,
-            `Health score stability maintained above ${thresholds.PROVEN_MIN_SCORE_STABILITY}%`,
-            "No score collapse events",
-          ],
+  return NextResponse.json(
+    {
+      strategy: {
+        name: project.name,
+        description: project.description,
+        strategyId: identity.strategyId,
+        slug: page.slug,
+        ownerHandle: owner?.handle ?? null,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        currentVersion: identity.versions[0] ?? null,
+      },
+      ladder: {
+        level: ladderLevel,
+        label: ladderMeta.label,
+        color: ladderMeta.color,
+        description: ladderMeta.description,
+        criteria: {
+          VALIDATED: {
+            label: "Validated",
+            requirements: [
+              `Backtest health score >= ${thresholds.VALIDATED_MIN_SCORE}/100`,
+              `Monte Carlo survival rate >= ${(thresholds.VALIDATED_MIN_SURVIVAL * 100).toFixed(0)}%`,
+              `Minimum ${thresholds.MIN_TRADES_VALIDATION} backtest trades`,
+            ],
+          },
+          VERIFIED: {
+            label: "Verified",
+            requirements: [
+              "All Validated requirements met",
+              `Minimum ${thresholds.MIN_LIVE_TRADES_VERIFIED} live trades recorded`,
+              "Live trade hash chain active with no gaps",
+            ],
+          },
+          PROVEN: {
+            label: "Proven",
+            requirements: [
+              "All Verified requirements met",
+              `Live trading for >= ${thresholds.MIN_LIVE_DAYS_PROVEN} days`,
+              `Max drawdown <= ${thresholds.PROVEN_MAX_DRAWDOWN_PCT}%`,
+              `Health score stability maintained above ${thresholds.PROVEN_MIN_SCORE_STABILITY}%`,
+              "No score collapse events",
+            ],
+          },
         },
       },
+      backtestHealth: backtestRun
+        ? {
+            score: backtestRun.healthScore,
+            status: backtestRun.healthStatus,
+            breakdown: backtestRun.scoreBreakdown,
+            evaluatedAt: backtestRun.createdAt,
+            stats: {
+              profitFactor: backtestRun.profitFactor,
+              maxDrawdownPct: backtestRun.maxDrawdownPct,
+              sharpeRatio: backtestRun.sharpeRatio,
+              winRate: backtestRun.winRate,
+              totalTrades: backtestRun.totalTrades,
+              expectedPayoff: backtestRun.expectedPayoff,
+              recoveryFactor: backtestRun.recoveryFactor,
+            },
+          }
+        : null,
+      monteCarlo,
+      instance: instanceData,
+      trackRecord: trackRecord
+        ? {
+            totalTrades: trackRecord.totalTrades,
+            winCount: trackRecord.winCount,
+            lossCount: trackRecord.lossCount,
+            totalProfit: trackRecord.totalProfit,
+            maxDrawdownPct: trackRecord.maxDrawdownPct,
+            balance: trackRecord.balance,
+            equity: trackRecord.equity,
+          }
+        : null,
+      liveHealth: page.showHealthStatus ? liveHealth : null,
+      chain: chainInfo,
+      equityCurve,
+      liveMetrics,
+      monitoring: monitoringStatus,
+      settings: {
+        showEquityCurve: page.showEquityCurve,
+        showTradeLog: page.showTradeLog,
+        showHealthStatus: page.showHealthStatus,
+      },
+      freshness: buildFreshnessWarnings(
+        liveHealth?.lastUpdated ?? null,
+        instanceData?.lastHeartbeat ?? null,
+        instanceData?.status ?? null,
+        backtestRun?.createdAt ?? null
+      ),
     },
-    backtestHealth: backtestRun
-      ? {
-          score: backtestRun.healthScore,
-          status: backtestRun.healthStatus,
-          breakdown: backtestRun.scoreBreakdown,
-          evaluatedAt: backtestRun.createdAt,
-          stats: {
-            profitFactor: backtestRun.profitFactor,
-            maxDrawdownPct: backtestRun.maxDrawdownPct,
-            sharpeRatio: backtestRun.sharpeRatio,
-            winRate: backtestRun.winRate,
-            totalTrades: backtestRun.totalTrades,
-            expectedPayoff: backtestRun.expectedPayoff,
-            recoveryFactor: backtestRun.recoveryFactor,
-          },
-        }
-      : null,
-    monteCarlo,
-    instance: instanceData,
-    trackRecord: trackRecord
-      ? {
-          totalTrades: trackRecord.totalTrades,
-          winCount: trackRecord.winCount,
-          lossCount: trackRecord.lossCount,
-          totalProfit: trackRecord.totalProfit,
-          maxDrawdownPct: trackRecord.maxDrawdownPct,
-          balance: trackRecord.balance,
-          equity: trackRecord.equity,
-        }
-      : null,
-    liveHealth: page.showHealthStatus ? liveHealth : null,
-    chain: chainInfo,
-    equityCurve,
-    liveMetrics,
-    monitoring: monitoringStatus,
-    settings: {
-      showEquityCurve: page.showEquityCurve,
-      showTradeLog: page.showTradeLog,
-      showHealthStatus: page.showHealthStatus,
-    },
-    freshness: buildFreshnessWarnings(
-      liveHealth?.lastUpdated ?? null,
-      instanceData?.lastHeartbeat ?? null,
-      instanceData?.status ?? null,
-      backtestRun?.createdAt ?? null
-    ),
-  });
+    {
+      headers: { "Cache-Control": "private, no-store, max-age=0" },
+    }
+  );
 }
 
 const HEALTH_STALE_MS = 48 * 60 * 60 * 1000; // 48 hours
