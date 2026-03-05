@@ -1,7 +1,12 @@
 import { createHash, timingSafeEqual } from "crypto";
 import { prisma } from "./prisma";
 import { NextResponse } from "next/server";
-import { telemetryRateLimiter, checkRateLimit } from "./rate-limit";
+import {
+  telemetryRateLimiter,
+  telemetryPreauthRateLimiter,
+  checkRateLimit,
+  getClientIp,
+} from "./rate-limit";
 import { apiError, ErrorCode } from "./error-codes";
 import { checkContentType } from "./validations";
 
@@ -17,6 +22,11 @@ const HEX_KEY_RE = /^[0-9a-fA-F]{32,128}$/;
  */
 export function hashApiKey(apiKey: string): string {
   return createHash("sha256").update(apiKey).digest("hex");
+}
+
+/** Hash a client IP so we never store raw IPs in memory */
+function hashIp(ip: string): string {
+  return createHash("sha256").update(ip).digest("hex").slice(0, 16);
 }
 
 /**
@@ -78,18 +88,38 @@ export async function verifyTelemetryApiKey(
 }
 
 /**
- * Authenticate a telemetry request: check Content-Type, verify API key, rate limit.
- * Returns the instance info or a NextResponse error.
+ * Authenticate a telemetry request: pre-auth IP rate limit → Content-Type →
+ * key format check → key verification → per-instance rate limit.
  *
- * Rate limiting applies to ALL requests (valid or invalid key) to prevent
- * brute-force key enumeration. Invalid keys are rate-limited by IP.
+ * Order of operations:
+ * 1. IP-based pre-auth rate limit (covers ALL requests, enumeration-safe)
+ * 2. Content-Type check
+ * 3. X-EA-Key presence + hex format validation
+ * 4. Key verification (DB lookup)
+ * 5. Per-instance rate limit (keyed by verified instanceId)
  */
 export async function authenticateTelemetry(
   request: Request
 ): Promise<
   { success: true; instanceId: string; userId: string } | { success: false; response: NextResponse }
 > {
-  // Content-Type check
+  // ── Step 1: IP-based pre-auth rate limit ──────────────────────────
+  // Runs FIRST, before any key-dependent logic. Uses hashed IP so we
+  // never store raw IPs. Every request counts, including missing/invalid keys.
+  const clientIp = getClientIp(request);
+  const ipKey = `telemetry:preauth:${hashIp(clientIp)}`;
+  const preauthResult = await checkRateLimit(telemetryPreauthRateLimiter, ipKey);
+
+  if (!preauthResult.success) {
+    return {
+      success: false,
+      response: NextResponse.json(apiError(ErrorCode.RATE_LIMITED, "Rate limit exceeded"), {
+        status: 429,
+      }),
+    };
+  }
+
+  // ── Step 2: Content-Type check ────────────────────────────────────
   const ctError = checkContentType(request);
   if (ctError) {
     return {
@@ -101,6 +131,7 @@ export async function authenticateTelemetry(
     };
   }
 
+  // ── Step 3: Key presence + format ─────────────────────────────────
   const apiKey = request.headers.get("X-EA-Key")?.trim();
 
   if (!apiKey) {
@@ -112,7 +143,6 @@ export async function authenticateTelemetry(
     };
   }
 
-  // Strict format check before any DB work
   if (!HEX_KEY_RE.test(apiKey)) {
     return {
       success: false,
@@ -122,27 +152,30 @@ export async function authenticateTelemetry(
     };
   }
 
-  // Rate limit ALL requests (valid or invalid) to prevent brute-force enumeration.
-  // Valid keys are limited by key hash; invalid keys by a global bucket.
-  const keyHash = hashApiKey(apiKey);
-  const rateLimitResult = await checkRateLimit(telemetryRateLimiter, `telemetry:${keyHash}`);
-
-  if (!rateLimitResult.success) {
-    return {
-      success: false,
-      response: NextResponse.json(apiError(ErrorCode.RATE_LIMITED, "Rate limit exceeded"), {
-        status: 429,
-      }),
-    };
-  }
-
-  // Verify key
+  // ── Step 4: Key verification ──────────────────────────────────────
   const instance = await verifyTelemetryApiKey(apiKey);
   if (!instance) {
     return {
       success: false,
       response: NextResponse.json(apiError(ErrorCode.INVALID_API_KEY, "Invalid API key"), {
         status: 401,
+      }),
+    };
+  }
+
+  // ── Step 5: Per-instance rate limit (post-auth) ───────────────────
+  // Keyed by verified instanceId — prevents a single legitimate instance
+  // from flooding the system (e.g., runaway EA loop).
+  const instanceResult = await checkRateLimit(
+    telemetryRateLimiter,
+    `telemetry:${instance.instanceId}`
+  );
+
+  if (!instanceResult.success) {
+    return {
+      success: false,
+      response: NextResponse.json(apiError(ErrorCode.RATE_LIMITED, "Rate limit exceeded"), {
+        status: 429,
       }),
     };
   }

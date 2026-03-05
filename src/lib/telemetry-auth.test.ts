@@ -16,8 +16,10 @@ vi.mock("./prisma", () => ({
 
 const mockCheckRateLimit = vi.fn().mockResolvedValue({ success: true });
 vi.mock("./rate-limit", () => ({
-  telemetryRateLimiter: {},
+  telemetryRateLimiter: { _tag: "telemetry" },
+  telemetryPreauthRateLimiter: { _tag: "preauth" },
   checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getClientIp: (req: Request) => req.headers.get("x-forwarded-for") || "127.0.0.1",
 }));
 
 vi.mock("./error-codes", async () => {
@@ -40,12 +42,15 @@ const VALID_KEY = "a".repeat(64);
 const INSTANCE_ID = "inst_123";
 const USER_ID = "user_456";
 
-function makeRequest(opts: { key?: string | null; contentType?: string } = {}) {
+function makeRequest(opts: { key?: string | null; contentType?: string; ip?: string } = {}) {
   const headers: Record<string, string> = {
     "Content-Type": opts.contentType ?? "application/json",
   };
   if (opts.key !== null && opts.key !== undefined) {
     headers["X-EA-Key"] = opts.key;
+  }
+  if (opts.ip) {
+    headers["x-forwarded-for"] = opts.ip;
   }
   return new Request("http://localhost/api/telemetry/heartbeat", {
     method: "POST",
@@ -63,6 +68,12 @@ function mockInstanceFound() {
   });
 }
 
+/** Extract the limiter and key from a specific checkRateLimit call */
+function getRateLimitCall(index: number) {
+  const call = mockCheckRateLimit.mock.calls[index];
+  return { limiter: call?.[0], key: call?.[1] as string };
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe("authenticateTelemetry", () => {
@@ -76,6 +87,90 @@ describe("authenticateTelemetry", () => {
     const mod = await import("./telemetry-auth");
     authenticateTelemetry = mod.authenticateTelemetry;
   });
+
+  // ── Pre-auth rate limiting ────────────────────────────────────────
+
+  it("pre-auth rate limit runs before anything else", async () => {
+    // Make pre-auth limiter reject
+    mockCheckRateLimit.mockResolvedValueOnce({ success: false });
+    const result = await authenticateTelemetry(makeRequest({ key: VALID_KEY }));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.response.status).toBe(429);
+    }
+
+    // Only one rate limit call (pre-auth), no DB calls
+    expect(mockCheckRateLimit).toHaveBeenCalledTimes(1);
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("pre-auth limiter key uses IP hash, not user-supplied key", async () => {
+    await authenticateTelemetry(makeRequest({ key: VALID_KEY, ip: "1.2.3.4" }));
+
+    const { key } = getRateLimitCall(0);
+    expect(key).toMatch(/^telemetry:preauth:/);
+    // Must NOT contain the raw key or its hash
+    const keyHash = createHash("sha256").update(VALID_KEY).digest("hex");
+    expect(key).not.toContain(VALID_KEY);
+    expect(key).not.toContain(keyHash);
+  });
+
+  it("same IP produces same pre-auth limiter key regardless of supplied key", async () => {
+    const ip = "10.0.0.1";
+    await authenticateTelemetry(makeRequest({ key: "b".repeat(64), ip }));
+    const key1 = getRateLimitCall(0).key;
+
+    vi.clearAllMocks();
+    mockCheckRateLimit.mockResolvedValue({ success: true });
+    await authenticateTelemetry(makeRequest({ key: "c".repeat(64), ip }));
+    const key2 = getRateLimitCall(0).key;
+
+    expect(key1).toBe(key2);
+  });
+
+  it("missing X-EA-Key is still rate-limited by pre-auth", async () => {
+    await authenticateTelemetry(makeRequest({}));
+    // Pre-auth rate limit was called
+    expect(mockCheckRateLimit).toHaveBeenCalledTimes(1);
+    const { key } = getRateLimitCall(0);
+    expect(key).toMatch(/^telemetry:preauth:/);
+  });
+
+  it("invalid hex key is still rate-limited by pre-auth", async () => {
+    await authenticateTelemetry(makeRequest({ key: "not-hex-!@#$%^&*()_+long-enough-string" }));
+    expect(mockCheckRateLimit).toHaveBeenCalledTimes(1);
+    const { key } = getRateLimitCall(0);
+    expect(key).toMatch(/^telemetry:preauth:/);
+  });
+
+  // ── Post-auth per-instance rate limiting ──────────────────────────
+
+  it("post-auth rate limit uses verified instanceId", async () => {
+    mockInstanceFound();
+    await authenticateTelemetry(makeRequest({ key: VALID_KEY }));
+
+    // Two rate limit calls: pre-auth (IP) + post-auth (instanceId)
+    expect(mockCheckRateLimit).toHaveBeenCalledTimes(2);
+    const { key } = getRateLimitCall(1);
+    expect(key).toBe(`telemetry:${INSTANCE_ID}`);
+  });
+
+  it("post-auth rate limit rejection returns 429", async () => {
+    mockInstanceFound();
+    // Pre-auth passes, post-auth rejects
+    mockCheckRateLimit
+      .mockResolvedValueOnce({ success: true })
+      .mockResolvedValueOnce({ success: false });
+
+    const result = await authenticateTelemetry(makeRequest({ key: VALID_KEY }));
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.response.status).toBe(429);
+    }
+  });
+
+  // ── Content-Type / key validation / auth ──────────────────────────
 
   it("rejects missing Content-Type with 415", async () => {
     const result = await authenticateTelemetry(
@@ -120,19 +215,6 @@ describe("authenticateTelemetry", () => {
     }
   });
 
-  it("rate-limits before verifying key (prevents brute-force)", async () => {
-    mockCheckRateLimit.mockResolvedValue({ success: false });
-    const result = await authenticateTelemetry(makeRequest({ key: VALID_KEY }));
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.response.status).toBe(429);
-      const body = await result.response.json();
-      expect(body.code).toBe("RATE_LIMITED");
-    }
-    // Key should NOT have been verified (rate limit fires first)
-    expect(mockFindUnique).not.toHaveBeenCalled();
-  });
-
   it("returns 401 for unknown key (no existence leakage)", async () => {
     const result = await authenticateTelemetry(makeRequest({ key: VALID_KEY }));
     expect(result.success).toBe(false);
@@ -140,7 +222,6 @@ describe("authenticateTelemetry", () => {
       const body = await result.response.json();
       expect(result.response.status).toBe(401);
       expect(body.code).toBe("INVALID_API_KEY");
-      // Should NOT leak whether a key exists or not
       expect(body.error).toBe("Invalid API key");
     }
   });

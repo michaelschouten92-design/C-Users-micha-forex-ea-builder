@@ -371,8 +371,20 @@ export const adminOtpIpRateLimiter = createRateLimiter({
 });
 
 /**
- * Rate limiter for telemetry endpoints (EA heartbeats, trades, errors)
- * Limits: 20 requests per minute per API key
+ * Pre-auth rate limiter for telemetry endpoints.
+ * Keyed by hashed client IP — applies to ALL requests regardless of key validity.
+ * Prevents brute-force key enumeration.
+ * Limits: 60 requests per minute per IP
+ */
+export const telemetryPreauthRateLimiter = createRateLimiter({
+  limit: 60,
+  windowMs: 60 * 1000, // 1 minute
+});
+
+/**
+ * Post-auth rate limiter for telemetry endpoints (EA heartbeats, trades, errors)
+ * Keyed by verified instanceId — throttles individual EA instances.
+ * Limits: 20 requests per minute per instance
  */
 export const telemetryRateLimiter = createRateLimiter({
   limit: 20,
