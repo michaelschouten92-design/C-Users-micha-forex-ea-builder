@@ -26,6 +26,10 @@ describe("shouldProtectRoute", () => {
     expect(shouldProtectRoute("/api/auth/reset-password")).toBe(true);
   });
 
+  it("returns false for internal heartbeat route", () => {
+    expect(shouldProtectRoute("/api/internal/heartbeat")).toBe(false);
+  });
+
   it("returns false for internal trade ingest routes", () => {
     expect(shouldProtectRoute("/api/internal/trades/import-csv")).toBe(false);
     expect(shouldProtectRoute("/api/internal/trades/webhook-ingest")).toBe(false);
