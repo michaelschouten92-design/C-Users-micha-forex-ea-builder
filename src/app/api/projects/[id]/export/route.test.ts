@@ -225,8 +225,8 @@ describe("POST /api/projects/[id]/export — identity binding", () => {
     );
   });
 
-  it("returns bindingFailed: true when binding throws", async () => {
-    mockBindIdentityToVersion.mockRejectedValue(new Error("Serialization failure P2034"));
+  it("returns bindingFailed: true when binding throws non-retryable error", async () => {
+    mockBindIdentityToVersion.mockRejectedValue(new Error("Connection refused"));
 
     const { POST } = await import("./route");
     const res = await POST(makeExportRequest(), {
@@ -238,12 +238,15 @@ describe("POST /api/projects/[id]/export — identity binding", () => {
     expect(body.success).toBe(true);
     expect(body.bindingFailed).toBe(true);
 
+    // Non-retryable: only called once
+    expect(mockBindIdentityToVersion).toHaveBeenCalledTimes(1);
+
     // Logged at warn with error message (not the full error object — no secret leakage)
     expect(mockWarn).toHaveBeenCalledWith(
       expect.objectContaining({
         strategyVersionId: STRATEGY_VERSION_ID,
         projectId: PROJECT_ID,
-        errMessage: "Serialization failure P2034",
+        errMessage: "Connection refused",
       }),
       expect.any(String)
     );
@@ -261,5 +264,81 @@ describe("POST /api/projects/[id]/export — identity binding", () => {
     // Response only contains bindingFailed flag, not the error details
     expect(body.bindingFailed).toBe(true);
     expect(JSON.stringify(body)).not.toContain("DB password");
+  });
+
+  // ── Serialization conflict retry ─────────────────────────
+
+  it("retries once on P2034 serialization conflict and succeeds", async () => {
+    const p2034Error = Object.assign(new Error("Transaction failed"), { code: "P2034" });
+    mockBindIdentityToVersion.mockRejectedValueOnce(p2034Error).mockResolvedValueOnce({
+      ok: true,
+      bindingId: "bind_1",
+      snapshotHash: "snap_1",
+      baselineHash: "base_1",
+      isNew: true,
+    });
+
+    const { POST } = await import("./route");
+    const res = await POST(makeExportRequest(), {
+      params: Promise.resolve({ id: PROJECT_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.bindingFailed).toBe(false);
+
+    // Called twice: first attempt failed, retry succeeded
+    expect(mockBindIdentityToVersion).toHaveBeenCalledTimes(2);
+
+    // Conflict logged before retry
+    expect(mockWarn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        strategyVersionId: STRATEGY_VERSION_ID,
+        projectId: PROJECT_ID,
+        attempt: 1,
+      }),
+      "Binding serialization conflict, retrying"
+    );
+  });
+
+  it("retries once on P2034 and fails on second attempt", async () => {
+    const p2034Error = Object.assign(new Error("Transaction failed"), { code: "P2034" });
+    mockBindIdentityToVersion
+      .mockRejectedValueOnce(p2034Error)
+      .mockRejectedValueOnce(new Error("Still failing"));
+
+    const { POST } = await import("./route");
+    const res = await POST(makeExportRequest(), {
+      params: Promise.resolve({ id: PROJECT_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.bindingFailed).toBe(true);
+
+    // Called twice: first attempt retryable, second attempt final failure
+    expect(mockBindIdentityToVersion).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries on Postgres serialization message", async () => {
+    const pgError = new Error("could not serialize access due to concurrent update");
+    mockBindIdentityToVersion.mockRejectedValueOnce(pgError).mockResolvedValueOnce({
+      ok: true,
+      bindingId: "bind_2",
+      snapshotHash: "snap_2",
+      baselineHash: null,
+      isNew: true,
+    });
+
+    const { POST } = await import("./route");
+    const res = await POST(makeExportRequest(), {
+      params: Promise.resolve({ id: PROJECT_ID }),
+    });
+
+    const body = await res.json();
+    expect(body.bindingFailed).toBe(false);
+    expect(mockBindIdentityToVersion).toHaveBeenCalledTimes(2);
   });
 });

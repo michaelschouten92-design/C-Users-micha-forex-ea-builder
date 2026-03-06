@@ -322,26 +322,47 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Bind identity hashes (runs its own Serializable tx).
     // Awaited so failures are observable — export already committed, so binding
     // failure must not fail the response, but MUST be surfaced to the caller.
+    // One immediate retry on serialization conflicts (Prisma P2034 / Postgres 40001).
     let bindingFailed = false;
-    try {
-      const bindResult = await bindIdentityToVersion(strategyVersionId);
-      if (!bindResult.ok) {
+    let bindAttempts = 0;
+    const MAX_BIND_ATTEMPTS = 2;
+
+    while (bindAttempts < MAX_BIND_ATTEMPTS) {
+      bindAttempts++;
+      try {
+        const bindResult = await bindIdentityToVersion(strategyVersionId);
+        if (!bindResult.ok) {
+          bindingFailed = true;
+          log.warn(
+            { strategyVersionId, projectId: project.id, errCode: bindResult.code },
+            "Identity binding returned error after export"
+          );
+        } else {
+          bindingFailed = false;
+        }
+        break; // Success or structured error — do not retry
+      } catch (bindErr) {
+        const retryable = bindAttempts < MAX_BIND_ATTEMPTS && isSerializationConflict(bindErr);
+
+        if (retryable) {
+          log.warn(
+            { strategyVersionId, projectId: project.id, attempt: bindAttempts },
+            "Binding serialization conflict, retrying"
+          );
+          continue;
+        }
+
         bindingFailed = true;
         log.warn(
-          { strategyVersionId, projectId: project.id, errCode: bindResult.code },
-          "Identity binding returned error after export"
+          {
+            strategyVersionId,
+            projectId: project.id,
+            errMessage: bindErr instanceof Error ? bindErr.message : String(bindErr),
+          },
+          "Identity binding threw after export"
         );
+        break;
       }
-    } catch (bindErr) {
-      bindingFailed = true;
-      log.warn(
-        {
-          strategyVersionId,
-          projectId: project.id,
-          errMessage: bindErr instanceof Error ? bindErr.message : String(bindErr),
-        },
-        "Identity binding threw after export"
-      );
     }
 
     log.info(
@@ -583,4 +604,19 @@ function sanitizeFileName(name: string): string {
     .replace(/[^a-zA-Z0-9_\-\s]/g, "")
     .replace(/\s+/g, "_")
     .substring(0, 50);
+}
+
+/**
+ * Detect Prisma serialization conflicts (P2034) and Postgres serialization
+ * failures (SQLSTATE 40001) that are safe to retry exactly once.
+ */
+function isSerializationConflict(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  // Prisma wraps serialization failures as PrismaClientKnownRequestError with code P2034
+  if ("code" in err && (err as { code: string }).code === "P2034") return true;
+  // Postgres serialization failure surfaced as message
+  if ("message" in err && typeof (err as { message: string }).message === "string") {
+    return (err as { message: string }).message.includes("could not serialize access");
+  }
+  return false;
 }
