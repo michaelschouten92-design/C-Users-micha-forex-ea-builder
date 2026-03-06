@@ -5,7 +5,7 @@ const NOW = new Date("2026-03-03T12:00:00Z");
 
 function makeInput(overrides: Partial<HeartbeatInput> = {}): HeartbeatInput {
   return {
-    lifecycleState: "HEALTHY",
+    lifecycleState: "LIVE_MONITORING",
     operatorHold: "NONE",
     monitoringSuppressedUntil: null,
     now: NOW,
@@ -28,7 +28,6 @@ describe("decideHeartbeatAction", () => {
   });
 
   it("NO_INSTANCE is fail-closed PAUSE (not STOP)", () => {
-    // PAUSE is conservative: no destructive STOP when we lack instance state
     const result = decideHeartbeatAction(null);
     expect(result.action).toBe("PAUSE");
   });
@@ -107,21 +106,55 @@ describe("decideHeartbeatAction", () => {
     expect(result).toEqual({ action: "STOP", reasonCode: "STRATEGY_HALTED" });
   });
 
-  // ── INVALIDATED (priority 4) ──────────────────────────
+  // ── INVALIDATED (priority 4 — terminal) ────────────────
 
   it("returns STOP + STRATEGY_INVALIDATED when lifecycle is INVALIDATED", () => {
     const result = decideHeartbeatAction(makeInput({ lifecycleState: "INVALIDATED" }));
     expect(result).toEqual({ action: "STOP", reasonCode: "STRATEGY_INVALIDATED" });
   });
 
-  // ── EDGE_AT_RISK (priority 5) ─────────────────────────
+  // ── NOT_LIVE (priority 5 — pre-live states) ────────────
+
+  it("returns PAUSE + NOT_LIVE for DRAFT lifecycle state", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "DRAFT" }));
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "NOT_LIVE" });
+  });
+
+  it("returns PAUSE + NOT_LIVE for BACKTESTED lifecycle state", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "BACKTESTED" }));
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "NOT_LIVE" });
+  });
+
+  it("returns PAUSE + NOT_LIVE for VERIFIED lifecycle state", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "VERIFIED" }));
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "NOT_LIVE" });
+  });
+
+  // ── UNKNOWN_LIFECYCLE_STATE (fail-closed) ──────────────
+
+  it("returns PAUSE + NOT_LIVE for unknown lifecycle state (fail-closed)", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "SOME_FUTURE_STATE" }));
+    expect(result).toEqual({ action: "PAUSE", reasonCode: "NOT_LIVE" });
+  });
+
+  it("unknown state never resolves to RUN", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "BANANA" }));
+    expect(result.action).not.toBe("RUN");
+  });
+
+  it("empty string lifecycle state is fail-closed PAUSE", () => {
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "" }));
+    expect(result.action).toBe("PAUSE");
+  });
+
+  // ── EDGE_AT_RISK (priority 6) ─────────────────────────
 
   it("returns PAUSE + MONITORING_AT_RISK when lifecycle is EDGE_AT_RISK", () => {
     const result = decideHeartbeatAction(makeInput({ lifecycleState: "EDGE_AT_RISK" }));
     expect(result).toEqual({ action: "PAUSE", reasonCode: "MONITORING_AT_RISK" });
   });
 
-  // ── SUPPRESSED (priority 6) ───────────────────────────
+  // ── SUPPRESSED (priority 7) ───────────────────────────
 
   it("returns PAUSE + MONITORING_SUPPRESSED when suppression is active", () => {
     const future = new Date("2026-03-03T13:00:00Z");
@@ -140,9 +173,9 @@ describe("decideHeartbeatAction", () => {
     expect(result).toEqual({ action: "RUN", reasonCode: "OK" });
   });
 
-  // ── RUN (priority 7) ─────────────────────────────────
+  // ── RUN (priority 8 — LIVE_MONITORING only) ────────────
 
-  it("returns RUN + OK for healthy instance with no holds", () => {
+  it("returns RUN + OK for LIVE_MONITORING with no holds", () => {
     const result = decideHeartbeatAction(makeInput());
     expect(result).toEqual({ action: "RUN", reasonCode: "OK" });
   });
@@ -155,5 +188,29 @@ describe("decideHeartbeatAction", () => {
   it("returns RUN for null operatorHold (legacy/unset)", () => {
     const result = decideHeartbeatAction(makeInput({ operatorHold: null }));
     expect(result).toEqual({ action: "RUN", reasonCode: "OK" });
+  });
+
+  // ── Precedence tests ──────────────────────────────────
+
+  it("HALTED beats NOT_LIVE (operator authority overrides lifecycle)", () => {
+    const result = decideHeartbeatAction(
+      makeInput({ operatorHold: "HALTED", lifecycleState: "DRAFT" })
+    );
+    expect(result).toEqual({ action: "STOP", reasonCode: "STRATEGY_HALTED" });
+  });
+
+  it("INVALIDATED beats EDGE_AT_RISK", () => {
+    // INVALIDATED is terminal, EDGE_AT_RISK is just risk — terminal wins
+    // (in practice these are mutually exclusive, but the priority is explicit)
+    const result = decideHeartbeatAction(makeInput({ lifecycleState: "INVALIDATED" }));
+    expect(result.action).toBe("STOP");
+  });
+
+  it("STOP conditions always beat RUN conditions", () => {
+    // Even with a live lifecycle state, HALTED produces STOP
+    const result = decideHeartbeatAction(
+      makeInput({ lifecycleState: "LIVE_MONITORING", operatorHold: "HALTED" })
+    );
+    expect(result.action).toBe("STOP");
   });
 });

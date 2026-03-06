@@ -126,6 +126,23 @@ const CONTROL_EXPLANATIONS: Record<HeartbeatReasonCode, ControlExplanation> = {
       { text: "Attach a live EA instance", href: "/app/onboarding?step=scope" },
     ],
   },
+  NOT_LIVE: {
+    title: "Strategy Not Live",
+    explanation:
+      "The strategy is in a pre-live lifecycle state (e.g. Draft, Backtested, or Verified). It has not yet been granted live trading authority.",
+    resolution: [
+      { text: "Complete the export and deployment process to enter live monitoring." },
+      { text: "Go to Command Center", href: "/app/live" },
+    ],
+  },
+  UNKNOWN_LIFECYCLE_STATE: {
+    title: "Unknown Lifecycle State",
+    explanation:
+      "The strategy's lifecycle state is not recognized by the governance layer. Execution is paused as a fail-closed safeguard.",
+    resolution: [
+      { text: "This may indicate a data inconsistency. Contact support if it persists." },
+    ],
+  },
 };
 
 /**

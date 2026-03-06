@@ -19,7 +19,9 @@ export type HeartbeatReasonCode =
   | "COMPUTATION_FAILED"
   | "NO_HEARTBEAT_PROOF"
   | "CONTROL_INCONSISTENCY_DETECTED"
-  | "AUTHORITY_UNINITIALIZED";
+  | "AUTHORITY_UNINITIALIZED"
+  | "NOT_LIVE"
+  | "UNKNOWN_LIFECYCLE_STATE";
 
 /**
  * Compile-time exhaustive check: every HeartbeatReasonCode must appear here.
@@ -38,6 +40,8 @@ const _REASON_CODE_REGISTRY: Record<HeartbeatReasonCode, true> = {
   NO_HEARTBEAT_PROOF: true,
   CONTROL_INCONSISTENCY_DETECTED: true,
   AUTHORITY_UNINITIALIZED: true,
+  NOT_LIVE: true,
+  UNKNOWN_LIFECYCLE_STATE: true,
 };
 
 /** Runtime-accessible list of all HeartbeatReasonCode values. */
@@ -60,23 +64,38 @@ export interface HeartbeatDecision {
 }
 
 /**
+ * Lifecycle states that grant live trading authority.
+ * Only these states can produce a RUN action. All others are pre-live,
+ * terminal, or risk states that must not allow trading.
+ */
+const LIVE_STATES: ReadonlySet<string> = new Set(["LIVE_MONITORING", "EDGE_AT_RISK"]);
+
+/**
+ * Lifecycle states that are terminal — no further trading is permitted.
+ */
+const TERMINAL_STATES: ReadonlySet<string> = new Set(["INVALIDATED"]);
+
+/**
  * Decide the heartbeat action for a strategy instance.
  *
  * Rules are evaluated in strict priority order — first match wins:
  *
- *   1. NO_INSTANCE             → PAUSE  (fail-closed: no state to evaluate)
- *   2. AUTHORITY_UNINITIALIZED → PAUSE  (user lacks strategies or live instances)
- *   3. HALTED                  → STOP   (operator authority is orthogonal to lifecycle;
- *                                        an explicit HALT always produces STOP regardless
- *                                        of lifecycle state, suppression, or risk flags)
- *   4. INVALIDATED             → STOP   (terminal lifecycle state)
- *   5. EDGE_AT_RISK            → PAUSE  (monitoring detected risk)
- *   6. SUPPRESSED              → PAUSE  (monitoring temporarily suppressed)
- *   7. otherwise               → RUN    (all clear)
+ *   1. NO_INSTANCE               → PAUSE  (fail-closed: no state to evaluate)
+ *   2. AUTHORITY_UNINITIALIZED   → PAUSE  (user lacks strategies or live instances)
+ *   3. HALTED                    → STOP   (operator authority is orthogonal to lifecycle;
+ *                                          an explicit HALT always produces STOP regardless
+ *                                          of lifecycle state, suppression, or risk flags)
+ *   4. INVALIDATED               → STOP   (terminal lifecycle state)
+ *   5. NOT_LIVE (pre-live)       → PAUSE  (DRAFT, BACKTESTED, VERIFIED — no trading authority)
+ *   6. UNKNOWN_LIFECYCLE_STATE   → PAUSE  (fail-closed: unrecognized state)
+ *   7. EDGE_AT_RISK              → PAUSE  (monitoring detected risk)
+ *   8. SUPPRESSED                → PAUSE  (monitoring temporarily suppressed)
+ *   9. LIVE_MONITORING           → RUN    (all clear)
  *
  * Invariants:
  * - Fail-closed: when in doubt, PAUSE (never RUN on uncertainty).
  * - Operator authority is orthogonal: HALT overrides any lifecycle state.
+ * - Only LIVE_MONITORING can produce RUN — all other states fail closed.
  * - Pure function: no I/O, no side effects, deterministic output.
  * - Reason codes are stable enum strings — never concatenated error messages.
  */
@@ -97,20 +116,25 @@ export function decideHeartbeatAction(input: HeartbeatInput | null): HeartbeatDe
   }
 
   // 4) Terminal lifecycle: invalidated
-  if (input.lifecycleState === "INVALIDATED") {
+  if (TERMINAL_STATES.has(input.lifecycleState)) {
     return { action: "STOP", reasonCode: "STRATEGY_INVALIDATED" };
   }
 
-  // 5) Edge at risk
+  // 5) Pre-live states: no trading authority yet
+  if (!LIVE_STATES.has(input.lifecycleState)) {
+    return { action: "PAUSE", reasonCode: "NOT_LIVE" };
+  }
+
+  // 6) Edge at risk (within LIVE_STATES but degraded)
   if (input.lifecycleState === "EDGE_AT_RISK") {
     return { action: "PAUSE", reasonCode: "MONITORING_AT_RISK" };
   }
 
-  // 6) Monitoring suppressed (time-bounded)
+  // 7) Monitoring suppressed (time-bounded)
   if (input.monitoringSuppressedUntil && input.now < input.monitoringSuppressedUntil) {
     return { action: "PAUSE", reasonCode: "MONITORING_SUPPRESSED" };
   }
 
-  // 7) All clear
+  // 8) LIVE_MONITORING — all clear
   return { action: "RUN", reasonCode: "OK" };
 }

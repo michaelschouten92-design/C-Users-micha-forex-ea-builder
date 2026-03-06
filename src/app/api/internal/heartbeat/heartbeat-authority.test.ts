@@ -69,7 +69,7 @@ describe("Heartbeat authority guard", () => {
   it("returns PAUSE + AUTHORITY_UNINITIALIZED when user has 0 strategies and 0 live EAs", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -89,7 +89,7 @@ describe("Heartbeat authority guard", () => {
   it("returns PAUSE + AUTHORITY_UNINITIALIZED when user has strategies but 0 live EAs (1,0)", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -108,7 +108,7 @@ describe("Heartbeat authority guard", () => {
   it("returns PAUSE + AUTHORITY_UNINITIALIZED when user has live EAs but 0 strategies (0,1)", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -128,7 +128,7 @@ describe("Heartbeat authority guard", () => {
     // Even with a perfectly healthy instance, authority block → PAUSE
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -147,7 +147,7 @@ describe("Heartbeat authority guard", () => {
   it("fail-closed: PAUSE when DB count query throws", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -165,7 +165,7 @@ describe("Heartbeat authority guard", () => {
   it("proceeds to normal decision logic when authority is ready (1,1)", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -184,7 +184,7 @@ describe("Heartbeat authority guard", () => {
   it("regression: existing HALTED decision still works when authority is ready", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
     });

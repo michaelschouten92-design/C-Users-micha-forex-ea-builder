@@ -117,7 +117,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("returns RUN + OK for healthy instance", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -163,7 +163,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("returns STOP + STRATEGY_HALTED for halted instance", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
     });
@@ -223,7 +223,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("logs HEARTBEAT_DECISION_MADE proof event on success", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -250,7 +250,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("still returns 200 when proof event logging fails", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -269,7 +269,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("response always includes strategyId, action, reasonCode, serverTime", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -291,7 +291,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("serverTime is parseable UTC ISO-8601", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -329,7 +329,7 @@ describe("POST /api/internal/heartbeat", () => {
     // Test RUN
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -345,7 +345,7 @@ describe("POST /api/internal/heartbeat", () => {
     // Test STOP (halted)
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
     });
@@ -372,7 +372,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("sets Cache-Control: no-store on success response", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -399,7 +399,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("does not return instanceTag or accountId in response", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -497,7 +497,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("snapshot excludes secrets (accountId, instanceTag)", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -525,7 +525,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("snapshot is stable across repeated calls with identical state", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });
@@ -546,7 +546,7 @@ describe("POST /api/internal/heartbeat", () => {
   it("governanceSnapshot is NOT returned in API response", async () => {
     mockFindFirst.mockResolvedValue({
       userId: "user-1",
-      lifecycleState: "HEALTHY",
+      lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
     });

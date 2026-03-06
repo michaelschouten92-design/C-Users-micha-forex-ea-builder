@@ -20,6 +20,8 @@ const REASON_EXPLAINERS: Record<string, string> = {
     "Control consistency guard detected a mismatch between state and decision \u2014 forced PAUSE.",
   AUTHORITY_UNINITIALIZED:
     "Authority not initialized \u2014 user lacks strategies or live instances \u2014 default PAUSE.",
+  NOT_LIVE: "Strategy in pre-live state \u2014 no trading authority \u2014 default PAUSE.",
+  UNKNOWN_LIFECYCLE_STATE: "Unrecognized lifecycle state \u2014 fail-closed PAUSE.",
 };
 
 const FALLBACK_EXPLANATION = "Unknown reason code \u2014 default PAUSE.";

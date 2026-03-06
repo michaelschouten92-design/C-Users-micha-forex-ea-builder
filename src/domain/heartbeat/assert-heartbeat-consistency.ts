@@ -18,6 +18,9 @@ const INCONSISTENCY: HeartbeatDecision = {
   reasonCode: "CONTROL_INCONSISTENCY_DETECTED",
 };
 
+/** Lifecycle states that grant live trading authority. Must match decideHeartbeatAction. */
+const LIVE_STATES: ReadonlySet<string> = new Set(["LIVE_MONITORING", "EDGE_AT_RISK"]);
+
 /**
  * Determine the expected action given the current state.
  * Follows the same strict priority order as decideHeartbeatAction.
@@ -26,6 +29,7 @@ function expectedAction(input: HeartbeatInput): HeartbeatAction {
   if (!input.authorityReady) return "PAUSE";
   if (input.operatorHold === "HALTED") return "STOP";
   if (input.lifecycleState === "INVALIDATED") return "STOP";
+  if (!LIVE_STATES.has(input.lifecycleState!)) return "PAUSE";
   if (input.lifecycleState === "EDGE_AT_RISK") return "PAUSE";
   if (input.monitoringSuppressedUntil && input.now < input.monitoringSuppressedUntil)
     return "PAUSE";
