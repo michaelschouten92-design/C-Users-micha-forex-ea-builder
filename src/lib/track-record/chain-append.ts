@@ -9,7 +9,8 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { buildCanonicalEvent, computeEventHash } from "./canonical";
 import { processEvent, stateFromDb, stateToDbUpdate } from "./state-manager";
-import { shouldCreateCheckpoint, buildCheckpointData } from "./checkpoint";
+import { shouldCreateCheckpoint, buildCheckpointData, computeCheckpointHmac } from "./checkpoint";
+import { shouldCreateCommitment, buildCommitmentData } from "./ledger-commitment";
 import type { TrackRecordEventType } from "./types";
 
 /**
@@ -69,6 +70,13 @@ export async function appendChainEvent(
 
       if (checkpoint) {
         await tx.trackRecordCheckpoint.create({ data: checkpoint });
+      }
+
+      // Create ledger commitment on the same cadence as the ingest path
+      if (shouldCreateCommitment(seqNo)) {
+        const stateHmac = checkpoint ? checkpoint.hmac : computeCheckpointHmac(instanceId, state);
+        const commitment = buildCommitmentData(instanceId, seqNo, state.lastEventHash, stateHmac);
+        await tx.ledgerCommitment.create({ data: commitment });
       }
 
       return { seqNo, eventHash };

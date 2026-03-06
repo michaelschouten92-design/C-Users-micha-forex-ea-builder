@@ -36,11 +36,14 @@ export async function generateProofBundle(
     if (toSeqNo != null) (whereClause.seqNo as Record<string, unknown>).lte = toSeqNo;
   }
 
-  const dbEvents = await prisma.trackRecordEvent.findMany({
+  // Fetch one extra row to detect truncation (100_000 is the bundle limit)
+  const dbEventsRaw = await prisma.trackRecordEvent.findMany({
     where: whereClause,
     orderBy: { seqNo: "asc" },
-    take: 100_000,
+    take: 100_001,
   });
+  const truncated = dbEventsRaw.length > 100_000;
+  const dbEvents = truncated ? dbEventsRaw.slice(0, 100_000) : dbEventsRaw;
 
   // Generate the investor report, passing pre-loaded events to avoid re-querying
   const report = await generateInvestorReport(instanceId, fromSeqNo, toSeqNo, dbEvents);
@@ -140,6 +143,13 @@ export async function generateProofBundle(
 
   // Run verification on the assembled bundle
   const verification = verifyProofBundle(preliminaryBundle);
+
+  // Flag truncation so consumers know the result covers a subset
+  if (truncated && verification.l1) {
+    verification.l1.caveats.push(
+      "Bundle truncated at 100,000 events. Verification covers a partial ledger range."
+    );
+  }
 
   return {
     ...preliminaryBundle,
