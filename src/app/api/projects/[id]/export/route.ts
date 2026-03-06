@@ -28,7 +28,9 @@ import {
   computeStrategyFingerprint,
   ensureStrategyIdentity,
   recordStrategyVersion,
+  createBaselineFromBacktest,
 } from "@/lib/strategy-identity";
+import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
 import { computePreLiveVerdict, extractPreLiveInput } from "@/lib/proof";
 import type { BuildJsonSchema } from "@/types/builder";
 
@@ -239,7 +241,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     startOfMonth.setUTCDate(1);
     startOfMonth.setUTCHours(0, 0, 0, 0);
 
-    const exportJob = await prisma.$transaction(async (tx) => {
+    const txResult = await prisma.$transaction(async (tx) => {
       const currentCount = await tx.exportJob.count({
         where: { userId: session.user.id, createdAt: { gte: startOfMonth }, deletedAt: null },
       });
@@ -269,6 +271,21 @@ export async function POST(request: NextRequest, { params }: Props) {
         fingerprintResult
       );
 
+      // Create BacktestBaseline if a backtest exists (enables drift monitoring + identity hashing)
+      if (latestBacktest) {
+        await createBaselineFromBacktest(tx, strategyVersion.id, {
+          id: latestBacktest.id,
+          totalTrades: latestBacktest.totalTrades,
+          winRate: latestBacktest.winRate,
+          profitFactor: latestBacktest.profitFactor,
+          maxDrawdownPct: latestBacktest.maxDrawdownPct,
+          sharpeRatio: latestBacktest.sharpeRatio,
+          initialDeposit: latestBacktest.initialDeposit,
+          totalNetProfit: latestBacktest.totalNetProfit,
+          period: latestBacktest.period,
+        });
+      }
+
       // Create LiveEAInstance for telemetry tracking (linked to strategy version)
       const liveEA = await tx.liveEAInstance.create({
         data: {
@@ -286,10 +303,10 @@ export async function POST(request: NextRequest, { params }: Props) {
         data: { instanceId: liveEA.id },
       });
 
-      return job;
+      return { job, strategyVersionId: strategyVersion.id };
     });
 
-    if (!exportJob) {
+    if (!txResult) {
       return NextResponse.json(
         apiError(
           ErrorCode.EXPORT_LIMIT,
@@ -299,6 +316,13 @@ export async function POST(request: NextRequest, { params }: Props) {
         { status: 403 }
       );
     }
+
+    const { job: exportJob, strategyVersionId } = txResult;
+
+    // Bind identity hashes (runs its own Serializable tx — non-blocking for export)
+    bindIdentityToVersion(strategyVersionId).catch((err) => {
+      log.error({ err, strategyVersionId }, "Identity binding failed after export");
+    });
 
     log.info(
       { projectId: project.id, exportId: exportJob.id, versionNo: version.versionNo },
