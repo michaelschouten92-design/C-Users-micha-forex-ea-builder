@@ -38,8 +38,12 @@ export interface ProofChainVerificationResult {
 }
 
 /**
- * Deterministic JSON serialization — keys sorted alphabetically, compact.
- * Null/undefined values are omitted.
+ * Deterministic JSON serialization — top-level keys sorted alphabetically, compact.
+ *
+ * IMPORTANT: Uses an array replacer which acts as a key allowlist at ALL
+ * nesting levels. Nested object keys not also present at the top level are
+ * silently excluded. Callers with nested objects must pre-serialize them
+ * to strings (see build-governance-snapshot.ts for the established pattern).
  */
 export function stableJSON(obj: Record<string, unknown>): string {
   return JSON.stringify(obj, Object.keys(obj).sort());

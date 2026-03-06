@@ -681,10 +681,9 @@ describe("runVerification", () => {
       const payload = mockAppendVerificationRunProof.mock.calls[0][0].runCompletedPayload;
       expect(payload.tradeSnapshotHash).toBe("abc123");
       expect(payload.tradeFactCount).toBe(3);
-      expect(payload.snapshotRange).toEqual({
-        earliest: "2025-01-01T00:00:00.000Z",
-        latest: "2025-01-03T00:00:00.000Z",
-      });
+      expect(payload.snapshotRange).toBe(
+        JSON.stringify({ earliest: "2025-01-01T00:00:00.000Z", latest: "2025-01-03T00:00:00.000Z" })
+      );
       expect(payload.dataSources).toEqual(["BACKTEST"]);
     });
 

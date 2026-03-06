@@ -288,7 +288,7 @@ describe("runMonitoring", () => {
         daysSinceLastTrade: 1,
         baselineMissing: false,
         consecutiveDriftSnapshots: 0,
-        transitionDecision: { type: "NO_TRANSITION", reason: "no_instance" },
+        transitionDecision: JSON.stringify({ type: "NO_TRANSITION", reason: "no_instance" }),
         consecutiveHealthyRuns: 0,
       })
     );
@@ -780,11 +780,12 @@ describe("runMonitoring", () => {
       "strat_1",
       "MONITORING_RUN_COMPLETED",
       expect.objectContaining({
-        transitionDecision: expect.objectContaining({
-          type: "NO_TRANSITION",
-          reason: "recovering",
-        }),
+        transitionDecision: expect.stringContaining('"type":"NO_TRANSITION"'),
       })
+    );
+    // Also verify the reason is included
+    expect(mockAppendProofEvent.mock.calls[0][2].transitionDecision).toContain(
+      '"reason":"recovering"'
     );
 
     expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
@@ -808,11 +809,11 @@ describe("runMonitoring", () => {
       "strat_1",
       "MONITORING_RUN_COMPLETED",
       expect.objectContaining({
-        transitionDecision: expect.objectContaining({
-          type: "NO_TRANSITION",
-          reason: "must_pass_through_edge_at_risk",
-        }),
+        transitionDecision: expect.stringContaining('"type":"NO_TRANSITION"'),
       })
+    );
+    expect(mockAppendProofEvent.mock.calls[0][2].transitionDecision).toContain(
+      '"reason":"must_pass_through_edge_at_risk"'
     );
 
     expect(mockPerformLifecycleTransitionInTx).not.toHaveBeenCalled();
@@ -907,13 +908,12 @@ describe("runMonitoring", () => {
       "strat_1",
       "MONITORING_RUN_COMPLETED",
       expect.objectContaining({
-        transitionDecision: expect.objectContaining({
-          type: "TRANSITION",
-          from: "LIVE_MONITORING",
-          to: "EDGE_AT_RISK",
-        }),
+        transitionDecision: expect.stringContaining('"type":"TRANSITION"'),
       })
     );
+    const td = mockAppendProofEvent.mock.calls[0][2].transitionDecision;
+    expect(td).toContain('"from":"LIVE_MONITORING"');
+    expect(td).toContain('"to":"EDGE_AT_RISK"');
   });
 
   // ── Atomicity ────────────────────────────────────────────────────

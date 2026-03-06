@@ -104,7 +104,12 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const chainVerification = verifyProofChain(chainedEvents as unknown as StoredProofEvent[]);
+    const startSequence =
+      chainedEvents.length > 0 ? (chainedEvents[0].sequence as number) : undefined;
+    const chainVerification = verifyProofChain(
+      chainedEvents as unknown as StoredProofEvent[],
+      startSequence
+    );
 
     return NextResponse.json({ data, chainVerification });
   } catch (err) {

@@ -25,6 +25,47 @@ describe("stableJSON", () => {
   it("handles empty object", () => {
     expect(stableJSON({})).toBe("{}");
   });
+
+  it("drops nested object keys not present at top level (array replacer behavior)", () => {
+    // This documents the known limitation: nested keys not in the top-level
+    // key set are silently excluded. Callers must pre-serialize nested objects.
+    const result = stableJSON({
+      topKey: "value",
+      nested: { innerOnly: 42 },
+    });
+    const parsed = JSON.parse(result);
+    // "nested" key exists but its content is empty — "innerOnly" was filtered out
+    expect(parsed.nested).toEqual({});
+  });
+
+  it("preserves nested key that also exists at top level", () => {
+    const result = stableJSON({
+      type: "outer",
+      nested: { type: "inner", unique: 99 },
+    });
+    const parsed = JSON.parse(result);
+    // "type" survives because it's a top-level key; "unique" is dropped
+    expect(parsed.nested).toEqual({ type: "inner" });
+  });
+
+  it("pre-serialized nested objects are fully included in hash", () => {
+    // This is the established workaround: JSON.stringify nested before passing
+    const withNested = stableJSON({
+      data: { a: 1, b: 2 },
+      id: "x",
+    });
+    const preSerialized = stableJSON({
+      data: JSON.stringify({ a: 1, b: 2 }),
+      id: "x",
+    });
+    // The nested version loses content; the pre-serialized version preserves it
+    const parsedNested = JSON.parse(withNested);
+    expect(parsedNested.data).toEqual({}); // content lost
+    // Pre-serialized string includes the nested content (escaped)
+    expect(preSerialized).toContain('\\"a\\"'); // "a" preserved inside escaped JSON string
+    // And critically, the two stableJSON outputs differ
+    expect(withNested).not.toBe(preSerialized);
+  });
 });
 
 describe("computeProofEventHash", () => {
@@ -76,6 +117,49 @@ describe("computeProofEventHash", () => {
       payload: { verdict: "NOT_READY" },
     });
     expect(h1).not.toBe(h2);
+  });
+
+  it("pre-serialized nested field changes hash vs raw nested object", () => {
+    // Regression: stableJSON drops nested object keys. Pre-serializing
+    // to a string ensures nested content is included in the hash.
+    const withRawNested = computeProofEventHash({
+      ...baseInput,
+      payload: {
+        recordId: "rec_001",
+        ruleResults: [{ ruleId: "drawdown-breach", status: "PASS" }],
+        snapshotRange: { earliest: "2025-01-01", latest: "2025-12-01" },
+      },
+    });
+    const withPreSerialized = computeProofEventHash({
+      ...baseInput,
+      payload: {
+        recordId: "rec_001",
+        ruleResults: JSON.stringify([{ ruleId: "drawdown-breach", status: "PASS" }]),
+        snapshotRange: JSON.stringify({ earliest: "2025-01-01", latest: "2025-12-01" }),
+      },
+    });
+    // Hashes MUST differ: the pre-serialized version covers nested content
+    expect(withRawNested).not.toBe(withPreSerialized);
+  });
+
+  it("different nested content produces different hash when pre-serialized", () => {
+    // Without pre-serialization, these would hash identically because
+    // nested keys are dropped. With pre-serialization, they differ.
+    const hashA = computeProofEventHash({
+      ...baseInput,
+      payload: {
+        recordId: "rec_001",
+        ruleResults: JSON.stringify([{ ruleId: "drawdown-breach", status: "PASS" }]),
+      },
+    });
+    const hashB = computeProofEventHash({
+      ...baseInput,
+      payload: {
+        recordId: "rec_001",
+        ruleResults: JSON.stringify([{ ruleId: "drawdown-breach", status: "INVALIDATED" }]),
+      },
+    });
+    expect(hashA).not.toBe(hashB);
   });
 });
 

@@ -318,7 +318,7 @@ export async function runVerification(
         ...(snapshot && {
           tradeSnapshotHash: snapshot.snapshotHash,
           tradeFactCount: snapshot.factCount,
-          snapshotRange: snapshot.range,
+          snapshotRange: JSON.stringify(snapshot.range),
           dataSources: snapshot.dataSources,
         }),
       },

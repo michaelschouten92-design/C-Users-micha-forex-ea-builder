@@ -323,10 +323,10 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           strategyId,
           monitoringVerdict: evalResult.verdict,
           reasons: evalResult.reasons,
-          ruleResults: evalResult.ruleResults,
+          ruleResults: JSON.stringify(evalResult.ruleResults),
           tradeSnapshotHash: snapshot.snapshotHash,
           liveFactCount: snapshot.factCount,
-          snapshotRange: snapshot.range,
+          snapshotRange: JSON.stringify(snapshot.range),
           configVersion,
           thresholdsHash,
           configSource,
@@ -336,13 +336,13 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           daysSinceLastTrade,
           baselineMissing,
           consecutiveDriftSnapshots,
-          transitionDecision: {
+          transitionDecision: JSON.stringify({
             type: transitionDecision.type,
             ...(transitionDecision.type === "TRANSITION"
               ? { from: transitionDecision.from, to: transitionDecision.to }
               : {}),
             reason: transitionDecision.reason,
-          },
+          }),
           consecutiveHealthyRuns,
           timestamp,
         });
