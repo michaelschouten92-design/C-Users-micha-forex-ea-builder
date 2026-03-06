@@ -849,7 +849,7 @@ function EACard({
       })()}
 
       {/* Controls Row */}
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+      <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
         <button
           onClick={handleTogglePause}
           disabled={pauseLoading}
@@ -959,28 +959,30 @@ function EACard({
           {showProof ? "Hide Proof" : "Proof"}
         </button>
 
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0" />
 
-        <span className="text-xs text-[#7C8DB0]">
-          Last heartbeat: {formatRelativeTime(ea.lastHeartbeat)}
-        </span>
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-xs text-[#7C8DB0] whitespace-nowrap">
+            Last heartbeat: {formatRelativeTime(ea.lastHeartbeat)}
+          </span>
 
-        {/* Delete button */}
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(239,68,68,0.2)] text-[#7C8DB0] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-all duration-200"
-          title="Delete this EA instance"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
-          Delete
-        </button>
+          {/* Delete button */}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(239,68,68,0.2)] text-[#7C8DB0] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-all duration-200"
+            title="Delete this EA instance"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Delete
+          </button>
+        </div>
       </div>
 
       {/* Delete confirmation dialog */}
