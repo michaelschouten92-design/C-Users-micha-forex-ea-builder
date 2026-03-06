@@ -319,10 +319,30 @@ export async function POST(request: NextRequest, { params }: Props) {
 
     const { job: exportJob, strategyVersionId } = txResult;
 
-    // Bind identity hashes (runs its own Serializable tx — non-blocking for export)
-    bindIdentityToVersion(strategyVersionId).catch((err) => {
-      log.error({ err, strategyVersionId }, "Identity binding failed after export");
-    });
+    // Bind identity hashes (runs its own Serializable tx).
+    // Awaited so failures are observable — export already committed, so binding
+    // failure must not fail the response, but MUST be surfaced to the caller.
+    let bindingFailed = false;
+    try {
+      const bindResult = await bindIdentityToVersion(strategyVersionId);
+      if (!bindResult.ok) {
+        bindingFailed = true;
+        log.warn(
+          { strategyVersionId, projectId: project.id, errCode: bindResult.code },
+          "Identity binding returned error after export"
+        );
+      }
+    } catch (bindErr) {
+      bindingFailed = true;
+      log.warn(
+        {
+          strategyVersionId,
+          projectId: project.id,
+          errMessage: bindErr instanceof Error ? bindErr.message : String(bindErr),
+        },
+        "Identity binding threw after export"
+      );
+    }
 
     log.info(
       { projectId: project.id, exportId: exportJob.id, versionNo: version.versionNo },
@@ -345,6 +365,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         versionNo: version.versionNo,
         exportType: "MQ5",
         telemetryApiKey,
+        bindingFailed,
         ...(preLiveCheck && { preLiveCheck }),
       },
       { headers: rateLimitHeaders }
