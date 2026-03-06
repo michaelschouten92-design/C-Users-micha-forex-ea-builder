@@ -273,7 +273,7 @@ export async function POST(request: NextRequest, { params }: Props) {
 
       // Create BacktestBaseline if a backtest exists (enables drift monitoring + identity hashing)
       if (latestBacktest) {
-        await createBaselineFromBacktest(tx, strategyVersion.id, {
+        await createBaselineFromBacktest(tx, identity.strategyId, strategyVersion.id, {
           id: latestBacktest.id,
           totalTrades: latestBacktest.totalTrades,
           winRate: latestBacktest.winRate,

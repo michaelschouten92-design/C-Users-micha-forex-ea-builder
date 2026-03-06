@@ -11,6 +11,8 @@ import {
   extractBaselineMetrics,
   estimateBacktestDuration,
 } from "@/lib/strategy-health/baseline-extractor";
+import { appendProofEventInTx } from "@/lib/proof/events";
+import { computeBaselineHash } from "@/lib/proof/identity-hashing";
 
 const log = logger.child({ module: "strategy-baseline" });
 
@@ -52,11 +54,14 @@ export interface BacktestRunForBaseline {
 /**
  * Create a BacktestBaseline for a strategy version from a BacktestRun.
  *
- * Idempotent: if a baseline already exists for the version, returns it.
+ * Proof-before-mutation: appends BASELINE_CREATED proof event before writing.
+ * Idempotent: if a baseline already exists for the version, returns it
+ * without appending a duplicate proof event.
  * Must be called within a transaction after the StrategyVersion is created.
  */
 export async function createBaselineFromBacktest(
   tx: TransactionClient,
+  strategyId: string,
   strategyVersionId: string,
   backtestRun: BacktestRunForBaseline
 ): Promise<{ id: string; isNew: boolean }> {
@@ -85,6 +90,28 @@ export async function createBaselineFromBacktest(
 
   const { metrics, raw } = extractBaselineMetrics(backtestResult, backtestDurationDays);
 
+  // Compute deterministic baseline hash before any writes
+  const baselineHash = computeBaselineHash({
+    totalTrades: raw.totalTrades,
+    winRate: raw.winRate,
+    profitFactor: raw.profitFactor,
+    maxDrawdownPct: raw.maxDrawdownPct,
+    avgTradesPerDay: raw.avgTradesPerDay,
+    netReturnPct: raw.netReturnPct,
+    sharpeRatio: raw.sharpeRatio,
+    initialDeposit: raw.initialDeposit,
+    backtestDurationDays: raw.backtestDurationDays,
+  });
+
+  // Proof-before-mutation: record baseline lock intent before writing the row.
+  // If this fails, the baseline row is never created (same tx).
+  await appendProofEventInTx(tx, strategyId, "BASELINE_CREATED", {
+    recordId: strategyVersionId,
+    strategyVersionId,
+    backtestRunId: backtestRun.id,
+    baselineHash,
+  });
+
   const baseline = await tx.backtestBaseline.create({
     data: {
       strategyVersionId,
@@ -104,7 +131,7 @@ export async function createBaselineFromBacktest(
   });
 
   log.info(
-    { strategyVersionId, baselineId: baseline.id, backtestRunId: backtestRun.id },
+    { strategyVersionId, baselineId: baseline.id, backtestRunId: backtestRun.id, baselineHash },
     "Backtest baseline created"
   );
 
