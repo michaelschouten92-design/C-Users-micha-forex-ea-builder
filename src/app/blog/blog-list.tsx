@@ -23,10 +23,10 @@ export function BlogList({ posts, allTags }: BlogListProps) {
       <div className="flex flex-wrap gap-2 mb-8">
         <button
           onClick={() => setActiveTag(null)}
-          className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-200 ${
+          className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
             !activeTag
-              ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-              : "bg-transparent text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] hover:text-white"
+              ? "bg-[#6366F1] text-white border-[#6366F1]"
+              : "bg-transparent text-[#A1A1AA] border-[rgba(255,255,255,0.10)] hover:text-[#FAFAFA]"
           }`}
         >
           All
@@ -35,10 +35,10 @@ export function BlogList({ posts, allTags }: BlogListProps) {
           <button
             key={tag}
             onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-200 ${
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
               activeTag === tag
-                ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                : "bg-transparent text-[#94A3B8] border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] hover:text-white"
+                ? "bg-[#6366F1] text-white border-[#6366F1]"
+                : "bg-transparent text-[#A1A1AA] border-[rgba(255,255,255,0.10)] hover:text-[#FAFAFA]"
             }`}
           >
             {tag}
@@ -52,9 +52,9 @@ export function BlogList({ posts, allTags }: BlogListProps) {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="block bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] transition-all duration-200 group"
+            className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6 hover:border-[rgba(255,255,255,0.10)] transition-colors group"
           >
-            <div className="flex items-center gap-3 text-xs text-[#64748B] mb-3">
+            <div className="flex items-center gap-3 text-xs text-[#71717A] mb-3">
               <time dateTime={post.date}>
                 {new Date(post.date).toLocaleDateString("en-US", {
                   year: "numeric",
@@ -65,15 +65,15 @@ export function BlogList({ posts, allTags }: BlogListProps) {
               <span>&middot;</span>
               <span>{post.readTime}</span>
             </div>
-            <h2 className="text-lg font-semibold text-white group-hover:text-[#22D3EE] transition-colors mb-2">
+            <h2 className="text-lg font-semibold text-[#FAFAFA] group-hover:text-[#818CF8] transition-colors mb-2">
               {post.title}
             </h2>
-            <p className="text-sm text-[#94A3B8] line-clamp-2">{post.description}</p>
+            <p className="text-sm text-[#A1A1AA] line-clamp-2">{post.description}</p>
             <div className="flex gap-2 mt-3">
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border border-[rgba(79,70,229,0.3)]"
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)]"
                 >
                   {tag}
                 </span>
@@ -83,7 +83,7 @@ export function BlogList({ posts, allTags }: BlogListProps) {
         ))}
 
         {filtered.length === 0 && (
-          <p className="text-center py-12 text-[#64748B] text-sm">
+          <p className="text-center py-12 text-[#71717A] text-sm">
             No posts found for &ldquo;{activeTag}&rdquo;
           </p>
         )}

@@ -6,38 +6,37 @@ import { ContactForm } from "./contact-form";
 export const metadata: Metadata = {
   title: "Contact | AlgoStudio",
   description:
-    "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our no-code EA builder.",
+    "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our monitoring and governance platform.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact | AlgoStudio",
-    description:
-      "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our no-code EA builder.",
+    description: "Get in touch with AlgoStudio. Contact us for support, questions, or feedback.",
   },
 };
 
 export default function ContactPage() {
   return (
-    <div id="main-content" className="min-h-screen flex flex-col">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B]">
       <SiteNav />
       <div className="max-w-2xl mx-auto pt-32 pb-16 px-4 flex-1">
-        <h1 className="text-4xl font-bold text-white mb-4">Contact</h1>
-        <p className="text-[#94A3B8] mb-10">
+        <h1 className="text-4xl font-bold text-[#FAFAFA] mb-4">Contact</h1>
+        <p className="text-[#A1A1AA] mb-10">
           Have a question, found a bug, or need help? We&apos;re here to help.
         </p>
 
         <div className="space-y-6">
           {/* Contact Form */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Send us a message</h2>
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-[#FAFAFA] mb-4">Send us a message</h2>
             <ContactForm />
           </div>
 
           {/* Email */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-[rgba(99,102,241,0.10)] rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg
-                  className="w-5 h-5 text-[#A78BFA]"
+                  className="w-5 h-5 text-[#6366F1]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -51,11 +50,11 @@ export default function ContactPage() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white mb-1">Email</h2>
-                <p className="text-sm text-[#94A3B8] mb-3">Prefer to email directly?</p>
+                <h2 className="text-lg font-semibold text-[#FAFAFA] mb-1">Email</h2>
+                <p className="text-sm text-[#A1A1AA] mb-3">Prefer to email directly?</p>
                 <a
                   href="mailto:support@algo-studio.com"
-                  className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors font-medium"
+                  className="text-[#6366F1] hover:text-[#818CF8] transition-colors font-medium"
                 >
                   support@algo-studio.com
                 </a>
@@ -65,7 +64,7 @@ export default function ContactPage() {
         </div>
 
         {/* Response time */}
-        <p className="text-sm text-[#64748B] mt-8">
+        <p className="text-sm text-[#71717A] mt-8">
           We typically respond within 24 hours on business days.
         </p>
       </div>

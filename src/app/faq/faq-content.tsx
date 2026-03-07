@@ -2,7 +2,12 @@
 
 import { useState, useMemo } from "react";
 
-type FAQCategory = "General" | "Validation" | "Track Record & Monitoring" | "Technical" | "Pricing";
+type FAQCategory =
+  | "General"
+  | "Verification"
+  | "Track Record & Monitoring"
+  | "Technical"
+  | "Pricing";
 
 interface FAQItem {
   q: string;
@@ -12,7 +17,7 @@ interface FAQItem {
 
 const CATEGORIES: FAQCategory[] = [
   "General",
-  "Validation",
+  "Verification",
   "Track Record & Monitoring",
   "Technical",
   "Pricing",
@@ -37,7 +42,7 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
       {/* Search */}
       <div className="relative mb-6">
         <svg
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -54,7 +59,7 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search questions..."
-          className="w-full pl-11 pr-4 py-3 bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl text-white text-sm placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-all duration-200"
+          className="w-full pl-11 pr-4 py-3 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl text-[#FAFAFA] text-sm placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition-colors"
         />
       </div>
 
@@ -62,10 +67,10 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
       <div className="flex flex-wrap gap-2 mb-8">
         <button
           onClick={() => setActiveCategory("All")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             activeCategory === "All"
-              ? "bg-[#4F46E5] text-white"
-              : "bg-[#1A0626]/50 text-[#94A3B8] border border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.4)] hover:text-white"
+              ? "bg-[#6366F1] text-white"
+              : "bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:text-[#FAFAFA]"
           }`}
         >
           All
@@ -74,10 +79,10 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               activeCategory === cat
-                ? "bg-[#4F46E5] text-white"
-                : "bg-[#1A0626]/50 text-[#94A3B8] border border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.4)] hover:text-white"
+                ? "bg-[#6366F1] text-white"
+                : "bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:text-[#FAFAFA]"
             }`}
           >
             {cat}
@@ -88,24 +93,24 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
       {/* FAQ items */}
       <div className="space-y-4">
         {filtered.length === 0 ? (
-          <p className="text-center text-[#64748B] py-8">
+          <p className="text-center text-[#71717A] py-8">
             No questions match your search. Try a different term.
           </p>
         ) : (
           filtered.map((item, i) => (
             <details
               key={i}
-              className="group bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden"
+              className="group bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden"
             >
-              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-sm list-none">
+              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-[#FAFAFA] font-medium text-sm list-none">
                 <span className="flex items-center gap-3">
                   {item.q}
-                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-[rgba(79,70,229,0.1)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]">
+                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)]">
                     {item.category}
                   </span>
                 </span>
                 <svg
-                  className="w-5 h-5 text-[#64748B] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                  className="w-5 h-5 text-[#71717A] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -119,7 +124,7 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
                   />
                 </svg>
               </summary>
-              <div className="px-6 pb-4 text-sm text-[#94A3B8] leading-relaxed">{item.a}</div>
+              <div className="px-6 pb-4 text-sm text-[#A1A1AA] leading-relaxed">{item.a}</div>
             </details>
           ))
         )}

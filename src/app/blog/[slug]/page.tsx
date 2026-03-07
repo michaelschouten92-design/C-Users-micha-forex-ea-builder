@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: "/opengraph-image",
           width: 1200,
           height: 630,
-          alt: "AlgoStudio - No-Code MT5 Expert Advisor Builder",
+          alt: "AlgoStudio — Strategy Monitoring & Governance",
         },
       ],
     },
@@ -99,7 +99,7 @@ export default async function BlogPostPage({ params }: Props) {
   ];
 
   return (
-    <div id="main-content" className="min-h-screen pt-24 pb-16 px-4">
+    <div id="main-content" className="min-h-screen pt-24 pb-16 px-4 bg-[#09090B]">
       <SiteNav />
       <script
         type="application/ld+json"
@@ -107,13 +107,13 @@ export default async function BlogPostPage({ params }: Props) {
       />
       <article className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <Link href="/blog" className="text-[#22D3EE] hover:underline text-sm">
+          <Link href="/blog" className="text-[#6366F1] hover:underline text-sm">
             &larr; Back to blog
           </Link>
         </div>
 
         <header className="mb-8">
-          <div className="flex items-center gap-3 text-xs text-[#64748B] mb-4">
+          <div className="flex items-center gap-3 text-xs text-[#71717A] mb-4">
             <time dateTime={post.date}>
               {new Date(post.date).toLocaleDateString("en-US", {
                 year: "numeric",
@@ -126,13 +126,13 @@ export default async function BlogPostPage({ params }: Props) {
             <span>&middot;</span>
             <span>{post.author}</span>
           </div>
-          <h1 className="text-3xl font-bold text-white leading-tight">{post.title}</h1>
-          <p className="text-[#94A3B8] mt-3">{post.description}</p>
+          <h1 className="text-3xl font-bold text-[#FAFAFA] leading-tight">{post.title}</h1>
+          <p className="text-[#A1A1AA] mt-3">{post.description}</p>
           <div className="flex gap-2 mt-4">
             {post.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs font-medium px-2.5 py-1 rounded-full bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border border-[rgba(79,70,229,0.3)]"
+                className="text-xs font-medium px-2.5 py-1 rounded-full bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)]"
               >
                 {tag}
               </span>
@@ -142,13 +142,13 @@ export default async function BlogPostPage({ params }: Props) {
 
         <div
           className="prose prose-invert prose-sm max-w-none
-            [&_h2]:text-white [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-4
-            [&_p]:text-[#CBD5E1] [&_p]:leading-relaxed [&_p]:mb-4
-            [&_strong]:text-white
-            [&_ul]:text-[#CBD5E1] [&_ul]:space-y-2 [&_ul]:mb-4 [&_ul]:pl-6 [&_ul]:list-disc
-            [&_ol]:text-[#CBD5E1] [&_ol]:space-y-2 [&_ol]:mb-4 [&_ol]:pl-6 [&_ol]:list-decimal
+            [&_h2]:text-[#FAFAFA] [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-4
+            [&_p]:text-[#A1A1AA] [&_p]:leading-relaxed [&_p]:mb-4
+            [&_strong]:text-[#FAFAFA]
+            [&_ul]:text-[#A1A1AA] [&_ul]:space-y-2 [&_ul]:mb-4 [&_ul]:pl-6 [&_ul]:list-disc
+            [&_ol]:text-[#A1A1AA] [&_ol]:space-y-2 [&_ol]:mb-4 [&_ol]:pl-6 [&_ol]:list-decimal
             [&_li]:leading-relaxed
-            [&_a]:text-[#22D3EE] [&_a]:underline"
+            [&_a]:text-[#6366F1] [&_a]:underline"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
@@ -157,16 +157,16 @@ export default async function BlogPostPage({ params }: Props) {
           const related = getRelatedPosts(slug);
           return related.length > 0 ? (
             <div className="mt-12">
-              <h3 className="text-lg font-semibold text-white mb-4">Related Articles</h3>
+              <h3 className="text-lg font-semibold text-[#FAFAFA] mb-4">Related Articles</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {related.map((related) => (
                   <Link
                     key={related.slug}
                     href={`/blog/${related.slug}`}
-                    className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 hover:border-[rgba(79,70,229,0.4)] transition-all duration-200 group"
+                    className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg p-4 hover:border-[rgba(255,255,255,0.10)] transition-colors group"
                   >
-                    <p className="text-xs text-[#64748B] mb-1.5">{related.readTime}</p>
-                    <h4 className="text-sm font-medium text-white group-hover:text-[#22D3EE] transition-colors line-clamp-2">
+                    <p className="text-xs text-[#71717A] mb-1.5">{related.readTime}</p>
+                    <h4 className="text-sm font-medium text-[#FAFAFA] group-hover:text-[#818CF8] transition-colors line-clamp-2">
                       {related.title}
                     </h4>
                   </Link>
@@ -177,16 +177,17 @@ export default async function BlogPostPage({ params }: Props) {
         })()}
 
         {/* CTA */}
-        <div className="mt-12 bg-gradient-to-br from-[#1A0626] to-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-xl p-8 text-center">
-          <h3 className="text-xl font-bold text-white mb-2">Ready to build your own EA?</h3>
-          <p className="text-[#94A3B8] mb-6 text-sm">
-            Start building automated trading strategies for MetaTrader 5 — no coding required.
+        <div className="mt-12 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 text-center">
+          <h3 className="text-xl font-bold text-[#FAFAFA] mb-2">Monitor your trading strategies</h3>
+          <p className="text-[#A1A1AA] mb-6 text-sm">
+            Continuous performance tracking, verification, and governance for algorithmic
+            strategies.
           </p>
           <Link
-            href="/login?mode=register"
-            className="inline-block bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+            href="/register"
+            className="inline-block bg-[#6366F1] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
           >
-            Get Started Free
+            Start monitoring
           </Link>
         </div>
       </article>

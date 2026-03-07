@@ -6,12 +6,12 @@ import { Footer } from "@/components/marketing/footer";
 export const metadata: Metadata = {
   title: "Roadmap — AlgoStudio",
   description:
-    "See what we're building next. AlgoStudio roadmap with recently shipped features, current priorities, and future plans for the MT5 EA builder.",
+    "See what we're building next. AlgoStudio roadmap with recently shipped features, current priorities, and future plans for strategy monitoring and governance.",
   alternates: { canonical: "/roadmap" },
   openGraph: {
     title: "AlgoStudio Roadmap — See What's Coming",
     description:
-      "From cloud backtesting to broker integrations. See every feature we're building for the visual MT5 EA builder.",
+      "From advanced analytics to broker integrations. See every feature we're building for strategy monitoring and governance.",
   },
 };
 
@@ -25,29 +25,30 @@ interface RoadmapItem {
 
 const SHIPPED: RoadmapItem[] = [
   {
-    title: "AI Strategy Generator",
+    title: "Public Proof Pages",
     description:
-      "Describe a strategy in plain English and get auto-generated node layouts. Rule-based MVP live now.",
-    tag: "AI",
+      "Share independently verifiable strategy proof pages with hash-chain integrity and Monte Carlo analysis.",
+    tag: "Verification",
     shipped: "Q1 2026",
   },
   {
-    title: "Multi-Pair Strategies",
-    description: "Run a single strategy across multiple currency pairs with correlation filtering.",
-    tag: "Trading",
+    title: "Strategy Discovery",
+    description: "Public directory of curated, verified strategies with live performance metrics.",
+    tag: "Discovery",
     shipped: "Q1 2026",
   },
   {
-    title: "Multi-Level Take Profit",
-    description: "Three staged TP levels with automatic SL management after each level is hit.",
-    tag: "Trade Management",
+    title: "Governance Ladder",
+    description:
+      "Multi-level verification pipeline from submission through validation to monitoring.",
+    tag: "Governance",
     shipped: "Q4 2025",
   },
   {
-    title: "ICT/SMC Nodes",
+    title: "Monte Carlo Analysis",
     description:
-      "Order blocks, fair value gaps, and market structure detection for smart money strategies.",
-    tag: "Price Action",
+      "Survival-rate simulation to stress-test strategy robustness under randomized conditions.",
+    tag: "Analytics",
     shipped: "Q3 2025",
   },
   {
@@ -58,32 +59,32 @@ const SHIPPED: RoadmapItem[] = [
     shipped: "Q3 2025",
   },
   {
-    title: "Live EA Dashboard",
-    description:
-      "Monitor your deployed EAs in real-time with heartbeat tracking, trade logs, and alerts.",
+    title: "Live Strategy Monitoring",
+    description: "Real-time heartbeat tracking, trade logs, and alerts for deployed strategies.",
     tag: "Monitoring",
     shipped: "Q2 2025",
   },
   {
-    title: "Grid / Pyramid Entry",
+    title: "Hash-Chain Trade Ledger",
     description:
-      "Place orders at regular intervals or add to winning positions with configurable lot multipliers.",
-    tag: "Trading",
+      "Tamper-evident trade recording with cryptographic hash chains for independent verification.",
+    tag: "Verification",
     shipped: "Q1 2025",
   },
 ];
 
 const IN_PROGRESS: RoadmapItem[] = [
   {
-    title: "Cloud Backtesting",
-    description: "Run backtests directly from AlgoStudio without needing MetaTrader installed.",
-    tag: "Infrastructure",
+    title: "Automated Drift Detection",
+    description:
+      "Continuous monitoring that flags when live performance deviates from backtest baselines.",
+    tag: "Monitoring",
     timeline: "Q2 2026",
   },
   {
-    title: "Advanced Optimization",
+    title: "Walk-Forward Validation",
     description:
-      "Walk-forward optimization and Monte Carlo analysis to validate strategy robustness before going live.",
+      "Out-of-sample validation to verify strategy robustness before promoting to live monitoring.",
     tag: "Analytics",
     timeline: "Q2 2026",
   },
@@ -92,22 +93,22 @@ const IN_PROGRESS: RoadmapItem[] = [
 const PLANNED: RoadmapItem[] = [
   {
     title: "Broker API Integration",
-    description: "Connect to brokers directly for live deployment without manual file copying.",
+    description: "Connect to brokers directly for automated trade data ingestion and monitoring.",
     tag: "Integration",
     timeline: "Q3 2026",
   },
   {
-    title: "TradingView Integration",
+    title: "Multi-Account Monitoring",
     description:
-      "Import TradingView Pine Script signals as entry triggers for your AlgoStudio EAs.",
-    tag: "Integration",
+      "Monitor the same strategy across multiple broker accounts with consolidated reporting.",
+    tag: "Monitoring",
     timeline: "Q3 2026",
   },
   {
-    title: "Advanced ML Nodes",
+    title: "Custom Risk Rules",
     description:
-      "Machine learning-based signal nodes for pattern recognition and adaptive strategies.",
-    tag: "AI",
+      "Define governance rules that trigger alerts or pauses when risk thresholds are breached.",
+    tag: "Governance",
     timeline: "Q4 2026",
   },
 ];
@@ -140,20 +141,20 @@ function RoadmapSection({
         {items.map((item) => (
           <div
             key={item.title}
-            className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-5 hover:border-[rgba(79,70,229,0.3)] transition-colors"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg p-5 hover:border-[rgba(255,255,255,0.10)] transition-colors"
           >
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)] whitespace-nowrap shrink-0">
+              <h3 className="text-sm font-semibold text-[#FAFAFA]">{item.title}</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)] whitespace-nowrap shrink-0">
                 {item.tag}
               </span>
             </div>
-            <p className="text-xs text-[#7C8DB0] leading-relaxed">{item.description}</p>
+            <p className="text-xs text-[#71717A] leading-relaxed">{item.description}</p>
             {showShipped && item.shipped && (
               <p className="text-[10px] text-[#22C55E] font-medium mt-2">Shipped {item.shipped}</p>
             )}
             {showTimeline && item.timeline && (
-              <p className="text-[10px] text-[#94A3B8] font-medium mt-2">Target: {item.timeline}</p>
+              <p className="text-[10px] text-[#A1A1AA] font-medium mt-2">Target: {item.timeline}</p>
             )}
           </div>
         ))}
@@ -164,15 +165,17 @@ function RoadmapSection({
 
 export default function RoadmapPage() {
   return (
-    <div id="main-content" className="min-h-screen flex flex-col">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B]">
       <SiteNav />
 
       <main className="pt-32 pb-16 px-4 sm:px-6 flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">AlgoStudio Roadmap</h1>
-            <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto">
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#FAFAFA] mb-4">
+              AlgoStudio Roadmap
+            </h1>
+            <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto">
               See what we have shipped, what we are building now, and what is planned for the
               future. Your feedback shapes our priorities.
             </p>
@@ -204,15 +207,15 @@ export default function RoadmapPage() {
           />
 
           {/* CTA */}
-          <div className="text-center mt-16 border-t border-[rgba(79,70,229,0.1)] pt-12">
-            <h2 className="text-2xl font-bold text-white mb-3">Have a feature request?</h2>
-            <p className="text-[#94A3B8] mb-6">
+          <div className="text-center mt-16 border-t border-[rgba(255,255,255,0.06)] pt-12">
+            <h2 className="text-2xl font-bold text-[#FAFAFA] mb-3">Have a feature request?</h2>
+            <p className="text-[#A1A1AA] mb-6">
               We prioritize based on user feedback. Let us know what would make AlgoStudio more
               useful for you.
             </p>
             <Link
               href="/contact"
-              className="inline-block bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
+              className="inline-block bg-[#6366F1] text-[#FAFAFA] px-6 py-3 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
             >
               Vote for Features
             </Link>
