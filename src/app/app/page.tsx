@@ -12,6 +12,7 @@ import { OnboardingGate } from "./components/onboarding-gate";
 import { OnboardingChecklist } from "./components/onboarding-checklist";
 import { shouldRedirectToOnboarding } from "./onboarding-heuristic";
 import { PortfolioHealthSummary } from "@/components/app/portfolio-health-summary";
+import { PortfolioRiskBanner } from "@/components/app/portfolio-risk-banner";
 import { CommandCenterView } from "./command-center-view";
 import { loadCommandCenterData } from "./load-command-center-data";
 
@@ -168,6 +169,19 @@ export default async function DashboardPage() {
                 tier={tier}
                 firstProjectId={projects.length > 0 ? projects[0].id : null}
               />
+            )}
+
+            {/* ── Portfolio Risk Banner ── */}
+            {commandCenter.strategies.length > 0 && (
+              <div className="mb-4">
+                <PortfolioRiskBanner
+                  summary={{
+                    invalidated: commandCenter.summary.invalidated,
+                    atRisk: commandCenter.summary.atRisk,
+                    awaitingData: commandCenter.strategies.filter((s) => !s.hasHealthData).length,
+                  }}
+                />
+              </div>
             )}
 
             {/* ══════════════════════════════════════════
