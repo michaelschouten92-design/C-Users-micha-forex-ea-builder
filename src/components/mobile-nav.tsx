@@ -64,7 +64,7 @@ export function MobileNav() {
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="text-[#94A3B8] hover:text-white p-2"
+        className="text-[#A1A1AA] hover:text-white p-2"
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
       >
@@ -97,70 +97,63 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="Mobile navigation menu"
-            className="absolute top-16 left-0 right-0 bg-[#0D0117]/95 backdrop-blur-md border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex flex-col gap-4 z-50"
+            className="absolute top-16 left-0 right-0 bg-[#09090B]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex flex-col gap-4 z-50"
           >
             <Link
-              href="/verified"
+              href="/strategies"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
-              Verified
+              Strategies
             </Link>
             <Link
               href="/product"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               Platform
             </Link>
             <Link
               href="/pricing"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               Pricing
             </Link>
             <Link
               href="/about"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               About
             </Link>
             <Link
-              href="/product/mt5-export"
-              onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
-            >
-              MT5 Export
-            </Link>
-            <Link
               href="/prop-firms"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               Prop Firms
             </Link>
             <Link
               href="/blog"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               Blog
             </Link>
             <Link
               href="/login"
               onClick={closeAndRestoreFocus}
-              className="text-sm text-[#94A3B8] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
               Sign in
             </Link>
             <Link
               href="/register"
               onClick={closeAndRestoreFocus}
-              className="text-sm bg-[#4F46E5] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#6366F1] transition-colors text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22D3EE]"
+              className="text-sm bg-[#6366F1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818CF8] transition-colors text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
-              Establish Control
+              Start monitoring
             </Link>
           </div>
         </>

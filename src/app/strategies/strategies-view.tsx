@@ -27,11 +27,11 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string; dir: "asc" | "desc" }> 
 ];
 
 const LADDER_COLORS: Record<string, string> = {
-  SUBMITTED: "#7C8DB0",
+  SUBMITTED: "#71717A",
   VALIDATED: "#F59E0B",
   VERIFIED: "#10B981",
   PROVEN: "#6366F1",
-  INSTITUTIONAL: "#8B5CF6",
+  INSTITUTIONAL: "#818CF8",
 };
 
 const LIFECYCLE_BADGE: Record<string, { color: string; label: string }> = {
@@ -65,20 +65,20 @@ export function StrategiesView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
         <div className="animate-pulse space-y-4 w-full max-w-5xl px-6">
-          <div className="h-10 bg-[#1A0626] rounded-xl w-64" />
-          <div className="h-64 bg-[#1A0626] rounded-xl" />
+          <div className="h-10 bg-[#111114] rounded-xl w-64" />
+          <div className="h-64 bg-[#111114] rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#09090B]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Verified Strategies</h1>
-        <p className="text-sm text-[#7C8DB0] mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mb-2">Verified Strategies</h1>
+        <p className="text-sm text-[#71717A] mb-6">
           Curated algorithmic trading strategies with independently verified performance.
         </p>
 
@@ -90,8 +90,8 @@ export function StrategiesView() {
               onClick={() => setSortIdx(i)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 i === sortIdx
-                  ? "bg-[#4F46E5] text-white"
-                  : "bg-[#1A0626] text-[#7C8DB0] hover:text-white border border-[rgba(79,70,229,0.15)]"
+                  ? "bg-[#6366F1] text-white"
+                  : "bg-[#111114] text-[#71717A] hover:text-[#FAFAFA] border border-[rgba(255,255,255,0.06)]"
               }`}
             >
               {opt.label}
@@ -100,8 +100,8 @@ export function StrategiesView() {
         </div>
 
         {sorted.length === 0 ? (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl px-5 py-12 text-center">
-            <p className="text-[#7C8DB0]">No verified strategies match the criteria yet.</p>
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-12 text-center">
+            <p className="text-[#71717A]">No verified strategies match the criteria yet.</p>
           </div>
         ) : (
           <>
@@ -109,7 +109,7 @@ export function StrategiesView() {
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[#7C8DB0] border-b border-[rgba(79,70,229,0.1)]">
+                  <tr className="text-[#71717A] border-b border-[rgba(255,255,255,0.06)]">
                     <th className="text-left py-3 px-3 font-medium">Name</th>
                     <th className="text-left py-3 px-3 font-medium">Ladder</th>
                     <th className="text-right py-3 px-3 font-medium">Profit Factor</th>
@@ -122,17 +122,17 @@ export function StrategiesView() {
                 <tbody>
                   {sorted.map((s) => {
                     const href = s.slug ? `/p/${s.slug}` : `/proof/${s.strategyId}`;
-                    const ladderColor = LADDER_COLORS[s.ladderLevel] ?? "#7C8DB0";
+                    const ladderColor = LADDER_COLORS[s.ladderLevel] ?? "#71717A";
                     const lc = LIFECYCLE_BADGE[s.lifecycle] ?? LIFECYCLE_BADGE.RUN;
                     return (
                       <tr
                         key={s.strategyId}
-                        className="border-b border-[rgba(79,70,229,0.05)] hover:bg-[#1A0626]/60 transition-colors"
+                        className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[#111114]/60 transition-colors"
                       >
                         <td className="py-3 px-3">
                           <Link
                             href={href}
-                            className="text-white hover:text-[#A78BFA] transition-colors font-medium"
+                            className="text-[#FAFAFA] hover:text-[#818CF8] transition-colors font-medium"
                           >
                             {s.name}
                           </Link>
@@ -149,16 +149,16 @@ export function StrategiesView() {
                             {s.ladderLevel}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-right text-white font-mono">
+                        <td className="py-3 px-3 text-right text-[#FAFAFA] font-mono">
                           {s.profitFactor.toFixed(2)}
                         </td>
-                        <td className="py-3 px-3 text-right text-white font-mono">
+                        <td className="py-3 px-3 text-right text-[#FAFAFA] font-mono">
                           {s.maxDrawdownPct.toFixed(1)}%
                         </td>
-                        <td className="py-3 px-3 text-right text-white font-mono">
+                        <td className="py-3 px-3 text-right text-[#FAFAFA] font-mono">
                           {s.tradeCount.toLocaleString()}
                         </td>
-                        <td className="py-3 px-3 text-right text-white font-mono">
+                        <td className="py-3 px-3 text-right text-[#FAFAFA] font-mono">
                           {s.monteCarloSurvivalPct}%
                         </td>
                         <td className="py-3 px-3 text-center">
@@ -184,16 +184,18 @@ export function StrategiesView() {
             <div className="sm:hidden space-y-3">
               {sorted.map((s) => {
                 const href = s.slug ? `/p/${s.slug}` : `/proof/${s.strategyId}`;
-                const ladderColor = LADDER_COLORS[s.ladderLevel] ?? "#7C8DB0";
+                const ladderColor = LADDER_COLORS[s.ladderLevel] ?? "#71717A";
                 const lc = LIFECYCLE_BADGE[s.lifecycle] ?? LIFECYCLE_BADGE.RUN;
                 return (
                   <Link
                     key={s.strategyId}
                     href={href}
-                    className="block bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 hover:border-[rgba(79,70,229,0.3)] transition-colors"
+                    className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 hover:border-[rgba(255,255,255,0.10)] transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold text-white truncate mr-2">{s.name}</h3>
+                      <h3 className="text-sm font-semibold text-[#FAFAFA] truncate mr-2">
+                        {s.name}
+                      </h3>
                       <span
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0"
                         style={{ backgroundColor: `${lc.color}15`, color: lc.color }}
@@ -219,20 +221,20 @@ export function StrategiesView() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <p className="text-[#7C8DB0]">Profit Factor</p>
-                        <p className="text-white font-mono">{s.profitFactor.toFixed(2)}</p>
+                        <p className="text-[#71717A]">Profit Factor</p>
+                        <p className="text-[#FAFAFA] font-mono">{s.profitFactor.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-[#7C8DB0]">Max Drawdown</p>
-                        <p className="text-white font-mono">{s.maxDrawdownPct.toFixed(1)}%</p>
+                        <p className="text-[#71717A]">Max Drawdown</p>
+                        <p className="text-[#FAFAFA] font-mono">{s.maxDrawdownPct.toFixed(1)}%</p>
                       </div>
                       <div>
-                        <p className="text-[#7C8DB0]">Trades</p>
-                        <p className="text-white font-mono">{s.tradeCount.toLocaleString()}</p>
+                        <p className="text-[#71717A]">Trades</p>
+                        <p className="text-[#FAFAFA] font-mono">{s.tradeCount.toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-[#7C8DB0]">Monte Carlo</p>
-                        <p className="text-white font-mono">{s.monteCarloSurvivalPct}%</p>
+                        <p className="text-[#71717A]">Monte Carlo</p>
+                        <p className="text-[#FAFAFA] font-mono">{s.monteCarloSurvivalPct}%</p>
                       </div>
                     </div>
                   </Link>

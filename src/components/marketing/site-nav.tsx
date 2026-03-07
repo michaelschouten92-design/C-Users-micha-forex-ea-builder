@@ -15,8 +15,7 @@ const PLATFORM_ITEMS = [
 ];
 
 const STRATEGIES_ITEMS = [
-  { label: "Strategy Discovery", href: "/strategies" },
-  { label: "Verified Hub", href: "/verified" },
+  { label: "Strategies", href: "/strategies" },
   { label: "Example Proof", href: "/p/demo" },
 ];
 
@@ -205,8 +204,8 @@ function MobileNavMenu() {
               </Link>
             ))}
 
-            {/* Verified Strategies */}
-            <p className={sectionClass}>Verified Strategies</p>
+            {/* Strategies */}
+            <p className={sectionClass}>Strategies</p>
             {STRATEGIES_ITEMS.map((item) => (
               <Link key={item.href} href={item.href} onClick={close} className={linkClass}>
                 {item.label}
@@ -272,7 +271,7 @@ export function SiteNav() {
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-6">
           <NavDropdown label="Platform" items={PLATFORM_ITEMS} />
-          <NavDropdown label="Verified Strategies" items={STRATEGIES_ITEMS} />
+          <NavDropdown label="Strategies" items={STRATEGIES_ITEMS} />
           <Link
             href="/pricing"
             className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"

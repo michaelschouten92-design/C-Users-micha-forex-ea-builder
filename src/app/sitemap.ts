@@ -59,11 +59,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...blogPosts,
     {
-      url: `${baseUrl}/verified`,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
       url: `${baseUrl}/strategies`,
       changeFrequency: "weekly",
       priority: 0.8,
