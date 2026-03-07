@@ -3,13 +3,11 @@ import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
-import { FAQSection, faqJsonLd } from "@/components/marketing/faq-section";
-import { CTASection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Prop Firm Strategies — Evaluated & Validated EAs for Funded Challenges | AlgoStudio",
+  title: "Prop Firms — Strategy Monitoring for Funded Challenges | AlgoStudio",
   description:
-    "Build and evaluate Expert Advisors configured for prop firm challenges. Health scoring, Monte Carlo validation, daily loss limits, and drawdown protection for FTMO, E8 Markets, FundingPips, and more.",
+    "Monitor and verify your algorithmic strategies for prop firm challenges. Drawdown tracking, performance verification, and strategy discipline for FTMO, E8 Markets, FundingPips, and more.",
   alternates: { canonical: "/prop-firms" },
 };
 
@@ -18,178 +16,47 @@ const breadcrumbs = [
   { name: "Prop Firms", href: "/prop-firms" },
 ];
 
-const propFirms = [
-  {
-    name: "FTMO",
-    rulesUrl: "https://ftmo.com/en/trading-objectives/",
-    dailyLoss: "5%",
-    maxDrawdown: "10%",
-    profitTarget: "10% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "30 days per phase",
-    recommended: {
-      riskPerTrade: "0.5%",
-      dailyCap: "3%",
-      maxTrades: "2",
-      strategy: "EMA Crossover or Trend Pullback",
-    },
-  },
-  {
-    name: "E8 Markets",
-    rulesUrl: "https://e8markets.com/",
-    dailyLoss: "4%",
-    maxDrawdown: "8%",
-    profitTarget: "8% (Phase 1) / 4% (Phase 2)",
-    timeLimit: "Unlimited",
-    recommended: {
-      riskPerTrade: "0.4%",
-      dailyCap: "2.5%",
-      maxTrades: "2",
-      strategy: "EMA Crossover or MACD Crossover",
-    },
-  },
-  {
-    name: "FundingPips",
-    rulesUrl: "https://fundingpips.com/",
-    dailyLoss: "5%",
-    maxDrawdown: "10%",
-    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "Unlimited",
-    recommended: {
-      riskPerTrade: "0.5%",
-      dailyCap: "3%",
-      maxTrades: "2",
-      strategy: "Trend Pullback or Range Breakout",
-    },
-  },
-  {
-    name: "FundedNext",
-    rulesUrl: "https://fundednext.com/",
-    dailyLoss: "5%",
-    maxDrawdown: "10%",
-    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "Unlimited",
-    recommended: {
-      riskPerTrade: "0.5%",
-      dailyCap: "3%",
-      maxTrades: "2",
-      strategy: "EMA Crossover or Trend Pullback",
-    },
-  },
-  {
-    name: "The 5%ers",
-    rulesUrl: "https://the5ers.com/",
-    dailyLoss: "5%",
-    maxDrawdown: "10%",
-    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "Unlimited",
-    recommended: {
-      riskPerTrade: "0.5%",
-      dailyCap: "3%",
-      maxTrades: "2",
-      strategy: "EMA Crossover or RSI Reversal",
-    },
-  },
-  {
-    name: "Alpha Capital",
-    rulesUrl: "https://alphacapitalgroup.com/",
-    dailyLoss: "5%",
-    maxDrawdown: "10%",
-    profitTarget: "8% (Phase 1) / 5% (Phase 2)",
-    timeLimit: "Unlimited",
-    recommended: {
-      riskPerTrade: "0.5%",
-      dailyCap: "3%",
-      maxTrades: "2",
-      strategy: "Trend Pullback or MACD Crossover",
-    },
-  },
-];
-
-const features = [
-  {
-    title: "Daily P&L Limits",
-    description:
-      "Set a hard daily loss cap in your EA. When the limit is reached, the EA stops trading for the rest of the day — preventing you from breaching the firm's daily loss rule.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    ),
-  },
-  {
-    title: "Maximum Drawdown Protection",
-    description:
-      "Built-in equity monitoring stops all trading if your account approaches the maximum drawdown limit. Configurable threshold with safety buffer.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-      />
-    ),
-  },
-  {
-    title: "News Filter",
-    description:
-      "Automatically stop trading before and after high-impact news events. NFP, FOMC, and ECB decisions can cause extreme volatility that blows through stop losses.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-      />
-    ),
-  },
-  {
-    title: "Risk-Per-Trade Management",
-    description:
-      "Position sizing calculated from account equity and stop loss distance. Your EA automatically adjusts lot sizes to risk exactly the configured percentage per trade.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
-        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-      />
-    ),
-  },
-];
-
 const faqItems = [
   {
-    q: "Do prop firms allow Expert Advisors?",
-    a: "Most major prop firms allow EAs. FTMO, E8 Markets, FundingPips, FundedNext, The 5%ers, and Alpha Capital all permit automated trading. Always check the specific firm's rules before deploying, as some have restrictions on certain trading styles (e.g., high-frequency trading or arbitrage).",
+    q: "What does AlgoStudio monitor for prop firm strategies?",
+    a: "AlgoStudio tracks strategy performance against validated baselines — drawdown levels, win rate, trade frequency, and profit factor. When metrics drift outside expected bounds, the platform surfaces the deviation through lifecycle governance.",
   },
   {
-    q: "What is the best strategy for prop firm challenges?",
-    a: "Trend-following strategies (EMA Crossover, Trend Pullback) tend to perform best because they produce larger winning trades relative to their stop losses. Combined with strict risk management (0.5% risk per trade, daily loss cap at 3%), these strategies can reach profit targets while staying well within drawdown limits.",
+    q: "Does AlgoStudio place trades on my prop firm account?",
+    a: "No. AlgoStudio does not place trades, manage positions, or interact with broker execution. It monitors and verifies strategy performance. Trading decisions remain with you and your strategy.",
   },
   {
-    q: "How do I avoid blowing a prop firm challenge?",
-    a: "The three most common reasons for failure are: risking too much per trade (use 0.5%), not having a daily loss cap (set it at 3%), and trading during high-impact news events (use a news filter). AlgoStudio lets you configure all three as built-in settings.",
+    q: "Can I use AlgoStudio during a prop firm challenge?",
+    a: "Yes. You can connect your strategy and monitor performance throughout both evaluation phases and funded account operation. Continuous monitoring helps you detect drawdown risk before it becomes a rule violation.",
   },
   {
-    q: "Should I use the same EA for Phase 1 and Phase 2?",
-    a: "Yes, but adjust the risk settings. Phase 2 typically has a lower profit target (5% vs 10%), so you can use slightly more conservative settings — lower risk per trade or fewer max trades per day. The strategy logic should remain the same.",
+    q: "How does verification help with prop firm trading?",
+    a: "Verification establishes a statistical baseline for your strategy — expected drawdown, trade frequency, win rate. During live trading, AlgoStudio measures actual performance against this baseline. Deviation from validated parameters is detected and scored.",
   },
   {
-    q: "Can I use AlgoStudio EAs on funded accounts after passing?",
-    a: "Yes. Once you pass the challenge, you can use the same EA on your funded account. The exported MQL5 code works identically on challenge and funded accounts. Many traders reduce risk slightly on funded accounts for more consistent long-term performance.",
-  },
-  {
-    q: "How long does it take to build a prop firm EA?",
-    a: "In AlgoStudio, you can build a prop-firm-ready EA in under 5 minutes. Choose a strategy template, configure the risk settings for your target prop firm, and export. Then backtest in the MT5 Strategy Tester before deploying on your challenge account.",
+    q: "Can I share my verified track record with a prop firm?",
+    a: "Strategies that pass verification can generate public proof pages — independently accessible records showing validation history, live performance, and governance status. You can share these with anyone via a link.",
   },
 ];
+
+function faqJsonLd(questions: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: questions.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
+}
 
 export default function PropFirmsPage() {
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#09090B]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
@@ -201,241 +68,325 @@ export default function PropFirmsPage() {
 
       <SiteNav />
 
-      <main className="pt-24 pb-20 px-6">
+      <main className="pt-24 pb-20 px-6 flex-1">
         <div className="max-w-4xl mx-auto">
           <Breadcrumbs items={breadcrumbs} />
 
-          {/* Hero */}
-          <section className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)] rounded-full px-4 py-1.5 mb-6">
-              <span className="text-xs text-[#A78BFA] font-medium">
-                Built-in prop firm compliance settings
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-              Evaluate Your Strategy for
+          {/* ════════════════════════════════════════════════════════
+              1. HERO
+              ════════════════════════════════════════════════════════ */}
+          <section className="mb-20">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#FAFAFA] leading-tight mb-6">
+              Monitor your prop firm
               <br />
-              <span className="text-[#A78BFA]">Prop Firm Challenges</span>
+              trading strategies.
             </h1>
-            <p className="text-lg text-[#94A3B8] max-w-2xl mx-auto mb-8">
-              Build and evaluate Expert Advisors with the exact risk settings, drawdown limits, and
-              daily loss caps required by top prop firms. Know your strategy&apos;s status before
-              you fund a challenge.
+            <p className="text-lg text-[#A1A1AA] max-w-2xl mb-8">
+              Prop firm rules require strict risk control and continuous discipline. AlgoStudio
+              monitors strategy performance, detects drawdown risk, and verifies track records — so
+              you know when your strategy is drifting before a rule violation occurs.
             </p>
-            <Link
-              href="/login?mode=register&redirect=/app/evaluate"
-              className="inline-block bg-[#4F46E5] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_24px_rgba(79,70,229,0.4)]"
-            >
-              Get Your Prop Strategy Evaluated — Free
-            </Link>
-          </section>
-
-          {/* Top disclaimer */}
-          <section className="mb-12">
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
-              <p className="text-xs text-amber-300/90 leading-relaxed">
-                <strong>Important:</strong> Prop firm rules change frequently. Always verify current
-                rules on the firm&apos;s official website before using these settings. The
-                information below may be outdated.
-              </p>
-              <p className="text-xs text-amber-300/90 leading-relaxed">
-                AlgoStudio is not affiliated with, endorsed by, or partnered with any prop firm
-                listed below. All firm names and logos are trademarks of their respective owners.
-              </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/register"
+                className="inline-block bg-[#6366F1] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors text-center"
+              >
+                Start monitoring
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-block px-8 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors text-center"
+              >
+                See pricing
+              </Link>
             </div>
           </section>
 
-          {/* Supported prop firms */}
+          {/* ════════════════════════════════════════════════════════
+              2. THE PROBLEM WITH PROP FIRM ACCOUNTS
+              ════════════════════════════════════════════════════════ */}
           <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              Configured for Top Prop Firms
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              The Problem with Prop Firm Accounts
             </h2>
-            <p className="text-[#94A3B8] text-center mb-10 max-w-2xl mx-auto">
-              Each prop firm has unique rules. Here are the challenge requirements and our
-              recommended EA settings for each. Always verify on the firm&apos;s website.
+            <p className="text-[#A1A1AA] mb-8 max-w-2xl">
+              Prop firm challenges have strict rules and narrow margins for error. Most failures
+              come from problems that are detectable — if you have the right monitoring in place.
             </p>
 
-            <div className="space-y-6">
-              {propFirms.map((firm) => (
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
+                  Strict drawdown limits
+                </h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Daily and maximum drawdown rules leave no room for unmonitored risk. A single bad
+                  session can end a challenge if drawdown isn&apos;t tracked in real time.
+                </p>
+              </div>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Unnoticed degradation</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Strategies can drift from their validated parameters without triggering obvious
+                  alerts. Win rate drops, trade frequency shifts, and risk exposure grows gradually.
+                </p>
+              </div>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">
+                  No reliable monitoring
+                </h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Most traders rely on broker dashboards that show what happened — not whether the
+                  strategy is still operating within validated bounds.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════
+              3. HOW ALGOSTUDIO HELPS
+              ════════════════════════════════════════════════════════ */}
+          <section className="mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              How AlgoStudio Helps
+            </h2>
+            <p className="text-[#A1A1AA] mb-8 max-w-2xl">
+              AlgoStudio tracks strategy performance in real time, detects performance drift and
+              drawdown risk, evaluates strategies using statistical analysis, and helps traders
+              maintain discipline through structured governance.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                {
+                  label: "Monitor",
+                  desc: "Continuous measurement of live strategy performance against validated baselines. Drawdown tracking, trade frequency analysis, and risk threshold alerts.",
+                },
+                {
+                  label: "Verify",
+                  desc: "Statistical evaluation across robustness dimensions — Monte Carlo survival, profit factor stability, and drawdown consistency. Deviation detection when parameters drift.",
+                },
+                {
+                  label: "Govern",
+                  desc: "Lifecycle framework that maps strategy health to operational status. When metrics degrade beyond validated bounds, the platform surfaces the deviation for action.",
+                },
+              ].map((item) => (
                 <div
-                  key={firm.name}
-                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl overflow-hidden"
+                  key={item.label}
+                  className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6"
                 >
-                  <div className="p-6 sm:p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-white">{firm.name}</h3>
-                      <a
-                        href={firm.rulesUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-[#A78BFA] hover:underline"
-                      >
-                        Official Rules &rarr;
-                      </a>
-                    </div>
-
-                    {/* Rules */}
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-[#0D0117]/50 rounded-lg p-3">
-                        <p className="text-xs text-[#64748B] mb-1">Daily Loss Limit</p>
-                        <p className="text-sm font-semibold text-[#EF4444]">{firm.dailyLoss}</p>
-                      </div>
-                      <div className="bg-[#0D0117]/50 rounded-lg p-3">
-                        <p className="text-xs text-[#64748B] mb-1">Max Drawdown</p>
-                        <p className="text-sm font-semibold text-[#EF4444]">{firm.maxDrawdown}</p>
-                      </div>
-                      <div className="bg-[#0D0117]/50 rounded-lg p-3">
-                        <p className="text-xs text-[#64748B] mb-1">Profit Target</p>
-                        <p className="text-sm font-semibold text-[#22D3EE]">{firm.profitTarget}</p>
-                      </div>
-                      <div className="bg-[#0D0117]/50 rounded-lg p-3">
-                        <p className="text-xs text-[#64748B] mb-1">Time Limit</p>
-                        <p className="text-sm font-semibold text-[#94A3B8]">{firm.timeLimit}</p>
-                      </div>
-                    </div>
-
-                    {/* Recommended settings */}
-                    <div className="border-t border-[rgba(79,70,229,0.1)] pt-6">
-                      <p className="text-xs text-[#A78BFA] font-medium uppercase tracking-wider mb-3">
-                        Recommended AlgoStudio Settings
-                      </p>
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-xs text-[#64748B]">Risk Per Trade</p>
-                          <p className="text-sm text-[#CBD5E1] font-medium">
-                            {firm.recommended.riskPerTrade}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-[#64748B]">Daily Loss Cap</p>
-                          <p className="text-sm text-[#CBD5E1] font-medium">
-                            {firm.recommended.dailyCap}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-[#64748B]">Max Open Trades</p>
-                          <p className="text-sm text-[#CBD5E1] font-medium">
-                            {firm.recommended.maxTrades}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-[#64748B]">Best Strategy</p>
-                          <p className="text-sm text-[#CBD5E1] font-medium">
-                            {firm.recommended.strategy}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Use template button */}
-                    <div className="mt-6">
-                      <Link
-                        href="/login?mode=register"
-                        className="text-sm text-[#A78BFA] font-medium hover:underline"
-                      >
-                        Use Template for {firm.name} &rarr;
-                      </Link>
-                    </div>
-                  </div>
+                  <h3 className="text-base font-semibold text-[#6366F1] mb-2">{item.label}</h3>
+                  <p className="text-sm text-[#A1A1AA] leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Feature highlights */}
+          {/* ════════════════════════════════════════════════════════
+              4. STRATEGY MONITORING
+              ════════════════════════════════════════════════════════ */}
           <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">
-              Built-In Prop Firm Safety Features
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              Strategy Monitoring for Prop Firms
             </h2>
-            <p className="text-[#94A3B8] text-center mb-10 max-w-2xl mx-auto">
-              Every AlgoStudio EA includes these prop-firm-critical features. No manual coding or
-              add-ons required.
+            <p className="text-[#A1A1AA] mb-8 max-w-2xl">
+              Prop firm environments demand continuous awareness of strategy health. AlgoStudio
+              provides structured monitoring designed for the constraints of funded trading.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-6">
-              {features.map((feature) => (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  title: "Continuous performance tracking",
+                  desc: "Live metrics measured against your strategy's validated baseline. Performance changes are detected as they happen, not after the fact.",
+                },
+                {
+                  title: "Drawdown monitoring",
+                  desc: "Real-time drawdown measurement relative to both daily and maximum limits. Early detection of drawdown risk before it becomes a rule violation.",
+                },
+                {
+                  title: "Risk threshold alerts",
+                  desc: "Configurable thresholds for key metrics — drawdown, win rate, trade frequency. The platform surfaces deviations when parameters move outside expected bounds.",
+                },
+                {
+                  title: "Lifecycle governance",
+                  desc: "Structured framework that maps strategy health to operational decisions. When monitoring detects sustained degradation, the lifecycle status reflects the change.",
+                },
+              ].map((item) => (
                 <div
-                  key={feature.title}
-                  className="bg-[#0D0117]/50 border border-[rgba(79,70,229,0.1)] rounded-xl p-6"
+                  key={item.title}
+                  className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6"
                 >
-                  <div className="w-10 h-10 bg-[rgba(79,70,229,0.15)] rounded-lg flex items-center justify-center mb-4">
+                  <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">{item.title}</h3>
+                  <p className="text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════
+              5. VERIFICATION & PROOF
+              ════════════════════════════════════════════════════════ */}
+          <section className="mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              Verification &amp; Proof
+            </h2>
+            <p className="text-[#A1A1AA] mb-8 max-w-2xl">
+              Strategies that pass verification can produce public proof pages — independently
+              accessible records of their validation history, live performance, and governance
+              status. Traders can share verified track records with anyone.
+            </p>
+
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">Verification ladder</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Strategies progress through verification levels — from initial submission through
+                  baseline validation to full live monitoring. Each level requires passing specific
+                  statistical thresholds.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">Public proof pages</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Verified strategies generate structured proof reports showing backtest scores,
+                  Monte Carlo analysis, live metrics, and governance history. Share with prop firms,
+                  investors, or the public.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">Strategy discovery</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Public strategies are listed on the{" "}
+                  <Link href="/strategies" className="text-[#6366F1] hover:underline">
+                    strategy discovery page
+                  </Link>
+                  , where anyone can browse verified track records and inspect the evidence.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════
+              6. STRATEGY INPUTS
+              ════════════════════════════════════════════════════════ */}
+          <section className="mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              How Strategies Enter AlgoStudio
+            </h2>
+            <p className="text-[#A1A1AA] mb-8 max-w-2xl">
+              AlgoStudio accepts strategies through multiple input methods. Connect your existing
+              strategy or upload trade history to begin monitoring.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Broker connection</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Connect your trading account to stream live performance data directly into
+                  AlgoStudio for continuous monitoring.
+                </p>
+              </div>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Trade history upload</h3>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Upload backtest results or trade history files for statistical evaluation and
+                  verification scoring.
+                </p>
+              </div>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-[#FAFAFA]">EA Builder</h3>
+                  <span className="text-[10px] font-medium text-[#71717A] border border-[rgba(255,255,255,0.06)] rounded px-1.5 py-0.5">
+                    Optional
+                  </span>
+                </div>
+                <p className="text-sm text-[#71717A] leading-relaxed">
+                  Build a strategy using the built-in EA builder and export MQL5 code. This is one
+                  input method — not the core of the platform.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════
+              FAQ (inline, design system tokens)
+              ════════════════════════════════════════════════════════ */}
+          <section className="mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-8">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-3">
+              {faqItems.map((item, i) => (
+                <details
+                  key={i}
+                  className="group rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] overflow-hidden"
+                >
+                  <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-[#FAFAFA] font-medium text-sm list-none">
+                    {item.q}
                     <svg
-                      className="w-5 h-5 text-[#A78BFA]"
+                      className="w-5 h-5 text-[#71717A] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
                       fill="none"
-                      stroke="currentColor"
                       viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
                     >
-                      {feature.icon}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
-                  </div>
-                  <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed">{feature.description}</p>
-                </div>
+                  </summary>
+                  <div className="px-6 pb-4 text-sm text-[#A1A1AA] leading-relaxed">{item.a}</div>
+                </details>
               ))}
             </div>
           </section>
 
-          {/* How it works */}
+          {/* ════════════════════════════════════════════════════════
+              DISCLAIMER
+              ════════════════════════════════════════════════════════ */}
           <section className="mb-20">
-            <h2 className="text-3xl font-bold text-white mb-10 text-center">
-              Build Your Prop Firm EA in 3 Steps
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
-                  1
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-3">Choose a Strategy</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Pick from 6 proven templates. EMA Crossover and Trend Pullback are the most
-                  popular for prop firm challenges.
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
-                  2
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-3">Set Prop Firm Risk Rules</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Configure risk per trade, daily loss cap, max drawdown, and session filters to
-                  match your prop firm&apos;s rules.
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
-                  3
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-3">Export &amp; Backtest</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Export clean MQL5 code, backtest in MT5 Strategy Tester with the prop firm
-                  constraints, and deploy when ready.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Disclaimer */}
-          <section className="mb-10">
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-xs text-amber-300/90 leading-relaxed">
+            <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5">
+              <p className="text-xs text-amber-300/80 leading-relaxed">
                 <strong>Disclaimer:</strong> AlgoStudio is not affiliated with any prop firm
                 mentioned on this page. Prop firm rules and requirements may change — always verify
-                the current rules on each firm&apos;s official website before starting a challenge.
-                AlgoStudio does not guarantee passing any challenge. Trading involves substantial
-                risk of loss. Always backtest thoroughly before deploying on a live challenge
-                account.
+                current rules on each firm&apos;s official website. AlgoStudio does not guarantee
+                passing any challenge. Trading involves substantial risk of loss.
               </p>
+            </div>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════
+              7. FINAL CTA
+              ════════════════════════════════════════════════════════ */}
+          <section className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-8 sm:p-12 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] mb-4">
+              Monitor your prop firm strategies with AlgoStudio.
+            </h2>
+            <p className="text-[#A1A1AA] mb-8 max-w-xl mx-auto">
+              Continuous performance tracking, drawdown monitoring, and verified proof of strategy
+              integrity.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/register"
+                className="inline-block bg-[#6366F1] text-white px-8 py-3.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors text-center"
+              >
+                Start monitoring
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-block px-8 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors text-center"
+              >
+                View pricing
+              </Link>
             </div>
           </section>
         </div>
       </main>
-
-      <FAQSection questions={faqItems} />
-
-      <CTASection
-        title="Evaluate your prop firm strategy"
-        description="Build your EA, upload the backtest, and get an instant health score. Know if your strategy can handle the challenge — before you fund it."
-      />
 
       <Footer />
     </div>
