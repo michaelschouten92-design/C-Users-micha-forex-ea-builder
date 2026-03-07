@@ -521,6 +521,33 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     <div className="min-h-screen bg-[#09090B]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
         {/* ════════════════════════════════════════════════
+            0. CONTEXT HEADER — orients cold traffic
+            ════════════════════════════════════════════════ */}
+        <div className="flex items-center justify-between text-xs text-[#71717A]">
+          <div className="flex items-center gap-1.5">
+            <svg
+              className="w-3.5 h-3.5 text-[#818CF8]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+            <span className="font-medium text-[#A1A1AA]">AlgoStudio</span>
+            <span className="text-[#71717A]">&middot;</span>
+            <span>Verified strategy proof</span>
+          </div>
+          <Link href="/strategies" className="hover:text-[#A1A1AA] transition-colors">
+            Browse strategies &rarr;
+          </Link>
+        </div>
+
+        {/* ════════════════════════════════════════════════
             1. HERO CARD — screenshot-friendly trust summary
             ════════════════════════════════════════════════ */}
         <section
@@ -601,13 +628,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
           {/* Trust verdict */}
           <div
-            className="rounded-lg px-4 py-2.5 mb-4"
+            className="rounded-lg px-5 py-3.5 mb-4"
             style={{
               backgroundColor: `${verdict.color}08`,
               border: `1px solid ${verdict.color}15`,
             }}
           >
-            <p className="text-sm font-semibold" style={{ color: verdict.color }}>
+            <p className="text-base font-semibold" style={{ color: verdict.color }}>
               {verdict.text}
             </p>
           </div>
@@ -686,58 +713,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         <VerificationLadder currentLevel={ladder.level} description={ladder.description} />
 
         {/* ════════════════════════════════════════════════
-            4. SHARE THIS PROOF (compact, high placement)
-            ════════════════════════════════════════════════ */}
-        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-sm font-semibold text-white">Share this proof</h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={copyLink}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
-              >
-                {copied ? "Copied!" : "Copy link"}
-              </button>
-              <button
-                onClick={shareX}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
-              >
-                Share on X
-              </button>
-              <button
-                onClick={shareReddit}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
-              >
-                Share on Reddit
-              </button>
-              <button
-                onClick={shareDiscord}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
-              >
-                Share to Discord
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#A1A1AA]">
-              <li className="flex items-center gap-1.5">
-                <span className="text-[#10B981]">&#x2713;</span>
-                Hash-chain audit log
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="text-[#10B981]">&#x2713;</span>
-                Snapshot-bound identity
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="text-[#10B981]">&#x2713;</span>
-                Lifecycle governance
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* ════════════════════════════════════════════════
-            5. BACKTEST EVALUATION + MONTE CARLO
+            4. BACKTEST EVALUATION + MONTE CARLO
             ════════════════════════════════════════════════ */}
         <section>
           <h2 className="text-base font-semibold text-white mb-3">Backtest Evaluation</h2>
@@ -1010,7 +986,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             8. PROOF INTEGRITY — chain + hashes + download
             ════════════════════════════════════════════════ */}
         <section>
-          <h2 className="text-base font-semibold text-white mb-3">Track Record Verification</h2>
+          <h2 className="text-lg font-semibold text-white mb-3">Track Record Verification</h2>
 
           {/* Chain info */}
           {chain && chain.length > 0 ? (
@@ -1110,7 +1086,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   </svg>
                 )}
                 <h3
-                  className={`text-sm font-semibold ${
+                  className={`text-base font-semibold ${
                     chainStatus.status === "PASS"
                       ? "text-[#10B981]"
                       : chainStatus.status === "FAIL"
@@ -1118,12 +1094,22 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                         : "text-[#71717A]"
                   }`}
                 >
-                  Proof Chain:{" "}
-                  {chainStatus.status === "PASS"
-                    ? "Intact"
-                    : chainStatus.status === "FAIL"
-                      ? "Break Detected"
-                      : "Unknown"}
+                  Chain Integrity:{" "}
+                  <span
+                    className={`uppercase tracking-wide ${
+                      chainStatus.status === "PASS"
+                        ? "text-[#10B981]"
+                        : chainStatus.status === "FAIL"
+                          ? "text-[#EF4444]"
+                          : "text-[#71717A]"
+                    }`}
+                  >
+                    {chainStatus.status === "PASS"
+                      ? "PASS"
+                      : chainStatus.status === "FAIL"
+                        ? "FAIL"
+                        : "UNKNOWN"}
+                  </span>
                 </h3>
               </div>
 
@@ -1256,6 +1242,57 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             {downloadError && <p className="text-xs text-[#EF4444] mt-1.5">{downloadError}</p>}
           </div>
         </section>
+
+        {/* ════════════════════════════════════════════════
+            SHARE THIS PROOF (after evidence, before footer)
+            ════════════════════════════════════════════════ */}
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-sm font-semibold text-white">Share this proof</h2>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={copyLink}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
+              >
+                {copied ? "Copied!" : "Copy link"}
+              </button>
+              <button
+                onClick={shareX}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
+              >
+                Share on X
+              </button>
+              <button
+                onClick={shareReddit}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
+              >
+                Share on Reddit
+              </button>
+              <button
+                onClick={shareDiscord}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
+              >
+                Share to Discord
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#A1A1AA]">
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Hash-chain audit log
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Snapshot-bound identity
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Lifecycle governance
+              </li>
+            </ul>
+          </div>
+        </div>
 
         {/* ════════════════════════════════════════════════
             FOOTER

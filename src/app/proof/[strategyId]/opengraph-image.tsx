@@ -8,11 +8,11 @@ export const contentType = "image/png";
 // ── Level colors (matches proof page) ────────────────────
 
 const LEVEL_COLORS: Record<string, string> = {
-  SUBMITTED: "#7C8DB0",
+  SUBMITTED: "#71717A",
   VALIDATED: "#6366F1",
   VERIFIED: "#10B981",
   PROVEN: "#F59E0B",
-  INSTITUTIONAL: "#A78BFA",
+  INSTITUTIONAL: "#818CF8",
 };
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -37,7 +37,7 @@ function deriveVerdict(level: string, driftDetected: boolean): { text: string; c
     case "VALIDATED":
       return { text: "Passed health evaluation and Monte Carlo stress test", color: "#6366F1" };
     default:
-      return { text: "Strategy submitted — verification in progress", color: "#7C8DB0" };
+      return { text: "Strategy submitted — verification in progress", color: "#71717A" };
   }
 }
 
@@ -122,7 +122,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
 
   const name = (strategy.name as string) || "Strategy";
   const level = (ladder.level as string) || "SUBMITTED";
-  const levelColor = LEVEL_COLORS[level] || "#7C8DB0";
+  const levelColor = LEVEL_COLORS[level] || "#71717A";
   const levelLabel = LEVEL_LABELS[level] || "Submitted";
   const driftDetected = (liveHealth?.driftDetected as boolean) || false;
 
@@ -137,7 +137,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#0A0118",
+        background: "#09090B",
         fontFamily: "system-ui, sans-serif",
       }}
     >
@@ -146,9 +146,9 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
         style={{
           width: 1060,
           padding: "48px 56px",
-          background: "#1A0626",
+          background: "#111114",
           borderRadius: 24,
-          border: "2px solid rgba(79,70,229,0.25)",
+          border: "2px solid rgba(255,255,255,0.10)",
           borderLeft: `4px solid ${levelColor}`,
           display: "flex",
           flexDirection: "column",
@@ -247,7 +247,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
                   flex: 1,
                   padding: "20px 16px",
                   borderRadius: 12,
-                  background: "rgba(10,1,24,0.6)",
+                  background: "rgba(24,24,27,0.6)",
                 }}
               >
                 <div
@@ -264,7 +264,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: "#7C8DB0",
+                    color: "#71717A",
                     textTransform: "uppercase",
                     letterSpacing: "1px",
                   }}
@@ -282,7 +282,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
             display: "flex",
             justifyContent: "flex-end",
             fontSize: 16,
-            color: "#7C8DB0",
+            color: "#71717A",
             fontWeight: 500,
           }}
         >
