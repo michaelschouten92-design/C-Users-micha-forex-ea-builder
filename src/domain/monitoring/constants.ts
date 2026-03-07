@@ -12,6 +12,9 @@ export const MONITORING = {
   /** Minimum seconds between monitoring runs for the same strategy */
   COOLDOWN_SECONDS: 300, // 5 minutes
 
+  /** Reclaim PENDING/RUNNING runs older than this (ms). 2× cooldown. */
+  STALE_RUN_THRESHOLD_MS: 10 * 60 * 1000,
+
   // ── Governed thresholds (included in thresholdsHash) ──────────────
   /** Live drawdown > baseline × multiplier → AT_RISK */
   DRAWDOWN_BREACH_MULTIPLIER: 1.5,

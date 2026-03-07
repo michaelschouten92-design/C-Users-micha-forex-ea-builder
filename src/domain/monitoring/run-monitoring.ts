@@ -69,6 +69,22 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
   const { strategyId, source } = params;
   const recordId = crypto.randomUUID();
 
+  // Reclaim stale active runs (crash recovery).
+  // A PENDING/RUNNING row older than STALE_RUN_THRESHOLD_MS is presumed
+  // orphaned from a process crash. Mark it FAILED to unblock the strategy.
+  await prisma.monitoringRun.updateMany({
+    where: {
+      strategyId,
+      status: { in: ["PENDING", "RUNNING"] },
+      requestedAt: { lt: new Date(Date.now() - MONITORING.STALE_RUN_THRESHOLD_MS) },
+    },
+    data: {
+      status: "FAILED",
+      completedAt: new Date(),
+      errorMessage: "Reclaimed: stale active run (presumed process crash)",
+    },
+  });
+
   // Create PENDING run row — partial unique index enforces at most one
   // active (PENDING/RUNNING) run per strategy. P2002 = already running.
   let run;

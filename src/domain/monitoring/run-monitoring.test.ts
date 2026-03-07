@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ── Mock handles ──────────────────────────────────────────────────────
 const mockMonitoringRunCreate = vi.fn();
 const mockMonitoringRunUpdate = vi.fn();
+const mockMonitoringRunUpdateMany = vi.fn();
 const mockMonitoringRunFindFirst = vi.fn();
 const mockMonitoringRunFindMany = vi.fn();
 const mockTradeFactFindMany = vi.fn();
@@ -44,6 +45,7 @@ vi.mock("@/lib/prisma", () => ({
     monitoringRun: {
       create: (...args: unknown[]) => mockMonitoringRunCreate(...args),
       update: (...args: unknown[]) => mockMonitoringRunUpdate(...args),
+      updateMany: (...args: unknown[]) => mockMonitoringRunUpdateMany(...args),
       findFirst: (...args: unknown[]) => mockMonitoringRunFindFirst(...args),
       findMany: (...args: unknown[]) => mockMonitoringRunFindMany(...args),
     },
