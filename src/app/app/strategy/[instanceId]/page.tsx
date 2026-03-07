@@ -6,6 +6,7 @@ import { SystemRecommendation } from "@/components/app/system-recommendation";
 import { LivePerformanceGrid } from "@/components/app/live-performance-grid";
 import { BaselineComparison } from "@/components/app/baseline-comparison";
 import { IncidentPreviewList } from "@/components/app/incident-preview-list";
+import { IncidentTimeline } from "@/components/app/incident-timeline";
 import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
@@ -45,13 +46,20 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 5. Recent Incidents — always visible, urgency-sorted */}
         <IncidentPreviewList incidents={data.incidents} />
 
-        {/* 6. Monitoring Diagnostics — collapsed by default */}
+        {/* 6. Event Timeline — collapsed, chronological audit view */}
+        <IncidentTimeline
+          latestRun={data.latestRun}
+          health={data.health}
+          incidents={data.incidents}
+        />
+
+        {/* 7. Monitoring Diagnostics — collapsed by default */}
         <DiagnosticsPanel latestRun={data.latestRun} health={data.health} />
 
-        {/* 7. Governance Context — collapsed by default */}
+        {/* 8. Governance Context — collapsed by default */}
         <GovernanceContextPanel data={data} />
 
-        {/* 8. Health Score Breakdown — secondary, collapsed */}
+        {/* 9. Health Score Breakdown — secondary, collapsed */}
         <HealthScoreBreakdown health={data.health} history={data.healthHistory} />
       </div>
     </div>
