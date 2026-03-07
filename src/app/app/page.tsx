@@ -2,14 +2,18 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CreateProjectButton } from "./components/create-project-button";
 import { ProjectList } from "./components/project-list";
 import { EmailVerificationBanner } from "./components/email-verification-banner";
 import { AppNav } from "@/components/app/app-nav";
-import { generateDailyInsights, getPortfolioStatus } from "@/lib/daily-insights";
+import { generateDailyInsights } from "@/lib/daily-insights";
 import { OnboardingGate } from "./components/onboarding-gate";
 import { OnboardingChecklist } from "./components/onboarding-checklist";
 import { shouldRedirectToOnboarding } from "./onboarding-heuristic";
+import { PortfolioHealthSummary } from "@/components/app/portfolio-health-summary";
+import { CommandCenterView } from "./command-center-view";
+import { loadCommandCenterData } from "./load-command-center-data";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -19,8 +23,6 @@ export default async function DashboardPage() {
   }
 
   // ── Server-driven onboarding gate (fail-closed) ──────────
-  // Redirect when user has zero strategies OR zero live EAs.
-  // If Prisma throws, fail-closed → redirect to onboarding.
   let onboardingRedirect: string | null;
   try {
     const [strategyCount, liveEACount] = await Promise.all([
@@ -35,66 +37,51 @@ export default async function DashboardPage() {
     redirect(onboardingRedirect);
   }
 
-  const [projects, subscription, user, liveEAs, recentBacktests, exportCount] = await Promise.all([
-    prisma.project.findMany({
-      where: { userId: session.user.id, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        _count: { select: { versions: true } },
-        versions: {
-          orderBy: { versionNo: "desc" },
-          take: 1,
-          select: { versionNo: true },
+  const [projects, subscription, user, commandCenter, recentBacktests, exportCount] =
+    await Promise.all([
+      prisma.project.findMany({
+        where: { userId: session.user.id, deletedAt: null },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          _count: { select: { versions: true } },
+          versions: {
+            orderBy: { versionNo: "desc" },
+            take: 1,
+            select: { versionNo: true },
+          },
+          tags: { select: { tag: true } },
         },
-        tags: { select: { tag: true } },
-      },
-    }),
-    prisma.subscription.findUnique({
-      where: { userId: session.user.id },
-    }),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { emailVerified: true },
-    }),
-    prisma.liveEAInstance.findMany({
-      where: { userId: session.user.id, deletedAt: null },
-      select: {
-        id: true,
-        eaName: true,
-        symbol: true,
-        status: true,
-        totalProfit: true,
-        totalTrades: true,
-        balance: true,
-        equity: true,
-        lastHeartbeat: true,
-        strategyStatus: true,
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 10,
-    }),
-    prisma.backtestRun.findMany({
-      where: { upload: { userId: session.user.id } },
-      select: {
-        id: true,
-        eaName: true,
-        symbol: true,
-        healthScore: true,
-        healthStatus: true,
-        totalNetProfit: true,
-        profitFactor: true,
-        maxDrawdownPct: true,
-        winRate: true,
-        totalTrades: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-    prisma.exportJob.count({
-      where: { userId: session.user.id, status: "DONE" },
-    }),
-  ]);
+      }),
+      prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { emailVerified: true },
+      }),
+      loadCommandCenterData(session.user.id),
+      prisma.backtestRun.findMany({
+        where: { upload: { userId: session.user.id } },
+        select: {
+          id: true,
+          eaName: true,
+          symbol: true,
+          healthScore: true,
+          healthStatus: true,
+          totalNetProfit: true,
+          profitFactor: true,
+          maxDrawdownPct: true,
+          winRate: true,
+          totalTrades: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.exportJob.count({
+        where: { userId: session.user.id, status: "DONE" },
+      }),
+    ]);
 
   // Determine effective tier
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
@@ -106,23 +93,44 @@ export default async function DashboardPage() {
     }
   }
 
-  // Generate insights
-  const insights = generateDailyInsights(liveEAs, recentBacktests, projects.length);
-  const portfolio = getPortfolioStatus(liveEAs, recentBacktests);
+  // Daily insights (uses lightweight summary for backward compat)
+  const liveEASummary = commandCenter.strategies.map((s) => ({
+    id: s.id,
+    eaName: s.eaName,
+    symbol: s.symbol,
+    status: s.status,
+    totalProfit: s.totalProfit,
+    totalTrades: s.totalTrades,
+    balance: null as number | null,
+    equity: null as number | null,
+    lastHeartbeat: s.lastHeartbeat ? new Date(s.lastHeartbeat) : null,
+    strategyStatus: undefined as string | undefined,
+  }));
+  const insights = generateDailyInsights(liveEASummary, recentBacktests, projects.length);
 
-  // Greeting based on server local time
+  // Greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  // Onboarding state detection
-  const isNewUser = projects.length === 0 && recentBacktests.length === 0 && liveEAs.length === 0;
+  // Onboarding state
+  const isNewUser =
+    projects.length === 0 && recentBacktests.length === 0 && commandCenter.strategies.length === 0;
   const isActivating =
     !isNewUser &&
     (projects.length === 0 ||
       recentBacktests.length === 0 ||
       exportCount === 0 ||
-      liveEAs.length === 0);
-  const hasLiveStrategies = liveEAs.length > 0;
+      commandCenter.strategies.length === 0);
+
+  // Derive nav monitor status from command center data
+  const navMonitorStatus =
+    commandCenter.strategies.length === 0
+      ? undefined
+      : commandCenter.summary.invalidated > 0 || commandCenter.summary.atRisk > 0
+        ? commandCenter.summary.invalidated > 0
+          ? ("critical" as const)
+          : ("warning" as const)
+        : ("healthy" as const);
 
   return (
     <div className="min-h-screen">
@@ -130,138 +138,53 @@ export default async function DashboardPage() {
         session={session}
         tier={tier}
         firstProjectId={projects.length > 0 ? projects[0].id : null}
-        monitorStatus={
-          liveEAs.length === 0
-            ? undefined
-            : liveEAs.some((ea) => ea.strategyStatus === "EDGE_DEGRADED")
-              ? "critical"
-              : liveEAs.some((ea) => ea.strategyStatus === "UNSTABLE")
-                ? "warning"
-                : "healthy"
-        }
+        monitorStatus={navMonitorStatus}
       />
 
       {user && !user.emailVerified && <EmailVerificationBanner />}
 
       <main id="main-content" className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* ====================================== */}
-        {/* NEW USER: OnboardingHero */}
-        {/* ====================================== */}
         {isNewUser ? (
           <OnboardingGate />
         ) : (
           <>
-            {/* ====================================== */}
-            {/* Portfolio Status Header */}
-            {/* ====================================== */}
-            <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">
-                    {greeting}.{" "}
-                    <span
-                      className={
-                        portfolio.status === "HEALTHY"
-                          ? "text-[#22C55E]"
-                          : portfolio.status === "ATTENTION"
-                            ? "text-[#F59E0B]"
-                            : portfolio.status === "AT_RISK"
-                              ? "text-[#EF4444]"
-                              : "text-[#7C8DB0]"
-                      }
-                    >
-                      {portfolio.label}
-                    </span>
-                  </h2>
-                  <p className="text-sm text-[#7C8DB0] mt-1">
-                    {liveEAs.filter((e) => e.status === "ONLINE").length} active EA
-                    {liveEAs.filter((e) => e.status === "ONLINE").length !== 1
-                      ? "s"
-                      : ""} &middot; {recentBacktests.length} evaluation
-                    {recentBacktests.length !== 1 ? "s" : ""} &middot; {projects.length} project
-                    {projects.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-                <Link
-                  href="/app/evaluate"
-                  className="sm:hidden text-sm px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg transition-colors font-medium text-center"
-                >
-                  Evaluate Strategy
-                </Link>
-              </div>
+            {/* ── Greeting ── */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white">{greeting}.</h2>
+              <p className="text-sm text-[#7C8DB0] mt-1">
+                {commandCenter.summary.online} online &middot; {recentBacktests.length} evaluation
+                {recentBacktests.length !== 1 ? "s" : ""} &middot; {projects.length} project
+                {projects.length !== 1 ? "s" : ""}
+              </p>
             </div>
 
-            {/* ====================================== */}
-            {/* Activation Checklist (in-progress users) */}
-            {/* ====================================== */}
+            {/* ── Activation Checklist ── */}
             {isActivating && (
               <OnboardingChecklist
                 hasProjects={projects.length > 0}
                 hasBacktests={recentBacktests.length > 0}
                 hasExports={exportCount > 0}
-                hasLiveEAs={liveEAs.length > 0}
+                hasLiveEAs={commandCenter.strategies.length > 0}
                 tier={tier}
                 firstProjectId={projects.length > 0 ? projects[0].id : null}
               />
             )}
 
-            {/* ====================================== */}
-            {/* Strategy Status Summary */}
-            {/* ====================================== */}
-            {hasLiveStrategies &&
-              (() => {
-                const counts = liveEAs.reduce(
-                  (acc, ea) => {
-                    const s = ea.strategyStatus as string;
-                    if (s === "CONSISTENT") acc.consistent++;
-                    else if (s === "MONITORING") acc.monitoring++;
-                    else if (s === "TESTING") acc.testing++;
-                    else if (s === "UNSTABLE") acc.unstable++;
-                    else if (s === "EDGE_DEGRADED") acc.degraded++;
-                    else acc.inactive++;
-                    return acc;
-                  },
-                  {
-                    consistent: 0,
-                    monitoring: 0,
-                    testing: 0,
-                    unstable: 0,
-                    degraded: 0,
-                    inactive: 0,
-                  }
-                );
-                const items = [
-                  { label: "Consistent", count: counts.consistent, color: "#10B981" },
-                  { label: "Monitoring", count: counts.monitoring, color: "#6366F1" },
-                  { label: "Testing", count: counts.testing, color: "#A78BFA" },
-                  { label: "Unstable", count: counts.unstable, color: "#F59E0B" },
-                  { label: "Degraded", count: counts.degraded, color: "#EF4444" },
-                  { label: "Inactive", count: counts.inactive, color: "#7C8DB0" },
-                ].filter((i) => i.count > 0);
+            {/* ══════════════════════════════════════════
+                COMMAND CENTER — Portfolio Health + Strategy Cards
+                ══════════════════════════════════════════ */}
+            {commandCenter.strategies.length > 0 && (
+              <section className="mb-10">
+                <div className="mb-4">
+                  <PortfolioHealthSummary summary={commandCenter.summary} />
+                </div>
+                <Suspense fallback={<StrategyGridSkeleton />}>
+                  <CommandCenterView strategies={commandCenter.strategies} />
+                </Suspense>
+              </section>
+            )}
 
-                return (
-                  <div className="mb-8 flex flex-wrap items-center gap-3 px-4 py-3 bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl">
-                    <span className="text-xs text-[#7C8DB0] font-medium mr-1">Strategies:</span>
-                    {items.map((item) => (
-                      <span
-                        key={item.label}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium"
-                        style={{ color: item.color }}
-                      >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        {item.count} {item.label}
-                      </span>
-                    ))}
-                  </div>
-                );
-              })()}
-
-            {/* ====================================== */}
-            {/* Daily Insights */}
-            {/* ====================================== */}
+            {/* ── Daily Insights ── */}
             {insights.length > 0 && (
               <div className="mb-8 space-y-3">
                 {insights.map((insight, i) => (
@@ -309,135 +232,7 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            {/* ====================================== */}
-            {/* Live EA Status Cards */}
-            {/* ====================================== */}
-            {liveEAs.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Live Strategies</h3>
-                  <Link
-                    href="/app/live"
-                    className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
-                  >
-                    View All &rarr;
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...liveEAs]
-                    .sort((a, b) => {
-                      const priority: Record<string, number> = {
-                        EDGE_DEGRADED: 0,
-                        UNSTABLE: 1,
-                        TESTING: 2,
-                        MONITORING: 3,
-                        CONSISTENT: 4,
-                        INACTIVE: 5,
-                      };
-                      return (
-                        (priority[a.strategyStatus ?? "INACTIVE"] ?? 5) -
-                        (priority[b.strategyStatus ?? "INACTIVE"] ?? 5)
-                      );
-                    })
-                    .slice(0, 6)
-                    .map((ea) => (
-                      <div
-                        key={ea.id}
-                        className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-white truncate">
-                            {ea.eaName}
-                          </span>
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${(() => {
-                              const s = ea.strategyStatus;
-                              if (s === "CONSISTENT")
-                                return "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25";
-                              if (s === "MONITORING")
-                                return "bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/25";
-                              if (s === "TESTING")
-                                return "bg-[#A78BFA]/10 text-[#A78BFA] border-[#A78BFA]/25";
-                              if (s === "UNSTABLE")
-                                return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/25";
-                              if (s === "EDGE_DEGRADED")
-                                return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25";
-                              return "bg-[#7C8DB0]/10 text-[#7C8DB0] border-[#7C8DB0]/25";
-                            })()}`}
-                          >
-                            <span
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  ea.strategyStatus === "CONSISTENT"
-                                    ? "#10B981"
-                                    : ea.strategyStatus === "MONITORING"
-                                      ? "#6366F1"
-                                      : ea.strategyStatus === "TESTING"
-                                        ? "#A78BFA"
-                                        : ea.strategyStatus === "UNSTABLE"
-                                          ? "#F59E0B"
-                                          : ea.strategyStatus === "EDGE_DEGRADED"
-                                            ? "#EF4444"
-                                            : "#7C8DB0",
-                              }}
-                            />
-                            {ea.strategyStatus === "CONSISTENT"
-                              ? "Consistent"
-                              : ea.strategyStatus === "MONITORING"
-                                ? "Monitoring"
-                                : ea.strategyStatus === "TESTING"
-                                  ? "Testing"
-                                  : ea.strategyStatus === "UNSTABLE"
-                                    ? "Unstable"
-                                    : ea.strategyStatus === "EDGE_DEGRADED"
-                                      ? "Degraded"
-                                      : "Inactive"}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-[#64748b]">Symbol</span>
-                            <p className="text-[#CBD5E1]">{ea.symbol || "—"}</p>
-                          </div>
-                          <div>
-                            <span className="text-[#64748b]">Profit</span>
-                            <p
-                              className={
-                                (ea.totalProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"
-                              }
-                            >
-                              ${(ea.totalProfit ?? 0).toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[#64748b]">Trades</span>
-                            <p className="text-[#CBD5E1]">{ea.totalTrades}</p>
-                          </div>
-                          <div>
-                            <span className="text-[#64748b]">Status</span>
-                            <p
-                              className={
-                                ea.status === "ONLINE"
-                                  ? "text-[#22C55E]"
-                                  : ea.status === "ERROR"
-                                    ? "text-[#EF4444]"
-                                    : "text-[#64748b]"
-                              }
-                            >
-                              {ea.status}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* ====================================== */}
-            {/* Recent Backtests */}
-            {/* ====================================== */}
+            {/* ── Recent Backtests ── */}
             {recentBacktests.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -510,9 +305,7 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            {/* ====================================== */}
-            {/* Upload CTA (when no backtests) */}
-            {/* ====================================== */}
+            {/* ── Upload CTA (when no backtests) ── */}
             {recentBacktests.length === 0 && (
               <Link
                 href="/app/evaluate"
@@ -542,9 +335,7 @@ export default async function DashboardPage() {
               </Link>
             )}
 
-            {/* ====================================== */}
-            {/* Projects */}
-            {/* ====================================== */}
+            {/* ── Projects ── */}
             <div className="mt-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-white">My Projects</h3>
@@ -559,9 +350,35 @@ export default async function DashboardPage() {
   );
 }
 
-// ============================================
-// Insight Icon
-// ============================================
+// ── Loading skeleton for strategy grid ──
+
+function StrategyGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 animate-pulse"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 bg-[#2b0a3d] rounded w-32" />
+            <div className="h-5 bg-[#2b0a3d] rounded-full w-16" />
+          </div>
+          <div className="h-3 bg-[#2b0a3d] rounded w-24 mb-3" />
+          <div className="h-1.5 bg-[#0A0118] rounded-full mb-3" />
+          <div className="flex justify-between mb-2">
+            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
+            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
+            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
+          </div>
+          <div className="h-3 bg-[#2b0a3d] rounded w-40 mt-2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Insight Icon (unchanged) ──
 
 function InsightIcon({ type, icon }: { type: string; icon: string }) {
   const color =
@@ -573,7 +390,6 @@ function InsightIcon({ type, icon }: { type: string; icon: string }) {
           ? "#A78BFA"
           : "#7C8DB0";
 
-  // Map icon names to SVG paths
   switch (icon) {
     case "alert":
     case "weak":
