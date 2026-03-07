@@ -125,7 +125,7 @@ const HEALTH_LABEL: Record<string, { color: string; label: string }> = {
   ROBUST: { color: "#10B981", label: "Robust" },
   MODERATE: { color: "#F59E0B", label: "Moderate" },
   WEAK: { color: "#EF4444", label: "Weak" },
-  INSUFFICIENT_DATA: { color: "#7C8DB0", label: "Insufficient Data" },
+  INSUFFICIENT_DATA: { color: "#71717A", label: "Insufficient Data" },
 };
 
 const LADDER_ICONS: Record<string, string> = {
@@ -144,7 +144,7 @@ const LADDER_ICONS: Record<string, string> = {
 function MiniEquityCurve({ points }: { points: Array<{ equity: number }> }) {
   if (points.length < 2)
     return (
-      <div className="h-32 flex items-center justify-center text-sm text-[#7C8DB0]">
+      <div className="h-32 flex items-center justify-center text-sm text-[#71717A]">
         Not enough data
       </div>
     );
@@ -192,26 +192,26 @@ function ScoreBar({
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
-        <span className="text-[#94A3B8]">{label}</span>
+        <span className="text-[#A1A1AA]">{label}</span>
         <span className="text-white font-medium">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      {explanation && <p className="text-[10px] text-[#7C8DB0]">{explanation}</p>}
+      {explanation && <p className="text-[10px] text-[#71717A]">{explanation}</p>}
     </div>
   );
 }
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">{label}</p>
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">{label}</p>
       <p className="text-lg font-semibold text-white">{value}</p>
-      {sub && <p className="text-xs text-[#7C8DB0] mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-[#71717A] mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -226,7 +226,7 @@ function CopyButton({ text }: { text: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="ml-1.5 inline-flex items-center p-0.5 rounded text-[#7C8DB0] hover:text-white transition-colors"
+      className="ml-1.5 inline-flex items-center p-0.5 rounded text-[#71717A] hover:text-white transition-colors"
       title="Copy to clipboard"
     >
       {copied ? (
@@ -283,7 +283,7 @@ function deriveVerdict(
       return { text: "Passed health evaluation and Monte Carlo stress test", color: "#6366F1" };
     case "SUBMITTED":
     default:
-      return { text: "Strategy submitted \u2014 verification in progress", color: "#7C8DB0" };
+      return { text: "Strategy submitted \u2014 verification in progress", color: "#71717A" };
   }
 }
 
@@ -463,13 +463,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
         <div className="animate-pulse space-y-4 w-full max-w-4xl px-6">
-          <div className="h-10 bg-[#1A0626] rounded-xl w-64" />
-          <div className="h-48 bg-[#1A0626] rounded-xl" />
+          <div className="h-10 bg-[#111114] rounded-xl w-64" />
+          <div className="h-48 bg-[#111114] rounded-xl" />
           <div className="grid grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 bg-[#1A0626] rounded-xl" />
+              <div key={i} className="h-20 bg-[#111114] rounded-xl" />
             ))}
           </div>
         </div>
@@ -479,10 +479,10 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Strategy Not Found</h1>
-          <p className="text-[#7C8DB0]">This proof page may be private or does not exist.</p>
+          <p className="text-[#71717A]">This proof page may be private or does not exist.</p>
         </div>
       </div>
     );
@@ -518,13 +518,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
   // ── Render ──────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#09090B]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
         {/* ════════════════════════════════════════════════
             1. HERO CARD — screenshot-friendly trust summary
             ════════════════════════════════════════════════ */}
         <section
-          className="rounded-xl bg-[#1A0626] p-5 sm:p-6"
+          className="rounded-xl bg-[#111114] p-5 sm:p-6"
           style={{
             border: `1px solid ${verdict.color}25`,
             borderLeft: `3px solid ${verdict.color}`,
@@ -536,7 +536,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               {strategy.name}
             </h1>
             {/* Verified by AlgoStudio badge */}
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#4F46E5]/15 border border-[#4F46E5]/40 text-[#818CF8] text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.40)] text-[#818CF8] text-xs font-semibold">
               <svg
                 className="w-3.5 h-3.5"
                 fill="none"
@@ -575,25 +575,25 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           </div>
 
           {/* Meta line: owner, ID, symbol, timeframe */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#7C8DB0] mb-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#71717A] mb-4">
             {strategy.ownerHandle && (
               <Link
                 href={`/@${strategy.ownerHandle}`}
-                className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                className="text-[#6366F1] hover:text-[#818CF8] transition-colors"
               >
                 @{strategy.ownerHandle}
               </Link>
             )}
-            <span className="font-mono text-xs text-[#7C8DB0]/60">{strategy.strategyId}</span>
+            <span className="font-mono text-xs text-[#71717A]/60">{strategy.strategyId}</span>
             {instance?.symbol && (
               <>
-                <span className="text-[#7C8DB0]/40">&middot;</span>
+                <span className="text-[#71717A]/40">&middot;</span>
                 <span className="text-xs">{instance.symbol}</span>
               </>
             )}
             {instance?.timeframe && (
               <>
-                <span className="text-[#7C8DB0]/40">&middot;</span>
+                <span className="text-[#71717A]/40">&middot;</span>
                 <span className="text-xs">{instance.timeframe}</span>
               </>
             )}
@@ -616,9 +616,9 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           {heroStats.length > 0 && (
             <div className="grid grid-cols-3 gap-3 mb-4">
               {heroStats.map((stat) => (
-                <div key={stat.label} className="bg-[#0A0118]/50 rounded-lg p-3 text-center">
+                <div key={stat.label} className="bg-[#18181B] rounded-lg p-3 text-center">
                   <p className="text-lg font-bold text-white tabular-nums">{stat.value}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">
                     {stat.label}
                   </p>
                 </div>
@@ -627,7 +627,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           )}
 
           {/* Connection status */}
-          <div className="flex items-center justify-between text-xs text-[#7C8DB0]">
+          <div className="flex items-center justify-between text-xs text-[#71717A]">
             {monitoring ? (
               <span className="inline-flex items-center gap-1.5">
                 <span
@@ -638,17 +638,17 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                         ? "#10B981"
                         : monitoring.status === "Delayed"
                           ? "#F59E0B"
-                          : "#7C8DB0",
+                          : "#71717A",
                   }}
                 />
                 {monitoring.status}
               </span>
             ) : (
-              <span className="text-[#7C8DB0]/60">No live connection</span>
+              <span className="text-[#71717A]/60">No live connection</span>
             )}
             {instance?.strategyStatus && (
               <span>
-                Phase: <span className="text-[#CBD5E1] font-medium">{instance.strategyStatus}</span>
+                Phase: <span className="text-[#FAFAFA] font-medium">{instance.strategyStatus}</span>
               </span>
             )}
           </div>
@@ -656,14 +656,14 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
         {/* Description (below hero, compact) */}
         {strategy.description && (
-          <p className="text-sm text-[#94A3B8] px-1">{strategy.description}</p>
+          <p className="text-sm text-[#A1A1AA] px-1">{strategy.description}</p>
         )}
 
         {/* ════════════════════════════════════════════════
             2. FRESHNESS WARNINGS
             ════════════════════════════════════════════════ */}
         {freshness && freshness.warnings.length > 0 && (
-          <div className="rounded-lg bg-[#1A0626]/50 border border-[#F59E0B]/20 px-4 py-2.5 space-y-1">
+          <div className="rounded-lg bg-[#111114] border border-[#F59E0B]/20 px-4 py-2.5 space-y-1">
             {freshness.warnings.map((w, i) => (
               <p key={i} className="text-[11px] text-[#F59E0B]/80 flex items-center gap-1.5">
                 <span className="flex-shrink-0">&#9888;</span>
@@ -674,7 +674,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         )}
 
         {/* Risk disclaimer */}
-        <div className="rounded-lg bg-[#1A0626]/50 border border-[#F59E0B]/20 px-4 py-2.5">
+        <div className="rounded-lg bg-[#111114] border border-[#F59E0B]/20 px-4 py-2.5">
           <p className="text-[11px] text-[#F59E0B]/80">
             Past performance does not guarantee future results. All trading involves risk.
           </p>
@@ -688,38 +688,38 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         {/* ════════════════════════════════════════════════
             4. SHARE THIS PROOF (compact, high placement)
             ════════════════════════════════════════════════ */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl px-5 py-4">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-sm font-semibold text-white">Share this proof</h2>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={copyLink}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
               >
                 {copied ? "Copied!" : "Copy link"}
               </button>
               <button
                 onClick={shareX}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
               >
                 Share on X
               </button>
               <button
                 onClick={shareReddit}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
               >
                 Share on Reddit
               </button>
               <button
                 onClick={shareDiscord}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
               >
                 Share to Discord
               </button>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#94A3B8]">
+          <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#A1A1AA]">
               <li className="flex items-center gap-1.5">
                 <span className="text-[#10B981]">&#x2713;</span>
                 Hash-chain audit log
@@ -742,12 +742,12 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         <section>
           <h2 className="text-base font-semibold text-white mb-3">Backtest Evaluation</h2>
           {backtestHealth ? (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-white">Health Score</h3>
                 <div className="flex items-center gap-2">
                   <span className="text-3xl font-bold text-white">{backtestHealth.score}</span>
-                  <span className="text-sm text-[#7C8DB0]">/100</span>
+                  <span className="text-sm text-[#71717A]">/100</span>
                   {healthLabel && (
                     <span
                       className="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -762,26 +762,26 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[#71717A] mb-0.5">Profit Factor</p>
                   <p className="text-white font-medium">
                     {backtestHealth.stats.profitFactor.toFixed(2)}
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Max Drawdown</p>
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[#71717A] mb-0.5">Max Drawdown</p>
                   <p className="text-white font-medium">
                     {backtestHealth.stats.maxDrawdownPct.toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Win Rate</p>
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[#71717A] mb-0.5">Win Rate</p>
                   <p className="text-white font-medium">
                     {backtestHealth.stats.winRate.toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Trades</p>
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[#71717A] mb-0.5">Trades</p>
                   <p className="text-white font-medium">
                     {backtestHealth.stats.totalTrades.toLocaleString()}
                   </p>
@@ -790,13 +790,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
               {/* Monte Carlo (sub-section if available) */}
               {monteCarlo && (
-                <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
+                <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-3">
                     Monte Carlo Stress Test
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                         Survival Rate
                       </p>
                       <p
@@ -805,8 +805,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                         {(monteCarlo.survivalRate * 100).toFixed(0)}%
                       </p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                         P5 (Worst)
                       </p>
                       <p className="text-sm font-medium text-[#EF4444]">
@@ -814,8 +814,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                         {monteCarlo.p5.toFixed(1)}%
                       </p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                         Median
                       </p>
                       <p className="text-sm font-medium text-white">
@@ -823,8 +823,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                         {monteCarlo.p50.toFixed(1)}%
                       </p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                         P95 (Best)
                       </p>
                       <p className="text-sm font-medium text-[#10B981]">
@@ -833,7 +833,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                       </p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-[#7C8DB0] mt-2">
+                  <p className="text-[10px] text-[#71717A] mt-2">
                     Based on ~1,000 randomized simulations. Survival rate = % of simulations that
                     remained profitable.
                   </p>
@@ -841,18 +841,18 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               )}
             </div>
           ) : (
-            <p className="text-sm text-[#7C8DB0]">
+            <p className="text-sm text-[#71717A]">
               Not available yet — no backtest evaluation uploaded.
             </p>
           )}
 
           {/* Standalone Monte Carlo (when no backtest health but MC exists) */}
           {!backtestHealth && monteCarlo && (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mt-3">
               <h3 className="text-sm font-semibold text-white mb-3">Monte Carlo Stress Test</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                     Survival Rate
                   </p>
                   <p
@@ -861,8 +861,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                     {(monteCarlo.survivalRate * 100).toFixed(0)}%
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                     P5 (Worst)
                   </p>
                   <p className="text-sm font-medium text-[#EF4444]">
@@ -870,8 +870,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                     {monteCarlo.p5.toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                     Median
                   </p>
                   <p className="text-sm font-medium text-white">
@@ -879,8 +879,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                     {monteCarlo.p50.toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                <div className="bg-[#18181B] rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                     P95 (Best)
                   </p>
                   <p className="text-sm font-medium text-[#10B981]">
@@ -909,7 +909,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
               {/* Equity Curve */}
               {equityCurve.length > 1 && (
-                <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-3">
+                <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mb-3">
                   <h3 className="text-sm font-semibold text-white mb-3">Equity Curve</h3>
                   <MiniEquityCurve points={equityCurve} />
                 </div>
@@ -917,25 +917,25 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
               {/* Live Risk Metrics */}
               {liveMetrics && (liveMetrics.sharpeRatio !== 0 || liveMetrics.profitFactor !== 0) && (
-                <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+                <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-white mb-3">Live Risk Metrics</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[#7C8DB0] mb-0.5">Sharpe</p>
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[#71717A] mb-0.5">Sharpe</p>
                       <p className="text-white font-medium">{liveMetrics.sharpeRatio.toFixed(2)}</p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[#7C8DB0] mb-0.5">Sortino</p>
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[#71717A] mb-0.5">Sortino</p>
                       <p className="text-white font-medium">
                         {liveMetrics.sortinoRatio.toFixed(2)}
                       </p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[#7C8DB0] mb-0.5">Calmar</p>
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[#71717A] mb-0.5">Calmar</p>
                       <p className="text-white font-medium">{liveMetrics.calmarRatio.toFixed(2)}</p>
                     </div>
-                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                      <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
+                    <div className="bg-[#18181B] rounded-lg p-3">
+                      <p className="text-[#71717A] mb-0.5">Profit Factor</p>
                       <p className="text-white font-medium">
                         {liveMetrics.profitFactor === Infinity
                           ? "\u221e"
@@ -947,7 +947,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               )}
             </>
           ) : (
-            <p className="text-sm text-[#7C8DB0]">Not available yet — no live data connected.</p>
+            <p className="text-sm text-[#71717A]">Not available yet — no live data connected.</p>
           )}
         </section>
 
@@ -958,17 +958,17 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           <section>
             <h2 className="text-base font-semibold text-white mb-3">Edge Stability</h2>
             <div
-              className="bg-[#1A0626] border rounded-xl p-5"
+              className="bg-[#111114] border rounded-xl p-5"
               style={{
                 borderColor: liveHealth.driftDetected
                   ? "rgba(245,158,11,0.3)"
-                  : "rgba(79,70,229,0.15)",
+                  : "rgba(255,255,255,0.06)",
                 borderLeft: liveHealth.driftDetected ? "3px solid #F59E0B" : undefined,
               }}
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-white">Live Health Monitor</h3>
-                <span className="text-xs text-[#7C8DB0]">
+                <span className="text-xs text-[#71717A]">
                   Score: {Math.round(liveHealth.overallScore * 100)}%
                 </span>
               </div>
@@ -986,7 +986,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   {liveHealth.driftDetected ? "Drift detected" : "No drift detected"}
                 </span>
                 {liveHealth.scoreTrend && (
-                  <span className="text-[10px] text-[#7C8DB0] ml-2">
+                  <span className="text-[10px] text-[#71717A] ml-2">
                     Trend: {liveHealth.scoreTrend}
                   </span>
                 )}
@@ -1014,7 +1014,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
 
           {/* Chain info */}
           {chain && chain.length > 0 ? (
-            <div className="bg-[#1A0626] border border-[#10B981]/20 rounded-xl p-5 mb-3">
+            <div className="bg-[#111114] border border-[#10B981]/20 rounded-xl p-5 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <svg
                   className="w-5 h-5 text-[#10B981]"
@@ -1029,17 +1029,17 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <p className="text-[#7C8DB0]">Chain Length</p>
+                  <p className="text-[#71717A]">Chain Length</p>
                   <p className="text-white font-medium">{chain.length.toLocaleString()} events</p>
                 </div>
                 <div>
-                  <p className="text-[#7C8DB0]">Latest Hash</p>
+                  <p className="text-[#71717A]">Latest Hash</p>
                   <p className="text-white font-mono text-[10px] break-all">
                     {chain.lastHash?.slice(0, 16)}...
                   </p>
                 </div>
                 <div>
-                  <p className="text-[#7C8DB0]">Last Verification</p>
+                  <p className="text-[#71717A]">Last Verification</p>
                   <p className="text-white font-medium">
                     {chain.lastVerification
                       ? new Date(chain.lastVerification).toLocaleDateString()
@@ -1047,13 +1047,13 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   </p>
                 </div>
               </div>
-              <p className="text-[10px] text-[#7C8DB0] mt-2">
+              <p className="text-[10px] text-[#71717A] mt-2">
                 Each trade is cryptographically hashed in sequence. The chain cannot be modified
                 without detection.
               </p>
             </div>
           ) : (
-            <p className="text-sm text-[#7C8DB0] mb-3">
+            <p className="text-sm text-[#71717A] mb-3">
               Not available yet — no hash-chain events recorded.
             </p>
           )}
@@ -1061,12 +1061,12 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           {/* Chain integrity status */}
           {chainStatus && (
             <div
-              className={`bg-[#1A0626] border rounded-xl p-5 mb-3 ${
+              className={`bg-[#111114] border rounded-xl p-5 mb-3 ${
                 chainStatus.status === "PASS"
                   ? "border-[#10B981]/20"
                   : chainStatus.status === "FAIL"
                     ? "border-[#EF4444]/20"
-                    : "border-[rgba(79,70,229,0.15)]"
+                    : "border-[rgba(255,255,255,0.06)]"
               }`}
             >
               <div className="flex items-center gap-2 mb-3">
@@ -1096,7 +1096,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   </svg>
                 ) : (
                   <svg
-                    className="w-5 h-5 text-[#7C8DB0]"
+                    className="w-5 h-5 text-[#71717A]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1115,7 +1115,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                       ? "text-[#10B981]"
                       : chainStatus.status === "FAIL"
                         ? "text-[#EF4444]"
-                        : "text-[#7C8DB0]"
+                        : "text-[#71717A]"
                   }`}
                 >
                   Proof Chain:{" "}
@@ -1130,18 +1130,18 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               {chainStatus.head && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-2">
                   <div>
-                    <p className="text-[#7C8DB0]">Head Sequence</p>
+                    <p className="text-[#71717A]">Head Sequence</p>
                     <p className="text-white font-medium">{chainStatus.head.lastSequence}</p>
                   </div>
                   <div>
-                    <p className="text-[#7C8DB0]">Head Hash</p>
+                    <p className="text-[#71717A]">Head Hash</p>
                     <p className="text-white font-mono text-[10px]">
                       {chainStatus.head.lastEventHashPrefix}...
                     </p>
                   </div>
                   {chainStatus.summary && (
                     <div>
-                      <p className="text-[#7C8DB0]">Scanned Window</p>
+                      <p className="text-[#71717A]">Scanned Window</p>
                       <p className="text-white font-medium">
                         #{chainStatus.summary.scannedFrom} – #{chainStatus.summary.scannedTo}
                       </p>
@@ -1151,18 +1151,18 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               )}
 
               {chainStatus.firstBreak && (
-                <div className="bg-[#0A0118]/50 rounded-lg p-3 text-xs mt-2">
+                <div className="bg-[#18181B] rounded-lg p-3 text-xs mt-2">
                   <p className="text-[#EF4444] font-medium mb-1">
                     Break at sequence #{chainStatus.firstBreak.sequence}
                   </p>
                   <div className="space-y-0.5 text-[10px]">
-                    <p className="text-[#7C8DB0]">
+                    <p className="text-[#71717A]">
                       Expected prev:{" "}
                       <span className="font-mono text-white">
                         {chainStatus.firstBreak.expectedPrevHashPrefix}...
                       </span>
                     </p>
-                    <p className="text-[#7C8DB0]">
+                    <p className="text-[#71717A]">
                       Actual prev:{" "}
                       <span className="font-mono text-white">
                         {chainStatus.firstBreak.actualPrevHashPrefix}...
@@ -1173,7 +1173,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               )}
 
               {chainStatus.errorCode && (
-                <p className="text-[10px] text-[#7C8DB0] mt-2">
+                <p className="text-[10px] text-[#71717A] mt-2">
                   Status:{" "}
                   {chainStatus.errorCode === "NO_CHAIN"
                     ? "No proof chain recorded yet."
@@ -1184,7 +1184,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               )}
 
               {chainStatus.status === "PASS" && (
-                <p className="text-[10px] text-[#7C8DB0] mt-2">
+                <p className="text-[10px] text-[#71717A] mt-2">
                   All events in the scan window have valid hash linkage. No tampering detected.
                 </p>
               )}
@@ -1196,12 +1196,12 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           (verification.snapshotHash ||
             verification.baselineMetricsHash ||
             verification.tradeChainHead) ? (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-3">
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mb-3">
               <h3 className="text-sm font-semibold text-white mb-3">Verification Hashes</h3>
               <div className="space-y-2 text-xs">
                 {verification.snapshotHash && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Snapshot Hash</span>
+                    <span className="text-[#71717A]">Snapshot Hash</span>
                     <span className="flex items-center text-white font-mono text-[10px]">
                       {verification.snapshotHash.slice(0, 16)}...
                       <CopyButton text={verification.snapshotHash} />
@@ -1210,7 +1210,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 )}
                 {verification.baselineMetricsHash && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Baseline Hash</span>
+                    <span className="text-[#71717A]">Baseline Hash</span>
                     <span className="flex items-center text-white font-mono text-[10px]">
                       {verification.baselineMetricsHash.slice(0, 16)}...
                       <CopyButton text={verification.baselineMetricsHash} />
@@ -1219,7 +1219,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 )}
                 {verification.tradeChainHead && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Trade Chain Head</span>
+                    <span className="text-[#71717A]">Trade Chain Head</span>
                     <span className="flex items-center text-white font-mono text-[10px]">
                       {verification.tradeChainHead.slice(0, 16)}...
                       <CopyButton text={verification.tradeChainHead} />
@@ -1229,14 +1229,14 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               </div>
             </div>
           ) : verification !== null ? (
-            <p className="text-sm text-[#7C8DB0] mb-3">Verification hashes not available yet.</p>
+            <p className="text-sm text-[#71717A] mb-3">Verification hashes not available yet.</p>
           ) : null}
 
           {/* Download */}
           <div>
             <button
               onClick={downloadVerification}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-xs text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.20)] transition-colors"
             >
               <svg
                 className="w-3.5 h-3.5"
@@ -1260,12 +1260,12 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
         {/* ════════════════════════════════════════════════
             FOOTER
             ════════════════════════════════════════════════ */}
-        <div className="text-center pt-6 border-t border-[rgba(79,70,229,0.1)]">
+        <div className="text-center pt-6 border-t border-[rgba(255,255,255,0.06)]">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#4F46E5] text-white text-sm font-medium rounded-xl hover:bg-[#4338CA] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#6366F1] text-white text-sm font-medium rounded-xl hover:bg-[#818CF8] transition-colors"
           >
-            Prove Your Edge
+            Start monitoring
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -1275,12 +1275,12 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               />
             </svg>
           </Link>
-          <p className="text-xs text-[#7C8DB0] mt-4">
+          <p className="text-xs text-[#71717A] mt-4">
             Powered by{" "}
-            <Link href="/" className="text-[#A78BFA] hover:text-[#C4B5FD] transition-colors">
+            <Link href="/" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
               AlgoStudio
             </Link>{" "}
-            &mdash; the governance and control layer for algorithmic trading
+            &mdash; monitoring & governance for algorithmic trading
           </p>
         </div>
       </div>

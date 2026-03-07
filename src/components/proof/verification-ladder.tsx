@@ -21,7 +21,7 @@ const LEVEL_RANK: Record<string, number> = {
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  SUBMITTED: "#7C8DB0",
+  SUBMITTED: "#71717A",
   VALIDATED: "#6366F1",
   VERIFIED: "#10B981",
   PROVEN: "#F59E0B",
@@ -36,8 +36,8 @@ export function VerificationLadder({ currentLevel, description }: VerificationLa
   const currentRank = LEVEL_RANK[currentLevel] ?? 0;
 
   return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-4 sm:p-5">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-4">Verification Level</p>
+    <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-4 sm:p-5">
+      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-4">Verification Level</p>
 
       {/* Step progression */}
       <div className="flex items-center">
@@ -46,7 +46,7 @@ export function VerificationLadder({ currentLevel, description }: VerificationLa
           const isCompleted = rank < currentRank;
           const isCurrent = level.key === currentLevel;
           const isReached = rank <= currentRank;
-          const color = LEVEL_COLORS[level.key] ?? "#7C8DB0";
+          const color = LEVEL_COLORS[level.key] ?? "#71717A";
 
           return (
             <div key={level.key} className="flex items-center flex-1 last:flex-none">
@@ -56,13 +56,12 @@ export function VerificationLadder({ currentLevel, description }: VerificationLa
                   className="w-3 h-3 rounded-full flex-shrink-0 transition-all"
                   style={{
                     backgroundColor: isReached ? color : "transparent",
-                    border: isReached ? "none" : "2px solid rgba(124,141,176,0.3)",
-                    boxShadow: isCurrent ? `0 0 8px ${color}40` : "none",
+                    border: isReached ? "none" : "2px solid rgba(255,255,255,0.15)",
                   }}
                 />
                 <span
                   className="text-[10px] font-medium text-center leading-tight"
-                  style={{ color: isCurrent ? color : isCompleted ? "#CBD5E1" : "#7C8DB0" }}
+                  style={{ color: isCurrent ? color : isCompleted ? "#FAFAFA" : "#71717A" }}
                 >
                   {level.label}
                 </span>
@@ -73,7 +72,7 @@ export function VerificationLadder({ currentLevel, description }: VerificationLa
                 <div
                   className="flex-1 h-px mx-1.5 sm:mx-3"
                   style={{
-                    backgroundColor: rank < currentRank ? `${color}60` : "rgba(124,141,176,0.2)",
+                    backgroundColor: rank < currentRank ? `${color}60` : "rgba(255,255,255,0.10)",
                   }}
                 />
               )}
@@ -83,7 +82,7 @@ export function VerificationLadder({ currentLevel, description }: VerificationLa
       </div>
 
       {/* Current level description */}
-      {description && <p className="text-xs text-[#94A3B8] mt-3">{description}</p>}
+      {description && <p className="text-xs text-[#A1A1AA] mt-3">{description}</p>}
     </div>
   );
 }
