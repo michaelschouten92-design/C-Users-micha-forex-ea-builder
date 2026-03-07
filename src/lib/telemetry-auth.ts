@@ -61,10 +61,10 @@ export async function verifyTelemetryApiKey(
   // 1. Try current key
   const instance = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: hash },
-    select: { id: true, userId: true, apiKeyHash: true },
+    select: { id: true, userId: true, apiKeyHash: true, deletedAt: true },
   });
 
-  if (instance && safeHashCompare(instance.apiKeyHash, hash)) {
+  if (instance && !instance.deletedAt && safeHashCompare(instance.apiKeyHash, hash)) {
     return { instanceId: instance.id, userId: instance.userId };
   }
 
@@ -73,6 +73,7 @@ export async function verifyTelemetryApiKey(
     where: {
       apiKeyHashPrev: hash,
       keyGracePeriodEnd: { gt: new Date() },
+      deletedAt: null,
     },
     select: { id: true, userId: true, apiKeyHashPrev: true },
   });
