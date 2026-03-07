@@ -84,10 +84,10 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
-        <span className="text-[#7C8DB0]">{label}</span>
-        <span className="text-white font-medium">{pct}%</span>
+        <span className="text-[#71717A]">{label}</span>
+        <span className="text-[#FAFAFA] font-medium">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#09090B] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: color }}
@@ -99,10 +99,10 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">{label}</p>
-      <p className="text-lg font-semibold text-white">{value}</p>
-      {sub && <p className="text-xs text-[#7C8DB0] mt-0.5">{sub}</p>}
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">{label}</p>
+      <p className="text-lg font-semibold text-[#FAFAFA]">{value}</p>
+      {sub && <p className="text-xs text-[#71717A] mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -110,10 +110,10 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 function MetricRow({ label, live, baseline }: { label: string; live: string; baseline: string }) {
   return (
     <div className="flex items-center justify-between text-xs py-1.5">
-      <span className="text-[#7C8DB0]">{label}</span>
+      <span className="text-[#71717A]">{label}</span>
       <div className="flex items-center gap-3">
-        <span className="text-white font-medium">{live}</span>
-        <span className="text-[#7C8DB0] text-[10px]">vs {baseline}</span>
+        <span className="text-[#FAFAFA] font-medium">{live}</span>
+        <span className="text-[#71717A] text-[10px]">vs {baseline}</span>
       </div>
     </div>
   );
@@ -170,8 +170,8 @@ function HealthSparkline({ scores }: { scores: number[] }) {
   const degradedY = H - pad - 0.4 * (H - 2 * pad);
 
   return (
-    <div className="pt-3 border-t border-[rgba(79,70,229,0.1)]">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Score History</p>
+    <div className="pt-3 border-t border-[rgba(255,255,255,0.06)]">
+      <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">Score History</p>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-8" preserveAspectRatio="none">
         <rect x={0} y={pad} width={W} height={warningY - pad} fill="#EF4444" opacity={0.05} />
         <rect
@@ -195,7 +195,7 @@ function HealthSparkline({ scores }: { scores: number[] }) {
           y1={warningY}
           x2={W}
           y2={warningY}
-          stroke="#7C8DB0"
+          stroke="#71717A"
           strokeWidth={0.3}
           strokeDasharray="2,2"
         />
@@ -204,7 +204,7 @@ function HealthSparkline({ scores }: { scores: number[] }) {
           y1={degradedY}
           x2={W}
           y2={degradedY}
-          stroke="#7C8DB0"
+          stroke="#71717A"
           strokeWidth={0.3}
           strokeDasharray="2,2"
         />
@@ -227,16 +227,16 @@ export function SampleEvaluationDemo() {
   const ciUpper = Math.round(h.confidenceUpper * 100);
 
   return (
-    <div className="bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-2xl overflow-hidden">
+    <div className="bg-[#09090B] border border-[rgba(255,255,255,0.06)] rounded-2xl overflow-hidden">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* ── Header ── */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">{d.strategy.name}</h2>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 text-xs font-mono font-medium text-[#A78BFA]">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA]">{d.strategy.name}</h2>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.20)] text-xs font-mono font-medium text-[#818CF8]">
               {d.strategy.id}
             </span>
-            <span className="text-xs text-[#7C8DB0] bg-[#1A0626] px-2 py-0.5 rounded">
+            <span className="text-xs text-[#71717A] bg-[#18181B] px-2 py-0.5 rounded">
               v{d.strategy.version}
             </span>
           </div>
@@ -315,14 +315,14 @@ export function SampleEvaluationDemo() {
               Broker Verified
             </span>
 
-            <span className="text-xs text-[#7C8DB0]">
+            <span className="text-xs text-[#71717A]">
               {d.instance.symbol} {d.instance.timeframe} @ {d.instance.broker}
             </span>
           </div>
         </div>
 
         {/* ── Risk Disclaimer ── */}
-        <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-3 mb-6">
+        <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3 mb-6">
           <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
             Sample data for demonstration. Past results do not guarantee future returns. All trading
             involves risk.
@@ -349,8 +349,8 @@ export function SampleEvaluationDemo() {
         </div>
 
         {/* ── Risk Metrics ── */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-medium text-white mb-3">Risk Metrics</h3>
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-3">Risk Metrics</h3>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {[
               { label: "Sharpe Ratio", value: d.metrics.sharpeRatio.toFixed(2) },
@@ -359,46 +359,46 @@ export function SampleEvaluationDemo() {
               { label: "Profit Factor", value: d.metrics.profitFactor.toFixed(2) },
               { label: "Max DD Duration", value: d.metrics.maxDDDuration },
             ].map((m) => (
-              <div key={m.label} className="bg-[#0A0118]/50 rounded-lg p-3">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+              <div key={m.label} className="bg-[#09090B]/50 rounded-lg p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-0.5">
                   {m.label}
                 </p>
-                <p className="text-sm font-medium text-white">{m.value}</p>
+                <p className="text-sm font-medium text-[#FAFAFA]">{m.value}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* ── Broker Verification ── */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-medium text-white mb-3">Broker Verification</h3>
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-3">Broker Verification</h3>
           <div className="grid grid-cols-3 gap-4 text-xs">
             <div>
-              <p className="text-[#7C8DB0]">Evidence Count</p>
-              <p className="text-white font-medium">{d.brokerVerification.evidenceCount}</p>
+              <p className="text-[#71717A]">Evidence Count</p>
+              <p className="text-[#FAFAFA] font-medium">{d.brokerVerification.evidenceCount}</p>
             </div>
             <div>
-              <p className="text-[#7C8DB0]">Matched</p>
+              <p className="text-[#71717A]">Matched</p>
               <p className="text-[#10B981] font-medium">{d.brokerVerification.matchedCount}</p>
             </div>
             <div>
-              <p className="text-[#7C8DB0]">Mismatches</p>
+              <p className="text-[#71717A]">Mismatches</p>
               <p className="text-[#10B981] font-medium">{d.brokerVerification.mismatchedCount}</p>
             </div>
           </div>
         </div>
 
         {/* ── Equity Curve ── */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-medium text-white mb-3">Equity Curve</h3>
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-3">Equity Curve</h3>
           <MiniEquityCurve points={d.equityCurve} />
         </div>
 
         {/* ── Health Score ── */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 mb-6">
-          <h3 className="text-sm font-medium text-white mb-4">Strategy Health Score</h3>
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-6">
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-4">Strategy Health Score</h3>
 
-          <div className="p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
+          <div className="p-4 rounded-lg bg-[#09090B]/50 border border-[rgba(255,255,255,0.06)] space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -412,23 +412,23 @@ export function SampleEvaluationDemo() {
                 >
                   {cfg.label}
                 </span>
-                <span className="text-xs text-[#7C8DB0]">
+                <span className="text-xs text-[#71717A]">
                   {scorePct}%
                   <span className="text-[10px] ml-1 opacity-70">
                     ({ciLower}–{ciUpper}%)
                   </span>
                 </span>
               </div>
-              <span className="text-[10px] text-[#7C8DB0]">
+              <span className="text-[10px] text-[#71717A]">
                 {h.tradesSampled} trades / {h.windowDays}d window
               </span>
             </div>
 
             {/* Driver + Trend + Expectancy */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#7C8DB0]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#71717A]">
               <span>{h.primaryDriver}</span>
               <span className="flex items-center gap-0.5">
-                <span className="text-[#7C8DB0]">&#9654;</span> {h.scoreTrend}
+                <span className="text-[#71717A]">&#9654;</span> {h.scoreTrend}
               </span>
               <span>Exp: +{h.expectancy.toFixed(3)}%/trade</span>
             </div>
@@ -443,8 +443,8 @@ export function SampleEvaluationDemo() {
             </div>
 
             {/* Live vs Baseline */}
-            <div className="pt-3 border-t border-[rgba(79,70,229,0.1)]">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
+            <div className="pt-3 border-t border-[rgba(255,255,255,0.06)]">
+              <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-2">
                 Live vs Baseline
               </p>
               <MetricRow
@@ -475,20 +475,20 @@ export function SampleEvaluationDemo() {
         </div>
 
         {/* ── Chain Integrity ── */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4">
-          <h3 className="text-sm font-medium text-white mb-3">Chain Integrity</h3>
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-3">Chain Integrity</h3>
           <div className="grid grid-cols-3 gap-4 text-xs">
             <div>
-              <p className="text-[#7C8DB0]">Chain Length</p>
-              <p className="text-white font-medium">{d.chain.length.toLocaleString()} events</p>
+              <p className="text-[#71717A]">Chain Length</p>
+              <p className="text-[#FAFAFA] font-medium">{d.chain.length.toLocaleString()} events</p>
             </div>
             <div>
-              <p className="text-[#7C8DB0]">Checkpoints</p>
-              <p className="text-white font-medium">{d.chain.checkpointCount}</p>
+              <p className="text-[#71717A]">Checkpoints</p>
+              <p className="text-[#FAFAFA] font-medium">{d.chain.checkpointCount}</p>
             </div>
             <div>
-              <p className="text-[#7C8DB0]">Last Checkpoint</p>
-              <p className="text-white font-medium">
+              <p className="text-[#71717A]">Last Checkpoint</p>
+              <p className="text-[#FAFAFA] font-medium">
                 {new Date(d.chain.lastCheckpoint).toLocaleDateString()}
               </p>
             </div>

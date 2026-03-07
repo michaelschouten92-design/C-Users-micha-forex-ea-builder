@@ -14,23 +14,23 @@ export default function PrivacyPolicyPage() {
   const lastUpdated = "2026-02-14";
 
   return (
-    <div id="main-content" className="min-h-screen flex flex-col text-[#CBD5E1]">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B] text-[#A1A1AA]">
       <SiteNav />
       <div className="max-w-3xl mx-auto px-6 pt-32 pb-16 flex-1">
-        <h1 className="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
-        <p className="text-sm text-[#64748B] mb-10">Last updated: {lastUpdated}</p>
+        <h1 className="text-3xl font-bold text-[#FAFAFA] mb-2">Privacy Policy</h1>
+        <p className="text-sm text-[#71717A] mb-10">Last updated: {lastUpdated}</p>
 
-        <div className="space-y-8 text-[#94A3B8] leading-relaxed">
+        <div className="space-y-8 text-[#A1A1AA] leading-relaxed">
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">1. What Data We Collect</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">1. What Data We Collect</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>
                 <strong>Account data:</strong> email address and (hashed) passwords when registering
                 via email, or profile information from your OAuth provider (Google, GitHub).
               </li>
               <li>
-                <strong>Project data:</strong> strategy names, descriptions, and builder
-                configurations that you create.
+                <strong>Project data:</strong> strategy names, descriptions, and configurations that
+                you create.
               </li>
               <li>
                 <strong>Payment data:</strong> processed by Stripe. We do not store credit card
@@ -44,7 +44,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">2. How We Use Your Data</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">2. How We Use Your Data</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>To create and manage your account</li>
               <li>To save and export your strategy projects</li>
@@ -56,7 +56,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">
               3. Sharing Data with Third Parties
             </h2>
             <p>We only share your data with the following processors:</p>
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">4. Data Security</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">4. Data Security</h2>
             <p>We take appropriate technical and organizational measures to protect your data:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>Passwords are hashed with bcrypt</li>
@@ -93,7 +93,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">5. Data Retention</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">5. Data Retention</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>Account data is retained as long as your account is active</li>
               <li>Deleted projects are permanently removed after 30 days</li>
@@ -103,7 +103,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">6. Your Rights (GDPR)</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">6. Your Rights (GDPR)</h2>
             <p>You have the right to:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>
@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">7. Cookies</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">7. Cookies</h2>
             <p>We use the following cookies:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>
@@ -147,7 +147,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">8. Contact</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">8. Contact</h2>
             <p>
               For questions about your privacy or to exercise your rights, contact us via the email
               address in your account settings.
@@ -155,7 +155,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">9. Changes</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">9. Changes</h2>
             <p>
               We may update this privacy policy from time to time. Changes will be published on this
               page with an updated date.
@@ -163,8 +163,8 @@ export default function PrivacyPolicyPage() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/10 text-sm text-[#64748B]">
-          <Link href="/terms" className="hover:text-[#94A3B8]">
+        <div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)] text-sm text-[#71717A]">
+          <Link href="/terms" className="hover:text-[#A1A1AA]">
             Terms of Service
           </Link>
         </div>
