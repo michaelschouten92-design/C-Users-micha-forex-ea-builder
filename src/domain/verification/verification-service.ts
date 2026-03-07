@@ -159,6 +159,9 @@ export async function runVerification(
   } = params;
   let { intermediateResults } = params;
 
+  // Generate recordId early so it's available for Phase 0 proof events.
+  const recordId = crypto.randomUUID();
+
   // --- Phase 0: Load/ingest TradeFacts + derive intermediate results ---
   let snapshot: TradeSnapshot | undefined;
 
@@ -218,6 +221,32 @@ export async function runVerification(
         "SNAPSHOT_BUILD_FAILED"
       );
       const decision = decideTransition(verdictResult.verdict, currentLifecycleState);
+      const timestamp = new Date().toISOString();
+
+      try {
+        await appendVerificationRunProof({
+          strategyId,
+          recordId,
+          runCompletedPayload: {
+            eventType: "VERIFICATION_RUN_COMPLETED",
+            strategyId,
+            strategyVersion,
+            verdict: verdictResult.verdict,
+            reasonCodes: verdictResult.reasonCodes,
+            configVersion: null,
+            thresholdsHash: null,
+            configSource: "not_attempted",
+            recordId,
+            timestamp,
+          },
+        });
+      } catch (proofErr) {
+        log.error(
+          { err: proofErr, recordId, strategyId },
+          "Failed to persist Phase 0 failure proof event"
+        );
+        throw proofErr;
+      }
 
       return {
         verdictResult,
@@ -234,9 +263,6 @@ export async function runVerification(
   let thresholdsHash: string | null;
   let configSource: ConfigSource | "missing";
   let mcSeed: number | undefined;
-
-  // Generate recordId early so we can derive the MC seed before computeVerdict.
-  const recordId = crypto.randomUUID();
 
   try {
     const loaded = await loadActiveConfigWithFallback();

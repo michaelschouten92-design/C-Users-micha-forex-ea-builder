@@ -85,7 +85,7 @@ export function evaluateWalkForwardDegradation(
       // D1a: enough OOS data to trust the signal
       return {
         tier: "D1a",
-        reasonCode: "WALK_FORWARD_DEGRADATION_EXTREME",
+        reasonCode: "WALK_FORWARD_DEGRADATION_MODERATE",
         measured,
       };
     }

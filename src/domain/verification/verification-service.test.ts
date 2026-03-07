@@ -703,7 +703,7 @@ describe("runVerification", () => {
       expect(payload.dataSources).toBeUndefined();
     });
 
-    it("snapshot build failure → SNAPSHOT_BUILD_FAILED + NOT_DEPLOYABLE", async () => {
+    it("snapshot build failure → SNAPSHOT_BUILD_FAILED + NOT_DEPLOYABLE + proof event", async () => {
       mockPrisma.tradeFact.count.mockRejectedValue(new Error("DB connection failed"));
 
       const result = await runVerification({
@@ -719,6 +719,20 @@ describe("runVerification", () => {
       expect(result.verdictResult.reasonCodes).toEqual(["SNAPSHOT_BUILD_FAILED"]);
       expect(result.lifecycleState).toBe("BACKTESTED");
       expect(result.decision.kind).toBe("NO_TRANSITION");
+
+      // Phase 0 failure now writes a proof event
+      expect(mockAppendVerificationRunProof).toHaveBeenCalledTimes(1);
+      const params = mockAppendVerificationRunProof.mock.calls[0][0];
+      expect(params.runCompletedPayload).toEqual(
+        expect.objectContaining({
+          eventType: "VERIFICATION_RUN_COMPLETED",
+          verdict: "NOT_DEPLOYABLE",
+          reasonCodes: ["SNAPSHOT_BUILD_FAILED"],
+          configSource: "not_attempted",
+          configVersion: null,
+          thresholdsHash: null,
+        })
+      );
     });
 
     it("backward compat: no backtestRunId → existing behavior unchanged", async () => {

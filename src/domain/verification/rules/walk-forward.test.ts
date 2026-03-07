@@ -55,7 +55,7 @@ describe("evaluateWalkForwardDegradation", () => {
         THRESHOLDS
       );
       expect(result.tier).toBe("D1a");
-      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_EXTREME");
+      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_MODERATE");
     });
 
     it("degradation 60% with 100 OOS trades → D1a", () => {
@@ -64,7 +64,7 @@ describe("evaluateWalkForwardDegradation", () => {
         THRESHOLDS
       );
       expect(result.tier).toBe("D1a");
-      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_EXTREME");
+      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_MODERATE");
     });
 
     it("degradation just above MAX (40.01%) with exact MIN_OOS (20) → D1a", () => {
@@ -73,7 +73,7 @@ describe("evaluateWalkForwardDegradation", () => {
         THRESHOLDS
       );
       expect(result.tier).toBe("D1a");
-      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_EXTREME");
+      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_MODERATE");
     });
 
     it("degradation at exact EXTREME threshold (80%) with enough OOS → D1a (not D1c)", () => {
@@ -83,7 +83,7 @@ describe("evaluateWalkForwardDegradation", () => {
         THRESHOLDS
       );
       expect(result.tier).toBe("D1a");
-      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_EXTREME");
+      expect(result.reasonCode).toBe("WALK_FORWARD_DEGRADATION_MODERATE");
     });
   });
 

@@ -206,7 +206,7 @@ describe("computeVerdict", () => {
         CONFIG
       );
       expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("WALK_FORWARD_DEGRADATION_EXTREME");
+      expect(result.reasonCodes).toContain("WALK_FORWARD_DEGRADATION_MODERATE");
       expect(result.scores.walkForwardDegradationPct).toBe(50);
       expect(result.scores.walkForwardOosSampleSize).toBe(25);
     });
