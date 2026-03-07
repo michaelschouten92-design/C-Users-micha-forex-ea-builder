@@ -47,14 +47,14 @@ export function SystemRecommendation({ level, reason }: SystemRecommendationProp
       }}
     >
       <div className="flex items-start gap-3">
-        <span className="text-lg flex-shrink-0 mt-0.5" style={{ color: config.color }}>
+        <span className="text-xl flex-shrink-0 mt-0.5 leading-none" style={{ color: config.color }}>
           {config.icon}
         </span>
-        <div className="space-y-1 min-w-0">
-          <h3 className="text-sm font-semibold" style={{ color: config.color }}>
+        <div className="space-y-1.5 min-w-0">
+          <h3 className="text-[15px] font-bold tracking-tight" style={{ color: config.color }}>
             {config.label}
           </h3>
-          <p className="text-xs text-[#CBD5E1] leading-relaxed">{reason}</p>
+          <p className="text-xs text-[#E2E8F0] leading-relaxed">{reason}</p>
         </div>
       </div>
     </div>

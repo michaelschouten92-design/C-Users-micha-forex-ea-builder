@@ -69,14 +69,14 @@ export function StrategyHeader({ data }: StrategyHeaderProps) {
       {/* Main header row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Left: Name + connection + badges */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
             <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: connectionColor }}
               title={data.status}
             />
-            <h1 className="text-lg font-semibold text-white">{data.eaName}</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">{data.eaName}</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {data.hasHealthData ? (
@@ -107,8 +107,8 @@ export function StrategyHeader({ data }: StrategyHeaderProps) {
         </div>
 
         {/* Right: Health score + last eval */}
-        <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 sm:min-w-[200px]">
-          <div className="w-full max-w-[220px]">
+        <div className="flex flex-col items-start sm:items-end gap-2.5 min-w-0 sm:min-w-[220px]">
+          <div className="w-full max-w-[240px]">
             <HealthScoreBar
               score={data.health ? Math.round(data.health.overallScore * 100) : null}
             />

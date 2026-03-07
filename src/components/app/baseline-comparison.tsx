@@ -48,7 +48,7 @@ function DeviationRow({
           <span className="text-[10px] text-[#7C8DB0]">Base: {format(baseline)}</span>
           <span className="text-xs font-medium text-white">{format(live)}</span>
           <span
-            className="text-[10px] font-medium w-16 text-right tabular-nums"
+            className="text-[11px] font-semibold w-16 text-right tabular-nums"
             style={{ color: isNegative ? deviationColor : "#10B981" }}
           >
             {rawDeviation >= 0 ? "+" : ""}
@@ -57,13 +57,13 @@ function DeviationRow({
         </div>
       </div>
       {/* Deviation bar */}
-      <div className="h-1 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${barWidth}%`,
             backgroundColor: isNegative ? deviationColor : "#10B981",
-            opacity: 0.7,
+            opacity: 0.85,
           }}
         />
       </div>

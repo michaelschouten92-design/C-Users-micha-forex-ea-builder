@@ -43,8 +43,9 @@ function IncidentCard({ incident }: { incident: IncidentSummary }) {
     <div
       className="rounded-lg p-3 space-y-2"
       style={{
-        backgroundColor: isUrgent ? `${config.color}08` : "rgba(10,1,24,0.5)",
-        border: `1px solid ${config.color}${isUrgent ? "25" : "15"}`,
+        backgroundColor: isUrgent ? `${config.color}12` : "rgba(10,1,24,0.5)",
+        border: `1px solid ${config.color}${isUrgent ? "35" : "15"}`,
+        borderLeft: isUrgent ? `3px solid ${config.color}` : undefined,
       }}
     >
       <div className="flex items-center justify-between">
