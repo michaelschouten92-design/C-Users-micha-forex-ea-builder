@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { z } from "zod";
-import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
+import { appendProofEventInTx } from "@/lib/proof/events";
+import { randomUUID } from "crypto";
 
 type Props = {
   params: Promise<{ instanceId: string }>;
@@ -98,7 +100,14 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },
-    select: { id: true, lifecyclePhase: true, lifecycleState: true },
+    select: {
+      id: true,
+      lifecyclePhase: true,
+      lifecycleState: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
+    },
   });
 
   if (!instance) {
@@ -111,22 +120,57 @@ export async function POST(request: NextRequest, { params }: Props) {
     });
   }
 
-  await performLifecycleTransition(
-    instanceId,
-    instance.lifecycleState as StrategyLifecycleState,
-    "INVALIDATED",
-    "manual"
-  );
+  const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
+  if (!strategyId) {
+    return NextResponse.json(
+      apiError(ErrorCode.INTERNAL_ERROR, "Instance has no linked strategy identity"),
+      { status: 500 }
+    );
+  }
 
-  await prisma.liveEAInstance.update({
-    where: { id: instanceId },
-    data: {
-      lifecyclePhase: "RETIRED",
-      phaseEnteredAt: new Date(),
-      retiredAt: new Date(),
-      retiredReason: "manual",
-    },
-  });
+  const recordId = randomUUID();
+  const now = new Date();
+
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        await appendProofEventInTx(tx, strategyId, "STRATEGY_MANUALLY_RETIRED", {
+          eventType: "STRATEGY_MANUALLY_RETIRED",
+          recordId,
+          strategyId,
+          instanceId,
+          from: instance.lifecycleState,
+          to: "INVALIDATED",
+          reason: "manual",
+          timestamp: now.toISOString(),
+        });
+
+        await performLifecycleTransitionInTx(
+          tx,
+          instanceId,
+          instance.lifecycleState as StrategyLifecycleState,
+          "INVALIDATED",
+          "manual",
+          "operator"
+        );
+
+        await tx.liveEAInstance.update({
+          where: { id: instanceId },
+          data: {
+            lifecyclePhase: "RETIRED",
+            phaseEnteredAt: now,
+            retiredAt: now,
+            retiredReason: "manual",
+          },
+        });
+      },
+      { isolationLevel: "Serializable" }
+    );
+  } catch (err) {
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Failed to retire strategy"), {
+      status: 500,
+    });
+  }
 
   return NextResponse.json({ success: true, phase: "RETIRED" });
 }
