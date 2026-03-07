@@ -28,6 +28,113 @@ const REASON_LABELS: Record<string, string> = {
   MONITORING_INVALID_INPUT: "Invalid Input",
 };
 
+// ── Rule evaluation table ─────────────────────────────────
+
+type RuleStatus = "PASS" | "AT_RISK" | "INVALIDATED";
+
+interface RuleRow {
+  name: string;
+  status: RuleStatus;
+  measured: string;
+  threshold: string;
+}
+
+const STATUS_COLORS: Record<RuleStatus, string> = {
+  PASS: "#10B981",
+  AT_RISK: "#F59E0B",
+  INVALIDATED: "#EF4444",
+};
+
+function deriveRuleRows(
+  health: HealthSnapshotDetail | null,
+  triggeredReasons: string[]
+): RuleRow[] {
+  const triggered = new Set(triggeredReasons);
+
+  // 1. Drawdown Breach
+  const ddThreshold =
+    health?.baselineMaxDDPct != null
+      ? health.baselineMaxDDPct * MONITORING.DRAWDOWN_BREACH_MULTIPLIER
+      : null;
+  const ddTriggered = triggered.has("MONITORING_DRAWDOWN_BREACH");
+
+  // 2. Sharpe Degradation — no live Sharpe in HealthSnapshot
+  const sharpeTriggered = triggered.has("MONITORING_SHARPE_DEGRADATION");
+
+  // 3. Losing Streak — not stored in HealthSnapshot
+  const streakTriggered = triggered.has("MONITORING_LOSS_STREAK");
+
+  // 4. Inactivity — not stored in HealthSnapshot
+  const inactivityTriggered = triggered.has("MONITORING_INACTIVITY");
+
+  // 5. CUSUM Drift
+  const driftTriggered = triggered.has("MONITORING_CUSUM_DRIFT");
+
+  return [
+    {
+      name: "Drawdown Breach",
+      status: ddTriggered ? "AT_RISK" : "PASS",
+      measured: health ? `${health.liveMaxDrawdownPct.toFixed(1)}%` : "\u2014",
+      threshold:
+        ddThreshold != null
+          ? `< ${ddThreshold.toFixed(1)}%`
+          : `< baseline \u00D7 ${MONITORING.DRAWDOWN_BREACH_MULTIPLIER}`,
+    },
+    {
+      name: "Sharpe Degradation",
+      status: sharpeTriggered ? "AT_RISK" : "PASS",
+      measured: sharpeTriggered ? "Below min" : health ? "Within range" : "\u2014",
+      threshold: `> baseline \u00D7 ${MONITORING.SHARPE_MIN_RATIO}`,
+    },
+    {
+      name: "Losing Streak",
+      status: streakTriggered ? "AT_RISK" : "PASS",
+      measured: streakTriggered
+        ? `\u2265 ${MONITORING.MAX_LOSING_STREAK}`
+        : health
+          ? `< ${MONITORING.MAX_LOSING_STREAK}`
+          : "\u2014",
+      threshold: `< ${MONITORING.MAX_LOSING_STREAK}`,
+    },
+    {
+      name: "Inactivity",
+      status: inactivityTriggered ? "AT_RISK" : "PASS",
+      measured: inactivityTriggered
+        ? `\u2265 ${MONITORING.MAX_INACTIVITY_DAYS}d`
+        : health
+          ? `< ${MONITORING.MAX_INACTIVITY_DAYS}d`
+          : "\u2014",
+      threshold: `< ${MONITORING.MAX_INACTIVITY_DAYS}d`,
+    },
+    {
+      name: "CUSUM Drift",
+      status: driftTriggered || health?.driftDetected ? "AT_RISK" : "PASS",
+      measured: health
+        ? `${health.driftSeverity > 0 ? Math.round(health.driftSeverity * 100) + "%" : "0%"} severity`
+        : "\u2014",
+      threshold: `< ${MONITORING.CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS} consecutive`,
+    },
+  ];
+}
+
+function RuleStatusBadge({ status }: { status: RuleStatus }) {
+  const color = STATUS_COLORS[status];
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded"
+      style={{
+        backgroundColor: `${color}15`,
+        color,
+      }}
+    >
+      <span className="w-1 h-1 rounded-full" style={{ backgroundColor: color }} />
+      {status === "PASS" ? "Pass" : status === "AT_RISK" ? "At Risk" : "Fail"}
+    </span>
+  );
+}
+
+// ── Component ─────────────────────────────────────────────
+
 interface DiagnosticsPanelProps {
   latestRun: MonitoringRunSummary | null;
   health: HealthSnapshotDetail | null;
@@ -69,26 +176,48 @@ export function DiagnosticsPanel({ latestRun, health }: DiagnosticsPanelProps) {
               )}
             </div>
 
-            {/* Triggered reason codes */}
-            {latestRun.reasons.length > 0 && (
-              <div className="space-y-1.5">
+            {/* Rule evaluation table */}
+            {health && health.status !== "INSUFFICIENT_DATA" && (
+              <div className="pt-2 border-t border-[rgba(79,70,229,0.1)] space-y-1.5">
                 <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">
-                  Triggered Rules
+                  Rule Evaluation
                 </p>
-                {latestRun.reasons.map((code) => (
+                {/* Header */}
+                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center px-2 py-1">
+                  <span className="text-[9px] uppercase tracking-wider text-[#7C8DB0]">Rule</span>
+                  <span className="text-[9px] uppercase tracking-wider text-[#7C8DB0] w-14 text-center">
+                    Status
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-[#7C8DB0] w-24 text-right">
+                    Measured
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-[#7C8DB0] w-28 text-right">
+                    Threshold
+                  </span>
+                </div>
+                {/* Rows */}
+                {deriveRuleRows(health, latestRun.reasons).map((rule) => (
                   <div
-                    key={code}
-                    className="flex items-center justify-between py-1.5 px-2 rounded bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.1)]"
+                    key={rule.name}
+                    className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center px-2 py-1.5 rounded"
+                    style={{
+                      backgroundColor:
+                        rule.status !== "PASS" ? `${STATUS_COLORS[rule.status]}08` : "transparent",
+                    }}
                   >
-                    <span className="text-xs text-[#EF4444] font-medium">
-                      {REASON_LABELS[code] ?? code}
+                    <span className="text-xs text-[#CBD5E1] font-medium">{rule.name}</span>
+                    <span className="w-14 flex justify-center">
+                      <RuleStatusBadge status={rule.status} />
+                    </span>
+                    <span className="text-[11px] text-white tabular-nums w-24 text-right">
+                      {rule.measured}
+                    </span>
+                    <span className="text-[10px] text-[#7C8DB0] tabular-nums w-28 text-right">
+                      {rule.threshold}
                     </span>
                   </div>
                 ))}
               </div>
-            )}
-            {latestRun.reasons.length === 0 && (
-              <p className="text-xs text-[#10B981]">All rules passed.</p>
             )}
           </>
         )}
