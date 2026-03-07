@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes, createHash } from "crypto";
+import { randomBytes, createHash, randomUUID } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/strategy-identity";
 import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
 import { computePreLiveVerdict, extractPreLiveInput } from "@/lib/proof";
+import { appendProofEventInTx } from "@/lib/proof/events";
 import type { BuildJsonSchema } from "@/types/builder";
 
 type Props = {
@@ -182,7 +183,8 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
-    // Pre-live verification check — assess deployment readiness from backtest data
+    // Fail-closed: require at least one backtest before allowing export.
+    // Without backtest data there is no baseline for monitoring and no quality evidence.
     const latestBacktest = await prisma.backtestRun.findFirst({
       where: {
         upload: { projectId: id, userId: session.user.id },
@@ -190,23 +192,28 @@ export async function POST(request: NextRequest, { params }: Props) {
       orderBy: { createdAt: "desc" },
     });
 
-    if (latestBacktest) {
-      const preLiveInput = extractPreLiveInput(latestBacktest);
-      const preLiveCheck = computePreLiveVerdict(preLiveInput);
+    if (!latestBacktest) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.VALIDATION_FAILED,
+          "A backtest is required before exporting. Upload and analyze a backtest report first."
+        ),
+        { status: 422, headers: rateLimitHeaders }
+      );
+    }
 
-      if (preLiveCheck.verdict === "NOT_DEPLOYABLE") {
-        return NextResponse.json(
-          {
-            error: "Strategy does not meet minimum deployment requirements.",
-            details: preLiveCheck.reasons.map((r) => r.message),
-            preLiveCheck,
-          },
-          { status: 422, headers: rateLimitHeaders }
-        );
-      }
+    const preLiveInput = extractPreLiveInput(latestBacktest);
+    const preLiveCheck = computePreLiveVerdict(preLiveInput);
 
-      // Attach preLiveCheck to response (stored in closure for later use)
-      (request as unknown as Record<string, unknown>).__preLiveCheck = preLiveCheck;
+    if (preLiveCheck.verdict === "NOT_DEPLOYABLE") {
+      return NextResponse.json(
+        {
+          error: "Strategy does not meet minimum deployment requirements.",
+          details: preLiveCheck.reasons.map((r) => r.message),
+          preLiveCheck,
+        },
+        { status: 422, headers: rateLimitHeaders }
+      );
     }
 
     // Override magic number for this export if provided
@@ -271,20 +278,18 @@ export async function POST(request: NextRequest, { params }: Props) {
         fingerprintResult
       );
 
-      // Create BacktestBaseline if a backtest exists (enables drift monitoring + identity hashing)
-      if (latestBacktest) {
-        await createBaselineFromBacktest(tx, identity.strategyId, strategyVersion.id, {
-          id: latestBacktest.id,
-          totalTrades: latestBacktest.totalTrades,
-          winRate: latestBacktest.winRate,
-          profitFactor: latestBacktest.profitFactor,
-          maxDrawdownPct: latestBacktest.maxDrawdownPct,
-          sharpeRatio: latestBacktest.sharpeRatio,
-          initialDeposit: latestBacktest.initialDeposit,
-          totalNetProfit: latestBacktest.totalNetProfit,
-          period: latestBacktest.period,
-        });
-      }
+      // Create BacktestBaseline (backtest guaranteed present by guard above)
+      await createBaselineFromBacktest(tx, identity.strategyId, strategyVersion.id, {
+        id: latestBacktest.id,
+        totalTrades: latestBacktest.totalTrades,
+        winRate: latestBacktest.winRate,
+        profitFactor: latestBacktest.profitFactor,
+        maxDrawdownPct: latestBacktest.maxDrawdownPct,
+        sharpeRatio: latestBacktest.sharpeRatio,
+        initialDeposit: latestBacktest.initialDeposit,
+        totalNetProfit: latestBacktest.totalNetProfit,
+        period: latestBacktest.period,
+      });
 
       // Create LiveEAInstance for telemetry tracking (linked to strategy version)
       const liveEA = await tx.liveEAInstance.create({
@@ -301,6 +306,17 @@ export async function POST(request: NextRequest, { params }: Props) {
       // Initialize TrackRecordState for the event-sourced track record system
       await tx.trackRecordState.create({
         data: { instanceId: liveEA.id },
+      });
+
+      // Proof event: record the export in the proof chain.
+      // Inside this tx — if proof write fails, the entire export rolls back.
+      await appendProofEventInTx(tx, identity.strategyId, "STRATEGY_EXPORTED", {
+        recordId: randomUUID(),
+        strategyId: identity.strategyId,
+        exportJobId: job.id,
+        strategyVersionId: strategyVersion.id,
+        liveEAInstanceId: liveEA.id,
+        fingerprint: fingerprintResult.fingerprint,
       });
 
       return { job, strategyVersionId: strategyVersion.id };
@@ -373,10 +389,6 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit successful export
     await audit.exportComplete(session.user.id, project.id, exportJob.id);
 
-    const preLiveCheck = (request as unknown as Record<string, unknown>).__preLiveCheck as
-      | ReturnType<typeof computePreLiveVerdict>
-      | undefined;
-
     return NextResponse.json(
       {
         success: true,
@@ -387,7 +399,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         exportType: "MQ5",
         telemetryApiKey,
         bindingFailed,
-        ...(preLiveCheck && { preLiveCheck }),
+        preLiveCheck,
       },
       { headers: rateLimitHeaders }
     );

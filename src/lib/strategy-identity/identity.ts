@@ -101,6 +101,20 @@ export async function recordStrategyVersion(
 
   const nextVersionNo = (latestVersion?.versionNo ?? 0) + 1;
 
+  // Resolve strategyId for proof event
+  const identity = await tx.strategyIdentity.findUnique({
+    where: { id: strategyIdentityId },
+    select: { strategyId: true },
+  });
+
+  // Proof-before-mutation: record version creation before writing the row.
+  await appendProofEventInTx(tx, identity!.strategyId, "STRATEGY_VERSION_CREATED", {
+    recordId: buildVersionId,
+    strategyIdentityId,
+    versionNo: nextVersionNo,
+    fingerprint: fingerprintResult.fingerprint,
+  });
+
   const version = await tx.strategyVersion.create({
     data: {
       strategyIdentityId,
