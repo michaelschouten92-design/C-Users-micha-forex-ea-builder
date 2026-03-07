@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { VerificationLadder } from "@/components/proof/verification-ladder";
 
 interface VerificationData {
   strategyId: string;
@@ -111,7 +112,14 @@ interface ProofData {
     status: string;
     lastHeartbeat: string | null;
   } | null;
+  freshness?: {
+    warnings: Array<{ type: string; message: string }>;
+    healthSnapshotAge: number | null;
+    backtestAge: number | null;
+  };
 }
+
+// ── Constants ─────────────────────────────────────────────
 
 const HEALTH_LABEL: Record<string, { color: string; label: string }> = {
   ROBUST: { color: "#10B981", label: "Robust" },
@@ -130,6 +138,8 @@ const LADDER_ICONS: Record<string, string> = {
   INSTITUTIONAL:
     "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
 };
+
+// ── Helper Components ─────────────────────────────────────
 
 function MiniEquityCurve({ points }: { points: Array<{ equity: number }> }) {
   if (points.length < 2)
@@ -247,6 +257,79 @@ function CopyButton({ text }: { text: string }) {
     </button>
   );
 }
+
+// ── Verdict Derivation ────────────────────────────────────
+
+function deriveVerdict(
+  ladder: ProofData["ladder"],
+  liveHealth: ProofData["liveHealth"],
+  chainStatus: ChainStatusData | null
+): { text: string; color: string } {
+  // Priority 1: Active negative signals
+  if (chainStatus?.status === "FAIL") {
+    return { text: "Proof chain integrity issue detected", color: "#EF4444" };
+  }
+  if (liveHealth?.driftDetected) {
+    return { text: "Edge drift detected \u2014 monitoring signals active", color: "#F59E0B" };
+  }
+
+  // Priority 2: Positive signals based on verification level
+  switch (ladder.level) {
+    case "PROVEN":
+      return { text: "Proven track record with sustained live performance", color: "#10B981" };
+    case "VERIFIED":
+      return { text: "Live trades cryptographically verified on-chain", color: "#10B981" };
+    case "VALIDATED":
+      return { text: "Passed health evaluation and Monte Carlo stress test", color: "#6366F1" };
+    case "SUBMITTED":
+    default:
+      return { text: "Strategy submitted \u2014 verification in progress", color: "#7C8DB0" };
+  }
+}
+
+// ── Hero Stats Derivation ─────────────────────────────────
+
+function getHeroStats(data: ProofData): Array<{ label: string; value: string }> {
+  const stats: Array<{ label: string; value: string }> = [];
+
+  // 1. Trade count (prefer live)
+  if (data.trackRecord) {
+    stats.push({ label: "Live Trades", value: data.trackRecord.totalTrades.toLocaleString() });
+  } else if (data.backtestHealth) {
+    stats.push({
+      label: "Backtest Trades",
+      value: data.backtestHealth.stats.totalTrades.toLocaleString(),
+    });
+  }
+
+  // 2. Profit Factor (prefer live)
+  if (
+    data.liveMetrics?.profitFactor &&
+    data.liveMetrics.profitFactor > 0 &&
+    isFinite(data.liveMetrics.profitFactor)
+  ) {
+    stats.push({ label: "Profit Factor", value: data.liveMetrics.profitFactor.toFixed(2) });
+  } else if (data.backtestHealth) {
+    stats.push({
+      label: "Profit Factor",
+      value: data.backtestHealth.stats.profitFactor.toFixed(2),
+    });
+  }
+
+  // 3. Monte Carlo survival or fallback to win rate
+  if (data.monteCarlo) {
+    stats.push({
+      label: "MC Survival",
+      value: `${(data.monteCarlo.survivalRate * 100).toFixed(0)}%`,
+    });
+  } else if (data.backtestHealth) {
+    stats.push({ label: "Win Rate", value: `${data.backtestHealth.stats.winRate.toFixed(1)}%` });
+  }
+
+  return stats.slice(0, 3);
+}
+
+// ── Main Component ────────────────────────────────────────
 
 export function ProofPageView({ strategyId }: { strategyId: string }) {
   const [data, setData] = useState<ProofData | null>(null);
@@ -376,6 +459,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     }).catch(() => {});
   }, [strategyId, getShareUrl]);
 
+  // ── Loading ─────────────────────────────────────────────
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
@@ -403,6 +488,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     );
   }
 
+  // ── Derived Values ──────────────────────────────────────
+
   const {
     strategy,
     ladder,
@@ -415,6 +502,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
     equityCurve,
     liveMetrics,
     monitoring,
+    freshness,
   } = data;
   const healthLabel = backtestHealth
     ? (HEALTH_LABEL[backtestHealth.status] ?? HEALTH_LABEL.INSUFFICIENT_DATA)
@@ -424,13 +512,29 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
       ? ((trackRecord.winCount / trackRecord.totalTrades) * 100).toFixed(1)
       : null;
 
+  const verdict = deriveVerdict(ladder, liveHealth, chainStatus);
+  const heroStats = getHeroStats(data);
+
+  // ── Render ──────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-[#0A0118]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4">
+        {/* ════════════════════════════════════════════════
+            1. HERO CARD — screenshot-friendly trust summary
+            ════════════════════════════════════════════════ */}
+        <section
+          className="rounded-xl bg-[#1A0626] p-5 sm:p-6"
+          style={{
+            border: `1px solid ${verdict.color}25`,
+            borderLeft: `3px solid ${verdict.color}`,
+          }}
+        >
+          {/* Name + badges */}
           <div className="flex flex-wrap items-center gap-3 mb-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">{strategy.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {strategy.name}
+            </h1>
             {/* Verified by AlgoStudio badge */}
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#4F46E5]/15 border border-[#4F46E5]/40 text-[#818CF8] text-xs font-semibold">
               <svg
@@ -440,11 +544,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d={LADDER_ICONS.VERIFIED} />
               </svg>
               Verified by AlgoStudio
             </span>
@@ -474,7 +574,8 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[#7C8DB0]">
+          {/* Meta line: owner, ID, symbol, timeframe */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#7C8DB0] mb-4">
             {strategy.ownerHandle && (
               <Link
                 href={`/@${strategy.ownerHandle}`}
@@ -484,108 +585,162 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               </Link>
             )}
             <span className="font-mono text-xs text-[#7C8DB0]/60">{strategy.strategyId}</span>
-            {monitoring && (
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  monitoring.status === "Connected"
-                    ? "bg-[#10B981]/10 text-[#10B981]"
-                    : monitoring.status === "Delayed"
-                      ? "bg-[#F59E0B]/10 text-[#F59E0B]"
-                      : "bg-[#7C8DB0]/10 text-[#7C8DB0]"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    monitoring.status === "Connected"
-                      ? "bg-[#10B981]"
-                      : monitoring.status === "Delayed"
-                        ? "bg-[#F59E0B]"
-                        : "bg-[#7C8DB0]"
-                  }`}
-                />
-                {monitoring.status}
-              </span>
+            {instance?.symbol && (
+              <>
+                <span className="text-[#7C8DB0]/40">&middot;</span>
+                <span className="text-xs">{instance.symbol}</span>
+              </>
+            )}
+            {instance?.timeframe && (
+              <>
+                <span className="text-[#7C8DB0]/40">&middot;</span>
+                <span className="text-xs">{instance.timeframe}</span>
+              </>
             )}
           </div>
 
-          {strategy.description && (
-            <p className="text-sm text-[#94A3B8] mt-2">{strategy.description}</p>
-          )}
-        </div>
-
-        {/* SEO Intro */}
-        <div className="bg-[#1A0626]/40 border border-[rgba(79,70,229,0.1)] rounded-xl px-5 py-4 mb-6">
-          <p className="text-sm font-semibold text-white mb-2">Verified Strategy Track Record</p>
-          <p className="text-xs text-[#94A3B8] leading-relaxed">
-            This page is an independently verified track record produced by AlgoStudio — a
-            deterministic governance and control layer for algorithmic trading strategies. Every
-            trade is recorded in a cryptographic hash-chain audit log that cannot be modified
-            without detection. Strategies are continuously monitored for structural drift and
-            governed through an automated lifecycle (RUN / PAUSE / STOP) based on predefined risk
-            rules.
-          </p>
-        </div>
-
-        {/* Share this proof */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl px-5 py-4 mb-4">
-          <h2 className="text-sm font-semibold text-white mb-3">Share this proof</h2>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={copyLink}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              {copied ? "Copied!" : "Copy link"}
-            </button>
-            <button
-              onClick={shareX}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              Share on X
-            </button>
-            <button
-              onClick={shareReddit}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              Share on Reddit
-            </button>
-            <button
-              onClick={shareDiscord}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
-            >
-              Share to Discord
-            </button>
-          </div>
-          <div className="mt-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
-              Why this is credible
+          {/* Trust verdict */}
+          <div
+            className="rounded-lg px-4 py-2.5 mb-4"
+            style={{
+              backgroundColor: `${verdict.color}08`,
+              border: `1px solid ${verdict.color}15`,
+            }}
+          >
+            <p className="text-sm font-semibold" style={{ color: verdict.color }}>
+              {verdict.text}
             </p>
-            <ul className="space-y-1 text-xs text-[#94A3B8]">
-              <li className="flex items-start gap-2">
-                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
-                Hash-chain audit log (tamper-evident)
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
-                Snapshot-bound strategy identity
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[#10B981] mt-0.5">&#x2713;</span>
-                Monitoring + lifecycle governance (RUN / PAUSE / STOP)
-              </li>
-            </ul>
           </div>
-        </div>
 
-        {/* Risk Disclaimer */}
-        <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-2.5 mb-6">
+          {/* 3 key stats */}
+          {heroStats.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className="bg-[#0A0118]/50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-white tabular-nums">{stat.value}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mt-0.5">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Connection status */}
+          <div className="flex items-center justify-between text-xs text-[#7C8DB0]">
+            {monitoring ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{
+                    backgroundColor:
+                      monitoring.status === "Connected"
+                        ? "#10B981"
+                        : monitoring.status === "Delayed"
+                          ? "#F59E0B"
+                          : "#7C8DB0",
+                  }}
+                />
+                {monitoring.status}
+              </span>
+            ) : (
+              <span className="text-[#7C8DB0]/60">No live connection</span>
+            )}
+            {instance?.strategyStatus && (
+              <span>
+                Phase: <span className="text-[#CBD5E1] font-medium">{instance.strategyStatus}</span>
+              </span>
+            )}
+          </div>
+        </section>
+
+        {/* Description (below hero, compact) */}
+        {strategy.description && (
+          <p className="text-sm text-[#94A3B8] px-1">{strategy.description}</p>
+        )}
+
+        {/* ════════════════════════════════════════════════
+            2. FRESHNESS WARNINGS
+            ════════════════════════════════════════════════ */}
+        {freshness && freshness.warnings.length > 0 && (
+          <div className="rounded-lg bg-[#1A0626]/50 border border-[#F59E0B]/20 px-4 py-2.5 space-y-1">
+            {freshness.warnings.map((w, i) => (
+              <p key={i} className="text-[11px] text-[#F59E0B]/80 flex items-center gap-1.5">
+                <span className="flex-shrink-0">&#9888;</span>
+                {w.message}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* Risk disclaimer */}
+        <div className="rounded-lg bg-[#1A0626]/50 border border-[#F59E0B]/20 px-4 py-2.5">
           <p className="text-[11px] text-[#F59E0B]/80">
             Past performance does not guarantee future results. All trading involves risk.
           </p>
         </div>
 
-        {/* Verified Performance */}
-        <section className="mb-4">
-          <h2 className="text-base font-semibold text-white mb-3">Verified Performance</h2>
+        {/* ════════════════════════════════════════════════
+            3. VERIFICATION LADDER
+            ════════════════════════════════════════════════ */}
+        <VerificationLadder currentLevel={ladder.level} description={ladder.description} />
+
+        {/* ════════════════════════════════════════════════
+            4. SHARE THIS PROOF (compact, high placement)
+            ════════════════════════════════════════════════ */}
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl px-5 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-sm font-semibold text-white">Share this proof</h2>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={copyLink}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
+                {copied ? "Copied!" : "Copy link"}
+              </button>
+              <button
+                onClick={shareX}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
+                Share on X
+              </button>
+              <button
+                onClick={shareReddit}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
+                Share on Reddit
+              </button>
+              <button
+                onClick={shareDiscord}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
+              >
+                Share to Discord
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#94A3B8]">
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Hash-chain audit log
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Snapshot-bound identity
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="text-[#10B981]">&#x2713;</span>
+                Lifecycle governance
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* ════════════════════════════════════════════════
+            5. BACKTEST EVALUATION + MONTE CARLO
+            ════════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-base font-semibold text-white mb-3">Backtest Evaluation</h2>
           {backtestHealth ? (
             <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
@@ -606,7 +761,6 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   )}
                 </div>
               </div>
-              {/* 7 factor breakdown */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="bg-[#0A0118]/50 rounded-lg p-3">
                   <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
@@ -627,43 +781,75 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   </p>
                 </div>
                 <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Sharpe Ratio</p>
-                  <p className="text-white font-medium">
-                    {backtestHealth.stats.sharpeRatio?.toFixed(2) ?? "---"}
-                  </p>
-                </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
                   <p className="text-[#7C8DB0] mb-0.5">Trades</p>
                   <p className="text-white font-medium">
                     {backtestHealth.stats.totalTrades.toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Expected Payoff</p>
-                  <p className="text-white font-medium">
-                    ${backtestHealth.stats.expectedPayoff.toFixed(2)}
-                  </p>
-                </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Recovery Factor</p>
-                  <p className="text-white font-medium">
-                    {backtestHealth.stats.recoveryFactor?.toFixed(2) ?? "---"}
-                  </p>
-                </div>
               </div>
+
+              {/* Monte Carlo (sub-section if available) */}
+              {monteCarlo && (
+                <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.1)]">
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
+                    Monte Carlo Stress Test
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                        Survival Rate
+                      </p>
+                      <p
+                        className={`text-lg font-bold ${monteCarlo.survivalRate >= 0.7 ? "text-[#10B981]" : monteCarlo.survivalRate >= 0.5 ? "text-[#F59E0B]" : "text-[#EF4444]"}`}
+                      >
+                        {(monteCarlo.survivalRate * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                        P5 (Worst)
+                      </p>
+                      <p className="text-sm font-medium text-[#EF4444]">
+                        {monteCarlo.p5 >= 0 ? "+" : ""}
+                        {monteCarlo.p5.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                        Median
+                      </p>
+                      <p className="text-sm font-medium text-white">
+                        {monteCarlo.p50 >= 0 ? "+" : ""}
+                        {monteCarlo.p50.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                        P95 (Best)
+                      </p>
+                      <p className="text-sm font-medium text-[#10B981]">
+                        {monteCarlo.p95 >= 0 ? "+" : ""}
+                        {monteCarlo.p95.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#7C8DB0] mt-2">
+                    Based on ~1,000 randomized simulations. Survival rate = % of simulations that
+                    remained profitable.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-[#7C8DB0]">
               Not available yet — no backtest evaluation uploaded.
             </p>
           )}
-        </section>
 
-        {/* Monte Carlo Validation */}
-        <section className="mb-4">
-          <h2 className="text-base font-semibold text-white mb-3">Monte Carlo Validation</h2>
-          {monteCarlo ? (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+          {/* Standalone Monte Carlo (when no backtest health but MC exists) */}
+          {!backtestHealth && monteCarlo && (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
+              <h3 className="text-sm font-semibold text-white mb-3">Monte Carlo Stress Test</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-[#0A0118]/50 rounded-lg p-3">
                   <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
@@ -703,52 +889,109 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   </p>
                 </div>
               </div>
-              <p className="text-[10px] text-[#7C8DB0] mt-2">
-                Based on ~1,000 randomized simulations. Survival rate = % of simulations that
-                remained profitable.
-              </p>
             </div>
-          ) : (
-            <p className="text-sm text-[#7C8DB0]">
-              Not available yet — Monte Carlo simulation has not been run.
-            </p>
           )}
         </section>
 
-        {/* Live Track Record */}
-        <section className="mb-4">
+        {/* ════════════════════════════════════════════════
+            6. LIVE TRACK RECORD
+            ════════════════════════════════════════════════ */}
+        <section>
           <h2 className="text-base font-semibold text-white mb-3">Live Track Record</h2>
           {trackRecord ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <Stat label="Live Trades" value={trackRecord.totalTrades.toLocaleString()} />
-              <Stat label="Win Rate" value={winRate ? `${winRate}%` : "---"} />
-              <Stat label="Max Drawdown" value={`${trackRecord.maxDrawdownPct.toFixed(1)}%`} />
-              <Stat label="Net Profit" value={`$${trackRecord.totalProfit.toFixed(2)}`} />
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                <Stat label="Live Trades" value={trackRecord.totalTrades.toLocaleString()} />
+                <Stat label="Win Rate" value={winRate ? `${winRate}%` : "---"} />
+                <Stat label="Max Drawdown" value={`${trackRecord.maxDrawdownPct.toFixed(1)}%`} />
+                <Stat label="Net Profit" value={`$${trackRecord.totalProfit.toFixed(2)}`} />
+              </div>
+
+              {/* Equity Curve */}
+              {equityCurve.length > 1 && (
+                <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-3">
+                  <h3 className="text-sm font-semibold text-white mb-3">Equity Curve</h3>
+                  <MiniEquityCurve points={equityCurve} />
+                </div>
+              )}
+
+              {/* Live Risk Metrics */}
+              {liveMetrics && (liveMetrics.sharpeRatio !== 0 || liveMetrics.profitFactor !== 0) && (
+                <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-white mb-3">Live Risk Metrics</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[#7C8DB0] mb-0.5">Sharpe</p>
+                      <p className="text-white font-medium">{liveMetrics.sharpeRatio.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[#7C8DB0] mb-0.5">Sortino</p>
+                      <p className="text-white font-medium">
+                        {liveMetrics.sortinoRatio.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[#7C8DB0] mb-0.5">Calmar</p>
+                      <p className="text-white font-medium">{liveMetrics.calmarRatio.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-[#0A0118]/50 rounded-lg p-3">
+                      <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
+                      <p className="text-white font-medium">
+                        {liveMetrics.profitFactor === Infinity
+                          ? "\u221e"
+                          : liveMetrics.profitFactor.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-sm text-[#7C8DB0]">Not available yet — no live data connected.</p>
           )}
-
-          {/* Equity Curve */}
-          {equityCurve.length > 1 && (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
-              <h3 className="text-sm font-semibold text-white mb-3">Equity Curve</h3>
-              <MiniEquityCurve points={equityCurve} />
-            </div>
-          )}
         </section>
 
-        {/* Monitoring Status */}
-        <section className="mb-4">
-          <h2 className="text-base font-semibold text-white mb-3">Monitoring Status</h2>
-          {liveHealth && liveHealth.status !== "INSUFFICIENT_DATA" ? (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5">
+        {/* ════════════════════════════════════════════════
+            7. EDGE STABILITY — monitoring + drift
+            ════════════════════════════════════════════════ */}
+        {liveHealth && liveHealth.status !== "INSUFFICIENT_DATA" && (
+          <section>
+            <h2 className="text-base font-semibold text-white mb-3">Edge Stability</h2>
+            <div
+              className="bg-[#1A0626] border rounded-xl p-5"
+              style={{
+                borderColor: liveHealth.driftDetected
+                  ? "rgba(245,158,11,0.3)"
+                  : "rgba(79,70,229,0.15)",
+                borderLeft: liveHealth.driftDetected ? "3px solid #F59E0B" : undefined,
+              }}
+            >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-white">Live Health Monitor</h3>
                 <span className="text-xs text-[#7C8DB0]">
                   Score: {Math.round(liveHealth.overallScore * 100)}%
                 </span>
               </div>
+
+              {/* Drift status */}
+              <div className="flex items-center gap-2 mb-3">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: liveHealth.driftDetected ? "#F59E0B" : "#10B981" }}
+                />
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: liveHealth.driftDetected ? "#F59E0B" : "#10B981" }}
+                >
+                  {liveHealth.driftDetected ? "Drift detected" : "No drift detected"}
+                </span>
+                {liveHealth.scoreTrend && (
+                  <span className="text-[10px] text-[#7C8DB0] ml-2">
+                    Trend: {liveHealth.scoreTrend}
+                  </span>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <ScoreBar label="Return" score={liveHealth.returnScore} />
                 <ScoreBar label="Volatility" score={liveHealth.volatilityScore} />
@@ -760,45 +1003,18 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 <p className="text-[10px] text-[#F59E0B] mt-2">{liveHealth.primaryDriver}</p>
               )}
             </div>
-          ) : (
-            <p className="text-sm text-[#7C8DB0]">Not available yet — no live monitoring data.</p>
-          )}
+          </section>
+        )}
 
-          {/* Live Risk Metrics */}
-          {liveMetrics && (liveMetrics.sharpeRatio !== 0 || liveMetrics.profitFactor !== 0) && (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
-              <h3 className="text-sm font-semibold text-white mb-3">Live Risk Metrics</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Sharpe</p>
-                  <p className="text-white font-medium">{liveMetrics.sharpeRatio.toFixed(2)}</p>
-                </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Sortino</p>
-                  <p className="text-white font-medium">{liveMetrics.sortinoRatio.toFixed(2)}</p>
-                </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Calmar</p>
-                  <p className="text-white font-medium">{liveMetrics.calmarRatio.toFixed(2)}</p>
-                </div>
-                <div className="bg-[#0A0118]/50 rounded-lg p-3">
-                  <p className="text-[#7C8DB0] mb-0.5">Profit Factor</p>
-                  <p className="text-white font-medium">
-                    {liveMetrics.profitFactor === Infinity
-                      ? "\u221e"
-                      : liveMetrics.profitFactor.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Track Record Verification */}
-        <section className="mb-4">
+        {/* ════════════════════════════════════════════════
+            8. PROOF INTEGRITY — chain + hashes + download
+            ════════════════════════════════════════════════ */}
+        <section>
           <h2 className="text-base font-semibold text-white mb-3">Track Record Verification</h2>
+
+          {/* Chain info */}
           {chain && chain.length > 0 ? (
-            <div className="bg-[#1A0626] border border-[#10B981]/20 rounded-xl p-5 mb-4">
+            <div className="bg-[#1A0626] border border-[#10B981]/20 rounded-xl p-5 mb-3">
               <div className="flex items-center gap-2 mb-3">
                 <svg
                   className="w-5 h-5 text-[#10B981]"
@@ -807,11 +1023,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" d={LADDER_ICONS.VERIFIED} />
                 </svg>
                 <h3 className="text-sm font-semibold text-[#10B981]">Cryptographically Verified</h3>
               </div>
@@ -841,56 +1053,15 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               </p>
             </div>
           ) : (
-            <p className="text-sm text-[#7C8DB0]">
+            <p className="text-sm text-[#7C8DB0] mb-3">
               Not available yet — no hash-chain events recorded.
             </p>
           )}
 
-          {/* Verification Hashes */}
-          {verification &&
-          (verification.snapshotHash ||
-            verification.baselineMetricsHash ||
-            verification.tradeChainHead) ? (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mt-3">
-              <h3 className="text-sm font-semibold text-white mb-3">Verification Hashes</h3>
-              <div className="space-y-2 text-xs">
-                {verification.snapshotHash && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Snapshot Hash</span>
-                    <span className="flex items-center text-white font-mono text-[10px]">
-                      {verification.snapshotHash.slice(0, 16)}...
-                      <CopyButton text={verification.snapshotHash} />
-                    </span>
-                  </div>
-                )}
-                {verification.baselineMetricsHash && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Baseline Hash</span>
-                    <span className="flex items-center text-white font-mono text-[10px]">
-                      {verification.baselineMetricsHash.slice(0, 16)}...
-                      <CopyButton text={verification.baselineMetricsHash} />
-                    </span>
-                  </div>
-                )}
-                {verification.tradeChainHead && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#7C8DB0]">Trade Chain Head</span>
-                    <span className="flex items-center text-white font-mono text-[10px]">
-                      {verification.tradeChainHead.slice(0, 16)}...
-                      <CopyButton text={verification.tradeChainHead} />
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : verification !== null ? (
-            <p className="text-sm text-[#7C8DB0] mt-3">Verification hashes not available yet.</p>
-          ) : null}
-
-          {/* Proof Chain Integrity */}
+          {/* Chain integrity status */}
           {chainStatus && (
             <div
-              className={`bg-[#1A0626] border rounded-xl p-5 mt-3 ${
+              className={`bg-[#1A0626] border rounded-xl p-5 mb-3 ${
                 chainStatus.status === "PASS"
                   ? "border-[#10B981]/20"
                   : chainStatus.status === "FAIL"
@@ -907,11 +1078,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                     stroke="currentColor"
                     strokeWidth={2}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" d={LADDER_ICONS.VERIFIED} />
                   </svg>
                 ) : chainStatus.status === "FAIL" ? (
                   <svg
@@ -1024,8 +1191,49 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             </div>
           )}
 
-          {/* Download verification data */}
-          <div className="mt-3">
+          {/* Verification Hashes */}
+          {verification &&
+          (verification.snapshotHash ||
+            verification.baselineMetricsHash ||
+            verification.tradeChainHead) ? (
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-3">
+              <h3 className="text-sm font-semibold text-white mb-3">Verification Hashes</h3>
+              <div className="space-y-2 text-xs">
+                {verification.snapshotHash && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Snapshot Hash</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.snapshotHash.slice(0, 16)}...
+                      <CopyButton text={verification.snapshotHash} />
+                    </span>
+                  </div>
+                )}
+                {verification.baselineMetricsHash && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Baseline Hash</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.baselineMetricsHash.slice(0, 16)}...
+                      <CopyButton text={verification.baselineMetricsHash} />
+                    </span>
+                  </div>
+                )}
+                {verification.tradeChainHead && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7C8DB0]">Trade Chain Head</span>
+                    <span className="flex items-center text-white font-mono text-[10px]">
+                      {verification.tradeChainHead.slice(0, 16)}...
+                      <CopyButton text={verification.tradeChainHead} />
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : verification !== null ? (
+            <p className="text-sm text-[#7C8DB0] mb-3">Verification hashes not available yet.</p>
+          ) : null}
+
+          {/* Download */}
+          <div>
             <button
               onClick={downloadVerification}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg text-xs text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-colors"
@@ -1049,26 +1257,9 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           </div>
         </section>
 
-        {/* Lifecycle Governance */}
-        <section className="mb-6">
-          <h2 className="text-base font-semibold text-white mb-3">Lifecycle Governance</h2>
-          <div className="bg-[#1A0626]/40 border border-[rgba(79,70,229,0.1)] rounded-xl px-5 py-4">
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              This strategy is governed by AlgoStudio&apos;s automated lifecycle engine. Predefined
-              risk rules can transition the strategy between RUN, PAUSE, and STOP states based on
-              real-time performance. Structural drift detection monitors for deviations from
-              baseline behaviour, and all state transitions are recorded in the audit log.
-            </p>
-            {instance && (
-              <div className="flex items-center gap-3 mt-3 text-xs">
-                <span className="text-[#7C8DB0]">Current phase:</span>
-                <span className="text-white font-medium">{instance.strategyStatus}</span>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Footer */}
+        {/* ════════════════════════════════════════════════
+            FOOTER
+            ════════════════════════════════════════════════ */}
         <div className="text-center pt-6 border-t border-[rgba(79,70,229,0.1)]">
           <Link
             href="/"
