@@ -33,7 +33,7 @@ export async function triggerMonitoringAfterIngest(
 ): Promise<TriggerMonitoringResult> {
   // Check operator hold — skip monitoring entirely when HALTED
   const instance = await prisma.liveEAInstance.findFirst({
-    where: { strategyVersion: { strategyIdentity: { strategyId } } },
+    where: { strategyVersion: { strategyIdentity: { strategyId } }, deletedAt: null },
     select: { operatorHold: true, monitoringSuppressedUntil: true },
   });
   if (instance?.operatorHold === "HALTED") {

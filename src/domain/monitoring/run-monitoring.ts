@@ -295,6 +295,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             strategyVersion: {
               strategyIdentity: { strategyId },
             },
+            deletedAt: null,
           },
           select: { id: true, lifecycleState: true },
         });
