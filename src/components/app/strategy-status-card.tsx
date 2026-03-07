@@ -123,7 +123,7 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
 
   return (
     <Link
-      href={`/app/live?instance=${s.id}`}
+      href={`/app/strategy/${s.id}`}
       className="block bg-[#1A0626] rounded-xl p-4 transition-colors hover:border-[rgba(79,70,229,0.35)]"
       style={{
         border: `1px solid ${borderColor}`,
