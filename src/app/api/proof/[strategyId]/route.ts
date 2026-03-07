@@ -183,6 +183,19 @@ export async function GET(request: NextRequest, { params }: Props) {
       const healthSnapshot = await prisma.healthSnapshot.findFirst({
         where: { instanceId: instance.id },
         orderBy: { createdAt: "desc" },
+        select: {
+          status: true,
+          overallScore: true,
+          returnScore: true,
+          volatilityScore: true,
+          drawdownScore: true,
+          winRateScore: true,
+          tradeFrequencyScore: true,
+          driftDetected: true,
+          primaryDriver: true,
+          scoreTrend: true,
+          createdAt: true,
+        },
       });
       if (healthSnapshot) {
         liveHealth = {
@@ -206,7 +219,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         prisma.trackRecordCheckpoint.findFirst({
           where: { instanceId: instance.id },
           orderBy: { createdAt: "desc" },
-          select: { hmac: true, createdAt: true },
+          select: { createdAt: true },
         }),
       ]);
       chainInfo = {
