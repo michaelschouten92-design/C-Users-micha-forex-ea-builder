@@ -178,6 +178,7 @@ export async function POST(request: NextRequest) {
               strategyVersion: {
                 strategyIdentity: { strategyId: incident.strategyId },
               },
+              deletedAt: null,
             },
             select: { id: true, lifecycleState: true },
           });
