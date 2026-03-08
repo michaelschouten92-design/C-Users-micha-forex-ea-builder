@@ -11,6 +11,7 @@ import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
+import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
 
 interface PageProps {
   params: Promise<{ instanceId: string }>;
@@ -63,7 +64,16 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 9. Strategy Aggregate — Layer 2 derived, collapsed, secondary */}
         {data.strategyAggregate && <StrategyAggregateSummary aggregate={data.strategyAggregate} />}
 
-        {/* 10. Health Score Breakdown — secondary, collapsed */}
+        {/* 10. Version Lineage — strategy version lifecycle, collapsed, secondary */}
+        {data.strategyLineage && (
+          <VersionLineagePanel
+            versionNo={data.versionNo}
+            currency={data.versionCurrency}
+            lineage={data.strategyLineage}
+          />
+        )}
+
+        {/* 11. Health Score Breakdown — secondary, collapsed */}
         <HealthScoreBreakdown health={data.health} history={data.healthHistory} />
       </div>
     </div>

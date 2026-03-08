@@ -156,6 +156,23 @@ export async function linkExternalBaseline(
     });
   }
 
+  // Deprecate the previously-current version (if any).
+  // For external strategies, this means a new baseline was linked — the old
+  // version's sentinel fingerprint is now superseded.
+  const previousCurrentId = (
+    await tx.strategyIdentity.findUnique({
+      where: { id: identity.id },
+      select: { currentVersionId: true },
+    })
+  )?.currentVersionId;
+
+  if (previousCurrentId && previousCurrentId !== version.id) {
+    await tx.strategyVersion.update({
+      where: { id: previousCurrentId },
+      data: { status: "DEPRECATED" },
+    });
+  }
+
   // Update identity to point at current version
   await tx.strategyIdentity.update({
     where: { id: identity.id },

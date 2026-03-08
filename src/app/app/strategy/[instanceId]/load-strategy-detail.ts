@@ -12,8 +12,12 @@
 import { prisma } from "@/lib/prisma";
 import {
   resolveInstanceMonitoringStatus,
+  resolveDeploymentCurrency,
+  buildStrategyLineage,
   type InstanceMonitoringStatus,
   type StrategyAggregateHealth,
+  type DeploymentVersionCurrency,
+  type StrategyLineage,
 } from "@/lib/semantic-layers";
 import { buildStrategyAggregate } from "@/lib/semantic-layers/strategy-aggregate";
 
@@ -144,6 +148,21 @@ export interface StrategyDetailData {
    * instance-level monitoring verdict shown above.
    */
   strategyAggregate: StrategyAggregateHealth | null;
+
+  // Version lineage (secondary — does not affect monitoring truth)
+
+  /** This deployment's version number. Null if not linked to a strategy. */
+  versionNo: number | null;
+
+  /** Whether this deployment is on the current version of its strategy. */
+  versionCurrency: DeploymentVersionCurrency;
+
+  /**
+   * Full lineage read-model for the strategy identity.
+   * Null when the instance has no linked strategy version.
+   * Includes all versions, deployment counts per version, and current/outdated splits.
+   */
+  strategyLineage: StrategyLineage | null;
 }
 
 // ── Monitoring status resolution (delegates to shared semantic layer) ──
@@ -435,27 +454,55 @@ export async function loadStrategyDetail(
     mappedIncidents
   );
 
-  // ── Layer 2: Strategy aggregate across sibling deployments ──
+  // ── Layer 2 + Lineage: Strategy aggregate and version lineage ──
   // Only available when this instance is linked to a strategy version.
   let strategyAggregate: StrategyAggregateHealth | null = null;
-  if (strategyId) {
-    const siblingInstances = await prisma.liveEAInstance.findMany({
-      where: {
-        deletedAt: null,
-        userId,
-        strategyVersion: { strategyIdentity: { strategyId } },
-      },
-      select: {
-        status: true,
-        lifecycleState: true,
-        healthSnapshots: {
-          take: 1,
-          orderBy: { createdAt: "desc" as const },
-          select: { status: true },
-        },
-      },
-    });
+  let versionNo: number | null = null;
+  let versionCurrency: DeploymentVersionCurrency = "UNLINKED";
+  let strategyLineage: StrategyLineage | null = null;
 
+  if (strategyId) {
+    // Fetch strategy identity, all versions, and all sibling deployments in parallel
+    const [identityData, siblingInstances] = await Promise.all([
+      prisma.strategyIdentity.findUnique({
+        where: { strategyId },
+        select: {
+          currentVersionId: true,
+          origin: true,
+          versions: {
+            orderBy: { versionNo: "desc" as const },
+            select: {
+              id: true,
+              versionNo: true,
+              status: true,
+              fingerprint: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
+      prisma.liveEAInstance.findMany({
+        where: {
+          deletedAt: null,
+          userId,
+          strategyVersion: { strategyIdentity: { strategyId } },
+        },
+        select: {
+          id: true,
+          eaName: true,
+          strategyVersionId: true,
+          status: true,
+          lifecycleState: true,
+          healthSnapshots: {
+            take: 1,
+            orderBy: { createdAt: "desc" as const },
+            select: { status: true },
+          },
+        },
+      }),
+    ]);
+
+    // Strategy aggregate (Layer 2)
     const instancesForAgg = siblingInstances.map((sib) => ({
       monitoringStatus: resolveInstanceMonitoringStatus(
         sib.lifecycleState,
@@ -464,8 +511,37 @@ export async function loadStrategyDetail(
       connectionStatus: sib.status as "ONLINE" | "OFFLINE" | "ERROR",
       hasHealthData: sib.healthSnapshots.length > 0,
     }));
-
     strategyAggregate = buildStrategyAggregate(strategyId, instancesForAgg);
+
+    // Version lineage
+    if (identityData) {
+      const currentVersionId = identityData.currentVersionId;
+
+      // This deployment's version info
+      const thisVersion = identityData.versions.find((v) => v.id === instance.strategyVersionId);
+      versionNo = thisVersion?.versionNo ?? null;
+      versionCurrency = resolveDeploymentCurrency(instance.strategyVersionId, currentVersionId);
+
+      // Full lineage read-model
+      strategyLineage = buildStrategyLineage(
+        strategyId,
+        identityData.origin as "PROJECT" | "EXTERNAL",
+        currentVersionId,
+        identityData.versions.map((v) => ({
+          id: v.id,
+          versionNo: v.versionNo,
+          status: v.status,
+          fingerprint: v.fingerprint,
+          createdAt: v.createdAt.toISOString(),
+        })),
+        siblingInstances.map((sib) => ({
+          id: sib.id,
+          eaName: sib.eaName,
+          strategyVersionId: sib.strategyVersionId,
+          status: sib.status,
+        }))
+      );
+    }
   }
 
   return {
@@ -494,5 +570,8 @@ export async function loadStrategyDetail(
     recommendation: level,
     recommendationReason: reason,
     strategyAggregate,
+    versionNo,
+    versionCurrency,
+    strategyLineage,
   };
 }

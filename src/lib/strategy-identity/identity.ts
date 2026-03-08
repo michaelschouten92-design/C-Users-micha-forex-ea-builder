@@ -127,6 +127,26 @@ export async function recordStrategyVersion(
     },
   });
 
+  // Deprecate the previously-current version (if any).
+  // The new version becomes the sole ACTIVE current version.
+  // Existing deployments on the deprecated version continue to function —
+  // deprecation is informational, not a monitoring signal.
+  if (latestVersion) {
+    const previousCurrentId = (
+      await tx.strategyIdentity.findUnique({
+        where: { id: strategyIdentityId },
+        select: { currentVersionId: true },
+      })
+    )?.currentVersionId;
+
+    if (previousCurrentId) {
+      await tx.strategyVersion.update({
+        where: { id: previousCurrentId },
+        data: { status: "DEPRECATED" },
+      });
+    }
+  }
+
   // Update identity with current fingerprint and version
   await tx.strategyIdentity.update({
     where: { id: strategyIdentityId },

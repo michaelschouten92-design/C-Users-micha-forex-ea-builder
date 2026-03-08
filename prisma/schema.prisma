@@ -798,6 +798,16 @@ model StrategyVersion {
   parameterHash      String   // SHA-256 of canonical settings + node params
   createdAt          DateTime @default(now())
 
+  // Version lifecycle status — explicit, not inferred.
+  //   ACTIVE:     This version is usable for deployments.
+  //   DEPRECATED: Superseded by a newer version. Existing deployments still function
+  //               but new deployments should use the current version.
+  //   RETIRED:    No longer recommended. Deployments on this version are considered outdated.
+  // Only one version per identity should be the "current" version (tracked by
+  // StrategyIdentity.currentVersionId), but multiple versions may remain ACTIVE
+  // if they represent valid alternative configurations.
+  status             String   @default("ACTIVE") // ACTIVE | DEPRECATED | RETIRED
+
   strategyIdentity StrategyIdentity  @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
   buildVersion     BuildVersion?     @relation(fields: [buildVersionId], references: [id], onDelete: Cascade)
   backtestBaseline BacktestBaseline?
@@ -806,6 +816,7 @@ model StrategyVersion {
 
   @@unique([strategyIdentityId, fingerprint])
   @@index([buildVersionId])
+  @@index([strategyIdentityId, status])
 }
 
 model BacktestBaseline {
