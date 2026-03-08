@@ -44,38 +44,51 @@ export interface StrategyWeakness {
 // System prompt
 // ============================================
 
-const SYSTEM_PROMPT = `You are an expert quantitative trading analyst reviewing MT5 backtest results. Your job is to provide a professional, honest assessment of a trading strategy's viability for live trading.
+const SYSTEM_PROMPT = `You are an expert quantitative trading analyst reviewing MT5 backtest results. Provide a professional, honest assessment of the strategy's viability for live trading.
 
-You will receive:
-1. Strategy metadata (symbol, timeframe, period)
-2. Key performance metrics (profit factor, drawdown, Sharpe ratio, etc.)
-3. A health score (0-100) with status (ROBUST/MODERATE/WEAK)
-4. A sample of actual trades from the backtest
+You will receive strategy metadata, performance metrics, a health score, and a sample of trades.
 
-Your analysis MUST cover these areas:
-- Overall Assessment: 2-3 sentence summary of the strategy's quality and readiness for live trading.
-- Strengths: what the strategy does well — be specific and reference actual metrics.
-- Weaknesses & Risks: identify specific problems with category, severity, description, and recommendation.
-- Overfitting Signals: too-perfect metrics, suspiciously high win rates (>80%), very few trades, extreme profit factor >5 with low trade count, period-specific performance.
-- Market Dependency: how dependent the strategy is on specific market conditions, trending vs ranging behavior, news sensitivity, spread sensitivity.
-- Key Takeaways: most important findings — what the trader should focus on improving and what further validation steps (Monte Carlo, walk-forward) would strengthen confidence.
+Analyze the strategy using this framework. Each section should interpret the data, not just restate it.
 
-Rules:
-- Be direct and honest — traders need truth, not encouragement
-- Use specific numbers from the data, not vague language
+1. Edge Quality
+Evaluate whether the strategy shows a statistically meaningful edge.
+Focus on: win rate vs payoff ratio, profit factor, expectancy per trade.
+
+2. Risk Structure
+Assess how risk manifests: drawdown depth, loss clustering, volatility of returns.
+
+3. Stability
+Evaluate whether the edge appears stable or fragile.
+Look for: dependence on a few large trades, asymmetric win/loss distribution, signs of regime sensitivity.
+
+4. Overfitting Risk
+Identify signals such as: extremely high win rates (>80%), very few trades, extreme profit factor (>5) with low trade count, suspiciously smooth equity curve.
+
+5. Practical Deployment Risk
+Consider what could break in live trading: slippage sensitivity, low trade frequency, fat-tail losses, spread dependency.
+
+6. Edge Decay Risk
+Assess the probability that the strategy's edge will degrade in live conditions.
+Consider: dependence on a small number of large winners, unstable payoff distribution, long flat periods, low trade count, regime sensitivity.
+Classify decay risk as LOW, MEDIUM, or HIGH and explain why in 1-2 sentences.
+
+Behavior rules:
+- Do not simply restate raw metrics — interpret what they mean for the strategy
+- Be concise, specific, and statistically grounded
+- Do not make claims unsupported by the provided metrics or trade sample
 - Keep the analysis field under 800 words
-- Focus on actionable insights, not generic advice
+- Focus on actionable insights
 
-You MUST respond with valid JSON only. No markdown, no prose outside the JSON object.
+You MUST respond with valid JSON only. No markdown fences, no prose outside the JSON object.
 
 Required JSON schema:
 {
-  "analysis": "Full analysis text in markdown format covering all areas above",
+  "analysis": "Full analysis text in markdown format covering all sections above",
   "weaknesses": [
     {
       "category": "OVERFITTING | RISK_MANAGEMENT | MARKET_DEPENDENCY | TRADE_FREQUENCY | PROFITABILITY | ROBUSTNESS | DRAWDOWN",
       "severity": "HIGH | MEDIUM | LOW",
-      "description": "Specific description referencing actual numbers",
+      "description": "Specific finding referencing actual numbers and its implication",
       "recommendation": "Actionable recommendation"
     }
   ]
@@ -404,28 +417,33 @@ function extractOptimizations(text: string): ParameterOptimization[] {
 }
 
 function parseAnalysisJson(text: string): { analysis: string; weaknesses: StrategyWeakness[] } {
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(text);
-    const analysis = typeof parsed.analysis === "string" ? parsed.analysis.trim() : "";
-    const rawWeaknesses = Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [];
-
-    const weaknesses = rawWeaknesses
-      .filter(
-        (w: Record<string, unknown>) =>
-          w.category && w.severity && w.description && w.recommendation
-      )
-      .map((w: Record<string, unknown>) => ({
-        category: String(w.category),
-        severity: (["HIGH", "MEDIUM", "LOW"].includes(String(w.severity))
-          ? String(w.severity)
-          : "MEDIUM") as StrategyWeakness["severity"],
-        description: String(w.description),
-        recommendation: String(w.recommendation),
-      }));
-
-    return { analysis, weaknesses };
-  } catch (err) {
-    logger.warn({ error: err }, "Failed to parse AI analysis JSON");
-    return { analysis: text, weaknesses: [] };
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("OpenAI returned invalid analysis JSON");
   }
+
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.analysis !== "string" || !obj.analysis.trim()) {
+    throw new Error("OpenAI returned invalid analysis JSON");
+  }
+
+  const analysis = obj.analysis.trim();
+  const rawWeaknesses = Array.isArray(obj.weaknesses) ? obj.weaknesses : [];
+
+  const weaknesses = rawWeaknesses
+    .filter(
+      (w: Record<string, unknown>) => w.category && w.severity && w.description && w.recommendation
+    )
+    .map((w: Record<string, unknown>) => ({
+      category: String(w.category),
+      severity: (["HIGH", "MEDIUM", "LOW"].includes(String(w.severity))
+        ? String(w.severity)
+        : "MEDIUM") as StrategyWeakness["severity"],
+      description: String(w.description),
+      recommendation: String(w.recommendation),
+    }));
+
+  return { analysis, weaknesses };
 }
