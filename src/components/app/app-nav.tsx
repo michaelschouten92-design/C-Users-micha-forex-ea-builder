@@ -24,7 +24,7 @@ const NAV_LINKS: {
 ];
 
 const MONITOR_DOT_COLOR: Record<string, string> = {
-  healthy: "#22C55E",
+  healthy: "#10B981",
   warning: "#F59E0B",
   critical: "#EF4444",
 };
@@ -34,14 +34,14 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
     <nav
       role="navigation"
       aria-label="Dashboard navigation"
-      className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
+      className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)] sticky top-0 z-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center gap-3">
             <Link
               href="/app"
-              className="text-xl font-bold text-white hover:text-[#A78BFA] transition-colors"
+              className="text-xl font-bold text-white hover:text-[#818CF8] transition-colors"
             >
               AlgoStudio
             </Link>
@@ -49,18 +49,18 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
           <div className="flex items-center gap-4">
             <Link
               href="/app/evaluate"
-              className="text-sm px-3 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg transition-colors font-medium hidden sm:inline-block"
+              className="text-sm px-3 py-1.5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-lg transition-colors font-medium hidden sm:inline-block"
             >
               Evaluate Strategy
             </Link>
-            <span className="text-sm text-[#CBD5E1] hidden md:inline">{session.user.email}</span>
+            <span className="text-sm text-[#A1A1AA] hidden md:inline">{session.user.email}</span>
             <span
               className={`text-xs px-3 py-1 rounded-full font-medium border ${
                 tier === "ELITE"
-                  ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/50"
+                  ? "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50"
                   : tier === "PRO"
-                    ? "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50"
-                    : "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]"
+                    ? "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50"
+                    : "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]"
               }`}
             >
               {tier}
@@ -71,8 +71,8 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
                 href={link.href(firstProjectId)}
                 className={`text-sm transition-colors duration-200 hidden sm:inline-flex items-center gap-1.5 ${
                   activeItem === link.key
-                    ? "text-[#22D3EE] font-medium"
-                    : "text-[#94A3B8] hover:text-[#22D3EE]"
+                    ? "text-[#818CF8] font-medium"
+                    : "text-[#71717A] hover:text-white"
                 }`}
               >
                 {link.label}
@@ -100,7 +100,7 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
             >
               <button
                 type="submit"
-                className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+                className="text-sm text-[#71717A] hover:text-white transition-colors duration-200"
               >
                 Sign Out
               </button>

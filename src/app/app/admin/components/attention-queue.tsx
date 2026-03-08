@@ -90,7 +90,7 @@ export function AttentionQueue() {
             return (
               <div
                 key={item.id}
-                className={`border-l-4 ${config.border} bg-[#09090B]/50 rounded-r-lg px-4 py-3`}
+                className={`border-l-4 ${config.border} bg-[#18181B] rounded-r-lg px-4 py-3`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 min-w-0">

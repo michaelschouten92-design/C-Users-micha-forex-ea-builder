@@ -163,7 +163,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.06)]">
           <div>

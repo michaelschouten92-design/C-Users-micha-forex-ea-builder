@@ -237,9 +237,9 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-[rgba(255,255,255,0.10)] bg-[#09090B] shadow-2xl">
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-[rgba(255,255,255,0.10)] bg-[#111114] shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-[#09090B] border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex justify-between items-center z-10">
+        <div className="sticky top-0 bg-[#111114] border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex justify-between items-center z-10">
           <h2 className="text-lg font-bold text-white">User Detail</h2>
           <button
             onClick={onClose}

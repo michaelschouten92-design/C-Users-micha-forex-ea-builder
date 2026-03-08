@@ -14,12 +14,12 @@ export function HealthScoreBar({ score }: HealthScoreBarProps) {
     return (
       <div className="space-y-1">
         <div className="flex justify-between text-xs">
-          <span className="text-[#7C8DB0]">Health</span>
-          <span className="text-[#7C8DB0] text-[10px]">Collecting...</span>
+          <span className="text-[#71717A]">Health</span>
+          <span className="text-[#71717A] text-[10px]">Collecting...</span>
         </div>
-        <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[#09090B] rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#7C8DB0] animate-pulse"
+            className="h-full rounded-full bg-[#71717A] animate-pulse"
             style={{ width: "30%" }}
           />
         </div>
@@ -32,12 +32,12 @@ export function HealthScoreBar({ score }: HealthScoreBarProps) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
-        <span className="text-[#7C8DB0]">Health</span>
+        <span className="text-[#71717A]">Health</span>
         <span className="font-medium" style={{ color }}>
           {score}%
         </span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#09090B] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${score}%`, backgroundColor: color }}

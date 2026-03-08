@@ -67,7 +67,7 @@ export function HelpButton() {
   return (
     <div ref={menuRef} className="fixed bottom-6 right-6 z-50">
       {open && (
-        <div className="absolute bottom-14 right-0 w-52 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-xl overflow-hidden mb-2">
+        <div className="absolute bottom-14 right-0 w-52 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl shadow-xl overflow-hidden mb-2">
           {HELP_LINKS.map((link) => {
             const isExternal = link.href.startsWith("mailto:");
             const Component = isExternal ? "a" : Link;
@@ -75,7 +75,7 @@ export function HelpButton() {
               <Component
                 key={link.label}
                 href={link.href}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-[#C4B5FD] hover:bg-[#4F46E5]/10 hover:text-white transition-colors"
+                className="flex items-center gap-3 px-4 py-3 text-sm text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-colors"
                 onClick={() => setOpen(false)}
               >
                 {link.icon}
@@ -87,7 +87,7 @@ export function HelpButton() {
       )}
       <button
         onClick={() => setOpen(!open)}
-        className="w-12 h-12 rounded-full bg-[#4F46E5] text-white shadow-lg hover:bg-[#4338CA] transition-colors flex items-center justify-center"
+        className="w-12 h-12 rounded-full bg-[#6366F1] text-white shadow-lg hover:bg-[#818CF8] transition-colors flex items-center justify-center"
         aria-label="Help"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

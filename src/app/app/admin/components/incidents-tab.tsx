@@ -148,7 +148,7 @@ export function IncidentsTab() {
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="rounded-lg border border-[rgba(255,255,255,0.10)] bg-[#09090B] p-4 space-y-3"
+          className="rounded-lg border border-[rgba(255,255,255,0.10)] bg-[#18181B] p-4 space-y-3"
         >
           <div className="grid grid-cols-2 gap-3">
             <div>

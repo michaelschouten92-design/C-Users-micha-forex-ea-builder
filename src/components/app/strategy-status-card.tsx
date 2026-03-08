@@ -42,8 +42,8 @@ function formatRelativeTime(isoStr: string | null): string {
 function MetricMini({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
-      <p className="text-[10px] text-[#7C8DB0]">{label}</p>
-      <p className="text-xs font-medium text-[#CBD5E1]">{value}</p>
+      <p className="text-[10px] text-[#71717A]">{label}</p>
+      <p className="text-xs font-medium text-[#A1A1AA]">{value}</p>
     </div>
   );
 }
@@ -93,7 +93,7 @@ function DriftIndicator({
 // ── Connection indicator ─────────────────────────────────
 
 function ConnectionDot({ status }: { status: "ONLINE" | "OFFLINE" | "ERROR" }) {
-  const color = status === "ONLINE" ? "#10B981" : status === "ERROR" ? "#EF4444" : "#7C8DB0";
+  const color = status === "ONLINE" ? "#10B981" : status === "ERROR" ? "#EF4444" : "#71717A";
 
   return (
     <span
@@ -119,12 +119,12 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
         ? "rgba(245,158,11,0.3)"
         : s.hasHealthData
           ? "rgba(16,185,129,0.25)"
-          : "rgba(79,70,229,0.15)";
+          : "rgba(255,255,255,0.06)";
 
   return (
     <Link
       href={`/app/strategy/${s.id}`}
-      className="block bg-[#1A0626] rounded-xl p-4 transition-colors hover:border-[rgba(79,70,229,0.35)]"
+      className="block bg-[#111114] rounded-xl p-4 transition-colors hover:border-[rgba(255,255,255,0.10)]"
       style={{
         border: `1px solid ${borderColor}`,
         borderLeft: `3px solid ${borderColor}`,
@@ -139,7 +139,7 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
         {s.hasHealthData ? (
           <MonitoringStatusBadge status={s.monitoringStatus} />
         ) : (
-          <span className="text-[10px] text-[#7C8DB0] font-medium px-2 py-0.5 rounded-full border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.08)]">
+          <span className="text-[10px] text-[#71717A] font-medium px-2 py-0.5 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.06)]">
             Awaiting Data
           </span>
         )}
@@ -147,13 +147,13 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
 
       {/* Row 2: Lifecycle state */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] text-[#7C8DB0] font-medium">
+        <span className="text-[10px] text-[#71717A] font-medium">
           {LIFECYCLE_LABELS[s.lifecycleState] ?? s.lifecycleState}
         </span>
         {s.symbol && (
           <>
-            <span className="text-[10px] text-[#7C8DB0]">&middot;</span>
-            <span className="text-[10px] text-[#7C8DB0]">{s.symbol}</span>
+            <span className="text-[10px] text-[#71717A]">&middot;</span>
+            <span className="text-[10px] text-[#71717A]">{s.symbol}</span>
           </>
         )}
       </div>
@@ -184,7 +184,7 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
       </div>
 
       {/* Row 5: Drift / Explainer + Last Activity */}
-      <div className="flex items-center justify-between pt-2 border-t border-[rgba(79,70,229,0.1)]">
+      <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,255,255,0.06)]">
         <div className="min-w-0 flex-1">
           <DriftIndicator
             driftDetected={s.driftDetected}
@@ -192,7 +192,7 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
             scoreTrend={s.scoreTrend}
           />
         </div>
-        <span className="text-[10px] text-[#7C8DB0] flex-shrink-0 ml-2">
+        <span className="text-[10px] text-[#71717A] flex-shrink-0 ml-2">
           {formatRelativeTime(s.lastHeartbeat)}
         </span>
       </div>
