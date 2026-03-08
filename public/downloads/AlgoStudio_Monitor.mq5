@@ -38,6 +38,12 @@ input string InpMagicNumbers  = "";              // Magic numbers to track (comm
 input string InpCommentFilter = "";              // Comment substring filter (empty=all)
 input bool   InpExcludeManual = false;           // Exclude manual trades (magic=0);
 
+// On-chart panel
+input bool   InpShowPanel     = true;             // Show monitor panel on chart
+input ENUM_BASE_CORNER InpPanelCorner = CORNER_RIGHT_UPPER; // Panel corner
+input int    InpPanelX        = 16;               // Panel X offset (pixels)
+input int    InpPanelY        = 28;               // Panel Y offset (pixels)
+
 //+------------------------------------------------------------------+
 //| CONSTANTS                                                        |
 //+------------------------------------------------------------------+
@@ -45,6 +51,13 @@ input bool   InpExcludeManual = false;           // Exclude manual trades (magic
 #define MAX_QUEUE_SIZE 500
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
+#define PANEL_PREFIX "AS_Panel_"
+#define PANEL_ROWS 5
+#define PANEL_WIDTH 260
+#define PANEL_ROW_HEIGHT 16
+#define PANEL_HEADER_HEIGHT 20
+#define PANEL_FONT_SIZE 8
+#define PANEL_FONT "Consolas"
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                          |
@@ -78,6 +91,10 @@ bool   g_initialized = false;
 string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
+
+// Panel state
+datetime g_lastSuccessfulHb = 0;
+string   g_panelError       = "";
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -141,6 +158,10 @@ int OnInit()
    // Send SESSION_START
    SendSessionStart();
 
+   // Create on-chart panel
+   if(InpShowPanel)
+      PanelCreate();
+
    Print("AlgoStudio Monitor: Initialized. Mode=",
          InpMonitorMode == MODE_ACCOUNT_WIDE ? "Account-Wide" : "Symbol-Only",
          " Heartbeat=", InpHeartbeatSec, "s Snapshot=", InpSnapshotSec, "s");
@@ -154,6 +175,9 @@ int OnInit()
 void OnDeinit(const int reason)
 {
    if(!g_initialized) return;
+
+   // Destroy panel
+   PanelDestroy();
 
    // Send SESSION_END
    SendSessionEnd();
@@ -206,6 +230,10 @@ void OnTimer()
       SendSnapshot();
       g_lastSnapshot = now;
    }
+
+   // Update on-chart panel
+   if(InpShowPanel)
+      PanelUpdate();
 
    // Periodic state save (every 5 minutes)
    static datetime lastSave = 0;
@@ -872,7 +900,11 @@ void SendHeartbeat()
       + JInt("spread", spread)
       + "}";
 
-   HttpPost("/api/telemetry/heartbeat", json);
+   if(HttpPost("/api/telemetry/heartbeat", json))
+   {
+      g_lastSuccessfulHb = TimeCurrent();
+      g_panelError = "";
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -910,10 +942,12 @@ bool HttpPost(string endpoint, string jsonBody)
          int err = GetLastError();
          if(err == 4014)
          {
+            g_panelError = "WebRequest not allowed — check Options";
             Print("AlgoStudio Monitor: Add ", InpBaseUrl, " to Tools > Options > Expert Advisors > Allow WebRequest");
             return false;  // Config error — don't retry
          }
          if(attempt < maxRetries) continue;
+         g_panelError = "Network error (" + IntegerToString(err) + ")";
          return false;
       }
 
@@ -921,6 +955,7 @@ bool HttpPost(string endpoint, string jsonBody)
       if(res == 429 || res >= 500)
       {
          if(attempt < maxRetries) continue;
+         g_panelError = "HTTP " + IntegerToString(res);
          return false;
       }
 
@@ -1175,6 +1210,161 @@ void LoadState()
 
    // Load offline queue
    LoadOfflineQueue();
+}
+
+//+------------------------------------------------------------------+
+//| ON-CHART MONITOR PANEL                                           |
+//+------------------------------------------------------------------+
+
+/** Create all panel chart objects. */
+void PanelCreate()
+{
+   int totalH = PANEL_HEADER_HEIGHT + PANEL_ROWS * PANEL_ROW_HEIGHT + 8;
+
+   // Background rectangle
+   string bgName = PANEL_PREFIX + "BG";
+   ObjectCreate(0, bgName, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, bgName, OBJPROP_CORNER, InpPanelCorner);
+   ObjectSetInteger(0, bgName, OBJPROP_XDISTANCE, InpPanelX);
+   ObjectSetInteger(0, bgName, OBJPROP_YDISTANCE, InpPanelY);
+   ObjectSetInteger(0, bgName, OBJPROP_XSIZE, PANEL_WIDTH);
+   ObjectSetInteger(0, bgName, OBJPROP_YSIZE, totalH);
+   ObjectSetInteger(0, bgName, OBJPROP_BGCOLOR, C'20,20,28');
+   ObjectSetInteger(0, bgName, OBJPROP_BORDER_COLOR, C'50,50,70');
+   ObjectSetInteger(0, bgName, OBJPROP_BORDER_TYPE, BORDER_FLAT);
+   ObjectSetInteger(0, bgName, OBJPROP_WIDTH, 1);
+   ObjectSetInteger(0, bgName, OBJPROP_BACK, false);
+   ObjectSetInteger(0, bgName, OBJPROP_SELECTABLE, false);
+
+   // Header label
+   PanelLabel("Header", 8, 4, "AlgoStudio Monitor", C'140,140,180', PANEL_FONT_SIZE + 1);
+
+   // Row labels (left column)
+   string rowNames[] = {"Status", "Instance", "Heartbeat", "Account", "Last error"};
+   for(int i = 0; i < PANEL_ROWS; i++)
+   {
+      int y = PANEL_HEADER_HEIGHT + i * PANEL_ROW_HEIGHT + 2;
+      PanelLabel("L" + IntegerToString(i), 8, y, rowNames[i] + ":", C'100,100,130', PANEL_FONT_SIZE);
+      PanelLabel("V" + IntegerToString(i), 88, y, "", C'200,200,220', PANEL_FONT_SIZE);
+   }
+
+   PanelUpdate();
+   ChartRedraw(0);
+}
+
+/** Create or get a panel text label. */
+void PanelLabel(string suffix, int x, int y, string text, color clr, int fontSize)
+{
+   string name = PANEL_PREFIX + suffix;
+
+   ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, name, OBJPROP_CORNER, InpPanelCorner);
+   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, InpPanelX + x);
+   ObjectSetInteger(0, name, OBJPROP_YDISTANCE, InpPanelY + y);
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetString(0, name, OBJPROP_FONT, PANEL_FONT);
+   ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+   ObjectSetInteger(0, name, OBJPROP_BACK, false);
+   ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+}
+
+/** Update panel values every timer tick. */
+void PanelUpdate()
+{
+   // Row 0: Status — derived from heartbeat recency
+   string status;
+   color  statusClr;
+   if(g_lastSuccessfulHb == 0)
+   {
+      status = "Offline";
+      statusClr = C'239,68,68';  // red
+   }
+   else
+   {
+      long elapsed = (long)TimeCurrent() - (long)g_lastSuccessfulHb;
+      if(elapsed <= 10)
+      {
+         status = "Connected";
+         statusClr = C'16,185,129'; // green
+      }
+      else if(elapsed <= 60)
+      {
+         status = "Delayed";
+         statusClr = C'245,158,11'; // yellow
+      }
+      else
+      {
+         status = "Offline";
+         statusClr = C'239,68,68'; // red
+      }
+   }
+   PanelSetValue(0, status, statusClr);
+
+   // Row 1: Instance — full identifier, prefer readability
+   string instLabel = "(pending)";
+   if(StringLen(g_instanceId) > 0)
+      instLabel = g_instanceId;
+   PanelSetValue(1, instLabel, C'200,200,220');
+
+   // Row 2: Heartbeat — neutral color, human-readable elapsed
+   string hbText;
+   if(g_lastSuccessfulHb == 0)
+   {
+      hbText = "never";
+   }
+   else
+   {
+      long elapsed = (long)TimeCurrent() - (long)g_lastSuccessfulHb;
+      if(elapsed < 60)
+         hbText = IntegerToString(elapsed) + "s ago";
+      else if(elapsed < 3600)
+         hbText = IntegerToString(elapsed / 60) + "m ago";
+      else
+         hbText = IntegerToString(elapsed / 3600) + "h ago";
+   }
+   PanelSetValue(2, hbText, C'200,200,220');
+
+   // Row 3: Account — login | server name
+   string acctText = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))
+                   + " | " + AccountInfoString(ACCOUNT_SERVER);
+   PanelSetValue(3, acctText, C'200,200,220');
+
+   // Row 4: Last error
+   if(StringLen(g_panelError) > 0)
+   {
+      string errText = g_panelError;
+      if(StringLen(errText) > 28)
+         errText = StringSubstr(errText, 0, 25) + "...";
+      PanelSetValue(4, errText, C'239,68,68');
+   }
+   else
+   {
+      PanelSetValue(4, "none", C'113,113,122');
+   }
+
+   ChartRedraw(0);
+}
+
+/** Set a panel value label's text and color. */
+void PanelSetValue(int row, string text, color clr)
+{
+   string name = PANEL_PREFIX + "V" + IntegerToString(row);
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+}
+
+/** Remove all panel objects from the chart. */
+void PanelDestroy()
+{
+   int total = ObjectsTotal(0, 0, -1);
+   for(int i = total - 1; i >= 0; i--)
+   {
+      string name = ObjectName(0, i, 0, -1);
+      if(StringFind(name, PANEL_PREFIX) == 0)
+         ObjectDelete(0, name);
+   }
+   ChartRedraw(0);
 }
 
 //+------------------------------------------------------------------+
