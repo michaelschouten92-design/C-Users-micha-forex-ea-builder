@@ -50,6 +50,32 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.\-\s()]/g, "_").slice(0, 255);
 }
 
+/**
+ * Decode raw file bytes into a string with BOM-aware encoding detection.
+ * MT5 exports are sometimes saved as UTF-16LE (BOM: FF FE). The default
+ * File.text() assumes UTF-8, producing interleaved null bytes that break
+ * all downstream string matching. This function detects encoding from the
+ * BOM and decodes correctly, stripping the BOM from the result.
+ */
+function decodeHtmlBytes(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+
+  let encoding: string = "utf-8";
+  if (bytes.length >= 2) {
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) {
+      encoding = "utf-16le";
+    } else if (bytes[0] === 0xfe && bytes[1] === 0xff) {
+      encoding = "utf-16be";
+    }
+    // UTF-8 BOM (EF BB BF) is handled natively by TextDecoder('utf-8')
+  }
+
+  const decoded = new TextDecoder(encoding).decode(bytes);
+
+  // Strip BOM character if present after decoding (U+FEFF)
+  return decoded.charCodeAt(0) === 0xfeff ? decoded.slice(1) : decoded;
+}
+
 // POST /api/backtest/upload — Upload and parse an MT5 backtest HTML report
 export async function POST(request: Request) {
   try {
@@ -119,8 +145,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // 7. Read file content
-    const html = await file.text();
+    // 7. Read file content (BOM-aware: handles UTF-8, UTF-16LE, UTF-16BE)
+    const html = decodeHtmlBytes(await file.arrayBuffer());
 
     // 8. Structural validation
     const structureCheck = isLikelyMT5Report(html);
