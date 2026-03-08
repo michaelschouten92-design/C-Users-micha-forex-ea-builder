@@ -104,7 +104,7 @@ Required JSON schema:
  */
 export async function analyzeStrategy(
   input: StrategyAnalysisInput
-): Promise<StrategyAnalysisResult | null> {
+): Promise<StrategyAnalysisResult> {
   const openai = getOpenAIClient();
   if (!openai) {
     throw new Error("AI analysis is not available — OPENAI_API_KEY not configured");
@@ -137,7 +137,7 @@ export async function analyzeStrategy(
     } else {
       logger.error({ error: err }, "AI strategy analysis API call failed");
     }
-    return null;
+    throw err;
   }
 
   // Extract text from response

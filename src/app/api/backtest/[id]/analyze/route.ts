@@ -111,8 +111,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       const message = err instanceof Error ? err.message : "AI analysis failed";
       logger.error({ error: err }, "AI analysis failed");
 
+      const isDev = process.env.NODE_ENV === "development";
+
       if (message.includes("OPENAI_API_KEY")) {
-        const isDev = process.env.NODE_ENV === "development";
         return NextResponse.json(
           apiError(
             ErrorCode.AI_UNAVAILABLE,
@@ -125,14 +126,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       }
 
       return NextResponse.json(
-        apiError(ErrorCode.INTERNAL_ERROR, "AI analysis failed. Please try again later."),
-        { status: 500 }
-      );
-    }
-
-    if (!result) {
-      return NextResponse.json(
-        apiError(ErrorCode.INTERNAL_ERROR, "AI analysis failed. Please try again later."),
+        apiError(
+          ErrorCode.INTERNAL_ERROR,
+          isDev ? message : "AI analysis failed. Please try again later."
+        ),
         { status: 500 }
       );
     }
