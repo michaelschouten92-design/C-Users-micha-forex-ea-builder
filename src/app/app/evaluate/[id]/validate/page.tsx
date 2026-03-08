@@ -213,7 +213,7 @@ function formatCurrency(val: number): string {
 }
 
 function getSurvivalColor(prob: number): string {
-  if (prob >= 90) return "#22C55E";
+  if (prob >= 90) return "#10B981";
   if (prob >= 70) return "#F59E0B";
   return "#EF4444";
 }
@@ -294,14 +294,14 @@ function EquityCurveChart({
               y1={toY(val)}
               x2={width - padding.right}
               y2={toY(val)}
-              stroke="rgba(79,70,229,0.1)"
+              stroke="rgba(255,255,255,0.06)"
               strokeWidth={1}
             />
             <text
               x={padding.left - 8}
               y={toY(val) + 4}
               textAnchor="end"
-              fill="#7C8DB0"
+              fill="#71717A"
               fontSize={10}
               fontFamily="monospace"
             >
@@ -314,12 +314,12 @@ function EquityCurveChart({
           y1={toY(startBalance)}
           x2={width - padding.right}
           y2={toY(startBalance)}
-          stroke="rgba(148,163,184,0.3)"
+          stroke="rgba(161,161,170,0.3)"
           strokeWidth={1}
           strokeDasharray="4 4"
         />
-        <path d={toBandPath(curves.best, curves.worst)} fill="rgba(79,70,229,0.08)" />
-        <path d={toBandPath(curves.p75, curves.p25)} fill="rgba(79,70,229,0.15)" />
+        <path d={toBandPath(curves.best, curves.worst)} fill="rgba(255,255,255,0.06)" />
+        <path d={toBandPath(curves.p75, curves.p25)} fill="rgba(255,255,255,0.06)" />
         <path
           d={toPath(curves.worst)}
           fill="none"
@@ -328,7 +328,7 @@ function EquityCurveChart({
           opacity={0.6}
         />
         <path d={toPath(curves.p25)} fill="none" stroke="#F59E0B" strokeWidth={1} opacity={0.5} />
-        <path d={toPath(curves.median)} fill="none" stroke="#22D3EE" strokeWidth={2} />
+        <path d={toPath(curves.median)} fill="none" stroke="#818CF8" strokeWidth={2} />
         <path d={toPath(curves.p75)} fill="none" stroke="#10B981" strokeWidth={1} opacity={0.5} />
         <path
           d={toPath(curves.best)}
@@ -338,9 +338,9 @@ function EquityCurveChart({
           opacity={0.6}
         />
       </svg>
-      <div className="flex flex-wrap gap-4 justify-center mt-2 text-xs text-[#7C8DB0]">
+      <div className="flex flex-wrap gap-4 justify-center mt-2 text-xs text-[#71717A]">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-[#22D3EE] inline-block" /> Median
+          <span className="w-3 h-0.5 bg-[#818CF8] inline-block" /> Median
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-0.5 bg-[#10B981] inline-block opacity-60" /> 75th / 95th
@@ -423,18 +423,18 @@ export default function ValidatePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !backtest) {
     return (
-      <div className="min-h-screen bg-[#0A0118]">
+      <div className="min-h-screen bg-[#09090B]">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
           <p className="text-[#EF4444] mb-4">{error || "Backtest not found"}</p>
-          <Link href="/app/evaluate" className="text-sm text-[#A78BFA] hover:text-[#22D3EE]">
+          <Link href="/app/evaluate" className="text-sm text-[#818CF8] hover:text-white">
             &larr; Back to Backtests
           </Link>
         </div>
@@ -445,18 +445,18 @@ export default function ValidatePage() {
   const survivalProb = simResult ? 100 - simResult.probabilityOfRuin : 0;
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#09090B]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/app/evaluate"
-            className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
+            className="text-sm text-[#71717A] hover:text-[#818CF8] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtests
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Strategy Validation</h1>
-          <p className="text-[#7C8DB0] mt-2">
+          <p className="text-[#71717A] mt-2">
             Monte Carlo simulation using your backtest parameters —{" "}
             {backtest.metadata.eaName || backtest.metadata.symbol}
           </p>
@@ -464,34 +464,34 @@ export default function ValidatePage() {
 
         {/* Pre-filled Parameters Summary */}
         {simParams && (
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-5 mb-6">
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mb-6">
             <h3 className="text-sm font-medium text-white mb-3">Parameters (from backtest)</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
               <div>
-                <span className="text-[#64748b]">Win Rate</span>
-                <p className="text-[#CBD5E1] font-medium">{simParams.winRate}%</p>
+                <span className="text-[#71717A]">Win Rate</span>
+                <p className="text-[#FAFAFA] font-medium">{simParams.winRate}%</p>
               </div>
               <div>
-                <span className="text-[#64748b]">R:R Ratio</span>
-                <p className="text-[#CBD5E1] font-medium">{simParams.rrRatio.toFixed(2)}</p>
+                <span className="text-[#71717A]">R:R Ratio</span>
+                <p className="text-[#FAFAFA] font-medium">{simParams.rrRatio.toFixed(2)}</p>
               </div>
               <div>
-                <span className="text-[#64748b]">Risk/Trade</span>
-                <p className="text-[#CBD5E1] font-medium">{simParams.riskPerTrade}%</p>
+                <span className="text-[#71717A]">Risk/Trade</span>
+                <p className="text-[#FAFAFA] font-medium">{simParams.riskPerTrade}%</p>
               </div>
               <div>
-                <span className="text-[#64748b]">Trades</span>
-                <p className="text-[#CBD5E1] font-medium">{simParams.numTrades}</p>
+                <span className="text-[#71717A]">Trades</span>
+                <p className="text-[#FAFAFA] font-medium">{simParams.numTrades}</p>
               </div>
               <div>
-                <span className="text-[#64748b]">Simulations</span>
-                <p className="text-[#CBD5E1] font-medium">
+                <span className="text-[#71717A]">Simulations</span>
+                <p className="text-[#FAFAFA] font-medium">
                   {simParams.numSimulations.toLocaleString()}
                 </p>
               </div>
               <div>
-                <span className="text-[#64748b]">Start Balance</span>
-                <p className="text-[#CBD5E1] font-medium">
+                <span className="text-[#71717A]">Start Balance</span>
+                <p className="text-[#FAFAFA] font-medium">
                   {formatCurrency(simParams.startBalance)}
                 </p>
               </div>
@@ -503,9 +503,9 @@ export default function ValidatePage() {
         {running && (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <div className="w-10 h-10 mx-auto border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin mb-4" />
+              <div className="w-10 h-10 mx-auto border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin mb-4" />
               <p className="text-white font-medium">Running 1,000 simulations...</p>
-              <p className="text-xs text-[#7C8DB0] mt-1">This takes a few seconds</p>
+              <p className="text-xs text-[#71717A] mt-1">This takes a few seconds</p>
             </div>
           </div>
         )}
@@ -520,7 +520,7 @@ export default function ValidatePage() {
                 borderColor: `${getSurvivalColor(survivalProb)}33`,
               }}
             >
-              <p className="text-sm text-[#7C8DB0] mb-2">Survival Probability</p>
+              <p className="text-sm text-[#71717A] mb-2">Survival Probability</p>
               <div
                 className="text-6xl sm:text-7xl font-bold mb-3"
                 style={{ color: getSurvivalColor(survivalProb) }}
@@ -530,12 +530,12 @@ export default function ValidatePage() {
               <p className="text-lg font-medium" style={{ color: getSurvivalColor(survivalProb) }}>
                 {getSurvivalLabel(survivalProb)}
               </p>
-              <p className="text-xs text-[#7C8DB0] mt-3 max-w-md mx-auto">
+              <p className="text-xs text-[#71717A] mt-3 max-w-md mx-auto">
                 Based on {simParams?.numSimulations.toLocaleString()} simulations of{" "}
                 {simParams?.numTrades} trades using your backtest&apos;s win rate and risk:reward
                 ratio. Results are deterministic for this backtest.
               </p>
-              <p className="text-[10px] text-[#64748b] mt-2 max-w-lg mx-auto">
+              <p className="text-[10px] text-[#71717A] mt-2 max-w-lg mx-auto">
                 This simulation assumes each trade is independent (IID). Real trading exhibits
                 serial correlation — trend-following strategies may face clustered losses that this
                 model underestimates. Results do not account for spreads, slippage, or commission
@@ -545,35 +545,35 @@ export default function ValidatePage() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <div className="text-xs text-[#7C8DB0] mb-1">Median Final</div>
-                <div className="text-lg font-bold text-[#22D3EE]">
+              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+                <div className="text-xs text-[#71717A] mb-1">Median Final</div>
+                <div className="text-lg font-bold text-[#818CF8]">
                   {formatCurrency(simResult.medianFinalBalance)}
                 </div>
               </div>
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <div className="text-xs text-[#7C8DB0] mb-1">Max Drawdown</div>
+              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+                <div className="text-xs text-[#71717A] mb-1">Max Drawdown</div>
                 <div className="text-lg font-bold text-[#F59E0B]">
                   {simResult.medianMaxDrawdown.toFixed(1)}%
                 </div>
-                <div className="text-[10px] text-[#64748b]">
+                <div className="text-[10px] text-[#71717A]">
                   Worst: {simResult.worstMaxDrawdown.toFixed(1)}%
                 </div>
               </div>
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <div className="text-xs text-[#7C8DB0] mb-1">Prob of Ruin</div>
+              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+                <div className="text-xs text-[#71717A] mb-1">Prob of Ruin</div>
                 <div
                   className="text-lg font-bold"
-                  style={{ color: simResult.probabilityOfRuin > 5 ? "#EF4444" : "#22C55E" }}
+                  style={{ color: simResult.probabilityOfRuin > 5 ? "#EF4444" : "#10B981" }}
                 >
                   {simResult.probabilityOfRuin.toFixed(1)}%
                 </div>
               </div>
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <div className="text-xs text-[#7C8DB0] mb-1">Prob of 2x</div>
+              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+                <div className="text-xs text-[#71717A] mb-1">Prob of 2x</div>
                 <div
                   className="text-lg font-bold"
-                  style={{ color: simResult.probabilityOf2x > 50 ? "#22C55E" : "#F59E0B" }}
+                  style={{ color: simResult.probabilityOf2x > 50 ? "#10B981" : "#F59E0B" }}
                 >
                   {simResult.probabilityOf2x.toFixed(1)}%
                 </div>
@@ -581,16 +581,16 @@ export default function ValidatePage() {
             </div>
 
             {/* Expandable Full Details */}
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden mb-6">
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden mb-6">
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-[rgba(255,255,255,0.06)] transition-colors"
               >
                 <span className="text-sm font-medium text-white">
                   Equity Curve &amp; Full Monte Carlo Output
                 </span>
                 <svg
-                  className={`w-4 h-4 text-[#7C8DB0] transition-transform ${showDetails ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-[#71717A] transition-transform ${showDetails ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -606,7 +606,7 @@ export default function ValidatePage() {
 
               {showDetails && (
                 <div className="px-6 pb-6">
-                  <p className="text-xs text-[#7C8DB0] mb-4">
+                  <p className="text-xs text-[#71717A] mb-4">
                     Equity curve bands across {simParams?.numSimulations.toLocaleString()}{" "}
                     simulations. Cyan = median, green = favorable (75th/95th), red = worst case (5th
                     percentile).
@@ -618,14 +618,14 @@ export default function ValidatePage() {
 
                   <div className="mt-6 grid grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="text-[#64748b]">25th Percentile Final</span>
-                      <p className="text-[#CBD5E1] font-medium">
+                      <span className="text-[#71717A]">25th Percentile Final</span>
+                      <p className="text-[#FAFAFA] font-medium">
                         {formatCurrency(simResult.p25FinalBalance)}
                       </p>
                     </div>
                     <div>
-                      <span className="text-[#64748b]">75th Percentile Final</span>
-                      <p className="text-[#CBD5E1] font-medium">
+                      <span className="text-[#71717A]">75th Percentile Final</span>
+                      <p className="text-[#FAFAFA] font-medium">
                         {formatCurrency(simResult.p75FinalBalance)}
                       </p>
                     </div>
@@ -638,7 +638,7 @@ export default function ValidatePage() {
             <div className="text-center">
               <Link
                 href="/app/risk"
-                className="text-xs text-[#7C8DB0] hover:text-[#A78BFA] transition-colors"
+                className="text-xs text-[#71717A] hover:text-[#818CF8] transition-colors"
               >
                 Want to adjust parameters? Use the full Monte Carlo calculator &rarr;
               </Link>

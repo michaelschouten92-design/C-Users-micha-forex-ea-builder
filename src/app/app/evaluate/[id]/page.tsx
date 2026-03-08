@@ -79,15 +79,15 @@ interface BacktestDetail {
 function getHealthColor(status: string): string {
   switch (status) {
     case "ROBUST":
-      return "#22C55E";
+      return "#10B981";
     case "MODERATE":
       return "#F59E0B";
     case "WEAK":
       return "#EF4444";
     case "INSUFFICIENT_DATA":
-      return "#7C8DB0";
+      return "#71717A";
     default:
-      return "#7C8DB0";
+      return "#71717A";
   }
 }
 
@@ -100,9 +100,9 @@ function getHealthBg(status: string): string {
     case "WEAK":
       return "rgba(239,68,68,0.1)";
     case "INSUFFICIENT_DATA":
-      return "rgba(124,141,176,0.1)";
+      return "rgba(113,113,122,0.1)";
     default:
-      return "rgba(124,141,176,0.1)";
+      return "rgba(113,113,122,0.1)";
   }
 }
 
@@ -128,7 +128,7 @@ function getSeverityColor(severity: string): string {
     case "LOW":
       return "#3B82F6";
     default:
-      return "#7C8DB0";
+      return "#71717A";
   }
 }
 
@@ -152,9 +152,9 @@ function MetricCard({
   positive: boolean;
 }) {
   return (
-    <div className="bg-[rgba(0,0,0,0.2)] rounded-xl px-4 py-3">
-      <p className="text-xs text-[#7C8DB0] mb-1">{label}</p>
-      <p className="text-lg font-bold" style={{ color: positive ? "#22C55E" : "#EF4444" }}>
+    <div className="bg-[#18181B] rounded-xl px-4 py-3">
+      <p className="text-xs text-[#71717A] mb-1">{label}</p>
+      <p className="text-lg font-bold" style={{ color: positive ? "#10B981" : "#EF4444" }}>
         {value}
       </p>
     </div>
@@ -252,8 +252,8 @@ export default function EvaluateDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -261,11 +261,11 @@ export default function EvaluateDetailPage() {
   // Error state
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#0A0118]">
+      <div className="min-h-screen bg-[#09090B]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <Link
             href="/app/evaluate"
-            className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
+            className="text-sm text-[#71717A] hover:text-[#818CF8] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtest
           </Link>
@@ -278,20 +278,20 @@ export default function EvaluateDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#09090B]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/app/evaluate"
-            className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors mb-4 inline-block"
+            className="text-sm text-[#71717A] hover:text-[#818CF8] transition-colors mb-4 inline-block"
           >
             &larr; Back to Backtest
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">
             {data.metadata.eaName || "Strategy"} — {data.metadata.symbol}
           </h1>
-          <p className="text-[#7C8DB0] mt-2">
+          <p className="text-[#71717A] mt-2">
             {data.metadata.timeframe} | {data.metadata.period} | {data.metrics.totalTrades} trades
           </p>
         </div>
@@ -319,9 +319,9 @@ export default function EvaluateDetailPage() {
                     >
                       {data.healthScore}
                     </div>
-                    <div className="text-xs text-[#7C8DB0]">/ 100</div>
+                    <div className="text-xs text-[#71717A]">/ 100</div>
                     {data.confidenceInterval && data.healthStatus !== "INSUFFICIENT_DATA" && (
-                      <div className="text-[10px] text-[#7C8DB0] mt-0.5">
+                      <div className="text-[10px] text-[#71717A] mt-0.5">
                         ±
                         {Math.round(
                           (data.confidenceInterval.upper - data.confidenceInterval.lower) / 2
@@ -344,11 +344,11 @@ export default function EvaluateDetailPage() {
                   {data.healthStatus}
                 </span>
                 {data.confidenceInterval && data.healthStatus !== "INSUFFICIENT_DATA" && (
-                  <span className="text-[10px] text-[#7C8DB0] ml-2">
+                  <span className="text-[10px] text-[#71717A] ml-2">
                     CI: {data.confidenceInterval.lower}–{data.confidenceInterval.upper}
                   </span>
                 )}
-                <p className="text-xs text-[#94A3B8] mt-2 max-w-md">
+                <p className="text-xs text-[#A1A1AA] mt-2 max-w-md">
                   {data.healthStatus === "ROBUST" &&
                     "Strategy shows consistent edge across multiple metrics. Consider paper trading or Monte Carlo validation before live deployment."}
                   {data.healthStatus === "MODERATE" &&
@@ -358,8 +358,8 @@ export default function EvaluateDetailPage() {
                   {data.healthStatus === "INSUFFICIENT_DATA" &&
                     "Not enough trades for a statistically reliable assessment. Upload a backtest with at least 30 trades."}
                 </p>
-                <div className="mt-2 text-[11px] text-[#7C8DB0]">
-                  <span className="font-medium text-[#A78BFA]">Next steps: </span>
+                <div className="mt-2 text-[11px] text-[#71717A]">
+                  <span className="font-medium text-[#818CF8]">Next steps: </span>
                   {data.healthStatus === "ROBUST" &&
                     "Run Monte Carlo validation below \u2192 Set up live monitoring after deployment."}
                   {data.healthStatus === "MODERATE" &&
@@ -398,7 +398,7 @@ export default function EvaluateDetailPage() {
           </div>
 
           {/* Risk Disclaimer */}
-          <div className="bg-[#1A0626]/50 border border-[#F59E0B]/20 rounded-lg px-4 py-3">
+          <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3">
             <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
               Past performance does not guarantee future results. Backtest results are hypothetical
               and subject to model limitations.
@@ -406,17 +406,17 @@ export default function EvaluateDetailPage() {
           </div>
 
           {/* Extended Metrics */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
             <h3 className="text-sm font-medium text-white mb-4">Extended Metrics</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div>
-                <p className="text-xs text-[#7C8DB0] mb-1">Sharpe Ratio</p>
+                <p className="text-xs text-[#71717A] mb-1">Sharpe Ratio</p>
                 <p className="text-sm font-semibold text-white">
                   {data.metrics.sharpeRatio != null ? data.metrics.sharpeRatio.toFixed(2) : "N/A"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#7C8DB0] mb-1">Recovery Factor</p>
+                <p className="text-xs text-[#71717A] mb-1">Recovery Factor</p>
                 <p className="text-sm font-semibold text-white">
                   {data.metrics.recoveryFactor != null
                     ? data.metrics.recoveryFactor.toFixed(2)
@@ -424,24 +424,24 @@ export default function EvaluateDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#7C8DB0] mb-1">Expected Payoff</p>
+                <p className="text-xs text-[#71717A] mb-1">Expected Payoff</p>
                 <p className="text-sm font-semibold text-white">
                   ${data.metrics.expectedPayoff.toFixed(2)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#7C8DB0] mb-1">Total Trades</p>
+                <p className="text-xs text-[#71717A] mb-1">Total Trades</p>
                 <p className="text-sm font-semibold text-white">{data.metrics.totalTrades}</p>
               </div>
               <div>
-                <p className="text-xs text-[#7C8DB0] mb-1">Max Drawdown (abs)</p>
+                <p className="text-xs text-[#71717A] mb-1">Max Drawdown (abs)</p>
                 <p className="text-sm font-semibold text-white">
                   ${data.metrics.maxDrawdownAbs.toFixed(2)}
                 </p>
               </div>
               {data.metrics.longWinRate != null && (
                 <div>
-                  <p className="text-xs text-[#7C8DB0] mb-1">Long Win Rate</p>
+                  <p className="text-xs text-[#71717A] mb-1">Long Win Rate</p>
                   <p className="text-sm font-semibold text-white">
                     {data.metrics.longWinRate.toFixed(1)}%
                   </p>
@@ -449,7 +449,7 @@ export default function EvaluateDetailPage() {
               )}
               {data.metrics.shortWinRate != null && (
                 <div>
-                  <p className="text-xs text-[#7C8DB0] mb-1">Short Win Rate</p>
+                  <p className="text-xs text-[#71717A] mb-1">Short Win Rate</p>
                   <p className="text-sm font-semibold text-white">
                     {data.metrics.shortWinRate.toFixed(1)}%
                   </p>
@@ -460,14 +460,14 @@ export default function EvaluateDetailPage() {
 
           {/* Score Breakdown (expandable) */}
           {data.scoreBreakdown && data.scoreBreakdown.length > 0 && (
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden">
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowBreakdown(!showBreakdown)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-[rgba(255,255,255,0.06)] transition-colors"
               >
                 <span className="text-sm font-medium text-white">Score Breakdown</span>
                 <svg
-                  className={`w-4 h-4 text-[#7C8DB0] transition-transform ${showBreakdown ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-[#71717A] transition-transform ${showBreakdown ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -485,27 +485,27 @@ export default function EvaluateDetailPage() {
                 <div className="px-6 pb-5 space-y-3">
                   {data.scoreBreakdown.map((item) => (
                     <div key={item.metric} className="flex items-center gap-3">
-                      <span className="text-xs text-[#7C8DB0] w-32 flex-shrink-0">
+                      <span className="text-xs text-[#71717A] w-32 flex-shrink-0">
                         {getMetricLabel(item.metric)}
                       </span>
-                      <div className="flex-1 h-2 bg-[rgba(79,70,229,0.1)] rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
                             width: `${item.score}%`,
                             background:
                               item.score >= 70
-                                ? "#22C55E"
+                                ? "#10B981"
                                 : item.score >= 40
                                   ? "#F59E0B"
                                   : "#EF4444",
                           }}
                         />
                       </div>
-                      <span className="text-xs text-[#94A3B8] w-16 text-right">
+                      <span className="text-xs text-[#A1A1AA] w-16 text-right">
                         {item.score.toFixed(0)} / 100
                       </span>
-                      <span className="text-xs text-[#64748b] w-12 text-right">
+                      <span className="text-xs text-[#71717A] w-12 text-right">
                         ({(item.weight * 100).toFixed(0)}%)
                       </span>
                     </div>
@@ -588,7 +588,7 @@ export default function EvaluateDetailPage() {
                   {infoWarnings.length > 0 && (
                     <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl px-5 py-4">
                       <p className="text-xs font-medium text-[#F59E0B] mb-2">Warnings</p>
-                      <ul className="text-xs text-[#94A3B8] space-y-1">
+                      <ul className="text-xs text-[#A1A1AA] space-y-1">
                         {infoWarnings.map((w, i) => (
                           <li key={i}>- {w}</li>
                         ))}
@@ -602,13 +602,13 @@ export default function EvaluateDetailPage() {
           {/* Validate Strategy CTA */}
           <Link
             href={`/app/evaluate/${id}/validate`}
-            className="block bg-gradient-to-r from-[rgba(34,211,238,0.1)] to-[rgba(79,70,229,0.15)] border border-[rgba(34,211,238,0.25)] rounded-xl p-5 hover:border-[rgba(34,211,238,0.4)] transition-all group"
+            className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 hover:border-[rgba(255,255,255,0.10)] transition-all group"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#22D3EE]/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#6366F1]/10 flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-5 h-5 text-[#22D3EE]"
+                    className="w-5 h-5 text-[#6366F1]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -622,16 +622,16 @@ export default function EvaluateDetailPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
+                  <h3 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
                     Validate Strategy
                   </h3>
-                  <p className="text-xs text-[#7C8DB0]">
+                  <p className="text-xs text-[#71717A]">
                     Run a Monte Carlo simulation to test survival probability
                   </p>
                 </div>
               </div>
               <svg
-                className="w-5 h-5 text-[#7C8DB0] group-hover:text-[#22D3EE] transition-colors flex-shrink-0"
+                className="w-5 h-5 text-[#71717A] group-hover:text-white transition-colors flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -647,9 +647,9 @@ export default function EvaluateDetailPage() {
           </Link>
 
           {/* Evaluation → Live Bridge */}
-          <div className="flex items-center gap-3 px-5 py-3.5 bg-[#1A0626]/60 border border-[rgba(79,70,229,0.1)] rounded-xl">
+          <div className="flex items-center gap-3 px-5 py-3.5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl">
             <svg
-              className="w-4 h-4 text-[#A78BFA] flex-shrink-0"
+              className="w-4 h-4 text-[#818CF8] flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -661,23 +661,23 @@ export default function EvaluateDetailPage() {
                 d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
-            <p className="text-xs text-[#94A3B8]">
-              <span className="text-[#A78BFA] font-medium">Next: </span>
+            <p className="text-xs text-[#A1A1AA]">
+              <span className="text-[#818CF8] font-medium">Next: </span>
               Deploy this strategy live to begin the evaluation lifecycle. New strategies start at{" "}
-              <span className="text-[#A78BFA] font-medium">Testing</span> status and progress as
+              <span className="text-[#818CF8] font-medium">Testing</span> status and progress as
               they build a track record.
             </p>
             <Link
               href="/app/live"
-              className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors font-medium whitespace-nowrap flex-shrink-0"
+              className="text-xs text-[#818CF8] hover:text-white transition-colors font-medium whitespace-nowrap flex-shrink-0"
             >
               Set Up &rarr;
             </Link>
           </div>
 
           {/* Action Bar */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="text-xs text-[#7C8DB0] space-y-1">
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="text-xs text-[#71717A] space-y-1">
               <p>
                 File: {data.fileName} ({formatFileSize(data.fileSize)})
               </p>
@@ -687,7 +687,7 @@ export default function EvaluateDetailPage() {
             </div>
             <button
               onClick={handleDelete}
-              className="text-xs text-[#7C8DB0] hover:text-[#EF4444] transition-colors px-3 py-1.5 border border-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.4)] rounded-lg"
+              className="text-xs text-[#71717A] hover:text-[#EF4444] transition-colors px-3 py-1.5 border border-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.4)] rounded-lg"
             >
               Delete Backtest
             </button>
@@ -713,12 +713,12 @@ function AIStrategyInsights({
 }) {
   if (!analysis && !analyzing) {
     return (
-      <div className="bg-gradient-to-r from-[rgba(79,70,229,0.15)] to-[rgba(167,139,250,0.1)] border border-[rgba(79,70,229,0.25)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-[#4F46E5]/20 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#6366F1]/20 flex items-center justify-center">
               <svg
-                className="w-6 h-6 text-[#A78BFA]"
+                className="w-6 h-6 text-[#818CF8]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -734,14 +734,14 @@ function AIStrategyInsights({
           </div>
           <div className="flex-1 text-center sm:text-left">
             <h3 className="text-sm font-semibold text-white mb-1">AI Strategy Insights</h3>
-            <p className="text-xs text-[#7C8DB0]">
+            <p className="text-xs text-[#71717A]">
               Get AI-powered analysis of your strategy — weaknesses, overfitting signals, and risk
               assessment. This is educational analysis, not a deployment decision.
             </p>
           </div>
           <button
             onClick={onAnalyze}
-            className="px-5 py-2.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0"
+            className="px-5 py-2.5 bg-[#6366F1] hover:bg-[#818CF8] text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0"
           >
             Analyze Strategy
           </button>
@@ -752,12 +752,12 @@ function AIStrategyInsights({
 
   if (analyzing) {
     return (
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-5 h-5 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
           <h3 className="text-sm font-semibold text-white">AI Strategy Insights is analyzing...</h3>
         </div>
-        <p className="text-xs text-[#7C8DB0]">
+        <p className="text-xs text-[#71717A]">
           Reviewing metrics, trade patterns, and risk factors. This usually takes 10-20 seconds.
         </p>
       </div>
@@ -767,11 +767,11 @@ function AIStrategyInsights({
   if (!analysis) return null;
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[rgba(79,70,229,0.1)]">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-[#A78BFA]"
+            className="w-5 h-5 text-[#818CF8]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -784,12 +784,12 @@ function AIStrategyInsights({
             />
           </svg>
           <h3 className="text-sm font-semibold text-white">AI Strategy Insights</h3>
-          <span className="text-[10px] text-[#64748b] ml-auto">{analysis.model}</span>
+          <span className="text-[10px] text-[#71717A] ml-auto">{analysis.model}</span>
         </div>
       </div>
 
       <div className="px-6 py-5">
-        <div className="prose prose-invert prose-sm max-w-none text-[#CBD5E1] text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="prose prose-invert prose-sm max-w-none text-[#FAFAFA] text-sm leading-relaxed whitespace-pre-wrap">
           {analysis.analysis}
         </div>
       </div>
@@ -803,7 +803,7 @@ function AIStrategyInsights({
             {analysis.weaknesses.map((w, i) => (
               <div
                 key={i}
-                className="bg-[rgba(0,0,0,0.2)] rounded-lg p-4 border-l-2"
+                className="bg-[#18181B] rounded-lg p-4 border-l-2"
                 style={{ borderLeftColor: getSeverityColor(w.severity) }}
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -816,12 +816,12 @@ function AIStrategyInsights({
                   >
                     {w.severity}
                   </span>
-                  <span className="text-[10px] text-[#64748b] uppercase tracking-wider">
+                  <span className="text-[10px] text-[#71717A] uppercase tracking-wider">
                     {w.category.replace(/_/g, " ")}
                   </span>
                 </div>
-                <p className="text-xs text-[#CBD5E1] mb-1.5">{w.description}</p>
-                <p className="text-xs text-[#A78BFA]">{w.recommendation}</p>
+                <p className="text-xs text-[#FAFAFA] mb-1.5">{w.description}</p>
+                <p className="text-xs text-[#818CF8]">{w.recommendation}</p>
               </div>
             ))}
           </div>
