@@ -111,9 +111,15 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       const message = err instanceof Error ? err.message : "AI analysis failed";
       logger.error({ error: err }, "AI analysis failed");
 
-      if (message.includes("ANTHROPIC_API_KEY")) {
+      if (message.includes("OPENAI_API_KEY")) {
+        const isDev = process.env.NODE_ENV === "development";
         return NextResponse.json(
-          apiError(ErrorCode.AI_UNAVAILABLE, "AI analysis is currently unavailable"),
+          apiError(
+            ErrorCode.AI_UNAVAILABLE,
+            isDev
+              ? "AI analysis unavailable — missing OPENAI_API_KEY"
+              : "AI analysis is currently unavailable"
+          ),
           { status: 503 }
         );
       }

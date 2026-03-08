@@ -108,6 +108,11 @@ export const anthropicCircuit = new CircuitBreaker("anthropic", {
   cooldownMs: 30_000,
 });
 
+export const openaiCircuit = new CircuitBreaker("openai", {
+  failureThreshold: 5,
+  cooldownMs: 30_000,
+});
+
 export const resendCircuit = new CircuitBreaker("resend-email", {
   failureThreshold: 5,
   cooldownMs: 30_000,

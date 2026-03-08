@@ -1,13 +1,13 @@
 /**
- * AI Strategy Insights — Analyzes backtest results using Claude.
+ * AI Strategy Insights — Analyzes backtest results using OpenAI.
  *
- * Takes parsed backtest metrics and a sample of trades, sends them to Claude
+ * Takes parsed backtest metrics and a sample of trades, sends them to OpenAI
  * for deep analysis, and returns structured findings.
  */
 
-import { getAnthropicClient, AI_ANALYSIS_MODEL } from "./anthropic";
+import { getOpenAIClient, AI_ANALYSIS_MODEL } from "./openai";
 import { logger } from "./logger";
-import { anthropicCircuit, CircuitOpenError } from "./circuit-breaker";
+import { openaiCircuit, CircuitOpenError } from "./circuit-breaker";
 import type { ParsedMetrics, ParsedDeal } from "./backtest-parser/types";
 
 // ============================================
@@ -53,64 +53,48 @@ You will receive:
 4. A sample of actual trades from the backtest
 
 Your analysis MUST cover these areas:
+- Overall Assessment: 2-3 sentence summary of the strategy's quality and readiness for live trading.
+- Strengths: what the strategy does well — be specific and reference actual metrics.
+- Weaknesses & Risks: identify specific problems with category, severity, description, and recommendation.
+- Overfitting Signals: too-perfect metrics, suspiciously high win rates (>80%), very few trades, extreme profit factor >5 with low trade count, period-specific performance.
+- Market Dependency: how dependent the strategy is on specific market conditions, trending vs ranging behavior, news sensitivity, spread sensitivity.
+- Key Takeaways: most important findings — what the trader should focus on improving and what further validation steps (Monte Carlo, walk-forward) would strengthen confidence.
 
-## Analysis Structure
-
-### Overall Assessment
-A 2-3 sentence summary of the strategy's quality and readiness for live trading.
-
-### Strengths
-What the strategy does well — be specific and reference actual metrics.
-
-### Weaknesses & Risks
-Identify specific problems. For each weakness, provide:
-- Category (one of: OVERFITTING, RISK_MANAGEMENT, MARKET_DEPENDENCY, TRADE_FREQUENCY, PROFITABILITY, ROBUSTNESS, DRAWDOWN)
-- Severity (HIGH/MEDIUM/LOW)
-- Specific description referencing actual numbers
-- Actionable recommendation
-
-### Overfitting Signals
-Look for: too-perfect metrics, suspiciously high win rates (>80%), very few trades, curve-fitting indicators (extreme profit factor >5 with low trade count), period-specific performance.
-
-### Market Dependency
-Assess: how dependent the strategy is on specific market conditions, trending vs ranging behavior, news sensitivity, spread sensitivity.
-
-### Key Takeaways
-Summarize the most important findings — what the trader should focus on improving and what further validation steps (Monte Carlo, walk-forward) would strengthen confidence.
-
-## Output Format Rules
+Rules:
 - Be direct and honest — traders need truth, not encouragement
 - Use specific numbers from the data, not vague language
-- Keep total response under 800 words
+- Keep the analysis field under 800 words
 - Focus on actionable insights, not generic advice
 
-## JSON Weaknesses Format
-After your analysis text, output a JSON block with structured weaknesses:
-\`\`\`json
-[
-  {
-    "category": "OVERFITTING",
-    "severity": "HIGH",
-    "description": "...",
-    "recommendation": "..."
-  }
-]
-\`\`\``;
+You MUST respond with valid JSON only. No markdown, no prose outside the JSON object.
+
+Required JSON schema:
+{
+  "analysis": "Full analysis text in markdown format covering all areas above",
+  "weaknesses": [
+    {
+      "category": "OVERFITTING | RISK_MANAGEMENT | MARKET_DEPENDENCY | TRADE_FREQUENCY | PROFITABILITY | ROBUSTNESS | DRAWDOWN",
+      "severity": "HIGH | MEDIUM | LOW",
+      "description": "Specific description referencing actual numbers",
+      "recommendation": "Actionable recommendation"
+    }
+  ]
+}`;
 
 // ============================================
 // Core function
 // ============================================
 
 /**
- * Analyze a backtest using Claude AI.
+ * Analyze a backtest using OpenAI.
  * Returns structured analysis or throws if the API is unavailable.
  */
 export async function analyzeStrategy(
   input: StrategyAnalysisInput
 ): Promise<StrategyAnalysisResult | null> {
-  const anthropic = getAnthropicClient();
-  if (!anthropic) {
-    throw new Error("AI analysis is not available — ANTHROPIC_API_KEY not configured");
+  const openai = getOpenAIClient();
+  if (!openai) {
+    throw new Error("AI analysis is not available — OPENAI_API_KEY not configured");
   }
 
   // Limit deals to 200 to keep token count reasonable
@@ -120,13 +104,16 @@ export async function analyzeStrategy(
 
   let response;
   try {
-    response = await anthropicCircuit.execute(() =>
-      anthropic.messages.create(
+    response = await openaiCircuit.execute(() =>
+      openai.chat.completions.create(
         {
           model: AI_ANALYSIS_MODEL,
           max_tokens: 2048,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userMessage }],
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userMessage },
+          ],
         },
         { timeout: 45000 }
       )
@@ -141,20 +128,19 @@ export async function analyzeStrategy(
   }
 
   // Extract text from response
-  const textBlocks = response.content.filter((b) => b.type === "text");
-  const fullText = textBlocks.map((b) => b.text).join("\n");
+  const fullText = response.choices[0]?.message?.content?.trim() ?? "";
+  if (!fullText) {
+    throw new Error("OpenAI returned empty analysis content");
+  }
 
-  // Parse weaknesses from JSON block if present
-  const weaknesses = extractWeaknesses(fullText);
-
-  // Remove the JSON block from the analysis text
-  const analysis = fullText.replace(/```json[\s\S]*?```/g, "").trim();
+  // Parse structured JSON response
+  const { analysis, weaknesses } = parseAnalysisJson(fullText);
 
   logger.info(
     {
       model: response.model,
-      inputTokens: response.usage.input_tokens,
-      outputTokens: response.usage.output_tokens,
+      inputTokens: response.usage?.prompt_tokens,
+      outputTokens: response.usage?.completion_tokens,
     },
     "AI strategy analysis completed"
   );
@@ -273,24 +259,7 @@ You will receive:
 2. A sample of trades
 3. Previously identified weaknesses
 
-Your task is to suggest specific, actionable parameter optimizations.
-
-## Output Format
-Return ONLY a JSON array of parameter optimization objects:
-\`\`\`json
-[
-  {
-    "parameter": "Stop Loss (pips)",
-    "currentValue": "50",
-    "suggestedValue": "35",
-    "expectedImpact": "Reduce max drawdown by ~15%",
-    "confidence": "HIGH",
-    "reasoning": "Current SL is too wide given the strategy's average winning trade size..."
-  }
-]
-\`\`\`
-
-## Rules
+Rules:
 - Suggest 3-7 optimizations
 - Be specific with parameter names and values
 - Base suggestions on actual data, not generic advice
@@ -298,17 +267,33 @@ Return ONLY a JSON array of parameter optimization objects:
 - If you can infer parameters from trade patterns (e.g., SL/TP from price gaps, timeframe from trade frequency), suggest those
 - Include risk management parameters (lot size, max positions, SL, TP)
 - Include timing parameters if relevant (session filters, day-of-week)
-- Focus on the most impactful changes first`;
+- Focus on the most impactful changes first
+
+You MUST respond with valid JSON only. No markdown, no prose outside the JSON object.
+
+Required JSON schema:
+{
+  "optimizations": [
+    {
+      "parameter": "Stop Loss (pips)",
+      "currentValue": "50",
+      "suggestedValue": "35",
+      "expectedImpact": "Reduce max drawdown by ~15%",
+      "confidence": "HIGH",
+      "reasoning": "..."
+    }
+  ]
+}`;
 
 /**
- * Generate parameter optimization suggestions using Claude AI.
+ * Generate parameter optimization suggestions using OpenAI.
  */
 export async function optimizeStrategy(
   input: OptimizeStrategyInput
 ): Promise<ParameterOptimization[]> {
-  const anthropic = getAnthropicClient();
-  if (!anthropic) {
-    throw new Error("AI optimization is not available — ANTHROPIC_API_KEY not configured");
+  const openai = getOpenAIClient();
+  if (!openai) {
+    throw new Error("AI optimization is not available — OPENAI_API_KEY not configured");
   }
 
   const m = input.metrics;
@@ -357,13 +342,16 @@ export async function optimizeStrategy(
 
   let response;
   try {
-    response = await anthropicCircuit.execute(() =>
-      anthropic.messages.create(
+    response = await openaiCircuit.execute(() =>
+      openai.chat.completions.create(
         {
           model: AI_ANALYSIS_MODEL,
           max_tokens: 2048,
-          system: OPTIMIZER_SYSTEM_PROMPT,
-          messages: [{ role: "user", content: parts.join("\n") }],
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: OPTIMIZER_SYSTEM_PROMPT },
+            { role: "user", content: parts.join("\n") },
+          ],
         },
         { timeout: 45000 }
       )
@@ -377,20 +365,24 @@ export async function optimizeStrategy(
     return [];
   }
 
-  const textBlocks = response.content.filter((b) => b.type === "text");
-  const fullText = textBlocks.map((b) => b.text).join("\n");
+  const fullText = response.choices[0]?.message?.content?.trim() ?? "";
+  if (!fullText) {
+    throw new Error("OpenAI returned empty optimization content");
+  }
 
   return extractOptimizations(fullText);
 }
 
 function extractOptimizations(text: string): ParameterOptimization[] {
   try {
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : text;
-    const parsed = JSON.parse(jsonStr);
-    if (!Array.isArray(parsed)) return [];
+    const parsed = JSON.parse(text);
+    const items = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed.optimizations)
+        ? parsed.optimizations
+        : [];
 
-    return parsed
+    return items
       .filter(
         (o: Record<string, unknown>) =>
           o.parameter && o.currentValue && o.suggestedValue && o.expectedImpact
@@ -411,15 +403,13 @@ function extractOptimizations(text: string): ParameterOptimization[] {
   }
 }
 
-function extractWeaknesses(text: string): StrategyWeakness[] {
+function parseAnalysisJson(text: string): { analysis: string; weaknesses: StrategyWeakness[] } {
   try {
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-    if (!jsonMatch) return [];
+    const parsed = JSON.parse(text);
+    const analysis = typeof parsed.analysis === "string" ? parsed.analysis.trim() : "";
+    const rawWeaknesses = Array.isArray(parsed.weaknesses) ? parsed.weaknesses : [];
 
-    const parsed = JSON.parse(jsonMatch[1]);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
+    const weaknesses = rawWeaknesses
       .filter(
         (w: Record<string, unknown>) =>
           w.category && w.severity && w.description && w.recommendation
@@ -432,8 +422,10 @@ function extractWeaknesses(text: string): StrategyWeakness[] {
         description: String(w.description),
         recommendation: String(w.recommendation),
       }));
+
+    return { analysis, weaknesses };
   } catch (err) {
-    logger.warn({ error: err }, "Failed to parse AI weaknesses JSON");
-    return [];
+    logger.warn({ error: err }, "Failed to parse AI analysis JSON");
+    return { analysis: text, weaknesses: [] };
   }
 }
