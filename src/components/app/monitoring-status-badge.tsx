@@ -1,20 +1,20 @@
 /**
- * MonitoringStatusBadge — primary health indicator for strategy cards.
+ * MonitoringStatusBadge — primary health indicator for deployment cards.
  *
  * Shows HEALTHY / AT_RISK / INVALIDATED with consistent color coding.
  * Reusable on dashboard cards and detail pages.
  */
 
-import type { MonitoringStatus } from "@/app/app/load-command-center-data";
+import type { InstanceMonitoringStatus } from "@/lib/semantic-layers";
 
-const CONFIG: Record<MonitoringStatus, { color: string; label: string }> = {
+const CONFIG: Record<InstanceMonitoringStatus, { color: string; label: string }> = {
   HEALTHY: { color: "#10B981", label: "Healthy" },
   AT_RISK: { color: "#F59E0B", label: "At Risk" },
   INVALIDATED: { color: "#EF4444", label: "Invalidated" },
 };
 
 interface MonitoringStatusBadgeProps {
-  status: MonitoringStatus;
+  status: InstanceMonitoringStatus;
   size?: "sm" | "md";
 }
 

@@ -94,17 +94,17 @@ export default async function DashboardPage() {
     }
   }
 
-  // Daily insights (uses lightweight summary for backward compat)
-  const liveEASummary = commandCenter.strategies.map((s) => ({
-    id: s.id,
-    eaName: s.eaName,
-    symbol: s.symbol,
-    status: s.status,
-    totalProfit: s.totalProfit,
-    totalTrades: s.totalTrades,
+  // Daily insights (uses instance data mapped to insights input shape)
+  const liveEASummary = commandCenter.instances.map((inst) => ({
+    id: inst.id,
+    eaName: inst.eaName,
+    symbol: inst.symbol,
+    status: inst.status,
+    totalProfit: inst.totalProfit,
+    totalTrades: inst.totalTrades,
     balance: null as number | null,
     equity: null as number | null,
-    lastHeartbeat: s.lastHeartbeat ? new Date(s.lastHeartbeat) : null,
+    lastHeartbeat: inst.lastHeartbeat ? new Date(inst.lastHeartbeat) : null,
     strategyStatus: undefined as string | undefined,
   }));
   const insights = generateDailyInsights(liveEASummary, recentBacktests, projects.length);
@@ -115,20 +115,21 @@ export default async function DashboardPage() {
 
   // Onboarding state
   const isNewUser =
-    projects.length === 0 && recentBacktests.length === 0 && commandCenter.strategies.length === 0;
+    projects.length === 0 && recentBacktests.length === 0 && commandCenter.instances.length === 0;
   const isActivating =
     !isNewUser &&
     (projects.length === 0 ||
       recentBacktests.length === 0 ||
       exportCount === 0 ||
-      commandCenter.strategies.length === 0);
+      commandCenter.instances.length === 0);
 
   // Derive nav monitor status from command center data
+  const ps = commandCenter.portfolioSummary;
   const navMonitorStatus =
-    commandCenter.strategies.length === 0
+    commandCenter.instances.length === 0
       ? undefined
-      : commandCenter.summary.invalidated > 0 || commandCenter.summary.atRisk > 0
-        ? commandCenter.summary.invalidated > 0
+      : ps.invalidatedCount > 0 || ps.atRiskCount > 0
+        ? ps.invalidatedCount > 0
           ? ("critical" as const)
           : ("warning" as const)
         : ("healthy" as const);
@@ -153,7 +154,7 @@ export default async function DashboardPage() {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white">{greeting}.</h2>
               <p className="text-sm text-[#71717A] mt-1">
-                {commandCenter.summary.online} online &middot; {recentBacktests.length} evaluation
+                {ps.onlineCount} online &middot; {recentBacktests.length} evaluation
                 {recentBacktests.length !== 1 ? "s" : ""} &middot; {projects.length} project
                 {projects.length !== 1 ? "s" : ""}
               </p>
@@ -165,20 +166,20 @@ export default async function DashboardPage() {
                 hasProjects={projects.length > 0}
                 hasBacktests={recentBacktests.length > 0}
                 hasExports={exportCount > 0}
-                hasLiveEAs={commandCenter.strategies.length > 0}
+                hasLiveEAs={commandCenter.instances.length > 0}
                 tier={tier}
                 firstProjectId={projects.length > 0 ? projects[0].id : null}
               />
             )}
 
             {/* ── Portfolio Risk Banner ── */}
-            {commandCenter.strategies.length > 0 && (
+            {commandCenter.instances.length > 0 && (
               <div className="mb-4">
                 <PortfolioRiskBanner
                   summary={{
-                    invalidated: commandCenter.summary.invalidated,
-                    atRisk: commandCenter.summary.atRisk,
-                    awaitingData: commandCenter.strategies.filter((s) => !s.hasHealthData).length,
+                    invalidated: ps.invalidatedCount,
+                    atRisk: ps.atRiskCount,
+                    awaitingData: ps.awaitingDataCount,
                   }}
                 />
               </div>
@@ -189,13 +190,13 @@ export default async function DashboardPage() {
                 Layer 3: Portfolio operational summary
                 Layer 1: Individual deployment cards (instance truth)
                 ══════════════════════════════════════════ */}
-            {commandCenter.strategies.length > 0 && (
+            {commandCenter.instances.length > 0 && (
               <section className="mb-10">
                 <div className="mb-4">
-                  <PortfolioHealthSummary summary={commandCenter.summary} />
+                  <PortfolioHealthSummary summary={commandCenter.portfolioSummary} />
                 </div>
                 <Suspense fallback={<StrategyGridSkeleton />}>
-                  <CommandCenterView strategies={commandCenter.strategies} />
+                  <CommandCenterView instances={commandCenter.instances} />
                 </Suspense>
               </section>
             )}

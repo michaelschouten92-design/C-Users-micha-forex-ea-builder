@@ -403,7 +403,11 @@ model LiveEAInstance {
   peakScore         Float     @default(0)
   peakScoreAt       DateTime?
 
-  // Strategy Status (computed, cached)
+  // Deployment Status (computed, cached per instance).
+  // HISTORICAL NAME: "strategyStatus" is a legacy column name. Semantically this
+  // is an instance-level (deployment-level) computed status, NOT a strategy-wide
+  // aggregate. The name is retained to avoid a schema migration; interpret it as
+  // "this deployment's operational status".
   strategyStatus          String    @default("TESTING")  // CONSISTENT | MONITORING | TESTING | UNSTABLE | EDGE_DEGRADED | INACTIVE
   strategyStatusUpdatedAt DateTime?
 

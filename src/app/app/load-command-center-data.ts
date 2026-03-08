@@ -22,19 +22,10 @@ import {
 // ── Types ────────────────────────────────────────────────
 
 /**
- * Re-export for backward compatibility.
- * Consumers should prefer `InstanceMonitoringStatus` from semantic-layers.
- */
-export type MonitoringStatus = InstanceMonitoringStatus;
-
-/**
  * Instance-level truth for the command center grid.
  * Each item represents ONE live deployment — not a strategy aggregate.
- *
- * Named "CommandCenterStrategy" for backward compat with existing consumers.
- * Semantically this is instance-level data.
  */
-export interface CommandCenterStrategy {
+export interface CommandCenterInstance {
   id: string;
   eaName: string;
   symbol: string | null;
@@ -72,30 +63,10 @@ export interface CommandCenterStrategy {
 
 export interface CommandCenterData {
   /** Instance-level rows (Layer 1 — each is one deployment's truth). */
-  instances: CommandCenterStrategy[];
-
-  /**
-   * @deprecated Use `instances` instead. Kept for backward compatibility.
-   * Alias for `instances`.
-   */
-  strategies: CommandCenterStrategy[];
+  instances: CommandCenterInstance[];
 
   /** Portfolio operational summary (Layer 3 — operational, not validation). */
   portfolioSummary: PortfolioOperationalSummary;
-
-  /**
-   * @deprecated Use `portfolioSummary` instead. Kept for backward compatibility.
-   * Raw counts derived from instance statuses.
-   */
-  summary: {
-    total: number;
-    healthy: number;
-    atRisk: number;
-    invalidated: number;
-    online: number;
-    driftCount: number;
-    avgHealthScore: number | null;
-  };
 }
 
 // ── Loader ───────────────────────────────────────────────
@@ -131,7 +102,7 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
     },
   });
 
-  const instances: CommandCenterStrategy[] = dbInstances.map((inst) => {
+  const instances: CommandCenterInstance[] = dbInstances.map((inst) => {
     const snap = inst.healthSnapshots[0] ?? null;
     const healthStatus = snap?.status ?? null;
     const monitoringStatus = resolveInstanceMonitoringStatus(inst.lifecycleState, healthStatus);
@@ -170,21 +141,8 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
     }))
   );
 
-  // Legacy summary (backward compat — deprecated in favor of portfolioSummary)
-  const summary = {
-    total: portfolioSummary.totalInstances,
-    healthy: portfolioSummary.healthyCount,
-    atRisk: portfolioSummary.atRiskCount,
-    invalidated: portfolioSummary.invalidatedCount,
-    online: portfolioSummary.onlineCount,
-    driftCount: portfolioSummary.driftCount,
-    avgHealthScore: portfolioSummary.avgHealthScore,
-  };
-
   return {
     instances,
-    strategies: instances, // backward compat alias
     portfolioSummary,
-    summary,
   };
 }

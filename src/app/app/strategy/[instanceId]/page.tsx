@@ -10,6 +10,7 @@ import { IncidentTimeline } from "@/components/app/incident-timeline";
 import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
+import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 
 interface PageProps {
   params: Promise<{ instanceId: string }>;
@@ -59,7 +60,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 8. Governance Context — collapsed by default */}
         <GovernanceContextPanel data={data} />
 
-        {/* 9. Health Score Breakdown — secondary, collapsed */}
+        {/* 9. Strategy Aggregate — Layer 2 derived, collapsed, secondary */}
+        {data.strategyAggregate && <StrategyAggregateSummary aggregate={data.strategyAggregate} />}
+
+        {/* 10. Health Score Breakdown — secondary, collapsed */}
         <HealthScoreBreakdown health={data.health} history={data.healthHistory} />
       </div>
     </div>

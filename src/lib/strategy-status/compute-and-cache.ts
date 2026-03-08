@@ -3,6 +3,12 @@
  *
  * Gathers all inputs from the database, calls resolveStrategyStatus(),
  * and updates the cached value on LiveEAInstance if it changed.
+ *
+ * NAMING NOTE: Despite the name "strategyStatus", this operates at the
+ * instance (deployment) level. Each LiveEAInstance has its own computed
+ * strategyStatus value. The name is historical and retained to avoid a
+ * schema migration. Interpret "strategy status" here as "deployment
+ * operational status".
  */
 
 import { prisma } from "@/lib/prisma";

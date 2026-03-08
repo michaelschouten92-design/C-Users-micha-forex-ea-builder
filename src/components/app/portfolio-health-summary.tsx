@@ -31,69 +31,11 @@ const STATUS_CONFIG: Record<OverallStatus, { color: string; label: string }> = {
 };
 
 interface PortfolioHealthSummaryProps {
-  /** Accepts either the new PortfolioOperationalSummary or legacy summary shape. */
-  summary: PortfolioOperationalSummary | LegacySummary;
-}
-
-/** Legacy shape for backward compatibility during transition. */
-interface LegacySummary {
-  total: number;
-  healthy: number;
-  atRisk: number;
-  invalidated: number;
-  online: number;
-  driftCount: number;
-  avgHealthScore: number | null;
-}
-
-function isPortfolioSummary(
-  s: PortfolioOperationalSummary | LegacySummary
-): s is PortfolioOperationalSummary {
-  return "_type" in s && s._type === "portfolio_operational";
-}
-
-function toPortfolioShape(s: PortfolioOperationalSummary | LegacySummary) {
-  if (isPortfolioSummary(s)) {
-    return {
-      healthy: s.healthyCount,
-      atRisk: s.atRiskCount,
-      invalidated: s.invalidatedCount,
-      online: s.onlineCount,
-      total: s.totalInstances,
-      driftCount: s.driftCount,
-      avgHealthScore: s.avgHealthScore,
-      operationalStatus: s.operationalStatus,
-    };
-  }
-  return {
-    healthy: s.healthy,
-    atRisk: s.atRisk,
-    invalidated: s.invalidated,
-    online: s.online,
-    total: s.total,
-    driftCount: s.driftCount,
-    avgHealthScore: s.avgHealthScore,
-    operationalStatus:
-      s.invalidated > 0
-        ? ("CRITICAL" as const)
-        : s.atRisk > 0
-          ? ("NEEDS_ATTENTION" as const)
-          : s.total === 0
-            ? ("NO_DATA" as const)
-            : ("ALL_CLEAR" as const),
-  };
+  summary: PortfolioOperationalSummary;
 }
 
 export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps) {
-  const data = toPortfolioShape(summary);
-  const overall =
-    data.total === 0
-      ? ("NO_DATA" as OverallStatus)
-      : data.invalidated > 0
-        ? ("CRITICAL" as OverallStatus)
-        : data.atRisk > 0
-          ? ("ATTENTION" as OverallStatus)
-          : ("HEALTHY" as OverallStatus);
+  const overall = deriveOverallStatus(summary);
   const config = STATUS_CONFIG[overall];
 
   if (overall === "NO_DATA") return null;
@@ -123,31 +65,31 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
 
         {/* Right: Counts — explicitly about deployments, not strategies */}
         <div className="flex items-center gap-4 sm:gap-6">
-          <CountPill label="Healthy" count={data.healthy} color="#10B981" />
-          <CountPill label="At Risk" count={data.atRisk} color="#F59E0B" />
-          <CountPill label="Invalidated" count={data.invalidated} color="#EF4444" />
+          <CountPill label="Healthy" count={summary.healthyCount} color="#10B981" />
+          <CountPill label="At Risk" count={summary.atRiskCount} color="#F59E0B" />
+          <CountPill label="Invalidated" count={summary.invalidatedCount} color="#EF4444" />
 
           {/* Divider */}
           <div className="hidden sm:block w-px h-6 bg-[rgba(79,70,229,0.15)]" />
 
           {/* Aggregates */}
           <div className="hidden sm:flex items-center gap-4">
-            {data.avgHealthScore !== null && (
+            {summary.avgHealthScore !== null && (
               <div className="text-center">
                 <p className="text-[10px] text-[#7C8DB0]">Avg Score</p>
-                <p className="text-xs font-medium text-[#CBD5E1]">{data.avgHealthScore}%</p>
+                <p className="text-xs font-medium text-[#CBD5E1]">{summary.avgHealthScore}%</p>
               </div>
             )}
-            {data.driftCount > 0 && (
+            {summary.driftCount > 0 && (
               <div className="text-center">
                 <p className="text-[10px] text-[#7C8DB0]">Drift</p>
-                <p className="text-xs font-medium text-[#F59E0B]">{data.driftCount}</p>
+                <p className="text-xs font-medium text-[#F59E0B]">{summary.driftCount}</p>
               </div>
             )}
             <div className="text-center">
               <p className="text-[10px] text-[#7C8DB0]">Online</p>
               <p className="text-xs font-medium text-[#CBD5E1]">
-                {data.online}/{data.total}
+                {summary.onlineCount}/{summary.totalInstances}
               </p>
             </div>
           </div>

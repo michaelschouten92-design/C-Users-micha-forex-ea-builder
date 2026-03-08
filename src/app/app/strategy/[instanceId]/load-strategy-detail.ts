@@ -13,7 +13,9 @@ import { prisma } from "@/lib/prisma";
 import {
   resolveInstanceMonitoringStatus,
   type InstanceMonitoringStatus,
+  type StrategyAggregateHealth,
 } from "@/lib/semantic-layers";
+import { buildStrategyAggregate } from "@/lib/semantic-layers/strategy-aggregate";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -134,6 +136,14 @@ export interface StrategyDetailData {
   // System recommendation (derived)
   recommendation: RecommendationLevel;
   recommendationReason: string;
+
+  /**
+   * Layer 2: Strategy aggregate across sibling deployments sharing the same
+   * strategy identity. Null when the instance has no linked strategy version.
+   * This is a secondary, derived read-model — NOT a replacement for the
+   * instance-level monitoring verdict shown above.
+   */
+  strategyAggregate: StrategyAggregateHealth | null;
 }
 
 // ── Monitoring status resolution (delegates to shared semantic layer) ──
@@ -425,6 +435,39 @@ export async function loadStrategyDetail(
     mappedIncidents
   );
 
+  // ── Layer 2: Strategy aggregate across sibling deployments ──
+  // Only available when this instance is linked to a strategy version.
+  let strategyAggregate: StrategyAggregateHealth | null = null;
+  if (strategyId) {
+    const siblingInstances = await prisma.liveEAInstance.findMany({
+      where: {
+        deletedAt: null,
+        userId,
+        strategyVersion: { strategyIdentity: { strategyId } },
+      },
+      select: {
+        status: true,
+        lifecycleState: true,
+        healthSnapshots: {
+          take: 1,
+          orderBy: { createdAt: "desc" as const },
+          select: { status: true },
+        },
+      },
+    });
+
+    const instancesForAgg = siblingInstances.map((sib) => ({
+      monitoringStatus: resolveInstanceMonitoringStatus(
+        sib.lifecycleState,
+        sib.healthSnapshots[0]?.status ?? null
+      ),
+      connectionStatus: sib.status as "ONLINE" | "OFFLINE" | "ERROR",
+      hasHealthData: sib.healthSnapshots.length > 0,
+    }));
+
+    strategyAggregate = buildStrategyAggregate(strategyId, instancesForAgg);
+  }
+
   return {
     id: instance.id,
     eaName: instance.eaName,
@@ -450,5 +493,6 @@ export async function loadStrategyDetail(
     latestRun: mappedRun,
     recommendation: level,
     recommendationReason: reason,
+    strategyAggregate,
   };
 }

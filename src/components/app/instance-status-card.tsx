@@ -1,5 +1,5 @@
 /**
- * StrategyStatusCard — dashboard card for a single deployment (instance).
+ * InstanceStatusCard — dashboard card for a single deployment (instance).
  *
  * Layer 1 (instance truth) — each card represents one LiveEAInstance.
  * This is NOT a strategy aggregate — it shows one deployment's actual health.
@@ -13,7 +13,7 @@
 import Link from "next/link";
 import { MonitoringStatusBadge } from "./monitoring-status-badge";
 import { HealthScoreBar } from "./health-score-bar";
-import type { CommandCenterStrategy } from "@/app/app/load-command-center-data";
+import type { CommandCenterInstance } from "@/app/app/load-command-center-data";
 
 // ── Lifecycle state display ──────────────────────────────
 
@@ -109,12 +109,12 @@ function ConnectionDot({ status }: { status: "ONLINE" | "OFFLINE" | "ERROR" }) {
 
 // ── Card ─────────────────────────────────────────────────
 
-interface StrategyStatusCardProps {
-  strategy: CommandCenterStrategy;
+interface InstanceStatusCardProps {
+  instance: CommandCenterInstance;
 }
 
-export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
-  const s = strategy;
+export function InstanceStatusCard({ instance }: InstanceStatusCardProps) {
+  const s = instance;
   const borderColor =
     s.monitoringStatus === "INVALIDATED"
       ? "rgba(239,68,68,0.4)"
@@ -170,18 +170,18 @@ export function StrategyStatusCard({ strategy }: StrategyStatusCardProps) {
       <div className="flex items-center justify-between mb-2 px-1">
         <MetricMini
           label="Win Rate"
-          value={s.liveWinRate !== null ? `${s.liveWinRate.toFixed(1)}%` : "—"}
+          value={s.liveWinRate !== null ? `${s.liveWinRate.toFixed(1)}%` : "\u2014"}
         />
         <MetricMini
           label="Max DD"
-          value={s.liveMaxDrawdownPct !== null ? `${s.liveMaxDrawdownPct.toFixed(1)}%` : "—"}
+          value={s.liveMaxDrawdownPct !== null ? `${s.liveMaxDrawdownPct.toFixed(1)}%` : "\u2014"}
         />
         <MetricMini
           label="Expectancy"
           value={
             s.expectancy !== null
               ? `${s.expectancy >= 0 ? "+" : ""}${s.expectancy.toFixed(3)}%`
-              : "—"
+              : "\u2014"
           }
         />
       </div>

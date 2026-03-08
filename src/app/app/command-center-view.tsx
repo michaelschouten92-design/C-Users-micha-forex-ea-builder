@@ -10,8 +10,9 @@
 
 import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { StrategyStatusCard } from "@/components/app/strategy-status-card";
-import type { CommandCenterStrategy, MonitoringStatus } from "./load-command-center-data";
+import { InstanceStatusCard } from "@/components/app/instance-status-card";
+import type { CommandCenterInstance } from "./load-command-center-data";
+import type { InstanceMonitoringStatus } from "@/lib/semantic-layers";
 
 // ── Filter types ─────────────────────────────────────────
 
@@ -34,35 +35,35 @@ const SORTS: { value: SortValue; label: string }[] = [
 
 // ── Filter logic ─────────────────────────────────────────
 
-function matchesFilter(s: CommandCenterStrategy, filter: FilterValue): boolean {
+function matchesFilter(inst: CommandCenterInstance, filter: FilterValue): boolean {
   switch (filter) {
     case "all":
       return true;
     case "healthy":
-      return s.monitoringStatus === "HEALTHY" && s.hasHealthData;
+      return inst.monitoringStatus === "HEALTHY" && inst.hasHealthData;
     case "at_risk":
-      return s.monitoringStatus === "AT_RISK" || s.monitoringStatus === "INVALIDATED";
+      return inst.monitoringStatus === "AT_RISK" || inst.monitoringStatus === "INVALIDATED";
     case "attention":
       return (
-        s.monitoringStatus === "INVALIDATED" ||
-        s.status === "OFFLINE" ||
-        s.status === "ERROR" ||
-        !s.hasHealthData
+        inst.monitoringStatus === "INVALIDATED" ||
+        inst.status === "OFFLINE" ||
+        inst.status === "ERROR" ||
+        !inst.hasHealthData
       );
   }
 }
 
-function getFilterCount(strategies: CommandCenterStrategy[], filter: FilterValue): number {
-  return strategies.filter((s) => matchesFilter(s, filter)).length;
+function getFilterCount(instances: CommandCenterInstance[], filter: FilterValue): number {
+  return instances.filter((inst) => matchesFilter(inst, filter)).length;
 }
 
 // ── Sort logic ───────────────────────────────────────────
 
-function sortStrategies(
-  strategies: CommandCenterStrategy[],
+function sortInstances(
+  instances: CommandCenterInstance[],
   sort: SortValue
-): CommandCenterStrategy[] {
-  const sorted = [...strategies];
+): CommandCenterInstance[] {
+  const sorted = [...instances];
   switch (sort) {
     case "health_asc":
       return sorted.sort((a, b) => (a.healthScore ?? -1) - (b.healthScore ?? -1));
@@ -81,7 +82,7 @@ function sortStrategies(
 
 // ── Monitoring status priority for default sort ──────────
 
-const STATUS_PRIORITY: Record<MonitoringStatus, number> = {
+const STATUS_PRIORITY: Record<InstanceMonitoringStatus, number> = {
   INVALIDATED: 0,
   AT_RISK: 1,
   HEALTHY: 2,
@@ -90,10 +91,10 @@ const STATUS_PRIORITY: Record<MonitoringStatus, number> = {
 // ── Component ────────────────────────────────────────────
 
 interface CommandCenterViewProps {
-  strategies: CommandCenterStrategy[];
+  instances: CommandCenterInstance[];
 }
 
-export function CommandCenterView({ strategies }: CommandCenterViewProps) {
+export function CommandCenterView({ instances }: CommandCenterViewProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -105,10 +106,10 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
   );
 
   const filtered = useMemo(() => {
-    let result = strategies.filter((s) => matchesFilter(s, filter));
+    let result = instances.filter((inst) => matchesFilter(inst, filter));
 
     // Apply sort — for health_asc, also sub-sort by monitoring status priority
-    result = sortStrategies(result, sort);
+    result = sortInstances(result, sort);
 
     if (sort === "health_asc") {
       result.sort((a, b) => {
@@ -120,7 +121,7 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
     }
 
     return result;
-  }, [strategies, filter, sort]);
+  }, [instances, filter, sort]);
 
   function updateParams(newFilter: FilterValue, newSort: SortValue) {
     const params = new URLSearchParams();
@@ -137,7 +138,7 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
         {/* Filter chips */}
         <div className="flex items-center gap-2 flex-wrap">
           {FILTERS.map((f) => {
-            const count = getFilterCount(strategies, f.value);
+            const count = getFilterCount(instances, f.value);
             const active = filter === f.value;
             return (
               <button
@@ -179,11 +180,11 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
         </select>
       </div>
 
-      {/* Strategy Grid */}
+      {/* Deployment Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((strategy) => (
-            <StrategyStatusCard key={strategy.id} strategy={strategy} />
+          {filtered.map((instance) => (
+            <InstanceStatusCard key={instance.id} instance={instance} />
           ))}
         </div>
       ) : (
