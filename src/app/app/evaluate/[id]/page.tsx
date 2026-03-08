@@ -5,27 +5,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { WalkForwardResults } from "../../backtest/[id]/walk-forward-results";
-import { OptimizationResults } from "../../backtest/[id]/optimization-results";
 import type { WalkForwardResult } from "@/lib/backtest-parser/walk-forward";
-import type { ParameterOptimization } from "@/lib/ai-strategy-doctor";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 // ============================================
 // Types
 // ============================================
-
-interface AIAnalysisData {
-  id: string;
-  analysis: string;
-  weaknesses: Array<{
-    category: string;
-    severity: "HIGH" | "MEDIUM" | "LOW";
-    description: string;
-    recommendation: string;
-  }>;
-  model: string;
-  createdAt: string;
-}
 
 interface BacktestDetail {
   id: string;
@@ -67,10 +52,8 @@ interface BacktestDetail {
   parseWarnings: string[];
   detectedLocale: string | null;
   dealCount: number;
-  aiAnalysis: AIAnalysisData | null;
   walkForwardResult: WalkForwardResult | null;
   tier: string;
-  optimizations: ParameterOptimization[] | null;
 }
 
 // ============================================
@@ -120,19 +103,6 @@ function getMetricLabel(metric: string): string {
   return labels[metric] || metric;
 }
 
-function getSeverityColor(severity: string): string {
-  switch (severity) {
-    case "HIGH":
-      return "#EF4444";
-    case "MEDIUM":
-      return "#F59E0B";
-    case "LOW":
-      return "#3B82F6";
-    default:
-      return "#71717A";
-  }
-}
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -175,8 +145,6 @@ export default function EvaluateDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisData | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
 
   // Fetch backtest data
   useEffect(() => {
@@ -189,9 +157,6 @@ export default function EvaluateDetailPage() {
         }
         const json = await res.json();
         setData(json);
-        if (json.aiAnalysis) {
-          setAiAnalysis(json.aiAnalysis);
-        }
       } catch {
         setError("Failed to load backtest data");
       } finally {
@@ -200,40 +165,6 @@ export default function EvaluateDetailPage() {
     }
     fetchData();
   }, [id]);
-
-  const handleAnalyze = async () => {
-    if (!data || analyzing) return;
-
-    setAnalyzing(true);
-    try {
-      const res = await fetch(`/api/backtest/${id}/analyze`, {
-        method: "POST",
-        headers: getCsrfHeaders(),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 409) {
-          toast.info("Analysis already exists");
-        } else if (res.status === 429) {
-          toast.error("Daily analysis limit reached. Upgrade your plan for more.");
-        } else if (res.status === 503) {
-          toast.error("AI analysis is currently unavailable");
-        } else {
-          toast.error(json.details || json.error || "Analysis failed");
-        }
-        return;
-      }
-
-      setAiAnalysis(json);
-      toast.success("AI analysis complete!");
-    } catch {
-      toast.error("Analysis failed. Please try again.");
-    } finally {
-      setAnalyzing(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!confirm("Delete this backtest analysis?")) return;
@@ -520,21 +451,6 @@ export default function EvaluateDetailPage() {
             </div>
           )}
 
-          {/* AI Strategy Insights */}
-          <AIStrategyInsights
-            analysis={aiAnalysis}
-            analyzing={analyzing}
-            onAnalyze={handleAnalyze}
-          />
-
-          {/* AI Strategy Optimizer */}
-          <OptimizationResults
-            backtestId={id}
-            existingOptimizations={data.optimizations}
-            hasAiAnalysis={!!aiAnalysis}
-            tier={data.tier ?? "FREE"}
-          />
-
           {/* Walk-Forward Analysis */}
           <WalkForwardResults
             backtestId={id}
@@ -699,139 +615,6 @@ export default function EvaluateDetailPage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ============================================
-// AI Strategy Insights
-// ============================================
-
-function AIStrategyInsights({
-  analysis,
-  analyzing,
-  onAnalyze,
-}: {
-  analysis: AIAnalysisData | null;
-  analyzing: boolean;
-  onAnalyze: () => void;
-}) {
-  if (!analysis && !analyzing) {
-    return (
-      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-[#6366F1]/20 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-[#818CF8]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="flex-1 text-center sm:text-left">
-            <h3 className="text-sm font-semibold text-white mb-1">AI Strategy Insights</h3>
-            <p className="text-xs text-[#71717A]">
-              Get AI-powered analysis of your strategy — weaknesses, overfitting signals, and risk
-              assessment. This is educational analysis, not a deployment decision.
-            </p>
-          </div>
-          <button
-            onClick={onAnalyze}
-            className="px-5 py-2.5 bg-[#6366F1] hover:bg-[#818CF8] text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0"
-          >
-            Analyze Strategy
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (analyzing) {
-    return (
-      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-5 h-5 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
-          <h3 className="text-sm font-semibold text-white">AI Strategy Insights is analyzing...</h3>
-        </div>
-        <p className="text-xs text-[#71717A]">
-          Reviewing metrics, trade patterns, and risk factors. This usually takes 10-20 seconds.
-        </p>
-      </div>
-    );
-  }
-
-  if (!analysis) return null;
-
-  return (
-    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.06)]">
-        <div className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-[#818CF8]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"
-            />
-          </svg>
-          <h3 className="text-sm font-semibold text-white">AI Strategy Insights</h3>
-          <span className="text-[10px] text-[#71717A] ml-auto">{analysis.model}</span>
-        </div>
-      </div>
-
-      <div className="px-6 py-5">
-        <div className="prose prose-invert prose-sm max-w-none text-[#FAFAFA] text-sm leading-relaxed whitespace-pre-wrap">
-          {analysis.analysis}
-        </div>
-      </div>
-
-      {analysis.weaknesses.length > 0 && (
-        <div className="px-6 pb-5">
-          <h4 className="text-xs font-semibold text-white mb-3 uppercase tracking-wider">
-            Identified Weaknesses
-          </h4>
-          <div className="space-y-3">
-            {analysis.weaknesses.map((w, i) => (
-              <div
-                key={i}
-                className="bg-[#18181B] rounded-lg p-4 border-l-2"
-                style={{ borderLeftColor: getSeverityColor(w.severity) }}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                    style={{
-                      color: getSeverityColor(w.severity),
-                      background: `${getSeverityColor(w.severity)}15`,
-                    }}
-                  >
-                    {w.severity}
-                  </span>
-                  <span className="text-[10px] text-[#71717A] uppercase tracking-wider">
-                    {w.category.replace(/_/g, " ")}
-                  </span>
-                </div>
-                <p className="text-xs text-[#FAFAFA] mb-1.5">{w.description}</p>
-                <p className="text-xs text-[#818CF8]">{w.recommendation}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
