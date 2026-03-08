@@ -141,8 +141,28 @@ export const HEALTH_SCORE_VERSION = 4;
 /** Maximum upload file size in bytes (5MB) */
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-/** Minimum number of tables expected in an MT5 report */
-export const MIN_TABLES_FOR_MT5 = 2;
+/** Minimum number of tables expected in a Strategy Tester report (MT4 uses 1 large table) */
+export const MIN_TABLES_FOR_MT5 = 1;
 
-/** Keyword present in MT5 reports */
+/**
+ * Lowercase identifier fragments matched against the report HTML.
+ * Covers MT4 ("Strategy Tester Report") and MT5 ("Strategy Tester") across
+ * EN, RU, ES, DE, FR, PT, IT, PL, ZH, JA locales.
+ * Matched via substring includes — order does not matter.
+ */
+export const STRATEGY_TESTER_IDENTIFIERS: string[] = [
+  "strategy tester", // EN (MT4 "Strategy Tester Report" matches too)
+  "тестер стратегий", // RU MT5
+  "отчет тестера", // RU MT4
+  "probador de estrategias", // ES
+  "strategietester", // DE
+  "testeur de stratégie", // FR
+  "testador de estratégia", // PT
+  "tester strategia", // IT
+  "tester strategii", // PL
+  "策略测试", // ZH
+  "ストラテジーテスター", // JA
+];
+
+/** @deprecated Use STRATEGY_TESTER_IDENTIFIERS instead */
 export const MT5_IDENTIFIER = "Strategy Tester";
