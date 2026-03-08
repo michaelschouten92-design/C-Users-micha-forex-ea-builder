@@ -12,7 +12,6 @@ import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { InstanceStatusCard } from "@/components/app/instance-status-card";
 import type { CommandCenterInstance } from "./load-command-center-data";
-import type { InstanceMonitoringStatus } from "@/lib/semantic-layers";
 
 // ── Filter types ─────────────────────────────────────────
 
@@ -21,7 +20,7 @@ type SortValue = "health_asc" | "health_desc" | "recent" | "name";
 
 const FILTERS: { value: FilterValue; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "healthy", label: "Healthy" },
+  { value: "healthy", label: "Clear" },
   { value: "at_risk", label: "At Risk" },
   { value: "attention", label: "Needs Attention" },
 ];
@@ -40,12 +39,17 @@ function matchesFilter(inst: CommandCenterInstance, filter: FilterValue): boolea
     case "all":
       return true;
     case "healthy":
-      return inst.monitoringStatus === "HEALTHY" && inst.hasHealthData;
+      return inst.governanceState === "CLEAR";
     case "at_risk":
-      return inst.monitoringStatus === "AT_RISK" || inst.monitoringStatus === "INVALIDATED";
+      return (
+        inst.governanceState === "REVIEW_REQUIRED" ||
+        inst.governanceState === "RESTRICTED" ||
+        inst.governanceState === "INVALIDATED"
+      );
     case "attention":
       return (
-        inst.monitoringStatus === "INVALIDATED" ||
+        inst.governanceState === "INVALIDATED" ||
+        inst.governanceState === "RESTRICTED" ||
         inst.status === "OFFLINE" ||
         inst.status === "ERROR" ||
         !inst.hasHealthData
@@ -80,12 +84,14 @@ function sortInstances(
   }
 }
 
-// ── Monitoring status priority for default sort ──────────
+// ── Governance state priority for default sort ──────────
 
-const STATUS_PRIORITY: Record<InstanceMonitoringStatus, number> = {
+const STATE_PRIORITY: Record<string, number> = {
   INVALIDATED: 0,
-  AT_RISK: 1,
-  HEALTHY: 2,
+  RESTRICTED: 1,
+  REVIEW_REQUIRED: 2,
+  OBSERVATION: 3,
+  CLEAR: 4,
 };
 
 // ── Component ────────────────────────────────────────────
@@ -113,8 +119,8 @@ export function CommandCenterView({ instances }: CommandCenterViewProps) {
 
     if (sort === "health_asc") {
       result.sort((a, b) => {
-        const pa = STATUS_PRIORITY[a.monitoringStatus];
-        const pb = STATUS_PRIORITY[b.monitoringStatus];
+        const pa = STATE_PRIORITY[a.governanceState] ?? 5;
+        const pb = STATE_PRIORITY[b.governanceState] ?? 5;
         if (pa !== pb) return pa - pb;
         return (a.healthScore ?? -1) - (b.healthScore ?? -1);
       });
@@ -195,11 +201,23 @@ export function CommandCenterView({ instances }: CommandCenterViewProps) {
 }
 
 function EmptyState({ filter }: { filter: FilterValue }) {
-  const messages: Record<FilterValue, string> = {
-    all: "No live deployments yet. Connect your first EA to start monitoring.",
-    healthy: "No deployments are currently healthy.",
-    at_risk: "No deployments are at risk. All clear.",
-    attention: "No deployments need attention right now.",
+  const messages: Record<FilterValue, { title: string; detail: string }> = {
+    all: {
+      title: "No live deployments connected",
+      detail: "Attach the AlgoStudio Monitor EA to a chart in MT5 to start sending telemetry.",
+    },
+    healthy: {
+      title: "No healthy deployments",
+      detail: "All deployments are either awaiting data or require attention.",
+    },
+    at_risk: {
+      title: "No deployments at risk",
+      detail: "All monitored deployments are operating within baseline.",
+    },
+    attention: {
+      title: "Nothing needs attention",
+      detail: "All deployments are healthy or under observation.",
+    },
   };
 
   return (
@@ -220,7 +238,8 @@ function EmptyState({ filter }: { filter: FilterValue }) {
             />
           </svg>
         </div>
-        <p className="text-sm text-[#71717A]">{messages[filter]}</p>
+        <p className="text-sm text-[#A1A1AA] mb-1">{messages[filter].title}</p>
+        <p className="text-xs text-[#71717A]">{messages[filter].detail}</p>
       </div>
     </div>
   );

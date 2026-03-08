@@ -27,7 +27,7 @@ const RECOMMENDATION_CONFIG: Record<
     icon: "\u25B2",
     label: "Investigate Degradation",
   },
-  STOP: { color: "#EF4444", icon: "\u25A0", label: "Stop Strategy" },
+  STOP: { color: "#EF4444", icon: "\u25A0", label: "Stop Deployment" },
 };
 
 interface SystemRecommendationProps {

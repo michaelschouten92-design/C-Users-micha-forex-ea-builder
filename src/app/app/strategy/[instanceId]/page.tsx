@@ -37,11 +37,19 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 1. Header — name, status, lifecycle, health, last eval */}
         <StrategyHeader data={data} />
 
+        {/* ── Control Layer ─────────────────────────────────── */}
+
         {/* 2. System Recommendation — action-oriented decision panel */}
         <SystemRecommendation level={data.recommendation} reason={data.recommendationReason} />
 
         {/* 3. Governance Verdict — control-layer conclusion */}
         <GovernancePanel governance={data.governance} />
+
+        {/* ── Monitoring Truth ──────────────────────────────── */}
+
+        <p className="text-[10px] font-semibold text-[#52525B] uppercase tracking-wider pt-2">
+          Monitoring
+        </p>
 
         {/* 4 + 5. Live Performance + Baseline vs Live — side by side on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -49,26 +57,32 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           <BaselineComparison health={data.health} />
         </div>
 
-        {/* 5. Recent Incidents — always visible, urgency-sorted */}
+        {/* 6. Recent Incidents — always visible, urgency-sorted */}
         <IncidentPreviewList incidents={data.incidents} />
 
-        {/* 6. Event Timeline — collapsed, chronological audit view */}
+        {/* 7. Event Timeline — collapsed, chronological audit view */}
         <IncidentTimeline
           latestRun={data.latestRun}
           health={data.health}
           incidents={data.incidents}
         />
 
-        {/* 7. Monitoring Diagnostics — collapsed by default */}
+        {/* 8. Monitoring Diagnostics — collapsed by default */}
         <DiagnosticsPanel latestRun={data.latestRun} health={data.health} />
 
-        {/* 8. Governance Context — collapsed by default */}
+        {/* ── Context ───────────────────────────────────────── */}
+
+        <p className="text-[10px] font-semibold text-[#52525B] uppercase tracking-wider pt-2">
+          Context
+        </p>
+
+        {/* 9. Governance Context — collapsed by default */}
         <GovernanceContextPanel data={data} />
 
-        {/* 9. Strategy Aggregate — Layer 2 derived, collapsed, secondary */}
+        {/* 10. Strategy Aggregate — Layer 2 derived, collapsed, secondary */}
         {data.strategyAggregate && <StrategyAggregateSummary aggregate={data.strategyAggregate} />}
 
-        {/* 10. Version Lineage — strategy version lifecycle, collapsed, secondary */}
+        {/* 11. Version Lineage — strategy version lifecycle, collapsed, secondary */}
         {data.strategyLineage && (
           <VersionLineagePanel
             versionNo={data.versionNo}
@@ -77,7 +91,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
           />
         )}
 
-        {/* 11. Health Score Breakdown — secondary, collapsed */}
+        {/* 12. Health Score Breakdown — secondary, collapsed */}
         <HealthScoreBreakdown health={data.health} history={data.healthHistory} />
       </div>
     </div>

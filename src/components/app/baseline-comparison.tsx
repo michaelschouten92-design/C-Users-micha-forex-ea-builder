@@ -102,7 +102,8 @@ export function BaselineComparison({ health }: BaselineComparisonProps) {
       </p>
       {!hasAnyBaseline ? (
         <p className="text-xs text-[#7C8DB0]">
-          No backtest baseline available. Upload a backtest to enable deviation tracking.
+          No baseline linked. Link a backtest to enable deterministic monitoring and deviation
+          tracking.
         </p>
       ) : (
         <div>

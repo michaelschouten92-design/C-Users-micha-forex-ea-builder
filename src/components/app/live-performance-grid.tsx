@@ -54,7 +54,8 @@ export function LivePerformanceGrid({ health }: LivePerformanceGridProps) {
           Live Performance
         </p>
         <p className="text-xs text-[#7C8DB0]">
-          Performance metrics will appear after sufficient trade activity.
+          Awaiting sufficient trade data. Metrics will appear after the first health evaluation
+          completes.
         </p>
       </div>
     );

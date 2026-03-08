@@ -15,7 +15,7 @@ export function HealthScoreBar({ score }: HealthScoreBarProps) {
       <div className="space-y-1">
         <div className="flex justify-between text-xs">
           <span className="text-[#71717A]">Health</span>
-          <span className="text-[#71717A] text-[10px]">Collecting...</span>
+          <span className="text-[#71717A] text-[10px]">Awaiting first evaluation</span>
         </div>
         <div className="h-1.5 bg-[#09090B] rounded-full overflow-hidden">
           <div

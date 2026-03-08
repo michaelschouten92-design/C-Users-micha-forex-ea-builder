@@ -189,7 +189,7 @@ function deriveRecommendation(
   if (lifecycleState === "INVALIDATED") {
     return {
       level: "STOP",
-      reason: "Strategy has been invalidated. Remove from live trading.",
+      reason: "Deployment has been invalidated. Remove from live trading.",
     };
   }
 
@@ -218,7 +218,7 @@ function deriveRecommendation(
     return {
       level: "INVESTIGATE",
       reason:
-        "Strategy edge is at risk. Governance system has flagged degraded performance. Review baseline deviation.",
+        "Deployment edge is at risk. Control layer has flagged degraded performance. Review baseline deviation.",
     };
   }
 
@@ -232,7 +232,7 @@ function deriveRecommendation(
       : "performance";
     return {
       level: "INVESTIGATE",
-      reason: `Edge drift detected in ${driver}. Strategy expectancy has persistently declined from baseline.`,
+      reason: `Edge drift detected in ${driver}. Deployment expectancy has persistently declined from baseline.`,
     };
   }
 
@@ -267,7 +267,7 @@ function deriveRecommendation(
   const trend = health?.scoreTrend ?? "stable";
   return {
     level: "NO_ACTION",
-    reason: `Strategy is healthy and performing within baseline.${score !== null ? ` Score ${trend} at ${score}%.` : ""} No drift detected.`,
+    reason: `Deployment is healthy and performing within baseline.${score !== null ? ` Score ${trend} at ${score}%.` : ""} No drift detected.`,
   };
 }
 

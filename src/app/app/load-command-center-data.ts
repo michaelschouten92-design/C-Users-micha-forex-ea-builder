@@ -14,9 +14,12 @@
 import { prisma } from "@/lib/prisma";
 import {
   resolveInstanceMonitoringStatus,
+  resolveDeploymentGovernance,
   buildPortfolioSummary,
   type InstanceMonitoringStatus,
   type PortfolioOperationalSummary,
+  type GovernanceState,
+  type GovernanceAction,
 } from "@/lib/semantic-layers";
 
 // ── Types ────────────────────────────────────────────────
@@ -59,6 +62,12 @@ export interface CommandCenterInstance {
   liveWinRate: number | null;
   liveMaxDrawdownPct: number | null;
   expectancy: number | null;
+
+  // Governance (derived — control-layer verdict)
+  governanceState: GovernanceState;
+  governanceAction: GovernanceAction;
+  governanceSummary: string;
+  governancePrimaryReason: string | null;
 }
 
 export interface CommandCenterData {
@@ -85,6 +94,8 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
       totalTrades: true,
       lifecycleState: true,
       lifecyclePhase: true,
+      operatorHold: true,
+      monitoringSuppressedUntil: true,
       healthSnapshots: {
         take: 1,
         orderBy: { createdAt: "desc" },
@@ -97,6 +108,7 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
           liveWinRate: true,
           liveMaxDrawdownPct: true,
           expectancy: true,
+          baselineReturnPct: true,
         },
       },
     },
@@ -106,6 +118,26 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
     const snap = inst.healthSnapshots[0] ?? null;
     const healthStatus = snap?.status ?? null;
     const monitoringStatus = resolveInstanceMonitoringStatus(inst.lifecycleState, healthStatus);
+    const hasHealthData = snap !== null;
+    const hasBaseline = snap?.baselineReturnPct != null;
+
+    // Derive governance verdict for card display
+    const governance = resolveDeploymentGovernance({
+      lifecycleState: inst.lifecycleState,
+      lifecyclePhase: inst.lifecyclePhase,
+      operatorHold: inst.operatorHold,
+      connectionStatus: inst.status as "ONLINE" | "OFFLINE" | "ERROR",
+      lastHeartbeat: inst.lastHeartbeat?.toISOString() ?? null,
+      monitoringSuppressedUntil: inst.monitoringSuppressedUntil?.toISOString() ?? null,
+      hasHealthData,
+      healthStatus,
+      driftDetected: snap?.driftDetected ?? false,
+      hasBaseline,
+      hasOpenIncident: false, // Not fetched at dashboard level — governance still useful without it
+      hasEscalatedIncident: false,
+      versionCurrency: "UNKNOWN",
+      now: new Date(),
+    });
 
     return {
       id: inst.id,
@@ -118,7 +150,7 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
       lifecycleState: inst.lifecycleState,
       lifecyclePhase: inst.lifecyclePhase,
       monitoringStatus,
-      hasHealthData: snap !== null,
+      hasHealthData,
       healthScore: snap ? Math.round(snap.overallScore * 100) : null,
       healthStatus,
       driftDetected: snap?.driftDetected ?? false,
@@ -127,6 +159,10 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
       liveWinRate: snap?.liveWinRate ?? null,
       liveMaxDrawdownPct: snap?.liveMaxDrawdownPct ?? null,
       expectancy: snap?.expectancy ?? null,
+      governanceState: governance.state,
+      governanceAction: governance.action,
+      governanceSummary: governance.summaryLine,
+      governancePrimaryReason: governance.reasons[0] ?? null,
     };
   });
 

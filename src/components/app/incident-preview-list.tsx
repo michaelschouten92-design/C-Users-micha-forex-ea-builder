@@ -1,5 +1,5 @@
 /**
- * IncidentPreviewList — shows up to 5 recent incidents for a strategy.
+ * IncidentPreviewList — shows up to 5 recent incidents for a deployment.
  *
  * Open/escalated incidents appear with urgency styling.
  * Closed incidents show resolution reason.

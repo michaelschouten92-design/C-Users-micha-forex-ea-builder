@@ -147,7 +147,10 @@ export function DiagnosticsPanel({ latestRun, health }: DiagnosticsPanelProps) {
     <DisclosureSection title="Monitoring Diagnostics" count={ruleCount}>
       <div className="pt-3 space-y-3">
         {!latestRun ? (
-          <p className="text-xs text-[#7C8DB0]">No monitoring run completed yet.</p>
+          <p className="text-xs text-[#7C8DB0]">
+            No monitoring evaluation completed yet. The system will run its first evaluation after
+            sufficient trade data has been collected.
+          </p>
         ) : (
           <>
             {/* Verdict + timestamp */}

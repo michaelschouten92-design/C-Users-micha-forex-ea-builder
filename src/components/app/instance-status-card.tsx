@@ -4,26 +4,33 @@
  * Layer 1 (instance truth) — each card represents one LiveEAInstance.
  * This is NOT a strategy aggregate — it shows one deployment's actual health.
  *
- * Answers three questions at a glance:
- *   1. Is this deployment working? (MonitoringStatusBadge)
- *   2. Why? (drift indicator + health score)
- *   3. What should I do? (status implies action)
+ * Follows the operator mental model:
+ *   1. STATUS  — governance state (what the control layer concludes)
+ *   2. WHY     — primary reason / signal
+ *   3. ACTION  — recommended next step
  */
 
 import Link from "next/link";
-import { MonitoringStatusBadge } from "./monitoring-status-badge";
 import { HealthScoreBar } from "./health-score-bar";
 import type { CommandCenterInstance } from "@/app/app/load-command-center-data";
+import type { GovernanceState, GovernanceAction } from "@/lib/semantic-layers";
 
-// ── Lifecycle state display ──────────────────────────────
+// ── Governance display config ────────────────────────────
 
-const LIFECYCLE_LABELS: Record<string, string> = {
-  LIVE_MONITORING: "Monitoring",
-  EDGE_AT_RISK: "Edge at Risk",
-  INVALIDATED: "Invalidated",
-  VERIFIED: "Verified",
-  BACKTESTED: "Backtested",
-  DRAFT: "Draft",
+const STATE_CONFIG: Record<GovernanceState, { color: string; label: string }> = {
+  CLEAR: { color: "#10B981", label: "Clear" },
+  OBSERVATION: { color: "#7C8DB0", label: "Observation" },
+  REVIEW_REQUIRED: { color: "#F59E0B", label: "Review Required" },
+  RESTRICTED: { color: "#EF4444", label: "Restricted" },
+  INVALIDATED: { color: "#EF4444", label: "Invalidated" },
+};
+
+const ACTION_LABELS: Record<GovernanceAction, string> = {
+  NONE: "No action needed",
+  OBSERVE: "Continue monitoring",
+  REVIEW: "Review deployment",
+  PAUSE: "Pause deployment",
+  STOP: "Stop deployment",
 };
 
 // ── Relative time formatting ─────────────────────────────
@@ -38,59 +45,6 @@ function formatRelativeTime(isoStr: string | null): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-// ── Sub-components ───────────────────────────────────────
-
-function MetricMini({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="text-center">
-      <p className="text-[10px] text-[#71717A]">{label}</p>
-      <p className="text-xs font-medium text-[#A1A1AA]">{value}</p>
-    </div>
-  );
-}
-
-function DriftIndicator({
-  driftDetected,
-  primaryDriver,
-  scoreTrend,
-}: {
-  driftDetected: boolean;
-  primaryDriver: string | null;
-  scoreTrend: string | null;
-}) {
-  if (driftDetected) {
-    const driverLabel = primaryDriver
-      ? primaryDriver.replace(/([A-Z])/g, " $1").trim()
-      : "performance";
-    return (
-      <p className="text-[10px] text-[#EF4444] truncate">
-        <span className="inline-block mr-1">&#9660;</span>
-        Drift detected in {driverLabel}
-      </p>
-    );
-  }
-
-  if (scoreTrend === "declining") {
-    return (
-      <p className="text-[10px] text-[#F59E0B] truncate">
-        <span className="inline-block mr-1">&#9660;</span>
-        Score trending down
-      </p>
-    );
-  }
-
-  if (scoreTrend === "improving") {
-    return (
-      <p className="text-[10px] text-[#10B981] truncate">
-        <span className="inline-block mr-1">&#9650;</span>
-        Score improving
-      </p>
-    );
-  }
-
-  return null;
 }
 
 // ── Connection indicator ─────────────────────────────────
@@ -115,51 +69,43 @@ interface InstanceStatusCardProps {
 
 export function InstanceStatusCard({ instance }: InstanceStatusCardProps) {
   const s = instance;
-  const borderColor =
-    s.monitoringStatus === "INVALIDATED"
-      ? "rgba(239,68,68,0.4)"
-      : s.monitoringStatus === "AT_RISK"
-        ? "rgba(245,158,11,0.3)"
-        : s.hasHealthData
-          ? "rgba(16,185,129,0.25)"
-          : "rgba(255,255,255,0.06)";
+  const stateConfig = STATE_CONFIG[s.governanceState];
 
   return (
     <Link
       href={`/app/strategy/${s.id}`}
       className="block bg-[#111114] rounded-xl p-4 transition-colors hover:border-[rgba(255,255,255,0.10)]"
       style={{
-        border: `1px solid ${borderColor}`,
-        borderLeft: `3px solid ${borderColor}`,
+        border: `1px solid ${stateConfig.color}20`,
+        borderLeft: `3px solid ${stateConfig.color}`,
       }}
     >
-      {/* Row 1: Name + Monitoring Status */}
+      {/* Row 1: Name + Governance State */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <ConnectionDot status={s.status} />
           <span className="text-sm font-medium text-white truncate">{s.eaName}</span>
         </div>
-        {s.hasHealthData ? (
-          <MonitoringStatusBadge status={s.monitoringStatus} />
-        ) : (
-          <span className="text-[10px] text-[#71717A] font-medium px-2 py-0.5 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.06)]">
-            Awaiting Data
-          </span>
-        )}
+        <span
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold rounded-full border flex-shrink-0"
+          style={{
+            backgroundColor: `${stateConfig.color}15`,
+            color: stateConfig.color,
+            borderColor: `${stateConfig.color}25`,
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: stateConfig.color }}
+          />
+          {stateConfig.label}
+        </span>
       </div>
 
-      {/* Row 2: Lifecycle state */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] text-[#71717A] font-medium">
-          {LIFECYCLE_LABELS[s.lifecycleState] ?? s.lifecycleState}
-        </span>
-        {s.symbol && (
-          <>
-            <span className="text-[10px] text-[#71717A]">&middot;</span>
-            <span className="text-[10px] text-[#71717A]">{s.symbol}</span>
-          </>
-        )}
-      </div>
+      {/* Row 2: WHY — primary reason */}
+      <p className="text-[11px] text-[#A1A1AA] mb-3 line-clamp-2 leading-relaxed">
+        {s.governancePrimaryReason ?? s.governanceSummary}
+      </p>
 
       {/* Row 3: Health Score Bar */}
       <div className="mb-3">
@@ -167,38 +113,51 @@ export function InstanceStatusCard({ instance }: InstanceStatusCardProps) {
       </div>
 
       {/* Row 4: Key Metrics */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <MetricMini
-          label="Win Rate"
-          value={s.liveWinRate !== null ? `${s.liveWinRate.toFixed(1)}%` : "\u2014"}
-        />
-        <MetricMini
-          label="Max DD"
-          value={s.liveMaxDrawdownPct !== null ? `${s.liveMaxDrawdownPct.toFixed(1)}%` : "\u2014"}
-        />
-        <MetricMini
-          label="Expectancy"
-          value={
-            s.expectancy !== null
-              ? `${s.expectancy >= 0 ? "+" : ""}${s.expectancy.toFixed(3)}%`
-              : "\u2014"
-          }
-        />
-      </div>
-
-      {/* Row 5: Drift / Explainer + Last Activity */}
-      <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,255,255,0.06)]">
-        <div className="min-w-0 flex-1">
-          <DriftIndicator
-            driftDetected={s.driftDetected}
-            primaryDriver={s.primaryDriver}
-            scoreTrend={s.scoreTrend}
+      {s.hasHealthData && s.healthStatus !== "INSUFFICIENT_DATA" && (
+        <div className="flex items-center justify-between mb-2 px-1">
+          <MetricMini
+            label="Win Rate"
+            value={s.liveWinRate !== null ? `${s.liveWinRate.toFixed(1)}%` : "\u2014"}
+          />
+          <MetricMini
+            label="Max DD"
+            value={s.liveMaxDrawdownPct !== null ? `${s.liveMaxDrawdownPct.toFixed(1)}%` : "\u2014"}
+          />
+          <MetricMini
+            label="Expectancy"
+            value={
+              s.expectancy !== null
+                ? `${s.expectancy >= 0 ? "+" : ""}${s.expectancy.toFixed(3)}%`
+                : "\u2014"
+            }
           />
         </div>
+      )}
+
+      {/* Row 5: ACTION + Last Activity */}
+      <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,255,255,0.06)]">
+        {s.governanceAction !== "NONE" ? (
+          <span className="text-[10px] font-medium" style={{ color: stateConfig.color }}>
+            {ACTION_LABELS[s.governanceAction]}
+          </span>
+        ) : (
+          <span className="text-[10px] text-[#71717A]">{ACTION_LABELS[s.governanceAction]}</span>
+        )}
         <span className="text-[10px] text-[#71717A] flex-shrink-0 ml-2">
           {formatRelativeTime(s.lastHeartbeat)}
         </span>
       </div>
     </Link>
+  );
+}
+
+// ── Sub-components ───────────────────────────────────────
+
+function MetricMini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <p className="text-[10px] text-[#71717A]">{label}</p>
+      <p className="text-xs font-medium text-[#A1A1AA]">{value}</p>
+    </div>
   );
 }

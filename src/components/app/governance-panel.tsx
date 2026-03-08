@@ -9,7 +9,7 @@
  * Clearly distinguished from raw monitoring truth (Layer 1).
  *
  * This panel answers: "What does the control layer think should happen?"
- * The monitoring sections above answer: "What is actually happening?"
+ * The monitoring sections below answer: "What is actually happening?"
  */
 
 import type {
@@ -30,10 +30,10 @@ const STATE_CONFIG: Record<GovernanceState, { color: string; label: string; icon
 
 const ACTION_CONFIG: Record<GovernanceAction, { color: string; label: string }> = {
   NONE: { color: "#10B981", label: "No action needed" },
-  OBSERVE: { color: "#7C8DB0", label: "Observe" },
-  REVIEW: { color: "#F59E0B", label: "Review recommended" },
-  PAUSE: { color: "#F59E0B", label: "Pause recommended" },
-  STOP: { color: "#EF4444", label: "Stop recommended" },
+  OBSERVE: { color: "#7C8DB0", label: "Continue monitoring" },
+  REVIEW: { color: "#F59E0B", label: "Review deployment" },
+  PAUSE: { color: "#F59E0B", label: "Pause deployment" },
+  STOP: { color: "#EF4444", label: "Stop deployment" },
 };
 
 const AUTHORITY_CONFIG: Record<string, { color: string; label: string }> = {
@@ -58,6 +58,9 @@ export function GovernancePanel({ governance }: GovernancePanelProps) {
   const stateConfig = STATE_CONFIG[governance.state];
   const actionConfig = ACTION_CONFIG[governance.action];
 
+  const primarySignal = governance.signals[0] ?? null;
+  const secondarySignals = governance.signals.slice(1);
+
   return (
     <div
       className="rounded-xl bg-[#111114] p-4"
@@ -72,8 +75,8 @@ export function GovernancePanel({ governance }: GovernancePanelProps) {
           <StateIcon icon={stateConfig.icon} color={stateConfig.color} />
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-semibold text-[#71717A] uppercase tracking-wider">
-                Governance
+              <h3 className="text-xs font-semibold text-[#52525B] uppercase tracking-wider">
+                Control Layer
               </h3>
               <span className="text-xs font-semibold" style={{ color: stateConfig.color }}>
                 {stateConfig.label}
@@ -83,7 +86,7 @@ export function GovernancePanel({ governance }: GovernancePanelProps) {
           </div>
         </div>
 
-        {/* Right: Authority + Confidence */}
+        {/* Right: Authority + Confidence + Action */}
         <div className="flex items-center gap-3">
           {governance.heartbeatAuthority && (
             <div className="text-center">
@@ -94,7 +97,7 @@ export function GovernancePanel({ governance }: GovernancePanelProps) {
                   color: AUTHORITY_CONFIG[governance.heartbeatAuthority]?.color ?? "#71717A",
                 }}
               >
-                {AUTHORITY_CONFIG[governance.heartbeatAuthority]?.label ?? "—"}
+                {AUTHORITY_CONFIG[governance.heartbeatAuthority]?.label ?? "\u2014"}
               </p>
             </div>
           )}
@@ -116,24 +119,36 @@ export function GovernancePanel({ governance }: GovernancePanelProps) {
         </div>
       </div>
 
-      {/* Signals list */}
+      {/* Signals — primary highlighted, secondary muted */}
       {governance.signals.length > 0 && (
-        <div className="pt-2 border-t border-[rgba(255,255,255,0.06)]">
-          <div className="flex flex-wrap gap-1.5">
-            {governance.signals.map((signal, i) => (
+        <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] space-y-2">
+          {/* Primary signal */}
+          {primarySignal && (
+            <div className="flex items-start gap-2">
               <span
-                key={signal}
-                className="text-[10px] px-2 py-0.5 rounded-full border bg-[rgba(255,255,255,0.02)]"
-                style={{
-                  color: i === 0 ? stateConfig.color : "#71717A",
-                  borderColor: i === 0 ? `${stateConfig.color}25` : "rgba(255,255,255,0.06)",
-                }}
-                title={governance.reasons[i]}
-              >
-                {governance.reasons[i]}
-              </span>
-            ))}
-          </div>
+                className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
+                style={{ backgroundColor: stateConfig.color }}
+              />
+              <p className="text-xs" style={{ color: stateConfig.color }}>
+                {governance.reasons[0]}
+              </p>
+            </div>
+          )}
+
+          {/* Secondary signals — collapsed if more than 2 */}
+          {secondarySignals.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 ml-3.5">
+              {secondarySignals.map((signal, i) => (
+                <span
+                  key={signal}
+                  className="text-[10px] text-[#71717A] px-2 py-0.5 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]"
+                  title={governance.reasons[i + 1]}
+                >
+                  {governance.reasons[i + 1]}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
