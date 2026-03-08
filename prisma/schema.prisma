@@ -422,6 +422,8 @@ model LiveEAInstance {
   ledgerCommitments      LedgerCommitment[]
   healthSnapshots        HealthSnapshot[]
   sharedProofBundles     SharedProofBundle[]
+  monitoringRuns         MonitoringRun[]
+  incidents              Incident[]
 
   @@index([userId, status])
   @@index([userId, deletedAt])
@@ -1192,7 +1194,8 @@ model AlertOutbox {
 
 model Incident {
   id                   String    @id @default(cuid())
-  strategyId           String
+  strategyId           String                     // Kept for proof chain continuity
+  instanceId           String?                    // LiveEAInstance.id — primary key (nullable for pre-migration rows)
   status               String    @default("OPEN") // OPEN | ACKNOWLEDGED | ESCALATED | CLOSED
   severity             String                     // AT_RISK | INVALIDATED
   triggerRecordId      String                     // MonitoringRun.recordId that opened this
@@ -1210,7 +1213,10 @@ model Incident {
   openedAt             DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
+  instance LiveEAInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
   @@index([strategyId, status])
+  @@index([instanceId, status])
   @@index([status, ackDeadlineAt])
   @@index([status, invalidateDeadlineAt])
 }
@@ -1252,7 +1258,8 @@ model OverrideRequest {
 
 model MonitoringRun {
   id                 String   @id @default(cuid())
-  strategyId         String                    // StrategyIdentity.strategyId
+  strategyId         String                    // StrategyIdentity.strategyId (kept for proof chain)
+  instanceId         String?                   // LiveEAInstance.id — primary monitoring key (nullable for pre-migration rows)
   status             String   @default("PENDING") // PENDING | RUNNING | COMPLETED | FAILED
   source             String                    // "live_ingest" | "manual"
   recordId           String   @unique          // UUID — stored as sessionId in ProofEventLog
@@ -1268,6 +1275,9 @@ model MonitoringRun {
   startedAt          DateTime?
   completedAt        DateTime?
 
+  instance LiveEAInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
   @@index([strategyId, requestedAt])
+  @@index([instanceId, requestedAt])
   @@index([status])
 }

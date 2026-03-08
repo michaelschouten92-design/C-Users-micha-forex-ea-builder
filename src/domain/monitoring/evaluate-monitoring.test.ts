@@ -20,6 +20,7 @@ const baseThresholds: MonitoringThresholds = {
 
 /** All-pass context: everything within limits */
 const healthyCtx: MonitoringContext = {
+  instanceId: "inst_1",
   strategyId: "strat_1",
   configVersion: "2.2.0",
   liveFactCount: 50,

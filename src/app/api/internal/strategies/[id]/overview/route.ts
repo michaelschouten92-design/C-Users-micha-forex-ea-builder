@@ -60,6 +60,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         take: 20,
         select: {
           id: true,
+          instanceId: true,
           completedAt: true,
           status: true,
           verdict: true,
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         take: 20,
         select: {
           id: true,
+          instanceId: true,
           status: true,
           openedAt: true,
           closedAt: true,

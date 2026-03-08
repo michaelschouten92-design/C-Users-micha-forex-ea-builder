@@ -115,9 +115,22 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
   // Step 5: Trigger monitoring run for LIVE ingest (non-blocking for ingest result)
   // The monitoring run is persisted (not fire-and-forget) but its failure
   // does not fail the ingest — the ingest proof event is already committed.
+  //
+  // Instance-first: resolve the instance for this strategy to trigger per-instance monitoring.
   if (source === "LIVE") {
     try {
-      await triggerMonitoringAfterIngest(strategyId);
+      const instance = await prisma.liveEAInstance.findFirst({
+        where: {
+          strategyVersion: { strategyIdentity: { strategyId } },
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (instance) {
+        await triggerMonitoringAfterIngest(instance.id);
+      } else {
+        log.warn({ strategyId }, "Monitoring skipped: no live instance for strategy");
+      }
     } catch (err) {
       log.error({ err, strategyId }, "Monitoring trigger failed (non-fatal for ingest)");
     }

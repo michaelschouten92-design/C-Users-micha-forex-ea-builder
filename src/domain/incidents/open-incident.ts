@@ -7,6 +7,7 @@ import type { IncidentOpenParams } from "./types";
 
 export interface IncidentCreateData {
   strategyId: string;
+  instanceId: string;
   status: "OPEN";
   severity: string;
   triggerRecordId: string;
@@ -28,6 +29,7 @@ export function buildIncidentData(params: IncidentOpenParams): IncidentCreateDat
 
   return {
     strategyId: params.strategyId,
+    instanceId: params.instanceId,
     status: "OPEN",
     severity: params.severity,
     triggerRecordId: params.triggerRecordId,

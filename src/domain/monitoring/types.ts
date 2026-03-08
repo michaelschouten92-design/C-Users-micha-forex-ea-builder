@@ -24,8 +24,12 @@ export interface RuleResult {
 
 /**
  * All data a monitoring rule needs — pre-loaded, no DB access in rules.
+ *
+ * Instance-first: the primary key is instanceId. strategyId is retained
+ * for proof chain continuity and TradeFact queries (TradeFact is strategy-scoped).
  */
 export interface MonitoringContext {
+  instanceId: string;
   strategyId: string;
   configVersion: string;
   liveFactCount: number;
@@ -35,11 +39,11 @@ export interface MonitoringContext {
   liveRollingSharpe: number;
   currentLosingStreak: number;
   daysSinceLastTrade: number;
-  // Baselines (from BacktestBaseline)
+  // Baselines (from BacktestBaseline via instance's strategyVersionId)
   baselineMaxDrawdownPct: number | null;
   baselineSharpeRatio: number | null;
   baselineMissing: boolean;
-  // CUSUM (from HealthSnapshots)
+  // CUSUM (from HealthSnapshots scoped to this instance)
   consecutiveDriftSnapshots: number;
 }
 

@@ -1,16 +1,19 @@
 /**
  * Monitoring run orchestrator — executes a single monitoring evaluation.
  *
+ * Instance-first: each run is scoped to a specific LiveEAInstance.
+ * strategyId is retained for proof chain continuity and TradeFact queries.
+ *
  * Phases:
  *   0.  Load config (reuse verification config-loader)
- *   1.  Build LIVE trade snapshot (scoped to source=LIVE)
+ *   1.  Build LIVE trade snapshot (scoped to source=LIVE, strategyId — TradeFact is strategy-scoped)
  *   1b. Compute live metrics from trade PnLs
- *   1c. Load baselines from BacktestBaseline
- *   1d. Load CUSUM drift from HealthSnapshots
+ *   1c. Load baselines from BacktestBaseline (via instance's strategyVersionId)
+ *   1d. Load CUSUM drift from HealthSnapshots (scoped to this instance)
  *   2.  Evaluate monitoring rules (5 deterministic rules)
  *   3+3b+4. Atomic transaction (Serializable):
  *       - Mark run COMPLETED
- *       - Resolve instance + count consecutive healthy runs
+ *       - Count consecutive healthy runs (per instance)
  *       - Compute transition decision
  *       - Write MONITORING_RUN_COMPLETED proof event
  *       - If TRANSITION: write transition proof event → validate → mutate lifecycle
@@ -45,6 +48,7 @@ import { buildIncidentData } from "@/domain/incidents/open-incident";
 const log = logger.child({ service: "monitoring-run" });
 
 export interface RunMonitoringParams {
+  instanceId: string;
   strategyId: string;
   source: string; // "live_ingest" | "manual"
 }
@@ -60,21 +64,21 @@ export interface RunMonitoringResult {
 }
 
 /**
- * Execute a monitoring run for the given strategy.
+ * Execute a monitoring run for the given instance.
  *
  * Creates a MonitoringRun row in PENDING, transitions through RUNNING,
  * and ends as COMPLETED or FAILED. Proof event is written before completion.
  */
 export async function runMonitoring(params: RunMonitoringParams): Promise<RunMonitoringResult> {
-  const { strategyId, source } = params;
+  const { instanceId, strategyId, source } = params;
   const recordId = crypto.randomUUID();
 
   // Reclaim stale active runs (crash recovery).
   // A PENDING/RUNNING row older than STALE_RUN_THRESHOLD_MS is presumed
-  // orphaned from a process crash. Mark it FAILED to unblock the strategy.
+  // orphaned from a process crash. Mark it FAILED to unblock the instance.
   await prisma.monitoringRun.updateMany({
     where: {
-      strategyId,
+      instanceId,
       status: { in: ["PENDING", "RUNNING"] },
       requestedAt: { lt: new Date(Date.now() - MONITORING.STALE_RUN_THRESHOLD_MS) },
     },
@@ -86,11 +90,12 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
   });
 
   // Create PENDING run row — partial unique index enforces at most one
-  // active (PENDING/RUNNING) run per strategy. P2002 = already running.
+  // active (PENDING/RUNNING) run per instance. P2002 = already running.
   let run;
   try {
     run = await prisma.monitoringRun.create({
       data: {
+        instanceId,
         strategyId,
         source,
         recordId,
@@ -99,7 +104,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      log.info({ strategyId }, "Monitoring run skipped: active run already exists");
+      log.info({ instanceId, strategyId }, "Monitoring run skipped: active run already exists");
       return {
         runId: "",
         recordId,
@@ -156,7 +161,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
               ? err.message
               : "No active monitoring config";
 
-        await failRun(run.id, recordId, strategyId, reasonCode, diagnostic);
+        await failRun(run.id, recordId, strategyId, instanceId, reasonCode, diagnostic);
         return {
           runId: run.id,
           recordId,
@@ -170,6 +175,9 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     }
 
     // Phase 1: Build LIVE trade snapshot
+    // TradeFact is strategy-scoped — all instances of the same strategy share trade facts.
+    // This is acceptable because TradeFact represents the canonical trade record for the strategy.
+    // Per-instance trade isolation would require adding instanceId to TradeFact (future work).
     const liveFacts = await prisma.tradeFact.findMany({
       where: { strategyId, source: "LIVE" },
       orderBy: [{ executedAt: "asc" }, { id: "asc" }],
@@ -181,6 +189,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
         run.id,
         recordId,
         strategyId,
+        instanceId,
         "NO_LIVE_DATA",
         "No LIVE TradeFacts found for strategy"
       );
@@ -217,27 +226,26 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       new Date()
     );
 
-    // Phase 1c: Load baselines
-    const baseline = await prisma.backtestBaseline.findFirst({
-      where: {
-        strategyVersion: {
-          strategyIdentity: { strategyId },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      select: { maxDrawdownPct: true, sharpeRatio: true },
+    // Phase 1c: Load baselines via instance's specific strategyVersionId.
+    // This is more precise than querying through strategyId — it uses the exact
+    // version linked to this instance, not the latest version of the strategy.
+    const instanceForBaseline = await prisma.liveEAInstance.findUnique({
+      where: { id: instanceId },
+      select: { strategyVersionId: true },
     });
+    let baseline: { maxDrawdownPct: number; sharpeRatio: number | null } | null = null;
+    if (instanceForBaseline?.strategyVersionId) {
+      baseline = await prisma.backtestBaseline.findUnique({
+        where: { strategyVersionId: instanceForBaseline.strategyVersionId },
+        select: { maxDrawdownPct: true, sharpeRatio: true },
+      });
+    }
     const baselineMissing = !baseline;
 
-    // Phase 1d: Load CUSUM drift from HealthSnapshots
+    // Phase 1d: Load CUSUM drift from HealthSnapshots scoped to THIS instance.
+    // Previously queried through strategyId which could blend multiple instances.
     const driftSnapshots = await prisma.healthSnapshot.findMany({
-      where: {
-        instance: {
-          strategyVersion: {
-            strategyIdentity: { strategyId },
-          },
-        },
-      },
+      where: { instanceId },
       orderBy: { createdAt: "desc" },
       take: monitoringThresholds.cusumDriftConsecutiveSnapshots,
       select: { driftDetected: true },
@@ -251,6 +259,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     // Phase 2: Evaluate rules
     const evalResult = evaluateMonitoring(
       {
+        instanceId,
         strategyId,
         configVersion,
         liveFactCount: snapshot.factCount,
@@ -289,25 +298,22 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           },
         });
 
-        // b. Resolve instance for lifecycle transition
-        const instanceRow = await tx.liveEAInstance.findFirst({
-          where: {
-            strategyVersion: {
-              strategyIdentity: { strategyId },
-            },
-            deletedAt: null,
-          },
+        // b. Load instance lifecycle state — use the known instanceId directly,
+        // not findFirst through strategyId (which could pick a wrong instance).
+        const instanceRow = await tx.liveEAInstance.findUnique({
+          where: { id: instanceId },
           select: { id: true, lifecycleState: true },
         });
         const instance = instanceRow
           ? { instanceId: instanceRow.id, lifecycleState: instanceRow.lifecycleState }
           : null;
 
-        // c. Count consecutive HEALTHY runs (includes current, now COMPLETED — no +1 hack)
+        // c. Count consecutive HEALTHY runs for THIS INSTANCE
+        // (includes current, now COMPLETED — no +1 hack)
         let consecutiveHealthyRuns = 0;
         if (instance) {
           const recentRuns = await tx.monitoringRun.findMany({
-            where: { strategyId, status: "COMPLETED" },
+            where: { instanceId, status: "COMPLETED" },
             orderBy: { completedAt: "desc" },
             take: 20,
             select: { verdict: true },
@@ -337,6 +343,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
         await appendProofEventInTx(tx, strategyId, "MONITORING_RUN_COMPLETED", {
           eventType: "MONITORING_RUN_COMPLETED",
           recordId,
+          instanceId,
           strategyId,
           monitoringVerdict: evalResult.verdict,
           reasons: evalResult.reasons,
@@ -372,6 +379,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           await appendProofEventInTx(tx, strategyId, transitionDecision.proofEventType, {
             eventType: transitionDecision.proofEventType,
             recordId,
+            instanceId,
             strategyId,
             from: transitionDecision.from,
             to: transitionDecision.to,
@@ -406,6 +414,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
               eventType: "lifecycle_transition",
               dedupeKey: `lifecycle_transition:${recordId}`,
               payload: {
+                instanceId,
                 strategyId,
                 fromState: transitionDecision.from,
                 toState: transitionDecision.to,
@@ -419,11 +428,12 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             },
           });
 
-          // g. Incident management — atomic with transition
+          // g. Incident management — atomic with transition, scoped to instance
           if (transitionDecision.to === "EDGE_AT_RISK") {
-            // Open incident
+            // Open incident for this specific instance
             const incidentData = buildIncidentData({
               strategyId,
+              instanceId,
               severity: "AT_RISK",
               triggerRecordId: recordId,
               reasonCodes: evalResult.reasons,
@@ -440,6 +450,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
               await appendProofEventInTx(tx, strategyId, "INCIDENT_OPENED", {
                 eventType: "INCIDENT_OPENED",
                 recordId,
+                instanceId,
                 strategyId,
                 incidentId: incident.id,
                 severity: incidentData.severity,
@@ -456,6 +467,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
                   eventType: "incident_opened",
                   dedupeKey: `incident_opened:${incident.id}`,
                   payload: {
+                    instanceId,
                     strategyId,
                     incidentId: incident.id,
                     severity: incidentData.severity,
@@ -469,7 +481,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
                 incidentErr instanceof Prisma.PrismaClientKnownRequestError &&
                 incidentErr.code === "P2002"
               ) {
-                log.warn({ strategyId }, "Incident already exists for strategy (P2002)");
+                log.warn({ instanceId, strategyId }, "Incident already exists (P2002)");
               } else {
                 throw incidentErr;
               }
@@ -478,9 +490,9 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             transitionDecision.to === "LIVE_MONITORING" ||
             transitionDecision.to === "INVALIDATED"
           ) {
-            // Close incident on recovery or invalidation
+            // Close incident for this instance on recovery or invalidation
             const openIncident = await tx.incident.findFirst({
-              where: { strategyId, status: { not: "CLOSED" } },
+              where: { instanceId, status: { not: "CLOSED" } },
             });
             if (openIncident) {
               const closeReason =
@@ -493,6 +505,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
               await appendProofEventInTx(tx, strategyId, "INCIDENT_CLOSED", {
                 eventType: "INCIDENT_CLOSED",
                 recordId,
+                instanceId,
                 strategyId,
                 incidentId: openIncident.id,
                 closeReason,
@@ -506,6 +519,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
                   eventType: "incident_closed",
                   dedupeKey: `incident_closed:${openIncident.id}`,
                   payload: {
+                    instanceId,
                     strategyId,
                     incidentId: openIncident.id,
                     closeReason,
@@ -533,7 +547,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
   } catch (err) {
     // Any uncaught error — mark run as FAILED
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    log.error({ err, strategyId, runId: run.id, recordId }, "Monitoring run failed");
+    log.error({ err, instanceId, strategyId, runId: run.id, recordId }, "Monitoring run failed");
 
     await prisma.monitoringRun
       .update({
@@ -562,6 +576,7 @@ async function failRun(
   runId: string,
   recordId: string,
   strategyId: string,
+  instanceId: string,
   reasonCode: string,
   diagnostic: string
 ): Promise<void> {
@@ -570,6 +585,7 @@ async function failRun(
     await appendProofEvent(strategyId, "MONITORING_RUN_COMPLETED", {
       eventType: "MONITORING_RUN_COMPLETED",
       recordId,
+      instanceId,
       strategyId,
       monitoringVerdict: null,
       reasons: [reasonCode],
@@ -596,17 +612,20 @@ async function failRun(
 }
 
 /**
- * Check if a monitoring run is allowed for the given strategy (cooldown check).
+ * Check if a monitoring run is allowed for the given instance (cooldown check).
  *
  * Uses DB-based cooldown: queries the last COMPLETED or FAILED run's completedAt
  * and rejects if within COOLDOWN_SECONDS.
  *
+ * Instance-first: cooldown is per instance, not per strategy.
+ * This ensures one instance's monitoring doesn't block another's.
+ *
  * Returns true if a new run is allowed.
  */
-export async function isMonitoringCooldownExpired(strategyId: string): Promise<boolean> {
+export async function isMonitoringCooldownExpired(instanceId: string): Promise<boolean> {
   const lastRun = await prisma.monitoringRun.findFirst({
     where: {
-      strategyId,
+      instanceId,
       status: { in: ["COMPLETED", "FAILED"] },
     },
     orderBy: { completedAt: "desc" },

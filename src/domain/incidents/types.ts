@@ -8,6 +8,7 @@ export type IncidentCloseReason =
 
 export interface IncidentOpenParams {
   strategyId: string;
+  instanceId: string;
   severity: IncidentSeverity;
   triggerRecordId: string;
   reasonCodes: string[];

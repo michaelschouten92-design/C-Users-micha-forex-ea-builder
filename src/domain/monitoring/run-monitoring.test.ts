@@ -8,8 +8,10 @@ const mockMonitoringRunFindFirst = vi.fn();
 const mockMonitoringRunFindMany = vi.fn();
 const mockTradeFactFindMany = vi.fn();
 const mockBacktestBaselineFindFirst = vi.fn();
+const mockBacktestBaselineFindUnique = vi.fn();
 const mockHealthSnapshotFindMany = vi.fn();
 const mockLiveEAInstanceFindFirst = vi.fn();
+const mockLiveEAInstanceFindUnique = vi.fn();
 const mockTransaction = vi.fn();
 const mockAppendProofEvent = vi.fn();
 const mockLoadActiveConfigWithFallback = vi.fn();
@@ -54,12 +56,14 @@ vi.mock("@/lib/prisma", () => ({
     },
     backtestBaseline: {
       findFirst: (...args: unknown[]) => mockBacktestBaselineFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockBacktestBaselineFindUnique(...args),
     },
     healthSnapshot: {
       findMany: (...args: unknown[]) => mockHealthSnapshotFindMany(...args),
     },
     liveEAInstance: {
       findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockLiveEAInstanceFindUnique(...args),
     },
   },
 }));
@@ -204,6 +208,9 @@ function setupDefaults() {
 
   mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
 
+  mockLiveEAInstanceFindUnique.mockResolvedValue({ strategyVersionId: "sv_1" });
+  mockBacktestBaselineFindUnique.mockResolvedValue({ maxDrawdownPct: 8, sharpeRatio: 1.5 });
+
   // Default: no LiveEAInstance → no transition attempted
   mockLiveEAInstanceFindFirst.mockResolvedValue(null);
   // Default: no previous runs → consecutive healthy = 0
@@ -222,7 +229,7 @@ function setupDefaults() {
         findMany: (...args: unknown[]) => mockMonitoringRunFindMany(...args),
       },
       liveEAInstance: {
-        findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+        findUnique: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
       },
       alertOutbox: {
         create: (...args: unknown[]) => mockAlertOutboxCreate(...args),
@@ -249,7 +256,7 @@ describe("runMonitoring", () => {
     return mod.runMonitoring;
   }
 
-  const params = { strategyId: "strat_1", source: "live_ingest" };
+  const params = { instanceId: "inst_test", strategyId: "strat_1", source: "live_ingest" };
 
   // ── Happy path ────────────────────────────────────────────────────
   it("happy path: creates run, evaluates, writes proof, marks COMPLETED", async () => {
@@ -259,6 +266,7 @@ describe("runMonitoring", () => {
     // 1. Created PENDING run row
     expect(mockMonitoringRunCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        instanceId: "inst_test",
         strategyId: "strat_1",
         status: "PENDING",
         recordId: FAKE_UUID,
@@ -345,7 +353,7 @@ describe("runMonitoring", () => {
 
   // ── Baseline missing ──────────────────────────────────────────────
   it("passes baselineMissing=true when no BacktestBaseline found", async () => {
-    mockBacktestBaselineFindFirst.mockResolvedValue(null);
+    mockBacktestBaselineFindUnique.mockResolvedValue(null);
 
     const run = await importRunMonitoring();
     await run(params);
@@ -971,6 +979,7 @@ describe("runMonitoring", () => {
         eventType: "lifecycle_transition",
         dedupeKey: `lifecycle_transition:${FAKE_UUID}`,
         payload: {
+          instanceId: "inst_test",
           strategyId: "strat_1",
           fromState: "LIVE_MONITORING",
           toState: "EDGE_AT_RISK",
@@ -1175,14 +1184,14 @@ describe("isMonitoringCooldownExpired", () => {
     mockMonitoringRunFindFirst.mockResolvedValue(null);
 
     const check = await importCooldownCheck();
-    expect(await check("strat_1")).toBe(true);
+    expect(await check("inst_test")).toBe(true);
   });
 
   it("returns true when last run completedAt is null", async () => {
     mockMonitoringRunFindFirst.mockResolvedValue({ completedAt: null });
 
     const check = await importCooldownCheck();
-    expect(await check("strat_1")).toBe(true);
+    expect(await check("inst_test")).toBe(true);
   });
 
   it("returns false when last run completed less than 5 min ago", async () => {
@@ -1192,7 +1201,7 @@ describe("isMonitoringCooldownExpired", () => {
     });
 
     const check = await importCooldownCheck();
-    expect(await check("strat_1")).toBe(false);
+    expect(await check("inst_test")).toBe(false);
   });
 
   it("returns true when last run completed more than 5 min ago", async () => {
@@ -1202,18 +1211,18 @@ describe("isMonitoringCooldownExpired", () => {
     });
 
     const check = await importCooldownCheck();
-    expect(await check("strat_1")).toBe(true);
+    expect(await check("inst_test")).toBe(true);
   });
 
   it("queries only COMPLETED and FAILED runs", async () => {
     mockMonitoringRunFindFirst.mockResolvedValue(null);
 
     const check = await importCooldownCheck();
-    await check("strat_1");
+    await check("inst_test");
 
     expect(mockMonitoringRunFindFirst).toHaveBeenCalledWith({
       where: {
-        strategyId: "strat_1",
+        instanceId: "inst_test",
         status: { in: ["COMPLETED", "FAILED"] },
       },
       orderBy: { completedAt: "desc" },

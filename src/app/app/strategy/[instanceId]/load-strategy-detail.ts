@@ -287,7 +287,8 @@ export async function loadStrategyDetail(
 
   if (!instance) return null;
 
-  // Resolve strategyId for incidents via StrategyVersion → StrategyIdentity
+  // Instance-first: query incidents and monitoring runs scoped to this instance.
+  // Falls back to strategyId for pre-migration data that lacks instanceId.
   let strategyId: string | null = null;
   if (instance.strategyVersionId) {
     const sv = await prisma.strategyVersion.findUnique({
@@ -299,38 +300,46 @@ export async function loadStrategyDetail(
     strategyId = sv?.strategyIdentity?.strategyId ?? null;
   }
 
-  // Fetch incidents and latest monitoring run in parallel
+  // Fetch incidents and latest monitoring run scoped to this instance
   const [incidents, latestRun] = await Promise.all([
-    strategyId
-      ? prisma.incident.findMany({
-          where: { strategyId },
-          orderBy: { openedAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            status: true,
-            severity: true,
-            reasonCodes: true,
-            openedAt: true,
-            closedAt: true,
-            closeReason: true,
-            ackDeadlineAt: true,
-            escalationCount: true,
-          },
-        })
-      : Promise.resolve([]),
-    strategyId
-      ? prisma.monitoringRun.findFirst({
-          where: { strategyId, status: "COMPLETED" },
-          orderBy: { completedAt: "desc" },
-          select: {
-            verdict: true,
-            reasons: true,
-            completedAt: true,
-            configVersion: true,
-          },
-        })
-      : Promise.resolve(null),
+    prisma.incident.findMany({
+      where: {
+        OR: [
+          { instanceId },
+          // Fallback: pre-migration incidents have instanceId=null but strategyId set
+          ...(strategyId ? [{ strategyId, instanceId: null }] : []),
+        ],
+      },
+      orderBy: { openedAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        status: true,
+        severity: true,
+        reasonCodes: true,
+        openedAt: true,
+        closedAt: true,
+        closeReason: true,
+        ackDeadlineAt: true,
+        escalationCount: true,
+      },
+    }),
+    prisma.monitoringRun.findFirst({
+      where: {
+        OR: [
+          { instanceId, status: "COMPLETED" },
+          // Fallback: pre-migration runs have instanceId=null
+          ...(strategyId ? [{ strategyId, instanceId: null, status: "COMPLETED" }] : []),
+        ],
+      },
+      orderBy: { completedAt: "desc" },
+      select: {
+        verdict: true,
+        reasons: true,
+        completedAt: true,
+        configVersion: true,
+      },
+    }),
   ]);
 
   const latestSnap = instance.healthSnapshots[0] ?? null;

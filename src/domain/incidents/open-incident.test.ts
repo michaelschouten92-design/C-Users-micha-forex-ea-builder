@@ -6,6 +6,7 @@ const BASE_NOW = new Date("2026-03-03T12:00:00.000Z");
 
 const baseParams: IncidentOpenParams = {
   strategyId: "strat_1",
+  instanceId: "inst_1",
   severity: "AT_RISK",
   triggerRecordId: "rec_abc",
   reasonCodes: ["MONITORING_DRAWDOWN_BREACH"],

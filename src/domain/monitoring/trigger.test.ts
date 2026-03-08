@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockRunMonitoring = vi.fn();
 const mockIsMonitoringCooldownExpired = vi.fn();
-const mockLiveEAInstanceFindFirst = vi.fn();
+const mockLiveEAInstanceFindUnique = vi.fn();
 
 vi.mock("./run-monitoring", () => ({
   runMonitoring: (...args: unknown[]) => mockRunMonitoring(...args),
@@ -12,23 +12,29 @@ vi.mock("./run-monitoring", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     liveEAInstance: {
-      findFirst: (...args: unknown[]) => mockLiveEAInstanceFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockLiveEAInstanceFindUnique(...args),
     },
   },
 }));
 
 vi.mock("@/lib/logger", () => ({
   logger: {
-    child: () => ({ debug: vi.fn(), info: vi.fn(), error: vi.fn() }),
+    child: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
   },
 }));
+
+const INSTANCE_ID = "inst_1";
+const STRATEGY_ID = "strat_1";
 
 describe("triggerMonitoringAfterIngest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLiveEAInstanceFindFirst.mockResolvedValue({
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
+      strategyVersion: {
+        strategyIdentity: { strategyId: STRATEGY_ID },
+      },
     });
   });
 
@@ -51,7 +57,7 @@ describe("triggerMonitoringAfterIngest", () => {
     mockRunMonitoring.mockResolvedValue(fakeResult);
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1");
+    const result = await trigger(INSTANCE_ID);
 
     expect(result).toEqual({
       triggered: true,
@@ -59,7 +65,8 @@ describe("triggerMonitoringAfterIngest", () => {
       result: fakeResult,
     });
     expect(mockRunMonitoring).toHaveBeenCalledWith({
-      strategyId: "strat_1",
+      instanceId: INSTANCE_ID,
+      strategyId: STRATEGY_ID,
       source: "live_ingest",
     });
   });
@@ -68,7 +75,7 @@ describe("triggerMonitoringAfterIngest", () => {
     mockIsMonitoringCooldownExpired.mockResolvedValue(false);
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1");
+    const result = await trigger(INSTANCE_ID);
 
     expect(result).toEqual({
       triggered: false,
@@ -82,14 +89,20 @@ describe("triggerMonitoringAfterIngest", () => {
     mockRunMonitoring.mockRejectedValue(new Error("DB crash"));
 
     const trigger = await importTrigger();
-    await expect(trigger("strat_1")).rejects.toThrow("DB crash");
+    await expect(trigger(INSTANCE_ID)).rejects.toThrow("DB crash");
   });
 
   it("skips monitoring when operator hold is HALTED", async () => {
-    mockLiveEAInstanceFindFirst.mockResolvedValue({ operatorHold: "HALTED" });
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
+      operatorHold: "HALTED",
+      monitoringSuppressedUntil: null,
+      strategyVersion: {
+        strategyIdentity: { strategyId: STRATEGY_ID },
+      },
+    });
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1");
+    const result = await trigger(INSTANCE_ID);
 
     expect(result).toEqual({ triggered: false, reason: "OPERATOR_HALTED" });
     expect(mockRunMonitoring).not.toHaveBeenCalled();
@@ -97,15 +110,11 @@ describe("triggerMonitoringAfterIngest", () => {
   });
 
   it("proceeds when operator hold is NONE", async () => {
-    mockLiveEAInstanceFindFirst.mockResolvedValue({
-      operatorHold: "NONE",
-      monitoringSuppressedUntil: null,
-    });
     mockIsMonitoringCooldownExpired.mockResolvedValue(true);
     mockRunMonitoring.mockResolvedValue(fakeResult);
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1");
+    const result = await trigger(INSTANCE_ID);
 
     expect(result).toEqual({ triggered: true, reason: "OK", result: fakeResult });
     expect(mockRunMonitoring).toHaveBeenCalled();
@@ -114,13 +123,16 @@ describe("triggerMonitoringAfterIngest", () => {
   it("skips monitoring when suppression window is active", async () => {
     const now = new Date("2026-03-02T12:00:00Z");
     const suppressedUntil = new Date("2026-03-02T12:10:00Z"); // 10 min in the future
-    mockLiveEAInstanceFindFirst.mockResolvedValue({
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
       operatorHold: "NONE",
       monitoringSuppressedUntil: suppressedUntil,
+      strategyVersion: {
+        strategyIdentity: { strategyId: STRATEGY_ID },
+      },
     });
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1", now);
+    const result = await trigger(INSTANCE_ID, now);
 
     expect(result).toEqual({ triggered: false, reason: "MONITORING_SUPPRESSED" });
     expect(mockRunMonitoring).not.toHaveBeenCalled();
@@ -130,17 +142,44 @@ describe("triggerMonitoringAfterIngest", () => {
   it("proceeds when suppression window has expired", async () => {
     const now = new Date("2026-03-02T12:15:00Z");
     const suppressedUntil = new Date("2026-03-02T12:10:00Z"); // 5 min in the past
-    mockLiveEAInstanceFindFirst.mockResolvedValue({
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
       operatorHold: "NONE",
       monitoringSuppressedUntil: suppressedUntil,
+      strategyVersion: {
+        strategyIdentity: { strategyId: STRATEGY_ID },
+      },
     });
     mockIsMonitoringCooldownExpired.mockResolvedValue(true);
     mockRunMonitoring.mockResolvedValue(fakeResult);
 
     const trigger = await importTrigger();
-    const result = await trigger("strat_1", now);
+    const result = await trigger(INSTANCE_ID, now);
 
     expect(result).toEqual({ triggered: true, reason: "OK", result: fakeResult });
     expect(mockRunMonitoring).toHaveBeenCalled();
+  });
+
+  it("skips monitoring when instance is not found", async () => {
+    mockLiveEAInstanceFindUnique.mockResolvedValue(null);
+
+    const trigger = await importTrigger();
+    const result = await trigger(INSTANCE_ID);
+
+    expect(result).toEqual({ triggered: false, reason: "INSTANCE_NOT_FOUND" });
+    expect(mockRunMonitoring).not.toHaveBeenCalled();
+  });
+
+  it("skips monitoring when no strategy is linked", async () => {
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+      strategyVersion: null,
+    });
+
+    const trigger = await importTrigger();
+    const result = await trigger(INSTANCE_ID);
+
+    expect(result).toEqual({ triggered: false, reason: "NO_STRATEGY_LINKED" });
+    expect(mockRunMonitoring).not.toHaveBeenCalled();
   });
 });

@@ -40,6 +40,9 @@ export function evaluateMonitoring(
   ctx: MonitoringContext,
   thresholds: MonitoringThresholds
 ): MonitoringEvaluationResult {
+  if (!ctx.instanceId) {
+    throw new Error("MonitoringContext.instanceId is required");
+  }
   if (!ctx.strategyId) {
     throw new Error("MonitoringContext.strategyId is required");
   }
