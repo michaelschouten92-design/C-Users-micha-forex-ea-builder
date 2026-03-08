@@ -185,7 +185,9 @@ export default async function DashboardPage() {
             )}
 
             {/* ══════════════════════════════════════════
-                COMMAND CENTER — Portfolio Health + Strategy Cards
+                COMMAND CENTER
+                Layer 3: Portfolio operational summary
+                Layer 1: Individual deployment cards (instance truth)
                 ══════════════════════════════════════════ */}
             {commandCenter.strategies.length > 0 && (
               <section className="mb-10">

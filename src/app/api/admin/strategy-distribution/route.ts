@@ -5,7 +5,9 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
 import { resolveStrategyStatus, type StrategyStatus } from "@/lib/strategy-status/resolver";
 
-// GET /api/admin/strategy-distribution - Strategy status distribution
+// GET /api/admin/strategy-distribution - Instance status distribution
+// Note: "StrategyStatus" here is computed per-instance (from resolveStrategyStatus).
+// This is a portfolio-level aggregate of instance statuses, not a strategy-level rollup.
 export async function GET() {
   try {
     const adminCheck = await checkAdmin();

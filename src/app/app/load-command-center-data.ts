@@ -3,14 +3,37 @@
  *
  * Single Prisma query fetches all LiveEAInstances with their latest
  * HealthSnapshot, avoiding N+1 client-side health API calls.
+ *
+ * Semantic layers:
+ *   - Each row in `instances` is Layer 1 (instance truth).
+ *   - `portfolioSummary` is Layer 3 (portfolio operational summary).
+ *   - Layer 2 (strategy aggregate) is not produced here — it requires
+ *     grouping by strategy identity, which the dashboard doesn't need yet.
  */
 
 import { prisma } from "@/lib/prisma";
+import {
+  resolveInstanceMonitoringStatus,
+  buildPortfolioSummary,
+  type InstanceMonitoringStatus,
+  type PortfolioOperationalSummary,
+} from "@/lib/semantic-layers";
 
 // ── Types ────────────────────────────────────────────────
 
-export type MonitoringStatus = "HEALTHY" | "AT_RISK" | "INVALIDATED";
+/**
+ * Re-export for backward compatibility.
+ * Consumers should prefer `InstanceMonitoringStatus` from semantic-layers.
+ */
+export type MonitoringStatus = InstanceMonitoringStatus;
 
+/**
+ * Instance-level truth for the command center grid.
+ * Each item represents ONE live deployment — not a strategy aggregate.
+ *
+ * Named "CommandCenterStrategy" for backward compat with existing consumers.
+ * Semantically this is instance-level data.
+ */
 export interface CommandCenterStrategy {
   id: string;
   eaName: string;
@@ -28,8 +51,8 @@ export interface CommandCenterStrategy {
   lifecycleState: string;
   lifecyclePhase: string;
 
-  // Monitoring (derived)
-  monitoringStatus: MonitoringStatus;
+  // Instance monitoring status (Layer 1 — single deployment truth)
+  monitoringStatus: InstanceMonitoringStatus;
 
   // Data sufficiency
   hasHealthData: boolean; // true if at least one HealthSnapshot exists
@@ -48,7 +71,22 @@ export interface CommandCenterStrategy {
 }
 
 export interface CommandCenterData {
+  /** Instance-level rows (Layer 1 — each is one deployment's truth). */
+  instances: CommandCenterStrategy[];
+
+  /**
+   * @deprecated Use `instances` instead. Kept for backward compatibility.
+   * Alias for `instances`.
+   */
   strategies: CommandCenterStrategy[];
+
+  /** Portfolio operational summary (Layer 3 — operational, not validation). */
+  portfolioSummary: PortfolioOperationalSummary;
+
+  /**
+   * @deprecated Use `portfolioSummary` instead. Kept for backward compatibility.
+   * Raw counts derived from instance statuses.
+   */
   summary: {
     total: number;
     healthy: number;
@@ -60,26 +98,10 @@ export interface CommandCenterData {
   };
 }
 
-// ── Monitoring status resolution ─────────────────────────
-
-/**
- * Derive the primary monitoring status from governance lifecycle state
- * and health snapshot status. Governance state takes precedence.
- */
-function resolveMonitoringStatus(
-  lifecycleState: string,
-  healthStatus: string | null
-): MonitoringStatus {
-  if (lifecycleState === "INVALIDATED") return "INVALIDATED";
-  if (lifecycleState === "EDGE_AT_RISK") return "AT_RISK";
-  if (healthStatus === "DEGRADED" || healthStatus === "WARNING") return "AT_RISK";
-  return "HEALTHY";
-}
-
 // ── Loader ───────────────────────────────────────────────
 
 export async function loadCommandCenterData(userId: string): Promise<CommandCenterData> {
-  const instances = await prisma.liveEAInstance.findMany({
+  const dbInstances = await prisma.liveEAInstance.findMany({
     where: { userId, deletedAt: null },
     orderBy: { updatedAt: "desc" },
     select: {
@@ -109,10 +131,10 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
     },
   });
 
-  const strategies: CommandCenterStrategy[] = instances.map((inst) => {
+  const instances: CommandCenterStrategy[] = dbInstances.map((inst) => {
     const snap = inst.healthSnapshots[0] ?? null;
     const healthStatus = snap?.status ?? null;
-    const monitoringStatus = resolveMonitoringStatus(inst.lifecycleState, healthStatus);
+    const monitoringStatus = resolveInstanceMonitoringStatus(inst.lifecycleState, healthStatus);
 
     return {
       id: inst.id,
@@ -137,39 +159,32 @@ export async function loadCommandCenterData(userId: string): Promise<CommandCent
     };
   });
 
-  // Compute summary
-  let healthScoreSum = 0;
-  let healthScoreCount = 0;
-  let healthy = 0;
-  let atRisk = 0;
-  let invalidated = 0;
-  let online = 0;
-  let driftCount = 0;
+  // Build portfolio operational summary (Layer 3)
+  const portfolioSummary = buildPortfolioSummary(
+    instances.map((s) => ({
+      monitoringStatus: s.monitoringStatus,
+      connectionStatus: s.status,
+      hasHealthData: s.hasHealthData,
+      driftDetected: s.driftDetected,
+      healthScore: s.healthScore,
+    }))
+  );
 
-  for (const s of strategies) {
-    if (s.monitoringStatus === "HEALTHY" && s.hasHealthData) healthy++;
-    else if (s.monitoringStatus === "AT_RISK") atRisk++;
-    else if (s.monitoringStatus === "INVALIDATED") invalidated++;
-
-    if (s.status === "ONLINE") online++;
-    if (s.driftDetected) driftCount++;
-
-    if (s.healthScore !== null) {
-      healthScoreSum += s.healthScore;
-      healthScoreCount++;
-    }
-  }
+  // Legacy summary (backward compat — deprecated in favor of portfolioSummary)
+  const summary = {
+    total: portfolioSummary.totalInstances,
+    healthy: portfolioSummary.healthyCount,
+    atRisk: portfolioSummary.atRiskCount,
+    invalidated: portfolioSummary.invalidatedCount,
+    online: portfolioSummary.onlineCount,
+    driftCount: portfolioSummary.driftCount,
+    avgHealthScore: portfolioSummary.avgHealthScore,
+  };
 
   return {
-    strategies,
-    summary: {
-      total: strategies.length,
-      healthy,
-      atRisk,
-      invalidated,
-      online,
-      driftCount,
-      avgHealthScore: healthScoreCount > 0 ? Math.round(healthScoreSum / healthScoreCount) : null,
-    },
+    instances,
+    strategies: instances, // backward compat alias
+    portfolioSummary,
+    summary,
   };
 }

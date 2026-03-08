@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * CommandCenterView — client component for strategy grid with filters and sorting.
+ * CommandCenterView — client component for deployment grid with filters and sorting.
  *
- * Receives pre-loaded strategies from the server component.
+ * Each card is Layer 1 (instance truth) — one deployment's actual health.
+ * Receives pre-loaded instance data from the server component.
  * All filtering and sorting is client-side (no round-trips).
  */
 
@@ -194,10 +195,10 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
 
 function EmptyState({ filter }: { filter: FilterValue }) {
   const messages: Record<FilterValue, string> = {
-    all: "No live strategies yet. Connect your first EA to start monitoring.",
-    healthy: "No strategies are currently healthy.",
-    at_risk: "No strategies are at risk. All clear.",
-    attention: "No strategies need attention right now.",
+    all: "No live deployments yet. Connect your first EA to start monitoring.",
+    healthy: "No deployments are currently healthy.",
+    at_risk: "No deployments are at risk. All clear.",
+    attention: "No deployments need attention right now.",
   };
 
   return (

@@ -1,8 +1,11 @@
 /**
- * StrategyStatusCard — dashboard card for a single strategy.
+ * StrategyStatusCard — dashboard card for a single deployment (instance).
+ *
+ * Layer 1 (instance truth) — each card represents one LiveEAInstance.
+ * This is NOT a strategy aggregate — it shows one deployment's actual health.
  *
  * Answers three questions at a glance:
- *   1. Is my strategy working? (MonitoringStatusBadge)
+ *   1. Is this deployment working? (MonitoringStatusBadge)
  *   2. Why? (drift indicator + health score)
  *   3. What should I do? (status implies action)
  */

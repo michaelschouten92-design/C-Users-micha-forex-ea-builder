@@ -1,5 +1,8 @@
 /**
- * PortfolioRiskBanner — one-line portfolio-level decision summary.
+ * PortfolioRiskBanner — one-line portfolio operational alert.
+ *
+ * Layer 3 (portfolio operational) — summarizes the most urgent deployment
+ * status across the user's instances. Not a strategy validation signal.
  *
  * Priority: INVALIDATED > AT_RISK > awaiting data > healthy.
  */
@@ -25,32 +28,32 @@ function deriveBanner(summary: PortfolioRiskBannerProps["summary"]): BannerConfi
         color: "#EF4444",
         headline:
           summary.invalidated === 1
-            ? "1 strategy invalidated \u2014 immediate review recommended"
-            : `${summary.invalidated} strategies invalidated \u2014 immediate review recommended`,
-        subtext: "A live strategy no longer satisfies governance conditions.",
+            ? "1 deployment invalidated \u2014 immediate review recommended"
+            : `${summary.invalidated} deployments invalidated \u2014 immediate review recommended`,
+        subtext: "A live deployment no longer satisfies governance conditions.",
       };
     case "attention":
       return {
         color: "#F59E0B",
         headline:
           summary.atRisk === 1
-            ? "1 strategy requires attention"
-            : `${summary.atRisk} strategies require attention`,
-        subtext: "Monitoring signals indicate degradation in a live strategy.",
+            ? "1 deployment requires attention"
+            : `${summary.atRisk} deployments require attention`,
+        subtext: "Monitoring signals indicate degradation in a live deployment.",
       };
     case "awaiting":
       return {
         color: "#7C8DB0",
         headline:
           summary.awaitingData === 1
-            ? "1 strategy is still collecting data"
-            : `${summary.awaitingData} strategies are still collecting data`,
+            ? "1 deployment is still collecting data"
+            : `${summary.awaitingData} deployments are still collecting data`,
         subtext: "Health assessment will appear after sufficient activity.",
       };
     case "healthy":
       return {
         color: "#10B981",
-        headline: "All strategies operating within expected range",
+        headline: "All deployments operating within expected range",
         subtext: "No active incidents or invalidations detected.",
       };
   }

@@ -1,5 +1,8 @@
 /**
- * Server-side data loader for the Strategy Detail Page.
+ * Server-side data loader for the Instance Detail Page.
+ *
+ * This page shows Layer 1 (instance truth) for a single deployment.
+ * All data is scoped to one LiveEAInstance — not a strategy aggregate.
  *
  * Single Prisma query fetches the LiveEAInstance with full health snapshot,
  * health history, recent incidents, latest monitoring run, and governance
@@ -7,10 +10,18 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import {
+  resolveInstanceMonitoringStatus,
+  type InstanceMonitoringStatus,
+} from "@/lib/semantic-layers";
 
 // ── Types ────────────────────────────────────────────────
 
-export type MonitoringStatus = "HEALTHY" | "AT_RISK" | "INVALIDATED";
+/**
+ * Re-export for backward compatibility.
+ * Consumers should prefer `InstanceMonitoringStatus` from semantic-layers.
+ */
+export type MonitoringStatus = InstanceMonitoringStatus;
 
 export type RecommendationLevel =
   | "NO_ACTION"
@@ -74,7 +85,15 @@ export interface MonitoringRunSummary {
   configVersion: string | null;
 }
 
+/**
+ * Instance-level detail data (Layer 1 — single deployment truth).
+ *
+ * Named "StrategyDetailData" for backward compat. Semantically, this
+ * represents a single LiveEAInstance with its health, incidents, and governance.
+ * It is NOT a strategy aggregate — it is one deployment's authoritative state.
+ */
 export interface StrategyDetailData {
+  /** LiveEAInstance ID — this is an instance, not a strategy. */
   id: string;
   eaName: string;
   symbol: string | null;
@@ -96,7 +115,7 @@ export interface StrategyDetailData {
   peakScore: number;
   peakScoreAt: string | null;
 
-  // Monitoring (derived)
+  // Instance monitoring status (Layer 1 — single deployment truth)
   monitoringStatus: MonitoringStatus;
   hasHealthData: boolean;
 
@@ -117,17 +136,7 @@ export interface StrategyDetailData {
   recommendationReason: string;
 }
 
-// ── Monitoring status resolution ─────────────────────────
-
-function resolveMonitoringStatus(
-  lifecycleState: string,
-  healthStatus: string | null
-): MonitoringStatus {
-  if (lifecycleState === "INVALIDATED") return "INVALIDATED";
-  if (lifecycleState === "EDGE_AT_RISK") return "AT_RISK";
-  if (healthStatus === "DEGRADED" || healthStatus === "WARNING") return "AT_RISK";
-  return "HEALTHY";
-}
+// ── Monitoring status resolution (delegates to shared semantic layer) ──
 
 // ── Recommendation derivation ────────────────────────────
 
@@ -383,7 +392,7 @@ export async function loadStrategyDetail(
     createdAt: s.createdAt.toISOString(),
   }));
 
-  const monitoringStatus = resolveMonitoringStatus(
+  const monitoringStatus = resolveInstanceMonitoringStatus(
     instance.lifecycleState,
     latestSnap?.status ?? null
   );
