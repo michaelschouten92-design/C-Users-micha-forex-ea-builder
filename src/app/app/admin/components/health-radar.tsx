@@ -162,8 +162,8 @@ export function HealthRadar() {
 
   if (loading || !health) {
     return (
-      <div className="flex items-center gap-4 px-4 py-2.5 mb-6 rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60">
-        <span className="text-xs text-[#94A3B8]">Loading health radar...</span>
+      <div className="flex items-center gap-4 px-4 py-2.5 mb-6 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60">
+        <span className="text-xs text-[#A1A1AA]">Loading health radar...</span>
       </div>
     );
   }
@@ -171,8 +171,8 @@ export function HealthRadar() {
   const domains = computeDomains(health);
 
   return (
-    <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 mb-6 rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60">
-      <span className="text-xs font-semibold text-[#A78BFA] uppercase tracking-wider mr-2">
+    <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 mb-6 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60">
+      <span className="text-xs font-semibold text-[#818CF8] uppercase tracking-wider mr-2">
         Health
       </span>
       {domains.map((domain) => (
@@ -181,9 +181,9 @@ export function HealthRadar() {
             className="w-2.5 h-2.5 rounded-full"
             style={{ backgroundColor: DOT_COLORS[domain.status] }}
           />
-          <span className="text-xs text-[#CBD5E1]">{domain.label}</span>
+          <span className="text-xs text-[#FAFAFA]">{domain.label}</span>
           {/* Tooltip */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded bg-[#0F0318] border border-[rgba(79,70,229,0.3)] text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded bg-[#09090B] border border-[rgba(255,255,255,0.10)] text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
             {domain.tooltip}
           </div>
         </div>

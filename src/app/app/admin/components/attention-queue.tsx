@@ -59,16 +59,16 @@ export function AttentionQueue() {
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6">
-        <div className="text-[#94A3B8] text-sm">Loading attention queue...</div>
+      <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-6">
+        <div className="text-[#A1A1AA] text-sm">Loading attention queue...</div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6">
+    <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider">
+        <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider">
           Attention Queue
         </h3>
         {data && data.items.length > 0 && (
@@ -81,7 +81,7 @@ export function AttentionQueue() {
       {!data || data.items.length === 0 ? (
         <div className="text-center py-8">
           <div className="text-2xl mb-2">&#x2714;&#xFE0F;</div>
-          <div className="text-[#94A3B8] text-sm">All clear — nothing needs attention</div>
+          <div className="text-[#A1A1AA] text-sm">All clear — nothing needs attention</div>
         </div>
       ) : (
         <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -90,17 +90,17 @@ export function AttentionQueue() {
             return (
               <div
                 key={item.id}
-                className={`border-l-4 ${config.border} bg-[#0A0118]/50 rounded-r-lg px-4 py-3`}
+                className={`border-l-4 ${config.border} bg-[#09090B]/50 rounded-r-lg px-4 py-3`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 min-w-0">
                     <span className="text-sm flex-shrink-0">{config.icon}</span>
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-white truncate">{item.title}</div>
-                      <div className="text-xs text-[#94A3B8] mt-0.5 truncate">{item.detail}</div>
+                      <div className="text-xs text-[#A1A1AA] mt-0.5 truncate">{item.detail}</div>
                     </div>
                   </div>
-                  <span className="text-xs text-[#7C8DB0] whitespace-nowrap flex-shrink-0">
+                  <span className="text-xs text-[#71717A] whitespace-nowrap flex-shrink-0">
                     {timeAgo(item.timestamp)}
                   </span>
                 </div>

@@ -128,8 +128,8 @@ export function IncidentsTab() {
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 statusFilter === f
-                  ? "bg-[#4F46E5] text-white"
-                  : "bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+                  ? "bg-[#6366F1] text-white"
+                  : "bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)]"
               }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -138,7 +138,7 @@ export function IncidentsTab() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-3 py-1.5 text-xs font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-colors"
+          className="px-3 py-1.5 text-xs font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] transition-colors"
         >
           {showForm ? "Cancel" : "Log Incident"}
         </button>
@@ -148,15 +148,15 @@ export function IncidentsTab() {
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#0F0318] p-4 space-y-3"
+          className="rounded-lg border border-[rgba(255,255,255,0.10)] bg-[#09090B] p-4 space-y-3"
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-[#94A3B8] block mb-1">Severity</label>
+              <label className="text-xs text-[#A1A1AA] block mb-1">Severity</label>
               <select
                 value={formSeverity}
                 onChange={(e) => setFormSeverity(e.target.value)}
-                className="w-full bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1.5 text-sm text-white focus:outline-none"
+                className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1.5 text-sm text-white focus:outline-none"
               >
                 <option value="critical">Critical</option>
                 <option value="high">High</option>
@@ -165,11 +165,11 @@ export function IncidentsTab() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-[#94A3B8] block mb-1">Category</label>
+              <label className="text-xs text-[#A1A1AA] block mb-1">Category</label>
               <select
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1.5 text-sm text-white focus:outline-none"
+                className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1.5 text-sm text-white focus:outline-none"
               >
                 <option value="manual">Manual</option>
                 <option value="ea_silent">Silent EA</option>
@@ -180,30 +180,30 @@ export function IncidentsTab() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-[#94A3B8] block mb-1">Title</label>
+            <label className="text-xs text-[#A1A1AA] block mb-1">Title</label>
             <input
               type="text"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="Brief incident title..."
-              className="w-full bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded px-3 py-1.5 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5]"
+              className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-1.5 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1]"
               required
             />
           </div>
           <div>
-            <label className="text-xs text-[#94A3B8] block mb-1">Description (optional)</label>
+            <label className="text-xs text-[#A1A1AA] block mb-1">Description (optional)</label>
             <textarea
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Additional details..."
               rows={2}
-              className="w-full bg-[#0A0118] border border-[rgba(79,70,229,0.3)] rounded px-3 py-1.5 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] resize-y"
+              className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-1.5 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] resize-y"
             />
           </div>
           <button
             type="submit"
             disabled={submitting || !formTitle.trim()}
-            className="px-4 py-1.5 text-xs font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
+            className="px-4 py-1.5 text-xs font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
           >
             {submitting ? "Creating..." : "Create Incident"}
           </button>
@@ -212,29 +212,29 @@ export function IncidentsTab() {
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-8 text-[#94A3B8] text-sm">Loading incidents...</div>
+        <div className="text-center py-8 text-[#A1A1AA] text-sm">Loading incidents...</div>
       ) : incidents.length === 0 ? (
-        <div className="text-center py-8 text-[#7C8DB0] text-sm">
+        <div className="text-center py-8 text-[#71717A] text-sm">
           No incidents found for this filter
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Severity</th>
-                <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Category</th>
-                <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Title</th>
-                <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Status</th>
-                <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Time</th>
-                <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Actions</th>
+              <tr className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)]">
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Severity</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Category</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Title</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {incidents.map((inc) => (
                 <tr
                   key={inc.id}
-                  className="border-b border-[rgba(79,70,229,0.1)] hover:bg-[#1A0626]/30"
+                  className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[#111114]/50"
                 >
                   <td className="px-3 py-2">
                     <span
@@ -245,7 +245,7 @@ export function IncidentsTab() {
                       {inc.severity}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-[#CBD5E1] text-xs">
+                  <td className="px-3 py-2 text-[#FAFAFA] text-xs">
                     {CATEGORY_LABELS[inc.category] || inc.category}
                   </td>
                   <td className="px-3 py-2 text-white max-w-xs truncate">{inc.title}</td>
@@ -258,7 +258,7 @@ export function IncidentsTab() {
                       {inc.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-[#94A3B8] text-xs whitespace-nowrap">
+                  <td className="px-3 py-2 text-[#A1A1AA] text-xs whitespace-nowrap">
                     {new Date(inc.createdAt).toLocaleString()}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -294,17 +294,17 @@ export function IncidentsTab() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] rounded hover:border-[rgba(79,70,229,0.4)] disabled:opacity-30 transition-colors"
+            className="px-3 py-1 text-xs text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] rounded hover:border-[rgba(255,255,255,0.10)] disabled:opacity-30 transition-colors"
           >
             Prev
           </button>
-          <span className="text-xs text-[#7C8DB0]">
+          <span className="text-xs text-[#71717A]">
             {page} / {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            className="px-3 py-1 text-xs text-[#94A3B8] border border-[rgba(79,70,229,0.2)] rounded hover:border-[rgba(79,70,229,0.4)] disabled:opacity-30 transition-colors"
+            className="px-3 py-1 text-xs text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] rounded hover:border-[rgba(255,255,255,0.10)] disabled:opacity-30 transition-colors"
           >
             Next
           </button>

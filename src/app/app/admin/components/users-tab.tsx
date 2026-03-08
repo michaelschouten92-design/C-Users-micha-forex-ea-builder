@@ -36,9 +36,9 @@ interface UserData {
 type Tier = "FREE" | "PRO" | "ELITE";
 
 const TIER_COLORS: Record<string, string> = {
-  ELITE: "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/50",
-  PRO: "bg-[#4F46E5]/20 text-[#A78BFA] border-[#4F46E5]/50",
-  FREE: "bg-[rgba(79,70,229,0.2)] text-[#A78BFA] border-[rgba(79,70,229,0.3)]",
+  ELITE: "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50",
+  PRO: "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50",
+  FREE: "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]",
 };
 
 interface UsersTabProps {
@@ -262,7 +262,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
       {/* Search/filter + user count */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-white">User Management</h2>
-        <span className="text-sm text-[#94A3B8]">
+        <span className="text-sm text-[#A1A1AA]">
           {filteredUsers.length === users.length
             ? `${users.length} users`
             : `${filteredUsers.length} of ${users.length} users`}
@@ -273,18 +273,18 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {segments.length > 0 && (
           <>
-            <span className="text-xs text-[#94A3B8]">Segments:</span>
+            <span className="text-xs text-[#A1A1AA]">Segments:</span>
             {segments.map((seg) => (
               <span key={seg.id} className="inline-flex items-center gap-1">
                 <button
                   onClick={() => applySegment(seg)}
-                  className="text-xs px-2.5 py-1 rounded-full bg-[#1A0626] border border-[rgba(79,70,229,0.3)] text-[#A78BFA] hover:border-[#4F46E5] transition-colors"
+                  className="text-xs px-2.5 py-1 rounded-full bg-[#111114] border border-[rgba(255,255,255,0.10)] text-[#818CF8] hover:border-[#6366F1] transition-colors"
                 >
                   {seg.name}
                 </button>
                 <button
                   onClick={() => handleDeleteSegment(seg.id)}
-                  className="text-xs text-[#7C8DB0] hover:text-red-400 transition-colors"
+                  className="text-xs text-[#71717A] hover:text-red-400 transition-colors"
                   title="Delete segment"
                 >
                   &times;
@@ -299,12 +299,12 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
             value={segmentName}
             onChange={(e) => setSegmentName(e.target.value)}
             placeholder="Save as..."
-            className="w-28 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5]"
+            className="w-28 bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1]"
           />
           <button
             onClick={handleSaveSegment}
             disabled={!segmentName.trim() || savingSegment}
-            className="text-xs px-2 py-1 rounded bg-[#4F46E5] text-white disabled:opacity-50 hover:bg-[#4338CA] transition-colors"
+            className="text-xs px-2 py-1 rounded bg-[#6366F1] text-white disabled:opacity-50 hover:bg-[#6366F1] transition-colors"
           >
             Save
           </button>
@@ -317,12 +317,12 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
           placeholder="Search by email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="flex-1 bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] transition-colors"
         />
         <select
           value={tierFilter}
           onChange={(e) => setTierFilter(e.target.value as "ALL" | Tier)}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         >
           <option value="ALL">All Tiers</option>
           <option value="FREE">FREE</option>
@@ -332,7 +332,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
         <select
           value={loginFilter}
           onChange={(e) => setLoginFilter(e.target.value as "ALL" | "7d" | "30d" | "NEVER")}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         >
           <option value="ALL">All Logins</option>
           <option value="7d">Last 7 days</option>
@@ -342,18 +342,18 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
         <select
           value={activityFilter}
           onChange={(e) => setActivityFilter(e.target.value as "ALL" | "active" | "inactive")}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         >
           <option value="ALL">All Activity</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer whitespace-nowrap">
+        <label className="flex items-center gap-2 text-sm text-[#A1A1AA] cursor-pointer whitespace-nowrap">
           <input
             type="checkbox"
             checked={churnFilter}
             onChange={(e) => setChurnFilter(e.target.checked)}
-            className="accent-[#4F46E5]"
+            className="accent-[#6366F1]"
           />
           Churn Risk
         </label>
@@ -370,7 +370,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               setActivityFilter("ALL");
               setChurnFilter(false);
             }}
-            className="text-xs text-[#94A3B8] hover:text-white transition-colors whitespace-nowrap"
+            className="text-xs text-[#A1A1AA] hover:text-white transition-colors whitespace-nowrap"
           >
             Clear all filters
           </button>
@@ -379,12 +379,12 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 p-3 rounded-lg border border-[#4F46E5]/40 bg-[#4F46E5]/10 flex flex-wrap items-center gap-3">
+        <div className="mb-4 p-3 rounded-lg border border-[#6366F1]/40 bg-[#6366F1]/10 flex flex-wrap items-center gap-3">
           <span className="text-sm text-white font-medium">{selectedIds.size} selected</span>
           <select
             value={bulkTier}
             onChange={(e) => setBulkTier(e.target.value as Tier)}
-            className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-sm text-white focus:outline-none"
+            className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
           >
             <option value="FREE">FREE</option>
             <option value="PRO">PRO</option>
@@ -393,47 +393,47 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
           <button
             onClick={handleBulkUpgrade}
             disabled={bulkUpgrading}
-            className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-3 py-1 rounded transition-colors"
+            className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-sm px-3 py-1 rounded transition-colors"
           >
             {bulkUpgrading ? "Upgrading..." : "Change Tier"}
           </button>
           <button
             onClick={handleExportCsv}
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] hover:border-[#4F46E5] text-white text-sm px-3 py-1 rounded transition-colors"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.10)] hover:border-[#6366F1] text-white text-sm px-3 py-1 rounded transition-colors"
           >
             Export CSV
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="text-sm text-[#94A3B8] hover:text-white transition-colors"
+            className="text-sm text-[#A1A1AA] hover:text-white transition-colors"
           >
             Clear
           </button>
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+      <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
+            <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
               <th className="px-4 py-3 w-8">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleSelectAll}
-                  className="accent-[#4F46E5]"
+                  className="accent-[#6366F1]"
                 />
               </th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Email</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Tier</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Status</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Activity</th>
-              <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">Projects</th>
-              <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">Exports</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Referred By</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Last Login</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Joined</th>
-              <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Actions</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Email</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Tier</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Activity</th>
+              <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Projects</th>
+              <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Exports</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Referred By</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Last Login</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Joined</th>
+              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -442,24 +442,24 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               return (
                 <tr
                   key={user.id}
-                  className="border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                  className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(user.id)}
                       onChange={() => toggleUser(user.id)}
-                      className="accent-[#4F46E5]"
+                      className="accent-[#6366F1]"
                     />
                   </td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => onUserClick(user.id)}
-                      className="text-white hover:text-[#22D3EE] transition-colors text-left"
+                      className="text-white hover:text-[#818CF8] transition-colors text-left"
                     >
                       {user.email}
                     </button>
-                    {isAdmin && <span className="ml-2 text-xs text-[#A78BFA]">(you)</span>}
+                    {isAdmin && <span className="ml-2 text-xs text-[#818CF8]">(you)</span>}
                     {user.suspended && (
                       <span className="ml-2 text-xs text-red-400">(suspended)</span>
                     )}
@@ -474,7 +474,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                       {user.subscription.tier}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{user.subscription.status}</td>
+                  <td className="px-4 py-3 text-[#A1A1AA]">{user.subscription.status}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -491,13 +491,13 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-[#CBD5E1]">{user.projectCount}</td>
-                  <td className="px-4 py-3 text-right text-[#CBD5E1]">{user.exportCount}</td>
-                  <td className="px-4 py-3 text-[#94A3B8] text-xs">{user.referredBy || "-"}</td>
-                  <td className="px-4 py-3 text-[#94A3B8] text-xs">
+                  <td className="px-4 py-3 text-right text-[#FAFAFA]">{user.projectCount}</td>
+                  <td className="px-4 py-3 text-right text-[#FAFAFA]">{user.exportCount}</td>
+                  <td className="px-4 py-3 text-[#A1A1AA] text-xs">{user.referredBy || "-"}</td>
+                  <td className="px-4 py-3 text-[#A1A1AA] text-xs">
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
+                  <td className="px-4 py-3 text-[#A1A1AA]">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
@@ -507,7 +507,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                           setSelectedUser(selectedUser === user.id ? null : user.id);
                           setSelectedTier(user.subscription.tier as Tier);
                         }}
-                        className="text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 transition-colors"
+                        className="text-xs text-[#818CF8] hover:text-[#818CF8]/80 transition-colors"
                       >
                         {selectedUser === user.id ? "Cancel" : "Change Tier"}
                       </button>
@@ -544,7 +544,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                               <button
                                 onClick={() => setDeletingUser(null)}
                                 disabled={deleteInProgress}
-                                className="text-xs text-[#94A3B8] hover:text-white disabled:opacity-50 transition-colors"
+                                className="text-xs text-[#A1A1AA] hover:text-white disabled:opacity-50 transition-colors"
                               >
                                 No
                               </button>
@@ -570,9 +570,9 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
 
       {/* Tier change panel */}
       {selectedUser && (
-        <div className="mt-4 p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60">
+        <div className="mt-4 p-4 rounded-lg border border-[rgba(255,255,255,0.10)] bg-[#111114]/60">
           <div className="flex items-center gap-4 flex-wrap">
-            <span className="text-sm text-[#94A3B8]">
+            <span className="text-sm text-[#A1A1AA]">
               Change tier for{" "}
               <span className="text-white font-medium">
                 {users.find((u) => u.id === selectedUser)?.email}
@@ -581,7 +581,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
             <select
               value={selectedTier}
               onChange={(e) => setSelectedTier(e.target.value as Tier)}
-              className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[#4F46E5]"
+              className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[#6366F1]"
             >
               <option value="FREE">FREE</option>
               <option value="PRO">PRO</option>
@@ -590,7 +590,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
             <button
               onClick={handleUpgrade}
               disabled={upgrading}
-              className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded transition-colors"
+              className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded transition-colors"
             >
               {upgrading ? "Updating..." : "Confirm"}
             </button>

@@ -27,7 +27,7 @@ function getEventColor(eventType: string): string {
   const prefix = eventType.split(".")[0];
   return (
     EVENT_TYPE_COLORS[prefix] ||
-    "bg-[rgba(79,70,229,0.2)] text-[#94A3B8] border-[rgba(79,70,229,0.3)]"
+    "bg-[rgba(255,255,255,0.06)] text-[#A1A1AA] border-[rgba(255,255,255,0.10)]"
   );
 }
 
@@ -119,7 +119,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
               showError("CSV export failed", err instanceof Error ? err.message : "Unknown error");
             }
           }}
-          className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] hover:border-[#4F46E5] text-white text-sm px-4 py-2 rounded transition-colors"
+          className="bg-[#111114] border border-[rgba(255,255,255,0.10)] hover:border-[#6366F1] text-white text-sm px-4 py-2 rounded transition-colors"
         >
           Export CSV
         </button>
@@ -130,7 +130,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
         <div className="mb-4">
           <button
             onClick={() => setSummaryOpen(!summaryOpen)}
-            className="flex items-center gap-2 text-sm font-medium text-[#A78BFA] hover:text-white transition-colors mb-2"
+            className="flex items-center gap-2 text-sm font-medium text-[#818CF8] hover:text-white transition-colors mb-2"
           >
             <svg
               className={`w-3 h-3 transition-transform ${summaryOpen ? "rotate-90" : ""}`}
@@ -144,34 +144,34 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             Admin Actions (30d) &mdash; {adminSummary.totalActions} total
           </button>
           {summaryOpen && (
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4 space-y-4">
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-4 space-y-4">
               {/* Stat cards */}
               <div className="flex flex-wrap gap-3">
                 {adminSummary.summary.map((s) => (
                   <div
                     key={s.eventType}
-                    className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#0F0318] px-3 py-2"
+                    className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#09090B] px-3 py-2"
                   >
-                    <div className="text-xs text-[#94A3B8]">{s.eventType}</div>
+                    <div className="text-xs text-[#A1A1AA]">{s.eventType}</div>
                     <div className="text-lg font-bold text-white">{s.count}</div>
                   </div>
                 ))}
               </div>
               {/* Recent actions table */}
-              <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.1)]">
+              <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Time</th>
-                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Event</th>
-                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">User</th>
-                      <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Resource</th>
+                    <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                      <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
+                      <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Event</th>
+                      <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">User</th>
+                      <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Resource</th>
                     </tr>
                   </thead>
                   <tbody>
                     {adminSummary.recentEvents.map((ev) => (
-                      <tr key={ev.id} className="border-b border-[rgba(79,70,229,0.05)]">
-                        <td className="px-3 py-1.5 text-[#94A3B8] whitespace-nowrap">
+                      <tr key={ev.id} className="border-b border-[rgba(255,255,255,0.06)]">
+                        <td className="px-3 py-1.5 text-[#A1A1AA] whitespace-nowrap">
                           {new Date(ev.createdAt).toLocaleString()}
                         </td>
                         <td className="px-3 py-1.5">
@@ -185,15 +185,15 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
                           {ev.userId ? (
                             <button
                               onClick={() => onUserClick(ev.userId!)}
-                              className="text-[#22D3EE] hover:text-[#22D3EE]/80 font-mono transition-colors"
+                              className="text-[#818CF8] hover:text-[#818CF8]/80 font-mono transition-colors"
                             >
                               {ev.userId.substring(0, 12)}...
                             </button>
                           ) : (
-                            <span className="text-[#7C8DB0]">-</span>
+                            <span className="text-[#71717A]">-</span>
                           )}
                         </td>
-                        <td className="px-3 py-1.5 text-[#94A3B8]">{ev.resourceType || "-"}</td>
+                        <td className="px-3 py-1.5 text-[#A1A1AA]">{ev.resourceType || "-"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -212,7 +212,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             setEventTypeFilter(e.target.value);
             setPage(1);
           }}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         >
           <option value="">All Event Types</option>
           <option value="auth.login">auth.login</option>
@@ -244,7 +244,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             setUserIdFilter(e.target.value);
             setPage(1);
           }}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] transition-colors"
         />
         <input
           type="date"
@@ -253,7 +253,7 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             setDateFrom(e.target.value);
             setPage(1);
           }}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         />
         <input
           type="date"
@@ -262,32 +262,32 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
             setDateTo(e.target.value);
             setPage(1);
           }}
-          className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+          className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         />
       </div>
 
       {loading ? (
-        <div className="text-[#94A3B8] py-8 text-center">Loading audit logs...</div>
+        <div className="text-[#A1A1AA] py-8 text-center">Loading audit logs...</div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+          <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Timestamp</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Event Type</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">User</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Resource</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">IP</th>
+                <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Timestamp</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Event Type</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">User</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Resource</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">IP</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.map((log) => (
                   <tr
                     key={log.id}
-                    className="border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                    className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                   >
-                    <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">
+                    <td className="px-4 py-3 text-[#A1A1AA] whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
@@ -301,34 +301,34 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
                       {log.userId ? (
                         <button
                           onClick={() => onUserClick(log.userId!)}
-                          className="text-[#22D3EE] hover:text-[#22D3EE]/80 text-xs font-mono transition-colors"
+                          className="text-[#818CF8] hover:text-[#818CF8]/80 text-xs font-mono transition-colors"
                         >
                           {log.userId.substring(0, 12)}...
                         </button>
                       ) : (
-                        <span className="text-[#7C8DB0]">-</span>
+                        <span className="text-[#71717A]">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[#94A3B8] text-xs">
+                    <td className="px-4 py-3 text-[#A1A1AA] text-xs">
                       {log.resourceType && (
                         <span>
                           {log.resourceType}
                           {log.resourceId && (
-                            <span className="text-[#7C8DB0] ml-1 font-mono">
+                            <span className="text-[#71717A] ml-1 font-mono">
                               {log.resourceId.substring(0, 8)}
                             </span>
                           )}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[#7C8DB0] text-xs font-mono">
+                    <td className="px-4 py-3 text-[#71717A] text-xs font-mono">
                       {log.ipAddress || "-"}
                     </td>
                   </tr>
                 ))}
                 {logs.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-[#7C8DB0]">
+                    <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
                       No audit logs found
                     </td>
                   </tr>
@@ -340,21 +340,21 @@ export function AuditLogTab({ onUserClick }: AuditLogTabProps) {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center mt-4">
-              <span className="text-sm text-[#94A3B8]">
+              <span className="text-sm text-[#A1A1AA]">
                 Page {page} of {totalPages} ({total} total)
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 text-sm rounded border border-[rgba(79,70,229,0.3)] text-white disabled:opacity-30 hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                  className="px-3 py-1.5 text-sm rounded border border-[rgba(255,255,255,0.10)] text-white disabled:opacity-30 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1.5 text-sm rounded border border-[rgba(79,70,229,0.3)] text-white disabled:opacity-30 hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                  className="px-3 py-1.5 text-sm rounded border border-[rgba(255,255,255,0.10)] text-white disabled:opacity-30 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   Next
                 </button>

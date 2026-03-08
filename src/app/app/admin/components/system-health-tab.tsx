@@ -29,7 +29,7 @@ function StatusDot({ status }: { status: "ok" | "error" | "unconfigured" | "warn
   const colors = {
     ok: "bg-emerald-400",
     error: "bg-red-400",
-    unconfigured: "bg-[#64748B]",
+    unconfigured: "bg-[#71717A]",
     warning: "bg-amber-400",
   };
 
@@ -62,7 +62,7 @@ export function SystemHealthTab() {
   }, [fetchHealth]);
 
   if (loading) {
-    return <div className="text-[#94A3B8] py-8 text-center">Loading system health...</div>;
+    return <div className="text-[#A1A1AA] py-8 text-center">Loading system health...</div>;
   }
 
   if (!health) {
@@ -81,7 +81,7 @@ export function SystemHealthTab() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white">System Health</h2>
         {lastUpdated && (
-          <span className="text-xs text-[#7C8DB0]">
+          <span className="text-xs text-[#71717A]">
             Last updated: {lastUpdated.toLocaleTimeString()} (auto-refresh 2m)
           </span>
         )}
@@ -89,22 +89,22 @@ export function SystemHealthTab() {
 
       {/* Services */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           <div className="flex items-center mb-2">
             <StatusDot status={health.services.database.status} />
             <span className="text-white font-medium">Database</span>
           </div>
-          <div className="text-sm text-[#94A3B8]">
+          <div className="text-sm text-[#A1A1AA]">
             Latency: <span className="text-white">{health.services.database.latency}ms</span>
           </div>
         </div>
 
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           <div className="flex items-center mb-2">
             <StatusDot status={health.services.redis.status} />
             <span className="text-white font-medium">Redis</span>
           </div>
-          <div className="text-sm text-[#94A3B8]">
+          <div className="text-sm text-[#A1A1AA]">
             {health.services.redis.status === "unconfigured" ? (
               "Not configured"
             ) : (
@@ -115,12 +115,12 @@ export function SystemHealthTab() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           <div className="flex items-center mb-2">
             <StatusDot status={health.services.stripe.status} />
             <span className="text-white font-medium">Stripe</span>
           </div>
-          <div className="text-sm text-[#94A3B8]">
+          <div className="text-sm text-[#A1A1AA]">
             {health.services.stripe.status === "unconfigured" ? (
               "Not configured"
             ) : (
@@ -134,44 +134,44 @@ export function SystemHealthTab() {
 
       {/* Exports & Webhooks */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           <div className="flex items-center mb-2">
             <StatusDot status={health.exports.queueDepth > 10 ? "warning" : "ok"} />
-            <span className="text-sm text-[#94A3B8]">Export Queue</span>
+            <span className="text-sm text-[#A1A1AA]">Export Queue</span>
           </div>
           <div className="text-2xl font-bold text-white">{health.exports.queueDepth}</div>
         </div>
 
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           <div className="flex items-center mb-2">
             <StatusDot status={exportStatus} />
-            <span className="text-sm text-[#94A3B8]">Failure Rate (24h)</span>
+            <span className="text-sm text-[#A1A1AA]">Failure Rate (24h)</span>
           </div>
           <div className="text-2xl font-bold text-white">{health.exports.failureRate}%</div>
-          <div className="text-xs text-[#7C8DB0]">
+          <div className="text-xs text-[#71717A]">
             {health.exports.failed24h} / {health.exports.total24h}
           </div>
         </div>
 
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8] mb-2">Webhooks (24h)</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA] mb-2">Webhooks (24h)</div>
           <div className="text-2xl font-bold text-white">{health.webhooks.count24h}</div>
         </div>
 
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8] mb-2">Live EAs</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA] mb-2">Live EAs</div>
           <div className="flex gap-4 mt-1">
             <div>
               <span className="text-emerald-400 font-bold">{health.eas.online}</span>
-              <span className="text-xs text-[#7C8DB0] ml-1">online</span>
+              <span className="text-xs text-[#71717A] ml-1">online</span>
             </div>
             <div>
               <span className="text-gray-400 font-bold">{health.eas.offline}</span>
-              <span className="text-xs text-[#7C8DB0] ml-1">offline</span>
+              <span className="text-xs text-[#71717A] ml-1">offline</span>
             </div>
             <div>
               <span className="text-red-400 font-bold">{health.eas.error}</span>
-              <span className="text-xs text-[#7C8DB0] ml-1">error</span>
+              <span className="text-xs text-[#71717A] ml-1">error</span>
             </div>
           </div>
         </div>

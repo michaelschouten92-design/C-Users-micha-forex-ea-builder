@@ -14,9 +14,9 @@ interface PlanLimitConfig {
 }
 
 const TIER_LABELS: Record<string, { name: string; color: string }> = {
-  FREE: { name: "Free", color: "border-[#7C8DB0]/50" },
-  PRO: { name: "Pro", color: "border-[#4F46E5]/50" },
-  ELITE: { name: "Elite", color: "border-[#A78BFA]/50" },
+  FREE: { name: "Free", color: "border-[#71717A]/50" },
+  PRO: { name: "Pro", color: "border-[#6366F1]/50" },
+  ELITE: { name: "Elite", color: "border-[#818CF8]/50" },
 };
 
 export function PlanLimitsTab() {
@@ -81,13 +81,13 @@ export function PlanLimitsTab() {
   }
 
   if (loading) {
-    return <div className="text-[#94A3B8] py-8 text-center">Loading plan limits...</div>;
+    return <div className="text-[#A1A1AA] py-8 text-center">Loading plan limits...</div>;
   }
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-6">Plan Limits Configuration</h2>
-      <p className="text-sm text-[#94A3B8] mb-6">
+      <p className="text-sm text-[#A1A1AA] mb-6">
         Configure limits per tier. Changes apply immediately. Use 999999 for unlimited.
       </p>
 
@@ -96,11 +96,11 @@ export function PlanLimitsTab() {
           const label = TIER_LABELS[tier];
           const hasEdits = !!edits[tier];
           return (
-            <div key={tier} className={`rounded-lg border ${label.color} bg-[#1A0626]/60 p-6`}>
+            <div key={tier} className={`rounded-lg border ${label.color} bg-[#111114] p-6`}>
               <h3 className="text-lg font-bold text-white mb-4">{label.name}</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1">Max Projects</label>
+                  <label className="block text-sm text-[#A1A1AA] mb-1">Max Projects</label>
                   <input
                     type="number"
                     min={0}
@@ -108,11 +108,11 @@ export function PlanLimitsTab() {
                     onChange={(e) =>
                       setEditValue(tier, "maxProjects", parseInt(e.target.value) || 0)
                     }
-                    className="w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+                    className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-[#94A3B8] mb-1">Max Exports / Month</label>
+                  <label className="block text-sm text-[#A1A1AA] mb-1">Max Exports / Month</label>
                   <input
                     type="number"
                     min={0}
@@ -120,16 +120,16 @@ export function PlanLimitsTab() {
                     onChange={(e) =>
                       setEditValue(tier, "maxExportsPerMonth", parseInt(e.target.value) || 0)
                     }
-                    className="w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#4F46E5] transition-colors"
+                    className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm text-[#A1A1AA] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={(getEditValue(tier, "canExportMQL5") as boolean) ?? true}
                       onChange={(e) => setEditValue(tier, "canExportMQL5", e.target.checked)}
-                      className="accent-[#4F46E5]"
+                      className="accent-[#6366F1]"
                     />
                     MQL5
                   </label>
@@ -137,7 +137,7 @@ export function PlanLimitsTab() {
                 <button
                   onClick={() => handleSave(tier)}
                   disabled={saving === tier || !hasEdits}
-                  className="w-full bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+                  className="w-full bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
                 >
                   {saving === tier ? "Saving..." : "Save"}
                 </button>

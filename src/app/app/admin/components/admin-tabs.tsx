@@ -41,8 +41,8 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
           onClick={() => onTabChange(tab.id)}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
             activeTab === tab.id
-              ? "bg-[#4F46E5] text-white shadow-lg shadow-[#4F46E5]/25"
-              : "bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)] hover:text-white"
+              ? "bg-[#6366F1] text-white shadow-lg shadow-[#6366F1]/25"
+              : "bg-[#111114]/60 text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)] hover:text-white"
           }`}
         >
           <span className="mr-1.5">{tab.icon}</span>

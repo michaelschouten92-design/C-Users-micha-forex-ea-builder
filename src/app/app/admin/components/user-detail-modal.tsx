@@ -72,7 +72,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 const EA_STATUS_DOT: Record<string, string> = {
   ONLINE: "#10B981",
-  OFFLINE: "#64748B",
+  OFFLINE: "#71717A",
   ERROR: "#EF4444",
 };
 
@@ -237,67 +237,67 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-[rgba(79,70,229,0.3)] bg-[#0F0318] shadow-2xl">
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-[rgba(255,255,255,0.10)] bg-[#09090B] shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-[#0F0318] border-b border-[rgba(79,70,229,0.2)] px-6 py-4 flex justify-between items-center z-10">
+        <div className="sticky top-0 bg-[#09090B] border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex justify-between items-center z-10">
           <h2 className="text-lg font-bold text-white">User Detail</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-[#94A3B8] hover:text-white text-xl transition-colors"
+            className="text-[#A1A1AA] hover:text-white text-xl transition-colors"
           >
             &times;
           </button>
         </div>
 
         {loading ? (
-          <div className="p-6 text-center text-[#94A3B8]">Loading user details...</div>
+          <div className="p-6 text-center text-[#A1A1AA]">Loading user details...</div>
         ) : !user ? (
           <div className="p-6 text-center text-red-400">User not found</div>
         ) : (
           <div className="p-6 space-y-6">
             {/* Account */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Account
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-[#7C8DB0]">Email:</span>{" "}
+                  <span className="text-[#71717A]">Email:</span>{" "}
                   <span className="text-white">{user.email}</span>
                 </div>
                 <div>
-                  <span className="text-[#7C8DB0]">Verified:</span>{" "}
+                  <span className="text-[#71717A]">Verified:</span>{" "}
                   <span className={user.emailVerified ? "text-emerald-400" : "text-yellow-400"}>
                     {user.emailVerified ? "Yes" : "No"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#7C8DB0]">Role:</span>{" "}
+                  <span className="text-[#71717A]">Role:</span>{" "}
                   <span className="text-white">{user.role}</span>
                 </div>
                 <div>
-                  <span className="text-[#7C8DB0]">Joined:</span>{" "}
+                  <span className="text-[#71717A]">Joined:</span>{" "}
                   <span className="text-white">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#7C8DB0]">Last Login:</span>{" "}
+                  <span className="text-[#71717A]">Last Login:</span>{" "}
                   <span className="text-white">
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
                   </span>
                 </div>
                 {user.referralCode && (
                   <div>
-                    <span className="text-[#7C8DB0]">Referral Code:</span>{" "}
-                    <span className="text-[#A78BFA] font-mono">{user.referralCode}</span>
+                    <span className="text-[#71717A]">Referral Code:</span>{" "}
+                    <span className="text-[#818CF8] font-mono">{user.referralCode}</span>
                   </div>
                 )}
                 {user.referredBy && (
                   <div>
-                    <span className="text-[#7C8DB0]">Referred By:</span>{" "}
-                    <span className="text-[#A78BFA] font-mono">{user.referredBy}</span>
+                    <span className="text-[#71717A]">Referred By:</span>{" "}
+                    <span className="text-[#818CF8] font-mono">{user.referredBy}</span>
                   </div>
                 )}
               </div>
@@ -305,26 +305,26 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Subscription */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Subscription
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-[#7C8DB0]">Tier:</span>{" "}
+                  <span className="text-[#71717A]">Tier:</span>{" "}
                   <span className="text-white">{user.subscription?.tier || "FREE"}</span>
                 </div>
                 <div>
-                  <span className="text-[#7C8DB0]">Status:</span>{" "}
+                  <span className="text-[#71717A]">Status:</span>{" "}
                   <span className="text-white">{user.subscription?.status || "active"}</span>
                 </div>
                 {user.subscription?.stripeCustomerId && (
                   <div className="col-span-2">
-                    <span className="text-[#7C8DB0]">Stripe:</span>{" "}
+                    <span className="text-[#71717A]">Stripe:</span>{" "}
                     <a
                       href={`https://dashboard.stripe.com/customers/${user.subscription.stripeCustomerId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#22D3EE] hover:text-[#22D3EE]/80 text-xs font-mono transition-colors"
+                      className="text-[#818CF8] hover:text-[#818CF8]/80 text-xs font-mono transition-colors"
                     >
                       {user.subscription.stripeCustomerId}
                     </a>
@@ -332,7 +332,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 )}
                 {user.subscription?.currentPeriodStart && (
                   <div>
-                    <span className="text-[#7C8DB0]">Period Start:</span>{" "}
+                    <span className="text-[#71717A]">Period Start:</span>{" "}
                     <span className="text-white">
                       {new Date(user.subscription.currentPeriodStart).toLocaleDateString()}
                     </span>
@@ -340,7 +340,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 )}
                 {user.subscription?.currentPeriodEnd && (
                   <div>
-                    <span className="text-[#7C8DB0]">Period End:</span>{" "}
+                    <span className="text-[#71717A]">Period End:</span>{" "}
                     <span className="text-white">
                       {new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}
                     </span>
@@ -351,7 +351,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Actions */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Actions
               </h3>
               <div className="flex flex-wrap gap-3">
@@ -359,7 +359,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   <select
                     value={selectedTier}
                     onChange={(e) => setSelectedTier(e.target.value as Tier)}
-                    className="bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-sm text-white focus:outline-none"
+                    className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
                   >
                     <option value="FREE">FREE</option>
                     <option value="PRO">PRO</option>
@@ -368,7 +368,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   <button
                     onClick={handleTierChange}
                     disabled={upgrading}
-                    className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+                    className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
                   >
                     {upgrading ? "Updating..." : "Change Tier"}
                   </button>
@@ -405,7 +405,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                       value={suspendReason}
                       onChange={(e) => setSuspendReason(e.target.value)}
                       placeholder="Suspension reason..."
-                      className="flex-1 bg-[#0F0318] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-red-500"
+                      className="flex-1 bg-[#09090B] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-red-500"
                     />
                     <button
                       onClick={handleSuspend}
@@ -430,7 +430,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   <span className="text-red-400 font-medium">Suspended:</span>{" "}
                   <span className="text-white">{user.suspendedReason}</span>
                   {user.suspendedAt && (
-                    <span className="text-[#7C8DB0] ml-2">
+                    <span className="text-[#71717A] ml-2">
                       ({new Date(user.suspendedAt).toLocaleString()})
                     </span>
                   )}
@@ -439,20 +439,20 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
               {/* Extend Subscription */}
               <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs text-[#94A3B8]">Extend subscription by</span>
+                <span className="text-xs text-[#A1A1AA]">Extend subscription by</span>
                 <input
                   type="number"
                   min={1}
                   max={365}
                   value={extendDays}
                   onChange={(e) => setExtendDays(Number(e.target.value))}
-                  className="w-16 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#4F46E5]"
+                  className="w-16 bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#6366F1]"
                 />
-                <span className="text-xs text-[#94A3B8]">days</span>
+                <span className="text-xs text-[#A1A1AA]">days</span>
                 <button
                   onClick={handleExtendSubscription}
                   disabled={extending}
-                  className="text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 border border-[#22D3EE]/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                  className="text-xs text-[#818CF8] hover:text-[#818CF8]/80 border border-[#818CF8]/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
                 >
                   {extending ? "Extending..." : "Extend"}
                 </button>
@@ -461,7 +461,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Admin Notes */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Admin Notes
               </h3>
               <textarea
@@ -469,7 +469,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add private notes about this user..."
                 rows={3}
-                className="w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors resize-y"
+                className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] transition-colors resize-y"
               />
               <button
                 onClick={async () => {
@@ -485,7 +485,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                   }
                 }}
                 disabled={savingNotes}
-                className="mt-2 bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+                className="mt-2 bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
               >
                 {savingNotes ? "Saving..." : "Save Notes"}
               </button>
@@ -493,35 +493,35 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Projects */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Projects ({user.projects.length})
               </h3>
               {user.projects.length === 0 ? (
-                <div className="text-[#7C8DB0] text-sm">No projects</div>
+                <div className="text-[#71717A] text-sm">No projects</div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Name</th>
-                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">
+                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
+                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">
                           Versions
                         </th>
-                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Exports</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Updated</th>
+                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Exports</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Updated</th>
                       </tr>
                     </thead>
                     <tbody>
                       {user.projects.map((p) => (
-                        <tr key={p.id} className="border-b border-[rgba(79,70,229,0.1)]">
+                        <tr key={p.id} className="border-b border-[rgba(255,255,255,0.06)]">
                           <td className="px-3 py-2 text-white">{p.name}</td>
-                          <td className="px-3 py-2 text-right text-[#CBD5E1]">
+                          <td className="px-3 py-2 text-right text-[#FAFAFA]">
                             {p._count.versions}
                           </td>
-                          <td className="px-3 py-2 text-right text-[#CBD5E1]">
+                          <td className="px-3 py-2 text-right text-[#FAFAFA]">
                             {p._count.exports}
                           </td>
-                          <td className="px-3 py-2 text-[#94A3B8]">
+                          <td className="px-3 py-2 text-[#A1A1AA]">
                             {new Date(p.updatedAt).toLocaleDateString()}
                           </td>
                         </tr>
@@ -534,34 +534,34 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Recent Exports */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Recent Exports ({user.exports.length})
               </h3>
               {user.exports.length === 0 ? (
-                <div className="text-[#7C8DB0] text-sm">No exports</div>
+                <div className="text-[#71717A] text-sm">No exports</div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Time</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Project</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Type</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Status</th>
+                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Project</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Type</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {user.exports.map((exp) => (
-                        <tr key={exp.id} className="border-b border-[rgba(79,70,229,0.1)]">
-                          <td className="px-3 py-2 text-[#94A3B8]">
+                        <tr key={exp.id} className="border-b border-[rgba(255,255,255,0.06)]">
+                          <td className="px-3 py-2 text-[#A1A1AA]">
                             {new Date(exp.createdAt).toLocaleString()}
                           </td>
                           <td className="px-3 py-2 text-white">{exp.project.name}</td>
-                          <td className="px-3 py-2 text-[#A78BFA] font-mono text-xs">
+                          <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">
                             {exp.exportType}
                           </td>
                           <td className="px-3 py-2">
-                            <span className={STATUS_BADGE[exp.status] || "text-[#94A3B8]"}>
+                            <span className={STATUS_BADGE[exp.status] || "text-[#A1A1AA]"}>
                               {exp.status}
                             </span>
                           </td>
@@ -575,27 +575,27 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Live Strategies */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Live Strategies ({user.liveEAs?.length ?? 0})
               </h3>
               {!user.liveEAs || user.liveEAs.length === 0 ? (
-                <div className="text-[#7C8DB0] text-sm">No live strategies</div>
+                <div className="text-[#71717A] text-sm">No live strategies</div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Name</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Symbol</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Status</th>
-                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Health</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">Strategy</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">
+                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Symbol</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
+                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Health</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Strategy</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">
                           Lifecycle
                         </th>
-                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Trades</th>
-                        <th className="text-right px-3 py-2 text-[#94A3B8] font-medium">Profit</th>
-                        <th className="text-left px-3 py-2 text-[#94A3B8] font-medium">
+                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Trades</th>
+                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Profit</th>
+                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">
                           Heartbeat
                         </th>
                       </tr>
@@ -604,18 +604,18 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                       {user.liveEAs.map((ea) => {
                         const health = ea.healthSnapshots?.[0];
                         return (
-                          <tr key={ea.id} className="border-b border-[rgba(79,70,229,0.1)]">
+                          <tr key={ea.id} className="border-b border-[rgba(255,255,255,0.06)]">
                             <td className="px-3 py-2 text-white">{ea.eaName}</td>
-                            <td className="px-3 py-2 text-[#A78BFA] font-mono text-xs">
+                            <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">
                               {ea.symbol || "-"}
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex items-center gap-1.5">
                                 <div
                                   className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: EA_STATUS_DOT[ea.status] || "#64748B" }}
+                                  style={{ backgroundColor: EA_STATUS_DOT[ea.status] || "#71717A" }}
                                 />
-                                <span className="text-[#CBD5E1] text-xs">{ea.status}</span>
+                                <span className="text-[#FAFAFA] text-xs">{ea.status}</span>
                               </div>
                             </td>
                             <td className="px-3 py-2 text-right">
@@ -628,22 +628,22 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                                         ? "text-yellow-400"
                                         : health.status === "DEGRADED"
                                           ? "text-red-400"
-                                          : "text-[#94A3B8]"
+                                          : "text-[#A1A1AA]"
                                   }
                                 >
                                   {health.overallScore.toFixed(0)}
                                 </span>
                               ) : (
-                                <span className="text-[#7C8DB0]">-</span>
+                                <span className="text-[#71717A]">-</span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-[#CBD5E1] text-xs">
+                            <td className="px-3 py-2 text-[#FAFAFA] text-xs">
                               {ea.strategyStatus}
                             </td>
-                            <td className="px-3 py-2 text-[#CBD5E1] text-xs">
+                            <td className="px-3 py-2 text-[#FAFAFA] text-xs">
                               {ea.lifecyclePhase}
                             </td>
-                            <td className="px-3 py-2 text-right text-[#CBD5E1]">
+                            <td className="px-3 py-2 text-right text-[#FAFAFA]">
                               {ea.totalTrades}
                             </td>
                             <td className="px-3 py-2 text-right">
@@ -656,7 +656,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                                 {ea.totalProfit.toFixed(2)}
                               </span>
                             </td>
-                            <td className="px-3 py-2 text-[#94A3B8] text-xs">
+                            <td className="px-3 py-2 text-[#A1A1AA] text-xs">
                               {ea.lastHeartbeat
                                 ? new Date(ea.lastHeartbeat).toLocaleString()
                                 : "Never"}
@@ -672,24 +672,24 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
 
             {/* Activity Log */}
             <section>
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Activity Log ({user.auditLogs.length})
               </h3>
               {user.auditLogs.length === 0 ? (
-                <div className="text-[#7C8DB0] text-sm">No activity</div>
+                <div className="text-[#71717A] text-sm">No activity</div>
               ) : (
                 <div className="space-y-1 max-h-60 overflow-y-auto">
                   {user.auditLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="flex items-center gap-3 text-xs py-1.5 border-b border-[rgba(79,70,229,0.05)]"
+                      className="flex items-center gap-3 text-xs py-1.5 border-b border-[rgba(255,255,255,0.06)]"
                     >
-                      <span className="text-[#7C8DB0] whitespace-nowrap">
+                      <span className="text-[#71717A] whitespace-nowrap">
                         {new Date(log.createdAt).toLocaleString()}
                       </span>
-                      <span className="text-[#A78BFA] font-medium">{log.eventType}</span>
+                      <span className="text-[#818CF8] font-medium">{log.eventType}</span>
                       {log.resourceType && (
-                        <span className="text-[#94A3B8]">{log.resourceType}</span>
+                        <span className="text-[#A1A1AA]">{log.resourceType}</span>
                       )}
                     </div>
                   ))}

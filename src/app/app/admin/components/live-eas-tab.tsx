@@ -140,29 +140,29 @@ export function LiveEAsTab() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Total EAs</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Total EAs</div>
           <div className="text-2xl font-bold text-white mt-1">{stats?.totalInstances ?? "..."}</div>
         </div>
-        <div className="rounded-lg border border-emerald-500/20 bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Online</div>
+        <div className="rounded-lg border border-emerald-500/20 bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Online</div>
           <div className="text-2xl font-bold text-emerald-400 mt-1">
             {stats?.onlineCount ?? "..."}
           </div>
         </div>
-        <div className="rounded-lg border border-gray-500/20 bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Offline</div>
+        <div className="rounded-lg border border-gray-500/20 bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Offline</div>
           <div className="text-2xl font-bold text-gray-400 mt-1">
             {stats?.offlineCount ?? "..."}
           </div>
         </div>
-        <div className="rounded-lg border border-red-500/20 bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Errors</div>
+        <div className="rounded-lg border border-red-500/20 bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Errors</div>
           <div className="text-2xl font-bold text-red-400 mt-1">{stats?.errorCount ?? "..."}</div>
         </div>
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Total Trades</div>
-          <div className="text-2xl font-bold text-cyan-400 mt-1">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Total Trades</div>
+          <div className="text-2xl font-bold text-[#818CF8] mt-1">
             {stats?.totalTradesAllTime?.toLocaleString() ?? "..."}
           </div>
         </div>
@@ -172,30 +172,30 @@ export function LiveEAsTab() {
       {stats && (stats.topSymbols.length > 0 || stats.topBrokers.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {stats.topSymbols.length > 0 && (
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Top Symbols
               </h3>
               <div className="space-y-2">
                 {stats.topSymbols.map((s) => (
                   <div key={s.symbol} className="flex justify-between text-sm">
                     <span className="text-white font-mono">{s.symbol}</span>
-                    <span className="text-[#94A3B8]">{s.count}</span>
+                    <span className="text-[#A1A1AA]">{s.count}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
           {stats.topBrokers.length > 0 && (
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
                 Top Brokers
               </h3>
               <div className="space-y-2">
                 {stats.topBrokers.map((b) => (
                   <div key={b.broker} className="flex justify-between text-sm">
                     <span className="text-white">{b.broker}</span>
-                    <span className="text-[#94A3B8]">{b.count}</span>
+                    <span className="text-[#A1A1AA]">{b.count}</span>
                   </div>
                 ))}
               </div>
@@ -209,28 +209,28 @@ export function LiveEAsTab() {
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Performance Analytics</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <div className="text-sm text-[#94A3B8]">Win Rate</div>
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <div className="text-sm text-[#A1A1AA]">Win Rate</div>
               <div className="text-2xl font-bold text-emerald-400 mt-1">{performance.winRate}%</div>
             </div>
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <div className="text-sm text-[#94A3B8]">Avg Profit</div>
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <div className="text-sm text-[#A1A1AA]">Avg Profit</div>
               <div
                 className={`text-2xl font-bold mt-1 ${performance.avgProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
               >
                 ${performance.avgProfit.toFixed(2)}
               </div>
             </div>
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <div className="text-sm text-[#94A3B8]">Total Profit</div>
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <div className="text-sm text-[#A1A1AA]">Total Profit</div>
               <div
                 className={`text-2xl font-bold mt-1 ${performance.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
               >
                 ${performance.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
             </div>
-            <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-              <div className="text-sm text-[#94A3B8]">Closed Trades</div>
+            <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+              <div className="text-sm text-[#A1A1AA]">Closed Trades</div>
               <div className="text-2xl font-bold text-white mt-1">
                 {performance.totalClosedTrades.toLocaleString()}
               </div>
@@ -239,25 +239,25 @@ export function LiveEAsTab() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top 5 EAs */}
-            <div className="rounded-lg border border-emerald-500/20 bg-[#1A0626]/60 p-4">
+            <div className="rounded-lg border border-emerald-500/20 bg-[#111114] p-4">
               <h4 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider mb-3">
                 Top 5 EAs
               </h4>
               {performance.top5.length === 0 ? (
-                <p className="text-[#7C8DB0] text-sm">No data</p>
+                <p className="text-[#71717A] text-sm">No data</p>
               ) : (
                 <div className="space-y-2">
                   {performance.top5.map((ea) => (
                     <div key={ea.id} className="flex justify-between items-center text-sm">
                       <div>
                         <span className="text-white font-medium">{ea.eaName}</span>
-                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.userEmail}</span>
+                        <span className="text-[#71717A] ml-2 text-xs">{ea.userEmail}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-emerald-400 font-mono">
                           ${ea.totalProfit.toFixed(2)}
                         </span>
-                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.winRate}% WR</span>
+                        <span className="text-[#71717A] ml-2 text-xs">{ea.winRate}% WR</span>
                       </div>
                     </div>
                   ))}
@@ -265,23 +265,23 @@ export function LiveEAsTab() {
               )}
             </div>
             {/* Bottom 5 EAs */}
-            <div className="rounded-lg border border-red-500/20 bg-[#1A0626]/60 p-4">
+            <div className="rounded-lg border border-red-500/20 bg-[#111114] p-4">
               <h4 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-3">
                 Bottom 5 EAs
               </h4>
               {performance.bottom5.length === 0 ? (
-                <p className="text-[#7C8DB0] text-sm">No data</p>
+                <p className="text-[#71717A] text-sm">No data</p>
               ) : (
                 <div className="space-y-2">
                   {performance.bottom5.map((ea) => (
                     <div key={ea.id} className="flex justify-between items-center text-sm">
                       <div>
                         <span className="text-white font-medium">{ea.eaName}</span>
-                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.userEmail}</span>
+                        <span className="text-[#71717A] ml-2 text-xs">{ea.userEmail}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-red-400 font-mono">${ea.totalProfit.toFixed(2)}</span>
-                        <span className="text-[#7C8DB0] ml-2 text-xs">{ea.winRate}% WR</span>
+                        <span className="text-[#71717A] ml-2 text-xs">{ea.winRate}% WR</span>
                       </div>
                     </div>
                   ))}
@@ -304,8 +304,8 @@ export function LiveEAsTab() {
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 statusFilter === s
-                  ? "bg-[#4F46E5] text-white"
-                  : "bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+                  ? "bg-[#6366F1] text-white"
+                  : "bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)]"
               }`}
             >
               {s || "All"}
@@ -325,11 +325,11 @@ export function LiveEAsTab() {
             placeholder="Search by user, EA name, symbol..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-[#1A0626]/60 border border-[rgba(79,70,229,0.2)] text-white text-sm placeholder-[#94A3B8]/50 focus:outline-none focus:border-[#4F46E5]"
+            className="flex-1 px-3 py-1.5 rounded-lg bg-[#111114] border border-[rgba(255,255,255,0.06)] text-white text-sm placeholder-[#A1A1AA]/50 focus:outline-none focus:border-[#6366F1]"
           />
           <button
             type="submit"
-            className="px-4 py-1.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#4338CA] transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
           >
             Search
           </button>
@@ -337,10 +337,10 @@ export function LiveEAsTab() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+      <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#1A0626]/80 text-[#94A3B8] text-left">
+            <tr className="bg-[#111114] text-[#A1A1AA] text-left">
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">EA Name</th>
               <th className="px-4 py-3 font-medium">User</th>
@@ -356,13 +356,13 @@ export function LiveEAsTab() {
           <tbody>
             {loading && instances.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-[#94A3B8]">
+                <td colSpan={10} className="px-4 py-8 text-center text-[#A1A1AA]">
                   Loading...
                 </td>
               </tr>
             ) : instances.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-[#94A3B8]">
+                <td colSpan={10} className="px-4 py-8 text-center text-[#A1A1AA]">
                   No live EAs found
                 </td>
               </tr>
@@ -371,7 +371,7 @@ export function LiveEAsTab() {
                 <tr
                   key={inst.id}
                   onClick={() => setSelectedId(inst.id)}
-                  className="border-t border-[rgba(79,70,229,0.1)] hover:bg-[#1A0626]/40 cursor-pointer transition-colors"
+                  className="border-t border-[rgba(255,255,255,0.06)] hover:bg-[#111114] cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span
@@ -381,11 +381,11 @@ export function LiveEAsTab() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-white font-medium">{inst.eaName}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{inst.userEmail}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
+                  <td className="px-4 py-3 text-[#A1A1AA]">{inst.userEmail}</td>
+                  <td className="px-4 py-3 text-[#A1A1AA]">
                     {inst.symbol ?? "-"} {inst.timeframe ? `/ ${inst.timeframe}` : ""}
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8] max-w-[120px] truncate">
+                  <td className="px-4 py-3 text-[#A1A1AA] max-w-[120px] truncate">
                     {inst.broker ?? "-"}
                   </td>
                   <td className="px-4 py-3 text-right text-white font-mono">
@@ -410,7 +410,7 @@ export function LiveEAsTab() {
                       maximumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
+                  <td className="px-4 py-3 text-[#A1A1AA]">
                     {formatRelativeTime(inst.lastHeartbeat)}
                   </td>
                 </tr>
@@ -423,14 +423,14 @@ export function LiveEAsTab() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-[#94A3B8]">
+          <div className="text-sm text-[#A1A1AA]">
             Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 rounded bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] disabled:opacity-40 hover:border-[rgba(79,70,229,0.4)] text-sm"
+              className="px-3 py-1 rounded bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] disabled:opacity-40 hover:border-[rgba(255,255,255,0.10)] text-sm"
             >
               Prev
             </button>
@@ -440,7 +440,7 @@ export function LiveEAsTab() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 rounded bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] disabled:opacity-40 hover:border-[rgba(79,70,229,0.4)] text-sm"
+              className="px-3 py-1 rounded bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] disabled:opacity-40 hover:border-[rgba(255,255,255,0.10)] text-sm"
             >
               Next
             </button>

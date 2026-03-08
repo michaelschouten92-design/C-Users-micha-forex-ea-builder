@@ -72,7 +72,7 @@ const STATUS_COLOR: Record<string, string> = {
 function EquityCurve({ heartbeats }: { heartbeats: Heartbeat[] }) {
   if (heartbeats.length < 2) {
     return (
-      <div className="h-40 flex items-center justify-center text-[#94A3B8] text-sm">
+      <div className="h-40 flex items-center justify-center text-[#A1A1AA] text-sm">
         Not enough data for chart
       </div>
     );
@@ -117,7 +117,7 @@ function EquityCurve({ heartbeats }: { heartbeats: Heartbeat[] }) {
           strokeWidth="2"
         />
       </svg>
-      <div className="flex justify-between text-xs text-[#94A3B8] mt-1 px-1">
+      <div className="flex justify-between text-xs text-[#A1A1AA] mt-1 px-1">
         <span>
           ${minEq.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
         </span>
@@ -163,13 +163,13 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#0F0518] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl">
+      <div className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[rgba(79,70,229,0.15)]">
+        <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.06)]">
           <div>
             <h2 className="text-xl font-bold text-white">{data?.eaName ?? "Loading..."}</h2>
             {data && (
-              <div className="flex items-center gap-3 mt-1 text-sm text-[#94A3B8]">
+              <div className="flex items-center gap-3 mt-1 text-sm text-[#A1A1AA]">
                 <span className={STATUS_COLOR[data.status]}>{data.status}</span>
                 <span>{data.userEmail}</span>
                 <span>
@@ -181,22 +181,22 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-[#94A3B8] hover:text-white text-2xl leading-none px-2"
+            className="text-[#A1A1AA] hover:text-white text-2xl leading-none px-2"
           >
             &times;
           </button>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-[#94A3B8]">Loading...</div>
+          <div className="p-8 text-center text-[#A1A1AA]">Loading...</div>
         ) : !data ? (
           <div className="p-8 text-center text-red-400">Failed to load data</div>
         ) : (
           <div className="p-6 space-y-6">
             {/* Equity Curve */}
             <div>
-              <h3 className="text-sm font-medium text-[#94A3B8] mb-2">Equity Curve</h3>
-              <div className="rounded-lg border border-[rgba(79,70,229,0.15)] bg-[#1A0626]/40 p-3">
+              <h3 className="text-sm font-medium text-[#A1A1AA] mb-2">Equity Curve</h3>
+              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
                 <EquityCurve heartbeats={data.heartbeats} />
               </div>
             </div>
@@ -240,13 +240,13 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
             </div>
 
             {/* Section tabs */}
-            <div className="flex gap-2 border-b border-[rgba(79,70,229,0.15)] pb-2">
+            <div className="flex gap-2 border-b border-[rgba(255,255,255,0.06)] pb-2">
               <button
                 onClick={() => setActiveSection("trades")}
                 className={`px-3 py-1.5 rounded-t text-sm font-medium transition-colors ${
                   activeSection === "trades"
-                    ? "text-white border-b-2 border-[#4F46E5]"
-                    : "text-[#94A3B8] hover:text-white"
+                    ? "text-white border-b-2 border-[#6366F1]"
+                    : "text-[#A1A1AA] hover:text-white"
                 }`}
               >
                 Trade History ({data.trades.length})
@@ -269,7 +269,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                       showError("Failed to export trades");
                     }
                   }}
-                  className="px-3 py-1.5 text-xs text-[#22D3EE] hover:text-[#22D3EE]/80 transition-colors ml-auto"
+                  className="px-3 py-1.5 text-xs text-[#818CF8] hover:text-[#818CF8]/80 transition-colors ml-auto"
                 >
                   Export Trades CSV
                 </button>
@@ -278,8 +278,8 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                 onClick={() => setActiveSection("errors")}
                 className={`px-3 py-1.5 rounded-t text-sm font-medium transition-colors ${
                   activeSection === "errors"
-                    ? "text-white border-b-2 border-[#4F46E5]"
-                    : "text-[#94A3B8] hover:text-white"
+                    ? "text-white border-b-2 border-[#6366F1]"
+                    : "text-[#A1A1AA] hover:text-white"
                 }`}
               >
                 Error Log ({data.errors.length})
@@ -288,10 +288,10 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
 
             {/* Trade History */}
             {activeSection === "trades" && (
-              <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.15)]">
+              <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-[#1A0626]/80 text-[#94A3B8] text-left">
+                    <tr className="bg-[#111114] text-[#A1A1AA] text-left">
                       <th className="px-3 py-2 font-medium">Ticket</th>
                       <th className="px-3 py-2 font-medium">Type</th>
                       <th className="px-3 py-2 font-medium">Symbol</th>
@@ -306,13 +306,13 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                   <tbody>
                     {data.trades.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-3 py-6 text-center text-[#94A3B8]">
+                        <td colSpan={9} className="px-3 py-6 text-center text-[#A1A1AA]">
                           No trades recorded
                         </td>
                       </tr>
                     ) : (
                       data.trades.map((trade) => (
-                        <tr key={trade.id} className="border-t border-[rgba(79,70,229,0.1)]">
+                        <tr key={trade.id} className="border-t border-[rgba(255,255,255,0.06)]">
                           <td className="px-3 py-2 text-white font-mono">{trade.ticket}</td>
                           <td className="px-3 py-2">
                             <span
@@ -321,7 +321,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                               {trade.type}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-[#94A3B8]">{trade.symbol}</td>
+                          <td className="px-3 py-2 text-[#A1A1AA]">{trade.symbol}</td>
                           <td className="px-3 py-2 text-right text-white font-mono">
                             {trade.lots.toFixed(2)}
                           </td>
@@ -339,10 +339,10 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                             {trade.profit >= 0 ? "+" : ""}
                             {trade.profit.toFixed(2)}
                           </td>
-                          <td className="px-3 py-2 text-[#94A3B8]">
+                          <td className="px-3 py-2 text-[#A1A1AA]">
                             {new Date(trade.openTime).toLocaleString()}
                           </td>
-                          <td className="px-3 py-2 text-[#94A3B8]">
+                          <td className="px-3 py-2 text-[#A1A1AA]">
                             {trade.closeTime ? new Date(trade.closeTime).toLocaleString() : "-"}
                           </td>
                         </tr>
@@ -357,7 +357,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
             {activeSection === "errors" && (
               <div className="space-y-2">
                 {data.errors.length === 0 ? (
-                  <div className="text-center text-[#94A3B8] py-6 text-sm">No errors recorded</div>
+                  <div className="text-center text-[#A1A1AA] py-6 text-sm">No errors recorded</div>
                 ) : (
                   data.errors.map((error) => (
                     <div
@@ -368,10 +368,10 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                         <span className="text-red-400 text-xs font-mono">
                           Error {error.errorCode}
                           {error.context && (
-                            <span className="text-[#94A3B8] ml-2">[{error.context}]</span>
+                            <span className="text-[#A1A1AA] ml-2">[{error.context}]</span>
                           )}
                         </span>
-                        <span className="text-[#94A3B8] text-xs">
+                        <span className="text-[#A1A1AA] text-xs">
                           {new Date(error.createdAt).toLocaleString()}
                         </span>
                       </div>
@@ -390,8 +390,8 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
 
 function MetricCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="rounded-lg border border-[rgba(79,70,229,0.15)] bg-[#1A0626]/40 p-3">
-      <div className="text-xs text-[#94A3B8]">{label}</div>
+    <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
+      <div className="text-xs text-[#A1A1AA]">{label}</div>
       <div className={`text-sm font-bold mt-0.5 ${color ?? "text-white"}`}>{value}</div>
     </div>
   );

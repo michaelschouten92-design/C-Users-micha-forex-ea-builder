@@ -19,10 +19,10 @@ interface DistributionData {
 const STATUS_CONFIG: { key: StrategyStatus; label: string; color: string }[] = [
   { key: "CONSISTENT", label: "Consistent", color: "#10B981" },
   { key: "MONITORING", label: "Monitoring", color: "#3B82F6" },
-  { key: "TESTING", label: "Testing", color: "#A78BFA" },
+  { key: "TESTING", label: "Testing", color: "#818CF8" },
   { key: "UNSTABLE", label: "Unstable", color: "#F59E0B" },
   { key: "EDGE_DEGRADED", label: "Edge Degraded", color: "#EF4444" },
-  { key: "INACTIVE", label: "Inactive", color: "#64748B" },
+  { key: "INACTIVE", label: "Inactive", color: "#71717A" },
 ];
 
 export function StrategyDistributionPanel() {
@@ -50,34 +50,34 @@ export function StrategyDistributionPanel() {
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6">
-        <div className="text-[#94A3B8] text-sm">Loading strategy distribution...</div>
+      <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-6">
+        <div className="text-[#A1A1AA] text-sm">Loading strategy distribution...</div>
       </div>
     );
   }
 
   if (!data || data.total === 0) {
     return (
-      <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6">
-        <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-3">
+      <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-6">
+        <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
           Strategy Distribution
         </h3>
-        <div className="text-[#7C8DB0] text-sm">No live strategies found</div>
+        <div className="text-[#71717A] text-sm">No live strategies found</div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6">
+    <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114]/60 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider">
+        <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider">
           Strategy Distribution
         </h3>
-        <span className="text-xs text-[#7C8DB0]">{data.total} total</span>
+        <span className="text-xs text-[#71717A]">{data.total} total</span>
       </div>
 
       {/* Stacked bar */}
-      <div className="h-4 rounded-full overflow-hidden flex bg-[#0A0118]">
+      <div className="h-4 rounded-full overflow-hidden flex bg-[#09090B]">
         {STATUS_CONFIG.map(({ key, color }) => {
           const count = data.distribution[key];
           if (count === 0) return null;
@@ -102,10 +102,10 @@ export function StrategyDistributionPanel() {
             <div key={key} className="text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-[#94A3B8]">{label}</span>
+                <span className="text-xs text-[#A1A1AA]">{label}</span>
               </div>
               <div className="text-lg font-bold text-white">{count}</div>
-              <div className="text-xs text-[#7C8DB0]">{pct}%</div>
+              <div className="text-xs text-[#71717A]">{pct}%</div>
             </div>
           );
         })}

@@ -97,12 +97,12 @@ export function ExportsTab() {
 
       {/* Top cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Today</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Today</div>
           <div className="text-2xl font-bold text-white mt-1">{todayCount}</div>
         </div>
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Success Rate (week)</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Success Rate (week)</div>
           <div className="text-2xl font-bold text-emerald-400 mt-1">
             {statsError ? (
               <span className="text-red-400 text-sm">Failed to load</span>
@@ -113,8 +113,8 @@ export function ExportsTab() {
             )}
           </div>
         </div>
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-          <div className="text-sm text-[#94A3B8]">Failed (week)</div>
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+          <div className="text-sm text-[#A1A1AA]">Failed (week)</div>
           <div className="text-2xl font-bold text-red-400 mt-1">{failedWeek}</div>
         </div>
       </div>
@@ -123,7 +123,7 @@ export function ExportsTab() {
       {dailyStats.length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-3">Success Rate (30 Days)</h3>
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
             {(() => {
               const maxTotal = Math.max(
                 ...dailyStats.map((d) => d.DONE + d.FAILED + d.QUEUED + d.RUNNING),
@@ -159,11 +159,11 @@ export function ExportsTab() {
                         )}
                         {total - day.DONE - day.FAILED > 0 && (
                           <div
-                            className="w-full bg-[#4F46E5]"
+                            className="w-full bg-[#6366F1]"
                             style={{ height: `${100 - donePct - failedPct}%`, minHeight: "1px" }}
                           />
                         )}
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-10">
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#09090B] border border-[rgba(255,255,255,0.10)] px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-10">
                           {day.date}: {day.DONE}ok / {day.FAILED}fail
                         </div>
                       </div>
@@ -172,19 +172,19 @@ export function ExportsTab() {
                 </div>
               );
             })()}
-            <div className="flex justify-between mt-2 text-xs text-[#7C8DB0]">
+            <div className="flex justify-between mt-2 text-xs text-[#71717A]">
               <span>{dailyStats[0]?.date || ""}</span>
               <span>{dailyStats[dailyStats.length - 1]?.date || ""}</span>
             </div>
             <div className="flex gap-4 mt-2">
-              <span className="flex items-center gap-1.5 text-xs text-[#94A3B8]">
+              <span className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" /> DONE
               </span>
-              <span className="flex items-center gap-1.5 text-xs text-[#94A3B8]">
+              <span className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
                 <span className="w-2 h-2 rounded-full bg-red-500" /> FAILED
               </span>
-              <span className="flex items-center gap-1.5 text-xs text-[#94A3B8]">
-                <span className="w-2 h-2 rounded-full bg-[#4F46E5]" /> OTHER
+              <span className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
+                <span className="w-2 h-2 rounded-full bg-[#6366F1]" /> OTHER
               </span>
             </div>
           </div>
@@ -202,8 +202,8 @@ export function ExportsTab() {
             }}
             className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
               statusFilter === s
-                ? "bg-[#4F46E5] text-white"
-                : "bg-[#1A0626]/60 text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+                ? "bg-[#6366F1] text-white"
+                : "bg-[#111114] text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)]"
             }`}
           >
             {s || "ALL"}
@@ -212,18 +212,18 @@ export function ExportsTab() {
       </div>
 
       {loading ? (
-        <div className="text-[#94A3B8] py-8 text-center">Loading exports...</div>
+        <div className="text-[#A1A1AA] py-8 text-center">Loading exports...</div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+          <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Time</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">User</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Project</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Type</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Status</th>
+                <tr className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Time</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">User</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Project</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Type</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,7 +231,7 @@ export function ExportsTab() {
                   <>
                     <tr
                       key={exp.id}
-                      className={`border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors ${
+                      className={`border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors ${
                         exp.status === "FAILED" ? "cursor-pointer" : ""
                       }`}
                       onClick={() => {
@@ -240,13 +240,13 @@ export function ExportsTab() {
                         }
                       }}
                     >
-                      <td className="px-4 py-3 text-[#94A3B8] whitespace-nowrap">
+                      <td className="px-4 py-3 text-[#A1A1AA] whitespace-nowrap">
                         {new Date(exp.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-white">{exp.user.email}</td>
-                      <td className="px-4 py-3 text-[#CBD5E1]">{exp.project.name}</td>
+                      <td className="px-4 py-3 text-[#FAFAFA]">{exp.project.name}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs font-mono text-[#A78BFA]">{exp.exportType}</span>
+                        <span className="text-xs font-mono text-[#818CF8]">{exp.exportType}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -269,7 +269,7 @@ export function ExportsTab() {
                 ))}
                 {exports.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-[#7C8DB0]">
+                    <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
                       No exports found
                     </td>
                   </tr>
@@ -280,21 +280,21 @@ export function ExportsTab() {
 
           {totalPages > 1 && (
             <div className="flex justify-between items-center mt-4">
-              <span className="text-sm text-[#94A3B8]">
+              <span className="text-sm text-[#A1A1AA]">
                 Page {page} of {totalPages} ({total} total)
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 text-sm rounded border border-[rgba(79,70,229,0.3)] text-white disabled:opacity-30 hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                  className="px-3 py-1.5 text-sm rounded border border-[rgba(255,255,255,0.10)] text-white disabled:opacity-30 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   Prev
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1.5 text-sm rounded border border-[rgba(79,70,229,0.3)] text-white disabled:opacity-30 hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                  className="px-3 py-1.5 text-sm rounded border border-[rgba(255,255,255,0.10)] text-white disabled:opacity-30 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                 >
                   Next
                 </button>

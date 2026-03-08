@@ -55,7 +55,7 @@ const NODE_CATEGORY_COLORS: Record<string, string> = {
   TakeProfit: "bg-red-500",
   TrailingStop: "bg-red-500",
   // Default
-  default: "bg-[#4F46E5]",
+  default: "bg-[#6366F1]",
 };
 
 function getNodeColor(type: string): string {
@@ -132,7 +132,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
   }, [sharedUsers]);
 
   if (loading) {
-    return <div className="text-[#94A3B8] py-8 text-center">Loading analytics...</div>;
+    return <div className="text-[#A1A1AA] py-8 text-center">Loading analytics...</div>;
   }
 
   if (!stats) {
@@ -141,7 +141,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
         <p className="text-red-400 mb-3">Failed to load analytics data</p>
         <button
           onClick={() => window.location.reload()}
-          className="text-sm text-[#A78BFA] hover:text-white transition-colors"
+          className="text-sm text-[#818CF8] hover:text-white transition-colors"
         >
           Retry
         </button>
@@ -161,7 +161,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       {funnel.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-white mb-3">Conversion Funnel</h3>
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4 space-y-3">
+          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 space-y-3">
             {funnel.map((step, i) => {
               const widthPct = Math.max(5, (step.count / maxFunnel) * 100);
               const pct =
@@ -170,13 +170,13 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
                 <div key={step.label}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-white">{step.label}</span>
-                    <span className="text-[#94A3B8]">
+                    <span className="text-[#A1A1AA]">
                       {step.count.toLocaleString()} ({pct})
                     </span>
                   </div>
-                  <div className="w-full h-6 bg-[#0F0318] rounded-full overflow-hidden">
+                  <div className="w-full h-6 bg-[#09090B] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#4F46E5] to-[#A78BFA] rounded-full transition-all"
+                      className="h-full bg-[#6366F1] rounded-full transition-all"
                       style={{ width: `${widthPct}%` }}
                     />
                   </div>
@@ -190,9 +190,9 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       {/* Signup chart */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-white mb-3">Signups (Last 30 Days)</h3>
-        <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
+        <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
           {stats.signups.length === 0 ? (
-            <div className="text-[#7C8DB0] text-sm text-center py-4">No signup data</div>
+            <div className="text-[#71717A] text-sm text-center py-4">No signup data</div>
           ) : (
             <div className="flex items-end gap-1 h-40">
               {stats.signups.map((day) => {
@@ -203,10 +203,10 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
                     className="flex-1 flex flex-col items-center justify-end group relative"
                   >
                     <div
-                      className="w-full bg-[#4F46E5] rounded-t hover:bg-[#A78BFA] transition-colors min-h-[2px]"
+                      className="w-full bg-[#6366F1] rounded-t hover:bg-[#818CF8] transition-colors min-h-[2px]"
                       style={{ height: `${heightPct}%` }}
                     />
-                    <div className="absolute -top-8 bg-[#0F0318] border border-[rgba(79,70,229,0.3)] px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-10">
+                    <div className="absolute -top-8 bg-[#09090B] border border-[rgba(255,255,255,0.10)] px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-10">
                       {day.date}: {day.count}
                     </div>
                   </div>
@@ -214,7 +214,7 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
               })}
             </div>
           )}
-          <div className="flex justify-between mt-2 text-xs text-[#7C8DB0]">
+          <div className="flex justify-between mt-2 text-xs text-[#71717A]">
             <span>{stats.signups[0]?.date || ""}</span>
             <span>{stats.signups[stats.signups.length - 1]?.date || ""}</span>
           </div>
@@ -225,15 +225,15 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       {featureUsage.length > 0 && (
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-white mb-3">Feature Usage (Top Node Types)</h3>
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4 space-y-2">
+          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 space-y-2">
             {featureUsage.slice(0, 20).map((feat) => {
               const widthPct = Math.max(3, (feat.count / maxFeature) * 100);
               return (
                 <div key={feat.type} className="flex items-center gap-3">
-                  <span className="text-xs text-[#94A3B8] w-36 truncate text-right font-mono">
+                  <span className="text-xs text-[#A1A1AA] w-36 truncate text-right font-mono">
                     {feat.type}
                   </span>
-                  <div className="flex-1 h-5 bg-[#0F0318] rounded-full overflow-hidden">
+                  <div className="flex-1 h-5 bg-[#09090B] rounded-full overflow-hidden">
                     <div
                       className={`h-full ${getNodeColor(feat.type)} rounded-full transition-all`}
                       style={{ width: `${widthPct}%` }}
@@ -251,8 +251,8 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-white mb-3">System Health</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-4">
-            <div className="text-sm text-[#94A3B8]">Webhook Events (24h)</div>
+          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+            <div className="text-sm text-[#A1A1AA]">Webhook Events (24h)</div>
             <div className="text-2xl font-bold text-white mt-1">{stats.webhookEventsLast24h}</div>
           </div>
         </div>
@@ -262,18 +262,18 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
       <div>
         <h3 className="text-lg font-semibold text-white mb-3">Referral Tracking</h3>
         {referralStats.length === 0 ? (
-          <div className="rounded-lg border border-[rgba(79,70,229,0.2)] bg-[#1A0626]/60 p-6 text-center text-[#7C8DB0]">
+          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 text-center text-[#71717A]">
             No referrals yet
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-[rgba(79,70,229,0.2)]">
+          <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#1A0626]/60 border-b border-[rgba(79,70,229,0.2)]">
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Referrer</th>
-                  <th className="text-left px-4 py-3 text-[#94A3B8] font-medium">Code</th>
-                  <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">Referred</th>
-                  <th className="text-right px-4 py-3 text-[#94A3B8] font-medium">
+                <tr className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Referrer</th>
+                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Code</th>
+                  <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Referred</th>
+                  <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">
                     Converted to Paid
                   </th>
                 </tr>
@@ -282,13 +282,13 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
                 {referralStats.map((ref) => (
                   <tr
                     key={ref.referralCode}
-                    className="border-b border-[rgba(79,70,229,0.1)] hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                    className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
                   >
                     <td className="px-4 py-3 text-white">{ref.email}</td>
-                    <td className="px-4 py-3 text-[#A78BFA] font-mono text-xs">
+                    <td className="px-4 py-3 text-[#818CF8] font-mono text-xs">
                       {ref.referralCode}
                     </td>
-                    <td className="px-4 py-3 text-right text-[#CBD5E1]">{ref.referred}</td>
+                    <td className="px-4 py-3 text-right text-[#FAFAFA]">{ref.referred}</td>
                     <td className="px-4 py-3 text-right text-emerald-400">{ref.paidConverted}</td>
                   </tr>
                 ))}
