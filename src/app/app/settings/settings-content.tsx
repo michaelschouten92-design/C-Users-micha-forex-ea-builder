@@ -475,10 +475,24 @@ function DeleteAccountSection() {
   );
 }
 
+const SAMPLE_PAYLOAD = `{
+  "event": "control_layer_alert",
+  "alertId": "clx9abc123def",
+  "alertType": "DEPLOYMENT_INVALIDATED",
+  "summary": "Deployment has been invalidated. Trading authority revoked.",
+  "reasons": ["MONITORING_DRAWDOWN_BREACH"],
+  "deploymentId": "clx7xyz456ghi",
+  "deploymentName": "Trend-Following EURUSD",
+  "createdAt": "2026-03-08T14:30:00.000Z"
+}`;
+
 function WebhookSection() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [showPayload, setShowPayload] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const [testMessage, setTestMessage] = useState("");
 
   const fetchUrl = useCallback(async () => {
     try {
@@ -519,16 +533,43 @@ function WebhookSection() {
     }
   }
 
+  async function handleTest() {
+    if (!url) return;
+    setTestStatus("testing");
+    setTestMessage("");
+    try {
+      const res = await fetch("/api/webhook/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: url }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestStatus("success");
+        setTestMessage(data.message ?? "Webhook endpoint is reachable.");
+      } else {
+        setTestStatus("error");
+        setTestMessage(data.error ?? "Test failed. Check your URL.");
+      }
+    } catch {
+      setTestStatus("error");
+      setTestMessage("Could not reach the test endpoint.");
+    }
+  }
+
   if (!loaded) return null;
 
   return (
     <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-      <h2 className="text-lg font-semibold text-white mb-2">Webhook</h2>
+      <h2 className="text-lg font-semibold text-white mb-2">Webhook Alerts</h2>
       <p className="text-sm text-[#94A3B8] mb-4">
-        Receive control-layer alerts (deployment invalidated, restricted, offline, etc.) via HTTP
-        POST to your endpoint. Delivery is best-effort with no retries.
+        AlgoStudio sends an HTTP POST to your endpoint when a new control-layer alert is created —
+        deployment invalidated, restricted, review required, offline, baseline missing, or version
+        outdated.
       </p>
-      <div className="flex flex-col sm:flex-row gap-2">
+
+      {/* URL input + Save */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-3">
         <input
           type="url"
           value={url}
@@ -544,12 +585,52 @@ function WebhookSection() {
           {loading ? "Saving..." : "Save"}
         </button>
       </div>
+
+      {/* Test button + result */}
       {url && (
-        <p className="text-[10px] text-[#7C8DB0] mt-2">
-          Payloads are signed with HMAC-SHA256 via the X-AlgoStudio-Signature header when
-          WEBHOOK_SECRET is configured.
-        </p>
+        <div className="mb-4">
+          <button
+            onClick={handleTest}
+            disabled={testStatus === "testing"}
+            className="text-xs text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
+          >
+            {testStatus === "testing" ? "Testing..." : "Send test payload"}
+          </button>
+          {testStatus === "success" && (
+            <p className="text-[11px] text-[#10B981] mt-1">{testMessage}</p>
+          )}
+          {testStatus === "error" && (
+            <p className="text-[11px] text-[#EF4444] mt-1">{testMessage}</p>
+          )}
+        </div>
       )}
+
+      {/* Sample payload toggle */}
+      <button
+        onClick={() => setShowPayload((p) => !p)}
+        className="text-xs text-[#7C8DB0] hover:text-white transition-colors mb-2"
+      >
+        {showPayload ? "Hide" : "Show"} sample payload
+      </button>
+      {showPayload && (
+        <pre className="text-[11px] text-[#CBD5E1] bg-[#0A0118] border border-[rgba(79,70,229,0.1)] rounded-lg p-3 overflow-x-auto mb-4 leading-relaxed">
+          {SAMPLE_PAYLOAD}
+        </pre>
+      )}
+
+      {/* Delivery semantics */}
+      <div className="space-y-1.5 text-[11px] text-[#7C8DB0]">
+        <p>Webhooks are sent once per new alert. Duplicate alerts are not resent.</p>
+        <p>Delivery is best-effort with a 5-second timeout. There are no retries.</p>
+        <p>One webhook URL per account. Delivery status is shown on each alert in the bell menu.</p>
+        {url && (
+          <p>
+            Payloads are signed via the{" "}
+            <code className="text-[#818CF8]">X-AlgoStudio-Signature</code> header (HMAC-SHA256) when
+            server signing is enabled.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

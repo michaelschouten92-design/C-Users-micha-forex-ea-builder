@@ -16,9 +16,16 @@ interface AlertItem {
   summary: string;
   reasons: string[] | null;
   acknowledgedAt: string | null;
+  webhookStatus: string | null;
   createdAt: string;
   instance: { eaName: string };
 }
+
+const WEBHOOK_STATUS_LABEL: Record<string, { text: string; color: string }> = {
+  DELIVERED: { text: "Webhook sent", color: "#10B981" },
+  FAILED: { text: "Webhook failed", color: "#EF4444" },
+  SKIPPED: { text: "No webhook", color: "#71717A" },
+};
 
 const ALERT_TYPE_COLORS: Record<string, string> = {
   DEPLOYMENT_INVALIDATED: "#EF4444",
@@ -179,9 +186,21 @@ export function NotificationBell() {
                         </span>
                       </div>
                       <p className="text-[11px] text-[#A1A1AA] leading-relaxed">{alert.summary}</p>
-                      <span className="text-[10px] text-[#71717A] mt-1 inline-block">
-                        {formatTimeAgo(alert.createdAt)}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-[#71717A]">
+                          {formatTimeAgo(alert.createdAt)}
+                        </span>
+                        {alert.webhookStatus && WEBHOOK_STATUS_LABEL[alert.webhookStatus] && (
+                          <span
+                            className="text-[9px]"
+                            style={{
+                              color: WEBHOOK_STATUS_LABEL[alert.webhookStatus].color,
+                            }}
+                          >
+                            {WEBHOOK_STATUS_LABEL[alert.webhookStatus].text}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
                       type="button"

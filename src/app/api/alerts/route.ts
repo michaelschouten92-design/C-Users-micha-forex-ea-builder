@@ -39,6 +39,7 @@ export async function GET(request: Request) {
         summary: true,
         reasons: true,
         acknowledgedAt: true,
+        webhookStatus: true,
         createdAt: true,
         instance: { select: { eaName: true } },
       },
