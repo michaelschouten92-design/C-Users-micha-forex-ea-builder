@@ -57,6 +57,7 @@ export async function ensureStrategyIdentity(
   const identity = await tx.strategyIdentity.create({
     data: {
       projectId,
+      origin: "PROJECT",
       strategyId,
       currentFingerprint: initialFingerprint,
     },

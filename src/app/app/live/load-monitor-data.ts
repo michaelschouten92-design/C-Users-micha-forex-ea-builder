@@ -203,7 +203,8 @@ function queryEaInstances(userId: string) {
         take: 200,
         select: { equity: true, createdAt: true },
       },
-      // Edge drift: baseline winrate from validated backtest
+      exportJobId: true,
+      // Edge drift: baseline winrate from validated backtest (same path for all strategies)
       strategyVersion: {
         select: {
           backtestBaseline: {

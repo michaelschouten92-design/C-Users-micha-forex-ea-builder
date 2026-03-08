@@ -16,6 +16,12 @@ import { RegisterEADialog } from "./register-ea-dialog";
 // TYPES
 // ============================================
 
+interface BaselineData {
+  winRate: number;
+  profitFactor: number;
+  totalTrades: number;
+}
+
 interface EAInstanceData {
   id: string;
   eaName: string;
@@ -38,6 +44,8 @@ interface EAInstanceData {
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
   strategyStatus?: string | null;
+  isExternal?: boolean;
+  baseline?: BaselineData | null;
 }
 
 interface TradeRecord {
@@ -692,11 +700,13 @@ function EACard({
   statusChanged,
   onTogglePause,
   onDelete,
+  onLinkBaseline,
 }: {
   ea: EAInstanceData;
   statusChanged: boolean;
   onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
   onDelete: (instanceId: string) => void;
+  onLinkBaseline?: (instanceId: string) => void;
 }) {
   const [showTradeLog, setShowTradeLog] = useState(false);
   const [showTrackRecord, setShowTrackRecord] = useState(false);
@@ -765,6 +775,19 @@ function EACard({
           {ea.mode === "PAPER" && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paper
+            </span>
+          )}
+          {ea.isExternal && !ea.baseline && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#64748B]/20 text-[#64748B] border border-[#64748B]/30">
+              No baseline
+            </span>
+          )}
+          {ea.baseline && (
+            <span
+              className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#4F46E5]/20 text-[#818CF8] border border-[#4F46E5]/30"
+              title={`Baseline: WR ${ea.baseline.winRate.toFixed(1)}% | PF ${ea.baseline.profitFactor.toFixed(2)} | ${ea.baseline.totalTrades} trades`}
+            >
+              Baseline linked
             </span>
           )}
         </div>
@@ -958,6 +981,23 @@ function EACard({
           </svg>
           {showProof ? "Hide Proof" : "Proof"}
         </button>
+
+        {ea.isExternal && !ea.baseline && onLinkBaseline && (
+          <button
+            onClick={() => onLinkBaseline(ea.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.3)] text-[#818CF8] hover:bg-[#4F46E5]/20 hover:border-[#4F46E5]/50 transition-all duration-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            Link Baseline
+          </button>
+        )}
 
         <div className="flex-1 min-w-0" />
 
@@ -1467,6 +1507,199 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
 }
 
 // ============================================
+// LINK BASELINE DIALOG
+// ============================================
+
+interface BacktestOption {
+  uploadId: string;
+  runId: string;
+  fileName: string;
+  eaName: string | null;
+  symbol: string;
+  totalTrades: number;
+  winRate: number;
+  profitFactor: number;
+  healthScore: number;
+  createdAt: string;
+}
+
+function LinkBaselineDialog({
+  instanceId,
+  instanceName,
+  onClose,
+  onLinked,
+}: {
+  instanceId: string;
+  instanceName: string;
+  onClose: () => void;
+  onLinked: (instanceId: string, baseline: BaselineData) => void;
+}) {
+  const [backtests, setBacktests] = useState<BacktestOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [linking, setLinking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchBacktests() {
+      try {
+        const res = await fetch("/api/backtest/list");
+        if (!res.ok) throw new Error("Failed to load backtests");
+        const json = await res.json();
+        if (cancelled) return;
+
+        // Filter eligible backtests (30+ trades, has a run)
+        const options: BacktestOption[] = [];
+        for (const item of json.data ?? []) {
+          if (!item.runId || !item.totalTrades || item.totalTrades < 30) continue;
+          options.push({
+            uploadId: item.uploadId,
+            runId: item.runId,
+            fileName: item.fileName,
+            eaName: item.eaName ?? null,
+            symbol: item.symbol ?? "",
+            totalTrades: item.totalTrades,
+            winRate: item.winRate ?? 0,
+            profitFactor: item.profitFactor ?? 0,
+            healthScore: item.healthScore ?? 0,
+            createdAt: item.createdAt,
+          });
+        }
+        setBacktests(options);
+      } catch {
+        if (!cancelled) setError("Failed to load backtests");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchBacktests();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleLink() {
+    if (!selectedRunId) return;
+    setLinking(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/live/${instanceId}/link-baseline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ backtestRunId: selectedRunId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Failed to link baseline");
+        setLinking(false);
+        return;
+      }
+      showSuccess("Baseline linked successfully");
+      onLinked(instanceId, json.baseline);
+    } catch {
+      setError("Network error — please try again");
+      setLinking(false);
+    }
+  }
+
+  const selected = backtests.find((b) => b.runId === selectedRunId);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">
+          <h2 className="text-lg font-semibold text-white">Link Backtest Baseline</h2>
+          <p className="text-xs text-[#7C8DB0] mt-1">
+            Select a backtest to use as baseline for &ldquo;{instanceName}&rdquo;. Edge drift
+            monitoring will compare live performance against this baseline.
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!loading && error && !backtests.length && (
+            <p className="text-sm text-[#EF4444] text-center py-4">{error}</p>
+          )}
+
+          {!loading && !error && backtests.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-sm text-[#94A3B8]">No eligible backtests found.</p>
+              <p className="text-xs text-[#64748B] mt-1">
+                Upload a backtest with at least 30 trades to link it as a baseline.
+              </p>
+            </div>
+          )}
+
+          {!loading && backtests.length > 0 && (
+            <div className="space-y-2">
+              {backtests.map((bt) => (
+                <button
+                  key={bt.runId}
+                  onClick={() => setSelectedRunId(bt.runId)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all duration-150 ${
+                    selectedRunId === bt.runId
+                      ? "border-[#4F46E5] bg-[#4F46E5]/10"
+                      : "border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.3)] bg-[#0A0118]/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-white truncate">
+                      {bt.eaName || bt.fileName}
+                    </span>
+                    <span className="text-[10px] text-[#7C8DB0] ml-2 shrink-0">{bt.symbol}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-[#7C8DB0]">
+                    <span>{bt.totalTrades} trades</span>
+                    <span>WR {bt.winRate.toFixed(1)}%</span>
+                    <span>PF {bt.profitFactor.toFixed(2)}</span>
+                    <span>Health {bt.healthScore}/100</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && backtests.length > 0 && <p className="text-xs text-[#EF4444] mt-3">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-[rgba(79,70,229,0.15)] flex items-center justify-between gap-3">
+          {selected && (
+            <p className="text-[10px] text-[#7C8DB0] truncate flex-1">
+              Selected: {selected.eaName || selected.fileName} ({selected.symbol})
+            </p>
+          )}
+          {!selected && <div className="flex-1" />}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleLink}
+              disabled={!selectedRunId || linking}
+              className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {linking ? "Linking..." : "Link Baseline"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -1476,6 +1709,7 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(null);
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2009,6 +2243,7 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
               statusChanged={changedIds.has(ea.id)}
               onTogglePause={handleTogglePause}
               onDelete={handleDelete}
+              onLinkBaseline={setLinkBaselineInstanceId}
             />
           ))}
         </div>
@@ -2017,6 +2252,21 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
       {/* Alerts Modal */}
       {showAlertsModal && (
         <AlertsModal instances={eaInstances} onClose={() => setShowAlertsModal(false)} />
+      )}
+
+      {/* Link Baseline Dialog */}
+      {linkBaselineInstanceId && (
+        <LinkBaselineDialog
+          instanceId={linkBaselineInstanceId}
+          instanceName={eaInstances.find((ea) => ea.id === linkBaselineInstanceId)?.eaName ?? ""}
+          onClose={() => setLinkBaselineInstanceId(null)}
+          onLinked={(instanceId, baseline) => {
+            setEaInstances((prev) =>
+              prev.map((ea) => (ea.id === instanceId ? { ...ea, baseline } : ea))
+            );
+            setLinkBaselineInstanceId(null);
+          }}
+        />
       )}
     </div>
   );

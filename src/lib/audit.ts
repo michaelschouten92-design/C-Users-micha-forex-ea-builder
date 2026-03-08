@@ -30,6 +30,7 @@ export type AuditEventType =
   | "live.external_ea_registered"
   | "live.api_key_rotated"
   | "live.strategy_status_change"
+  | "live.baseline_linked"
   // Admin impersonation
   | "admin.impersonation_start"
   | "admin.impersonation_stop"

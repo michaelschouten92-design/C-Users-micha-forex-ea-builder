@@ -80,6 +80,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   }> = [];
 
   for (const page of pages) {
+    if (!page.strategyIdentity.project) continue;
     const projectId = page.strategyIdentity.project.id;
 
     // Latest backtest (most recent evaluation)
@@ -157,8 +158,8 @@ export async function GET(request: NextRequest, { params }: Props) {
     proofCards.push({
       strategyId: page.strategyIdentity.strategyId,
       slug: page.slug,
-      name: page.strategyIdentity.project.name,
-      description: page.strategyIdentity.project.description,
+      name: page.strategyIdentity.project!.name,
+      description: page.strategyIdentity.project!.description,
       ladderLevel: level,
       ladderMeta: LADDER_META[level],
       healthScore: backtest?.healthScore ?? null,

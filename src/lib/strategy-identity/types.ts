@@ -10,7 +10,8 @@ export interface FingerprintResult {
 
 export interface StrategyIdentityInfo {
   id: string;
-  projectId: string;
+  projectId: string | null;
+  origin: "PROJECT" | "EXTERNAL";
   strategyId: string;
   currentFingerprint: string;
   currentVersionId: string | null;
@@ -21,7 +22,7 @@ export interface StrategyIdentityInfo {
 export interface StrategyVersionInfo {
   id: string;
   strategyIdentityId: string;
-  buildVersionId: string;
+  buildVersionId: string | null;
   versionNo: number;
   fingerprint: string;
   logicHash: string;

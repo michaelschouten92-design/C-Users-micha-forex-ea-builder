@@ -69,7 +69,7 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   // Find latest backtest trade count
   let backtestTradeCount: number | null = null;
-  for (const upload of identity.project.backtestUploads) {
+  for (const upload of identity.project?.backtestUploads ?? []) {
     if (upload.runs[0]) {
       backtestTradeCount = upload.runs[0].totalTrades;
       break;

@@ -466,6 +466,14 @@ export async function GET(request: NextRequest, { params }: Props) {
         return NextResponse.json({ error: "Export not found" }, { status: 404 });
       }
 
+      // Guard: redownload requires both a build artifact and a project
+      if (!exportJob.buildVersion || !exportJob.project) {
+        return NextResponse.json(
+          { error: "Export is missing build or project data" },
+          { status: 400 }
+        );
+      }
+
       // Migrate and validate buildJson
       const migratedBuildJson = migrateProjectData(exportJob.buildVersion.buildJson);
       const buildJsonValidation = buildJsonSchema.safeParse(migratedBuildJson);

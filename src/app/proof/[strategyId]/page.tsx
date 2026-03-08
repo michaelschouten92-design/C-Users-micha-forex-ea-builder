@@ -49,9 +49,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Gather available proof signals
   const levelMeta = LADDER_META[identity.publicPage.ladderLevel as LadderLevel];
-  const name = identity.project.name;
+  const name = identity.project?.name ?? "Strategy";
 
-  const backtestRun = identity.project.backtestUploads?.[0]?.runs?.[0] ?? null;
+  const backtestRun = identity.project?.backtestUploads?.[0]?.runs?.[0] ?? null;
   const backtestTrades = backtestRun?.totalTrades ?? null;
   const profitFactor = backtestRun?.profitFactor ?? null;
 

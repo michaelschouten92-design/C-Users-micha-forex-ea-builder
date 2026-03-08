@@ -79,9 +79,12 @@ export async function GET(request: NextRequest) {
 
   const total = await prisma.verifiedStrategyPage.count({ where: baseWhere });
 
+  // Filter out entries without a project (external strategies) — should not occur in hub queries
+  const pagesWithProject = pages.filter((p) => p.strategyIdentity.project !== null);
+
   // Batch load user handles and backtest data (avoids N+1 queries)
-  const userIds = [...new Set(pages.map((p) => p.strategyIdentity.project.userId))];
-  const projectIds = [...new Set(pages.map((p) => p.strategyIdentity.project.id))];
+  const userIds = [...new Set(pagesWithProject.map((p) => p.strategyIdentity.project!.userId))];
+  const projectIds = [...new Set(pagesWithProject.map((p) => p.strategyIdentity.project!.id))];
 
   const [users, backtestUploads] = await Promise.all([
     prisma.user.findMany({
@@ -135,8 +138,9 @@ export async function GET(request: NextRequest) {
     createdAt: Date;
   }> = [];
 
-  for (const p of pages) {
-    const projectId = p.strategyIdentity.project.id;
+  for (const p of pagesWithProject) {
+    const project = p.strategyIdentity.project!;
+    const projectId = project.id;
     const backtest = backtestMap.get(projectId);
 
     if (!backtest) continue;
@@ -150,9 +154,9 @@ export async function GET(request: NextRequest) {
     results.push({
       strategyId: p.strategyIdentity.strategyId,
       slug: p.slug,
-      name: p.strategyIdentity.project.name,
-      description: p.strategyIdentity.project.description,
-      ownerHandle: handleMap.get(p.strategyIdentity.project.userId) ?? null,
+      name: project.name,
+      description: project.description,
+      ownerHandle: handleMap.get(project.userId) ?? null,
       ladderLevel: p.ladderLevel,
       ladderMeta: LADDER_META[p.ladderLevel],
       healthScore: backtest.healthScore,

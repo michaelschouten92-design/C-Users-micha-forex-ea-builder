@@ -45,6 +45,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           take: 200,
           select: { equity: true, createdAt: true },
         },
+        strategyVersion: {
+          select: {
+            backtestBaseline: {
+              select: {
+                winRate: true,
+                profitFactor: true,
+                totalTrades: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -66,6 +77,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       openTrades: ea.openTrades,
       totalTrades: ea.totalTrades,
       totalProfit: ea.totalProfit,
+      isExternal: ea.exportJobId === null,
+      baseline: ea.strategyVersion?.backtestBaseline
+        ? {
+            winRate: ea.strategyVersion.backtestBaseline.winRate,
+            profitFactor: ea.strategyVersion.backtestBaseline.profitFactor,
+            totalTrades: ea.strategyVersion.backtestBaseline.totalTrades,
+          }
+        : null,
       trades: ea.trades.map((t) => ({
         profit: t.profit,
         closeTime: t.closeTime?.toISOString() ?? null,

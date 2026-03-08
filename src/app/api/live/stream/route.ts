@@ -45,6 +45,17 @@ export async function GET(request: Request): Promise<Response> {
           include: {
             heartbeats: { orderBy: { createdAt: "desc" }, take: 20 },
             trades: { orderBy: { createdAt: "desc" }, take: 20 },
+            strategyVersion: {
+              select: {
+                backtestBaseline: {
+                  select: {
+                    winRate: true,
+                    profitFactor: true,
+                    totalTrades: true,
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -65,6 +76,14 @@ export async function GET(request: Request): Promise<Response> {
           openTrades: inst.openTrades,
           totalTrades: inst.totalTrades,
           totalProfit: inst.totalProfit,
+          isExternal: inst.exportJobId === null,
+          baseline: inst.strategyVersion?.backtestBaseline
+            ? {
+                winRate: inst.strategyVersion.backtestBaseline.winRate,
+                profitFactor: inst.strategyVersion.backtestBaseline.profitFactor,
+                totalTrades: inst.strategyVersion.backtestBaseline.totalTrades,
+              }
+            : null,
           heartbeats: inst.heartbeats.map((h) => ({
             equity: h.equity,
             createdAt: h.createdAt.toISOString(),

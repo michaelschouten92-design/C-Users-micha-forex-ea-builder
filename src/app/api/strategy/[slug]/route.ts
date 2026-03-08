@@ -233,8 +233,8 @@ export async function GET(request: NextRequest, { params }: Props) {
 
       return NextResponse.json({
         strategy: {
-          name: page.strategyIdentity.project.name,
-          description: page.strategyIdentity.project.description,
+          name: page.strategyIdentity.project?.name ?? "",
+          description: page.strategyIdentity.project?.description ?? null,
           strategyId: page.strategyIdentity.strategyId,
           currentVersion: page.strategyIdentity.versions[0] || null,
         },
@@ -281,8 +281,8 @@ export async function GET(request: NextRequest, { params }: Props) {
   // No pinned instance — return basic strategy info
   return NextResponse.json({
     strategy: {
-      name: page.strategyIdentity.project.name,
-      description: page.strategyIdentity.project.description,
+      name: page.strategyIdentity.project?.name ?? "",
+      description: page.strategyIdentity.project?.description ?? null,
       strategyId: page.strategyIdentity.strategyId,
       currentVersion: page.strategyIdentity.versions[0] || null,
     },

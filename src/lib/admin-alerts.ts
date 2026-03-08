@@ -180,7 +180,7 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
       id: `failed-export-${exp.id}`,
       type: "failed_export",
       severity: "high",
-      title: `Failed export: ${exp.project.name}`,
+      title: `Failed export: ${exp.project?.name ?? "Unknown project"}`,
       detail: exp.errorMessage || "No error details",
       userId: exp.userId,
       timestamp: exp.createdAt.toISOString(),

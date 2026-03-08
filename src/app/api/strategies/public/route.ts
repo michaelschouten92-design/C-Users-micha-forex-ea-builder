@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
   for (const page of pages) {
     const identity = page.strategyIdentity;
     const project = identity.project;
+    if (!project) continue;
 
     // Find the latest backtest run across all uploads
     let latestRun: {

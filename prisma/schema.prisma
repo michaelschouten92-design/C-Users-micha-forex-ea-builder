@@ -758,26 +758,33 @@ model LedgerCommitment {
 // STRATEGY IDENTITY & HEALTH MONITORING
 // ============================================
 
+enum StrategyOrigin {
+  PROJECT   // Created through AlgoStudio project export
+  EXTERNAL  // Created through manual baseline linking of an external EA
+}
+
 model StrategyIdentity {
-  id                 String   @id @default(cuid())
-  projectId          String   @unique
-  strategyId         String   @unique  // "AS-" + 8 hex chars, permanent public ID
+  id                 String          @id @default(cuid())
+  projectId          String?         @unique  // null for EXTERNAL strategies
+  origin             StrategyOrigin  @default(PROJECT)
+  strategyId         String          @unique  // "AS-" + 8 hex chars, permanent public ID
   currentFingerprint String
   currentVersionId   String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  project    Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project    Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
   versions   StrategyVersion[]
   publicPage VerifiedStrategyPage?
 
   @@index([strategyId])
+  @@index([origin])
 }
 
 model StrategyVersion {
   id                 String   @id @default(cuid())
   strategyIdentityId String
-  buildVersionId     String
+  buildVersionId     String?  // null for externally-registered strategies
   versionNo          Int
   fingerprint        String   // SHA-256(logicHash + parameterHash + schemaVersion)
   logicHash          String   // SHA-256 of canonical node/edge topology
@@ -785,7 +792,7 @@ model StrategyVersion {
   createdAt          DateTime @default(now())
 
   strategyIdentity StrategyIdentity  @relation(fields: [strategyIdentityId], references: [id], onDelete: Cascade)
-  buildVersion     BuildVersion      @relation(fields: [buildVersionId], references: [id], onDelete: Cascade)
+  buildVersion     BuildVersion?     @relation(fields: [buildVersionId], references: [id], onDelete: Cascade)
   backtestBaseline BacktestBaseline?
   binding          StrategyIdentityBinding?
   instances        LiveEAInstance[]
