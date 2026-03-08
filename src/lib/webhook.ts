@@ -59,6 +59,48 @@ async function resolveAndValidateUrl(url: string): Promise<boolean> {
   }
 }
 
+export type WebhookResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Fire a webhook POST and return the delivery result.
+ * Same SSRF protection and HMAC signing as fireWebhook, but propagates outcome.
+ */
+export async function fireWebhookWithResult(url: string, payload: object): Promise<WebhookResult> {
+  try {
+    const urlSafe = await resolveAndValidateUrl(url);
+    if (!urlSafe) {
+      return { ok: false, error: "URL targets private network" };
+    }
+
+    const body = JSON.stringify(payload);
+    const signature = signPayload(body);
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (signature) {
+      headers[SIGNATURE_HEADER] = signature;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      return { ok: false, error: `HTTP ${response.status}` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
 /**
  * Fire a webhook POST request to the given URL with a JSON payload.
  * Includes HMAC-SHA256 signature in X-AlgoStudio-Signature header when WEBHOOK_SECRET is set.

@@ -14,7 +14,9 @@
  */
 
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { prisma as defaultPrisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { fireWebhookWithResult } from "@/lib/webhook";
 
 const log = logger.child({ service: "control-layer-alerts" });
 
@@ -56,6 +58,7 @@ export interface EmitAlertParams {
  * be created for the same state if it recurs.
  *
  * Uses upsert-style: try create, catch P2002 (duplicate) silently.
+ * On successful creation, attempts webhook delivery (fire-and-forget).
  */
 export async function emitControlLayerAlert(
   db: PrismaClient | Prisma.TransactionClient,
@@ -64,8 +67,9 @@ export async function emitControlLayerAlert(
   const { userId, instanceId, alertType, reasons } = params;
   const dedupeKey = `${alertType}:${instanceId}`;
 
+  let alertId: string | null = null;
   try {
-    await (db as PrismaClient).controlLayerAlert.create({
+    const created = await (db as PrismaClient).controlLayerAlert.create({
       data: {
         userId,
         instanceId,
@@ -75,6 +79,7 @@ export async function emitControlLayerAlert(
         dedupeKey,
       },
     });
+    alertId = created.id;
     log.info({ instanceId, alertType }, "Control-layer alert emitted");
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -82,6 +87,84 @@ export async function emitControlLayerAlert(
       return;
     }
     log.error({ err, instanceId, alertType }, "Failed to emit control-layer alert");
+    return;
+  }
+
+  // Fire-and-forget webhook delivery — never blocks or throws
+  if (alertId) {
+    deliverAlertWebhook(alertId, userId, instanceId, alertType, reasons).catch((err) => {
+      log.error({ err, alertId }, "Webhook delivery background task failed");
+    });
+  }
+}
+
+// ── Webhook delivery ─────────────────────────────────────
+
+/**
+ * Attempt webhook delivery for a newly created alert.
+ * Looks up user's webhookUrl; if absent, marks SKIPPED.
+ * On success/failure, updates the alert's delivery tracking fields.
+ */
+async function deliverAlertWebhook(
+  alertId: string,
+  userId: string,
+  instanceId: string,
+  alertType: ControlLayerAlertType,
+  reasons?: string[]
+): Promise<void> {
+  // Look up user webhook URL and instance name
+  const [user, instance] = await Promise.all([
+    defaultPrisma.user.findUnique({
+      where: { id: userId },
+      select: { webhookUrl: true },
+    }),
+    defaultPrisma.liveEAInstance.findUnique({
+      where: { id: instanceId },
+      select: { eaName: true },
+    }),
+  ]);
+
+  if (!user?.webhookUrl) {
+    await defaultPrisma.controlLayerAlert
+      .update({
+        where: { id: alertId },
+        data: { webhookStatus: "SKIPPED", webhookAt: new Date() },
+      })
+      .catch(() => {});
+    return;
+  }
+
+  const payload = {
+    event: "control_layer_alert",
+    alertId,
+    alertType,
+    summary: ALERT_SUMMARIES[alertType],
+    reasons: reasons ?? [],
+    deploymentId: instanceId,
+    deploymentName: instance?.eaName ?? null,
+    createdAt: new Date().toISOString(),
+  };
+
+  const result = await fireWebhookWithResult(user.webhookUrl, payload);
+  const now = new Date();
+  if (result.ok) {
+    await defaultPrisma.controlLayerAlert
+      .update({
+        where: { id: alertId },
+        data: { webhookStatus: "DELIVERED", webhookAt: now },
+      })
+      .catch(() => {});
+  } else {
+    await defaultPrisma.controlLayerAlert
+      .update({
+        where: { id: alertId },
+        data: {
+          webhookStatus: "FAILED",
+          webhookAt: now,
+          webhookError: result.error.slice(0, 200),
+        },
+      })
+      .catch(() => {});
   }
 }
 

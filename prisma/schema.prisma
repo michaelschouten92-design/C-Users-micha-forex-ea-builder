@@ -1223,6 +1223,9 @@ model ControlLayerAlert {
   reasons        Json?     // Optional signal/reason details
   dedupeKey      String    @unique // Prevents repeat alerts for same state
   acknowledgedAt DateTime?
+  webhookStatus  String?   // DELIVERED | FAILED | SKIPPED
+  webhookAt      DateTime? // When webhook delivery was attempted
+  webhookError   String?   // Error message on failure (truncated)
   createdAt      DateTime  @default(now())
 
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)

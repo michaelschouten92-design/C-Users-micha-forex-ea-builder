@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { PushNotificationToggle } from "@/components/app/push-notification-toggle";
 import { HandleSetting } from "@/components/app/handle-setting";
 import { getCsrfHeaders } from "@/lib/api-client";
@@ -84,6 +84,9 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
         </p>
         <PushNotificationToggle />
       </div>
+
+      {/* Webhook */}
+      <WebhookSection />
 
       {/* Referral Program */}
       <ReferralsSection />
@@ -375,6 +378,7 @@ function DeleteAccountSection() {
   return (
     <div className="bg-[#1A0626] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-[#EF4444] mb-2">Delete Account</h2>
+
       <p className="text-sm text-[#94A3B8] mb-4">
         Permanently delete your account and all associated data. This action cannot be undone.
       </p>
@@ -466,6 +470,85 @@ function DeleteAccountSection() {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function WebhookSection() {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchUrl = useCallback(async () => {
+    try {
+      const res = await fetch("/api/account/webhook");
+      if (res.ok) {
+        const data = await res.json();
+        setUrl(data.webhookUrl ?? "");
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUrl();
+  }, [fetchUrl]);
+
+  async function handleSave() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/account/webhook", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl: url || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showSuccess(url ? "Webhook URL saved" : "Webhook disabled");
+      } else {
+        showError(data.error ?? "Failed to save webhook URL");
+      }
+    } catch {
+      showError("Failed to save webhook URL");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">Webhook</h2>
+      <p className="text-sm text-[#94A3B8] mb-4">
+        Receive control-layer alerts (deployment invalidated, restricted, offline, etc.) via HTTP
+        POST to your endpoint. Delivery is best-effort with no retries.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://your-server.com/webhook"
+          className="flex-1 px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 text-sm"
+        />
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        >
+          {loading ? "Saving..." : "Save"}
+        </button>
+      </div>
+      {url && (
+        <p className="text-[10px] text-[#7C8DB0] mt-2">
+          Payloads are signed with HMAC-SHA256 via the X-AlgoStudio-Signature header when
+          WEBHOOK_SECRET is configured.
+        </p>
       )}
     </div>
   );
