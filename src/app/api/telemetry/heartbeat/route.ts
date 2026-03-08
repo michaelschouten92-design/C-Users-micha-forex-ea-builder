@@ -14,6 +14,7 @@ import {
   checkEquityTargetAlerts,
 } from "@/lib/alerts";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
+import { emitControlLayerAlert, clearAlertByDedupe } from "@/lib/alerts/control-layer-alerts";
 import { z } from "zod";
 
 // NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
@@ -193,6 +194,27 @@ async function processHeartbeatSideEffects(
         }
       );
     }
+  }
+
+  // Control-layer offline alert: EA was ONLINE and heartbeat gap > 1h → emit MONITOR_OFFLINE
+  if (prev.status === "ONLINE" && prev.lastHeartbeat) {
+    const elapsed = Date.now() - prev.lastHeartbeat.getTime();
+    if (elapsed > ONE_HOUR_MS) {
+      emitControlLayerAlert(prisma, {
+        userId,
+        instanceId,
+        alertType: "MONITOR_OFFLINE",
+        reasons: [`Offline for ${Math.round(elapsed / 60000)} minutes`],
+      }).catch((err) => {
+        log.error({ err, instanceId }, "Control-layer offline alert failed");
+      });
+    }
+  }
+  // EA came back online from OFFLINE/ERROR → clear any existing offline alert
+  if (prev.status !== "ONLINE") {
+    clearAlertByDedupe(prisma, `MONITOR_OFFLINE:${instanceId}`).catch((err) => {
+      log.error({ err, instanceId }, "Failed to clear offline alert");
+    });
   }
 
   // Check user-configured drawdown alerts (EAAlertConfig system)

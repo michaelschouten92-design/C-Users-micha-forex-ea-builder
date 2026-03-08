@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/lib/auth";
 import { MobileNavMenu } from "@/app/app/components/mobile-nav-menu";
+import { NotificationBell } from "./notification-bell";
 
 export type NavItem = "build" | "evaluate" | "monitor" | "risk" | "settings";
 
@@ -91,6 +92,7 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
                 )}
               </Link>
             ))}
+            <NotificationBell />
             <form
               action={async () => {
                 "use server";

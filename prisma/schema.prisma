@@ -147,6 +147,7 @@ model User {
   backtestUploads    BacktestUpload[]
   pushSubscriptions  PushSubscription[]
   outboxEntries      NotificationOutbox[]
+  controlLayerAlerts ControlLayerAlert[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -429,6 +430,7 @@ model LiveEAInstance {
   tradeFacts             TradeFact[]
   monitoringRuns         MonitoringRun[]
   incidents              Incident[]
+  controlLayerAlerts     ControlLayerAlert[]
 
   @@index([userId, status])
   @@index([userId, deletedAt])
@@ -1206,6 +1208,28 @@ model AlertOutbox {
   dedupeKey     String   @unique
 
   @@index([status, nextAttemptAt])
+}
+
+// ============================================
+// CONTROL LAYER ALERT — in-app governance alerts
+// ============================================
+
+model ControlLayerAlert {
+  id             String    @id @default(cuid())
+  userId         String
+  instanceId     String
+  alertType      String    // DEPLOYMENT_INVALIDATED | DEPLOYMENT_RESTRICTED | DEPLOYMENT_REVIEW_REQUIRED | MONITOR_OFFLINE | BASELINE_MISSING | VERSION_OUTDATED
+  summary        String    // Human-readable summary
+  reasons        Json?     // Optional signal/reason details
+  dedupeKey      String    @unique // Prevents repeat alerts for same state
+  acknowledgedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, acknowledgedAt, createdAt])
+  @@index([instanceId])
 }
 
 // ============================================

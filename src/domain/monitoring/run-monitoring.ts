@@ -45,6 +45,12 @@ import type { TransitionDecision } from "./decide-monitoring-transition";
 import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
 import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import { buildIncidentData } from "@/domain/incidents/open-incident";
+import {
+  emitTransitionAlerts,
+  emitControlLayerAlert,
+  emitMonitoringSignalAlerts,
+  clearAlertByDedupe,
+} from "@/lib/alerts/control-layer-alerts";
 const log = logger.child({ service: "monitoring-run" });
 
 export interface RunMonitoringParams {
@@ -317,10 +323,14 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
         // not findFirst through strategyId (which could pick a wrong instance).
         const instanceRow = await tx.liveEAInstance.findUnique({
           where: { id: instanceId },
-          select: { id: true, lifecycleState: true },
+          select: { id: true, lifecycleState: true, userId: true },
         });
         const instance = instanceRow
-          ? { instanceId: instanceRow.id, lifecycleState: instanceRow.lifecycleState }
+          ? {
+              instanceId: instanceRow.id,
+              lifecycleState: instanceRow.lifecycleState,
+              userId: instanceRow.userId,
+            }
           : null;
 
         // c. Count consecutive HEALTHY runs for THIS INSTANCE
@@ -443,7 +453,16 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             },
           });
 
-          // g. Incident management — atomic with transition, scoped to instance
+          // g. In-app control-layer alert — atomic with transition
+          await emitTransitionAlerts(tx, {
+            userId: instance.userId,
+            instanceId,
+            fromState: transitionDecision.from!,
+            toState: transitionDecision.to!,
+            reasons: evalResult.reasons,
+          });
+
+          // h. Incident management — atomic with transition, scoped to instance
           if (transitionDecision.to === "EDGE_AT_RISK") {
             // Open incident for this specific instance
             const incidentData = buildIncidentData({
@@ -545,10 +564,63 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           }
         }
 
-        return { consecutiveHealthyRuns, transition };
+        return { consecutiveHealthyRuns, transition, userId: instance?.userId ?? null };
       },
       { isolationLevel: "Serializable" }
     );
+
+    // ── Fire-and-forget control-layer alerts (outside serializable tx) ──
+
+    if (atomicResult.userId) {
+      const userId = atomicResult.userId;
+
+      // DEPLOYMENT_REVIEW: verdict AT_RISK but no lifecycle transition occurred
+      if (evalResult.verdict === "AT_RISK" && !atomicResult.transition) {
+        emitControlLayerAlert(prisma, {
+          userId,
+          instanceId,
+          alertType: "DEPLOYMENT_REVIEW",
+          reasons: evalResult.reasons,
+        }).catch((err) => {
+          log.error({ err, instanceId }, "Failed to emit DEPLOYMENT_REVIEW alert");
+        });
+      }
+
+      // BASELINE_MISSING / VERSION_OUTDATED: condition-based with clear-on-resolve
+      const versionOutdated = instanceForBaseline?.strategyVersionId
+        ? await prisma.strategyIdentity
+            .findUnique({
+              where: { strategyId },
+              select: { currentVersionId: true },
+            })
+            .then((si) =>
+              si?.currentVersionId
+                ? instanceForBaseline!.strategyVersionId !== si.currentVersionId
+                : false
+            )
+        : false;
+
+      emitMonitoringSignalAlerts(prisma, {
+        userId,
+        instanceId,
+        baselineMissing,
+        versionOutdated,
+      }).catch((err) => {
+        log.error({ err, instanceId }, "Failed to emit monitoring signal alerts");
+      });
+
+      // Clear resolved conditions
+      if (!baselineMissing) {
+        clearAlertByDedupe(prisma, `BASELINE_MISSING:${instanceId}`).catch((err) => {
+          log.error({ err, instanceId }, "Failed to clear BASELINE_MISSING alert");
+        });
+      }
+      if (!versionOutdated) {
+        clearAlertByDedupe(prisma, `VERSION_OUTDATED:${instanceId}`).catch((err) => {
+          log.error({ err, instanceId }, "Failed to clear VERSION_OUTDATED alert");
+        });
+      }
+    }
 
     return {
       runId: run.id,
