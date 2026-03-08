@@ -8,6 +8,7 @@ import { WalkForwardResults } from "../../backtest/[id]/walk-forward-results";
 import { OptimizationResults } from "../../backtest/[id]/optimization-results";
 import type { WalkForwardResult } from "@/lib/backtest-parser/walk-forward";
 import type { ParameterOptimization } from "@/lib/ai-strategy-doctor";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 // ============================================
 // Types
@@ -207,6 +208,7 @@ export default function EvaluateDetailPage() {
     try {
       const res = await fetch(`/api/backtest/${id}/analyze`, {
         method: "POST",
+        headers: getCsrfHeaders(),
       });
 
       const json = await res.json();
@@ -237,7 +239,10 @@ export default function EvaluateDetailPage() {
     if (!confirm("Delete this backtest analysis?")) return;
 
     try {
-      const res = await fetch(`/api/backtest/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backtest/${id}`, {
+        method: "DELETE",
+        headers: getCsrfHeaders(),
+      });
       if (res.ok) {
         toast.success("Backtest deleted");
         router.push("/app/evaluate");
