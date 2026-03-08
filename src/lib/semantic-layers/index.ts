@@ -20,3 +20,11 @@ export type {
   VersionWithDeployments,
   StrategyLineage,
 } from "./version-lineage";
+export { resolveDeploymentGovernance, getSignalLabel } from "./governance";
+export type {
+  GovernanceState,
+  GovernanceAction,
+  GovernanceSignal,
+  DeploymentGovernance,
+  GovernanceInput,
+} from "./governance";

@@ -13,11 +13,13 @@ import { prisma } from "@/lib/prisma";
 import {
   resolveInstanceMonitoringStatus,
   resolveDeploymentCurrency,
+  resolveDeploymentGovernance,
   buildStrategyLineage,
   type InstanceMonitoringStatus,
   type StrategyAggregateHealth,
   type DeploymentVersionCurrency,
   type StrategyLineage,
+  type DeploymentGovernance,
 } from "@/lib/semantic-layers";
 import { buildStrategyAggregate } from "@/lib/semantic-layers/strategy-aggregate";
 
@@ -137,9 +139,17 @@ export interface StrategyDetailData {
   // Latest monitoring run
   latestRun: MonitoringRunSummary | null;
 
-  // System recommendation (derived)
+  // System recommendation (derived — legacy, retained for backward compat)
   recommendation: RecommendationLevel;
   recommendationReason: string;
+
+  /**
+   * Governance verdict — the control layer's conclusion about this deployment.
+   * Derived from monitoring truth, lifecycle, incidents, heartbeat authority,
+   * and lineage context. This is what the control layer concludes should happen,
+   * not just what is happening.
+   */
+  governance: DeploymentGovernance;
 
   /**
    * Layer 2: Strategy aggregate across sibling deployments sharing the same
@@ -286,6 +296,7 @@ export async function loadStrategyDetail(
       retiredReason: true,
       peakScore: true,
       peakScoreAt: true,
+      monitoringSuppressedUntil: true,
       strategyVersionId: true,
       healthSnapshots: {
         take: 20,
@@ -544,6 +555,27 @@ export async function loadStrategyDetail(
     }
   }
 
+  // ── Governance verdict ──────────────────────────────────
+  // Derived from all canonical signals — monitoring, lifecycle, incidents,
+  // heartbeat authority, and lineage context.
+  const hasBaseline = health?.baselineReturnPct !== null && health?.baselineReturnPct !== undefined;
+  const governance = resolveDeploymentGovernance({
+    lifecycleState: instance.lifecycleState,
+    lifecyclePhase: instance.lifecyclePhase,
+    operatorHold: instance.operatorHold,
+    connectionStatus: instance.status as "ONLINE" | "OFFLINE" | "ERROR",
+    lastHeartbeat: instance.lastHeartbeat?.toISOString() ?? null,
+    monitoringSuppressedUntil: instance.monitoringSuppressedUntil?.toISOString() ?? null,
+    hasHealthData,
+    healthStatus: latestSnap?.status ?? null,
+    driftDetected: latestSnap?.driftDetected ?? false,
+    hasBaseline,
+    hasOpenIncident: mappedIncidents.some((i) => i.status === "OPEN"),
+    hasEscalatedIncident: mappedIncidents.some((i) => i.status === "ESCALATED"),
+    versionCurrency,
+    now: new Date(),
+  });
+
   return {
     id: instance.id,
     eaName: instance.eaName,
@@ -569,6 +601,7 @@ export async function loadStrategyDetail(
     latestRun: mappedRun,
     recommendation: level,
     recommendationReason: reason,
+    governance,
     strategyAggregate,
     versionNo,
     versionCurrency,

@@ -12,6 +12,7 @@ import { GovernanceContextPanel } from "@/components/app/governance-context-pane
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
+import { GovernancePanel } from "@/components/app/governance-panel";
 
 interface PageProps {
   params: Promise<{ instanceId: string }>;
@@ -39,7 +40,10 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 2. System Recommendation — action-oriented decision panel */}
         <SystemRecommendation level={data.recommendation} reason={data.recommendationReason} />
 
-        {/* 3 + 4. Live Performance + Baseline vs Live — side by side on desktop */}
+        {/* 3. Governance Verdict — control-layer conclusion */}
+        <GovernancePanel governance={data.governance} />
+
+        {/* 4 + 5. Live Performance + Baseline vs Live — side by side on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <LivePerformanceGrid health={data.health} />
           <BaselineComparison health={data.health} />
