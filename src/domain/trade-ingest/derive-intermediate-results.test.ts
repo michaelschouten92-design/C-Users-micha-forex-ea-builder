@@ -25,6 +25,7 @@ function makeTradeFact(overrides: Partial<TradeFact> & { id: string }): TradeFac
     profit: 50,
     executedAt: new Date("2025-01-15T10:00:00Z"),
     ingestedAt: new Date(),
+    instanceId: null,
     comment: null,
     ...overrides,
   };

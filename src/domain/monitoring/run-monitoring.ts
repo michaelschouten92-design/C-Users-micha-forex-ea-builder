@@ -174,14 +174,29 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       throw err;
     }
 
-    // Phase 1: Build LIVE trade snapshot
-    // TradeFact is strategy-scoped — all instances of the same strategy share trade facts.
-    // This is acceptable because TradeFact represents the canonical trade record for the strategy.
-    // Per-instance trade isolation would require adding instanceId to TradeFact (future work).
-    const liveFacts = await prisma.tradeFact.findMany({
-      where: { strategyId, source: "LIVE" },
+    // Phase 1: Build LIVE trade snapshot — instance-scoped.
+    // Primary: query by instanceId (post-migration rows).
+    // Fallback: if no instance-scoped rows exist, fall back to strategyId
+    // for pre-migration LIVE TradeFacts that lack instanceId.
+    let liveFacts = await prisma.tradeFact.findMany({
+      where: { instanceId, source: "LIVE" },
       orderBy: [{ executedAt: "asc" }, { id: "asc" }],
     });
+
+    if (liveFacts.length === 0) {
+      // Pre-migration fallback: load LIVE facts by strategyId where instanceId is null.
+      // This is narrow — only picks up rows that were never tagged with an instance.
+      liveFacts = await prisma.tradeFact.findMany({
+        where: { strategyId, source: "LIVE", instanceId: null },
+        orderBy: [{ executedAt: "asc" }, { id: "asc" }],
+      });
+      if (liveFacts.length > 0) {
+        log.info(
+          { instanceId, strategyId, count: liveFacts.length },
+          "Using pre-migration LIVE TradeFacts (instanceId=null fallback)"
+        );
+      }
+    }
 
     if (liveFacts.length === 0) {
       // No live facts — cannot evaluate, mark FAILED

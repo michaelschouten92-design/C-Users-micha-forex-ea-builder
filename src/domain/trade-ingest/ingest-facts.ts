@@ -20,8 +20,9 @@ export async function ingestTradeFactsFromDeals(params: {
   sourceRunId: string;
   deals: ParsedDeal[];
   symbolFallback: string;
+  instanceId?: string | null;
 }): Promise<IngestResult> {
-  const { strategyId, source, sourceRunId, deals, symbolFallback } = params;
+  const { strategyId, source, sourceRunId, deals, symbolFallback, instanceId } = params;
 
   // Step 1: Filter balance deals
   const tradingDeals = deals.filter((d) => d.type !== "balance");
@@ -37,6 +38,7 @@ export async function ingestTradeFactsFromDeals(params: {
   const result = await prisma.tradeFact.createMany({
     data: candidates.map((c) => ({
       strategyId,
+      instanceId: instanceId ?? null,
       source,
       sourceRunId,
       sourceTicket: c.sourceTicket,

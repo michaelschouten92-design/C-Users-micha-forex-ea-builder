@@ -422,6 +422,7 @@ model LiveEAInstance {
   ledgerCommitments      LedgerCommitment[]
   healthSnapshots        HealthSnapshot[]
   sharedProofBundles     SharedProofBundle[]
+  tradeFacts             TradeFact[]
   monitoringRuns         MonitoringRun[]
   incidents              Incident[]
 
@@ -1123,6 +1124,7 @@ model ProofThreshold {
 model TradeFact {
   id           String   @id @default(cuid())
   strategyId   String                    // Logical FK to StrategyIdentity.strategyId
+  instanceId   String?                   // FK to LiveEAInstance — null for BACKTEST and pre-migration rows
   source       String                    // "BACKTEST" | "LIVE" (future-proof)
   sourceRunId  String?                   // BacktestRun.id (nullable for future LIVE source)
   sourceTicket Int                       // ParsedDeal.ticket (MT5 ticket number)
@@ -1138,9 +1140,12 @@ model TradeFact {
   ingestedAt   DateTime @default(now())
   comment      String?
 
+  instance     LiveEAInstance? @relation(fields: [instanceId], references: [id])
+
   @@unique([strategyId, source, sourceTicket])
   @@index([strategyId, executedAt])
   @@index([strategyId, source])
+  @@index([instanceId, source])
   @@index([sourceRunId])
 }
 

@@ -60,15 +60,20 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
   // Step 1: Parse CSV → ParsedDeal[]
   const deals = parseCsvDeals(csv);
 
-  // Guard: reject LIVE ingest when strategy is halted
+  // Guard: reject LIVE ingest when strategy is halted, and resolve instanceId
+  let resolvedInstanceId: string | null = null;
   if (source === "LIVE") {
     const instance = await prisma.liveEAInstance.findFirst({
-      where: { strategyVersion: { strategyIdentity: { strategyId } } },
-      select: { operatorHold: true },
+      where: {
+        strategyVersion: { strategyIdentity: { strategyId } },
+        deletedAt: null,
+      },
+      select: { id: true, operatorHold: true },
     });
     if (instance?.operatorHold === "HALTED") {
       throw new StrategyHaltedError(strategyId);
     }
+    resolvedInstanceId = instance?.id ?? null;
   }
 
   // Step 2: Validate + ingest (fail-closed)
@@ -78,6 +83,7 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
     sourceRunId: backtestRunId ?? `csv-import-${Date.now()}`,
     deals,
     symbolFallback: symbolFallback ?? "",
+    instanceId: resolvedInstanceId,
   });
 
   // Step 3: Build snapshot from all facts for this strategy
@@ -116,21 +122,10 @@ export async function runCsvIngestPipeline(params: CsvIngestParams): Promise<Csv
   // The monitoring run is persisted (not fire-and-forget) but its failure
   // does not fail the ingest — the ingest proof event is already committed.
   //
-  // Instance-first: resolve the instance for this strategy to trigger per-instance monitoring.
-  if (source === "LIVE") {
+  // Instance-first: reuse resolvedInstanceId from step 1 (no extra DB call).
+  if (source === "LIVE" && resolvedInstanceId) {
     try {
-      const instance = await prisma.liveEAInstance.findFirst({
-        where: {
-          strategyVersion: { strategyIdentity: { strategyId } },
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (instance) {
-        await triggerMonitoringAfterIngest(instance.id);
-      } else {
-        log.warn({ strategyId }, "Monitoring skipped: no live instance for strategy");
-      }
+      await triggerMonitoringAfterIngest(resolvedInstanceId);
     } catch (err) {
       log.error({ err, strategyId }, "Monitoring trigger failed (non-fatal for ingest)");
     }

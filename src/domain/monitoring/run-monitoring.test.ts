@@ -578,7 +578,7 @@ describe("runMonitoring", () => {
     await run(params);
 
     expect(mockTradeFactFindMany).toHaveBeenCalledWith({
-      where: { strategyId: "strat_1", source: "LIVE" },
+      where: { instanceId: "inst_test", source: "LIVE" },
       orderBy: [{ executedAt: "asc" }, { id: "asc" }],
     });
   });
