@@ -19,17 +19,22 @@ export const ANTHROPIC_TIMEOUT_MS = 30_000;
 export const ANTHROPIC_MAX_RETRIES = 2;
 
 let client: Anthropic | null = null;
+let warnedMissing = false;
 
 /**
  * Get the Anthropic client singleton.
  * Returns null if ANTHROPIC_API_KEY is not configured.
+ * Logs a warning once per process lifetime when the key is missing.
  */
 export function getAnthropicClient(): Anthropic | null {
   if (client) return client;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    logger.warn("ANTHROPIC_API_KEY not set — AI analysis features disabled");
+    if (!warnedMissing) {
+      warnedMissing = true;
+      logger.warn("ANTHROPIC_API_KEY not set — AI analysis features disabled");
+    }
     return null;
   }
 
@@ -39,6 +44,12 @@ export function getAnthropicClient(): Anthropic | null {
     maxRetries: ANTHROPIC_MAX_RETRIES,
   });
   return client;
+}
+
+// Startup diagnostic — runs once when this module is first imported.
+// Visible in server logs so missing config is caught during deploy, not on first user request.
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn("\u26A0\uFE0F  AI analysis disabled — ANTHROPIC_API_KEY not configured");
 }
 
 /** Default model for strategy analysis (fast + cost-effective) */
