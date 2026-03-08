@@ -64,7 +64,7 @@ export function CreateProjectButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-[#4F46E5] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+        className="bg-[#6366F1] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
       >
         + New Project
       </button>
@@ -79,7 +79,7 @@ export function CreateProjectButton() {
           <div
             role="dialog"
             aria-labelledby="create-project-title"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleSubmit}>
@@ -90,13 +90,13 @@ export function CreateProjectButton() {
 
                 {error && (
                   <div
-                    className={`p-3 rounded-lg mb-4 text-sm border ${isLimitError ? "bg-[rgba(79,70,229,0.1)] border-[rgba(79,70,229,0.3)] text-[#A78BFA]" : "bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#EF4444]"}`}
+                    className={`p-3 rounded-lg mb-4 text-sm border ${isLimitError ? "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.10)] text-[#818CF8]" : "bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#EF4444]"}`}
                   >
                     <p>{error}</p>
                     {isLimitError && (
                       <Link
                         href="/pricing"
-                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-[#4F46E5] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
+                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 bg-[#6366F1] text-white text-xs font-medium rounded-lg hover:bg-[#818CF8] transition-colors"
                       >
                         <svg
                           className="w-3.5 h-3.5"
@@ -119,7 +119,7 @@ export function CreateProjectButton() {
 
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-[#CBD5E1] mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-[#FAFAFA] mb-1">
                       Name *
                     </label>
                     <input
@@ -131,9 +131,9 @@ export function CreateProjectButton() {
                       required
                       autoFocus
                       maxLength={100}
-                      className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                      className="w-full px-4 py-3 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-white placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-colors"
                     />
-                    <span className="text-[10px] text-[#7C8DB0] mt-0.5 block text-right">
+                    <span className="text-[10px] text-[#71717A] mt-0.5 block text-right">
                       {name.length}/100
                     </span>
                   </div>
@@ -141,7 +141,7 @@ export function CreateProjectButton() {
                   <div>
                     <label
                       htmlFor="description"
-                      className="block text-sm font-medium text-[#CBD5E1] mb-1"
+                      className="block text-sm font-medium text-[#FAFAFA] mb-1"
                     >
                       Description
                     </label>
@@ -152,27 +152,27 @@ export function CreateProjectButton() {
                       placeholder="Optional description..."
                       rows={3}
                       maxLength={500}
-                      className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+                      className="w-full px-4 py-3 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-white placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-colors"
                     />
-                    <span className="text-[10px] text-[#7C8DB0] mt-0.5 block text-right">
+                    <span className="text-[10px] text-[#71717A] mt-0.5 block text-right">
                       {description.length}/500
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[#0F172A]/50 px-6 py-4 flex justify-end gap-3 rounded-b-xl border-t border-[rgba(79,70,229,0.2)]">
+              <div className="bg-[#09090B]/50 px-6 py-4 flex justify-end gap-3 rounded-b-xl border-t border-[rgba(255,255,255,0.06)]">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-2 text-[#94A3B8] hover:text-white transition-colors duration-200"
+                  className="px-4 py-2 text-[#A1A1AA] hover:text-white transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading || !name.trim()}
-                  className="bg-[#4F46E5] text-white px-5 py-2 rounded-lg font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="bg-[#6366F1] text-white px-5 py-2 rounded-lg font-medium hover:bg-[#818CF8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? "Creating..." : "Create"}
                 </button>

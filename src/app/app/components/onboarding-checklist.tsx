@@ -125,18 +125,18 @@ export function OnboardingChecklist({
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5 mb-8">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 mb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-white">Getting started</h3>
-          <p className="text-xs text-[#7C8DB0] mt-0.5">
+          <p className="text-xs text-[#71717A] mt-0.5">
             {completedCount} of {steps.length} complete
           </p>
         </div>
         <button
           onClick={handleDismiss}
-          className="text-xs text-[#64748B] hover:text-[#94A3B8] transition-colors"
+          className="text-xs text-[#71717A] hover:text-[#A1A1AA] transition-colors"
           aria-label="Dismiss checklist"
         >
           Dismiss
@@ -144,9 +144,9 @@ export function OnboardingChecklist({
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-[#1E293B] rounded-full overflow-hidden mb-5">
+      <div className="h-1.5 bg-[#18181B] rounded-full overflow-hidden mb-5">
         <div
-          className="h-full bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] rounded-full transition-all duration-500"
+          className="h-full bg-[#6366F1] rounded-full transition-all duration-500"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -159,15 +159,15 @@ export function OnboardingChecklist({
             <div
               key={step.id}
               className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                isNext ? "bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]" : ""
+                isNext ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)]" : ""
               }`}
             >
               {/* Step indicator */}
               <div className="flex-shrink-0 mt-0.5">
                 {step.completed ? (
-                  <div className="w-5 h-5 rounded-full bg-[#22D3EE]/20 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-[#10B981]/20 flex items-center justify-center">
                     <svg
-                      className="w-3 h-3 text-[#22D3EE]"
+                      className="w-3 h-3 text-[#10B981]"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -183,7 +183,7 @@ export function OnboardingChecklist({
                 ) : (
                   <div
                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold ${
-                      isNext ? "border-[#A78BFA] text-[#A78BFA]" : "border-[#334155] text-[#334155]"
+                      isNext ? "border-[#818CF8] text-[#818CF8]" : "border-[#334155] text-[#334155]"
                     }`}
                   >
                     {i + 1}
@@ -196,22 +196,22 @@ export function OnboardingChecklist({
                 <p
                   className={`text-sm font-medium ${
                     step.completed
-                      ? "text-[#64748B] line-through"
+                      ? "text-[#71717A] line-through"
                       : isNext
                         ? "text-white"
-                        : "text-[#94A3B8]"
+                        : "text-[#A1A1AA]"
                   }`}
                 >
                   {step.label}
                 </p>
-                {isNext && <p className="text-xs text-[#7C8DB0] mt-0.5">{step.description}</p>}
+                {isNext && <p className="text-xs text-[#71717A] mt-0.5">{step.description}</p>}
               </div>
 
               {/* Action */}
               {isNext && !step.completed && (
                 <Link
                   href={step.href}
-                  className="flex-shrink-0 text-xs px-3 py-1.5 rounded-md bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-colors font-medium"
+                  className="flex-shrink-0 text-xs px-3 py-1.5 rounded-md bg-[#6366F1] text-white hover:bg-[#818CF8] transition-colors font-medium"
                 >
                   {step.cta}
                 </Link>

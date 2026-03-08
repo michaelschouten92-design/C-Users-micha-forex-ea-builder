@@ -63,12 +63,12 @@ export function OnboardingHero() {
     <div className="max-w-4xl mx-auto">
       {/* Welcome Header */}
       <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.25)] mb-4">
-          <span className="w-2 h-2 rounded-full bg-[#22D3EE] animate-pulse" />
-          <span className="text-xs text-[#A78BFA] font-medium">Proof-Based Trading Platform</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.10)] mb-4">
+          <span className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse" />
+          <span className="text-xs text-[#818CF8] font-medium">Proof-Based Trading Platform</span>
         </div>
         <h2 className="text-3xl font-bold text-white mb-3">Welcome to AlgoStudio</h2>
-        <p className="text-[#94A3B8] text-base max-w-xl mx-auto leading-relaxed">
+        <p className="text-[#A1A1AA] text-base max-w-xl mx-auto leading-relaxed">
           Build trading strategies, verify their performance with tamper-proof track records, and
           monitor their health in real time. Every result is provable.
         </p>
@@ -81,19 +81,19 @@ export function OnboardingHero() {
             step: "1",
             label: "Build or Upload",
             desc: "Create a strategy or upload an existing backtest",
-            color: "#22D3EE",
+            color: "#6366F1",
           },
           {
             step: "2",
             label: "Evaluate",
             desc: "Get an instant quality score for your strategy",
-            color: "#A78BFA",
+            color: "#818CF8",
           },
           {
             step: "3",
             label: "Monitor",
             desc: "Deploy to MetaTrader 5 and start tracking",
-            color: "#4F46E5",
+            color: "#6366F1",
           },
           {
             step: "4",
@@ -104,7 +104,7 @@ export function OnboardingHero() {
         ].map((s) => (
           <div
             key={s.step}
-            className="bg-[#1A0626]/60 border border-[rgba(79,70,229,0.12)] rounded-xl px-4 py-4 text-center"
+            className="bg-[#111114]/60 border border-[rgba(255,255,255,0.06)] rounded-xl px-4 py-4 text-center"
           >
             <div
               className="w-7 h-7 rounded-full mx-auto mb-2 flex items-center justify-center text-xs font-bold"
@@ -117,7 +117,7 @@ export function OnboardingHero() {
               {s.step}
             </div>
             <p className="text-sm font-medium text-white mb-1">{s.label}</p>
-            <p className="text-[11px] text-[#7C8DB0] leading-snug">{s.desc}</p>
+            <p className="text-[11px] text-[#71717A] leading-snug">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -125,11 +125,11 @@ export function OnboardingHero() {
       {/* Two Paths */}
       <div className="grid md:grid-cols-2 gap-5 mb-8">
         {/* Path 1: Build a Strategy */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-[rgba(79,70,229,0.15)] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-5 h-5 text-[#A78BFA]"
+                className="w-5 h-5 text-[#818CF8]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -144,10 +144,10 @@ export function OnboardingHero() {
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Build a Strategy</h3>
-              <p className="text-xs text-[#7C8DB0]">No coding required</p>
+              <p className="text-xs text-[#71717A]">No coding required</p>
             </div>
           </div>
-          <p className="text-sm text-[#94A3B8] mb-4 leading-relaxed">
+          <p className="text-sm text-[#A1A1AA] mb-4 leading-relaxed">
             Pick a template, customize the settings, and export a ready-to-use Expert Advisor for
             MetaTrader 5. Takes about 5 minutes.
           </p>
@@ -159,19 +159,19 @@ export function OnboardingHero() {
                 key={preset.id}
                 onClick={() => createFromPreset(preset.id)}
                 disabled={loadingPreset !== null}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.05)] hover:border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all text-left disabled:opacity-50 group"
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.06)] transition-all text-left disabled:opacity-50 group"
               >
                 <div>
-                  <span className="text-sm font-medium text-[#CBD5E1] group-hover:text-white transition-colors">
+                  <span className="text-sm font-medium text-[#FAFAFA] group-hover:text-white transition-colors">
                     {preset.name}
                   </span>
-                  <p className="text-[11px] text-[#64748B] mt-0.5">
+                  <p className="text-[11px] text-[#71717A] mt-0.5">
                     {preset.buildJson.nodes.length} blocks &middot; Ready to customize
                   </p>
                 </div>
                 {loadingPreset === preset.id ? (
                   <svg
-                    className="animate-spin h-4 w-4 text-[#A78BFA]"
+                    className="animate-spin h-4 w-4 text-[#818CF8]"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -191,7 +191,7 @@ export function OnboardingHero() {
                   </svg>
                 ) : (
                   <svg
-                    className="w-4 h-4 text-[#64748B] group-hover:text-[#A78BFA] transition-colors"
+                    className="w-4 h-4 text-[#71717A] group-hover:text-[#818CF8] transition-colors"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -210,11 +210,11 @@ export function OnboardingHero() {
         </div>
 
         {/* Path 2: Upload a Backtest */}
-        <div className="bg-[#1A0626] border border-[rgba(34,211,238,0.2)] rounded-xl p-6">
+        <div className="bg-[#111114] border border-[rgba(99,102,241,0.20)] rounded-xl p-6">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-[rgba(34,211,238,0.15)] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-[rgba(99,102,241,0.15)] flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-5 h-5 text-[#22D3EE]"
+                className="w-5 h-5 text-[#6366F1]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -229,17 +229,17 @@ export function OnboardingHero() {
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Upload a Backtest</h3>
-              <p className="text-xs text-[#7C8DB0]">Already have a strategy?</p>
+              <p className="text-xs text-[#71717A]">Already have a strategy?</p>
             </div>
           </div>
-          <p className="text-sm text-[#94A3B8] mb-4 leading-relaxed">
+          <p className="text-sm text-[#A1A1AA] mb-4 leading-relaxed">
             Upload your MT5 Strategy Tester report (.html) and get an instant health score. See how
             your strategy measures up across 5 key metrics.
           </p>
 
           <Link
             href="/app/evaluate"
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] transition-all font-medium text-sm"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.25)] text-[#6366F1] hover:bg-[rgba(99,102,241,0.15)] hover:border-[rgba(99,102,241,0.40)] transition-all font-medium text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -252,9 +252,9 @@ export function OnboardingHero() {
             Upload Backtest Report
           </Link>
 
-          <div className="mt-4 px-4 py-3 rounded-lg bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]">
-            <p className="text-[11px] text-[#7C8DB0] leading-relaxed">
-              <span className="text-[#94A3B8] font-medium">How to get a report:</span> In MetaTrader
+          <div className="mt-4 px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)]">
+            <p className="text-[11px] text-[#71717A] leading-relaxed">
+              <span className="text-[#A1A1AA] font-medium">How to get a report:</span> In MetaTrader
               5, run the Strategy Tester, then right-click the results and select &quot;Save as
               Report (.html)&quot;.
             </p>
@@ -264,9 +264,9 @@ export function OnboardingHero() {
 
       {/* Subtle concept introduction */}
       <div className="text-center">
-        <p className="text-xs text-[#64748B]">
+        <p className="text-xs text-[#71717A]">
           AlgoStudio evaluates every strategy through a progression:{" "}
-          <span className="text-[#A78BFA]">Testing</span>
+          <span className="text-[#818CF8]">Testing</span>
           {" → "}
           <span className="text-[#6366F1]">Monitoring</span>
           {" → "}

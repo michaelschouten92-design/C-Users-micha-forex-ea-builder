@@ -25,7 +25,7 @@ const PATH_CONFIG = {
     title: "I Have a Validated Backtest",
     subtitle: "Upload your MT5 report to establish a statistical baseline.",
     icon: "upload",
-    accentColor: "#22D3EE",
+    accentColor: "#6366F1",
   },
   live: {
     title: "I'm Already Trading Live",
@@ -37,7 +37,7 @@ const PATH_CONFIG = {
     title: "I Want to Validate First",
     subtitle: "Build a strategy, run a backtest, then establish authority.",
     icon: "shield",
-    accentColor: "#A78BFA",
+    accentColor: "#818CF8",
   },
 } as const;
 
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
       <div className="fixed top-4 right-4 z-50">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+          className="text-sm text-[#A1A1AA] hover:text-[#818CF8] transition-colors duration-200"
         >
           Sign Out
         </button>
@@ -193,10 +193,10 @@ function StepIndicator({
               disabled={!isClickable}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.4)] text-white"
+                  ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.10)] text-white"
                   : isComplete
                     ? "bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10B981] cursor-pointer hover:border-[rgba(16,185,129,0.5)]"
-                    : "bg-transparent border border-[rgba(79,70,229,0.1)] text-[#64748B]"
+                    : "bg-transparent border border-[rgba(255,255,255,0.06)] text-[#71717A]"
               }`}
             >
               {isComplete ? (
@@ -210,7 +210,9 @@ function StepIndicator({
               ) : (
                 <span
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                    isActive ? "bg-[#4F46E5] text-white" : "bg-[rgba(79,70,229,0.1)] text-[#64748B]"
+                    isActive
+                      ? "bg-[#6366F1] text-white"
+                      : "bg-[rgba(255,255,255,0.06)] text-[#71717A]"
                   }`}
                 >
                   {i + 1}
@@ -222,7 +224,7 @@ function StepIndicator({
             {i < STEPS.length - 1 && (
               <div
                 className={`w-6 sm:w-10 h-px ${
-                  i < currentIndex ? "bg-[#10B981]" : "bg-[rgba(79,70,229,0.15)]"
+                  i < currentIndex ? "bg-[#10B981]" : "bg-[rgba(255,255,255,0.06)]"
                 }`}
               />
             )}
@@ -238,14 +240,14 @@ function ScopeStep({ onSelect }: { onSelect: (path: OnboardingPath) => void }) {
   return (
     <div>
       <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.25)] mb-4">
-          <span className="w-2 h-2 rounded-full bg-[#4F46E5] animate-pulse" />
-          <span className="text-xs text-[#A78BFA] font-medium">Strategy Control Layer</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.10)] mb-4">
+          <span className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse" />
+          <span className="text-xs text-[#818CF8] font-medium">Strategy Control Layer</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
           Establish Control Over Your Strategy.
         </h1>
-        <p className="text-[#94A3B8] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="text-[#A1A1AA] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
           AlgoStudio governs the lifecycle of live algorithmic strategies. Choose where you are
           today — we&apos;ll guide you to structural authority.
         </p>
@@ -258,7 +260,7 @@ function ScopeStep({ onSelect }: { onSelect: (path: OnboardingPath) => void }) {
           <button
             key={key}
             onClick={() => onSelect(key)}
-            className="group text-left bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6 hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+            className="group text-left bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6 hover:border-[rgba(255,255,255,0.10)] transition-all duration-200"
           >
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
@@ -269,10 +271,10 @@ function ScopeStep({ onSelect }: { onSelect: (path: OnboardingPath) => void }) {
             >
               <PathIcon icon={config.icon} color={config.accentColor} />
             </div>
-            <h3 className="text-base font-semibold text-white mb-2 group-hover:text-[#CBD5E1] transition-colors">
+            <h3 className="text-base font-semibold text-white mb-2 group-hover:text-[#FAFAFA] transition-colors">
               {config.title}
             </h3>
-            <p className="text-sm text-[#7C8DB0] leading-relaxed">{config.subtitle}</p>
+            <p className="text-sm text-[#71717A] leading-relaxed">{config.subtitle}</p>
             <div
               className="mt-4 flex items-center gap-1.5 text-xs font-medium"
               style={{ color: config.accentColor }}
@@ -296,9 +298,9 @@ function ScopeStep({ onSelect }: { onSelect: (path: OnboardingPath) => void }) {
         ))}
       </div>
 
-      <p className="mt-10 text-center text-xs text-[#64748B]">
+      <p className="mt-10 text-center text-xs text-[#71717A]">
         Every path leads to the same outcome:{" "}
-        <span className="text-[#A78BFA]">deterministic lifecycle authority</span> over your
+        <span className="text-[#818CF8]">deterministic lifecycle authority</span> over your
         strategy.
       </p>
     </div>
@@ -312,10 +314,10 @@ function BacktestBaselineStep({ onNext }: { onNext: () => void }) {
       <StepHeader
         title="Establish Your Statistical Baseline"
         description="Upload your MT5 Strategy Tester report. AlgoStudio will extract key performance metrics and create a validated baseline for lifecycle governance."
-        accentColor="#22D3EE"
+        accentColor="#6366F1"
       />
 
-      <div className="mt-8 bg-[#1A0626] border border-[rgba(34,211,238,0.2)] rounded-xl p-6">
+      <div className="mt-8 bg-[#111114] border border-[rgba(99,102,241,0.20)] rounded-xl p-6">
         <h3 className="text-sm font-semibold text-white mb-3">What happens next</h3>
         <ol className="space-y-3">
           {[
@@ -323,8 +325,8 @@ function BacktestBaselineStep({ onNext }: { onNext: () => void }) {
             "AlgoStudio scores it across 5 structural metrics",
             "Your baseline becomes the anchor for all future deviation checks",
           ].map((text, i) => (
-            <li key={i} className="flex gap-3 items-start text-sm text-[#94A3B8]">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] flex items-center justify-center text-[10px] font-bold text-[#22D3EE]">
+            <li key={i} className="flex gap-3 items-start text-sm text-[#A1A1AA]">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.25)] flex items-center justify-center text-[10px] font-bold text-[#6366F1]">
                 {i + 1}
               </span>
               {text}
@@ -333,13 +335,13 @@ function BacktestBaselineStep({ onNext }: { onNext: () => void }) {
         </ol>
       </div>
 
-      <p className="mt-6 mb-3 text-xs text-[#94A3B8]">
+      <p className="mt-6 mb-3 text-xs text-[#A1A1AA]">
         Submit the baseline this strategy will be governed against.
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/app/evaluate"
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] transition-all font-medium text-sm"
+          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.25)] text-[#6366F1] hover:bg-[rgba(99,102,241,0.15)] hover:border-[rgba(99,102,241,0.40)] transition-all font-medium text-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -372,7 +374,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
         accentColor="#10B981"
       />
 
-      <div className="mt-8 bg-[#1A0626] border border-[rgba(16,185,129,0.2)] rounded-xl p-6">
+      <div className="mt-8 bg-[#111114] border border-[rgba(16,185,129,0.2)] rounded-xl p-6">
         <h3 className="text-sm font-semibold text-white mb-3">How connection works</h3>
         <ol className="space-y-3">
           {[
@@ -380,7 +382,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
             "Add the AlgoStudio bridge EA to your MetaTrader 5 chart",
             "Your EA begins sending heartbeats — AlgoStudio governs the lifecycle",
           ].map((text, i) => (
-            <li key={i} className="flex gap-3 items-start text-sm text-[#94A3B8]">
+            <li key={i} className="flex gap-3 items-start text-sm text-[#A1A1AA]">
               <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.25)] flex items-center justify-center text-[10px] font-bold text-[#10B981]">
                 {i + 1}
               </span>
@@ -390,7 +392,7 @@ function LiveBaselineStep({ onNext }: { onNext: () => void }) {
         </ol>
       </div>
 
-      <p className="mt-6 mb-3 text-xs text-[#94A3B8]">
+      <p className="mt-6 mb-3 text-xs text-[#A1A1AA]">
         Submit the baseline this strategy will be governed against.
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
@@ -438,33 +440,33 @@ function ValidateBaselineStep({
       <StepHeader
         title="Build, Test, Then Deploy With Authority"
         description="Start with a strategy template or build your own. Run a backtest to establish a statistical baseline before live deployment."
-        accentColor="#A78BFA"
+        accentColor="#818CF8"
       />
 
-      <p className="mt-8 mb-4 text-xs text-[#94A3B8] text-center">
+      <p className="mt-8 mb-4 text-xs text-[#A1A1AA] text-center">
         Submit the baseline this strategy will be governed against.
       </p>
       <div className="grid sm:grid-cols-2 gap-5">
         {/* Option A: Template */}
-        <div className="bg-[#1A0626] border border-[rgba(167,139,250,0.2)] rounded-xl p-5">
+        <div className="bg-[#111114] border border-[rgba(129,140,248,0.2)] rounded-xl p-5">
           <h3 className="text-sm font-semibold text-white mb-1">Start from a template</h3>
-          <p className="text-xs text-[#7C8DB0] mb-4">No coding required</p>
+          <p className="text-xs text-[#71717A] mb-4">No coding required</p>
           <div className="space-y-2">
             {starterPresets.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => onCreatePreset(preset.id)}
                 disabled={loadingPreset !== null}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.05)] hover:border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all text-left disabled:opacity-50 group"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.06)] transition-all text-left disabled:opacity-50 group"
               >
-                <span className="text-sm text-[#CBD5E1] group-hover:text-white transition-colors">
+                <span className="text-sm text-[#FAFAFA] group-hover:text-white transition-colors">
                   {preset.name}
                 </span>
                 {loadingPreset === preset.id ? (
                   <Spinner />
                 ) : (
                   <svg
-                    className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#A78BFA] transition-colors"
+                    className="w-3.5 h-3.5 text-[#71717A] group-hover:text-[#818CF8] transition-colors"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -483,12 +485,12 @@ function ValidateBaselineStep({
         </div>
 
         {/* Option B: Upload */}
-        <div className="bg-[#1A0626] border border-[rgba(34,211,238,0.2)] rounded-xl p-5">
+        <div className="bg-[#111114] border border-[rgba(99,102,241,0.20)] rounded-xl p-5">
           <h3 className="text-sm font-semibold text-white mb-1">Upload an existing backtest</h3>
-          <p className="text-xs text-[#7C8DB0] mb-4">Already have an MT5 report?</p>
+          <p className="text-xs text-[#71717A] mb-4">Already have an MT5 report?</p>
           <Link
             href="/app/evaluate"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.15)] hover:border-[rgba(34,211,238,0.4)] transition-all font-medium text-sm"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.25)] text-[#6366F1] hover:bg-[rgba(99,102,241,0.15)] hover:border-[rgba(99,102,241,0.40)] transition-all font-medium text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -500,7 +502,7 @@ function ValidateBaselineStep({
             </svg>
             Upload Report
           </Link>
-          <p className="mt-3 text-[11px] text-[#64748B] leading-relaxed">
+          <p className="mt-3 text-[11px] text-[#71717A] leading-relaxed">
             Upload your .html/.htm Strategy Tester report to get an instant health score and
             baseline.
           </p>
@@ -529,11 +531,11 @@ function AuthorityStep({ path, onComplete }: { path: OnboardingPath; onComplete:
       <StepHeader
         title="Establish Deterministic Authority"
         description="AlgoStudio governs your strategy's lifecycle with rule-based decisions. No discretion. No emotion. Structural control."
-        accentColor="#4F46E5"
+        accentColor="#6366F1"
       />
 
-      <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-        <p className="text-sm text-[#94A3B8] leading-relaxed mb-6">{contextLines[path]}</p>
+      <div className="mt-8 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
+        <p className="text-sm text-[#A1A1AA] leading-relaxed mb-6">{contextLines[path]}</p>
 
         <div className="space-y-4">
           {[
@@ -564,7 +566,7 @@ function AuthorityStep({ path, onComplete }: { path: OnboardingPath; onComplete:
               >
                 {state.label}
               </span>
-              <p className="text-sm text-[#94A3B8]">{state.desc}</p>
+              <p className="text-sm text-[#A1A1AA]">{state.desc}</p>
             </div>
           ))}
         </div>
@@ -573,11 +575,11 @@ function AuthorityStep({ path, onComplete }: { path: OnboardingPath; onComplete:
       <div className="mt-8 text-center">
         <button
           onClick={onComplete}
-          className="px-8 py-3 bg-[#4F46E5] text-white font-medium rounded-lg hover:bg-[#6366F1] transition-colors text-base"
+          className="px-8 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#6366F1] transition-colors text-base"
         >
           Establish Control
         </button>
-        <p className="mt-3 text-xs text-[#64748B]">
+        <p className="mt-3 text-xs text-[#71717A]">
           You can configure specific deviation thresholds from your strategy dashboard.
         </p>
       </div>
@@ -602,7 +604,7 @@ function StepHeader({
         style={{ backgroundColor: accentColor }}
       />
       <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">{title}</h2>
-      <p className="text-[#94A3B8] text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+      <p className="text-[#A1A1AA] text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
         {description}
       </p>
     </div>
@@ -614,14 +616,14 @@ function SkipButton({ onClick }: { onClick: () => void }) {
     <div className="flex flex-col items-center sm:items-end gap-1">
       <button
         onClick={onClick}
-        className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all text-sm"
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[rgba(255,255,255,0.06)] text-[#A1A1AA] hover:text-white hover:border-[rgba(255,255,255,0.10)] transition-all text-sm"
       >
         Skip for now
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>
-      <span className="text-[11px] text-[#64748B]">
+      <span className="text-[11px] text-[#71717A]">
         You can place a strategy under governance at any time.
       </span>
     </div>
@@ -630,9 +632,9 @@ function SkipButton({ onClick }: { onClick: () => void }) {
 
 function HelpBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 px-4 py-3 rounded-lg bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]">
-      <p className="text-[11px] text-[#7C8DB0] leading-relaxed">
-        <span className="text-[#94A3B8] font-medium">Tip: </span>
+    <div className="mt-6 px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)]">
+      <p className="text-[11px] text-[#71717A] leading-relaxed">
+        <span className="text-[#A1A1AA] font-medium">Tip: </span>
         {children}
       </p>
     </div>
@@ -699,7 +701,7 @@ function PathIcon({ icon, color }: { icon: string; color: string }) {
 
 function Spinner() {
   return (
-    <svg className="animate-spin h-4 w-4 text-[#A78BFA]" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-4 w-4 text-[#818CF8]" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"

@@ -41,7 +41,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
     <div ref={menuRef} className="relative sm:hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="p-2 text-[#94A3B8] hover:text-white transition-colors rounded-lg hover:bg-[rgba(79,70,229,0.15)]"
+        className="p-2 text-[#A1A1AA] hover:text-white transition-colors rounded-lg hover:bg-[rgba(255,255,255,0.06)]"
         aria-label={open ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={open}
       >
@@ -67,11 +67,11 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-2 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-2 overflow-hidden">
           <Link
             href={firstProjectId ? `/app/projects/${firstProjectId}` : "/app"}
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#22D3EE] font-medium hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#818CF8] font-medium hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -86,7 +86,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
           <Link
             href="/app/evaluate"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -101,7 +101,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
           <Link
             href="/app/live"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -116,7 +116,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
           <Link
             href="/app/risk"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -131,7 +131,7 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
           <Link
             href="/app/settings"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -149,12 +149,12 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
             </svg>
             Settings
           </Link>
-          <div className="border-t border-[rgba(79,70,229,0.15)] mt-1 pt-1">
+          <div className="border-t border-[rgba(255,255,255,0.06)] mt-1 pt-1">
             <form action="/api/auth/signout" method="POST">
               <button
                 type="submit"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)] transition-colors w-full text-left"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors w-full text-left"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path

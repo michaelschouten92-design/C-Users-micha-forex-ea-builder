@@ -34,17 +34,17 @@ export default function DashboardError({
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Something Went Wrong</h2>
-        <p className="text-[#94A3B8] mb-6">An error occurred while loading the dashboard.</p>
+        <p className="text-[#A1A1AA] mb-6">An error occurred while loading the dashboard.</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+            className="px-6 py-2.5 bg-[#6366F1] text-white rounded-lg hover:bg-[#6366F1]/90 transition-colors"
           >
             Try Again
           </button>
           <Link
             href="/"
-            className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+            className="px-6 py-2.5 border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
           >
             Back to Home
           </Link>

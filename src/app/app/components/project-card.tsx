@@ -149,7 +149,7 @@ export function ProjectCard({ project }: { project: Project }) {
   });
 
   return (
-    <div className="relative bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl hover:border-[rgba(79,70,229,0.4)] transition-all duration-200 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)]">
+    <div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl hover:border-[rgba(255,255,255,0.20)] transition-colors duration-200">
       <Link href={`/app/projects/${project.id}`} className="block p-6">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
@@ -161,7 +161,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]"
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[#818CF8] border border-[rgba(255,255,255,0.06)]"
                   >
                     {tag}
                   </span>
@@ -175,7 +175,7 @@ export function ProjectCard({ project }: { project: Project }) {
               setShowMenu(!showMenu);
             }}
             aria-label="Project options"
-            className="text-[#7C8DB0] hover:text-[#CBD5E1] p-2 -mr-2 -mt-1 transition-colors duration-200"
+            className="text-[#71717A] hover:text-[#FAFAFA] p-2 -mr-2 -mt-1 transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -184,12 +184,12 @@ export function ProjectCard({ project }: { project: Project }) {
         </div>
 
         {project.description && (
-          <p className="text-sm text-[#94A3B8] mt-1 line-clamp-2">{project.description}</p>
+          <p className="text-sm text-[#A1A1AA] mt-1 line-clamp-2">{project.description}</p>
         )}
 
-        <div className="flex items-center gap-4 mt-4 text-xs text-[#7C8DB0]">
+        <div className="flex items-center gap-4 mt-4 text-xs text-[#71717A]">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE]"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1]"></span>
             {project._count.versions} versions
           </span>
           <span>Updated: {updatedAt}</span>
@@ -201,7 +201,7 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
           <div
             role="menu"
-            className="absolute right-4 bottom-full mb-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]"
+            className="absolute right-4 bottom-full mb-2 bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.4)] z-20 py-1 min-w-[120px]"
           >
             <button
               role="menuitem"
@@ -209,7 +209,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 setShowMenu(false);
                 setShowDuplicateConfirm(true);
               }}
-              className="w-full text-left px-4 py-2 text-sm text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.1)] transition-colors duration-200"
+              className="w-full text-left px-4 py-2 text-sm text-[#FAFAFA] hover:bg-[rgba(255,255,255,0.06)] transition-colors duration-200"
             >
               Duplicate
             </button>
@@ -219,7 +219,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 setShowMenu(false);
                 setShowTagEditor(true);
               }}
-              className="w-full text-left px-4 py-2 text-sm text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.1)] transition-colors duration-200"
+              className="w-full text-left px-4 py-2 text-sm text-[#FAFAFA] hover:bg-[rgba(255,255,255,0.06)] transition-colors duration-200"
             >
               Edit Tags
             </button>
@@ -244,7 +244,7 @@ export function ProjectCard({ project }: { project: Project }) {
           onClick={() => setShowTagEditor(false)}
         >
           <div
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-white mb-4">Edit Tags</h3>
@@ -252,7 +252,7 @@ export function ProjectCard({ project }: { project: Project }) {
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[rgba(79,70,229,0.15)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]"
+                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.06)] text-[#818CF8] border border-[rgba(255,255,255,0.06)]"
                 >
                   {tag}
                   <button
@@ -272,7 +272,7 @@ export function ProjectCard({ project }: { project: Project }) {
                   </button>
                 </span>
               ))}
-              {tags.length === 0 && <span className="text-xs text-[#7C8DB0]">No tags yet</span>}
+              {tags.length === 0 && <span className="text-xs text-[#71717A]">No tags yet</span>}
             </div>
             {tags.length < 5 && (
               <div className="flex gap-2 mb-4">
@@ -288,23 +288,23 @@ export function ProjectCard({ project }: { project: Project }) {
                   }}
                   maxLength={20}
                   placeholder="Add tag..."
-                  className="flex-1 px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none"
+                  className="flex-1 px-3 py-2 text-sm bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-white placeholder-[#71717A] focus:ring-2 focus:ring-[#6366F1] focus:border-transparent focus:outline-none"
                 />
                 <button
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || savingTags}
-                  className="px-3 py-2 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Add
                 </button>
               </div>
             )}
-            <p className="text-[10px] text-[#7C8DB0] mb-4">
+            <p className="text-[10px] text-[#71717A] mb-4">
               Max 5 tags, 20 characters each. Press Enter to add.
             </p>
             <button
               onClick={() => setShowTagEditor(false)}
-              className="w-full px-4 py-2.5 text-sm font-medium text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+              className="w-full px-4 py-2.5 text-sm font-medium text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
             >
               Done
             </button>
@@ -325,12 +325,12 @@ export function ProjectCard({ project }: { project: Project }) {
             role="alertdialog"
             aria-labelledby="duplicate-modal-title"
             aria-describedby="duplicate-modal-desc"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(79,70,229,0.15)] flex items-center justify-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
               <svg
-                className="w-6 h-6 text-[#A78BFA]"
+                className="w-6 h-6 text-[#818CF8]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -349,14 +349,14 @@ export function ProjectCard({ project }: { project: Project }) {
             >
               Duplicate Project
             </h3>
-            <p id="duplicate-modal-desc" className="text-sm text-[#94A3B8] text-center mb-6">
+            <p id="duplicate-modal-desc" className="text-sm text-[#A1A1AA] text-center mb-6">
               Create a copy of{" "}
               <span className="text-white font-medium">&ldquo;{project.name}&rdquo;</span>?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDuplicateConfirm(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
               >
                 Cancel
               </button>
@@ -366,7 +366,7 @@ export function ProjectCard({ project }: { project: Project }) {
                   handleDuplicate();
                 }}
                 disabled={duplicating}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 transition-colors"
               >
                 {duplicating ? "Duplicating..." : "Duplicate"}
               </button>
@@ -388,7 +388,7 @@ export function ProjectCard({ project }: { project: Project }) {
             role="alertdialog"
             aria-labelledby="delete-modal-title"
             aria-describedby="delete-modal-desc"
-            className="bg-[#1A0626] border border-[rgba(239,68,68,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
+            className="bg-[#111114] border border-[rgba(239,68,68,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(239,68,68,0.15)] flex items-center justify-center">
@@ -412,7 +412,7 @@ export function ProjectCard({ project }: { project: Project }) {
             >
               Delete Project
             </h3>
-            <p id="delete-modal-desc" className="text-sm text-[#94A3B8] text-center mb-6">
+            <p id="delete-modal-desc" className="text-sm text-[#A1A1AA] text-center mb-6">
               Are you sure you want to delete{" "}
               <span className="text-white font-medium">&ldquo;{project.name}&rdquo;</span>? This
               action cannot be undone.
@@ -420,7 +420,7 @@ export function ProjectCard({ project }: { project: Project }) {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
               >
                 Cancel
               </button>

@@ -152,7 +152,7 @@ export default async function DashboardPage() {
             {/* ── Greeting ── */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white">{greeting}.</h2>
-              <p className="text-sm text-[#7C8DB0] mt-1">
+              <p className="text-sm text-[#71717A] mt-1">
                 {commandCenter.summary.online} online &middot; {recentBacktests.length} evaluation
                 {recentBacktests.length !== 1 ? "s" : ""} &middot; {projects.length} project
                 {projects.length !== 1 ? "s" : ""}
@@ -208,10 +208,10 @@ export default async function DashboardPage() {
                       insight.type === "warning"
                         ? "bg-[#F59E0B]/5 border-[#F59E0B]/20"
                         : insight.type === "success"
-                          ? "bg-[#22C55E]/5 border-[#22C55E]/20"
+                          ? "bg-[#10B981]/5 border-[#10B981]/20"
                           : insight.type === "action"
-                            ? "bg-[#4F46E5]/5 border-[#4F46E5]/20"
-                            : "bg-[#1A0626] border-[rgba(79,70,229,0.15)]"
+                            ? "bg-[#6366F1]/5 border-[#6366F1]/20"
+                            : "bg-[#111114] border-[rgba(255,255,255,0.06)]"
                     }`}
                   >
                     <div className="flex-shrink-0">
@@ -223,20 +223,20 @@ export default async function DashboardPage() {
                           insight.type === "warning"
                             ? "text-[#F59E0B]"
                             : insight.type === "success"
-                              ? "text-[#22C55E]"
+                              ? "text-[#10B981]"
                               : "text-white"
                         }`}
                       >
                         {insight.message}
                       </p>
                       {insight.detail && (
-                        <p className="text-xs text-[#7C8DB0] mt-0.5">{insight.detail}</p>
+                        <p className="text-xs text-[#71717A] mt-0.5">{insight.detail}</p>
                       )}
                     </div>
                     {insight.linkHref && (
                       <Link
                         href={insight.linkHref}
-                        className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors font-medium flex-shrink-0"
+                        className="text-xs text-[#818CF8] hover:text-white transition-colors font-medium flex-shrink-0"
                       >
                         {insight.linkLabel || "View"} &rarr;
                       </Link>
@@ -253,7 +253,7 @@ export default async function DashboardPage() {
                   <h3 className="text-lg font-semibold text-white">Recent Evaluations</h3>
                   <Link
                     href="/app/evaluate"
-                    className="text-xs text-[#A78BFA] hover:text-[#22D3EE] transition-colors"
+                    className="text-xs text-[#818CF8] hover:text-white transition-colors"
                   >
                     View All &rarr;
                   </Link>
@@ -263,7 +263,7 @@ export default async function DashboardPage() {
                     <Link
                       key={bt.id}
                       href={`/app/evaluate/${bt.id}`}
-                      className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 hover:border-[rgba(79,70,229,0.3)] transition-colors"
+                      className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 hover:border-[rgba(255,255,255,0.10)] transition-colors"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-white truncate">
@@ -274,7 +274,7 @@ export default async function DashboardPage() {
                           style={{
                             color:
                               bt.healthStatus === "ROBUST"
-                                ? "#22C55E"
+                                ? "#10B981"
                                 : bt.healthStatus === "MODERATE"
                                   ? "#F59E0B"
                                   : "#EF4444",
@@ -291,26 +291,26 @@ export default async function DashboardPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                          <span className="text-[#64748b]">Symbol</span>
-                          <p className="text-[#CBD5E1]">{bt.symbol}</p>
+                          <span className="text-[#71717A]">Symbol</span>
+                          <p className="text-[#FAFAFA]">{bt.symbol}</p>
                         </div>
                         <div>
-                          <span className="text-[#64748b]">Profit</span>
+                          <span className="text-[#71717A]">Profit</span>
                           <p
                             className={
-                              (bt.totalNetProfit ?? 0) >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"
+                              (bt.totalNetProfit ?? 0) >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
                             }
                           >
                             ${(bt.totalNetProfit ?? 0).toFixed(2)}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[#64748b]">Win Rate</span>
-                          <p className="text-[#CBD5E1]">{(bt.winRate ?? 0).toFixed(1)}%</p>
+                          <span className="text-[#71717A]">Win Rate</span>
+                          <p className="text-[#FAFAFA]">{(bt.winRate ?? 0).toFixed(1)}%</p>
                         </div>
                         <div>
-                          <span className="text-[#64748b]">PF</span>
-                          <p className="text-[#CBD5E1]">{(bt.profitFactor ?? 0).toFixed(2)}</p>
+                          <span className="text-[#71717A]">PF</span>
+                          <p className="text-[#FAFAFA]">{(bt.profitFactor ?? 0).toFixed(2)}</p>
                         </div>
                       </div>
                     </Link>
@@ -323,19 +323,19 @@ export default async function DashboardPage() {
             {recentBacktests.length === 0 && (
               <Link
                 href="/app/evaluate"
-                className="block mb-8 p-6 bg-gradient-to-r from-[rgba(79,70,229,0.15)] to-[rgba(34,211,238,0.1)] border border-[rgba(79,70,229,0.25)] rounded-xl hover:border-[rgba(34,211,238,0.4)] transition-all duration-200 group"
+                className="block mb-8 p-6 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl hover:border-[rgba(255,255,255,0.20)] transition-colors group"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
+                    <h3 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
                       Evaluate Your First Strategy
                     </h3>
-                    <p className="text-xs text-[#7C8DB0] mt-1">
+                    <p className="text-xs text-[#71717A] mt-1">
                       Upload an MT5 report and get a full strategy evaluation — health score, AI
                       analysis, and stress test.
                     </p>
                   </div>
-                  <span className="text-[#94A3B8] group-hover:text-[#22D3EE] transition-colors shrink-0 ml-4">
+                  <span className="text-[#A1A1AA] group-hover:text-white transition-colors shrink-0 ml-4">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -372,20 +372,20 @@ function StrategyGridSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-4 animate-pulse"
+          className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 animate-pulse"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="h-4 bg-[#2b0a3d] rounded w-32" />
-            <div className="h-5 bg-[#2b0a3d] rounded-full w-16" />
+            <div className="h-4 bg-[#18181B] rounded w-32" />
+            <div className="h-5 bg-[#18181B] rounded-full w-16" />
           </div>
-          <div className="h-3 bg-[#2b0a3d] rounded w-24 mb-3" />
-          <div className="h-1.5 bg-[#0A0118] rounded-full mb-3" />
+          <div className="h-3 bg-[#18181B] rounded w-24 mb-3" />
+          <div className="h-1.5 bg-[#09090B] rounded-full mb-3" />
           <div className="flex justify-between mb-2">
-            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
-            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
-            <div className="h-8 bg-[#2b0a3d] rounded w-16" />
+            <div className="h-8 bg-[#18181B] rounded w-16" />
+            <div className="h-8 bg-[#18181B] rounded w-16" />
+            <div className="h-8 bg-[#18181B] rounded w-16" />
           </div>
-          <div className="h-3 bg-[#2b0a3d] rounded w-40 mt-2" />
+          <div className="h-3 bg-[#18181B] rounded w-40 mt-2" />
         </div>
       ))}
     </div>
@@ -399,10 +399,10 @@ function InsightIcon({ type, icon }: { type: string; icon: string }) {
     type === "warning"
       ? "#F59E0B"
       : type === "success"
-        ? "#22C55E"
+        ? "#10B981"
         : type === "action"
-          ? "#A78BFA"
-          : "#7C8DB0";
+          ? "#818CF8"
+          : "#71717A";
 
   switch (icon) {
     case "alert":

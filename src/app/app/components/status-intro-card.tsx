@@ -31,13 +31,13 @@ export function StatusIntroCard() {
   if (isDismissedFromStorage || localDismissed) return null;
 
   return (
-    <div className="mb-6 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
+    <div className="mb-6 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h4 className="text-sm font-semibold text-white mb-2">
             How AlgoStudio evaluates your strategies
           </h4>
-          <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
+          <p className="text-xs text-[#A1A1AA] leading-relaxed mb-4">
             Every live strategy goes through an evaluation process. As your EA trades and builds a
             track record, AlgoStudio continuously assesses its performance against its baseline.
             Strategies earn their status — nothing is given for free.
@@ -48,7 +48,7 @@ export function StatusIntroCard() {
             {[
               {
                 label: "Testing",
-                color: "#A78BFA",
+                color: "#818CF8",
                 desc: "New strategy, collecting initial data",
               },
               {
@@ -63,7 +63,7 @@ export function StatusIntroCard() {
               },
             ].map((status, i) => (
               <div key={status.label} className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(15,23,42,0.5)] border border-[rgba(79,70,229,0.15)]">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#09090B]/50 border border-[rgba(255,255,255,0.06)]">
                   <span
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: status.color }}
@@ -74,7 +74,7 @@ export function StatusIntroCard() {
                 </div>
                 {i < 2 && (
                   <svg
-                    className="w-3 h-3 text-[#334155] flex-shrink-0"
+                    className="w-3 h-3 text-[#71717A] flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -91,7 +91,7 @@ export function StatusIntroCard() {
             ))}
           </div>
 
-          <p className="text-[11px] text-[#64748B] mt-3">
+          <p className="text-[11px] text-[#71717A] mt-3">
             If performance degrades, the status changes to reflect that — giving you an early
             warning before a drawdown becomes a problem.
           </p>
@@ -99,7 +99,7 @@ export function StatusIntroCard() {
 
         <button
           onClick={handleDismiss}
-          className="text-[#64748B] hover:text-[#94A3B8] transition-colors flex-shrink-0"
+          className="text-[#71717A] hover:text-[#A1A1AA] transition-colors flex-shrink-0"
           aria-label="Dismiss"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

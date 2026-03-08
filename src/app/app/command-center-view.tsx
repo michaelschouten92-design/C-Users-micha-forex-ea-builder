@@ -147,12 +147,12 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   active
-                    ? "bg-[#4F46E5] text-white"
-                    : "bg-[#1A0626] text-[#7C8DB0] border border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.3)] hover:text-white"
+                    ? "bg-[#6366F1] text-white"
+                    : "bg-[#111114] text-[#71717A] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.10)] hover:text-white"
                 }`}
               >
                 {f.label}
-                <span className={`ml-1.5 ${active ? "text-white/70" : "text-[#7C8DB0]/70"}`}>
+                <span className={`ml-1.5 ${active ? "text-white/70" : "text-[#71717A]/70"}`}>
                   {count}
                 </span>
               </button>
@@ -168,7 +168,7 @@ export function CommandCenterView({ strategies }: CommandCenterViewProps) {
             setSort(newSort);
             updateParams(filter, newSort);
           }}
-          className="bg-[#1A0626] text-[#CBD5E1] text-xs border border-[rgba(79,70,229,0.15)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#4F46E5] appearance-none cursor-pointer"
+          className="bg-[#111114] text-[#FAFAFA] text-xs border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#6366F1] appearance-none cursor-pointer"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -203,9 +203,9 @@ function EmptyState({ filter }: { filter: FilterValue }) {
   return (
     <div className="flex items-center justify-center py-16">
       <div className="text-center max-w-sm">
-        <div className="w-12 h-12 bg-[rgba(79,70,229,0.15)] rounded-xl flex items-center justify-center mx-auto mb-4">
+        <div className="w-12 h-12 bg-[rgba(255,255,255,0.06)] rounded-xl flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-6 h-6 text-[#A78BFA]"
+            className="w-6 h-6 text-[#818CF8]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -218,7 +218,7 @@ function EmptyState({ filter }: { filter: FilterValue }) {
             />
           </svg>
         </div>
-        <p className="text-sm text-[#7C8DB0]">{messages[filter]}</p>
+        <p className="text-sm text-[#71717A]">{messages[filter]}</p>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ type SortOption = "updated" | "created" | "name";
 
 const TIER_COLORS: Record<string, string> = {
   FREE: "bg-[rgba(16,185,129,0.15)] text-[#10B981] border-[rgba(16,185,129,0.3)]",
-  PRO: "bg-[rgba(168,85,247,0.15)] text-[#A855F7] border-[rgba(168,85,247,0.3)]",
+  PRO: "bg-[rgba(129,140,248,0.15)] text-[#818CF8] border-[rgba(129,140,248,0.3)]",
 };
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
@@ -56,10 +56,10 @@ const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  indicator: "#22D3EE",
+  indicator: "#818CF8",
   timing: "#F59E0B",
   trading: "#6366F1",
-  trademanagement: "#A78BFA",
+  trademanagement: "#818CF8",
 };
 
 function getNodeTypeDots(nodes: { data: Record<string, unknown> }[]) {
@@ -116,8 +116,8 @@ function OnboardingEmpty() {
   return (
     <div className="space-y-8">
       {/* Welcome section */}
-      <div className="bg-gradient-to-br from-[#1A0626] to-[#0F172A] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#6366F1] flex items-center justify-center">
           <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -128,7 +128,7 @@ function OnboardingEmpty() {
           </svg>
         </div>
         <h3 className="text-xl font-bold text-white mb-2">Welcome to AlgoStudio</h3>
-        <p className="text-[#94A3B8] max-w-md mx-auto mb-6">
+        <p className="text-[#A1A1AA] max-w-md mx-auto mb-6">
           Build automated trading strategies for MetaTrader 5 with a visual builder. Start from a
           template or create a blank project.
         </p>
@@ -137,7 +137,7 @@ function OnboardingEmpty() {
 
       {/* Template section */}
       <div>
-        <h3 className="text-sm font-medium text-[#7C8DB0] uppercase tracking-wide mb-4">
+        <h3 className="text-sm font-medium text-[#71717A] uppercase tracking-wide mb-4">
           Or start from a template
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -151,10 +151,10 @@ function OnboardingEmpty() {
                 key={preset.id}
                 onClick={() => createFromPreset(preset.id)}
                 disabled={loadingPreset !== null}
-                className="text-left bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5 hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] disabled:opacity-50 transition-all duration-200 group hover:scale-[1.02]"
+                className="text-left bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 hover:border-[rgba(255,255,255,0.20)] disabled:opacity-50 transition-colors duration-200 group"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
+                  <h4 className="font-semibold text-white group-hover:text-white transition-colors">
                     {preset.name}
                   </h4>
                   <div className="flex items-center gap-1.5">
@@ -172,9 +172,9 @@ function OnboardingEmpty() {
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-[#94A3B8] line-clamp-2 mb-3">{preset.description}</p>
+                <p className="text-xs text-[#A1A1AA] line-clamp-2 mb-3">{preset.description}</p>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-xs text-[#7C8DB0]">
+                  <div className="flex items-center gap-3 text-xs text-[#71717A]">
                     <span>{preset.buildJson.nodes.length} blocks</span>
                     <span>{preset.buildJson.edges.length} connections</span>
                   </div>
@@ -193,14 +193,14 @@ function OnboardingEmpty() {
                         <div
                           key={cat}
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: CATEGORY_COLORS[cat] || "#64748B" }}
+                          style={{ backgroundColor: CATEGORY_COLORS[cat] || "#71717A" }}
                         />
                       ))}
                     </div>
                   )}
                 </div>
                 {loadingPreset === preset.id && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-[#A78BFA]">
+                  <div className="mt-3 flex items-center gap-2 text-xs text-[#818CF8]">
                     <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
@@ -332,7 +332,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7C8DB0] pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] pointer-events-none"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -350,14 +350,14 @@ export function ProjectList({ projects }: { projects: Project[] }) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects..."
             aria-label="Search projects by name or description"
-            className="w-full pl-10 pr-4 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2 text-sm bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-white placeholder-[#71717A] focus:ring-2 focus:ring-[#6366F1] focus:border-transparent focus:outline-none transition-all duration-200"
           />
         </div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
           aria-label="Sort projects"
-          className="px-3 py-2 text-sm bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+          className="px-3 py-2 text-sm bg-[#18181B] border border-[rgba(255,255,255,0.10)] rounded-lg text-[#FAFAFA] focus:ring-2 focus:ring-[#6366F1] focus:border-transparent focus:outline-none transition-all duration-200"
         >
           <option value="updated">Last updated ↓</option>
           <option value="created">Newest first ↓</option>
@@ -376,8 +376,8 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                 onClick={() => toggleTag(tag)}
                 className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-all duration-200 ${
                   isActive
-                    ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-                    : "bg-transparent text-[#A78BFA] border-[rgba(79,70,229,0.3)] hover:border-[rgba(79,70,229,0.5)] hover:bg-[rgba(79,70,229,0.1)]"
+                    ? "bg-[#6366F1] text-white border-[#6366F1]"
+                    : "bg-transparent text-[#818CF8] border-[rgba(255,255,255,0.10)] hover:border-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.06)]"
                 }`}
               >
                 {tag}
@@ -385,7 +385,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
             );
           })}
           {selectedTags.size > 1 && (
-            <span className="text-xs text-[#7C8DB0] px-1 py-1">(matching all)</span>
+            <span className="text-xs text-[#71717A] px-1 py-1">(matching all)</span>
           )}
           {(selectedTags.size > 0 || search.trim()) && (
             <button
@@ -393,7 +393,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                 setSelectedTags(new Set());
                 setSearch("");
               }}
-              className="text-xs text-[#7C8DB0] hover:text-white px-2 py-1 transition-colors"
+              className="text-xs text-[#71717A] hover:text-white px-2 py-1 transition-colors"
             >
               Clear all filters
             </button>
@@ -405,7 +405,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
       <div className="mb-4">
         <button
           onClick={() => setShowTemplates(!showTemplates)}
-          className="text-sm text-[#A78BFA] hover:text-[#C4B5FD] transition-colors flex items-center gap-1.5"
+          className="text-sm text-[#818CF8] hover:text-[#818CF8] transition-colors flex items-center gap-1.5"
         >
           <svg
             className={`w-3.5 h-3.5 transition-transform ${showTemplates ? "rotate-90" : ""}`}
@@ -429,10 +429,10 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                   key={preset.id}
                   onClick={() => createFromPresetInline(preset.id)}
                   disabled={loadingPreset !== null}
-                  className="text-left bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 hover:border-[rgba(79,70,229,0.4)] hover:shadow-[0_4px_16px_rgba(79,70,229,0.1)] disabled:opacity-50 transition-all duration-200 group hover:scale-[1.02]"
+                  className="text-left bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg p-4 hover:border-[rgba(255,255,255,0.20)] disabled:opacity-50 transition-colors duration-200 group"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
+                    <h4 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
                       {preset.name}
                     </h4>
                     <div className="flex items-center gap-1.5">
@@ -449,16 +449,16 @@ export function ProjectList({ projects }: { projects: Project[] }) {
                             <div
                               key={cat}
                               className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: CATEGORY_COLORS[cat] || "#64748B" }}
+                              style={{ backgroundColor: CATEGORY_COLORS[cat] || "#71717A" }}
                             />
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{preset.description}</p>
+                  <p className="text-xs text-[#A1A1AA] mt-1 line-clamp-2">{preset.description}</p>
                   {loadingPreset === preset.id && (
-                    <span className="text-xs text-[#A78BFA] mt-2 block">Creating...</span>
+                    <span className="text-xs text-[#818CF8] mt-2 block">Creating...</span>
                   )}
                 </button>
               );
@@ -469,14 +469,14 @@ export function ProjectList({ projects }: { projects: Project[] }) {
 
       {/* Results count */}
       {search.trim() && filtered.length > 0 && (
-        <p className="text-xs text-[#7C8DB0] mb-3">
+        <p className="text-xs text-[#71717A] mb-3">
           {filtered.length} project{filtered.length !== 1 ? "s" : ""} found
         </p>
       )}
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#7C8DB0]">
+        <div className="text-center py-12 text-[#71717A]">
           <p className="text-sm">
             {search.trim() && selectedTags.size > 0 ? (
               <>No projects match &ldquo;{search}&rdquo; and the selected tags</>
@@ -491,7 +491,7 @@ export function ProjectList({ projects }: { projects: Project[] }) {
               setSearch("");
               setSelectedTags(new Set());
             }}
-            className="mt-2 text-xs text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+            className="mt-2 text-xs text-[#818CF8] hover:text-[#818CF8] transition-colors"
           >
             Clear all filters
           </button>

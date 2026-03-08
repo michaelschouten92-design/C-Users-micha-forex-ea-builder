@@ -156,7 +156,7 @@ export function SubscriptionPanel({
 
   return (
     <>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 mb-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Plan Info */}
           <div>
@@ -164,13 +164,13 @@ export function SubscriptionPanel({
               <h3 className="text-lg font-semibold text-white">{plan.name} Plan</h3>
               {tier !== "FREE" && subscriptionStatus === "active" && (
                 <span
-                  className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#A78BFA]" : "bg-[#4F46E5]"}`}
+                  className={`text-xs text-white px-2 py-0.5 rounded-full ${tier === "ELITE" ? "bg-[#818CF8]" : "bg-[#6366F1]"}`}
                 >
                   Active
                 </span>
               )}
               {tier !== "FREE" && subscriptionStatus === "trialing" && (
-                <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#22D3EE]">
+                <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#6366F1]">
                   Trial
                 </span>
               )}
@@ -227,7 +227,7 @@ export function SubscriptionPanel({
                 </div>
               </div>
             )}
-            <p className="text-sm text-[#94A3B8]">
+            <p className="text-sm text-[#A1A1AA]">
               {tier === "FREE"
                 ? "Upgrade for unlimited projects, verified track records, and live monitoring."
                 : tier === "PRO"
@@ -241,7 +241,7 @@ export function SubscriptionPanel({
             {tier === "FREE" ? (
               <Link
                 href="/pricing"
-                className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+                className="inline-flex items-center gap-2 bg-[#6366F1] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -258,7 +258,7 @@ export function SubscriptionPanel({
                 {tier === "PRO" && (
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center gap-2 bg-[#A78BFA] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#8B5CF6] transition-all duration-200 hover:shadow-[0_0_16px_rgba(167,139,250,0.3)]"
+                    className="inline-flex items-center gap-2 bg-[#818CF8] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -275,7 +275,7 @@ export function SubscriptionPanel({
                   <button
                     onClick={() => setConfirmAction("downgrade")}
                     disabled={loading || !!cancelPeriodEnd || !!pendingDowngrade}
-                    className="inline-flex items-center gap-2 border border-[rgba(245,158,11,0.5)] text-[#F59E0B] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(245,158,11,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 border border-[rgba(245,158,11,0.5)] text-[#F59E0B] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(245,158,11,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -292,7 +292,7 @@ export function SubscriptionPanel({
                   <button
                     onClick={() => setConfirmAction("cancel")}
                     disabled={loading}
-                    className="inline-flex items-center gap-2 border border-[rgba(239,68,68,0.4)] text-[#EF4444] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(239,68,68,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    className="inline-flex items-center gap-2 border border-[rgba(239,68,68,0.4)] text-[#EF4444] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(239,68,68,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
                     Cancel Subscription
                   </button>
@@ -301,7 +301,7 @@ export function SubscriptionPanel({
                   <button
                     onClick={handleManageSubscription}
                     disabled={loading}
-                    className="inline-flex items-center gap-2 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(255,255,255,0.06)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <>
@@ -333,18 +333,18 @@ export function SubscriptionPanel({
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[rgba(79,70,229,0.2)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
           {/* Projects Usage */}
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#94A3B8]">Projects</span>
+              <span className="text-[#A1A1AA]">Projects</span>
               <span className="text-white">
                 {projectCount} / {projectLimit === Infinity ? "\u221E" : projectLimit}
               </span>
             </div>
             {projectLimit !== Infinity && (
               <div
-                className="h-2 bg-[#1E293B] rounded-full overflow-hidden"
+                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={projectCount}
                 aria-valuemin={0}
@@ -357,7 +357,7 @@ export function SubscriptionPanel({
                       ? "bg-[#EF4444]"
                       : projectPercentage >= 80
                         ? "bg-[#F59E0B]"
-                        : "bg-[#22D3EE]"
+                        : "bg-[#6366F1]"
                   }`}
                   style={{ width: `${Math.min(projectPercentage, 100)}%` }}
                 />
@@ -378,21 +378,21 @@ export function SubscriptionPanel({
               </p>
             )}
             {projectLimit === Infinity && (
-              <p className="text-xs text-[#22D3EE] font-medium">Unlimited</p>
+              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
             )}
           </div>
 
           {/* Exports Usage */}
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#94A3B8]">Exports this month</span>
+              <span className="text-[#A1A1AA]">Exports this month</span>
               <span className="text-white">
                 {exportCount} / {exportLimit === Infinity ? "\u221E" : exportLimit}
               </span>
             </div>
             {exportLimit !== Infinity && (
               <div
-                className="h-2 bg-[#1E293B] rounded-full overflow-hidden"
+                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={exportCount}
                 aria-valuemin={0}
@@ -405,7 +405,7 @@ export function SubscriptionPanel({
                       ? "bg-[#EF4444]"
                       : exportPercentage >= 80
                         ? "bg-[#F59E0B]"
-                        : "bg-[#22D3EE]"
+                        : "bg-[#6366F1]"
                   }`}
                   style={{ width: `${Math.min(exportPercentage, 100)}%` }}
                 />
@@ -426,10 +426,10 @@ export function SubscriptionPanel({
               </p>
             )}
             {exportLimit === Infinity && (
-              <p className="text-xs text-[#22D3EE] font-medium">Unlimited</p>
+              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
             )}
             {tier === "FREE" && exportLimit !== Infinity && exportPercentage < 80 && (
-              <p className="text-xs text-[#64748B] mt-1">
+              <p className="text-xs text-[#71717A] mt-1">
                 Free plan: 3 exports per month. Resets on the 1st.
               </p>
             )}
@@ -438,16 +438,16 @@ export function SubscriptionPanel({
 
         {/* Feature Highlight */}
         {tier === "FREE" && (
-          <div className="mt-4 p-3 bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg">
-            <p className="text-xs text-[#A78BFA]">
+          <div className="mt-4 p-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-lg">
+            <p className="text-xs text-[#818CF8]">
               <span className="font-medium">Upgrade to unlock:</span> Unlimited projects & exports,
               verified track records, live EA monitoring, and priority support
             </p>
           </div>
         )}
         {tier === "PRO" && (
-          <div className="mt-4 p-3 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.2)] rounded-lg">
-            <p className="text-xs text-[#A78BFA]">
+          <div className="mt-4 p-3 bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.20)] rounded-lg">
+            <p className="text-xs text-[#818CF8]">
               <span className="font-medium">Elite includes:</span> Strategy Health Monitor, edge
               degradation detection, CUSUM drift analysis, advanced drawdown alerts, embeddable
               proof widget, 1-on-1 strategy review (1/month), and direct developer channel
@@ -463,13 +463,13 @@ export function SubscriptionPanel({
           onClick={() => !loading && setConfirmAction(null)}
         >
           <div
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {confirmAction === "downgrade" ? (
               <>
                 <h3 className="text-lg font-semibold text-white mb-3">Downgrade to Pro?</h3>
-                <p className="text-sm text-[#94A3B8] mb-4">
+                <p className="text-sm text-[#A1A1AA] mb-4">
                   Your plan will change to Pro at the end of your billing period
                   {currentPeriodEnd && <> ({formatDate(currentPeriodEnd)})</>}. You&apos;ll keep
                   full Elite access until then, including Strategy Health Monitor, edge degradation
@@ -480,7 +480,7 @@ export function SubscriptionPanel({
                   <button
                     onClick={() => setConfirmAction(null)}
                     disabled={loading}
-                    className="px-4 py-2 text-sm text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors disabled:opacity-50"
                   >
                     Keep Elite
                   </button>
@@ -513,7 +513,7 @@ export function SubscriptionPanel({
             ) : (
               <>
                 <h3 className="text-lg font-semibold text-white mb-3">Cancel Subscription?</h3>
-                <p className="text-sm text-[#94A3B8] mb-4">
+                <p className="text-sm text-[#A1A1AA] mb-4">
                   Your access continues until{" "}
                   <span className="text-white font-medium">
                     {periodEndDisplay
@@ -527,7 +527,7 @@ export function SubscriptionPanel({
                   <button
                     onClick={() => setConfirmAction(null)}
                     disabled={loading}
-                    className="px-4 py-2 text-sm text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors disabled:opacity-50"
                   >
                     Keep Subscription
                   </button>

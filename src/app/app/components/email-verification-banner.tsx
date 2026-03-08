@@ -82,7 +82,7 @@ export function EmailVerificationBanner() {
             setDismissed(true);
             localStorage.setItem("emailVerificationDismissed", "true");
           }}
-          className="text-[#94A3B8] hover:text-white p-1 flex-shrink-0"
+          className="text-[#A1A1AA] hover:text-white p-1 flex-shrink-0"
           aria-label="Dismiss"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
