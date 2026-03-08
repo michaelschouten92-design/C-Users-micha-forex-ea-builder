@@ -219,7 +219,7 @@ export default function EvaluateDetailPage() {
         } else if (res.status === 503) {
           toast.error("AI analysis is currently unavailable");
         } else {
-          toast.error(json.error || "Analysis failed");
+          toast.error(json.details || json.error || "Analysis failed");
         }
         return;
       }

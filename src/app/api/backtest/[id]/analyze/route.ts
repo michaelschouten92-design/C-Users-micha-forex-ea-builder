@@ -128,7 +128,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       return NextResponse.json(
         apiError(
           ErrorCode.INTERNAL_ERROR,
-          isDev ? message : "AI analysis failed. Please try again later."
+          isDev ? message : "AI analysis failed. Please try again later.",
+          message
         ),
         { status: 500 }
       );
