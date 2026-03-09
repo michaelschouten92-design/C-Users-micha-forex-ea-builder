@@ -215,6 +215,12 @@ function queryEaInstances(userId: string) {
           },
         },
       },
+      // Terminal deployment baseline status (derived read-only flag for UI)
+      terminalDeployments: {
+        where: { baselineStatus: "RELINK_REQUIRED" },
+        select: { id: true },
+        take: 1,
+      },
     },
   });
 }

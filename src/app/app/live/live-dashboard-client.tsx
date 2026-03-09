@@ -46,6 +46,7 @@ interface EAInstanceData {
   strategyStatus?: string | null;
   isExternal?: boolean;
   baseline?: BaselineData | null;
+  relinkRequired?: boolean;
 }
 
 interface TradeRecord {
@@ -78,6 +79,7 @@ interface AlertConfig {
 interface LiveDashboardClientProps {
   initialData: EAInstanceData[];
   tier?: "FREE" | "PRO" | "ELITE";
+  initialRelinkInstanceId?: string | null;
 }
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
@@ -777,12 +779,17 @@ function EACard({
               Paper
             </span>
           )}
-          {ea.isExternal && !ea.baseline && (
+          {ea.relinkRequired && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+              Baseline suspended
+            </span>
+          )}
+          {!ea.relinkRequired && ea.isExternal && !ea.baseline && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#64748B]/20 text-[#64748B] border border-[#64748B]/30">
               No baseline
             </span>
           )}
-          {ea.baseline && (
+          {!ea.relinkRequired && ea.baseline && (
             <span
               className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#4F46E5]/20 text-[#818CF8] border border-[#4F46E5]/30"
               title={`Baseline: WR ${ea.baseline.winRate.toFixed(1)}% | PF ${ea.baseline.profitFactor.toFixed(2)} | ${ea.baseline.totalTrades} trades`}
@@ -792,6 +799,57 @@ function EACard({
           )}
         </div>
       </div>
+
+      {/* Relink required warning */}
+      {ea.relinkRequired && (
+        <div className="mb-4 rounded-lg bg-[#F59E0B]/[0.06] border border-[#F59E0B]/20 p-4">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-[#F59E0B] mb-1">
+                Material configuration change detected — baseline trust suspended
+              </p>
+              <p className="text-[11px] text-[#94A3B8] leading-relaxed mb-3">
+                Monitoring is running without a trusted baseline. Governance may emit NO_BASELINE
+                until a replacement baseline is linked.
+              </p>
+              {onLinkBaseline && (
+                <button
+                  onClick={() => onLinkBaseline(ea.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 hover:bg-[#F59E0B]/30 transition-colors"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                    />
+                  </svg>
+                  Link new baseline
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Financial Metrics */}
       <div className="grid grid-cols-3 gap-3 mb-4">
@@ -982,7 +1040,7 @@ function EACard({
           {showProof ? "Hide Proof" : "Proof"}
         </button>
 
-        {ea.isExternal && !ea.baseline && onLinkBaseline && (
+        {ea.isExternal && !ea.baseline && !ea.relinkRequired && onLinkBaseline && (
           <button
             onClick={() => onLinkBaseline(ea.id)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.3)] text-[#818CF8] hover:bg-[#4F46E5]/20 hover:border-[#4F46E5]/50 transition-all duration-200"
@@ -1526,11 +1584,13 @@ interface BacktestOption {
 function LinkBaselineDialog({
   instanceId,
   instanceName,
+  isRelink,
   onClose,
   onLinked,
 }: {
   instanceId: string;
   instanceName: string;
+  isRelink?: boolean;
   onClose: () => void;
   onLinked: (instanceId: string, baseline: BaselineData) => void;
 }) {
@@ -1610,10 +1670,13 @@ function LinkBaselineDialog({
       <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">
-          <h2 className="text-lg font-semibold text-white">Link Backtest Baseline</h2>
+          <h2 className="text-lg font-semibold text-white">
+            {isRelink ? "Restore Baseline Trust" : "Link Backtest Baseline"}
+          </h2>
           <p className="text-xs text-[#7C8DB0] mt-1">
-            Select a backtest to use as baseline for &ldquo;{instanceName}&rdquo;. Edge drift
-            monitoring will compare live performance against this baseline.
+            {isRelink
+              ? `Baseline trust was suspended due to a material configuration change on "${instanceName}". Select a replacement backtest baseline to restore monitoring.`
+              : `Select a backtest to use as baseline for "${instanceName}". Edge drift monitoring will compare live performance against this baseline.`}
           </p>
         </div>
 
@@ -1703,13 +1766,36 @@ function LinkBaselineDialog({
 // MAIN COMPONENT
 // ============================================
 
-export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientProps) {
+export function LiveDashboardClient({
+  initialData,
+  tier,
+  initialRelinkInstanceId,
+}: LiveDashboardClientProps) {
   const [eaInstances, setEaInstances] = useState<EAInstanceData[]>(initialData);
   const [soundAlerts, setSoundAlerts] = useState(false);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
-  const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(null);
+  const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(() => {
+    // Auto-open LinkBaselineDialog from ?relink= query param
+    if (initialRelinkInstanceId && initialData.some((ea) => ea.id === initialRelinkInstanceId)) {
+      return initialRelinkInstanceId;
+    }
+    return null;
+  });
+
+  // Clean up ?relink= from URL after initial render
+  const relinkCleanedRef = useRef(false);
+  useEffect(() => {
+    if (initialRelinkInstanceId && !relinkCleanedRef.current) {
+      relinkCleanedRef.current = true;
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("relink")) {
+        url.searchParams.delete("relink");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
+    }
+  }, [initialRelinkInstanceId]);
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2259,10 +2345,13 @@ export function LiveDashboardClient({ initialData, tier }: LiveDashboardClientPr
         <LinkBaselineDialog
           instanceId={linkBaselineInstanceId}
           instanceName={eaInstances.find((ea) => ea.id === linkBaselineInstanceId)?.eaName ?? ""}
+          isRelink={eaInstances.find((ea) => ea.id === linkBaselineInstanceId)?.relinkRequired}
           onClose={() => setLinkBaselineInstanceId(null)}
           onLinked={(instanceId, baseline) => {
             setEaInstances((prev) =>
-              prev.map((ea) => (ea.id === instanceId ? { ...ea, baseline } : ea))
+              prev.map((ea) =>
+                ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
+              )
             );
             setLinkBaselineInstanceId(null);
           }}

@@ -56,6 +56,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             },
           },
         },
+        terminalDeployments: {
+          where: { baselineStatus: "RELINK_REQUIRED" },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
@@ -78,6 +83,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       totalTrades: ea.totalTrades,
       totalProfit: ea.totalProfit,
       isExternal: ea.exportJobId === null,
+      relinkRequired: ea.terminalDeployments.length > 0,
       baseline: ea.strategyVersion?.backtestBaseline
         ? {
             winRate: ea.strategyVersion.backtestBaseline.winRate,

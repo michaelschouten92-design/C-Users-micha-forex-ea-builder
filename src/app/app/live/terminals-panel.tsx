@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 // ── Types ─────────────────────────────────────────────
 
@@ -127,6 +128,9 @@ export function TerminalsPanel() {
 
 function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: () => void }) {
   const unlinkedCount = terminal.deployments.filter((d) => !d.instanceId).length;
+  const relinkCount = terminal.deployments.filter(
+    (d) => d.baselineStatus === "RELINK_REQUIRED"
+  ).length;
 
   return (
     <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] overflow-hidden">
@@ -148,6 +152,11 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {relinkCount > 0 && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.25)] text-[#F59E0B]">
+                {relinkCount} relink needed
+              </span>
+            )}
             {unlinkedCount > 0 && (
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.25)] text-[#F59E0B]">
                 {unlinkedCount} unlinked
@@ -249,14 +258,32 @@ function DeploymentRow({
         )}
       </div>
 
-      {/* Relink-required explanation */}
+      {/* Relink-required explanation + recovery CTA */}
       {isRelinkRequired && (
-        <div className="mt-2 px-3 py-2 rounded bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.15)]">
-          <p className="text-[10px] text-[#F59E0B] leading-relaxed">
-            EA configuration changed materially. Deterministic monitoring is suspended until a new
-            baseline is linked. Go to the linked instance and link a new backtest baseline that
-            reflects the current configuration.
+        <div className="mt-2 px-3 py-2.5 rounded bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.15)]">
+          <p className="text-[10px] font-medium text-[#F59E0B] mb-0.5">
+            Material configuration change detected — baseline trust suspended
           </p>
+          <p className="text-[10px] text-[#94A3B8] leading-relaxed mb-2">
+            Monitoring is running without a trusted baseline. Governance may emit NO_BASELINE until
+            a replacement baseline is linked.
+          </p>
+          {deployment.instanceId && (
+            <Link
+              href={`/app/live?relink=${deployment.instanceId}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 hover:bg-[#F59E0B]/30 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
+              </svg>
+              Link new baseline
+            </Link>
+          )}
         </div>
       )}
 

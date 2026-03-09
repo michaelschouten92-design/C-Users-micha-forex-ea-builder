@@ -20,7 +20,7 @@ import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-anal
 export default async function LiveEADashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ decision?: string }>;
+  searchParams: Promise<{ decision?: string; relink?: string }>;
 }) {
   const session = await auth();
 
@@ -161,6 +161,7 @@ export default async function LiveEADashboardPage({
     totalProfit: ea.totalProfit,
     strategyStatus: ea.strategyStatus as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
+    relinkRequired: ea.terminalDeployments.length > 0,
     trades: ea.trades.map((t) => ({
       profit: t.profit,
       closeTime: t.closeTime?.toISOString() ?? null,
@@ -170,6 +171,8 @@ export default async function LiveEADashboardPage({
       createdAt: h.createdAt.toISOString(),
     })),
   }));
+
+  const relinkInstanceId = params.relink ?? null;
 
   // ── Derive governance context from instance data ──
   const now = new Date();
@@ -278,7 +281,11 @@ export default async function LiveEADashboardPage({
           </div>
 
           <MonitorTabs>
-            <LiveDashboardClient initialData={serializedInstances} tier={tier} />
+            <LiveDashboardClient
+              initialData={serializedInstances}
+              tier={tier}
+              initialRelinkInstanceId={relinkInstanceId}
+            />
 
             {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
             {(() => {
