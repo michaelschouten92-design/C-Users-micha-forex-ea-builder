@@ -148,6 +148,12 @@ export async function POST(
       });
     });
 
+    // 9a. Post-commit: mark TerminalDeployment as LINKED (if applicable)
+    await prisma.terminalDeployment.updateMany({
+      where: { instanceId },
+      data: { baselineStatus: "LINKED" },
+    });
+
     // 9. Post-commit: bind identity (deterministic hashes, same as export flow)
     const bindResult = await bindIdentityToVersion(result.strategyVersionId);
     if (!bindResult.ok) {
