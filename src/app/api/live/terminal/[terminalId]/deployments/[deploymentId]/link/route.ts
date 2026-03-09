@@ -148,10 +148,26 @@ export async function POST(
       );
     }
 
-    // 7. Derive baselineStatus from instance's canonical baseline chain
+    // 7. Conflict: instance already linked to a different deployment
+    const existingDeployment = await prisma.terminalDeployment.findFirst({
+      where: { instanceId, id: { not: deploymentId } },
+      select: { id: true, symbol: true, timeframe: true, eaName: true },
+    });
+
+    if (existingDeployment) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.INSTANCE_HAS_DEPLOYMENT,
+          `This instance is already linked to another deployment (${existingDeployment.eaName} ${existingDeployment.symbol} ${existingDeployment.timeframe}). Unlink it first.`
+        ),
+        { status: 409 }
+      );
+    }
+
+    // 8. Derive baselineStatus from instance's canonical baseline chain
     const baselineStatus = instance.strategyVersionId ? "LINKED" : "UNLINKED";
 
-    // 8. Execute the link in a transaction
+    // 9. Execute the link in a transaction
     await prisma.$transaction([
       prisma.terminalDeployment.update({
         where: { id: deploymentId },
