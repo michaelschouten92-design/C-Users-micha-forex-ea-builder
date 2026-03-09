@@ -149,6 +149,9 @@ int OnInit()
    g_sessionStart = TimeCurrent();
    g_initialized = true;
 
+   // DEBUG: Remove after verifying new build is active
+   Comment("PANEL BUILD ACTIVE");
+
    // Sync chain state from server if we have an instanceId
    if(StringLen(g_instanceId) > 0 && g_seqNo > 0)
    {
