@@ -234,6 +234,37 @@ export default function EvaluateDetailPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Verification Result */}
+          {data.verificationSummary && (
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
+              <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-3">
+                Verification Result
+              </h3>
+              <p
+                className="text-lg font-semibold"
+                style={{
+                  color: data.verificationSummary.verdict === "VERIFIED" ? "#22C55E" : "#EF4444",
+                }}
+              >
+                {data.verificationSummary.verdict === "VERIFIED" ? "Verified" : "Not verified"}
+              </p>
+              <p className="text-xs text-[#A1A1AA] mt-1">
+                {data.verificationSummary.verdict === "VERIFIED"
+                  ? "Baseline is suitable as a monitoring reference."
+                  : "Baseline is not yet suitable as a monitoring reference."}
+              </p>
+              {data.verificationSummary.reasons.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {data.verificationSummary.reasons.map((reason, i) => (
+                    <li key={i} className="text-xs text-[#71717A]">
+                      • {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           {/* Health Score Card */}
           <div
             className="rounded-2xl p-6 sm:p-8 border"
@@ -333,43 +364,6 @@ export default function EvaluateDetailPage() {
               />
             </div>
           </div>
-
-          {/* Verification Summary */}
-          {data.verificationSummary && (
-            <div
-              className="rounded-xl border px-5 py-4"
-              style={{
-                background:
-                  data.verificationSummary.verdict === "VERIFIED"
-                    ? "rgba(34,197,94,0.06)"
-                    : "rgba(239,68,68,0.06)",
-                borderColor:
-                  data.verificationSummary.verdict === "VERIFIED"
-                    ? "rgba(34,197,94,0.2)"
-                    : "rgba(239,68,68,0.2)",
-              }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="text-sm font-semibold"
-                  style={{
-                    color: data.verificationSummary.verdict === "VERIFIED" ? "#22C55E" : "#EF4444",
-                  }}
-                >
-                  {data.verificationSummary.verdict === "VERIFIED" ? "Verified" : "Not Verified"}
-                </span>
-              </div>
-              {data.verificationSummary.reasons.length > 0 && (
-                <ul className="mt-1 space-y-0.5">
-                  {data.verificationSummary.reasons.map((reason, i) => (
-                    <li key={i} className="text-xs text-[#A1A1AA]">
-                      • {reason}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
 
           {/* Risk Disclaimer */}
           <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3">
