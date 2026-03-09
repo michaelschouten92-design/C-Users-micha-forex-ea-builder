@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTerminal } from "@/lib/terminal-auth";
 import { apiError, ErrorCode } from "@/lib/error-codes";
 import { logger } from "@/lib/logger";
+import { appendProofEvent } from "@/lib/proof/events";
 
 export const dynamic = "force-dynamic";
 
@@ -181,6 +182,22 @@ export async function POST(request: NextRequest) {
       if (isMaterialChange && newBaselineStatus === "RELINK_REQUIRED" && existing!.instanceId) {
         const instanceId = existing!.instanceId;
         try {
+          // Capture strategyVersionId + strategyId before nullification
+          const instanceSnapshot = await prisma.liveEAInstance.findUnique({
+            where: { id: instanceId },
+            select: {
+              strategyVersionId: true,
+              strategyVersion: {
+                select: {
+                  strategyIdentity: { select: { strategyId: true } },
+                },
+              },
+            },
+          });
+          const previousStrategyVersionId = instanceSnapshot?.strategyVersionId ?? null;
+          const strategyId =
+            instanceSnapshot?.strategyVersion?.strategyIdentity?.strategyId ?? null;
+
           await prisma.liveEAInstance.update({
             where: { id: instanceId },
             data: { strategyVersionId: null },
@@ -195,6 +212,29 @@ export async function POST(request: NextRequest) {
             },
             "Material change detected — baseline trust suspended (strategyVersionId cleared)"
           );
+
+          // Append audit proof event for trust suspension
+          if (strategyId) {
+            const recordId = crypto.randomUUID();
+            await appendProofEvent(strategyId, "MATERIAL_CHANGE_TRUST_SUSPENDED", {
+              eventType: "MATERIAL_CHANGE_TRUST_SUSPENDED",
+              recordId,
+              terminalConnectionId: terminalId,
+              terminalDeploymentId: deployment.id,
+              instanceId,
+              previousStrategyVersionId,
+              previousMaterialFingerprint: existing!.materialFingerprint,
+              newMaterialFingerprint: reportedFingerprint,
+              previousBaselineStatus: existing!.baselineStatus,
+              newBaselineStatus: "RELINK_REQUIRED",
+              timestamp: now.toISOString(),
+            }).catch((proofErr) => {
+              log.error(
+                { err: proofErr, strategyId, instanceId },
+                "Failed to append MATERIAL_CHANGE_TRUST_SUSPENDED proof event"
+              );
+            });
+          }
         } catch (err) {
           log.error(
             { err, instanceId, deploymentKey },
