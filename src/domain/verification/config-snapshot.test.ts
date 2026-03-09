@@ -15,9 +15,6 @@ const BASE_THRESHOLDS: VerificationThresholds = {
   minTradeCount: 30,
   readyConfidenceThreshold: 0.75,
   notDeployableThreshold: 0.45,
-  maxSharpeDegradationPct: 40,
-  extremeSharpeDegradationPct: 80,
-  minOosTradeCount: 20,
   ruinProbabilityCeiling: 0.15,
   monteCarloIterations: 10_000,
 };
@@ -54,11 +51,8 @@ describe("computeThresholdsHash", () => {
       ruinProbabilityCeiling: 0.15,
       minTradeCount: 30,
       monteCarloIterations: 10_000,
-      extremeSharpeDegradationPct: 80,
       readyConfidenceThreshold: 0.75,
-      maxSharpeDegradationPct: 40,
       notDeployableThreshold: 0.45,
-      minOosTradeCount: 20,
     } as VerificationThresholds;
 
     expect(computeThresholdsHash(shuffled)).toBe(computeThresholdsHash(BASE_THRESHOLDS));
@@ -71,9 +65,6 @@ describe("computeThresholdsHash", () => {
       { minTradeCount: 31 },
       { readyConfidenceThreshold: 0.8 },
       { notDeployableThreshold: 0.5 },
-      { maxSharpeDegradationPct: 41 },
-      { extremeSharpeDegradationPct: 81 },
-      { minOosTradeCount: 21 },
       { ruinProbabilityCeiling: 0.16 },
       { monteCarloIterations: 10_001 },
     ];
@@ -133,7 +124,7 @@ describe("buildConfigSnapshot", () => {
   it("returns configVersion, thresholds, monitoringThresholds, and thresholdsHash", () => {
     const snapshot = buildConfigSnapshot();
 
-    expect(snapshot.configVersion).toBe("2.3.2");
+    expect(snapshot.configVersion).toBe("3.0.0");
     expect(snapshot.thresholds).toEqual(BASE_THRESHOLDS);
     expect(snapshot.monitoringThresholds).toEqual(BASE_MONITORING);
     expect(snapshot.thresholdsHash).toMatch(/^[a-f0-9]{64}$/);
@@ -196,7 +187,7 @@ describe("verifyConfigSnapshot", () => {
     const snapshot = buildConfigSnapshot();
     // Simulate stripping monitoringThresholds from a v2 snapshot
     const stripped: VerificationThresholdsSnapshot = {
-      configVersion: "2.3.2",
+      configVersion: "3.0.0",
       thresholds: snapshot.thresholds,
       // monitoringThresholds intentionally missing
       thresholdsHash: snapshot.thresholdsHash,
@@ -212,7 +203,7 @@ describe("verifyConfigSnapshot", () => {
     const snapshot = buildConfigSnapshot();
     const v1StyleHash = computeThresholdsHash(snapshot.thresholds);
     const stripped: VerificationThresholdsSnapshot = {
-      configVersion: "2.3.2",
+      configVersion: "3.0.0",
       thresholds: snapshot.thresholds,
       thresholdsHash: v1StyleHash,
     };

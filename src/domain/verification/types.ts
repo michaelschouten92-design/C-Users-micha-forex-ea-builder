@@ -2,8 +2,6 @@ export type VerificationVerdict = "READY" | "UNCERTAIN" | "NOT_DEPLOYABLE";
 
 export type ReasonCode =
   | "INSUFFICIENT_DATA"
-  | "WALK_FORWARD_DEGRADATION_EXTREME"
-  | "WALK_FORWARD_DEGRADATION_MODERATE"
   | "RUIN_PROBABILITY_EXCEEDED"
   | "COMPOSITE_BELOW_MINIMUM"
   | "COMPUTATION_FAILED"
@@ -11,7 +9,6 @@ export type ReasonCode =
   | "INCOMPLETE_ANALYSIS"
   | "ALL_CHECKS_PASSED"
   | "COMPOSITE_IN_UNCERTAIN_BAND"
-  | "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE"
   | "CONFIG_SNAPSHOT_MISSING"
   | "CONFIG_HASH_MISMATCH"
   | "SNAPSHOT_BUILD_FAILED";
@@ -30,12 +27,6 @@ export interface VerificationInput {
   /** Pre-computed stage results. Omitted stages treated as not-yet-run. */
   intermediateResults?: {
     robustnessScores?: { composite: number };
-    walkForward?: {
-      /** Percentage degradation of Sharpe ratio from IS to OOS (positive = worse OOS). */
-      sharpeDegradationPct: number;
-      /** Number of trades in the out-of-sample portion. */
-      outOfSampleTradeCount: number;
-    };
     monteCarlo?: {
       /** Dollar PnL per trade from backtest. */
       tradePnls: number[];
@@ -52,8 +43,6 @@ export interface VerificationResult {
   reasonCodes: ReasonCode[];
   scores: {
     composite: number;
-    walkForwardDegradationPct: number | null;
-    walkForwardOosSampleSize: number | null;
     monteCarloRuinProbability: number | null;
     sampleSize: number;
   };
@@ -63,9 +52,6 @@ export interface VerificationResult {
     minTradeCount: number;
     readyConfidenceThreshold: number;
     notDeployableThreshold: number;
-    maxSharpeDegradationPct: number;
-    extremeSharpeDegradationPct: number;
-    minOosTradeCount: number;
     ruinProbabilityCeiling: number;
     monteCarloIterations?: number;
   };

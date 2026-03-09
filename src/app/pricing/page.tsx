@@ -75,7 +75,6 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     rows: [
       ["EA builder & strategy templates", true, true, true],
       ["MQL5 export", "3/month", "Unlimited", "Unlimited"],
-      ["Walk-forward analysis", false, true, true],
       ["Strategy journal", true, true, true],
     ],
   },
@@ -312,7 +311,6 @@ export default function PricingPage() {
                 "Lifecycle governance (run / pause)",
                 "Governance snapshot logging",
                 "Email, webhook & Telegram alerts",
-                "Walk-forward analysis",
                 "Priority support",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">

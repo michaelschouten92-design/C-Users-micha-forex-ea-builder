@@ -91,7 +91,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             optimizations: run.aiAnalysis.optimizations ?? null,
           }
         : null,
-      walkForwardResult: run.walkForwardResult ?? null,
       tier,
       optimizations: run.aiAnalysis?.optimizations ?? null,
     });

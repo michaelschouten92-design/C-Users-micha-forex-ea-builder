@@ -58,8 +58,6 @@ describe("computeVerdict", () => {
       const result = computeVerdict(makeInput(5), CONFIG);
       expect(result.scores).toEqual({
         composite: 0,
-        walkForwardDegradationPct: null,
-        walkForwardOosSampleSize: null,
         monteCarloRuinProbability: null,
         sampleSize: 5,
       });
@@ -74,9 +72,6 @@ describe("computeVerdict", () => {
       expect(t.minTradeCount).toBe(VERIFICATION.MIN_TRADE_COUNT);
       expect(t.readyConfidenceThreshold).toBe(VERIFICATION.READY_CONFIDENCE_THRESHOLD);
       expect(t.notDeployableThreshold).toBe(VERIFICATION.NOT_DEPLOYABLE_THRESHOLD);
-      expect(t.maxSharpeDegradationPct).toBe(VERIFICATION.MAX_SHARPE_DEGRADATION_PCT);
-      expect(t.extremeSharpeDegradationPct).toBe(VERIFICATION.EXTREME_SHARPE_DEGRADATION_PCT);
-      expect(t.minOosTradeCount).toBe(VERIFICATION.MIN_OOS_TRADE_COUNT);
       expect(t.ruinProbabilityCeiling).toBe(VERIFICATION.RUIN_PROBABILITY_CEILING);
       expect(t.monteCarloIterations).toBe(VERIFICATION.MONTE_CARLO_ITERATIONS);
     });
@@ -170,130 +165,6 @@ describe("computeVerdict", () => {
     });
   });
 
-  describe("D1 — Walk-Forward Degradation integration", () => {
-    /** Helper: build input with walk-forward stage results. */
-    function makeWfInput(
-      tradeCount: number,
-      composite: number,
-      wf: { sharpeDegradationPct: number; outOfSampleTradeCount: number }
-    ): VerificationInput {
-      return {
-        strategyId: "strat-1",
-        strategyVersion: 1,
-        tradeHistory: Array.from({ length: tradeCount }, () => ({})),
-        backtestParameters: {},
-        intermediateResults: {
-          robustnessScores: { composite },
-          walkForward: wf,
-        },
-      };
-    }
-
-    it("D1 pass + high composite → READY with walk-forward scores populated", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: 20, outOfSampleTradeCount: 50 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("READY");
-      expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
-      expect(result.scores.walkForwardDegradationPct).toBe(20);
-      expect(result.scores.walkForwardOosSampleSize).toBe(50);
-    });
-
-    it("D1a (moderate + enough OOS) blocks READY → NOT_DEPLOYABLE", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: 50, outOfSampleTradeCount: 25 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("WALK_FORWARD_DEGRADATION_MODERATE");
-      expect(result.scores.walkForwardDegradationPct).toBe(50);
-      expect(result.scores.walkForwardOosSampleSize).toBe(25);
-    });
-
-    it("D1b (moderate + thin OOS) blocks READY → UNCERTAIN", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: 50, outOfSampleTradeCount: 10 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("UNCERTAIN");
-      expect(result.reasonCodes).toContain("WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE");
-    });
-
-    it("D1c (extreme) → NOT_DEPLOYABLE regardless of composite or OOS count", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 1.0, { sharpeDegradationPct: 85, outOfSampleTradeCount: 0 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("WALK_FORWARD_DEGRADATION_EXTREME");
-    });
-
-    it("D0 short-circuits before D1 — walk-forward scores stay null", () => {
-      const input: VerificationInput = {
-        strategyId: "strat-1",
-        strategyVersion: 1,
-        tradeHistory: Array.from({ length: 5 }, () => ({})),
-        backtestParameters: {},
-        intermediateResults: {
-          robustnessScores: { composite: 0.9 },
-          walkForward: { sharpeDegradationPct: 85, outOfSampleTradeCount: 50 },
-        },
-      };
-      const result = computeVerdict(input, CONFIG);
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toEqual(["INSUFFICIENT_DATA"]);
-      expect(result.scores.walkForwardDegradationPct).toBeNull();
-      expect(result.scores.walkForwardOosSampleSize).toBeNull();
-    });
-
-    it("no walkForward stage → scores stay null, no D1 flags", () => {
-      const result = computeVerdict(makeInput(100, 0.9), CONFIG);
-      expect(result.verdict).toBe("READY");
-      expect(result.scores.walkForwardDegradationPct).toBeNull();
-      expect(result.scores.walkForwardOosSampleSize).toBeNull();
-    });
-
-    it("NaN degradation → INVALID_SCORE → NOT_DEPLOYABLE", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: NaN, outOfSampleTradeCount: 50 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("INVALID_SCORE");
-    });
-
-    it("negative OOS trade count → INVALID_SCORE → NOT_DEPLOYABLE", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: 20, outOfSampleTradeCount: -1 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("INVALID_SCORE");
-    });
-
-    it("Infinity degradation → INVALID_SCORE → NOT_DEPLOYABLE", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, {
-          sharpeDegradationPct: Infinity,
-          outOfSampleTradeCount: 50,
-        }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("INVALID_SCORE");
-    });
-
-    it("READY with D1 pass has exactly ['ALL_CHECKS_PASSED'] reason codes", () => {
-      const result = computeVerdict(
-        makeWfInput(100, 0.9, { sharpeDegradationPct: 10, outOfSampleTradeCount: 50 }),
-        CONFIG
-      );
-      expect(result.verdict).toBe("READY");
-      expect(result.reasonCodes).toEqual(["ALL_CHECKS_PASSED"]);
-    });
-  });
-
   describe("D2 — Monte Carlo Ruin Probability integration", () => {
     const MC_SEED = 12345;
 
@@ -301,8 +172,7 @@ describe("computeVerdict", () => {
     function makeMcInput(
       tradeCount: number,
       composite: number,
-      mc: { tradePnls: number[]; initialBalance: number },
-      wf?: { sharpeDegradationPct: number; outOfSampleTradeCount: number }
+      mc: { tradePnls: number[]; initialBalance: number }
     ): VerificationInput {
       return {
         strategyId: "strat-1",
@@ -311,7 +181,6 @@ describe("computeVerdict", () => {
         backtestParameters: {},
         intermediateResults: {
           robustnessScores: { composite },
-          ...(wf && { walkForward: wf }),
           monteCarlo: mc,
         },
       };
@@ -397,22 +266,6 @@ describe("computeVerdict", () => {
       );
       expect(result.verdict).toBe("NOT_DEPLOYABLE");
       expect(result.reasonCodes).toContain("INVALID_SCORE");
-    });
-
-    it("D1 fail + D2 fail → both reason codes accumulated", () => {
-      const result = computeVerdict(
-        makeMcInput(
-          100,
-          0.9,
-          { tradePnls: [-1000, -1000, -1000], initialBalance: 100 },
-          { sharpeDegradationPct: 85, outOfSampleTradeCount: 50 }
-        ),
-        CONFIG,
-        { monteCarloSeed: MC_SEED }
-      );
-      expect(result.verdict).toBe("NOT_DEPLOYABLE");
-      expect(result.reasonCodes).toContain("WALK_FORWARD_DEGRADATION_EXTREME");
-      expect(result.reasonCodes).toContain("RUIN_PROBABILITY_EXCEEDED");
     });
 
     it("READY with D2 pass has exactly ['ALL_CHECKS_PASSED']", () => {

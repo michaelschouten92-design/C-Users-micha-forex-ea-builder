@@ -2,7 +2,7 @@
  * Pre-Live Verification Check — deployment readiness assessment from backtest data.
  *
  * Pure function that evaluates whether a strategy is ready for live deployment
- * based on backtest metrics, Monte Carlo validation, and walk-forward analysis.
+ * based on backtest metrics and Monte Carlo validation.
  *
  * Verdicts:
  *   READY          — all hard gates pass, soft gate failures below threshold
@@ -29,10 +29,6 @@ export type ReasonType =
   | "MISSING_MONTE_CARLO"
   | "LOW_SURVIVAL_RATE"
   | "NEGATIVE_P5_RETURN"
-  | "MISSING_WALK_FORWARD"
-  | "WALK_FORWARD_OVERFITTED"
-  | "LOW_CONSISTENCY"
-  | "HIGH_OVERFIT_PROBABILITY"
   | "EXCESSIVE_DRAWDOWN"
   | "BACKTEST_WARNINGS"
   | "BELOW_ROBUST_SCORE"
@@ -74,11 +70,6 @@ export interface PreLiveCheckInput {
   confidenceUpper: number | null;
   warnings: string[];
   // From BacktestRun JSON fields (nullable)
-  walkForward: {
-    consistencyScore: number;
-    overfitProbability: number;
-    verdict: "ROBUST" | "MODERATE" | "OVERFITTED";
-  } | null;
   monteCarlo: {
     survivalRate: number;
     p5: number;
@@ -107,8 +98,6 @@ export const PRE_LIVE_MIN_PROFIT_FACTOR = 1.0;
 // Soft gate thresholds
 export const PRE_LIVE_MIN_SURVIVAL = 0.7;
 export const PRE_LIVE_MAX_DRAWDOWN = 30;
-export const PRE_LIVE_MIN_CONSISTENCY = 50;
-export const PRE_LIVE_MAX_OVERFIT_PROB = 0.5;
 export const PRE_LIVE_ROBUST_SCORE = 80;
 export const PRE_LIVE_MIN_SHARPE = 0.5;
 export const PRE_LIVE_MIN_RECOVERY_FACTOR = 1.0;
@@ -278,102 +267,18 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     // Reason already added by S1 MISSING_MONTE_CARLO
   }
 
-  // S3: Walk-forward overfitted
-  const s3Weight = 3;
+  // S3: Max drawdown
+  const s3Weight = 2;
   totalSoftWeight += s3Weight;
-  if (input.walkForward != null) {
-    const s3 = input.walkForward.verdict !== "OVERFITTED";
-    gateResults.push({
-      gate: "S3",
-      passed: s3,
-      hard: false,
-      detail: `verdict=${input.walkForward.verdict}`,
-    });
-    if (!s3) {
-      failedSoftWeight += s3Weight;
-      reasons.push({
-        type: "WALK_FORWARD_OVERFITTED",
-        message: "Walk-forward analysis indicates the strategy is overfitted to historical data.",
-        severity: "warning",
-      });
-    }
-  } else {
-    gateResults.push({ gate: "S3", passed: false, hard: false, detail: "walkForward=null" });
-    failedSoftWeight += s3Weight;
-    reasons.push({
-      type: "MISSING_WALK_FORWARD",
-      message: "Walk-forward analysis has not been run.",
-      severity: "warning",
-    });
-    actions.push({
-      label: "Run walk-forward analysis",
-      description:
-        "Run walk-forward analysis to test out-of-sample performance and detect overfitting.",
-    });
-  }
-
-  // S4: Walk-forward consistency
-  const s4Weight = 2;
-  totalSoftWeight += s4Weight;
-  if (input.walkForward != null) {
-    const s4 = input.walkForward.consistencyScore >= PRE_LIVE_MIN_CONSISTENCY;
-    gateResults.push({
-      gate: "S4",
-      passed: s4,
-      hard: false,
-      detail: `consistencyScore=${input.walkForward.consistencyScore}, required>=${PRE_LIVE_MIN_CONSISTENCY}`,
-    });
-    if (!s4) {
-      failedSoftWeight += s4Weight;
-      reasons.push({
-        type: "LOW_CONSISTENCY",
-        message: `Walk-forward consistency score ${input.walkForward.consistencyScore} is below ${PRE_LIVE_MIN_CONSISTENCY} — out-of-sample performance is erratic.`,
-        severity: "warning",
-      });
-    }
-  } else {
-    gateResults.push({ gate: "S4", passed: false, hard: false, detail: "walkForward=null" });
-    failedSoftWeight += s4Weight;
-    // Reason already added by S3 MISSING_WALK_FORWARD
-  }
-
-  // S5: Walk-forward overfit probability
-  const s5Weight = 2;
-  totalSoftWeight += s5Weight;
-  if (input.walkForward != null) {
-    const s5 = input.walkForward.overfitProbability < PRE_LIVE_MAX_OVERFIT_PROB;
-    gateResults.push({
-      gate: "S5",
-      passed: s5,
-      hard: false,
-      detail: `overfitProbability=${input.walkForward.overfitProbability}, required<${PRE_LIVE_MAX_OVERFIT_PROB}`,
-    });
-    if (!s5) {
-      failedSoftWeight += s5Weight;
-      reasons.push({
-        type: "HIGH_OVERFIT_PROBABILITY",
-        message: `Overfit probability ${(input.walkForward.overfitProbability * 100).toFixed(0)}% exceeds ${PRE_LIVE_MAX_OVERFIT_PROB * 100}% threshold.`,
-        severity: "warning",
-      });
-    }
-  } else {
-    gateResults.push({ gate: "S5", passed: false, hard: false, detail: "walkForward=null" });
-    failedSoftWeight += s5Weight;
-    // Reason already added by S3 MISSING_WALK_FORWARD
-  }
-
-  // S6: Max drawdown
-  const s6Weight = 2;
-  totalSoftWeight += s6Weight;
-  const s6 = input.maxDrawdownPct <= PRE_LIVE_MAX_DRAWDOWN;
+  const s3 = input.maxDrawdownPct <= PRE_LIVE_MAX_DRAWDOWN;
   gateResults.push({
-    gate: "S6",
-    passed: s6,
+    gate: "S3",
+    passed: s3,
     hard: false,
     detail: `maxDrawdownPct=${input.maxDrawdownPct}, required<=${PRE_LIVE_MAX_DRAWDOWN}`,
   });
-  if (!s6) {
-    failedSoftWeight += s6Weight;
+  if (!s3) {
+    failedSoftWeight += s3Weight;
     reasons.push({
       type: "EXCESSIVE_DRAWDOWN",
       message: `Max drawdown ${input.maxDrawdownPct.toFixed(1)}% exceeds ${PRE_LIVE_MAX_DRAWDOWN}% limit.`,
@@ -381,18 +286,18 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     });
   }
 
-  // S7: Warnings
-  const s7Weight = 1;
-  totalSoftWeight += s7Weight;
-  const s7 = input.warnings.length === 0;
+  // S4: Warnings
+  const s4Weight = 1;
+  totalSoftWeight += s4Weight;
+  const s4 = input.warnings.length === 0;
   gateResults.push({
-    gate: "S7",
-    passed: s7,
+    gate: "S4",
+    passed: s4,
     hard: false,
     detail: `warnings=${input.warnings.length}`,
   });
-  if (!s7) {
-    failedSoftWeight += s7Weight;
+  if (!s4) {
+    failedSoftWeight += s4Weight;
     reasons.push({
       type: "BACKTEST_WARNINGS",
       message: `${input.warnings.length} warning(s) detected: ${input.warnings[0]}${input.warnings.length > 1 ? ` (+${input.warnings.length - 1} more)` : ""}`,
@@ -400,18 +305,18 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     });
   }
 
-  // S8: Below robust score
-  const s8Weight = 1;
-  totalSoftWeight += s8Weight;
-  const s8 = input.healthScore >= PRE_LIVE_ROBUST_SCORE;
+  // S5: Below robust score
+  const s5Weight = 1;
+  totalSoftWeight += s5Weight;
+  const s5 = input.healthScore >= PRE_LIVE_ROBUST_SCORE;
   gateResults.push({
-    gate: "S8",
-    passed: s8,
+    gate: "S5",
+    passed: s5,
     hard: false,
     detail: `healthScore=${input.healthScore}, required>=${PRE_LIVE_ROBUST_SCORE}`,
   });
-  if (!s8) {
-    failedSoftWeight += s8Weight;
+  if (!s5) {
+    failedSoftWeight += s5Weight;
     reasons.push({
       type: "BELOW_ROBUST_SCORE",
       message: `Health score ${input.healthScore} is below the Robust tier threshold of ${PRE_LIVE_ROBUST_SCORE}.`,
@@ -419,19 +324,19 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     });
   }
 
-  // S9: Sharpe ratio (skip if null)
-  const s9Weight = 1;
+  // S6: Sharpe ratio (skip if null)
+  const s6Weight = 1;
   if (input.sharpeRatio != null) {
-    totalSoftWeight += s9Weight;
-    const s9 = input.sharpeRatio >= PRE_LIVE_MIN_SHARPE;
+    totalSoftWeight += s6Weight;
+    const s6 = input.sharpeRatio >= PRE_LIVE_MIN_SHARPE;
     gateResults.push({
-      gate: "S9",
-      passed: s9,
+      gate: "S6",
+      passed: s6,
       hard: false,
       detail: `sharpeRatio=${input.sharpeRatio}, required>=${PRE_LIVE_MIN_SHARPE}`,
     });
-    if (!s9) {
-      failedSoftWeight += s9Weight;
+    if (!s6) {
+      failedSoftWeight += s6Weight;
       reasons.push({
         type: "LOW_SHARPE",
         message: `Sharpe ratio ${input.sharpeRatio.toFixed(2)} is below ${PRE_LIVE_MIN_SHARPE} — poor risk-adjusted returns.`,
@@ -440,26 +345,26 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     }
   } else {
     gateResults.push({
-      gate: "S9",
+      gate: "S6",
       passed: true,
       hard: false,
       detail: "sharpeRatio=null, skipped",
     });
   }
 
-  // S10: Recovery factor (skip if null)
-  const s10Weight = 1;
+  // S7: Recovery factor (skip if null)
+  const s7Weight = 1;
   if (input.recoveryFactor != null) {
-    totalSoftWeight += s10Weight;
-    const s10 = input.recoveryFactor >= PRE_LIVE_MIN_RECOVERY_FACTOR;
+    totalSoftWeight += s7Weight;
+    const s7 = input.recoveryFactor >= PRE_LIVE_MIN_RECOVERY_FACTOR;
     gateResults.push({
-      gate: "S10",
-      passed: s10,
+      gate: "S7",
+      passed: s7,
       hard: false,
       detail: `recoveryFactor=${input.recoveryFactor}, required>=${PRE_LIVE_MIN_RECOVERY_FACTOR}`,
     });
-    if (!s10) {
-      failedSoftWeight += s10Weight;
+    if (!s7) {
+      failedSoftWeight += s7Weight;
       reasons.push({
         type: "LOW_RECOVERY_FACTOR",
         message: `Recovery factor ${input.recoveryFactor.toFixed(2)} is below ${PRE_LIVE_MIN_RECOVERY_FACTOR} — net profit hasn't recovered from worst drawdown.`,
@@ -468,7 +373,7 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
     }
   } else {
     gateResults.push({
-      gate: "S10",
+      gate: "S7",
       passed: true,
       hard: false,
       detail: "recoveryFactor=null, skipped",
@@ -514,12 +419,6 @@ export function computePreLiveVerdict(input: PreLiveCheckInput): PreLiveCheckRes
 // extractPreLiveInput — maps BacktestRun to PreLiveCheckInput
 // ============================================
 
-interface WalkForwardJson {
-  consistencyScore?: number;
-  overfitProbability?: number;
-  verdict?: string;
-}
-
 interface MonteCarloJson {
   survivalRate?: number;
   p5?: number;
@@ -528,24 +427,6 @@ interface MonteCarloJson {
 }
 
 export function extractPreLiveInput(backtest: BacktestRun): PreLiveCheckInput {
-  // Parse walkForwardResult JSON
-  let walkForward: PreLiveCheckInput["walkForward"] = null;
-  if (backtest.walkForwardResult != null) {
-    const wf = backtest.walkForwardResult as WalkForwardJson;
-    if (
-      typeof wf.consistencyScore === "number" &&
-      typeof wf.overfitProbability === "number" &&
-      typeof wf.verdict === "string" &&
-      (wf.verdict === "ROBUST" || wf.verdict === "MODERATE" || wf.verdict === "OVERFITTED")
-    ) {
-      walkForward = {
-        consistencyScore: wf.consistencyScore,
-        overfitProbability: wf.overfitProbability,
-        verdict: wf.verdict,
-      };
-    }
-  }
-
   // Parse validationResult (Monte Carlo) JSON
   let monteCarlo: PreLiveCheckInput["monteCarlo"] = null;
   if (backtest.validationResult != null) {
@@ -587,7 +468,6 @@ export function extractPreLiveInput(backtest: BacktestRun): PreLiveCheckInput {
     confidenceLower: backtest.confidenceLower,
     confidenceUpper: backtest.confidenceUpper,
     warnings,
-    walkForward,
     monteCarlo,
   };
 }

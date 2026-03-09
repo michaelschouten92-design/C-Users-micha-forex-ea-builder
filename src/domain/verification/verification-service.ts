@@ -110,8 +110,6 @@ function buildGovernanceFailureResult(
     reasonCodes: [reasonCode],
     scores: {
       composite: 0,
-      walkForwardDegradationPct: null,
-      walkForwardOosSampleSize: null,
       monteCarloRuinProbability: null,
       sampleSize: 0,
     },
@@ -121,9 +119,6 @@ function buildGovernanceFailureResult(
       minTradeCount: 0,
       readyConfidenceThreshold: 0,
       notDeployableThreshold: 0,
-      maxSharpeDegradationPct: 0,
-      extremeSharpeDegradationPct: 0,
-      minOosTradeCount: 0,
       ruinProbabilityCeiling: 0,
       monteCarloIterations: 0,
     },
@@ -202,12 +197,11 @@ export async function runVerification(
 
       snapshot = buildTradeSnapshot(facts, run.initialDeposit);
 
-      // Derive MC + WF data server-side (overrides any client-supplied values)
+      // Derive MC data server-side (overrides any client-supplied values)
       const derived = deriveIntermediateResults(facts, run.initialDeposit);
       intermediateResults = {
         ...intermediateResults,
         monteCarlo: derived.monteCarlo,
-        walkForward: derived.walkForward,
       };
     } catch (err) {
       log.error(

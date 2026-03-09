@@ -1,6 +1,5 @@
 import type { VerificationInput, VerificationResult, ReasonCode } from "./types";
 import type { VerificationThresholdsSnapshot } from "./config-snapshot";
-import { evaluateWalkForwardDegradation } from "./rules/walk-forward";
 import { evaluateMonteCarloRuin } from "./rules/monte-carlo-ruin";
 
 export interface ComputeVerdictOptions {
@@ -25,10 +24,6 @@ export function computeVerdict(
     ...thresholds,
   };
 
-  // Mutable scores — stages populate their fields as they run.
-  let walkForwardDegradationPct: number | null = null;
-  let walkForwardOosSampleSize: number | null = null;
-
   // --- D0: MIN_TRADE_COUNT gate (short-circuits all subsequent rules) ---
   if (sampleSize < thresholds.minTradeCount) {
     reasonCodes.push("INSUFFICIENT_DATA");
@@ -39,41 +34,12 @@ export function computeVerdict(
       reasonCodes,
       scores: {
         composite: 0,
-        walkForwardDegradationPct: null,
-        walkForwardOosSampleSize: null,
         monteCarloRuinProbability: null,
         sampleSize,
       },
       thresholdsUsed,
       warnings,
     };
-  }
-
-  // --- D1: Walk-Forward Degradation (3-tier guard) ---
-  // Runs only when walk-forward stage results are provided.
-  // Omitted stage = not-yet-run; no flag raised.
-  const wf = input.intermediateResults?.walkForward;
-  if (wf) {
-    // Validate walk-forward input completeness
-    if (
-      !Number.isFinite(wf.sharpeDegradationPct) ||
-      !Number.isFinite(wf.outOfSampleTradeCount) ||
-      wf.outOfSampleTradeCount < 0
-    ) {
-      reasonCodes.push("INVALID_SCORE");
-    } else {
-      try {
-        const d1 = evaluateWalkForwardDegradation(wf, thresholds);
-        walkForwardDegradationPct = d1.measured.sharpeDegradationPct;
-        walkForwardOosSampleSize = d1.measured.outOfSampleTradeCount;
-        if (d1.reasonCode) {
-          reasonCodes.push(d1.reasonCode);
-        }
-      } catch {
-        // Defense-in-depth: unexpected error in D1 evaluation → fail-closed
-        reasonCodes.push("COMPUTATION_FAILED");
-      }
-    }
   }
 
   // --- D2: Monte Carlo Ruin Probability ---
@@ -114,8 +80,6 @@ export function computeVerdict(
     (
       [
         "INSUFFICIENT_DATA",
-        "WALK_FORWARD_DEGRADATION_EXTREME",
-        "WALK_FORWARD_DEGRADATION_MODERATE",
         "RUIN_PROBABILITY_EXCEEDED",
         "COMPOSITE_BELOW_MINIMUM",
         "COMPUTATION_FAILED",
@@ -125,13 +89,7 @@ export function computeVerdict(
   );
 
   const hasUncertain = reasonCodes.some((rc) =>
-    (
-      [
-        "INCOMPLETE_ANALYSIS",
-        "COMPOSITE_IN_UNCERTAIN_BAND",
-        "WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE",
-      ] as ReasonCode[]
-    ).includes(rc)
+    (["INCOMPLETE_ANALYSIS", "COMPOSITE_IN_UNCERTAIN_BAND"] as ReasonCode[]).includes(rc)
   );
 
   let verdict: VerificationResult["verdict"];
@@ -155,8 +113,6 @@ export function computeVerdict(
     reasonCodes,
     scores: {
       composite,
-      walkForwardDegradationPct,
-      walkForwardOosSampleSize,
       monteCarloRuinProbability,
       sampleSize,
     },

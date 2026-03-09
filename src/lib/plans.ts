@@ -109,7 +109,6 @@ export const PLANS = {
       "Live EA monitoring dashboard",
       "External EA monitoring",
       "Multi-strategy portfolio view",
-      "Walk-forward analysis",
       "Email, webhook & Telegram alerts",
       "Priority support",
     ],

@@ -15,9 +15,6 @@ export interface VerificationThresholds {
   minTradeCount: number;
   readyConfidenceThreshold: number;
   notDeployableThreshold: number;
-  maxSharpeDegradationPct: number;
-  extremeSharpeDegradationPct: number;
-  minOosTradeCount: number;
   ruinProbabilityCeiling: number;
   monteCarloIterations: number;
 }
@@ -110,9 +107,6 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
     minTradeCount: VERIFICATION.MIN_TRADE_COUNT,
     readyConfidenceThreshold: VERIFICATION.READY_CONFIDENCE_THRESHOLD,
     notDeployableThreshold: VERIFICATION.NOT_DEPLOYABLE_THRESHOLD,
-    maxSharpeDegradationPct: VERIFICATION.MAX_SHARPE_DEGRADATION_PCT,
-    extremeSharpeDegradationPct: VERIFICATION.EXTREME_SHARPE_DEGRADATION_PCT,
-    minOosTradeCount: VERIFICATION.MIN_OOS_TRADE_COUNT,
     ruinProbabilityCeiling: VERIFICATION.RUIN_PROBABILITY_CEILING,
     monteCarloIterations: VERIFICATION.MONTE_CARLO_ITERATIONS,
   };

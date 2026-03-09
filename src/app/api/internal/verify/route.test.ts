@@ -110,8 +110,6 @@ describe("POST /api/internal/verify", () => {
         reasonCodes: ["COMPOSITE_IN_UNCERTAIN_BAND"],
         scores: {
           composite: 0.6,
-          walkForwardDegradationPct: null,
-          walkForwardOosSampleSize: null,
           monteCarloRuinProbability: null,
           sampleSize: 100,
         },
@@ -121,9 +119,6 @@ describe("POST /api/internal/verify", () => {
           minTradeCount: 30,
           readyConfidenceThreshold: 0.75,
           notDeployableThreshold: 0.45,
-          maxSharpeDegradationPct: 40,
-          extremeSharpeDegradationPct: 80,
-          minOosTradeCount: 20,
           ruinProbabilityCeiling: 0.15,
         },
         warnings: [],

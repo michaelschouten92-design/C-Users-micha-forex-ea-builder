@@ -18,9 +18,6 @@ const {
       minTradeCount: 30,
       readyConfidenceThreshold: 0.75,
       notDeployableThreshold: 0.45,
-      maxSharpeDegradationPct: 40,
-      extremeSharpeDegradationPct: 80,
-      minOosTradeCount: 20,
       ruinProbabilityCeiling: 0.15,
       monteCarloIterations: 10_000,
     },
@@ -77,7 +74,6 @@ const {
     }),
     mockDeriveIntermediateResults: vi.fn().mockReturnValue({
       monteCarlo: { tradePnls: [100, -50, 200], initialBalance: 10000 },
-      walkForward: { sharpeDegradationPct: 25, outOfSampleTradeCount: 30 },
     }),
   };
 });

@@ -14,8 +14,6 @@ const LIFECYCLE_STATES = [
 
 interface VerificationScores {
   composite: number;
-  walkForwardDegradationPct: number | null;
-  walkForwardOosSampleSize: number | null;
   monteCarloRuinProbability: number | null;
   sampleSize: number;
 }
@@ -26,9 +24,6 @@ interface ThresholdsUsed {
   minTradeCount: number;
   readyConfidenceThreshold: number;
   notDeployableThreshold: number;
-  maxSharpeDegradationPct: number;
-  extremeSharpeDegradationPct: number;
-  minOosTradeCount: number;
   ruinProbabilityCeiling: number;
   monteCarloIterations?: number;
 }
@@ -132,21 +127,6 @@ function tryParseJson(
   } catch {
     return { ok: false, error: `${fieldName}: Invalid JSON` };
   }
-}
-
-/** Infer D1 tier from reason codes and scores — avoids adding tier to the API surface. */
-function inferD1Tier(res: VerifyResponse): string {
-  const codes = res.verdictResult.reasonCodes;
-  const deg = res.verdictResult.scores.walkForwardDegradationPct;
-  const oos = res.verdictResult.scores.walkForwardOosSampleSize;
-  const t = res.verdictResult.thresholdsUsed;
-  if (deg === null) return "—";
-  if (codes.includes("WALK_FORWARD_DEGRADATION_EXTREME")) {
-    if (deg > t.extremeSharpeDegradationPct) return "D1c (extreme)";
-    return "D1a (moderate + sufficient OOS)";
-  }
-  if (codes.includes("WALK_FORWARD_FLAGGED_NOT_CONCLUSIVE")) return "D1b (moderate + thin OOS)";
-  return `pass (${deg}% <= ${t.maxSharpeDegradationPct}%${oos !== null ? `, OOS=${oos}` : ""})`;
 }
 
 function VerifyForm() {
@@ -454,47 +434,6 @@ function VerifyForm() {
                     </span>
                   </div>
                 </div>
-              </div>
-
-              {/* D1 Walk-Forward */}
-              <div className="bg-[#0F0318] rounded p-3 space-y-1.5">
-                <h4 className="text-xs text-[#A78BFA] font-medium">D1 Walk-Forward Degradation</h4>
-                {result.verdictResult.scores.walkForwardDegradationPct !== null ? (
-                  <div className="space-y-1.5 text-xs">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                      <div>
-                        <span className="text-[#7C8DB0]">degradation: </span>
-                        <span className="text-white font-mono">
-                          {result.verdictResult.scores.walkForwardDegradationPct}%
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[#7C8DB0]">OOS trades: </span>
-                        <span className="text-white font-mono">
-                          {result.verdictResult.scores.walkForwardOosSampleSize ?? "—"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[#7C8DB0]">max: </span>
-                        <span className="text-white font-mono">
-                          {result.verdictResult.thresholdsUsed.maxSharpeDegradationPct}%
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[#7C8DB0]">extreme: </span>
-                        <span className="text-white font-mono">
-                          {result.verdictResult.thresholdsUsed.extremeSharpeDegradationPct}%
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[#7C8DB0]">tier: </span>
-                      <span className="text-white font-mono">{inferD1Tier(result)}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-[#475569]">Not evaluated (no walk-forward data)</p>
-                )}
               </div>
 
               {/* D2 Monte Carlo */}

@@ -237,7 +237,6 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Governance snapshot logging",
               "Email, webhook & Telegram alerts",
               "Unlimited strategies & exports",
-              "Walk-forward analysis",
               "Priority support",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">

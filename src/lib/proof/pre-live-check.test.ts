@@ -24,11 +24,6 @@ function makeInput(overrides: Partial<PreLiveCheckInput> = {}): PreLiveCheckInpu
     confidenceLower: 70,
     confidenceUpper: 95,
     warnings: [],
-    walkForward: {
-      consistencyScore: 75,
-      overfitProbability: 0.2,
-      verdict: "ROBUST",
-    },
     monteCarlo: {
       survivalRate: 0.9,
       p5: 5,
@@ -157,80 +152,50 @@ describe("computePreLiveVerdict — Soft Gates", () => {
     expect(result.reasons.some((r) => r.type === "NEGATIVE_P5_RETURN")).toBe(true);
   });
 
-  it("S3: fails when walk-forward verdict is OVERFITTED", () => {
-    const result = computePreLiveVerdict(
-      makeInput({
-        walkForward: { consistencyScore: 75, overfitProbability: 0.2, verdict: "OVERFITTED" },
-      })
-    );
-    expect(result.gateResults.find((g) => g.gate === "S3")?.passed).toBe(false);
-    expect(result.reasons.some((r) => r.type === "WALK_FORWARD_OVERFITTED")).toBe(true);
-  });
-
-  it("S4: fails when walk-forward consistencyScore < 50", () => {
-    const result = computePreLiveVerdict(
-      makeInput({
-        walkForward: { consistencyScore: 49, overfitProbability: 0.2, verdict: "ROBUST" },
-      })
-    );
-    expect(result.gateResults.find((g) => g.gate === "S4")?.passed).toBe(false);
-    expect(result.reasons.some((r) => r.type === "LOW_CONSISTENCY")).toBe(true);
-  });
-
-  it("S5: fails when walk-forward overfitProbability >= 0.5", () => {
-    const result = computePreLiveVerdict(
-      makeInput({
-        walkForward: { consistencyScore: 75, overfitProbability: 0.5, verdict: "MODERATE" },
-      })
-    );
-    expect(result.gateResults.find((g) => g.gate === "S5")?.passed).toBe(false);
-    expect(result.reasons.some((r) => r.type === "HIGH_OVERFIT_PROBABILITY")).toBe(true);
-  });
-
-  it("S6: fails when maxDrawdownPct > 30", () => {
+  it("S3: fails when maxDrawdownPct > 30", () => {
     const result = computePreLiveVerdict(makeInput({ maxDrawdownPct: 31 }));
-    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S3")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "EXCESSIVE_DRAWDOWN")).toBe(true);
   });
 
-  it("S6: passes when maxDrawdownPct = 30", () => {
+  it("S3: passes when maxDrawdownPct = 30", () => {
     const result = computePreLiveVerdict(makeInput({ maxDrawdownPct: 30 }));
-    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(true);
+    expect(result.gateResults.find((g) => g.gate === "S3")?.passed).toBe(true);
   });
 
-  it("S7: fails when warnings are present", () => {
+  it("S4: fails when warnings are present", () => {
     const result = computePreLiveVerdict(makeInput({ warnings: ["Martingale detected"] }));
-    expect(result.gateResults.find((g) => g.gate === "S7")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S4")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "BACKTEST_WARNINGS")).toBe(true);
   });
 
-  it("S8: fails when healthScore < 80", () => {
+  it("S5: fails when healthScore < 80", () => {
     const result = computePreLiveVerdict(makeInput({ healthScore: 79, healthStatus: "MODERATE" }));
-    expect(result.gateResults.find((g) => g.gate === "S8")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S5")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "BELOW_ROBUST_SCORE")).toBe(true);
   });
 
-  it("S9: fails when sharpeRatio < 0.5", () => {
+  it("S6: fails when sharpeRatio < 0.5", () => {
     const result = computePreLiveVerdict(makeInput({ sharpeRatio: 0.4 }));
-    expect(result.gateResults.find((g) => g.gate === "S9")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "LOW_SHARPE")).toBe(true);
   });
 
-  it("S9: skipped (passed) when sharpeRatio is null", () => {
+  it("S6: skipped (passed) when sharpeRatio is null", () => {
     const result = computePreLiveVerdict(makeInput({ sharpeRatio: null }));
-    expect(result.gateResults.find((g) => g.gate === "S9")?.passed).toBe(true);
+    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(true);
     expect(result.reasons.some((r) => r.type === "LOW_SHARPE")).toBe(false);
   });
 
-  it("S10: fails when recoveryFactor < 1.0", () => {
+  it("S7: fails when recoveryFactor < 1.0", () => {
     const result = computePreLiveVerdict(makeInput({ recoveryFactor: 0.8 }));
-    expect(result.gateResults.find((g) => g.gate === "S10")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S7")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "LOW_RECOVERY_FACTOR")).toBe(true);
   });
 
-  it("S10: skipped (passed) when recoveryFactor is null", () => {
+  it("S7: skipped (passed) when recoveryFactor is null", () => {
     const result = computePreLiveVerdict(makeInput({ recoveryFactor: null }));
-    expect(result.gateResults.find((g) => g.gate === "S10")?.passed).toBe(true);
+    expect(result.gateResults.find((g) => g.gate === "S7")?.passed).toBe(true);
     expect(result.reasons.some((r) => r.type === "LOW_RECOVERY_FACTOR")).toBe(false);
   });
 });
@@ -248,19 +213,10 @@ describe("computePreLiveVerdict — Missing Data", () => {
     expect(result.actions.some((a) => a.label === "Run Monte Carlo validation")).toBe(true);
   });
 
-  it("missing walkForward → S3/S4/S5 fail with MISSING_WALK_FORWARD reason", () => {
-    const result = computePreLiveVerdict(makeInput({ walkForward: null }));
-    expect(result.gateResults.find((g) => g.gate === "S3")?.passed).toBe(false);
-    expect(result.gateResults.find((g) => g.gate === "S4")?.passed).toBe(false);
-    expect(result.gateResults.find((g) => g.gate === "S5")?.passed).toBe(false);
-    expect(result.reasons.some((r) => r.type === "MISSING_WALK_FORWARD")).toBe(true);
-    expect(result.actions.some((a) => a.label === "Run walk-forward analysis")).toBe(true);
-  });
-
-  it("missing both MC + WF → clearly UNCERTAIN", () => {
-    const result = computePreLiveVerdict(makeInput({ monteCarlo: null, walkForward: null }));
+  it("missing MC → clearly UNCERTAIN", () => {
+    const result = computePreLiveVerdict(makeInput({ monteCarlo: null }));
     expect(result.verdict).toBe("UNCERTAIN");
-    // S1(3) + S2(1) + S3(3) + S4(2) + S5(2) = 11 failed weight
+    // S1(3) + S2(1) = 4 failed weight >= threshold
   });
 });
 
@@ -276,10 +232,7 @@ describe("computePreLiveVerdict — Threshold Boundaries", () => {
   });
 
   it("soft weight just below threshold → READY", () => {
-    // Missing WF S3(3) alone but with MC present: only S3=3 + S4=2 + S5=2 = 7
-    // Actually need to construct a case with exactly 3 failed weight
-    // WF null fails S3(3)+S4(2)+S5(2) = 7, too much
-    // Instead: single warning S7(1) + below robust S8(1) + low sharpe S9(1) = 3 < 4
+    // S4(1) warning + S5(1) below robust + S6(1) low sharpe = 3 < 4
     const result = computePreLiveVerdict(
       makeInput({
         healthScore: 75,
@@ -306,7 +259,6 @@ describe("computePreLiveVerdict — Reason Ordering", () => {
         expectedPayoff: -1,
         profitFactor: 0.5,
         monteCarlo: null,
-        walkForward: null,
         warnings: ["Test warning"],
       })
     );
@@ -336,7 +288,6 @@ describe("computePreLiveVerdict — Readiness Score", () => {
         expectedPayoff: -1,
         profitFactor: 0.5,
         monteCarlo: null,
-        walkForward: null,
         maxDrawdownPct: 40,
         warnings: ["Warning"],
         sharpeRatio: 0.1,
@@ -346,30 +297,21 @@ describe("computePreLiveVerdict — Readiness Score", () => {
     expect(result.readinessScore).toBe(0);
   });
 
-  it("all hard pass, all soft fail → ~25", () => {
+  it("all hard pass, all soft fail → score between 0 and 100", () => {
     const result = computePreLiveVerdict(
       makeInput({
-        // All hard gates pass
         healthScore: 60,
         healthStatus: "MODERATE",
         totalTrades: 200,
         profitFactor: 1.5,
         expectedPayoff: 3,
-        // All soft gates fail
         monteCarlo: null,
-        walkForward: null,
         maxDrawdownPct: 40,
         warnings: ["Warning"],
         sharpeRatio: 0.1,
         recoveryFactor: 0.3,
       })
     );
-    // Hard: 5 * 10 = 50 passed, Soft: 0 passed out of 19 (17 base + sharpe 1 + recovery 1)
-    // Score = 100 * 50 / 69 ≈ 72... wait
-    // Total = 50 (hard) + 19 (soft) = 69
-    // Passed = 50 (hard) + 0 (soft) = 50
-    // Score = round(100 * 50 / 69) = round(72.46) = 72
-    // The plan says ~25 assuming all soft = 17. With nullable metrics included it's higher.
     expect(result.readinessScore).toBeGreaterThan(0);
     expect(result.readinessScore).toBeLessThan(100);
   });
@@ -405,11 +347,7 @@ describe("extractPreLiveInput", () => {
       healthScoreVersion: 1,
       confidenceLower: 70,
       confidenceUpper: 95,
-      walkForwardResult: {
-        consistencyScore: 75,
-        overfitProbability: 0.2,
-        verdict: "ROBUST",
-      },
+      walkForwardResult: null,
       trades: [],
       scoreBreakdown: null,
       parseWarnings: ["Test warning"],
@@ -441,11 +379,6 @@ describe("extractPreLiveInput", () => {
     expect(input.confidenceLower).toBe(70);
     expect(input.confidenceUpper).toBe(95);
     expect(input.warnings).toEqual(["Test warning"]);
-    expect(input.walkForward).toEqual({
-      consistencyScore: 75,
-      overfitProbability: 0.2,
-      verdict: "ROBUST",
-    });
     expect(input.monteCarlo).toEqual({
       survivalRate: 0.9,
       p5: 5,
@@ -456,7 +389,6 @@ describe("extractPreLiveInput", () => {
 
   it("handles missing JSON fields gracefully", () => {
     const backtest = makeBacktestRun({
-      walkForwardResult: null,
       validationResult: null,
       parseWarnings: null,
       sharpeRatio: null,
@@ -464,7 +396,6 @@ describe("extractPreLiveInput", () => {
     });
     const input = extractPreLiveInput(backtest);
 
-    expect(input.walkForward).toBeNull();
     expect(input.monteCarlo).toBeNull();
     expect(input.warnings).toEqual([]);
     expect(input.sharpeRatio).toBeNull();
@@ -484,12 +415,7 @@ describe("computePreLiveVerdict — Verdict Integration", () => {
     expect(result.reasons).toHaveLength(0);
   });
 
-  it("missing WF only (weight 7) → UNCERTAIN", () => {
-    const result = computePreLiveVerdict(makeInput({ walkForward: null }));
-    expect(result.verdict).toBe("UNCERTAIN");
-  });
-
-  it("minor issues only (S7+S8+S9 = 3) → READY", () => {
+  it("minor issues only (S4+S5+S6 = 3) → READY", () => {
     const result = computePreLiveVerdict(
       makeInput({
         healthScore: 75,
@@ -521,7 +447,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
         recoveryFactor: 4.2,
         warnings: [],
         monteCarlo: { survivalRate: 0.96, p5: 15, p50: 45, p95: 90 },
-        walkForward: { consistencyScore: 85, overfitProbability: 0.1, verdict: "ROBUST" },
       })
     );
 
@@ -534,7 +459,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
 
   it("borderline: passes hard gates, soft weight exactly at threshold → UNCERTAIN", () => {
     // Monte Carlo null → S1(3) + S2(1) = 4 = UNCERTAIN_WEIGHT_THRESHOLD
-    // All hard gates pass, all other soft gates pass
     const result = computePreLiveVerdict(
       makeInput({
         healthScore: 85,
@@ -547,7 +471,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
         recoveryFactor: 1.5,
         warnings: [],
         monteCarlo: null,
-        walkForward: { consistencyScore: 60, overfitProbability: 0.3, verdict: "MODERATE" },
       })
     );
 
@@ -572,7 +495,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
         recoveryFactor: 0.3,
         warnings: ["Martingale detected", "Outlier profit skew"],
         monteCarlo: { survivalRate: 0.3, p5: -20, p50: -5, p95: 10 },
-        walkForward: { consistencyScore: 25, overfitProbability: 0.8, verdict: "OVERFITTED" },
       })
     );
 
@@ -587,7 +509,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
     const result = computePreLiveVerdict(
       makeInput({
         totalTrades: 30,
-        // All other metrics are strong
         healthScore: 80,
         healthStatus: "ROBUST",
         profitFactor: 1.6,
@@ -599,7 +520,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
     expect(result.gateResults.find((g) => g.gate === "H1")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "INSUFFICIENT_TRADES")).toBe(true);
     expect(result.actions.some((a) => a.label === "Extend backtest")).toBe(true);
-    // Only H1 fails — other hard gates pass
     const failedHard = result.gateResults.filter((g) => g.hard && !g.passed);
     expect(failedHard).toHaveLength(1);
   });
@@ -608,38 +528,29 @@ describe("computePreLiveVerdict — Scenarios", () => {
     const result = computePreLiveVerdict(
       makeInput({
         maxDrawdownPct: 45,
-        // Hard gates all pass
         healthScore: 70,
         healthStatus: "MODERATE",
         totalTrades: 200,
         profitFactor: 1.4,
         expectedPayoff: 3.0,
-        // Other soft gates configured so only S6(2) + S8(1) fail (total 3 < 4)
-        // But need to push over threshold: also null sharpe adds nothing (skipped)
-        // S6=2 + S8=1 (below 80) = 3... still READY unless we add more
-        // Make monteCarlo null to push over: S1(3)+S2(1)+S6(2)+S8(1) = 7
         monteCarlo: null,
       })
     );
 
     expect(result.verdict).toBe("UNCERTAIN");
-    expect(result.gateResults.find((g) => g.gate === "S6")?.passed).toBe(false);
+    expect(result.gateResults.find((g) => g.gate === "S3")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "EXCESSIVE_DRAWDOWN")).toBe(true);
   });
 
   it("Monte Carlo instability: low survival + negative p5 → UNCERTAIN", () => {
     const result = computePreLiveVerdict(
       makeInput({
-        // Hard gates pass
         healthScore: 82,
         healthStatus: "ROBUST",
         totalTrades: 300,
         profitFactor: 1.5,
         expectedPayoff: 4.0,
-        // Monte Carlo shows instability
         monteCarlo: { survivalRate: 0.45, p5: -12, p50: 8, p95: 35 },
-        // Walk-forward is fine
-        walkForward: { consistencyScore: 70, overfitProbability: 0.2, verdict: "ROBUST" },
       })
     );
 
@@ -649,7 +560,6 @@ describe("computePreLiveVerdict — Scenarios", () => {
     expect(result.gateResults.find((g) => g.gate === "S2")?.passed).toBe(false);
     expect(result.reasons.some((r) => r.type === "LOW_SURVIVAL_RATE")).toBe(true);
     expect(result.reasons.some((r) => r.type === "NEGATIVE_P5_RETURN")).toBe(true);
-    // Hard gates all pass
     expect(result.gateResults.filter((g) => g.hard && !g.passed)).toHaveLength(0);
   });
 });
