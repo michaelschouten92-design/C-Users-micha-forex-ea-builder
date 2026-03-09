@@ -81,13 +81,6 @@ const IN_PROGRESS: RoadmapItem[] = [
     tag: "Monitoring",
     timeline: "Q2 2026",
   },
-  {
-    title: "Walk-Forward Validation",
-    description:
-      "Out-of-sample validation to verify strategy robustness before promoting to live monitoring.",
-    tag: "Analytics",
-    timeline: "Q2 2026",
-  },
 ];
 
 const PLANNED: RoadmapItem[] = [

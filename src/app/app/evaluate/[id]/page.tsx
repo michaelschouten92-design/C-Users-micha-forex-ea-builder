@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { WalkForwardResults } from "../../backtest/[id]/walk-forward-results";
-import type { WalkForwardResult } from "@/lib/backtest-parser/walk-forward";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 // ============================================
@@ -52,7 +50,6 @@ interface BacktestDetail {
   parseWarnings: string[];
   detectedLocale: string | null;
   dealCount: number;
-  walkForwardResult: WalkForwardResult | null;
   tier: string;
 }
 
@@ -301,7 +298,7 @@ export default function EvaluateDetailPage() {
                   {data.healthStatus === "MODERATE" &&
                     "Review weak metrics in the breakdown \u2192 Consider parameter optimization \u2192 Retest with a longer period."}
                   {data.healthStatus === "WEAK" &&
-                    "Review strategy fundamentals \u2192 Check for overfitting with walk-forward analysis \u2192 Rework entry/exit logic before retesting."}
+                    "Review strategy fundamentals \u2192 Analyze score breakdown for weak metrics \u2192 Rework entry/exit logic before retesting."}
                   {data.healthStatus === "INSUFFICIENT_DATA" &&
                     "Upload a backtest with more trades (ideally 100+) for a reliable assessment."}
                 </div>
@@ -450,13 +447,6 @@ export default function EvaluateDetailPage() {
               )}
             </div>
           )}
-
-          {/* Walk-Forward Analysis */}
-          <WalkForwardResults
-            backtestId={id}
-            existingResult={data.walkForwardResult}
-            tier={data.tier ?? "FREE"}
-          />
 
           {/* Warnings — red flags separated from informational */}
           {data.parseWarnings.length > 0 &&
