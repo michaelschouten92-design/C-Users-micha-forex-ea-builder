@@ -100,6 +100,12 @@ enum VerificationConfigStatus {
   DEPRECATED
 }
 
+enum BaselineStatus {
+  UNLINKED
+  LINKED
+  RELINK_REQUIRED
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -147,7 +153,8 @@ model User {
   backtestUploads    BacktestUpload[]
   pushSubscriptions  PushSubscription[]
   outboxEntries      NotificationOutbox[]
-  controlLayerAlerts ControlLayerAlert[]
+  controlLayerAlerts  ControlLayerAlert[]
+  terminalConnections TerminalConnection[]
 
   @@index([createdAt])
   @@index([suspended])
@@ -392,7 +399,8 @@ model LiveEAInstance {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Soft delete
 
-  strategyVersionId String?
+  strategyVersionId      String?
+  terminalConnectionId   String?   // Physical terminal this instance belongs to (null = standalone)
 
   // Strategy Lifecycle
   lifecyclePhase    String    @default("NEW")  // NEW | PROVING | PROVEN | RETIRED
@@ -412,9 +420,10 @@ model LiveEAInstance {
   strategyStatus          String    @default("TESTING")  // CONSISTENT | MONITORING | TESTING | UNSTABLE | EDGE_DEGRADED | INACTIVE
   strategyStatusUpdatedAt DateTime?
 
-  exportJob      ExportJob?       @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  strategyVersion StrategyVersion? @relation(fields: [strategyVersionId], references: [id])
+  exportJob           ExportJob?          @relation(fields: [exportJobId], references: [id], onDelete: Cascade)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyVersion     StrategyVersion?    @relation(fields: [strategyVersionId], references: [id])
+  terminalConnection  TerminalConnection? @relation(fields: [terminalConnectionId], references: [id])
   heartbeats     EAHeartbeat[]
   trades         EATrade[]
   errors         EAError[]
@@ -431,6 +440,7 @@ model LiveEAInstance {
   monitoringRuns         MonitoringRun[]
   incidents              Incident[]
   controlLayerAlerts     ControlLayerAlert[]
+  terminalDeployments    TerminalDeployment[]
 
   @@index([userId, status])
   @@index([userId, deletedAt])
@@ -439,6 +449,7 @@ model LiveEAInstance {
   @@index([strategyVersionId])
   @@index([apiKeyHashPrev, keyGracePeriodEnd])
   @@index([operatorHold])
+  @@index([terminalConnectionId])
 }
 
 model EAHeartbeat {
@@ -1327,4 +1338,55 @@ model MonitoringRun {
   @@index([strategyId, requestedAt])
   @@index([instanceId, requestedAt])
   @@index([status])
+}
+
+// ============================================
+// TERMINAL CONNECTION — Physical MT5 terminal
+// ============================================
+
+model TerminalConnection {
+  id            String    @id @default(cuid())
+  userId        String
+  label         String    // User-friendly terminal name (e.g. "VPS-1 IC Markets")
+  apiKeyHash    String    @unique // SHA-256 of terminal-level API key
+  status        EAStatus  @default(OFFLINE) // ONLINE | OFFLINE | ERROR
+  lastHeartbeat DateTime?
+  broker        String?
+  accountNumber String?
+  terminalVersion String? // MT5 build number
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // Soft delete
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instances   LiveEAInstance[]
+  deployments TerminalDeployment[]
+
+  @@index([userId, deletedAt])
+  @@index([status, lastHeartbeat])
+}
+
+// ============================================
+// TERMINAL DEPLOYMENT — Maps deployment identity to instance
+// ============================================
+
+model TerminalDeployment {
+  id                   String         @id @default(cuid())
+  terminalConnectionId String
+  instanceId           String?        // Linked LiveEAInstance (null = detected but unlinked)
+  deploymentKey        String         // SHA-256(symbol:timeframe:magicNumber:eaName) — stable identity
+  symbol               String
+  timeframe            String
+  magicNumber          Int
+  eaName               String
+  baselineStatus       BaselineStatus @default(UNLINKED)
+  firstSeenAt          DateTime       @default(now())
+  lastSeenAt           DateTime       @default(now())
+
+  terminal TerminalConnection @relation(fields: [terminalConnectionId], references: [id], onDelete: Cascade)
+  instance LiveEAInstance?    @relation(fields: [instanceId], references: [id])
+
+  @@unique([terminalConnectionId, deploymentKey])
+  @@index([instanceId])
+  @@index([terminalConnectionId, lastSeenAt])
 }
