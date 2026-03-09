@@ -26,11 +26,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Find instances that already have a TerminalDeployment linked to them
+  const linkedInstanceIds = await prisma.terminalDeployment
+    .findMany({
+      where: { instanceId: { not: null } },
+      select: { instanceId: true },
+    })
+    .then((rows) => rows.map((r) => r.instanceId!));
+
   const instances = await prisma.liveEAInstance.findMany({
     where: {
       userId: session.user.id,
       deletedAt: null,
       OR: [{ terminalConnectionId: null }, { terminalConnectionId: terminalId }],
+      // Exclude instances already linked to a deployment (1:1 invariant)
+      id: linkedInstanceIds.length > 0 ? { notIn: linkedInstanceIds } : undefined,
     },
     orderBy: { createdAt: "desc" },
     select: {
