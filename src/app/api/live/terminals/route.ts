@@ -34,6 +34,7 @@ export async function GET() {
           timeframe: true,
           magicNumber: true,
           eaName: true,
+          materialFingerprint: true,
           baselineStatus: true,
           instanceId: true,
           firstSeenAt: true,
