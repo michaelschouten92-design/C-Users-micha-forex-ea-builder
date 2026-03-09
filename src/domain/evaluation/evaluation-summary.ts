@@ -9,7 +9,6 @@ export interface EvaluationInput {
   totalTrades: number;
   profitFactor: number;
   maxDrawdownPct: number;
-  winRate: number;
 }
 
 export interface EvaluationSummary {
@@ -20,11 +19,10 @@ export interface EvaluationSummary {
 const MIN_TRADE_COUNT = 100;
 const MIN_PROFIT_FACTOR = 1.2;
 const MAX_DRAWDOWN_PCT = 35;
-const MIN_WIN_RATE = 0.35;
 const MAX_REASONS = 3;
 
 export function buildEvaluationSummary(input: EvaluationInput): EvaluationSummary {
-  const { totalTrades, profitFactor, maxDrawdownPct, winRate } = input;
+  const { totalTrades, profitFactor, maxDrawdownPct } = input;
   const reasons: string[] = [];
 
   if (totalTrades < MIN_TRADE_COUNT) {
@@ -37,10 +35,6 @@ export function buildEvaluationSummary(input: EvaluationInput): EvaluationSummar
 
   if (maxDrawdownPct > MAX_DRAWDOWN_PCT) {
     reasons.push("Drawdown too high");
-  }
-
-  if (winRate < MIN_WIN_RATE) {
-    reasons.push("Win rate unusually low");
   }
 
   return {
