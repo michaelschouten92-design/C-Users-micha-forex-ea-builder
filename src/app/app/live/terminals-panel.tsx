@@ -196,6 +196,7 @@ function DeploymentRow({
 }) {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const isLinked = deployment.instanceId !== null;
+  const isRelinkRequired = deployment.baselineStatus === "RELINK_REQUIRED";
 
   return (
     <div className="px-5 py-3">
@@ -212,7 +213,9 @@ function DeploymentRow({
           <div className="flex items-center gap-2">
             <BaselineStatusBadge status={deployment.baselineStatus} />
             {isLinked && deployment.instance ? (
-              <span className="text-[10px] text-[#10B981]">
+              <span
+                className={`text-[10px] ${isRelinkRequired ? "text-[#F59E0B]" : "text-[#10B981]"}`}
+              >
                 Linked to {deployment.instance.eaName}
               </span>
             ) : (
@@ -234,12 +237,28 @@ function DeploymentRow({
             Link Instance
           </button>
         )}
-        {isLinked && (
+        {isLinked && !isRelinkRequired && (
           <span className="flex-shrink-0 text-[10px] font-medium px-2 py-1 rounded bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-[#10B981]">
             Linked
           </span>
         )}
+        {isLinked && isRelinkRequired && (
+          <span className="flex-shrink-0 text-[10px] font-medium px-2 py-1 rounded bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.25)] text-[#F59E0B]">
+            Relink needed
+          </span>
+        )}
       </div>
+
+      {/* Relink-required explanation */}
+      {isRelinkRequired && (
+        <div className="mt-2 px-3 py-2 rounded bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.15)]">
+          <p className="text-[10px] text-[#F59E0B] leading-relaxed">
+            EA configuration changed materially. Deterministic monitoring is suspended until a new
+            baseline is linked. Go to the linked instance and link a new backtest baseline that
+            reflects the current configuration.
+          </p>
+        </div>
+      )}
 
       {showLinkDialog && (
         <LinkInstanceDialog
