@@ -31,6 +31,9 @@ export type AuditEventType =
   | "live.api_key_rotated"
   | "live.strategy_status_change"
   | "live.baseline_linked"
+  // Terminal
+  | "live.terminal_registered"
+  | "live.terminal_deleted"
   // Admin impersonation
   | "admin.impersonation_start"
   | "admin.impersonation_stop"
