@@ -149,9 +149,6 @@ int OnInit()
    g_sessionStart = TimeCurrent();
    g_initialized = true;
 
-   // DEBUG: Remove after verifying new build is active
-   Comment("PANEL BUILD ACTIVE");
-
    // Sync chain state from server if we have an instanceId
    if(StringLen(g_instanceId) > 0 && g_seqNo > 0)
    {
@@ -1224,11 +1221,17 @@ void PanelCreate()
 {
    int totalH = PANEL_HEADER_HEIGHT + PANEL_ROWS * PANEL_ROW_HEIGHT + 8;
 
+   // For right-side corners, OBJ_RECTANGLE_LABEL anchors from its top-left
+   // corner but XDISTANCE measures from the chart's right edge. We must offset
+   // by the panel width so the rectangle extends leftward into view.
+   bool rightCorner = (InpPanelCorner == CORNER_RIGHT_UPPER || InpPanelCorner == CORNER_RIGHT_LOWER);
+   int bgX = rightCorner ? InpPanelX + PANEL_WIDTH : InpPanelX;
+
    // Background rectangle
    string bgName = PANEL_PREFIX + "BG";
    ObjectCreate(0, bgName, OBJ_RECTANGLE_LABEL, 0, 0, 0);
    ObjectSetInteger(0, bgName, OBJPROP_CORNER, InpPanelCorner);
-   ObjectSetInteger(0, bgName, OBJPROP_XDISTANCE, InpPanelX);
+   ObjectSetInteger(0, bgName, OBJPROP_XDISTANCE, bgX);
    ObjectSetInteger(0, bgName, OBJPROP_YDISTANCE, InpPanelY);
    ObjectSetInteger(0, bgName, OBJPROP_XSIZE, PANEL_WIDTH);
    ObjectSetInteger(0, bgName, OBJPROP_YSIZE, totalH);
@@ -1240,15 +1243,15 @@ void PanelCreate()
    ObjectSetInteger(0, bgName, OBJPROP_SELECTABLE, false);
 
    // Header label
-   PanelLabel("Header", 8, 4, "AlgoStudio Monitor", C'140,140,180', PANEL_FONT_SIZE + 1);
+   PanelLabel("Header", 8, 4, "AlgoStudio Monitor", C'140,140,180', PANEL_FONT_SIZE + 1, rightCorner);
 
    // Row labels (left column)
    string rowNames[] = {"Status", "Instance", "Heartbeat", "Account", "Last error"};
    for(int i = 0; i < PANEL_ROWS; i++)
    {
       int y = PANEL_HEADER_HEIGHT + i * PANEL_ROW_HEIGHT + 2;
-      PanelLabel("L" + IntegerToString(i), 8, y, rowNames[i] + ":", C'100,100,130', PANEL_FONT_SIZE);
-      PanelLabel("V" + IntegerToString(i), 88, y, "", C'200,200,220', PANEL_FONT_SIZE);
+      PanelLabel("L" + IntegerToString(i), 8, y, rowNames[i] + ":", C'100,100,130', PANEL_FONT_SIZE, rightCorner);
+      PanelLabel("V" + IntegerToString(i), 88, y, "", C'200,200,220', PANEL_FONT_SIZE, rightCorner);
    }
 
    PanelUpdate();
@@ -1256,13 +1259,18 @@ void PanelCreate()
 }
 
 /** Create or get a panel text label. */
-void PanelLabel(string suffix, int x, int y, string text, color clr, int fontSize)
+void PanelLabel(string suffix, int x, int y, string text, color clr, int fontSize, bool rightCorner)
 {
    string name = PANEL_PREFIX + suffix;
 
+   // For right-side corners, OBJ_LABEL with ANCHOR_LEFT_UPPER places the text's
+   // left edge at XDISTANCE from chart right. Offset by panel width so labels
+   // sit inside the background rectangle.
+   int labelX = rightCorner ? InpPanelX + PANEL_WIDTH - x : InpPanelX + x;
+
    ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
    ObjectSetInteger(0, name, OBJPROP_CORNER, InpPanelCorner);
-   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, InpPanelX + x);
+   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, labelX);
    ObjectSetInteger(0, name, OBJPROP_YDISTANCE, InpPanelY + y);
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetString(0, name, OBJPROP_FONT, PANEL_FONT);
@@ -1270,6 +1278,8 @@ void PanelLabel(string suffix, int x, int y, string text, color clr, int fontSiz
    ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
    ObjectSetInteger(0, name, OBJPROP_BACK, false);
    ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+   if(rightCorner)
+      ObjectSetInteger(0, name, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER);
 }
 
 /** Update panel values every timer tick. */
