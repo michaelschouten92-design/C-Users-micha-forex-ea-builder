@@ -1379,6 +1379,7 @@ model TerminalDeployment {
   timeframe            String
   magicNumber          Int
   eaName               String
+  materialFingerprint  String?        // SHA-256 of EA parameters/config — detects material changes
   baselineStatus       BaselineStatus @default(UNLINKED)
   firstSeenAt          DateTime       @default(now())
   lastSeenAt           DateTime       @default(now())
