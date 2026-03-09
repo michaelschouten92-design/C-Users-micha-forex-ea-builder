@@ -34,6 +34,7 @@ export type AuditEventType =
   // Terminal
   | "live.terminal_registered"
   | "live.terminal_deleted"
+  | "live.deployment_linked"
   // Admin impersonation
   | "admin.impersonation_start"
   | "admin.impersonation_stop"
