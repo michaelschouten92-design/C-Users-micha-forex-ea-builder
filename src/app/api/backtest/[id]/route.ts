@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { buildEvaluationSummary } from "@/domain/evaluation/evaluation-summary";
 
 // GET /api/backtest/[id] — Get a single backtest result
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -93,6 +94,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         : null,
       tier,
       optimizations: run.aiAnalysis?.optimizations ?? null,
+      verificationSummary: buildEvaluationSummary({
+        totalTrades: run.totalTrades,
+        profitFactor: run.profitFactor,
+        maxDrawdownPct: run.maxDrawdownPct,
+      }),
     });
   } catch (error) {
     logger.error({ error }, "Failed to get backtest");

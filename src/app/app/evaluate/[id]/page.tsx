@@ -51,6 +51,10 @@ interface BacktestDetail {
   detectedLocale: string | null;
   dealCount: number;
   tier: string;
+  verificationSummary?: {
+    verdict: "VERIFIED" | "NOT_VERIFIED";
+    reasons: string[];
+  };
 }
 
 // ============================================
@@ -329,6 +333,43 @@ export default function EvaluateDetailPage() {
               />
             </div>
           </div>
+
+          {/* Verification Summary */}
+          {data.verificationSummary && (
+            <div
+              className="rounded-xl border px-5 py-4"
+              style={{
+                background:
+                  data.verificationSummary.verdict === "VERIFIED"
+                    ? "rgba(34,197,94,0.06)"
+                    : "rgba(239,68,68,0.06)",
+                borderColor:
+                  data.verificationSummary.verdict === "VERIFIED"
+                    ? "rgba(34,197,94,0.2)"
+                    : "rgba(239,68,68,0.2)",
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className="text-sm font-semibold"
+                  style={{
+                    color: data.verificationSummary.verdict === "VERIFIED" ? "#22C55E" : "#EF4444",
+                  }}
+                >
+                  {data.verificationSummary.verdict === "VERIFIED" ? "Verified" : "Not Verified"}
+                </span>
+              </div>
+              {data.verificationSummary.reasons.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {data.verificationSummary.reasons.map((reason, i) => (
+                    <li key={i} className="text-xs text-[#A1A1AA]">
+                      • {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Risk Disclaimer */}
           <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3">
