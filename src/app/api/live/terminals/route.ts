@@ -45,6 +45,7 @@ export async function GET() {
               eaName: true,
               status: true,
               strategyVersionId: true,
+              lifecycleState: true,
             },
           },
         },
@@ -67,6 +68,7 @@ export async function GET() {
               eaName: d.instance.eaName,
               status: d.instance.status,
               hasBaseline: d.instance.strategyVersionId !== null,
+              lifecycleState: d.instance.lifecycleState,
             }
           : null,
       })),

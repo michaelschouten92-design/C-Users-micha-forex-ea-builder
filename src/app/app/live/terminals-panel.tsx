@@ -10,6 +10,7 @@ interface DeploymentInstance {
   eaName: string;
   status: string;
   hasBaseline: boolean;
+  lifecycleState: string;
 }
 
 interface Deployment {
@@ -142,8 +143,16 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
             <div>
               <h3 className="text-sm font-medium text-white">{terminal.label}</h3>
               <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[10px] text-[#7C8DB0]">
+                  {terminal.status === "ONLINE" ? "Connected" : "Disconnected"}
+                </span>
+                {terminal.lastHeartbeat && (
+                  <span className="text-[10px] text-[#64748B]">
+                    · Last heartbeat {formatTimeAgo(terminal.lastHeartbeat)}
+                  </span>
+                )}
                 {terminal.broker && (
-                  <span className="text-[10px] text-[#7C8DB0]">{terminal.broker}</span>
+                  <span className="text-[10px] text-[#64748B]">· {terminal.broker}</span>
                 )}
                 {terminal.accountNumber && (
                   <span className="text-[10px] text-[#64748B]">#{terminal.accountNumber}</span>
@@ -169,7 +178,7 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
         </div>
       </div>
 
-      {/* Deployments */}
+      {/* Running strategies */}
       {terminal.deployments.length === 0 ? (
         <div className="px-5 py-6 text-center">
           <p className="text-xs text-[#64748B]">
@@ -177,15 +186,22 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-[rgba(79,70,229,0.06)]">
-          {terminal.deployments.map((deployment) => (
-            <DeploymentRow
-              key={deployment.id}
-              deployment={deployment}
-              terminalId={terminal.id}
-              onRefresh={onRefresh}
-            />
-          ))}
+        <div>
+          <div className="px-5 pt-3 pb-1">
+            <span className="text-[10px] font-medium text-[#64748B] uppercase tracking-wide">
+              Running strategies
+            </span>
+          </div>
+          <div className="divide-y divide-[rgba(79,70,229,0.06)]">
+            {terminal.deployments.map((deployment) => (
+              <DeploymentRow
+                key={deployment.id}
+                deployment={deployment}
+                terminalId={terminal.id}
+                onRefresh={onRefresh}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -204,85 +220,61 @@ function DeploymentRow({
   onRefresh: () => void;
 }) {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const isLinked = deployment.instanceId !== null;
-  const isRelinkRequired = deployment.baselineStatus === "RELINK_REQUIRED";
+
+  const baselineLabel = resolveBaselineLabel(deployment.baselineStatus);
+  const monitoringLabel = resolveMonitoringLabel(deployment);
+  const action = resolveAction(deployment);
 
   return (
     <div className="px-5 py-3">
-      <div className="flex items-center justify-between gap-3">
-        {/* Left: deployment info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-xs font-medium text-white">{deployment.eaName}</span>
-            <span className="text-[10px] font-mono text-[#7C8DB0]">
-              {deployment.symbol} {deployment.timeframe}
-            </span>
-            <span className="text-[10px] font-mono text-[#64748B]">M{deployment.magicNumber}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <BaselineStatusBadge status={deployment.baselineStatus} />
-            {isLinked && deployment.instance ? (
-              <span
-                className={`text-[10px] ${isRelinkRequired ? "text-[#F59E0B]" : "text-[#10B981]"}`}
-              >
-                Linked to {deployment.instance.eaName}
-              </span>
-            ) : (
-              <span className="text-[10px] text-[#F59E0B]">Unlinked</span>
-            )}
-            <span className="text-[10px] text-[#64748B]">
-              Last seen {formatTimeAgo(deployment.lastSeenAt)}
-            </span>
-          </div>
-        </div>
-
-        {/* Right: action */}
-        {!isLinked && (
-          <button
-            type="button"
-            onClick={() => setShowLinkDialog(true)}
-            className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.3)] text-[#A78BFA] hover:bg-[rgba(79,70,229,0.25)] hover:text-white transition-colors"
-          >
-            Link Instance
-          </button>
-        )}
-        {isLinked && !isRelinkRequired && (
-          <span className="flex-shrink-0 text-[10px] font-medium px-2 py-1 rounded bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-[#10B981]">
-            Linked
-          </span>
-        )}
-        {isLinked && isRelinkRequired && (
-          <span className="flex-shrink-0 text-[10px] font-medium px-2 py-1 rounded bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.25)] text-[#F59E0B]">
-            Relink needed
-          </span>
+      {/* Identity line */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-xs font-medium text-white">
+          {deployment.symbol} · {deployment.timeframe}
+        </span>
+        <span className="text-[10px] font-mono text-[#64748B]">Magic {deployment.magicNumber}</span>
+        {deployment.eaName && (
+          <span className="text-[10px] text-[#7C8DB0]">· {deployment.eaName}</span>
         )}
       </div>
 
-      {/* Relink-required explanation + recovery CTA */}
-      {isRelinkRequired && (
-        <div className="mt-2 px-3 py-2.5 rounded bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.15)]">
-          <p className="text-[10px] font-medium text-[#F59E0B] mb-0.5">
-            Material configuration change detected — baseline trust suspended
-          </p>
-          <p className="text-[10px] text-[#94A3B8] leading-relaxed mb-2">
-            Monitoring is running without a trusted baseline. Governance may emit NO_BASELINE until
-            a replacement baseline is linked.
-          </p>
-          {deployment.instanceId && (
+      {/* Status rows */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <StatusLine label="Baseline" value={baselineLabel.text} color={baselineLabel.color} />
+        <StatusLine label="Monitoring" value={monitoringLabel.text} color={monitoringLabel.color} />
+        <span className="text-[10px] text-[#64748B]">
+          Last seen {formatTimeAgo(deployment.lastSeenAt)}
+        </span>
+      </div>
+
+      {/* Action line */}
+      {action && (
+        <div className="mt-1.5">
+          {action.type === "link" && (
+            <button
+              type="button"
+              onClick={() => setShowLinkDialog(true)}
+              className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
+            >
+              Action: Link instance
+            </button>
+          )}
+          {action.type === "relink" && deployment.instanceId && (
             <Link
               href={`/app/live?relink=${deployment.instanceId}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 hover:bg-[#F59E0B]/30 transition-colors"
+              className="text-[11px] font-medium text-[#F59E0B] hover:text-white transition-colors"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                />
-              </svg>
-              Link new baseline
+              Action: Restore baseline trust
             </Link>
+          )}
+          {action.type === "link-baseline" && (
+            <button
+              type="button"
+              onClick={() => setShowLinkDialog(true)}
+              className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
+            >
+              Action: Link baseline
+            </button>
           )}
         </div>
       )}
@@ -301,6 +293,65 @@ function DeploymentRow({
       )}
     </div>
   );
+}
+
+// ── Instance display helpers ─────────────────────────
+
+function StatusLine({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <span className="text-[10px]">
+      <span className="text-[#64748B]">{label}:</span>{" "}
+      <span className="font-medium" style={{ color }}>
+        {value}
+      </span>
+    </span>
+  );
+}
+
+function resolveBaselineLabel(status: string): { text: string; color: string } {
+  switch (status) {
+    case "LINKED":
+      return { text: "Verified", color: "#10B981" };
+    case "RELINK_REQUIRED":
+      return { text: "Suspended", color: "#F59E0B" };
+    default:
+      return { text: "Missing", color: "#71717A" };
+  }
+}
+
+function resolveMonitoringLabel(deployment: Deployment): { text: string; color: string } {
+  if (!deployment.instance) {
+    return { text: "Not linked", color: "#71717A" };
+  }
+  if (deployment.baselineStatus === "RELINK_REQUIRED" || deployment.baselineStatus === "UNLINKED") {
+    return { text: "No baseline", color: "#71717A" };
+  }
+  const state = deployment.instance.lifecycleState;
+  switch (state) {
+    case "LIVE_MONITORING":
+      return { text: "Healthy", color: "#10B981" };
+    case "EDGE_AT_RISK":
+      return { text: "At risk", color: "#F59E0B" };
+    case "INVALIDATED":
+      return { text: "Invalidated", color: "#EF4444" };
+    default:
+      return { text: "Pending", color: "#7C8DB0" };
+  }
+}
+
+function resolveAction(
+  deployment: Deployment
+): { type: "link" | "relink" | "link-baseline" } | null {
+  if (!deployment.instanceId) {
+    return { type: "link" };
+  }
+  if (deployment.baselineStatus === "RELINK_REQUIRED") {
+    return { type: "relink" };
+  }
+  if (deployment.baselineStatus === "UNLINKED") {
+    return { type: "link-baseline" };
+  }
+  return null;
 }
 
 // ── Link Instance Dialog ──────────────────────────────
@@ -424,46 +475,6 @@ function LinkInstanceDialog({
 function StatusDot({ status }: { status: string }) {
   const color = status === "ONLINE" ? "#10B981" : status === "ERROR" ? "#EF4444" : "#71717A";
   return <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />;
-}
-
-const BASELINE_STATUS_STYLES: Record<
-  string,
-  { label: string; color: string; bg: string; border: string }
-> = {
-  LINKED: {
-    label: "Baseline linked",
-    color: "#10B981",
-    bg: "rgba(16,185,129,0.08)",
-    border: "rgba(16,185,129,0.2)",
-  },
-  UNLINKED: {
-    label: "No baseline",
-    color: "#71717A",
-    bg: "rgba(113,113,122,0.08)",
-    border: "rgba(113,113,122,0.2)",
-  },
-  RELINK_REQUIRED: {
-    label: "Relink required",
-    color: "#F59E0B",
-    bg: "rgba(245,158,11,0.08)",
-    border: "rgba(245,158,11,0.2)",
-  },
-};
-
-function BaselineStatusBadge({ status }: { status: string }) {
-  const style = BASELINE_STATUS_STYLES[status] ?? BASELINE_STATUS_STYLES.UNLINKED;
-  return (
-    <span
-      className="text-[9px] font-medium px-1.5 py-0.5 rounded"
-      style={{
-        color: style.color,
-        backgroundColor: style.bg,
-        border: `1px solid ${style.border}`,
-      }}
-    >
-      {style.label}
-    </span>
-  );
 }
 
 function formatTimeAgo(iso: string): string {
