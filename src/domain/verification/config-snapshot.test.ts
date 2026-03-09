@@ -22,6 +22,8 @@ const BASE_THRESHOLDS: VerificationThresholds = {
 const BASE_MONITORING: MonitoringThresholds = {
   drawdownBreachMultiplier: 1.5,
   sharpeMinRatio: 0.5,
+  profitFactorMinRatio: 0.6,
+  winRateMinRatio: 0.7,
   maxLosingStreak: 10,
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
@@ -94,6 +96,8 @@ describe("computeThresholdsHash", () => {
     const mutations: Partial<MonitoringThresholds>[] = [
       { drawdownBreachMultiplier: 2.0 },
       { sharpeMinRatio: 0.6 },
+      { profitFactorMinRatio: 0.5 },
+      { winRateMinRatio: 0.6 },
       { maxLosingStreak: 15 },
       { maxInactivityDays: 7 },
       { cusumDriftConsecutiveSnapshots: 5 },

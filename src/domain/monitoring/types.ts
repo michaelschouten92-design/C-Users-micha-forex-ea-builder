@@ -7,6 +7,8 @@ export type MonitoringVerdict = "HEALTHY" | "AT_RISK" | "INVALIDATED";
 export type MonitoringReasonCode =
   | "MONITORING_DRAWDOWN_BREACH"
   | "MONITORING_SHARPE_DEGRADATION"
+  | "MONITORING_PROFIT_FACTOR_DEGRADED"
+  | "MONITORING_WIN_RATE_DEGRADED"
   | "MONITORING_LOSS_STREAK"
   | "MONITORING_INACTIVITY"
   | "MONITORING_CUSUM_DRIFT"
@@ -37,11 +39,15 @@ export interface MonitoringContext {
   // Live metrics (computed from TradeFacts)
   liveMaxDrawdownPct: number;
   liveRollingSharpe: number;
+  liveProfitFactor: number;
+  liveWinRate: number;
   currentLosingStreak: number;
   daysSinceLastTrade: number;
   // Baselines (from BacktestBaseline via instance's strategyVersionId)
   baselineMaxDrawdownPct: number | null;
   baselineSharpeRatio: number | null;
+  baselineProfitFactor: number | null;
+  baselineWinRate: number | null;
   baselineMissing: boolean;
   // CUSUM (from HealthSnapshots scoped to this instance)
   consecutiveDriftSnapshots: number;

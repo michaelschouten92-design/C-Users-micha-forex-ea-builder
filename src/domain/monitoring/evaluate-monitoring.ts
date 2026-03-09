@@ -14,6 +14,8 @@ import type {
 import type { MonitoringThresholds } from "@/domain/verification/config-snapshot";
 import { evaluateDrawdownBreach } from "./rules/drawdown-breach";
 import { evaluateSharpeDegradation } from "./rules/sharpe-degradation";
+import { evaluateProfitFactorDegradation } from "./rules/profit-factor-degradation";
+import { evaluateWinRateDegradation } from "./rules/win-rate-degradation";
 import { evaluateLosingStreak } from "./rules/losing-streak";
 import { evaluateInactivity } from "./rules/inactivity";
 import { evaluateCusumDrift } from "./rules/cusum-drift";
@@ -27,9 +29,11 @@ import { evaluateCusumDrift } from "./rules/cusum-drift";
  * Fixed evaluation order:
  *   1. Drawdown breach
  *   2. Sharpe degradation
- *   3. Losing streak
- *   4. Inactivity
- *   5. CUSUM drift
+ *   3. Profit factor degradation
+ *   4. Win rate degradation
+ *   5. Losing streak
+ *   6. Inactivity
+ *   7. CUSUM drift
  *
  * Verdict composition:
  *   - any INVALIDATED → INVALIDATED
@@ -67,6 +71,22 @@ export function evaluateMonitoring(
         baselineMissing: ctx.baselineMissing,
       },
       { sharpeMinRatio: thresholds.sharpeMinRatio }
+    ),
+    evaluateProfitFactorDegradation(
+      {
+        liveProfitFactor: ctx.liveProfitFactor,
+        baselineProfitFactor: ctx.baselineProfitFactor,
+        baselineMissing: ctx.baselineMissing,
+      },
+      { profitFactorMinRatio: thresholds.profitFactorMinRatio }
+    ),
+    evaluateWinRateDegradation(
+      {
+        liveWinRate: ctx.liveWinRate,
+        baselineWinRate: ctx.baselineWinRate,
+        baselineMissing: ctx.baselineMissing,
+      },
+      { winRateMinRatio: thresholds.winRateMinRatio }
     ),
     evaluateLosingStreak(
       { currentLosingStreak: ctx.currentLosingStreak },

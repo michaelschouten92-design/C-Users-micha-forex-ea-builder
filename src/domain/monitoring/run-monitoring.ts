@@ -35,6 +35,8 @@ import { MONITORING } from "./constants";
 import {
   computeLiveMaxDrawdownPct,
   computeSharpe,
+  computeLiveProfitFactor,
+  computeLiveWinRate,
   computeCurrentLosingStreak,
   computeDaysSinceLastTrade,
 } from "./live-metrics";
@@ -241,6 +243,8 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       LIVE_SNAPSHOT_INITIAL_BALANCE
     );
     const liveRollingSharpe = computeSharpe(recentPnls);
+    const liveProfitFactor = computeLiveProfitFactor(recentPnls);
+    const liveWinRate = computeLiveWinRate(recentPnls);
     const currentLosingStreak = computeCurrentLosingStreak(snapshot.tradePnls);
     const daysSinceLastTrade = computeDaysSinceLastTrade(
       new Date(snapshot.range.latest),
@@ -254,11 +258,16 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       where: { id: instanceId },
       select: { strategyVersionId: true },
     });
-    let baseline: { maxDrawdownPct: number; sharpeRatio: number | null } | null = null;
+    let baseline: {
+      maxDrawdownPct: number;
+      sharpeRatio: number | null;
+      profitFactor: number;
+      winRate: number;
+    } | null = null;
     if (instanceForBaseline?.strategyVersionId) {
       baseline = await prisma.backtestBaseline.findUnique({
         where: { strategyVersionId: instanceForBaseline.strategyVersionId },
-        select: { maxDrawdownPct: true, sharpeRatio: true },
+        select: { maxDrawdownPct: true, sharpeRatio: true, profitFactor: true, winRate: true },
       });
     }
     const baselineMissing = !baseline;
@@ -287,10 +296,14 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
         snapshotHash: snapshot.snapshotHash,
         liveMaxDrawdownPct,
         liveRollingSharpe,
+        liveProfitFactor,
+        liveWinRate,
         currentLosingStreak,
         daysSinceLastTrade,
         baselineMaxDrawdownPct: baseline?.maxDrawdownPct ?? null,
         baselineSharpeRatio: baseline?.sharpeRatio ?? null,
+        baselineProfitFactor: baseline?.profitFactor ?? null,
+        baselineWinRate: baseline?.winRate ?? null,
         baselineMissing,
         consecutiveDriftSnapshots,
       },

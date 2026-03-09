@@ -23,6 +23,8 @@ export interface VerificationThresholds {
 export interface MonitoringThresholds {
   drawdownBreachMultiplier: number;
   sharpeMinRatio: number;
+  profitFactorMinRatio: number;
+  winRateMinRatio: number;
   maxLosingStreak: number;
   maxInactivityDays: number;
   cusumDriftConsecutiveSnapshots: number;
@@ -114,6 +116,8 @@ export function buildConfigSnapshot(): VerificationThresholdsSnapshot {
   const monitoringThresholds: MonitoringThresholds = {
     drawdownBreachMultiplier: MONITORING.DRAWDOWN_BREACH_MULTIPLIER,
     sharpeMinRatio: MONITORING.SHARPE_MIN_RATIO,
+    profitFactorMinRatio: MONITORING.PROFIT_FACTOR_MIN_RATIO,
+    winRateMinRatio: MONITORING.WIN_RATE_MIN_RATIO,
     maxLosingStreak: MONITORING.MAX_LOSING_STREAK,
     maxInactivityDays: MONITORING.MAX_INACTIVITY_DAYS,
     cusumDriftConsecutiveSnapshots: MONITORING.CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS,

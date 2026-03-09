@@ -59,6 +59,37 @@ export function computeCurrentLosingStreak(tradePnls: number[]): number {
 }
 
 /**
+ * Compute profit factor from trade PnLs: gross profit / gross loss.
+ * Returns 0 if no winning trades. Returns Infinity if no losing trades
+ * (which is treated as "pass" by the rule — no degradation possible).
+ */
+export function computeLiveProfitFactor(tradePnls: number[]): number {
+  if (tradePnls.length === 0) return 0;
+
+  let grossProfit = 0;
+  let grossLoss = 0;
+  for (const pnl of tradePnls) {
+    if (pnl > 0) grossProfit += pnl;
+    else grossLoss += Math.abs(pnl);
+  }
+
+  if (grossLoss === 0) return grossProfit > 0 ? Infinity : 0;
+  return Math.round((grossProfit / grossLoss) * 100) / 100;
+}
+
+/**
+ * Compute win rate from trade PnLs: wins / total.
+ * A win is a trade with profit > 0.
+ * Returns 0 if no trades.
+ */
+export function computeLiveWinRate(tradePnls: number[]): number {
+  if (tradePnls.length === 0) return 0;
+
+  const wins = tradePnls.filter((p) => p > 0).length;
+  return Math.round((wins / tradePnls.length) * 100) / 100;
+}
+
+/**
  * Calendar days since the latest trade date.
  * Deterministic: takes `now` as an explicit parameter.
  */

@@ -26,6 +26,10 @@ export const MONITORING = {
   MAX_INACTIVITY_DAYS: 14,
   /** Consecutive HealthSnapshots with driftDetected=true */
   CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
+  /** Live profitFactor < baseline × ratio → AT_RISK */
+  PROFIT_FACTOR_MIN_RATIO: 0.6,
+  /** Live winRate < baseline × ratio → AT_RISK */
+  WIN_RATE_MIN_RATIO: 0.7,
   /** Consecutive HEALTHY runs required to recover from EDGE_AT_RISK */
   RECOVERY_RUNS_REQUIRED: 3,
 

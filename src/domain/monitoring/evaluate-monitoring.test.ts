@@ -6,6 +6,8 @@ import type { MonitoringThresholds } from "@/domain/verification/config-snapshot
 const baseThresholds: MonitoringThresholds = {
   drawdownBreachMultiplier: 1.5,
   sharpeMinRatio: 0.5,
+  profitFactorMinRatio: 0.6,
+  winRateMinRatio: 0.7,
   maxLosingStreak: 10,
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
@@ -27,10 +29,14 @@ const healthyCtx: MonitoringContext = {
   snapshotHash: "abc123",
   liveMaxDrawdownPct: 5,
   liveRollingSharpe: 1.0,
+  liveProfitFactor: 1.8,
+  liveWinRate: 0.6,
   currentLosingStreak: 2,
   daysSinceLastTrade: 1,
   baselineMaxDrawdownPct: 8,
   baselineSharpeRatio: 1.5,
+  baselineProfitFactor: 2.0,
+  baselineWinRate: 0.65,
   baselineMissing: false,
   consecutiveDriftSnapshots: 0,
 };
@@ -41,7 +47,7 @@ describe("evaluateMonitoring", () => {
 
     expect(result.verdict).toBe("HEALTHY");
     expect(result.reasons).toEqual([]);
-    expect(result.ruleResults).toHaveLength(5);
+    expect(result.ruleResults).toHaveLength(7);
     expect(result.ruleResults.every((r) => r.status === "PASS")).toBe(true);
   });
 
@@ -113,11 +119,13 @@ describe("evaluateMonitoring", () => {
       baselineMissing: true,
       baselineMaxDrawdownPct: null,
       baselineSharpeRatio: null,
+      baselineProfitFactor: null,
+      baselineWinRate: null,
     };
     const result = evaluateMonitoring(ctx, baseThresholds);
 
     expect(result.verdict).toBe("AT_RISK");
-    // Both drawdown and Sharpe rules produce MONITORING_BASELINE_MISSING
+    // All baseline-consuming rules produce MONITORING_BASELINE_MISSING
     // but it should be deduplicated
     expect(result.reasons).toEqual(["MONITORING_BASELINE_MISSING"]);
   });
@@ -144,14 +152,16 @@ describe("evaluateMonitoring", () => {
     expect(result.reasons).toContain("MONITORING_CUSUM_DRIFT");
   });
 
-  it("always returns exactly 5 rule results", () => {
+  it("always returns exactly 7 rule results", () => {
     const result = evaluateMonitoring(healthyCtx, baseThresholds);
-    expect(result.ruleResults).toHaveLength(5);
+    expect(result.ruleResults).toHaveLength(7);
 
     const ruleIds = result.ruleResults.map((r) => r.ruleId);
     expect(ruleIds).toEqual([
       "drawdown-breach",
       "sharpe-degradation",
+      "profit-factor-degradation",
+      "win-rate-degradation",
       "losing-streak",
       "inactivity",
       "cusum-drift",

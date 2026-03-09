@@ -119,6 +119,8 @@ vi.mock("./constants", () => ({
     COOLDOWN_SECONDS: 300,
     DRAWDOWN_BREACH_MULTIPLIER: 1.5,
     SHARPE_MIN_RATIO: 0.5,
+    PROFIT_FACTOR_MIN_RATIO: 0.6,
+    WIN_RATE_MIN_RATIO: 0.7,
     MAX_LOSING_STREAK: 10,
     MAX_INACTIVITY_DAYS: 14,
     CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
@@ -132,6 +134,8 @@ vi.mock("./constants", () => ({
 vi.mock("./live-metrics", () => ({
   computeLiveMaxDrawdownPct: () => 5.0,
   computeSharpe: () => 1.2,
+  computeLiveProfitFactor: () => 1.8,
+  computeLiveWinRate: () => 0.6,
   computeCurrentLosingStreak: () => 2,
   computeDaysSinceLastTrade: () => 1,
 }));
@@ -153,6 +157,8 @@ const FAKE_RUN_ID = "cuid_run_1";
 const MONITORING_THRESHOLDS = {
   drawdownBreachMultiplier: 1.5,
   sharpeMinRatio: 0.5,
+  profitFactorMinRatio: 0.6,
+  winRateMinRatio: 0.7,
   maxLosingStreak: 10,
   maxInactivityDays: 14,
   cusumDriftConsecutiveSnapshots: 3,
@@ -209,7 +215,12 @@ function setupDefaults() {
   mockAppendProofEvent.mockResolvedValue({ sequence: 1, eventHash: "eh_1" });
 
   mockLiveEAInstanceFindUnique.mockResolvedValue({ strategyVersionId: "sv_1" });
-  mockBacktestBaselineFindUnique.mockResolvedValue({ maxDrawdownPct: 8, sharpeRatio: 1.5 });
+  mockBacktestBaselineFindUnique.mockResolvedValue({
+    maxDrawdownPct: 8,
+    sharpeRatio: 1.5,
+    profitFactor: 2.0,
+    winRate: 0.65,
+  });
 
   // Default: no LiveEAInstance → no transition attempted
   mockLiveEAInstanceFindFirst.mockResolvedValue(null);
