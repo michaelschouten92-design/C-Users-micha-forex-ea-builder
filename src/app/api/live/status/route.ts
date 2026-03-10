@@ -52,6 +52,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 winRate: true,
                 profitFactor: true,
                 totalTrades: true,
+                maxDrawdownPct: true,
+                sharpeRatio: true,
               },
             },
           },
@@ -89,6 +91,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             winRate: ea.strategyVersion.backtestBaseline.winRate,
             profitFactor: ea.strategyVersion.backtestBaseline.profitFactor,
             totalTrades: ea.strategyVersion.backtestBaseline.totalTrades,
+            maxDrawdownPct: ea.strategyVersion.backtestBaseline.maxDrawdownPct,
+            sharpeRatio: ea.strategyVersion.backtestBaseline.sharpeRatio,
           }
         : null,
       trades: ea.trades.map((t) => ({

@@ -21,6 +21,8 @@ interface BaselineData {
   winRate: number;
   profitFactor: number;
   totalTrades: number;
+  maxDrawdownPct: number;
+  sharpeRatio: number;
 }
 
 interface EAInstanceData {
@@ -855,6 +857,42 @@ function EACard({
                   Restore baseline trust
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Baseline Snapshot — only when trusted */}
+      {!ea.relinkRequired && ea.baseline && (
+        <div className="mb-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.12)] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+            Baseline Snapshot
+          </p>
+          <p className="text-[10px] text-[#64748B] mb-2">
+            Reference metrics for trusted live monitoring.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div>
+              <p className="text-[10px] text-[#64748B]">Trades</p>
+              <p className="text-xs font-medium text-[#CBD5E1]">{ea.baseline.totalTrades}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#64748B]">Profit Factor</p>
+              <p className="text-xs font-medium text-[#CBD5E1]">
+                {ea.baseline.profitFactor.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#64748B]">Max Drawdown</p>
+              <p className="text-xs font-medium text-[#CBD5E1]">
+                {ea.baseline.maxDrawdownPct.toFixed(1)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[#64748B]">Sharpe</p>
+              <p className="text-xs font-medium text-[#CBD5E1]">
+                {ea.baseline.sharpeRatio.toFixed(2)}
+              </p>
             </div>
           </div>
         </div>
