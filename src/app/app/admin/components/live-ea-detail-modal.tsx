@@ -173,7 +173,9 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                 <span className={STATUS_COLOR[data.status]}>{data.status}</span>
                 <span>{data.userEmail}</span>
                 <span>
-                  {data.symbol ?? ""} {data.timeframe ? `/ ${data.timeframe}` : ""}
+                  {data.symbol
+                    ? `${data.symbol}${data.timeframe ? ` / ${data.timeframe}` : ""}`
+                    : "Account-wide monitor — strategy deployment identity not available"}
                 </span>
               </div>
             )}
@@ -220,7 +222,7 @@ export function LiveEADetailModal({ instanceId, onClose }: LiveEADetailModalProp
                 }
               />
               <MetricCard
-                label="Drawdown"
+                label="Floating DD"
                 value={
                   data.heartbeats.length > 0 ? `${data.heartbeats[0].drawdown.toFixed(1)}%` : "-"
                 }

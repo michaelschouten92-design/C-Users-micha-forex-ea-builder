@@ -151,6 +151,9 @@ int OnInit()
    // Evaluate deployment discovery eligibility (session-bound — never re-evaluated)
    EvaluateDeploymentEligibility();
 
+   if(InpMonitorMode != MODE_SYMBOL_ONLY)
+      Print("AlgoStudio Monitor: Account-wide monitoring mode active — deployment discovery and baseline monitoring disabled");
+
    // Build state file path
    string keyPrefix = StringSubstr(InpApiKey, 0, 8);
    g_stateFile = STATE_FILE_PREFIX + keyPrefix + ".dat";
@@ -363,7 +366,7 @@ void EvaluateDeploymentEligibility()
    // 1. Must be SYMBOL_ONLY mode
    if(InpMonitorMode != MODE_SYMBOL_ONLY)
    {
-      Print("AlgoStudio Monitor: Deployment discovery disabled (requires Symbol-Only mode)");
+      Print("AlgoStudio Monitor: Deployment discovery disabled (ACCOUNT_WIDE mode — use SYMBOL_ONLY with a single magic number for strategy monitoring)");
       return;
    }
 

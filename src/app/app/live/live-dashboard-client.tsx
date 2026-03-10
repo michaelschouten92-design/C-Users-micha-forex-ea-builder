@@ -91,7 +91,7 @@ interface LiveDashboardClientProps {
 }
 
 const ALERT_TYPE_LABELS: Record<string, string> = {
-  DRAWDOWN: "Drawdown Threshold",
+  DRAWDOWN: "Floating Drawdown",
   OFFLINE: "EA Offline",
   NEW_TRADE: "New Trade",
   ERROR: "EA Error",
@@ -756,7 +756,11 @@ function EACard({
             {ea.eaName}
           </h3>
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
-            {ea.symbol && <span>{ea.symbol}</span>}
+            {ea.symbol ? (
+              <span>{ea.symbol}</span>
+            ) : (
+              <span className="text-[#7C8DB0]/70 italic">Account-wide (portfolio mode)</span>
+            )}
             {ea.timeframe && <span>{ea.timeframe}</span>}
             {ea.broker && (
               <>
@@ -1452,7 +1456,7 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
                 onChange={(e) => setNewAlertType(e.target.value)}
                 className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
               >
-                <option value="DRAWDOWN">Drawdown Threshold</option>
+                <option value="DRAWDOWN">Floating Drawdown</option>
                 <option value="OFFLINE">EA Offline</option>
                 <option value="NEW_TRADE">New Trade</option>
                 <option value="ERROR">EA Error</option>
@@ -2034,7 +2038,7 @@ export function LiveDashboardClient({
     });
 
     if (res.ok) {
-      showSuccess("Global drawdown alert saved", `Alert at ${threshold}% drawdown`);
+      showSuccess("Floating drawdown alert saved", `Alert at ${threshold}% floating DD`);
     } else {
       showError("Failed to save alert");
     }
@@ -2183,7 +2187,7 @@ export function LiveDashboardClient({
             </div>
           </div>
 
-          {/* Global Drawdown Alert Threshold */}
+          {/* Global Floating Drawdown Alert */}
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
@@ -2201,7 +2205,7 @@ export function LiveDashboardClient({
                   />
                 </svg>
                 <p className="text-xs text-[#CBD5E1]">
-                  Global drawdown alert threshold (applies to all EAs)
+                  Floating drawdown alert (current balance-equity gap, all EAs)
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -2215,7 +2219,7 @@ export function LiveDashboardClient({
                   step="0.1"
                   className="w-20 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#4F46E5]"
                 />
-                <span className="text-xs text-[#7C8DB0]">% drawdown</span>
+                <span className="text-xs text-[#7C8DB0]">% floating DD</span>
                 <button
                   onClick={handleSaveGlobalDrawdown}
                   className="px-3 py-1 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200"
