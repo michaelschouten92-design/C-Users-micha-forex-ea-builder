@@ -35,7 +35,10 @@ export default function DashboardError({
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Something Went Wrong</h2>
-        <p className="text-[#A1A1AA] mb-6">An error occurred while loading the dashboard.</p>
+        <p className="text-[#A1A1AA] mb-4">An error occurred while loading the dashboard.</p>
+        {error.digest && (
+          <p className="text-xs text-[#71717A] mb-4 font-mono">Error ID: {error.digest}</p>
+        )}
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}

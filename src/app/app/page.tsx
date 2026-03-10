@@ -49,10 +49,12 @@ export default async function DashboardPage() {
   }
 
   let projects, subscription, user, commandCenter, recentBacktests, exportCount;
+  let section = "destructure";
   try {
     ({ projects, subscription, user, commandCenter, recentBacktests, exportCount } = data);
 
     // Determine effective tier
+    section = "tier";
     let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
     if (tier !== "FREE") {
       const isActive = subscription?.status === "active" || subscription?.status === "trialing";
@@ -64,6 +66,7 @@ export default async function DashboardPage() {
     }
 
     // Daily insights (uses instance data mapped to insights input shape)
+    section = "insights";
     const liveEASummary = commandCenter.instances.map((inst) => ({
       id: inst.id,
       eaName: inst.eaName,
@@ -79,10 +82,12 @@ export default async function DashboardPage() {
     const insights = generateDailyInsights(liveEASummary, recentBacktests, projects.length);
 
     // Greeting
+    section = "greeting";
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
     // Onboarding state
+    section = "onboarding-state";
     const isNewUser =
       projects.length === 0 && recentBacktests.length === 0 && commandCenter.instances.length === 0;
     const isActivating =
@@ -93,6 +98,7 @@ export default async function DashboardPage() {
         commandCenter.instances.length === 0);
 
     // Derive nav monitor status from command center data
+    section = "nav-status";
     const ps = commandCenter.portfolioSummary;
     const navMonitorStatus =
       commandCenter.instances.length === 0
@@ -102,6 +108,8 @@ export default async function DashboardPage() {
             ? ("critical" as const)
             : ("warning" as const)
           : ("healthy" as const);
+
+    section = "render";
 
     return (
       <div className="min-h-screen">
@@ -340,13 +348,10 @@ export default async function DashboardPage() {
       </div>
     );
   } catch (err) {
-    console.error("[app/page] render-phase crash:", err);
-    return (
-      <DashboardFallback
-        session={session}
-        error={err instanceof Error ? err.message : String(err)}
-      />
-    );
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error(`[app/page] CRASH in section="${section}":`, msg, stack);
+    return <DashboardFallback session={session} error={`section=${section}: ${msg}`} />;
   }
 }
 
@@ -380,9 +385,10 @@ function DashboardFallback({
               </svg>
             </div>
             <h2 className="text-xl font-bold text-white mb-3">Dashboard temporarily unavailable</h2>
-            <p className="text-[#94A3B8] mb-6">
+            <p className="text-[#94A3B8] mb-4">
               Unable to load dashboard data. Please try again in a moment.
             </p>
+            <p className="text-xs text-[#71717A] mb-6 font-mono break-all">{error}</p>
             <Link
               href="/app"
               className="inline-block px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
