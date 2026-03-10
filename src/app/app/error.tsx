@@ -12,6 +12,7 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
+    console.error("[app error boundary]", error.message, error.digest, error.stack);
     Sentry.captureException(error);
   }, [error]);
 
