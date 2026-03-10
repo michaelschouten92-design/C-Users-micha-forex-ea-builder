@@ -811,7 +811,7 @@ function EACard({
                 }}
                 title={
                   trust.state === "VERIFIED" && ea.baseline
-                    ? `Baseline: WR ${ea.baseline.winRate.toFixed(1)}% | PF ${ea.baseline.profitFactor.toFixed(2)} | ${ea.baseline.totalTrades} trades`
+                    ? `Baseline: WR ${(ea.baseline.winRate ?? 0).toFixed(1)}% | PF ${(ea.baseline.profitFactor ?? 0).toFixed(2)} | ${ea.baseline.totalTrades} trades`
                     : undefined
                 }
               >
@@ -890,19 +890,19 @@ function EACard({
             <div>
               <p className="text-[10px] text-[#64748B]">Profit Factor</p>
               <p className="text-xs font-medium text-[#CBD5E1]">
-                {ea.baseline.profitFactor.toFixed(2)}
+                {(ea.baseline.profitFactor ?? 0).toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-[10px] text-[#64748B]">Max Drawdown</p>
               <p className="text-xs font-medium text-[#CBD5E1]">
-                {ea.baseline.maxDrawdownPct.toFixed(1)}%
+                {(ea.baseline.maxDrawdownPct ?? 0).toFixed(1)}%
               </p>
             </div>
             <div>
               <p className="text-[10px] text-[#64748B]">Sharpe</p>
               <p className="text-xs font-medium text-[#CBD5E1]">
-                {ea.baseline.sharpeRatio.toFixed(2)}
+                {(ea.baseline.sharpeRatio ?? 0).toFixed(2)}
               </p>
             </div>
           </div>

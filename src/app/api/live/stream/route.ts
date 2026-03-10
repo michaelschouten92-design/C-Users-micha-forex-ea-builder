@@ -52,6 +52,8 @@ export async function GET(request: Request): Promise<Response> {
                     winRate: true,
                     profitFactor: true,
                     totalTrades: true,
+                    maxDrawdownPct: true,
+                    sharpeRatio: true,
                   },
                 },
               },
@@ -82,6 +84,8 @@ export async function GET(request: Request): Promise<Response> {
                 winRate: inst.strategyVersion.backtestBaseline.winRate,
                 profitFactor: inst.strategyVersion.backtestBaseline.profitFactor,
                 totalTrades: inst.strategyVersion.backtestBaseline.totalTrades,
+                maxDrawdownPct: inst.strategyVersion.backtestBaseline.maxDrawdownPct,
+                sharpeRatio: inst.strategyVersion.backtestBaseline.sharpeRatio,
               }
             : null,
           heartbeats: inst.heartbeats.map((h) => ({
