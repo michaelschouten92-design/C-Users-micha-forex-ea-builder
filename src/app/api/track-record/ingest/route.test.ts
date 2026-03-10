@@ -296,6 +296,50 @@ describe("POST /api/track-record/ingest", () => {
       expect(body.lastEventHash).toBe(serverHash);
     });
 
+    it("returns 400 VALIDATION_FAILED for invalid payload (permanent client error for EA)", async () => {
+      // This proves the backend returns a stable 4xx (not 409, not 429, not 5xx)
+      // for validation errors. The EA classifies this as a permanent client error
+      // and increments the poison retry count.
+      const { POST } = await import("./route");
+      // Valid JSON, valid schema shape, but payload validation fails
+      const response = await POST(
+        makeRequest({
+          eventType: "INVALID_TYPE",
+          seqNo: 1,
+          prevHash: "0".repeat(64),
+          eventHash: "a".repeat(64),
+          timestamp: Math.floor(Date.now() / 1000) - 60,
+          payload: {},
+        })
+      );
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.code).toBe("VALIDATION_FAILED");
+      // Key: status is NOT 409, NOT 429, NOT 5xx — EA treats as permanent
+      expect(response.status).not.toBe(409);
+      expect(response.status).not.toBe(429);
+      expect(response.status).toBeLessThan(500);
+    });
+
+    it("returns 400 for future timestamp (permanent, not retryable)", async () => {
+      const { POST } = await import("./route");
+      const response = await POST(
+        makeRequest({
+          eventType: "SNAPSHOT",
+          seqNo: 1,
+          prevHash: "0".repeat(64),
+          eventHash: "a".repeat(64),
+          timestamp: Math.floor(Date.now() / 1000) + 3600, // 1 hour in future
+          payload: {},
+        })
+      );
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.code).toBe("VALIDATION_FAILED");
+    });
+
     it("returns 500 on internal error (EA should stop flush and retry later)", async () => {
       mockTransaction.mockRejectedValue(new Error("DB connection lost"));
 

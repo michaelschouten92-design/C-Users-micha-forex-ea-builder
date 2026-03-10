@@ -52,6 +52,7 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 //+------------------------------------------------------------------+
 #define GENESIS_HASH "0000000000000000000000000000000000000000000000000000000000000000"
 #define MAX_QUEUE_SIZE 500
+#define POISON_DROP_THRESHOLD 3
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
 #define PANEL_PREFIX "AS_Panel_"
@@ -87,6 +88,7 @@ int    g_magicFilterCount = 0;
 
 // Offline queue
 string g_offlineQueue[];
+int    g_queueRetryCount[];  // parallel array: permanent-failure retry count per queued event
 int    g_queueCount = 0;
 
 // State
@@ -1243,12 +1245,17 @@ void EnqueueEvent(string json)
       Print("AlgoStudio Monitor: Offline queue full (", MAX_QUEUE_SIZE, "). Dropping oldest event.");
       // Shift array left
       for(int i = 0; i < g_queueCount - 1; i++)
+      {
          g_offlineQueue[i] = g_offlineQueue[i + 1];
+         g_queueRetryCount[i] = g_queueRetryCount[i + 1];
+      }
       g_queueCount--;
    }
 
    ArrayResize(g_offlineQueue, g_queueCount + 1);
+   ArrayResize(g_queueRetryCount, g_queueCount + 1);
    g_offlineQueue[g_queueCount] = json;
+   g_queueRetryCount[g_queueCount] = 0;
    g_queueCount++;
 
    // Persist queue to file
@@ -1260,7 +1267,8 @@ void FlushOfflineQueue()
    if(g_queueCount == 0) return;
 
    int consumed = 0;
-   for(int i = 0; i < g_queueCount; i++)
+   bool stopped = false;
+   for(int i = 0; i < g_queueCount && !stopped; i++)
    {
       int status = HttpPostEx("/api/track-record/ingest", g_offlineQueue[i]);
 
@@ -1272,27 +1280,52 @@ void FlushOfflineQueue()
       else if(status == 409)
       {
          // Duplicate/already-past — server already has this or a later event.
-         // Skip it: the event was locally committed but the server moved past it
-         // (e.g., via a live send that succeeded after this event was queued,
-         // or after SyncChainState advanced the server's view).
          Print("AlgoStudio Monitor: Queued event skipped (409 duplicate/past). Removing from queue.");
          consumed++;
       }
+      else if(status == -1 || status == 429 || status >= 500)
+      {
+         // Network failure, rate limit, or server error — stop flush, retry later
+         stopped = true;
+      }
       else
       {
-         // Network failure (-1), 429, 5xx, or other error — stop flush, retry later
-         break;
+         // Permanent client error (400, 422, etc. — not 409, not 429)
+         g_queueRetryCount[i]++;
+         if(g_queueRetryCount[i] >= POISON_DROP_THRESHOLD)
+         {
+            Print("AlgoStudio Monitor: Dropping poison queued event after ",
+                  g_queueRetryCount[i], " permanent failures (last status: ", status,
+                  "). Event discarded to unblock queue.");
+            consumed++;
+         }
+         else
+         {
+            Print("AlgoStudio Monitor: Queued event got permanent error ", status,
+                  " (attempt ", g_queueRetryCount[i], "/", POISON_DROP_THRESHOLD,
+                  "). Stopping flush, will retry.");
+            stopped = true;
+         }
       }
    }
 
    if(consumed > 0)
    {
       Print("AlgoStudio Monitor: Flushed ", consumed, "/", g_queueCount, " queued events.");
-      // Remove consumed events (accepted + skipped)
+      // Remove consumed events (accepted + skipped + dropped)
       for(int i = consumed; i < g_queueCount; i++)
+      {
          g_offlineQueue[i - consumed] = g_offlineQueue[i];
+         g_queueRetryCount[i - consumed] = g_queueRetryCount[i];
+      }
       g_queueCount -= consumed;
       ArrayResize(g_offlineQueue, g_queueCount);
+      ArrayResize(g_queueRetryCount, g_queueCount);
+      SaveOfflineQueue();
+   }
+   else if(stopped)
+   {
+      // Retry counts may have been incremented — persist without removing events
       SaveOfflineQueue();
    }
 }
@@ -1306,11 +1339,12 @@ void SaveOfflineQueue()
    FileWriteString(handle, IntegerToString(g_queueCount) + "\n");
    for(int i = 0; i < g_queueCount; i++)
    {
-      // Base64-like encoding: replace newlines in JSON (shouldn't be any, but safety)
+      // Replace newlines in JSON (shouldn't be any, but safety)
       string line = g_offlineQueue[i];
       StringReplace(line, "\n", "\\n");
       StringReplace(line, "\r", "\\r");
-      FileWriteString(handle, line + "\n");
+      // Format: retryCount|jsonPayload
+      FileWriteString(handle, IntegerToString(g_queueRetryCount[i]) + "|" + line + "\n");
    }
    FileClose(handle);
 }
@@ -1328,10 +1362,22 @@ void LoadOfflineQueue()
    if(g_queueCount < 0) g_queueCount = 0;
    if(g_queueCount > MAX_QUEUE_SIZE) g_queueCount = MAX_QUEUE_SIZE;
    ArrayResize(g_offlineQueue, g_queueCount);
+   ArrayResize(g_queueRetryCount, g_queueCount);
 
    for(int i = 0; i < g_queueCount && !FileIsEnding(handle); i++)
    {
       string line = FileReadString(handle);
+      // Parse format: retryCount|jsonPayload (backward-compat: no pipe = old format, retryCount=0)
+      int pipePos = StringFind(line, "|");
+      if(pipePos > 0)
+      {
+         g_queueRetryCount[i] = (int)StringToInteger(StringSubstr(line, 0, pipePos));
+         line = StringSubstr(line, pipePos + 1);
+      }
+      else
+      {
+         g_queueRetryCount[i] = 0;
+      }
       StringReplace(line, "\\n", "\n");
       StringReplace(line, "\\r", "\r");
       g_offlineQueue[i] = line;
