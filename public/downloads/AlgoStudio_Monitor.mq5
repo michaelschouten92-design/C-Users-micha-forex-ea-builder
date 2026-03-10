@@ -719,16 +719,21 @@ bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadP
 
    bool sent = HttpPost("/api/track-record/ingest", json);
 
+   // Advance chain state regardless of send outcome.
+   // Enqueue = local commit: queued events are part of the local chain,
+   // so subsequent events chain correctly off them.
+   g_seqNo = nextSeq;
+   g_lastHash = eventHash;
+
    if(sent)
    {
-      g_seqNo = nextSeq;
-      g_lastHash = eventHash;
       SaveState();
    }
    else
    {
-      // Queue for later
+      // Queue for later — state already advanced
       EnqueueEvent(json);
+      SaveState();
    }
 
    return sent;
@@ -1022,8 +1027,10 @@ void SendHeartbeat()
 
 //+------------------------------------------------------------------+
 //| HTTP POST with retry + exponential backoff                       |
+//| Returns HTTP status code (200-599), or -1 for network failure.   |
+//| Callers decide how to interpret the status.                      |
 //+------------------------------------------------------------------+
-bool HttpPost(string endpoint, string jsonBody)
+int HttpPostEx(string endpoint, string jsonBody)
 {
    string url = InpBaseUrl + endpoint;
    string headers = "Content-Type: application/json\r\nX-EA-Key: " + InpApiKey;
@@ -1057,11 +1064,11 @@ bool HttpPost(string endpoint, string jsonBody)
          {
             g_panelError = "WebRequest not allowed — check Options";
             Print("AlgoStudio Monitor: Add ", InpBaseUrl, " to Tools > Options > Expert Advisors > Allow WebRequest");
-            return false;  // Config error — don't retry
+            return -1;  // Config error — don't retry
          }
          if(attempt < maxRetries) continue;
          g_panelError = "Network error (" + IntegerToString(err) + ")";
-         return false;
+         return -1;
       }
 
       // 429 or 5xx — retry
@@ -1069,7 +1076,7 @@ bool HttpPost(string endpoint, string jsonBody)
       {
          if(attempt < maxRetries) continue;
          g_panelError = "HTTP " + IntegerToString(res);
-         return false;
+         return res;
       }
 
       // Always parse response for governance fields + instanceId
@@ -1082,10 +1089,19 @@ bool HttpPost(string endpoint, string jsonBody)
       if(StringFind(endpoint, "/heartbeat") >= 0)
          ParseGovernanceAction(response);
 
-      return (res >= 200 && res < 300);
+      return res;
    }
 
-   return false;
+   return -1;
+}
+
+//+------------------------------------------------------------------+
+//| HttpPost — convenience wrapper returning bool (success = 2xx)    |
+//+------------------------------------------------------------------+
+bool HttpPost(string endpoint, string jsonBody)
+{
+   int status = HttpPostEx(endpoint, jsonBody);
+   return (status >= 200 && status < 300);
 }
 
 //+------------------------------------------------------------------+
@@ -1243,21 +1259,39 @@ void FlushOfflineQueue()
 {
    if(g_queueCount == 0) return;
 
-   int sent = 0;
+   int consumed = 0;
    for(int i = 0; i < g_queueCount; i++)
    {
-      bool ok = HttpPost("/api/track-record/ingest", g_offlineQueue[i]);
-      if(!ok) break;  // Stop on first failure
-      sent++;
+      int status = HttpPostEx("/api/track-record/ingest", g_offlineQueue[i]);
+
+      if(status >= 200 && status < 300)
+      {
+         // Success — event accepted by server
+         consumed++;
+      }
+      else if(status == 409)
+      {
+         // Duplicate/already-past — server already has this or a later event.
+         // Skip it: the event was locally committed but the server moved past it
+         // (e.g., via a live send that succeeded after this event was queued,
+         // or after SyncChainState advanced the server's view).
+         Print("AlgoStudio Monitor: Queued event skipped (409 duplicate/past). Removing from queue.");
+         consumed++;
+      }
+      else
+      {
+         // Network failure (-1), 429, 5xx, or other error — stop flush, retry later
+         break;
+      }
    }
 
-   if(sent > 0)
+   if(consumed > 0)
    {
-      Print("AlgoStudio Monitor: Flushed ", sent, "/", g_queueCount, " queued events.");
-      // Remove sent events
-      for(int i = sent; i < g_queueCount; i++)
-         g_offlineQueue[i - sent] = g_offlineQueue[i];
-      g_queueCount -= sent;
+      Print("AlgoStudio Monitor: Flushed ", consumed, "/", g_queueCount, " queued events.");
+      // Remove consumed events (accepted + skipped)
+      for(int i = consumed; i < g_queueCount; i++)
+         g_offlineQueue[i - consumed] = g_offlineQueue[i];
+      g_queueCount -= consumed;
       ArrayResize(g_offlineQueue, g_queueCount);
       SaveOfflineQueue();
    }

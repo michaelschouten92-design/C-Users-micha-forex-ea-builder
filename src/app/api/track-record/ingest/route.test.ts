@@ -33,14 +33,16 @@ vi.mock("@sentry/nextjs", () => ({
   captureException: (...args: unknown[]) => mockSentryCaptureException(...args),
 }));
 
+const mockTransaction = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    $transaction: vi.fn(),
+    $transaction: (...args: unknown[]) => mockTransaction(...args),
   },
 }));
 
+const mockVerifySingleEvent = vi.fn();
 vi.mock("@/lib/track-record/chain-verifier", () => ({
-  verifySingleEvent: vi.fn(),
+  verifySingleEvent: (...args: unknown[]) => mockVerifySingleEvent(...args),
 }));
 
 vi.mock("@/lib/track-record/state-manager", () => ({
@@ -158,6 +160,151 @@ describe("POST /api/track-record/ingest", () => {
       expect(body.error).toBe("Validation failed");
       expect(body.code).toBe("VALIDATION_FAILED");
       expect(body.details).toBeDefined();
+    });
+  });
+
+  describe("chain fork prevention — 409 contract for EA queue flush", () => {
+    // These tests verify the backend contract that the EA's FlushOfflineQueue relies on.
+    // The EA advances local chain state on enqueue (enqueue = local commit), then
+    // replays queued events later. The backend must return 409 for past/duplicate seqNos
+    // so the EA can skip them and continue flushing.
+
+    const mockTx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      trackRecordState: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      trackRecordEvent: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+      },
+      liveEAInstance: {
+        findUnique: vi.fn().mockResolvedValue({ createdAt: new Date("2025-01-01") }),
+      },
+      trackRecordCheckpoint: { create: vi.fn() },
+      ledgerCommitment: { create: vi.fn() },
+    };
+
+    function validEvent(seqNo: number, prevHash: string, eventHash: string) {
+      return {
+        eventType: "SNAPSHOT",
+        seqNo,
+        prevHash,
+        eventHash,
+        timestamp: Math.floor(Date.now() / 1000) - 60,
+        payload: {},
+      };
+    }
+
+    beforeEach(() => {
+      // Reset all mockTx sub-mocks
+      mockTx.$queryRaw.mockResolvedValue([]);
+      mockTx.trackRecordState.findUnique.mockReset();
+      mockTx.trackRecordState.create.mockReset();
+      mockTx.trackRecordState.update.mockReset();
+      mockTx.trackRecordEvent.findUnique.mockReset();
+      mockTx.trackRecordEvent.create.mockReset();
+      mockTx.liveEAInstance.findUnique.mockResolvedValue({ createdAt: new Date("2025-01-01") });
+      mockTransaction.mockImplementation(async (fn: (tx: typeof mockTx) => Promise<unknown>) => {
+        return fn(mockTx);
+      });
+    });
+
+    it("returns 409 DUPLICATE_EVENT for past seqNo (server already ahead)", async () => {
+      // Server state: lastSeqNo=5
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID,
+        lastSeqNo: 5,
+        lastEventHash: "b".repeat(64),
+      });
+
+      const { POST } = await import("./route");
+      // EA sends queued event with seqNo=3 (past)
+      const response = await POST(makeRequest(validEvent(3, "a".repeat(64), "c".repeat(64))));
+
+      expect(response.status).toBe(409);
+      const body = await response.json();
+      expect(body.code).toBe("DUPLICATE_EVENT");
+    });
+
+    it("returns 200 for idempotent resend of exact same seqNo+eventHash", async () => {
+      const hash = "d".repeat(64);
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID,
+        lastSeqNo: 5,
+        lastEventHash: hash,
+      });
+      // First call: receivedAt monotonicity check; second call: idempotency check
+      mockTx.trackRecordEvent.findUnique
+        .mockResolvedValueOnce({ receivedAt: new Date() })
+        .mockResolvedValueOnce({ eventHash: hash });
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest(validEvent(5, "a".repeat(64), hash)));
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.success).toBe(true);
+      expect(body.lastSeqNo).toBe(5);
+    });
+
+    it("returns 409 for same seqNo but different eventHash (chain fork)", async () => {
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID,
+        lastSeqNo: 5,
+        lastEventHash: "e".repeat(64),
+      });
+      // First call: receivedAt monotonicity check; second call: idempotency check (different hash)
+      mockTx.trackRecordEvent.findUnique
+        .mockResolvedValueOnce({ receivedAt: new Date() })
+        .mockResolvedValueOnce({ eventHash: "e".repeat(64) });
+
+      const { POST } = await import("./route");
+      // EA sends seqNo=5 with different hash — fork attempt
+      const response = await POST(makeRequest(validEvent(5, "a".repeat(64), "f".repeat(64))));
+
+      expect(response.status).toBe(409);
+      const body = await response.json();
+      expect(body.code).toBe("DUPLICATE_EVENT");
+    });
+
+    it("returns 409 with CHAIN_VERIFICATION_FAILED when prevHash mismatches", async () => {
+      const serverHash = "g".repeat(64);
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID,
+        lastSeqNo: 5,
+        lastEventHash: serverHash,
+      });
+
+      // Mock chain verifier to reject
+      mockVerifySingleEvent.mockReturnValue({
+        valid: false,
+        error: "prevHash mismatch: expected " + serverHash,
+      });
+
+      const { POST } = await import("./route");
+      // EA sends seqNo=6 but with wrong prevHash
+      const response = await POST(makeRequest(validEvent(6, "x".repeat(64), "h".repeat(64))));
+
+      expect(response.status).toBe(409);
+      const body = await response.json();
+      expect(body.code).toBe("CHAIN_VERIFICATION_FAILED");
+      // Response includes server state so EA can diagnose
+      expect(body.lastSeqNo).toBe(5);
+      expect(body.lastEventHash).toBe(serverHash);
+    });
+
+    it("returns 500 on internal error (EA should stop flush and retry later)", async () => {
+      mockTransaction.mockRejectedValue(new Error("DB connection lost"));
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest(validEvent(1, "0".repeat(64), "a".repeat(64))));
+
+      expect(response.status).toBe(500);
+      const body = await response.json();
+      expect(body.code).toBe("INTERNAL_ERROR");
     });
   });
 
