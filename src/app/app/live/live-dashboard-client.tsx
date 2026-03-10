@@ -12,6 +12,7 @@ import { ShareTrackRecordButton } from "@/components/app/share-track-record-butt
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
 import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
+import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
 
 // ============================================
 // TYPES
@@ -50,6 +51,7 @@ interface EAInstanceData {
   isExternal?: boolean;
   baseline?: BaselineData | null;
   relinkRequired?: boolean;
+  monitoringReasons?: string[];
 }
 
 interface TradeRecord {
@@ -897,6 +899,25 @@ function EACard({
           </div>
         </div>
       )}
+
+      {/* Why At Risk — only when degraded/unstable with active reasons */}
+      {(ea.strategyStatus === "EDGE_DEGRADED" || ea.strategyStatus === "UNSTABLE") &&
+        ea.monitoringReasons &&
+        ea.monitoringReasons.length > 0 && (
+          <div className="mb-4 rounded-lg bg-[#EF4444]/[0.04] border border-[#EF4444]/15 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-[#EF4444] mb-1.5">
+              Why At Risk
+            </p>
+            <ul className="space-y-1">
+              {formatMonitoringReasons(ea.monitoringReasons).map((reason) => (
+                <li key={reason} className="flex items-start gap-1.5 text-[11px] text-[#CBD5E1]">
+                  <span className="mt-1 w-1 h-1 rounded-full bg-[#EF4444] shrink-0" />
+                  {reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
       {/* Financial Metrics */}
       <div className="grid grid-cols-3 gap-3 mb-4">

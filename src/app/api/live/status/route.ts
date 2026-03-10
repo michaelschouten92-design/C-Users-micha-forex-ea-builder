@@ -63,6 +63,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           select: { id: true },
           take: 1,
         },
+        incidents: {
+          where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
+          orderBy: { openedAt: "desc" },
+          select: { reasonCodes: true },
+          take: 1,
+        },
       },
     });
 
@@ -86,6 +92,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       totalProfit: ea.totalProfit,
       isExternal: ea.exportJobId === null,
       relinkRequired: ea.terminalDeployments.length > 0,
+      monitoringReasons: ea.incidents[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
       baseline: ea.strategyVersion?.backtestBaseline
         ? {
             winRate: ea.strategyVersion.backtestBaseline.winRate,
