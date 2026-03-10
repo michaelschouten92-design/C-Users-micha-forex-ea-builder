@@ -109,36 +109,16 @@ export default async function DashboardPage() {
             : ("warning" as const)
           : ("healthy" as const);
 
-    // Pre-render server components inside try/catch so their errors are catchable.
-    // (Child server components in JSX execute outside the parent's try/catch during RSC streaming.)
-    section = "appnav";
-    const appNavEl = AppNav({
-      session,
-      tier,
-      firstProjectId: projects.length > 0 ? projects[0].id : null,
-      monitorStatus: navMonitorStatus,
-    });
-
-    let riskBannerEl: React.ReactNode = null;
-    let healthSummaryEl: React.ReactNode = null;
-    if (commandCenter.instances.length > 0) {
-      section = "risk-banner";
-      riskBannerEl = PortfolioRiskBanner({
-        summary: {
-          invalidated: ps.invalidatedCount,
-          atRisk: ps.atRiskCount,
-          awaitingData: ps.awaitingDataCount,
-        },
-      });
-      section = "health-summary";
-      healthSummaryEl = PortfolioHealthSummary({ summary: commandCenter.portfolioSummary });
-    }
-
     section = "render";
 
     return (
       <div className="min-h-screen">
-        {appNavEl}
+        <AppNav
+          session={session}
+          tier={tier}
+          firstProjectId={projects.length > 0 ? projects[0].id : null}
+          monitorStatus={navMonitorStatus}
+        />
 
         {user && !user.emailVerified && <EmailVerificationBanner />}
 
@@ -170,7 +150,17 @@ export default async function DashboardPage() {
               )}
 
               {/* ── Portfolio Risk Banner ── */}
-              {riskBannerEl && <div className="mb-4">{riskBannerEl}</div>}
+              {commandCenter.instances.length > 0 && (
+                <div className="mb-4">
+                  <PortfolioRiskBanner
+                    summary={{
+                      invalidated: ps.invalidatedCount,
+                      atRisk: ps.atRiskCount,
+                      awaitingData: ps.awaitingDataCount,
+                    }}
+                  />
+                </div>
+              )}
 
               {/* ══════════════════════════════════════════
                 COMMAND CENTER
@@ -179,7 +169,9 @@ export default async function DashboardPage() {
                 ══════════════════════════════════════════ */}
               {commandCenter.instances.length > 0 && (
                 <section className="mb-10">
-                  <div className="mb-4">{healthSummaryEl}</div>
+                  <div className="mb-4">
+                    <PortfolioHealthSummary summary={commandCenter.portfolioSummary} />
+                  </div>
                   <Suspense fallback={<StrategyGridSkeleton />}>
                     <CommandCenterView instances={commandCenter.instances} />
                   </Suspense>

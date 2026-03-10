@@ -18,7 +18,7 @@ export default function DashboardError({
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div role="alert" className="text-center p-8 max-w-md">
+      <div role="alert" className="text-center p-8 max-w-lg">
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
           <svg
             className="w-8 h-8 text-red-500"
@@ -36,9 +36,19 @@ export default function DashboardError({
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Something Went Wrong</h2>
         <p className="text-[#A1A1AA] mb-4">An error occurred while loading the dashboard.</p>
-        {error.digest && (
-          <p className="text-xs text-[#71717A] mb-4 font-mono">Error ID: {error.digest}</p>
-        )}
+        <div className="mb-6 p-3 bg-[#18181B] rounded-lg border border-[rgba(255,255,255,0.06)] text-left">
+          <p className="text-xs text-red-400 font-mono break-all">
+            {error.message || "No message"}
+          </p>
+          {error.digest && (
+            <p className="text-xs text-[#71717A] font-mono mt-1">digest: {error.digest}</p>
+          )}
+          {error.stack && (
+            <pre className="text-[10px] text-[#71717A] font-mono mt-2 whitespace-pre-wrap break-all max-h-32 overflow-auto">
+              {error.stack}
+            </pre>
+          )}
+        </div>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
