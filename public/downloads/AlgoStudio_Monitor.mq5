@@ -38,6 +38,9 @@ input string InpMagicNumbers  = "";              // Magic numbers to track (comm
 input string InpCommentFilter = "";              // Comment substring filter (empty=all)
 input bool   InpExcludeManual = false;           // Exclude manual trades (magic=0);
 
+// Deployment identity (optional — enables deployment discovery)
+input string InpTrackedEaName = "";              // Name of the EA being monitored (optional)
+
 // On-chart panel
 input bool   InpShowPanel     = true;             // Show monitor panel on chart
 input ENUM_BASE_CORNER InpPanelCorner = CORNER_RIGHT_UPPER; // Panel corner
@@ -101,6 +104,13 @@ string   g_govAction     = "RUN";    // RUN | PAUSE | STOP
 string   g_govReason     = "";       // reasonCode from backend
 datetime g_govReceivedAt = 0;        // When last governance action was received
 
+// Deployment discovery state (session-bound, evaluated once in OnInit)
+bool     g_deploymentAware  = false;
+string   g_deploySymbol     = "";
+string   g_deployTimeframe  = "";
+long     g_deployMagic      = 0;
+string   g_deployEaName     = "";
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -137,6 +147,9 @@ int OnInit()
    // Parse magic number filter
    ParseMagicFilter();
 
+   // Evaluate deployment discovery eligibility (session-bound — never re-evaluated)
+   EvaluateDeploymentEligibility();
+
    // Build state file path
    string keyPrefix = StringSubstr(InpApiKey, 0, 8);
    g_stateFile = STATE_FILE_PREFIX + keyPrefix + ".dat";
@@ -169,7 +182,8 @@ int OnInit()
 
    Print("AlgoStudio Monitor: Initialized. Mode=",
          InpMonitorMode == MODE_ACCOUNT_WIDE ? "Account-Wide" : "Symbol-Only",
-         " Heartbeat=", InpHeartbeatSec, "s Snapshot=", InpSnapshotSec, "s");
+         " Heartbeat=", InpHeartbeatSec, "s Snapshot=", InpSnapshotSec, "s",
+         " Deployment=", g_deploymentAware ? "enabled" : "disabled");
 
    return INIT_SUCCEEDED;
 }
@@ -334,6 +348,61 @@ void ParseMagicFilter()
       }
    }
    ArrayResize(g_magicFilter, g_magicFilterCount);
+}
+
+//+------------------------------------------------------------------+
+//| Evaluate deployment discovery eligibility (session-bound)        |
+//| All preconditions must be met. If any fails, deployment          |
+//| discovery is disabled for the entire session (no re-evaluation). |
+//+------------------------------------------------------------------+
+void EvaluateDeploymentEligibility()
+{
+   g_deploymentAware = false;
+
+   // 1. Must be SYMBOL_ONLY mode
+   if(InpMonitorMode != MODE_SYMBOL_ONLY)
+   {
+      Print("AlgoStudio Monitor: Deployment discovery disabled (requires Symbol-Only mode)");
+      return;
+   }
+
+   // 2. Must have exactly one magic number > 0
+   if(g_magicFilterCount != 1)
+   {
+      Print("AlgoStudio Monitor: Deployment discovery disabled (requires exactly one magic number, got ",
+            g_magicFilterCount, ")");
+      return;
+   }
+   if(g_magicFilter[0] <= 0)
+   {
+      Print("AlgoStudio Monitor: Deployment discovery disabled (magic number must be > 0)");
+      return;
+   }
+
+   // 3. Must have tracked EA name
+   if(StringLen(InpTrackedEaName) == 0)
+   {
+      Print("AlgoStudio Monitor: Deployment discovery disabled (InpTrackedEaName is empty)");
+      return;
+   }
+
+   // 4. Symbol must be non-empty (guaranteed in SYMBOL_ONLY, but defensive)
+   if(StringLen(_Symbol) == 0)
+   {
+      Print("AlgoStudio Monitor: Deployment discovery disabled (empty symbol)");
+      return;
+   }
+
+   // All preconditions met — store session-bound deployment identity
+   g_deploymentAware = true;
+   g_deploySymbol    = _Symbol;
+   g_deployTimeframe = EnumToString((ENUM_TIMEFRAMES)Period());
+   g_deployMagic     = g_magicFilter[0];
+   g_deployEaName    = InpTrackedEaName;
+
+   Print("AlgoStudio Monitor: Deployment discovery enabled. ",
+         g_deploySymbol, ":", g_deployTimeframe, ":", IntegerToString(g_deployMagic),
+         ":", g_deployEaName);
 }
 
 //+------------------------------------------------------------------+
@@ -899,6 +968,18 @@ void SendHeartbeat()
    string symbol = (InpMonitorMode == MODE_SYMBOL_ONLY) ? _Symbol : "";
    string tf = (InpMonitorMode == MODE_SYMBOL_ONLY) ? EnumToString((ENUM_TIMEFRAMES)Period()) : "";
 
+   // Build optional deployment object (only when deployment-aware)
+   string deployJson = "";
+   if(g_deploymentAware)
+   {
+      deployJson = ",\"deployment\":{"
+         + JStr("symbol", g_deploySymbol) + ","
+         + JStr("timeframe", g_deployTimeframe) + ","
+         + JInt("magicNumber", (int)g_deployMagic) + ","
+         + JStr("eaName", g_deployEaName)
+         + "}";
+   }
+
    string json = "{"
       + JStr("mode", accMode) + ","
       + (StringLen(symbol) > 0 ? JStr("symbol", symbol) + "," : "")
@@ -912,6 +993,7 @@ void SendHeartbeat()
       + JMoney("totalProfit", totalPL) + ","
       + JMoney("drawdown", dd) + ","
       + JInt("spread", spread)
+      + deployJson
       + "}";
 
    if(HttpPost("/api/telemetry/heartbeat", json))

@@ -16,11 +16,19 @@ import {
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
 import { emitControlLayerAlert, clearAlertByDedupe } from "@/lib/alerts/control-layer-alerts";
 import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-action";
+import { createHash } from "crypto";
 import { z } from "zod";
 
 // NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
 // The legacy EAAlertRule/EAAlert system has been removed from runtime code.
 // See prisma/schema.prisma for deprecated model annotations.
+
+const deploymentSchema = z.object({
+  symbol: z.string().min(1).max(20).trim(),
+  timeframe: z.string().min(1).max(10).trim(),
+  magicNumber: z.number().int().min(1), // Must be > 0 — magic=0 is excluded by product rules
+  eaName: z.string().min(1).max(100).trim(),
+});
 
 const heartbeatSchema = z.object({
   symbol: z.string().max(32).optional(),
@@ -35,6 +43,7 @@ const heartbeatSchema = z.object({
   drawdown: z.number().finite().min(0).max(100).default(0),
   spread: z.number().finite().min(0).max(10000).default(0),
   mode: z.enum(["LIVE", "PAPER"]).optional(),
+  deployment: deploymentSchema.optional(),
 });
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -75,6 +84,7 @@ export async function POST(request: NextRequest) {
         lifecycleState: true,
         operatorHold: true,
         monitoringSuppressedUntil: true,
+        terminalConnectionId: true,
         user: { select: { email: true, webhookUrl: true } },
       },
     });
@@ -129,6 +139,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fire-and-forget deployment discovery — process only if deployment data is present
+    if (data.deployment) {
+      processDeploymentDiscovery(
+        auth.instanceId,
+        auth.userId,
+        data.deployment,
+        previousState?.terminalConnectionId ?? null,
+        data.broker ?? null,
+        data.accountNumber ?? null
+      ).catch((err) => {
+        log.error({ err, instanceId: auth.instanceId }, "Deployment discovery failed");
+      });
+    }
+
     // Governance decision — reuse the same pure function as internal heartbeat.
     // The telemetry endpoint authenticates by API key (instance is confirmed to exist),
     // so authorityReady is always true here.
@@ -163,6 +187,7 @@ interface PreviousState {
   lifecycleState: string | null;
   operatorHold: string | null;
   monitoringSuppressedUntil: Date | null;
+  terminalConnectionId: string | null;
   user: { email: string; webhookUrl: string | null };
 }
 
@@ -255,4 +280,113 @@ async function processHeartbeatSideEffects(
       log.error({ err, instanceId }, "Equity target alert check failed");
     });
   }
+}
+
+// ── Deployment Discovery ──────────────────────────────────────────────
+
+/**
+ * Compute stable deployment identity key — same formula as terminal/deployments endpoint.
+ * SHA-256(SYMBOL:TIMEFRAME:MAGICNUMBER:EANAME) — case-normalized.
+ */
+function computeDeploymentKey(d: {
+  symbol: string;
+  timeframe: string;
+  magicNumber: number;
+  eaName: string;
+}): string {
+  const raw = `${d.symbol.toUpperCase()}:${d.timeframe.toUpperCase()}:${d.magicNumber}:${d.eaName}`;
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+/**
+ * Process deployment discovery from heartbeat data.
+ *
+ * Resolve or auto-create a TerminalConnection for this instance,
+ * then upsert the TerminalDeployment. Idempotent — safe to call on every heartbeat.
+ */
+async function processDeploymentDiscovery(
+  instanceId: string,
+  userId: string,
+  deployment: { symbol: string; timeframe: string; magicNumber: number; eaName: string },
+  existingTerminalId: string | null,
+  broker: string | null,
+  accountNumber: string | null
+): Promise<void> {
+  const now = new Date();
+
+  // Step 1: Resolve or auto-create TerminalConnection
+  let terminalId = existingTerminalId;
+  if (!terminalId) {
+    // Auto-create terminal — use deterministic apiKeyHash so repeated calls are safe.
+    // This hash is synthetic (not for X-Terminal-Key auth) — just satisfies the unique constraint.
+    const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
+
+    const label = [broker, accountNumber].filter(Boolean).join(" ") || "Monitor EA";
+
+    // Use upsert to handle race conditions (concurrent heartbeats)
+    const terminal = await prisma.terminalConnection.upsert({
+      where: { apiKeyHash: syntheticHash },
+      create: {
+        userId,
+        label: `Auto: ${label}`,
+        apiKeyHash: syntheticHash,
+        status: "ONLINE",
+        lastHeartbeat: now,
+        broker: broker ?? undefined,
+        accountNumber: accountNumber ?? undefined,
+      },
+      update: {
+        status: "ONLINE",
+        lastHeartbeat: now,
+        ...(broker != null && { broker }),
+        ...(accountNumber != null && { accountNumber }),
+      },
+      select: { id: true },
+    });
+
+    terminalId = terminal.id;
+
+    // Link instance to terminal (only if not already linked)
+    await prisma.liveEAInstance.update({
+      where: { id: instanceId },
+      data: { terminalConnectionId: terminalId },
+    });
+
+    log.info(
+      { instanceId, terminalId },
+      "Auto-created TerminalConnection for deployment discovery"
+    );
+  } else {
+    // Terminal exists — update heartbeat timestamp
+    await prisma.terminalConnection.update({
+      where: { id: terminalId },
+      data: { status: "ONLINE", lastHeartbeat: now },
+    });
+  }
+
+  // Step 2: Compute deployment key and upsert TerminalDeployment
+  const deploymentKey = computeDeploymentKey(deployment);
+
+  await prisma.terminalDeployment.upsert({
+    where: {
+      terminalConnectionId_deploymentKey: {
+        terminalConnectionId: terminalId,
+        deploymentKey,
+      },
+    },
+    create: {
+      terminalConnectionId: terminalId,
+      instanceId,
+      deploymentKey,
+      symbol: deployment.symbol.toUpperCase(),
+      timeframe: deployment.timeframe.toUpperCase(),
+      magicNumber: deployment.magicNumber,
+      eaName: deployment.eaName,
+      lastSeenAt: now,
+    },
+    update: {
+      lastSeenAt: now,
+      instanceId, // Re-link if previously unlinked
+    },
+  });
 }

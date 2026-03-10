@@ -39,14 +39,25 @@ vi.mock("@/lib/strategy-status/compute-and-cache", () => ({
 
 const mockTransaction = vi.fn();
 const mockFindUnique = vi.fn();
+const mockInstanceUpdate = vi.fn();
+const mockTerminalUpsert = vi.fn();
+const mockTerminalUpdate = vi.fn();
+const mockDeploymentUpsert = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: (...args: unknown[]) => mockTransaction(...args),
     liveEAInstance: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
-      update: vi.fn(),
+      update: (...args: unknown[]) => mockInstanceUpdate(...args),
     },
     eAHeartbeat: { create: vi.fn() },
+    terminalConnection: {
+      upsert: (...args: unknown[]) => mockTerminalUpsert(...args),
+      update: (...args: unknown[]) => mockTerminalUpdate(...args),
+    },
+    terminalDeployment: {
+      upsert: (...args: unknown[]) => mockDeploymentUpsert(...args),
+    },
   },
 }));
 
@@ -96,9 +107,14 @@ describe("POST /api/telemetry/heartbeat", () => {
       lifecycleState: "LIVE_MONITORING",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
+      terminalConnectionId: null,
       user: { email: "test@test.com", webhookUrl: null },
     });
     mockTransaction.mockResolvedValue(undefined);
+    mockInstanceUpdate.mockResolvedValue(undefined);
+    mockTerminalUpsert.mockResolvedValue({ id: "term_auto_1" });
+    mockTerminalUpdate.mockResolvedValue(undefined);
+    mockDeploymentUpsert.mockResolvedValue(undefined);
   });
 
   it("returns 401 when auth fails", async () => {
@@ -147,6 +163,7 @@ describe("POST /api/telemetry/heartbeat", () => {
       lifecycleState: "EDGE_AT_RISK",
       operatorHold: "NONE",
       monitoringSuppressedUntil: null,
+      terminalConnectionId: null,
       user: { email: "test@test.com", webhookUrl: null },
     });
     const { POST } = await import("./route");
@@ -167,6 +184,7 @@ describe("POST /api/telemetry/heartbeat", () => {
       lifecycleState: "LIVE_MONITORING",
       operatorHold: "HALTED",
       monitoringSuppressedUntil: null,
+      terminalConnectionId: null,
       user: { email: "test@test.com", webhookUrl: null },
     });
     const { POST } = await import("./route");
@@ -193,5 +211,98 @@ describe("POST /api/telemetry/heartbeat", () => {
     const body = await res.json();
     expect(body).toHaveProperty("error");
     expect(body).toHaveProperty("code");
+  });
+
+  it("processes deployment discovery when deployment object is present", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        broker: "IC Markets",
+        accountNumber: "12345",
+        deployment: {
+          symbol: "EURUSD",
+          timeframe: "PERIOD_H1",
+          magicNumber: 99001,
+          eaName: "TrendFollower",
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    // Allow fire-and-forget to settle
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockTerminalUpsert).toHaveBeenCalledTimes(1);
+    expect(mockDeploymentUpsert).toHaveBeenCalledTimes(1);
+    // Verify deployment upsert includes correct instanceId
+    const deployCall = mockDeploymentUpsert.mock.calls[0][0];
+    expect(deployCall.create.instanceId).toBe(INSTANCE_ID);
+    expect(deployCall.create.symbol).toBe("EURUSD");
+    expect(deployCall.create.magicNumber).toBe(99001);
+    expect(deployCall.create.eaName).toBe("TrendFollower");
+  });
+
+  it("skips deployment discovery when deployment object is absent", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest({ balance: 10000 }));
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockTerminalUpsert).not.toHaveBeenCalled();
+    expect(mockDeploymentUpsert).not.toHaveBeenCalled();
+  });
+
+  it("uses existing terminalConnectionId when already linked", async () => {
+    mockFindUnique.mockResolvedValue({
+      status: "ONLINE",
+      tradingState: "ACTIVE",
+      lastHeartbeat: new Date(),
+      eaName: "TestEA",
+      symbol: "EURUSD",
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+      terminalConnectionId: "term_existing",
+      user: { email: "test@test.com", webhookUrl: null },
+    });
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        deployment: {
+          symbol: "GBPUSD",
+          timeframe: "PERIOD_M15",
+          magicNumber: 500,
+          eaName: "Scalper",
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 50));
+    // Should NOT auto-create terminal — use existing
+    expect(mockTerminalUpsert).not.toHaveBeenCalled();
+    expect(mockTerminalUpdate).toHaveBeenCalledTimes(1);
+    expect(mockDeploymentUpsert).toHaveBeenCalledTimes(1);
+    // Verify deployment uses existing terminal
+    const deployCall = mockDeploymentUpsert.mock.calls[0][0];
+    expect(deployCall.where.terminalConnectionId_deploymentKey.terminalConnectionId).toBe(
+      "term_existing"
+    );
+  });
+
+  it("rejects deployment with magicNumber=0", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        deployment: {
+          symbol: "EURUSD",
+          timeframe: "PERIOD_H1",
+          magicNumber: 0,
+          eaName: "TestEA",
+        },
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.code).toBe("VALIDATION_FAILED");
   });
 });
