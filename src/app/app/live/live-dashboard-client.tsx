@@ -725,10 +725,12 @@ function EACard({
   const [pauseLoading, setPauseLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const winRate = calculateWinRate(ea.trades);
-  const profitFactor = calculateProfitFactor(ea.trades);
-  const maxDrawdown = calculateMaxDrawdown(ea.heartbeats);
-  const closedCount = ea.trades.filter((t) => t.closeTime !== null).length;
+  const trades = ea.trades ?? [];
+  const heartbeats = ea.heartbeats ?? [];
+  const winRate = calculateWinRate(trades);
+  const profitFactor = calculateProfitFactor(trades);
+  const maxDrawdown = calculateMaxDrawdown(heartbeats);
+  const closedCount = trades.filter((t) => t.closeTime !== null).length;
 
   async function handleTogglePause(): Promise<void> {
     setPauseLoading(true);
@@ -948,7 +950,7 @@ function EACard({
 
       {/* Mini equity chart */}
       <div className="mb-4 rounded-lg bg-[#0A0118]/50 p-2">
-        <MiniEquityChart heartbeats={ea.heartbeats} />
+        <MiniEquityChart heartbeats={ea.heartbeats ?? []} />
       </div>
 
       {/* Performance Metrics */}
@@ -977,7 +979,7 @@ function EACard({
 
       {/* Slippage info (estimated from trade data) */}
       {(() => {
-        const closedTrades = ea.trades.filter((t) => t.closeTime !== null);
+        const closedTrades = (ea.trades ?? []).filter((t) => t.closeTime !== null);
         if (closedTrades.length < 5) return null;
         // Estimate average absolute profit deviation as a proxy for slippage awareness
         const avgProfit =
@@ -2046,7 +2048,7 @@ export function LiveDashboardClient({
 
   // Calculate portfolio-level max drawdown for display
   const portfolioMaxDrawdown = (() => {
-    const allHeartbeats = eaInstances.flatMap((ea) => ea.heartbeats);
+    const allHeartbeats = eaInstances.flatMap((ea) => ea.heartbeats ?? []);
     if (allHeartbeats.length === 0) return 0;
     return calculateMaxDrawdown(allHeartbeats);
   })();
@@ -2177,7 +2179,7 @@ export function LiveDashboardClient({
               </p>
               <p
                 className={`text-lg font-semibold ${
-                  portfolioMaxDrawdown > parseFloat(globalDrawdownThreshold) || 0
+                  portfolioMaxDrawdown > (parseFloat(globalDrawdownThreshold) || 0)
                     ? "text-[#EF4444]"
                     : "text-white"
                 }`}
