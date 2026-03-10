@@ -55,6 +55,7 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 #define POISON_DROP_THRESHOLD 3
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
+#define MONITOR_VERSION "1.0.0"
 #define PANEL_PREFIX "AS_Panel_"
 #define PANEL_FONT "Consolas"
 #define PANEL_FONT_MONO "Consolas"
@@ -1581,7 +1582,7 @@ void PanelCreate()
    ObjectSetInteger(0, accentName, OBJPROP_SELECTABLE, false);
 
    // Title
-   OvlLabel("Title", OVL_LEFT_MARGIN, 20, "ALGOSTUDIO MONITOR", OVL_TITLE_COLOR, OVL_TITLE_FONT_SIZE);
+   OvlLabel("Title", OVL_LEFT_MARGIN, 20, "ALGOSTUDIO MONITOR v" + MONITOR_VERSION, OVL_TITLE_COLOR, OVL_TITLE_FONT_SIZE);
 
    // Subtitle — mode / scope
    string subtitle;
