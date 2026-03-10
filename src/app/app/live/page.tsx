@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
@@ -22,7 +23,14 @@ export default async function LiveEADashboardPage({
 }: {
   searchParams: Promise<{ decision?: string; relink?: string }>;
 }) {
-  const session = await auth();
+  let session: Session | null;
+  try {
+    session = await auth();
+  } catch (err) {
+    // Auth failure (DB timeout, config issue) — show degraded state
+    console.error("[live/page] auth() failed:", err);
+    return <DegradedFallback />;
+  }
 
   if (!session?.user) {
     redirect("/login?expired=true");
@@ -32,69 +40,17 @@ export default async function LiveEADashboardPage({
 
   // Fail-closed: render degraded state on DB error
   if (!data) {
-    return (
-      <div className="min-h-screen">
-        <AppNav activeItem="monitor" session={session} tier="FREE" firstProjectId={null} />
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          <AppBreadcrumbs
-            items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
-          />
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center max-w-md">
-              <div className="w-16 h-16 bg-[rgba(245,158,11,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-8 h-8 text-amber-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-3">
-                Command Center temporarily unavailable
-              </h2>
-              <p className="text-[#94A3B8] mb-6">
-                Authority status could not be determined. All strategies should be considered under
-                PAUSE governance until connectivity is restored.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Link
-                  href="/app/live"
-                  className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
-                >
-                  Try Again
-                </Link>
-                <Link
-                  href="/app"
-                  className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
-                >
-                  Back to Dashboard
-                </Link>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
+    return <DegradedFallback session={session} />;
   }
 
-  const { eaInstances, subscription, authority, analytics, recentDecisions } = data;
+  let params: { decision?: string; relink?: string };
+  try {
+    params = await searchParams;
+  } catch {
+    params = {};
+  }
 
-  const params = await searchParams;
-  const { decision: selectedDecision, selectedId } = selectDecision(
-    recentDecisions,
-    authority,
-    params.decision
-  );
-  const selectedTimestamp = selectedId
-    ? recentDecisions.find((d) => d.id === selectedId)?.timestamp
-    : authority?.decidedAt;
+  const { subscription } = data;
 
   let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
   if (tier !== "FREE") {
@@ -141,6 +97,33 @@ export default async function LiveEADashboardPage({
       </div>
     );
   }
+
+  try {
+    return renderDashboard(session, data, params, tier);
+  } catch (err) {
+    console.error("[live/page] render error:", err);
+    return <DegradedFallback session={session} />;
+  }
+}
+
+// ── Render the full dashboard (extracted so the page function can catch) ──
+
+function renderDashboard(
+  session: { user: { id: string; email?: string | null } },
+  data: NonNullable<Awaited<ReturnType<typeof loadMonitorData>>>,
+  params: { decision?: string; relink?: string },
+  tier: "FREE" | "PRO" | "ELITE"
+) {
+  const { eaInstances, authority, analytics, recentDecisions } = data;
+
+  const { decision: selectedDecision, selectedId } = selectDecision(
+    recentDecisions,
+    authority,
+    params.decision
+  );
+  const selectedTimestamp = selectedId
+    ? recentDecisions.find((d) => d.id === selectedId)?.timestamp
+    : authority?.decidedAt;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -305,6 +288,67 @@ export default async function LiveEADashboardPage({
             })()}
           </MonitorTabs>
         </section>
+      </main>
+    </div>
+  );
+}
+
+// ── Degraded fallback (shown when auth/data/render fails) ──
+
+function DegradedFallback({
+  session,
+}: {
+  session?: { user: { email?: string | null } } | null;
+} = {}) {
+  return (
+    <div className="min-h-screen">
+      {session?.user ? (
+        <AppNav activeItem="monitor" session={session} tier="FREE" firstProjectId={null} />
+      ) : null}
+      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <AppBreadcrumbs
+          items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 bg-[rgba(245,158,11,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg
+                className="w-8 h-8 text-amber-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              Command Center temporarily unavailable
+            </h2>
+            <p className="text-[#94A3B8] mb-6">
+              Authority status could not be determined. All strategies should be considered under
+              PAUSE governance until connectivity is restored.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Link
+                href="/app/live"
+                className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+              >
+                Try Again
+              </Link>
+              <Link
+                href="/app"
+                className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );
