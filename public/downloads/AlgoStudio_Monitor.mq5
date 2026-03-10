@@ -56,12 +56,29 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
 #define PANEL_PREFIX "AS_Panel_"
-#define PANEL_ROWS 6
-#define PANEL_WIDTH 260
-#define PANEL_ROW_HEIGHT 16
-#define PANEL_HEADER_HEIGHT 20
-#define PANEL_FONT_SIZE 8
 #define PANEL_FONT "Consolas"
+#define PANEL_FONT_MONO "Consolas"
+
+// Overlay layout constants
+#define OVL_TITLE_FONT_SIZE   16
+#define OVL_SUBTITLE_FONT_SIZE 10
+#define OVL_LABEL_FONT_SIZE    9
+#define OVL_VALUE_FONT_SIZE    9
+#define OVL_SMALL_FONT_SIZE    8
+#define OVL_ROW_HEIGHT        22
+#define OVL_SECTION_GAP        8
+#define OVL_LEFT_MARGIN       40
+#define OVL_VALUE_X          160
+#define OVL_BG_COLOR       C'14,14,20'
+#define OVL_BORDER_COLOR   C'35,35,50'
+#define OVL_TITLE_COLOR    C'120,120,170'
+#define OVL_SUBTITLE_COLOR C'85,85,110'
+#define OVL_LABEL_COLOR    C'80,80,105'
+#define OVL_VALUE_COLOR    C'190,190,210'
+#define OVL_DIM_COLOR      C'55,55,70'
+#define OVL_GREEN          C'16,185,129'
+#define OVL_YELLOW         C'245,158,11'
+#define OVL_RED            C'239,68,68'
 
 //+------------------------------------------------------------------+
 //| GLOBALS                                                          |
@@ -97,9 +114,13 @@ string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
 
-// Panel state
+// Panel / overlay state
 datetime g_lastSuccessfulHb = 0;
 string   g_panelError       = "";
+bool     g_chartColorsSaved = false;
+color    g_savedBg, g_savedFg, g_savedGrid, g_savedBullCandle, g_savedBearCandle;
+color    g_savedChartUp, g_savedChartDown, g_savedVolumes, g_savedBullBody, g_savedBearBody;
+bool     g_savedShowGrid    = true;
 
 // Governance state (from heartbeat response — NOT persisted across restarts)
 string   g_govAction     = "RUN";    // RUN | PAUSE | STOP
@@ -1456,76 +1477,151 @@ void LoadState()
 }
 
 //+------------------------------------------------------------------+
-//| ON-CHART MONITOR PANEL                                           |
+//| ON-CHART MONITOR OVERLAY                                         |
 //+------------------------------------------------------------------+
 
-/** Create all panel chart objects. */
+/** Save original chart colors so they can be restored on deinit. */
+void SaveChartColors()
+{
+   g_savedBg          = (color)ChartGetInteger(0, CHART_COLOR_BACKGROUND);
+   g_savedFg          = (color)ChartGetInteger(0, CHART_COLOR_FOREGROUND);
+   g_savedGrid        = (color)ChartGetInteger(0, CHART_COLOR_GRID);
+   g_savedBullCandle  = (color)ChartGetInteger(0, CHART_COLOR_CANDLE_BULL);
+   g_savedBearCandle  = (color)ChartGetInteger(0, CHART_COLOR_CANDLE_BEAR);
+   g_savedChartUp     = (color)ChartGetInteger(0, CHART_COLOR_CHART_UP);
+   g_savedChartDown   = (color)ChartGetInteger(0, CHART_COLOR_CHART_DOWN);
+   g_savedVolumes     = (color)ChartGetInteger(0, CHART_COLOR_VOLUMES);
+   g_savedBullBody    = (color)ChartGetInteger(0, CHART_COLOR_CHART_UP);
+   g_savedBearBody    = (color)ChartGetInteger(0, CHART_COLOR_CHART_DOWN);
+   g_savedShowGrid    = (bool)ChartGetInteger(0, CHART_SHOW_GRID);
+   g_chartColorsSaved = true;
+}
+
+/** Dim chart so the overlay dominates. */
+void ApplyChartCosmetics()
+{
+   ChartSetInteger(0, CHART_COLOR_BACKGROUND, OVL_BG_COLOR);
+   ChartSetInteger(0, CHART_COLOR_FOREGROUND, C'35,35,45');
+   ChartSetInteger(0, CHART_COLOR_GRID,       OVL_BG_COLOR);
+   ChartSetInteger(0, CHART_SHOW_GRID, false);
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BULL, C'28,28,38');
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, C'28,28,38');
+   ChartSetInteger(0, CHART_COLOR_CHART_UP,    C'28,28,38');
+   ChartSetInteger(0, CHART_COLOR_CHART_DOWN,  C'28,28,38');
+   ChartSetInteger(0, CHART_COLOR_VOLUMES,     C'28,28,38');
+}
+
+/** Restore original chart colors. */
+void RestoreChartColors()
+{
+   if(!g_chartColorsSaved) return;
+   ChartSetInteger(0, CHART_COLOR_BACKGROUND,  g_savedBg);
+   ChartSetInteger(0, CHART_COLOR_FOREGROUND,  g_savedFg);
+   ChartSetInteger(0, CHART_COLOR_GRID,        g_savedGrid);
+   ChartSetInteger(0, CHART_SHOW_GRID,         g_savedShowGrid);
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BULL, g_savedBullCandle);
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, g_savedBearCandle);
+   ChartSetInteger(0, CHART_COLOR_CHART_UP,    g_savedChartUp);
+   ChartSetInteger(0, CHART_COLOR_CHART_DOWN,  g_savedChartDown);
+   ChartSetInteger(0, CHART_COLOR_VOLUMES,     g_savedVolumes);
+}
+
+/** Create a text label on the overlay. Always CORNER_LEFT_UPPER. */
+void OvlLabel(string suffix, int x, int y, string text, color clr, int fontSize)
+{
+   string name = PANEL_PREFIX + suffix;
+   ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+   ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetString(0, name, OBJPROP_FONT, PANEL_FONT_MONO);
+   ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+   ObjectSetInteger(0, name, OBJPROP_BACK, false);
+   ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+}
+
+/** Create all overlay objects. */
 void PanelCreate()
 {
-   int totalH = PANEL_HEADER_HEIGHT + PANEL_ROWS * PANEL_ROW_HEIGHT + 8;
+   SaveChartColors();
+   ApplyChartCosmetics();
 
-   // For right-side corners, OBJ_RECTANGLE_LABEL anchors from its top-left
-   // corner but XDISTANCE measures from the chart's right edge. We must offset
-   // by the panel width so the rectangle extends leftward into view.
-   bool rightCorner = (InpPanelCorner == CORNER_RIGHT_UPPER || InpPanelCorner == CORNER_RIGHT_LOWER);
-   int bgX = rightCorner ? InpPanelX + PANEL_WIDTH : InpPanelX;
+   int chartW = (int)ChartGetInteger(0, CHART_WIDTH_IN_PIXELS);
+   int chartH = (int)ChartGetInteger(0, CHART_HEIGHT_IN_PIXELS);
 
-   // Background rectangle
+   // Full-chart background
    string bgName = PANEL_PREFIX + "BG";
    ObjectCreate(0, bgName, OBJ_RECTANGLE_LABEL, 0, 0, 0);
-   ObjectSetInteger(0, bgName, OBJPROP_CORNER, InpPanelCorner);
-   ObjectSetInteger(0, bgName, OBJPROP_XDISTANCE, bgX);
-   ObjectSetInteger(0, bgName, OBJPROP_YDISTANCE, InpPanelY);
-   ObjectSetInteger(0, bgName, OBJPROP_XSIZE, PANEL_WIDTH);
-   ObjectSetInteger(0, bgName, OBJPROP_YSIZE, totalH);
-   ObjectSetInteger(0, bgName, OBJPROP_BGCOLOR, C'20,20,28');
-   ObjectSetInteger(0, bgName, OBJPROP_BORDER_COLOR, C'50,50,70');
+   ObjectSetInteger(0, bgName, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, bgName, OBJPROP_XDISTANCE, 0);
+   ObjectSetInteger(0, bgName, OBJPROP_YDISTANCE, 0);
+   ObjectSetInteger(0, bgName, OBJPROP_XSIZE, chartW);
+   ObjectSetInteger(0, bgName, OBJPROP_YSIZE, chartH);
+   ObjectSetInteger(0, bgName, OBJPROP_BGCOLOR, OVL_BG_COLOR);
+   ObjectSetInteger(0, bgName, OBJPROP_BORDER_COLOR, OVL_BORDER_COLOR);
    ObjectSetInteger(0, bgName, OBJPROP_BORDER_TYPE, BORDER_FLAT);
-   ObjectSetInteger(0, bgName, OBJPROP_WIDTH, 1);
+   ObjectSetInteger(0, bgName, OBJPROP_WIDTH, 0);
    ObjectSetInteger(0, bgName, OBJPROP_BACK, false);
    ObjectSetInteger(0, bgName, OBJPROP_SELECTABLE, false);
 
-   // Header label
-   PanelLabel("Header", 8, 4, "AlgoStudio Monitor", C'140,140,180', PANEL_FONT_SIZE + 1, rightCorner);
+   // Accent line under title
+   string accentName = PANEL_PREFIX + "Accent";
+   ObjectCreate(0, accentName, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, accentName, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+   ObjectSetInteger(0, accentName, OBJPROP_XDISTANCE, OVL_LEFT_MARGIN);
+   ObjectSetInteger(0, accentName, OBJPROP_YDISTANCE, 52);
+   ObjectSetInteger(0, accentName, OBJPROP_XSIZE, 200);
+   ObjectSetInteger(0, accentName, OBJPROP_YSIZE, 1);
+   ObjectSetInteger(0, accentName, OBJPROP_BGCOLOR, OVL_BORDER_COLOR);
+   ObjectSetInteger(0, accentName, OBJPROP_BORDER_COLOR, OVL_BORDER_COLOR);
+   ObjectSetInteger(0, accentName, OBJPROP_BORDER_TYPE, BORDER_FLAT);
+   ObjectSetInteger(0, accentName, OBJPROP_BACK, false);
+   ObjectSetInteger(0, accentName, OBJPROP_SELECTABLE, false);
 
-   // Row labels (left column)
-   string rowNames[] = {"Status", "Governance", "Instance", "Heartbeat", "Account", "Last error"};
-   for(int i = 0; i < PANEL_ROWS; i++)
+   // Title
+   OvlLabel("Title", OVL_LEFT_MARGIN, 20, "ALGOSTUDIO MONITOR", OVL_TITLE_COLOR, OVL_TITLE_FONT_SIZE);
+
+   // Subtitle — mode / scope
+   string subtitle;
+   if(InpMonitorMode == MODE_ACCOUNT_WIDE)
+      subtitle = "Account-wide portfolio mode";
+   else
    {
-      int y = PANEL_HEADER_HEIGHT + i * PANEL_ROW_HEIGHT + 2;
-      PanelLabel("L" + IntegerToString(i), 8, y, rowNames[i] + ":", C'100,100,130', PANEL_FONT_SIZE, rightCorner);
-      PanelLabel("V" + IntegerToString(i), 88, y, "", C'200,200,220', PANEL_FONT_SIZE, rightCorner);
+      subtitle = _Symbol + "  " + EnumToString((ENUM_TIMEFRAMES)Period());
+      if(StringLen(InpTrackedEaName) > 0)
+         subtitle = subtitle + "  —  " + InpTrackedEaName;
+   }
+   OvlLabel("Subtitle", OVL_LEFT_MARGIN, 58, subtitle, OVL_SUBTITLE_COLOR, OVL_SUBTITLE_FONT_SIZE);
+
+   // Info rows — labels (left) and values (right)
+   int y = 92;
+   string rowNames[] = {"Status", "Governance", "Heartbeat", "Instance", "Account", "Queue", "Last error"};
+   for(int i = 0; i < 7; i++)
+   {
+      OvlLabel("L" + IntegerToString(i), OVL_LEFT_MARGIN, y, rowNames[i], OVL_LABEL_COLOR, OVL_LABEL_FONT_SIZE);
+      OvlLabel("V" + IntegerToString(i), OVL_VALUE_X, y, "", OVL_VALUE_COLOR, OVL_VALUE_FONT_SIZE);
+      y += OVL_ROW_HEIGHT;
    }
 
    PanelUpdate();
    ChartRedraw(0);
 }
 
-/** Create or get a panel text label. */
-void PanelLabel(string suffix, int x, int y, string text, color clr, int fontSize, bool rightCorner)
+/** Resize the overlay background to match current chart dimensions. */
+void PanelResize()
 {
-   string name = PANEL_PREFIX + suffix;
+   int chartW = (int)ChartGetInteger(0, CHART_WIDTH_IN_PIXELS);
+   int chartH = (int)ChartGetInteger(0, CHART_HEIGHT_IN_PIXELS);
 
-   // For right-side corners, OBJ_LABEL with ANCHOR_LEFT_UPPER places the text's
-   // left edge at XDISTANCE from chart right. Offset by panel width so labels
-   // sit inside the background rectangle.
-   int labelX = rightCorner ? InpPanelX + PANEL_WIDTH - x : InpPanelX + x;
-
-   ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
-   ObjectSetInteger(0, name, OBJPROP_CORNER, InpPanelCorner);
-   ObjectSetInteger(0, name, OBJPROP_XDISTANCE, labelX);
-   ObjectSetInteger(0, name, OBJPROP_YDISTANCE, InpPanelY + y);
-   ObjectSetString(0, name, OBJPROP_TEXT, text);
-   ObjectSetString(0, name, OBJPROP_FONT, PANEL_FONT);
-   ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
-   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
-   ObjectSetInteger(0, name, OBJPROP_BACK, false);
-   ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
-   if(rightCorner)
-      ObjectSetInteger(0, name, OBJPROP_ANCHOR, ANCHOR_RIGHT_UPPER);
+   string bgName = PANEL_PREFIX + "BG";
+   ObjectSetInteger(0, bgName, OBJPROP_XSIZE, chartW);
+   ObjectSetInteger(0, bgName, OBJPROP_YSIZE, chartH);
+   ChartRedraw(0);
 }
 
-/** Update panel values every timer tick. */
+/** Update overlay values every timer tick. */
 void PanelUpdate()
 {
    // Row 0: Status — derived from heartbeat recency
@@ -1534,7 +1630,7 @@ void PanelUpdate()
    if(g_lastSuccessfulHb == 0)
    {
       status = "Offline";
-      statusClr = C'239,68,68';  // red
+      statusClr = OVL_RED;
    }
    else
    {
@@ -1542,17 +1638,17 @@ void PanelUpdate()
       if(elapsed <= 10)
       {
          status = "Connected";
-         statusClr = C'16,185,129'; // green
+         statusClr = OVL_GREEN;
       }
       else if(elapsed <= 60)
       {
          status = "Delayed";
-         statusClr = C'245,158,11'; // yellow
+         statusClr = OVL_YELLOW;
       }
       else
       {
          status = "Offline";
-         statusClr = C'239,68,68'; // red
+         statusClr = OVL_RED;
       }
    }
    PanelSetValue(0, status, statusClr);
@@ -1563,35 +1659,29 @@ void PanelUpdate()
    if(g_govAction == "RUN")
    {
       govLabel = "RUN";
-      govClr = C'16,185,129';  // green
+      govClr = OVL_GREEN;
    }
    else if(g_govAction == "PAUSE")
    {
       govLabel = "PAUSED";
       if(StringLen(g_govReason) > 0)
-         govLabel = govLabel + " (" + g_govReason + ")";
-      if(StringLen(govLabel) > 28)
-         govLabel = StringSubstr(govLabel, 0, 25) + "...";
-      govClr = C'245,158,11';  // yellow
+         govLabel = govLabel + "  " + g_govReason;
+      if(StringLen(govLabel) > 40)
+         govLabel = StringSubstr(govLabel, 0, 37) + "...";
+      govClr = OVL_YELLOW;
    }
-   else // STOP
+   else
    {
       govLabel = "STOPPED";
       if(StringLen(g_govReason) > 0)
-         govLabel = govLabel + " (" + g_govReason + ")";
-      if(StringLen(govLabel) > 28)
-         govLabel = StringSubstr(govLabel, 0, 25) + "...";
-      govClr = C'239,68,68';   // red
+         govLabel = govLabel + "  " + g_govReason;
+      if(StringLen(govLabel) > 40)
+         govLabel = StringSubstr(govLabel, 0, 37) + "...";
+      govClr = OVL_RED;
    }
    PanelSetValue(1, govLabel, govClr);
 
-   // Row 2: Instance — full identifier, prefer readability
-   string instLabel = "(pending)";
-   if(StringLen(g_instanceId) > 0)
-      instLabel = g_instanceId;
-   PanelSetValue(2, instLabel, C'200,200,220');
-
-   // Row 3: Heartbeat — neutral color, human-readable elapsed
+   // Row 2: Heartbeat — human-readable elapsed
    string hbText;
    if(g_lastSuccessfulHb == 0)
    {
@@ -1607,30 +1697,42 @@ void PanelUpdate()
       else
          hbText = IntegerToString(elapsed / 3600) + "h ago";
    }
-   PanelSetValue(3, hbText, C'200,200,220');
+   PanelSetValue(2, hbText, OVL_VALUE_COLOR);
 
-   // Row 4: Account — login | server name
+   // Row 3: Instance
+   string instLabel = "(pending)";
+   if(StringLen(g_instanceId) > 0)
+      instLabel = g_instanceId;
+   PanelSetValue(3, instLabel, OVL_VALUE_COLOR);
+
+   // Row 4: Account — login | server
    string acctText = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))
-                   + " | " + AccountInfoString(ACCOUNT_SERVER);
-   PanelSetValue(4, acctText, C'200,200,220');
+                   + "  " + AccountInfoString(ACCOUNT_SERVER);
+   PanelSetValue(4, acctText, OVL_DIM_COLOR);
 
-   // Row 5: Last error
+   // Row 5: Queue — only show count when non-zero
+   if(g_queueCount > 0)
+      PanelSetValue(5, IntegerToString(g_queueCount) + " queued", OVL_YELLOW);
+   else
+      PanelSetValue(5, "—", OVL_DIM_COLOR);
+
+   // Row 6: Last error
    if(StringLen(g_panelError) > 0)
    {
       string errText = g_panelError;
-      if(StringLen(errText) > 28)
-         errText = StringSubstr(errText, 0, 25) + "...";
-      PanelSetValue(5, errText, C'239,68,68');
+      if(StringLen(errText) > 50)
+         errText = StringSubstr(errText, 0, 47) + "...";
+      PanelSetValue(6, errText, OVL_RED);
    }
    else
    {
-      PanelSetValue(5, "none", C'113,113,122');
+      PanelSetValue(6, "—", OVL_DIM_COLOR);
    }
 
    ChartRedraw(0);
 }
 
-/** Set a panel value label's text and color. */
+/** Set an overlay value label's text and color. */
 void PanelSetValue(int row, string text, color clr)
 {
    string name = PANEL_PREFIX + "V" + IntegerToString(row);
@@ -1638,7 +1740,7 @@ void PanelSetValue(int row, string text, color clr)
    ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
 }
 
-/** Remove all panel objects from the chart. */
+/** Remove all overlay objects and restore chart colors. */
 void PanelDestroy()
 {
    int total = ObjectsTotal(0, 0, -1);
@@ -1648,7 +1750,17 @@ void PanelDestroy()
       if(StringFind(name, PANEL_PREFIX) == 0)
          ObjectDelete(0, name);
    }
+   RestoreChartColors();
    ChartRedraw(0);
+}
+
+//+------------------------------------------------------------------+
+//| CHART EVENT — resize overlay on chart dimension changes          |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
+{
+   if(id == CHARTEVENT_CHART_CHANGE && InpShowPanel)
+      PanelResize();
 }
 
 //+------------------------------------------------------------------+
