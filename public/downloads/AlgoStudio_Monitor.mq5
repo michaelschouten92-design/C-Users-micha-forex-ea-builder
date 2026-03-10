@@ -52,7 +52,7 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
 #define PANEL_PREFIX "AS_Panel_"
-#define PANEL_ROWS 5
+#define PANEL_ROWS 6
 #define PANEL_WIDTH 260
 #define PANEL_ROW_HEIGHT 16
 #define PANEL_HEADER_HEIGHT 20
@@ -95,6 +95,11 @@ bool   g_processingTrade = false;
 // Panel state
 datetime g_lastSuccessfulHb = 0;
 string   g_panelError       = "";
+
+// Governance state (from heartbeat response — NOT persisted across restarts)
+string   g_govAction     = "RUN";    // RUN | PAUSE | STOP
+string   g_govReason     = "";       // reasonCode from backend
+datetime g_govReceivedAt = 0;        // When last governance action was received
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -217,11 +222,19 @@ void OnTimer()
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
    PollTradeChanges();
 
-   // Heartbeat
+   // Heartbeat — always runs regardless of governance action
    if(now - g_lastHeartbeat >= InpHeartbeatSec)
    {
       SendHeartbeat();
       g_lastHeartbeat = now;
+   }
+
+   // Governance gate: PAUSE/STOP → skip trade polling and snapshots
+   if(g_govAction != "RUN")
+   {
+      if(InpShowPanel)
+         PanelUpdate();
+      return;
    }
 
    // Snapshot for track record
@@ -252,6 +265,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeResult& result)
 {
    if(!g_initialized) return;
+   if(g_govAction != "RUN") return;  // Governance gate: no trade events when paused/stopped
    g_processingTrade = true;
 
    // We care about deal additions
@@ -959,12 +973,15 @@ bool HttpPost(string endpoint, string jsonBody)
          return false;
       }
 
-      // Parse instanceId from response if we don't have one
+      // Always parse response for governance fields + instanceId
+      string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+
       if(StringLen(g_instanceId) == 0)
-      {
-         string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
          ParseInstanceId(response);
-      }
+
+      // Parse governance action from heartbeat responses
+      if(StringFind(endpoint, "/heartbeat") >= 0)
+         ParseGovernanceAction(response);
 
       return (res >= 200 && res < 300);
    }
@@ -977,16 +994,63 @@ bool HttpPost(string endpoint, string jsonBody)
 //+------------------------------------------------------------------+
 void ParseInstanceId(string response)
 {
-   int pos = StringFind(response, "\"instanceId\":\"");
-   if(pos < 0) return;
-
-   int valStart = pos + 14;
-   int valEnd = StringFind(response, "\"", valStart);
-   if(valEnd > valStart)
+   string id = ParseJsonString(response, "instanceId");
+   if(StringLen(id) > 0)
    {
-      g_instanceId = StringSubstr(response, valStart, valEnd - valStart);
+      g_instanceId = id;
       SaveState();
    }
+}
+
+//+------------------------------------------------------------------+
+//| Parse governance action + reasonCode from heartbeat response     |
+//| Scans for "action":"..." and "reasonCode":"..." independently.   |
+//| If action is missing or unrecognized, defaults to RUN.           |
+//+------------------------------------------------------------------+
+void ParseGovernanceAction(string response)
+{
+   // Parse action
+   string action = ParseJsonString(response, "action");
+   if(action == "RUN" || action == "PAUSE" || action == "STOP")
+   {
+      if(action != g_govAction)
+      {
+         Print("AlgoStudio Monitor: Governance action changed: ", g_govAction, " -> ", action);
+         g_govReason = "";  // Clear stale reason on action change
+      }
+      g_govAction = action;
+      g_govReceivedAt = TimeCurrent();
+   }
+   else if(StringLen(action) == 0)
+   {
+      // No action field — defensive default to RUN
+      g_govAction = "RUN";
+      g_govReason = "";
+   }
+   // else: unrecognized value — keep previous action (fail-safe)
+
+   // Parse reasonCode (informational)
+   string reason = ParseJsonString(response, "reasonCode");
+   if(StringLen(reason) > 0)
+      g_govReason = reason;
+}
+
+//+------------------------------------------------------------------+
+//| Extract a string value from JSON by key name.                    |
+//| Looks for "key":"value" pattern. Returns "" if not found.        |
+//| Independent of key order — scans full response string.           |
+//+------------------------------------------------------------------+
+string ParseJsonString(string json, string key)
+{
+   string needle = "\"" + key + "\":\"";
+   int pos = StringFind(json, needle);
+   if(pos < 0) return "";
+
+   int valStart = pos + StringLen(needle);
+   int valEnd = StringFind(json, "\"", valStart);
+   if(valEnd <= valStart) return "";
+
+   return StringSubstr(json, valStart, valEnd - valStart);
 }
 
 //+------------------------------------------------------------------+
@@ -1246,7 +1310,7 @@ void PanelCreate()
    PanelLabel("Header", 8, 4, "AlgoStudio Monitor", C'140,140,180', PANEL_FONT_SIZE + 1, rightCorner);
 
    // Row labels (left column)
-   string rowNames[] = {"Status", "Instance", "Heartbeat", "Account", "Last error"};
+   string rowNames[] = {"Status", "Governance", "Instance", "Heartbeat", "Account", "Last error"};
    for(int i = 0; i < PANEL_ROWS; i++)
    {
       int y = PANEL_HEADER_HEIGHT + i * PANEL_ROW_HEIGHT + 2;
@@ -1314,13 +1378,41 @@ void PanelUpdate()
    }
    PanelSetValue(0, status, statusClr);
 
-   // Row 1: Instance — full identifier, prefer readability
+   // Row 1: Governance — action from backend heartbeat response
+   string govLabel;
+   color  govClr;
+   if(g_govAction == "RUN")
+   {
+      govLabel = "RUN";
+      govClr = C'16,185,129';  // green
+   }
+   else if(g_govAction == "PAUSE")
+   {
+      govLabel = "PAUSED";
+      if(StringLen(g_govReason) > 0)
+         govLabel = govLabel + " (" + g_govReason + ")";
+      if(StringLen(govLabel) > 28)
+         govLabel = StringSubstr(govLabel, 0, 25) + "...";
+      govClr = C'245,158,11';  // yellow
+   }
+   else // STOP
+   {
+      govLabel = "STOPPED";
+      if(StringLen(g_govReason) > 0)
+         govLabel = govLabel + " (" + g_govReason + ")";
+      if(StringLen(govLabel) > 28)
+         govLabel = StringSubstr(govLabel, 0, 25) + "...";
+      govClr = C'239,68,68';   // red
+   }
+   PanelSetValue(1, govLabel, govClr);
+
+   // Row 2: Instance — full identifier, prefer readability
    string instLabel = "(pending)";
    if(StringLen(g_instanceId) > 0)
       instLabel = g_instanceId;
-   PanelSetValue(1, instLabel, C'200,200,220');
+   PanelSetValue(2, instLabel, C'200,200,220');
 
-   // Row 2: Heartbeat — neutral color, human-readable elapsed
+   // Row 3: Heartbeat — neutral color, human-readable elapsed
    string hbText;
    if(g_lastSuccessfulHb == 0)
    {
@@ -1336,24 +1428,24 @@ void PanelUpdate()
       else
          hbText = IntegerToString(elapsed / 3600) + "h ago";
    }
-   PanelSetValue(2, hbText, C'200,200,220');
+   PanelSetValue(3, hbText, C'200,200,220');
 
-   // Row 3: Account — login | server name
+   // Row 4: Account — login | server name
    string acctText = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))
                    + " | " + AccountInfoString(ACCOUNT_SERVER);
-   PanelSetValue(3, acctText, C'200,200,220');
+   PanelSetValue(4, acctText, C'200,200,220');
 
-   // Row 4: Last error
+   // Row 5: Last error
    if(StringLen(g_panelError) > 0)
    {
       string errText = g_panelError;
       if(StringLen(errText) > 28)
          errText = StringSubstr(errText, 0, 25) + "...";
-      PanelSetValue(4, errText, C'239,68,68');
+      PanelSetValue(5, errText, C'239,68,68');
    }
    else
    {
-      PanelSetValue(4, "none", C'113,113,122');
+      PanelSetValue(5, "none", C'113,113,122');
    }
 
    ChartRedraw(0);

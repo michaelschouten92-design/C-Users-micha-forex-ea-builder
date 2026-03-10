@@ -15,6 +15,7 @@ import {
 } from "@/lib/alerts";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
 import { emitControlLayerAlert, clearAlertByDedupe } from "@/lib/alerts/control-layer-alerts";
+import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-action";
 import { z } from "zod";
 
 // NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
         lastHeartbeat: true,
         eaName: true,
         symbol: true,
+        lifecycleState: true,
+        operatorHold: true,
+        monitoringSuppressedUntil: true,
         user: { select: { email: true, webhookUrl: true } },
       },
     });
@@ -125,13 +129,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If the instance is paused, instruct the EA to pause trading
-    const isPaused = previousState?.tradingState === "PAUSED";
-    if (isPaused) {
-      return NextResponse.json({ success: true, action: "PAUSE" });
-    }
+    // Governance decision — reuse the same pure function as internal heartbeat.
+    // The telemetry endpoint authenticates by API key (instance is confirmed to exist),
+    // so authorityReady is always true here.
+    const now = new Date();
+    const decision = previousState
+      ? decideHeartbeatAction({
+          lifecycleState: previousState.lifecycleState,
+          operatorHold: previousState.operatorHold as "NONE" | "HALTED" | "OVERRIDE_PENDING" | null,
+          monitoringSuppressedUntil: previousState.monitoringSuppressedUntil,
+          now,
+          authorityReady: true,
+        })
+      : { action: "PAUSE" as const, reasonCode: "NO_INSTANCE" as const };
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      action: decision.action,
+      reasonCode: decision.reasonCode,
+    });
   } catch (err) {
     log.error({ err, instanceId: auth.instanceId }, "Heartbeat processing failed");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
@@ -144,6 +160,9 @@ interface PreviousState {
   lastHeartbeat: Date | null;
   eaName: string;
   symbol: string | null;
+  lifecycleState: string | null;
+  operatorHold: string | null;
+  monitoringSuppressedUntil: Date | null;
   user: { email: string; webhookUrl: string | null };
 }
 

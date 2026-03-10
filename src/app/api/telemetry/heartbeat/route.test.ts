@@ -93,6 +93,9 @@ describe("POST /api/telemetry/heartbeat", () => {
       lastHeartbeat: new Date(),
       eaName: "TestEA",
       symbol: "EURUSD",
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
       user: { email: "test@test.com", webhookUrl: null },
     });
     mockTransaction.mockResolvedValue(undefined);
@@ -130,15 +133,20 @@ describe("POST /api/telemetry/heartbeat", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.action).toBe("RUN");
+    expect(body.reasonCode).toBe("OK");
   });
 
-  it("returns PAUSE action when instance is paused", async () => {
+  it("returns PAUSE action when instance is at risk", async () => {
     mockFindUnique.mockResolvedValue({
       status: "ONLINE",
       tradingState: "PAUSED",
       lastHeartbeat: new Date(),
       eaName: "TestEA",
       symbol: "EURUSD",
+      lifecycleState: "EDGE_AT_RISK",
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
       user: { email: "test@test.com", webhookUrl: null },
     });
     const { POST } = await import("./route");
@@ -146,6 +154,27 @@ describe("POST /api/telemetry/heartbeat", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.action).toBe("PAUSE");
+    expect(body.reasonCode).toBe("MONITORING_AT_RISK");
+  });
+
+  it("returns STOP action when operator hold is HALTED", async () => {
+    mockFindUnique.mockResolvedValue({
+      status: "ONLINE",
+      tradingState: "ACTIVE",
+      lastHeartbeat: new Date(),
+      eaName: "TestEA",
+      symbol: "EURUSD",
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "HALTED",
+      monitoringSuppressedUntil: null,
+      user: { email: "test@test.com", webhookUrl: null },
+    });
+    const { POST } = await import("./route");
+    const res = await POST(makeRequest({ balance: 1000 }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.action).toBe("STOP");
+    expect(body.reasonCode).toBe("STRATEGY_HALTED");
   });
 
   it("returns 500 (not 400) when DB transaction fails", async () => {
