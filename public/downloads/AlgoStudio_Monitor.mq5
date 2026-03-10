@@ -110,6 +110,7 @@ string   g_deploySymbol     = "";
 string   g_deployTimeframe  = "";
 long     g_deployMagic      = 0;
 string   g_deployEaName     = "";
+string   g_deployFingerprint = "";  // SHA-256 of material config fields
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -400,9 +401,21 @@ void EvaluateDeploymentEligibility()
    g_deployMagic     = g_magicFilter[0];
    g_deployEaName    = InpTrackedEaName;
 
+   // Compute material fingerprint — canonical shape:
+   // SYMBOL_UPPER:TIMEFRAME_UPPER:MAGIC:EA_NAME:COMMENT_FILTER:EXCLUDE_MANUAL
+   string canonical = StringFormat("%s:%s:%d:%s:%s:%s",
+      g_deploySymbol,
+      g_deployTimeframe,
+      g_deployMagic,
+      g_deployEaName,
+      InpCommentFilter,
+      InpExcludeManual ? "true" : "false");
+   g_deployFingerprint = SHA256(canonical);
+
    Print("AlgoStudio Monitor: Deployment discovery enabled. ",
          g_deploySymbol, ":", g_deployTimeframe, ":", IntegerToString(g_deployMagic),
-         ":", g_deployEaName);
+         ":", g_deployEaName,
+         " fingerprint=", StringSubstr(g_deployFingerprint, 0, 16), "...");
 }
 
 //+------------------------------------------------------------------+
@@ -976,7 +989,8 @@ void SendHeartbeat()
          + JStr("symbol", g_deploySymbol) + ","
          + JStr("timeframe", g_deployTimeframe) + ","
          + JInt("magicNumber", (int)g_deployMagic) + ","
-         + JStr("eaName", g_deployEaName)
+         + JStr("eaName", g_deployEaName) + ","
+         + JStr("materialFingerprint", g_deployFingerprint)
          + "}";
    }
 

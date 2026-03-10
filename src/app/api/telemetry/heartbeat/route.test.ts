@@ -43,6 +43,7 @@ const mockInstanceUpdate = vi.fn();
 const mockTerminalUpsert = vi.fn();
 const mockTerminalUpdate = vi.fn();
 const mockDeploymentUpsert = vi.fn();
+const mockDeploymentFindUnique = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: (...args: unknown[]) => mockTransaction(...args),
@@ -56,6 +57,7 @@ vi.mock("@/lib/prisma", () => ({
       update: (...args: unknown[]) => mockTerminalUpdate(...args),
     },
     terminalDeployment: {
+      findUnique: (...args: unknown[]) => mockDeploymentFindUnique(...args),
       upsert: (...args: unknown[]) => mockDeploymentUpsert(...args),
     },
   },
@@ -114,7 +116,8 @@ describe("POST /api/telemetry/heartbeat", () => {
     mockInstanceUpdate.mockResolvedValue(undefined);
     mockTerminalUpsert.mockResolvedValue({ id: "term_auto_1" });
     mockTerminalUpdate.mockResolvedValue(undefined);
-    mockDeploymentUpsert.mockResolvedValue(undefined);
+    mockDeploymentFindUnique.mockResolvedValue(null); // No existing deployment by default
+    mockDeploymentUpsert.mockResolvedValue({ id: "deploy_1" });
   });
 
   it("returns 401 when auth fails", async () => {
@@ -304,5 +307,103 @@ describe("POST /api/telemetry/heartbeat", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("stores materialFingerprint on first deployment report", async () => {
+    mockDeploymentFindUnique.mockResolvedValue(null); // No existing deployment
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        broker: "IC Markets",
+        accountNumber: "12345",
+        deployment: {
+          symbol: "EURUSD",
+          timeframe: "PERIOD_H1",
+          magicNumber: 99001,
+          eaName: "TrendFollower",
+          materialFingerprint: "a".repeat(64),
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockDeploymentUpsert).toHaveBeenCalledTimes(1);
+    const upsertCall = mockDeploymentUpsert.mock.calls[0][0];
+    expect(upsertCall.create.materialFingerprint).toBe("a".repeat(64));
+  });
+
+  it("detects material change and transitions LINKED baseline to RELINK_REQUIRED", async () => {
+    mockDeploymentFindUnique.mockResolvedValue({
+      id: "deploy_existing",
+      instanceId: INSTANCE_ID,
+      baselineStatus: "LINKED",
+      materialFingerprint: "a".repeat(64),
+    });
+    // Mock the instance snapshot for suspendBaselineTrust
+    mockFindUnique.mockResolvedValueOnce({
+      status: "ONLINE",
+      tradingState: "ACTIVE",
+      lastHeartbeat: new Date(),
+      eaName: "TestEA",
+      symbol: "EURUSD",
+      lifecycleState: "LIVE_MONITORING",
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+      terminalConnectionId: null,
+      user: { email: "test@test.com", webhookUrl: null },
+    });
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        broker: "IC Markets",
+        accountNumber: "12345",
+        deployment: {
+          symbol: "EURUSD",
+          timeframe: "PERIOD_H1",
+          magicNumber: 99001,
+          eaName: "TrendFollower",
+          materialFingerprint: "b".repeat(64), // Different from stored "a".repeat(64)
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockDeploymentUpsert).toHaveBeenCalledTimes(1);
+    const upsertCall = mockDeploymentUpsert.mock.calls[0][0];
+    expect(upsertCall.update.baselineStatus).toBe("RELINK_REQUIRED");
+    expect(upsertCall.update.materialFingerprint).toBe("b".repeat(64));
+  });
+
+  it("does NOT transition UNLINKED baseline on fingerprint mismatch", async () => {
+    mockDeploymentFindUnique.mockResolvedValue({
+      id: "deploy_existing",
+      instanceId: INSTANCE_ID,
+      baselineStatus: "UNLINKED",
+      materialFingerprint: "a".repeat(64),
+    });
+    const { POST } = await import("./route");
+    const res = await POST(
+      makeRequest({
+        balance: 10000,
+        broker: "IC Markets",
+        accountNumber: "12345",
+        deployment: {
+          symbol: "EURUSD",
+          timeframe: "PERIOD_H1",
+          magicNumber: 99001,
+          eaName: "TrendFollower",
+          materialFingerprint: "b".repeat(64),
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockDeploymentUpsert).toHaveBeenCalledTimes(1);
+    const upsertCall = mockDeploymentUpsert.mock.calls[0][0];
+    // Fingerprint is updated but baselineStatus is NOT set
+    expect(upsertCall.update.materialFingerprint).toBe("b".repeat(64));
+    expect(upsertCall.update.baselineStatus).toBeUndefined();
   });
 });

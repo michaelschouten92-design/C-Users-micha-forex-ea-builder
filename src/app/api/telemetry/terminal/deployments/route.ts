@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticateTerminal } from "@/lib/terminal-auth";
 import { apiError, ErrorCode } from "@/lib/error-codes";
 import { logger } from "@/lib/logger";
-import { appendProofEvent } from "@/lib/proof/events";
+import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/material-change";
 
 export const dynamic = "force-dynamic";
 
@@ -120,18 +120,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Determine if this is a material change
-      const isMaterialChange =
-        reportedFingerprint !== null &&
-        existing !== null &&
-        existing.materialFingerprint !== null &&
-        existing.materialFingerprint !== reportedFingerprint;
-
-      // Determine new baselineStatus
-      let newBaselineStatus: string | undefined;
-      if (isMaterialChange && existing!.baselineStatus === "LINKED") {
-        newBaselineStatus = "RELINK_REQUIRED";
-      }
+      // Detect material change using shared helper
+      const changeResult = detectMaterialChange({
+        reportedFingerprint,
+        existingFingerprint: existing?.materialFingerprint ?? null,
+        existingBaselineStatus: existing?.baselineStatus ?? null,
+      });
+      const newBaselineStatus = changeResult.newBaselineStatus;
 
       // Build update data
       const updateData: Record<string, unknown> = {
@@ -179,68 +174,20 @@ export async function POST(request: NextRequest) {
       });
 
       // If material change detected on a LINKED deployment, suspend canonical baseline trust
-      if (isMaterialChange && newBaselineStatus === "RELINK_REQUIRED" && existing!.instanceId) {
-        const instanceId = existing!.instanceId;
-        try {
-          // Capture strategyVersionId + strategyId before nullification
-          const instanceSnapshot = await prisma.liveEAInstance.findUnique({
-            where: { id: instanceId },
-            select: {
-              strategyVersionId: true,
-              strategyVersion: {
-                select: {
-                  strategyIdentity: { select: { strategyId: true } },
-                },
-              },
-            },
-          });
-          const previousStrategyVersionId = instanceSnapshot?.strategyVersionId ?? null;
-          const strategyId =
-            instanceSnapshot?.strategyVersion?.strategyIdentity?.strategyId ?? null;
-
-          await prisma.liveEAInstance.update({
-            where: { id: instanceId },
-            data: { strategyVersionId: null },
-          });
-          log.warn(
-            {
-              terminalId,
-              deploymentKey,
-              instanceId,
-              previousFingerprint: existing!.materialFingerprint,
-              newFingerprint: reportedFingerprint,
-            },
-            "Material change detected — baseline trust suspended (strategyVersionId cleared)"
-          );
-
-          // Append audit proof event for trust suspension
-          if (strategyId) {
-            const recordId = crypto.randomUUID();
-            await appendProofEvent(strategyId, "MATERIAL_CHANGE_TRUST_SUSPENDED", {
-              eventType: "MATERIAL_CHANGE_TRUST_SUSPENDED",
-              recordId,
-              terminalConnectionId: terminalId,
-              terminalDeploymentId: deployment.id,
-              instanceId,
-              previousStrategyVersionId,
-              previousMaterialFingerprint: existing!.materialFingerprint,
-              newMaterialFingerprint: reportedFingerprint,
-              previousBaselineStatus: existing!.baselineStatus,
-              newBaselineStatus: "RELINK_REQUIRED",
-              timestamp: now.toISOString(),
-            }).catch((proofErr) => {
-              log.error(
-                { err: proofErr, strategyId, instanceId },
-                "Failed to append MATERIAL_CHANGE_TRUST_SUSPENDED proof event"
-              );
-            });
-          }
-        } catch (err) {
-          log.error(
-            { err, instanceId, deploymentKey },
-            "Failed to clear strategyVersionId on material change"
-          );
-        }
+      if (
+        changeResult.isMaterialChange &&
+        newBaselineStatus === "RELINK_REQUIRED" &&
+        existing!.instanceId
+      ) {
+        await suspendBaselineTrust({
+          instanceId: existing!.instanceId,
+          terminalConnectionId: terminalId,
+          terminalDeploymentId: deployment.id,
+          deploymentKey,
+          previousFingerprint: existing!.materialFingerprint,
+          newFingerprint: reportedFingerprint,
+          previousBaselineStatus: existing!.baselineStatus,
+        });
       }
 
       return {

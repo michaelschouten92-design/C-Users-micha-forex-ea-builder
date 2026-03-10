@@ -16,6 +16,7 @@ import {
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
 import { emitControlLayerAlert, clearAlertByDedupe } from "@/lib/alerts/control-layer-alerts";
 import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-action";
+import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/material-change";
 import { createHash } from "crypto";
 import { z } from "zod";
 
@@ -23,11 +24,19 @@ import { z } from "zod";
 // The legacy EAAlertRule/EAAlert system has been removed from runtime code.
 // See prisma/schema.prisma for deprecated model annotations.
 
+/** Strict hex hash: 64 chars (SHA-256 output). */
+const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
+
 const deploymentSchema = z.object({
   symbol: z.string().min(1).max(20).trim(),
   timeframe: z.string().min(1).max(10).trim(),
   magicNumber: z.number().int().min(1), // Must be > 0 — magic=0 is excluded by product rules
   eaName: z.string().min(1).max(100).trim(),
+  /** Optional SHA-256 hash of EA material configuration. Reported by Monitor EA. */
+  materialFingerprint: z
+    .string()
+    .regex(HEX_HASH_RE, "materialFingerprint must be a 64-char hex SHA-256 hash")
+    .optional(),
 });
 
 const heartbeatSchema = z.object({
@@ -307,12 +316,19 @@ function computeDeploymentKey(d: {
 async function processDeploymentDiscovery(
   instanceId: string,
   userId: string,
-  deployment: { symbol: string; timeframe: string; magicNumber: number; eaName: string },
+  deployment: {
+    symbol: string;
+    timeframe: string;
+    magicNumber: number;
+    eaName: string;
+    materialFingerprint?: string;
+  },
   existingTerminalId: string | null,
   broker: string | null,
   accountNumber: string | null
 ): Promise<void> {
   const now = new Date();
+  const reportedFingerprint = deployment.materialFingerprint ?? null;
 
   // Step 1: Resolve or auto-create TerminalConnection
   let terminalId = existingTerminalId;
@@ -367,7 +383,42 @@ async function processDeploymentDiscovery(
   // Step 2: Compute deployment key and upsert TerminalDeployment
   const deploymentKey = computeDeploymentKey(deployment);
 
-  await prisma.terminalDeployment.upsert({
+  // Read existing row for material change detection
+  const existing = await prisma.terminalDeployment.findUnique({
+    where: {
+      terminalConnectionId_deploymentKey: {
+        terminalConnectionId: terminalId,
+        deploymentKey,
+      },
+    },
+    select: {
+      id: true,
+      instanceId: true,
+      baselineStatus: true,
+      materialFingerprint: true,
+    },
+  });
+
+  // Detect material change using shared helper
+  const changeResult = detectMaterialChange({
+    reportedFingerprint,
+    existingFingerprint: existing?.materialFingerprint ?? null,
+    existingBaselineStatus: existing?.baselineStatus ?? null,
+  });
+
+  // Build update data
+  const updateData: Record<string, unknown> = {
+    lastSeenAt: now,
+    instanceId, // Re-link if previously unlinked
+  };
+  if (reportedFingerprint !== null) {
+    updateData.materialFingerprint = reportedFingerprint;
+  }
+  if (changeResult.newBaselineStatus) {
+    updateData.baselineStatus = changeResult.newBaselineStatus;
+  }
+
+  const upsertedDeployment = await prisma.terminalDeployment.upsert({
     where: {
       terminalConnectionId_deploymentKey: {
         terminalConnectionId: terminalId,
@@ -383,10 +434,28 @@ async function processDeploymentDiscovery(
       magicNumber: deployment.magicNumber,
       eaName: deployment.eaName,
       lastSeenAt: now,
+      ...(reportedFingerprint !== null && { materialFingerprint: reportedFingerprint }),
     },
-    update: {
-      lastSeenAt: now,
-      instanceId, // Re-link if previously unlinked
-    },
+    update: updateData,
+    select: { id: true },
   });
+
+  // Suspend baseline trust on material change for LINKED deployments
+  if (
+    changeResult.isMaterialChange &&
+    changeResult.newBaselineStatus === "RELINK_REQUIRED" &&
+    existing?.instanceId
+  ) {
+    suspendBaselineTrust({
+      instanceId: existing.instanceId,
+      terminalConnectionId: terminalId,
+      terminalDeploymentId: upsertedDeployment.id,
+      deploymentKey,
+      previousFingerprint: existing.materialFingerprint,
+      newFingerprint: reportedFingerprint,
+      previousBaselineStatus: existing.baselineStatus,
+    }).catch((err) => {
+      log.error({ err, instanceId, deploymentKey }, "Baseline trust suspension failed");
+    });
+  }
 }
