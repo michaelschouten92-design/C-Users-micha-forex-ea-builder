@@ -77,7 +77,7 @@ datetime g_lastSnapshot   = 0;
 datetime g_sessionStart   = 0;
 
 // Trade tracking
-int    g_knownDeals[];       // History deal tickets we've already reported
+ulong  g_knownDeals[];       // History deal tickets we've already reported
 int    g_knownDealCount = 0;
 int    g_knownPositions[];   // Position tickets currently open
 int    g_knownPosCount  = 0;
@@ -325,7 +325,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       }
 
       // Mark deal as known
-      AddKnownDeal((int)dealTicket);
+      AddKnownDeal(dealTicket);
    }
 
    g_processingTrade = false;
@@ -528,12 +528,12 @@ void BuildKnownDeals()
    {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
-      g_knownDeals[g_knownDealCount++] = (int)ticket;
+      g_knownDeals[g_knownDealCount++] = ticket;
    }
    ArrayResize(g_knownDeals, g_knownDealCount);
 }
 
-void AddKnownDeal(int ticket)
+void AddKnownDeal(ulong ticket)
 {
    for(int i = 0; i < g_knownDealCount; i++)
       if(g_knownDeals[i] == ticket) return;
@@ -561,7 +561,7 @@ void PollTradeChanges()
       bool known = false;
       for(int j = 0; j < g_knownDealCount; j++)
       {
-         if(g_knownDeals[j] == (int)ticket) { known = true; break; }
+         if(g_knownDeals[j] == ticket) { known = true; break; }
       }
       if(known) continue;
 
@@ -575,7 +575,7 @@ void PollTradeChanges()
       else if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY || entry == DEAL_ENTRY_INOUT)
          SendTradeClose(ticket);
 
-      AddKnownDeal((int)ticket);
+      AddKnownDeal(ticket);
    }
 
    BuildKnownPositions();
