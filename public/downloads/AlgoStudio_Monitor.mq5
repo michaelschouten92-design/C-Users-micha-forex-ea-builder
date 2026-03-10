@@ -1490,7 +1490,7 @@ void SaveChartColors()
    g_savedBearCandle  = (color)ChartGetInteger(0, CHART_COLOR_CANDLE_BEAR);
    g_savedChartUp     = (color)ChartGetInteger(0, CHART_COLOR_CHART_UP);
    g_savedChartDown   = (color)ChartGetInteger(0, CHART_COLOR_CHART_DOWN);
-   g_savedVolumes     = (color)ChartGetInteger(0, CHART_COLOR_VOLUMES);
+   g_savedVolumes     = (color)ChartGetInteger(0, CHART_COLOR_VOLUME);
    g_savedBullBody    = (color)ChartGetInteger(0, CHART_COLOR_CHART_UP);
    g_savedBearBody    = (color)ChartGetInteger(0, CHART_COLOR_CHART_DOWN);
    g_savedShowGrid    = (bool)ChartGetInteger(0, CHART_SHOW_GRID);
@@ -1508,7 +1508,7 @@ void ApplyChartCosmetics()
    ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, C'28,28,38');
    ChartSetInteger(0, CHART_COLOR_CHART_UP,    C'28,28,38');
    ChartSetInteger(0, CHART_COLOR_CHART_DOWN,  C'28,28,38');
-   ChartSetInteger(0, CHART_COLOR_VOLUMES,     C'28,28,38');
+   ChartSetInteger(0, CHART_COLOR_VOLUME,     C'28,28,38');
 }
 
 /** Restore original chart colors. */
@@ -1523,7 +1523,7 @@ void RestoreChartColors()
    ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, g_savedBearCandle);
    ChartSetInteger(0, CHART_COLOR_CHART_UP,    g_savedChartUp);
    ChartSetInteger(0, CHART_COLOR_CHART_DOWN,  g_savedChartDown);
-   ChartSetInteger(0, CHART_COLOR_VOLUMES,     g_savedVolumes);
+   ChartSetInteger(0, CHART_COLOR_VOLUME,     g_savedVolumes);
 }
 
 /** Create a text label on the overlay. Always CORNER_LEFT_UPPER. */
