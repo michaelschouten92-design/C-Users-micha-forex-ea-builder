@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { resolveBaselineTrust } from "@/lib/live/baseline-trust-state";
 
 // ── Types ─────────────────────────────────────────────
 
@@ -221,7 +222,7 @@ function DeploymentRow({
 }) {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
 
-  const baselineLabel = resolveBaselineLabel(deployment.baselineStatus);
+  const baselineTrust = resolveBaselineTrust(deployment.baselineStatus);
   const monitoringLabel = resolveMonitoringLabel(deployment);
   const action = resolveAction(deployment);
 
@@ -240,7 +241,7 @@ function DeploymentRow({
 
       {/* Status rows */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <StatusLine label="Baseline" value={baselineLabel.text} color={baselineLabel.color} />
+        <StatusLine label="Baseline" value={baselineTrust.label} color={baselineTrust.color} />
         <StatusLine label="Monitoring" value={monitoringLabel.text} color={monitoringLabel.color} />
         <span className="text-[10px] text-[#64748B]">
           Last seen {formatTimeAgo(deployment.lastSeenAt)}
@@ -264,7 +265,7 @@ function DeploymentRow({
               href={`/app/live?relink=${deployment.instanceId}`}
               className="text-[11px] font-medium text-[#F59E0B] hover:text-white transition-colors"
             >
-              Action: Restore baseline trust
+              Action: {baselineTrust.actionLabel}
             </Link>
           )}
           {action.type === "link-baseline" && (
@@ -273,7 +274,7 @@ function DeploymentRow({
               onClick={() => setShowLinkDialog(true)}
               className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
             >
-              Action: Link baseline
+              Action: {baselineTrust.actionLabel}
             </button>
           )}
         </div>
@@ -306,17 +307,6 @@ function StatusLine({ label, value, color }: { label: string; value: string; col
       </span>
     </span>
   );
-}
-
-function resolveBaselineLabel(status: string): { text: string; color: string } {
-  switch (status) {
-    case "LINKED":
-      return { text: "Verified", color: "#10B981" };
-    case "RELINK_REQUIRED":
-      return { text: "Suspended", color: "#F59E0B" };
-    default:
-      return { text: "Missing", color: "#71717A" };
-  }
 }
 
 function resolveMonitoringLabel(deployment: Deployment): { text: string; color: string } {

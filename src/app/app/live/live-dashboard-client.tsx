@@ -11,6 +11,7 @@ import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
+import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
 
 // ============================================
 // TYPES
@@ -779,24 +780,32 @@ function EACard({
               Paper
             </span>
           )}
-          {ea.relinkRequired && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-              Baseline suspended
-            </span>
-          )}
-          {!ea.relinkRequired && ea.isExternal && !ea.baseline && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#64748B]/20 text-[#64748B] border border-[#64748B]/30">
-              No baseline
-            </span>
-          )}
-          {!ea.relinkRequired && ea.baseline && (
-            <span
-              className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#4F46E5]/20 text-[#818CF8] border border-[#4F46E5]/30"
-              title={`Baseline: WR ${ea.baseline.winRate.toFixed(1)}% | PF ${ea.baseline.profitFactor.toFixed(2)} | ${ea.baseline.totalTrades} trades`}
-            >
-              Baseline linked
-            </span>
-          )}
+          {(() => {
+            const trust = resolveInstanceBaselineTrust({
+              hasBaseline: !!ea.baseline,
+              relinkRequired: !!ea.relinkRequired,
+            });
+            const bgMap = { VERIFIED: "#4F46E5", SUSPENDED: "#F59E0B", MISSING: "#64748B" };
+            const bg = bgMap[trust.state];
+            return (
+              <span
+                className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full"
+                style={{
+                  backgroundColor: `${bg}33`,
+                  color: trust.color,
+                  borderWidth: 1,
+                  borderColor: `${bg}4D`,
+                }}
+                title={
+                  trust.state === "VERIFIED" && ea.baseline
+                    ? `Baseline: WR ${ea.baseline.winRate.toFixed(1)}% | PF ${ea.baseline.profitFactor.toFixed(2)} | ${ea.baseline.totalTrades} trades`
+                    : undefined
+                }
+              >
+                Baseline {trust.label.toLowerCase()}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -843,7 +852,7 @@ function EACard({
                       d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                     />
                   </svg>
-                  Link new baseline
+                  Restore baseline trust
                 </button>
               )}
             </div>
@@ -1053,7 +1062,7 @@ function EACard({
                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
               />
             </svg>
-            Link Baseline
+            Link baseline
           </button>
         )}
 
