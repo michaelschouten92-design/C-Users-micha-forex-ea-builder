@@ -45,6 +45,7 @@ export async function triggerMonitoringAfterIngest(
       strategyVersion: {
         select: {
           strategyIdentity: { select: { strategyId: true } },
+          backtestBaseline: { select: { id: true } },
         },
       },
     },
@@ -60,6 +61,13 @@ export async function triggerMonitoringAfterIngest(
   if (!strategyId) {
     log.info({ instanceId }, "Monitoring skipped: no strategy linked");
     return { triggered: false, reason: "NO_STRATEGY_LINKED" };
+  }
+
+  // Baseline trust guard — monitoring requires a verified baseline.
+  // Without a BacktestBaseline record the rules have nothing to compare against.
+  if (!instance.strategyVersion?.backtestBaseline) {
+    log.info({ instanceId, strategyId }, "Monitoring skipped: no verified baseline");
+    return { triggered: false, reason: "NO_VERIFIED_BASELINE" };
   }
 
   // Check operator hold — skip monitoring entirely when HALTED

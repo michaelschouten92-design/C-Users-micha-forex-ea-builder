@@ -34,6 +34,7 @@ describe("triggerMonitoringAfterIngest", () => {
       monitoringSuppressedUntil: null,
       strategyVersion: {
         strategyIdentity: { strategyId: STRATEGY_ID },
+        backtestBaseline: { id: "bl_1" },
       },
     });
   });
@@ -98,6 +99,7 @@ describe("triggerMonitoringAfterIngest", () => {
       monitoringSuppressedUntil: null,
       strategyVersion: {
         strategyIdentity: { strategyId: STRATEGY_ID },
+        backtestBaseline: { id: "bl_1" },
       },
     });
 
@@ -128,6 +130,7 @@ describe("triggerMonitoringAfterIngest", () => {
       monitoringSuppressedUntil: suppressedUntil,
       strategyVersion: {
         strategyIdentity: { strategyId: STRATEGY_ID },
+        backtestBaseline: { id: "bl_1" },
       },
     });
 
@@ -147,6 +150,7 @@ describe("triggerMonitoringAfterIngest", () => {
       monitoringSuppressedUntil: suppressedUntil,
       strategyVersion: {
         strategyIdentity: { strategyId: STRATEGY_ID },
+        backtestBaseline: { id: "bl_1" },
       },
     });
     mockIsMonitoringCooldownExpired.mockResolvedValue(true);
@@ -167,6 +171,24 @@ describe("triggerMonitoringAfterIngest", () => {
 
     expect(result).toEqual({ triggered: false, reason: "INSTANCE_NOT_FOUND" });
     expect(mockRunMonitoring).not.toHaveBeenCalled();
+  });
+
+  it("skips monitoring when no verified baseline exists", async () => {
+    mockLiveEAInstanceFindUnique.mockResolvedValue({
+      operatorHold: "NONE",
+      monitoringSuppressedUntil: null,
+      strategyVersion: {
+        strategyIdentity: { strategyId: STRATEGY_ID },
+        backtestBaseline: null,
+      },
+    });
+
+    const trigger = await importTrigger();
+    const result = await trigger(INSTANCE_ID);
+
+    expect(result).toEqual({ triggered: false, reason: "NO_VERIFIED_BASELINE" });
+    expect(mockRunMonitoring).not.toHaveBeenCalled();
+    expect(mockIsMonitoringCooldownExpired).not.toHaveBeenCalled();
   });
 
   it("skips monitoring when no strategy is linked", async () => {

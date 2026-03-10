@@ -362,21 +362,18 @@ describe("runMonitoring", () => {
     );
   });
 
-  // ── Baseline missing ──────────────────────────────────────────────
-  it("passes baselineMissing=true when no BacktestBaseline found", async () => {
+  // ── Baseline missing — fail-safe early return ────────────────────
+  it("aborts with NO_VERIFIED_BASELINE when no BacktestBaseline found", async () => {
     mockBacktestBaselineFindUnique.mockResolvedValue(null);
 
     const run = await importRunMonitoring();
-    await run(params);
+    const result = await run(params);
 
-    expect(mockEvaluateMonitoring).toHaveBeenCalledWith(
-      expect.objectContaining({
-        baselineMaxDrawdownPct: null,
-        baselineSharpeRatio: null,
-        baselineMissing: true,
-      }),
-      MONITORING_THRESHOLDS
-    );
+    expect(result.reasons).toEqual(["NO_VERIFIED_BASELINE"]);
+    expect(result.verdict).toBe("HEALTHY");
+    expect(result.liveFactCount).toBe(2);
+    // Rules should NOT have been evaluated
+    expect(mockEvaluateMonitoring).not.toHaveBeenCalled();
   });
 
   // ── CUSUM drift counting ──────────────────────────────────────────

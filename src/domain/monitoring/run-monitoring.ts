@@ -272,6 +272,29 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     }
     const baselineMissing = !baseline;
 
+    // Fail-safe: abort if no verified baseline exists.
+    // The trigger already guards this, but this catches race conditions
+    // (e.g. baseline unlinked between trigger and evaluation) and
+    // alternative entry points (e.g. manual runs).
+    if (baselineMissing) {
+      await failRun(
+        run.id,
+        recordId,
+        strategyId,
+        instanceId,
+        "NO_VERIFIED_BASELINE",
+        "No BacktestBaseline found — monitoring requires a verified baseline"
+      );
+      return {
+        runId: run.id,
+        recordId,
+        verdict: "HEALTHY",
+        reasons: ["NO_VERIFIED_BASELINE"],
+        tradeSnapshotHash: snapshot.snapshotHash,
+        liveFactCount: liveFacts.length,
+      };
+    }
+
     // Phase 1d: Load CUSUM drift from HealthSnapshots scoped to THIS instance.
     // Previously queried through strategyId which could blend multiple instances.
     const driftSnapshots = await prisma.healthSnapshot.findMany({
