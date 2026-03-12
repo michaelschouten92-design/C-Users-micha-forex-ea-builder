@@ -41,7 +41,7 @@ const deploymentSchema = z.object({
 
 const heartbeatSchema = z.object({
   symbol: z.string().max(32).optional(),
-  timeframe: z.string().max(8).optional(),
+  timeframe: z.string().max(16).optional(),
   broker: z.string().max(128).optional(),
   accountNumber: z.union([z.string(), z.number()]).transform(String).optional(),
   balance: z.number().finite().min(0).max(1e12).default(0),
