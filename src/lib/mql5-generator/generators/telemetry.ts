@@ -197,7 +197,7 @@ function buildSendTradeUpdateMQL5(): string {
          + TelemetryJsonNum("closePrice", closePrice) + ","
          + TelemetryJsonNum("lots", HistoryDealGetDouble(dTicket, DEAL_VOLUME)) + ","
          + TelemetryJsonNum("profit", HistoryDealGetDouble(dTicket, DEAL_PROFIT)) + ","
-         + "\\"magicNumber\\":" + IntegerToString(dealMagic) + ","
+         + TelemetryJsonInt("magicNumber", dealMagic) + ","
          + TelemetryJsonPair("openTime", TimeToString(openTime)) + ","
          + TelemetryJsonPair("closeTime", TimeToString(closeTime))
          + "}";
