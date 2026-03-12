@@ -24,6 +24,7 @@ export async function GET() {
       broker: true,
       accountNumber: true,
       terminalVersion: true,
+      unattributedTradeCount: true,
       createdAt: true,
       deployments: {
         orderBy: { lastSeenAt: "desc" },
@@ -35,6 +36,7 @@ export async function GET() {
           magicNumber: true,
           eaName: true,
           materialFingerprint: true,
+          source: true,
           baselineStatus: true,
           instanceId: true,
           firstSeenAt: true,

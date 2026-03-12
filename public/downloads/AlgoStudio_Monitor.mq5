@@ -53,6 +53,7 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 #define GENESIS_HASH "0000000000000000000000000000000000000000000000000000000000000000"
 #define MAX_QUEUE_SIZE 500
 #define POISON_DROP_THRESHOLD 3
+#define MAX_DISCOVERED_DEPLOYMENTS 50
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
 #define MONITOR_VERSION "1.0.0"
@@ -177,7 +178,7 @@ int OnInit()
    EvaluateDeploymentEligibility();
 
    if(InpMonitorMode != MODE_SYMBOL_ONLY)
-      Print("AlgoStudio Monitor: Account-wide monitoring mode active — deployment discovery and baseline monitoring disabled");
+      Print("AlgoStudio Monitor: Account-wide monitoring mode active — automatic deployment discovery enabled, baseline monitoring requires linking");
 
    // Build state file path
    string keyPrefix = StringSubstr(InpApiKey, 0, 8);
@@ -449,6 +450,155 @@ void EvaluateDeploymentEligibility()
          g_deploySymbol, ":", g_deployTimeframe, ":", IntegerToString(g_deployMagic),
          ":", g_deployEaName,
          " fingerprint=", StringSubstr(g_deployFingerprint, 0, 16), "...");
+}
+
+//+------------------------------------------------------------------+
+//| Discover deployment candidates from account-wide trade activity  |
+//| Groups closed deals by symbol+magicNumber where magic > 0.       |
+//| Returns JSON fragment: ,"discoveredDeployments":[...],"unattrib.."|
+//| Returns empty string if not in ACCOUNT_WIDE mode or no activity. |
+//+------------------------------------------------------------------+
+string DiscoverDeploymentsFromActivity()
+{
+   if(InpMonitorMode != MODE_ACCOUNT_WIDE) return "";
+
+   HistorySelect(0, TimeCurrent());
+   int total = HistoryDealsTotal();
+
+   // Parallel arrays for grouping (MQL5 has no hash maps)
+   string  disc_symbols[];
+   long    disc_magics[];
+   string  disc_eaHints[];
+   int     disc_counts[];
+   int     discoveredCount = 0;
+   int     unattributed = 0;
+
+   ArrayResize(disc_symbols, MAX_DISCOVERED_DEPLOYMENTS);
+   ArrayResize(disc_magics,  MAX_DISCOVERED_DEPLOYMENTS);
+   ArrayResize(disc_eaHints, MAX_DISCOVERED_DEPLOYMENTS);
+   ArrayResize(disc_counts,  MAX_DISCOVERED_DEPLOYMENTS);
+
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+
+      // Only count completed trades (DEAL_ENTRY_OUT)
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      // Skip balance/credit operations
+      ENUM_DEAL_TYPE dtype = (ENUM_DEAL_TYPE)HistoryDealGetInteger(ticket, DEAL_TYPE);
+      if(dtype == DEAL_TYPE_BALANCE || dtype == DEAL_TYPE_CREDIT ||
+         dtype == DEAL_TYPE_CHARGE  || dtype == DEAL_TYPE_CORRECTION ||
+         dtype == DEAL_TYPE_BONUS)
+         continue;
+
+      long   magic = (long)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      string sym   = HistoryDealGetString(ticket, DEAL_SYMBOL);
+
+      if(StringLen(sym) == 0) continue;
+
+      // magic == 0 → unattributed (manual or no EA identity)
+      if(magic == 0)
+      {
+         unattributed++;
+         continue;
+      }
+
+      // Find existing group
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+      {
+         if(disc_symbols[j] == sym && disc_magics[j] == magic)
+         {
+            idx = j;
+            break;
+         }
+      }
+
+      if(idx >= 0)
+      {
+         disc_counts[idx]++;
+      }
+      else if(discoveredCount < MAX_DISCOVERED_DEPLOYMENTS)
+      {
+         disc_symbols[discoveredCount] = sym;
+         disc_magics[discoveredCount]  = magic;
+         disc_counts[discoveredCount]  = 1;
+         // Use deal comment as EA name hint (first non-empty wins)
+         string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
+         // Strip broker suffixes like "[sl]", "[tp]", position ticket refs
+         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0)
+            comment = "";
+         disc_eaHints[discoveredCount] = comment;
+         discoveredCount++;
+      }
+   }
+
+   // Scan open positions — catches strategies before their first closed deal
+   for(int p = PositionsTotal() - 1; p >= 0; p--)
+   {
+      ulong posTicket = PositionGetTicket(p);
+      if(posTicket == 0) continue;
+      if(!PositionSelectByTicket(posTicket)) continue;
+
+      string sym   = PositionGetString(POSITION_SYMBOL);
+      long   magic = (long)PositionGetInteger(POSITION_MAGIC);
+
+      if(StringLen(sym) == 0) continue;
+
+      if(magic == 0)
+      {
+         unattributed++;
+         continue;
+      }
+
+      // Find existing group or create new
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+      {
+         if(disc_symbols[j] == sym && disc_magics[j] == magic)
+         {
+            idx = j;
+            break;
+         }
+      }
+
+      if(idx >= 0)
+      {
+         disc_counts[idx]++;
+      }
+      else if(discoveredCount < MAX_DISCOVERED_DEPLOYMENTS)
+      {
+         disc_symbols[discoveredCount] = sym;
+         disc_magics[discoveredCount]  = magic;
+         disc_counts[discoveredCount]  = 1;
+         string comment = PositionGetString(POSITION_COMMENT);
+         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0)
+            comment = "";
+         disc_eaHints[discoveredCount] = comment;
+         discoveredCount++;
+      }
+   }
+
+   if(discoveredCount == 0 && unattributed == 0) return "";
+
+   // Build JSON fragment
+   string json = ",\"discoveredDeployments\":[";
+   for(int i = 0; i < discoveredCount; i++)
+   {
+      if(i > 0) json += ",";
+      json += "{"
+         + JStr("symbol", disc_symbols[i]) + ","
+         + JInt("magicNumber", (int)disc_magics[i]) + ","
+         + JStr("eaHint", disc_eaHints[i]) + ","
+         + JInt("tradeCount", disc_counts[i])
+         + "}";
+   }
+   json += "]";
+   json += ",\"unattributedTradeCount\":" + IntegerToString(unattributed);
+
+   return json;
 }
 
 //+------------------------------------------------------------------+
@@ -1041,7 +1191,7 @@ void SendHeartbeat()
    string symbol = (InpMonitorMode == MODE_SYMBOL_ONLY) ? _Symbol : "";
    string tf = (InpMonitorMode == MODE_SYMBOL_ONLY) ? EnumToString((ENUM_TIMEFRAMES)Period()) : "";
 
-   // Build optional deployment object (only when deployment-aware)
+   // Build optional deployment object (only when deployment-aware — SYMBOL_ONLY mode)
    string deployJson = "";
    if(g_deploymentAware)
    {
@@ -1053,6 +1203,9 @@ void SendHeartbeat()
          + JStr("materialFingerprint", g_deployFingerprint)
          + "}";
    }
+
+   // Automatic deployment discovery (ACCOUNT_WIDE mode only)
+   string discoveryJson = DiscoverDeploymentsFromActivity();
 
    string json = "{"
       + JStr("mode", accMode) + ","
@@ -1068,6 +1221,7 @@ void SendHeartbeat()
       + JMoney("drawdown", dd) + ","
       + JInt("spread", spread)
       + deployJson
+      + discoveryJson
       + "}";
 
    if(HttpPost("/api/telemetry/heartbeat", json))

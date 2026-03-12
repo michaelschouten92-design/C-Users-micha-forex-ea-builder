@@ -22,6 +22,7 @@ interface Deployment {
   magicNumber: number;
   eaName: string;
   baselineStatus: string;
+  source: string; // "PRECISE" | "DISCOVERED"
   instanceId: string | null;
   firstSeenAt: string;
   lastSeenAt: string;
@@ -36,6 +37,7 @@ interface Terminal {
   broker: string | null;
   accountNumber: string | null;
   terminalVersion: string | null;
+  unattributedTradeCount: number;
   createdAt: string;
   deployments: Deployment[];
 }
@@ -111,7 +113,7 @@ export function TerminalsPanel() {
         </div>
         <p className="text-sm text-[#94A3B8] mb-1">No terminals registered</p>
         <p className="text-xs text-[#64748B]">
-          Register a terminal from Settings to start discovering chart deployments.
+          Register a terminal from Settings to start discovering deployments.
         </p>
       </div>
     );
@@ -129,6 +131,9 @@ export function TerminalsPanel() {
 // ── Terminal Card ──────────────────────────────────────
 
 function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: () => void }) {
+  const discoveredDeployments = terminal.deployments.filter((d) => d.source === "DISCOVERED");
+  const preciseDeployments = terminal.deployments.filter((d) => d.source !== "DISCOVERED");
+  const hasDiscovery = discoveredDeployments.length > 0 || terminal.unattributedTradeCount > 0;
   const unlinkedCount = terminal.deployments.filter((d) => !d.instanceId).length;
   const relinkCount = terminal.deployments.filter(
     (d) => d.baselineStatus === "RELINK_REQUIRED"
@@ -179,14 +184,11 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
         </div>
       </div>
 
-      {/* Running strategies */}
-      {terminal.deployments.length === 0 ? (
-        <div className="px-5 py-6 text-center">
-          <p className="text-xs text-[#64748B]">
-            No deployments detected yet. Ensure the Monitor EA is running.
-          </p>
-        </div>
-      ) : (
+      {/* Discovery guidance banner — shown when account-wide discovery is active */}
+      {hasDiscovery && <DiscoveryGuidanceBanner unattributed={terminal.unattributedTradeCount} />}
+
+      {/* Precise deployments (from SYMBOL_ONLY mode) */}
+      {preciseDeployments.length > 0 && (
         <div>
           <div className="px-5 pt-3 pb-1">
             <span className="text-[10px] font-medium text-[#64748B] uppercase tracking-wide">
@@ -194,7 +196,7 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
             </span>
           </div>
           <div className="divide-y divide-[rgba(79,70,229,0.06)]">
-            {terminal.deployments.map((deployment) => (
+            {preciseDeployments.map((deployment) => (
               <DeploymentRow
                 key={deployment.id}
                 deployment={deployment}
@@ -205,6 +207,101 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
           </div>
         </div>
       )}
+
+      {/* Discovered deployments (from ACCOUNT_WIDE mode) */}
+      {discoveredDeployments.length > 0 && (
+        <div>
+          <div className="px-5 pt-3 pb-1 flex items-center gap-2">
+            <span className="text-[10px] font-medium text-[#64748B] uppercase tracking-wide">
+              Discovered deployments
+            </span>
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-[rgba(99,102,241,0.12)] border border-[rgba(99,102,241,0.2)] text-[#818CF8]">
+              From trading activity
+            </span>
+          </div>
+          <div className="divide-y divide-[rgba(79,70,229,0.06)]">
+            {discoveredDeployments.map((deployment) => (
+              <DeploymentRow
+                key={deployment.id}
+                deployment={deployment}
+                terminalId={terminal.id}
+                onRefresh={onRefresh}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {terminal.deployments.length === 0 && !hasDiscovery && (
+        <div className="px-5 py-6 text-center">
+          <p className="text-xs text-[#64748B]">
+            No deployments detected yet. Ensure the Monitor EA is running.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Discovery Guidance Banner ─────────────────────────
+
+function DiscoveryGuidanceBanner({ unattributed }: { unattributed: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mx-5 mt-3 rounded-lg bg-[rgba(99,102,241,0.06)] border border-[rgba(99,102,241,0.15)] px-4 py-3">
+      <div className="flex items-start gap-2.5">
+        <svg
+          className="w-4 h-4 text-[#818CF8] flex-shrink-0 mt-0.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+            <span className="font-medium text-[#C4B5FD]">Automatic deployment discovery.</span>{" "}
+            Deployments below were inferred from live trading activity. Review each one and link a
+            baseline to start monitoring.
+            {unattributed > 0 && (
+              <span className="text-[#71717A]">
+                {" "}
+                · {unattributed} trade{unattributed !== 1 ? "s" : ""} with magic 0 (unattributed)
+              </span>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="text-[10px] text-[#818CF8] hover:text-white mt-1 transition-colors"
+          >
+            {expanded ? "Hide details" : "How does this work?"}
+          </button>
+          {expanded && (
+            <div className="mt-2 text-[10px] text-[#71717A] leading-relaxed space-y-1.5">
+              <p>
+                In account-wide mode, AlgoStudio groups trades by symbol and magic number to
+                identify likely strategy deployments.
+              </p>
+              <p>
+                Strategies using unique magic numbers are attributed most accurately. Trades with
+                magic number 0 cannot be confidently assigned to a strategy and remain unattributed.
+              </p>
+              <p className="text-[#A1A1AA]">
+                Next steps: review each discovered deployment, then link the correct baseline to
+                begin monitoring.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -226,17 +323,24 @@ function DeploymentRow({
   const baselineTrust = resolveBaselineTrust(deployment.baselineStatus);
   const monitoringLabel = resolveMonitoringLabel(deployment);
   const action = resolveAction(deployment);
+  const isDiscovered = deployment.source === "DISCOVERED";
 
   return (
     <div className="px-5 py-3">
       {/* Identity line */}
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-xs font-medium text-white">
-          {deployment.symbol} · {deployment.timeframe}
+          {deployment.symbol}
+          {deployment.timeframe !== "*" && ` · ${deployment.timeframe}`}
         </span>
         <span className="text-[10px] font-mono text-[#64748B]">Magic {deployment.magicNumber}</span>
-        {deployment.eaName && (
+        {deployment.eaName && !deployment.eaName.startsWith("Magic ") && (
           <span className="text-[10px] text-[#7C8DB0]">· {deployment.eaName}</span>
+        )}
+        {isDiscovered && (
+          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.15)] text-[#818CF8]">
+            Discovered
+          </span>
         )}
       </div>
 
@@ -258,7 +362,9 @@ function DeploymentRow({
               onClick={() => setShowLinkInstanceDialog(true)}
               className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
             >
-              Action: Link instance
+              {isDiscovered
+                ? "Link a baseline to start monitoring this strategy"
+                : "Action: Link instance"}
             </button>
           )}
           {action.type === "relink" && deployment.instanceId && (
@@ -286,7 +392,7 @@ function DeploymentRow({
         <LinkInstanceDialog
           terminalId={terminalId}
           deploymentId={deployment.id}
-          deploymentLabel={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe}`}
+          deploymentLabel={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe !== "*" ? deployment.timeframe : ""}`}
           onClose={() => setShowLinkInstanceDialog(false)}
           onLinked={() => {
             setShowLinkInstanceDialog(false);
@@ -298,9 +404,9 @@ function DeploymentRow({
       {showBaselineDialog && deployment.instanceId && (
         <LinkBaselineDialog
           instanceId={deployment.instanceId}
-          instanceName={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe}`}
+          instanceName={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe !== "*" ? deployment.timeframe : ""}`}
           isRelink={deployment.baselineStatus === "RELINK_REQUIRED"}
-          deploymentLabel={`${deployment.symbol} · ${deployment.timeframe} · Magic ${deployment.magicNumber}`}
+          deploymentLabel={`${deployment.symbol} · ${deployment.timeframe !== "*" ? deployment.timeframe + " · " : ""}Magic ${deployment.magicNumber}`}
           onClose={() => setShowBaselineDialog(false)}
           onLinked={() => {
             setShowBaselineDialog(false);

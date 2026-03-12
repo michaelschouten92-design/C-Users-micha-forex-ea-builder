@@ -1363,6 +1363,8 @@ model TerminalConnection {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Soft delete
 
+  unattributedTradeCount Int @default(0) // Trades with magic=0 (account-wide discovery)
+
   user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   instances   LiveEAInstance[]
   deployments TerminalDeployment[]
@@ -1386,6 +1388,7 @@ model TerminalDeployment {
   magicNumber          Int
   eaName               String
   materialFingerprint  String?         // SHA-256 of EA parameters/config — detects material changes
+  source               String          @default("PRECISE") // PRECISE (symbol-only) | DISCOVERED (account-wide)
   baselineStatus       BaselineStatus  @default(UNLINKED)
   firstSeenAt          DateTime        @default(now())
   lastSeenAt           DateTime        @default(now())

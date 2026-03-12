@@ -39,6 +39,13 @@ const deploymentSchema = z.object({
     .optional(),
 });
 
+const discoveredDeploymentSchema = z.object({
+  symbol: z.string().min(1).max(20).trim(),
+  magicNumber: z.number().int().min(1), // Must be > 0
+  eaHint: z.string().max(100).trim().optional().default(""),
+  tradeCount: z.number().int().min(0).optional().default(0),
+});
+
 const heartbeatSchema = z.object({
   symbol: z.string().max(32).optional(),
   timeframe: z.string().max(16).optional(),
@@ -53,6 +60,9 @@ const heartbeatSchema = z.object({
   spread: z.number().finite().min(0).max(10000).default(0),
   mode: z.enum(["LIVE", "PAPER"]).optional(),
   deployment: deploymentSchema.optional(),
+  // Account-wide deployment discovery
+  discoveredDeployments: z.array(discoveredDeploymentSchema).max(50).optional(),
+  unattributedTradeCount: z.number().int().min(0).optional(),
 });
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -169,6 +179,24 @@ export async function POST(request: NextRequest) {
         );
       } catch (err) {
         log.error({ err, instanceId: auth.instanceId }, "Deployment discovery failed");
+      }
+    }
+
+    // Account-wide deployment discovery — process discovered deployment candidates.
+    // Runs when discoveredDeployments array is present (ACCOUNT_WIDE mode).
+    if (data.discoveredDeployments && data.discoveredDeployments.length > 0) {
+      try {
+        await processDiscoveredDeployments(
+          auth.instanceId,
+          auth.userId,
+          data.discoveredDeployments,
+          previousState?.terminalConnectionId ?? null,
+          data.broker ?? null,
+          data.accountNumber ?? null,
+          data.unattributedTradeCount ?? 0
+        );
+      } catch (err) {
+        log.error({ err, instanceId: auth.instanceId }, "Account-wide deployment discovery failed");
       }
     }
 
@@ -472,4 +500,130 @@ async function processDeploymentDiscovery(
       log.error({ err, instanceId, deploymentKey }, "Baseline trust suspension failed");
     });
   }
+}
+
+// ── Account-Wide Deployment Discovery ────────────────────────────────
+
+/**
+ * Compute deployment key for discovered (account-wide) deployments.
+ * Uses "*" for timeframe since it's unknown from trade data.
+ * SHA-256(SYMBOL:*:MAGICNUMBER:EAHINT_OR_*) — deterministic.
+ */
+function computeDiscoveredDeploymentKey(d: {
+  symbol: string;
+  magicNumber: number;
+  eaHint: string;
+}): string {
+  const eaKey = d.eaHint || "*";
+  const raw = `${d.symbol.toUpperCase()}:*:${d.magicNumber}:${eaKey}`;
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+/**
+ * Process discovered deployments from account-wide monitoring.
+ * Each candidate is a symbol+magicNumber group from trade history.
+ * Creates TerminalDeployment entries with source="DISCOVERED".
+ */
+async function processDiscoveredDeployments(
+  instanceId: string,
+  userId: string,
+  deployments: { symbol: string; magicNumber: number; eaHint?: string; tradeCount?: number }[],
+  existingTerminalId: string | null,
+  broker: string | null,
+  accountNumber: string | null,
+  unattributedTradeCount: number
+): Promise<void> {
+  const now = new Date();
+
+  // Step 1: Resolve or auto-create TerminalConnection (same logic as precise discovery)
+  let terminalId = existingTerminalId;
+  if (!terminalId) {
+    const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
+    const label = [broker, accountNumber].filter(Boolean).join(" ") || "Monitor EA";
+
+    const terminal = await prisma.terminalConnection.upsert({
+      where: { apiKeyHash: syntheticHash },
+      create: {
+        userId,
+        label: `Auto: ${label}`,
+        apiKeyHash: syntheticHash,
+        status: "ONLINE",
+        lastHeartbeat: now,
+        broker: broker ?? undefined,
+        accountNumber: accountNumber ?? undefined,
+        unattributedTradeCount,
+      },
+      update: {
+        status: "ONLINE",
+        lastHeartbeat: now,
+        unattributedTradeCount,
+        ...(broker != null && { broker }),
+        ...(accountNumber != null && { accountNumber }),
+      },
+      select: { id: true },
+    });
+
+    terminalId = terminal.id;
+
+    await prisma.liveEAInstance.update({
+      where: { id: instanceId },
+      data: { terminalConnectionId: terminalId },
+    });
+
+    log.info(
+      { instanceId, terminalId, discovered: deployments.length },
+      "Auto-created TerminalConnection for account-wide discovery"
+    );
+  } else {
+    await prisma.terminalConnection.update({
+      where: { id: terminalId },
+      data: { status: "ONLINE", lastHeartbeat: now, unattributedTradeCount },
+    });
+  }
+
+  // Step 2: Upsert each discovered deployment
+  for (const d of deployments) {
+    const eaHint = d.eaHint || "";
+    const eaName = eaHint || `Magic ${d.magicNumber}`;
+    const deploymentKey = computeDiscoveredDeploymentKey({
+      symbol: d.symbol,
+      magicNumber: d.magicNumber,
+      eaHint: "", // Use empty for stable key — eaHint from comments is unreliable
+    });
+
+    await prisma.terminalDeployment.upsert({
+      where: {
+        terminalConnectionId_deploymentKey: {
+          terminalConnectionId: terminalId,
+          deploymentKey,
+        },
+      },
+      create: {
+        terminalConnectionId: terminalId,
+        deploymentKey,
+        symbol: d.symbol.toUpperCase(),
+        timeframe: "*",
+        magicNumber: d.magicNumber,
+        eaName,
+        source: "DISCOVERED",
+        lastSeenAt: now,
+      },
+      update: {
+        lastSeenAt: now,
+        // Update eaName if we now have a hint and previously only had a magic label
+        ...(eaHint && { eaName }),
+      },
+      select: { id: true },
+    });
+  }
+
+  log.info(
+    {
+      instanceId,
+      terminalId,
+      discovered: deployments.length,
+      unattributed: unattributedTradeCount,
+    },
+    "Processed account-wide deployment discovery"
+  );
 }
