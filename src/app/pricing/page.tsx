@@ -13,7 +13,7 @@ import { Footer } from "@/components/marketing/footer";
 
 const CheckIcon = () => (
   <svg
-    className="w-4 h-4 text-[#10B981] flex-shrink-0 mt-0.5"
+    className="w-4 h-4 text-[#10B981] flex-shrink-0 mx-auto"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
