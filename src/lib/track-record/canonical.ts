@@ -48,6 +48,7 @@ const INT_FIELDS = new Set([
   "uptimeSeconds",
   "previousSeqNo",
   "recoveredFromSeqNo",
+  "magicNumber",
 ]);
 
 /**
