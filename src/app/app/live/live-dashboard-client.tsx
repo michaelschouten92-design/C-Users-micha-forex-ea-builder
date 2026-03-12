@@ -11,10 +11,7 @@ import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
-import {
-  resolveInstanceBaselineTrust,
-  type BaselineTrustDisplay,
-} from "@/lib/live/baseline-trust-state";
+import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
 import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
 
 // ============================================
@@ -745,6 +742,7 @@ function EACard({
 
   return (
     <div
+      id={`ea-card-${ea.id}`}
       className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
         statusChanged
           ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
@@ -2364,68 +2362,175 @@ export function LiveDashboardClient({
         </div>
       )}
 
-      {/* Action Required Panel */}
+      {/* Action Required / Edge Health Panel */}
       {(() => {
-        const actionable = eaInstances
-          .map((ea) => {
-            const trust = resolveInstanceBaselineTrust({
-              hasBaseline: !!ea.baseline,
-              relinkRequired: !!ea.relinkRequired,
-            });
-            if (trust.actionLabel === null) return null;
-            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-            const stateLabel =
-              trust.state === "SUSPENDED" ? "Baseline suspended" : "No baseline linked";
-            return { id: ea.id, identity, stateLabel, trust };
-          })
-          .filter(
-            (
-              item
-            ): item is {
-              id: string;
-              identity: string;
-              stateLabel: string;
-              trust: BaselineTrustDisplay;
-            } => item !== null
-          );
+        interface ActionItem {
+          id: string;
+          identity: string;
+          statusLabel: string;
+          reason: string;
+          actionLabel: string;
+          color: string;
+          onClick: () => void;
+        }
 
-        if (actionable.length === 0) return null;
+        const items: ActionItem[] = [];
+
+        for (const ea of eaInstances) {
+          const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+
+          // Priority 1: Baseline trust issues (existing logic)
+          const trust = resolveInstanceBaselineTrust({
+            hasBaseline: !!ea.baseline,
+            relinkRequired: !!ea.relinkRequired,
+          });
+          if (trust.state === "SUSPENDED") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "Baseline suspended",
+              reason: "Material change invalidated baseline trust",
+              actionLabel: trust.actionLabel!,
+              color: "#F59E0B",
+              onClick: () => setLinkBaselineInstanceId(ea.id),
+            });
+            continue; // One item per instance — most urgent wins
+          }
+          if (trust.state === "MISSING") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "No baseline linked",
+              reason: "No baseline is linked to this deployment",
+              actionLabel: trust.actionLabel!,
+              color: "#71717A",
+              onClick: () => setLinkBaselineInstanceId(ea.id),
+            });
+            continue;
+          }
+
+          // Priority 2: Edge health issues (from strategy status / health status)
+          if (ea.strategyStatus === "EDGE_DEGRADED") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "Edge degraded",
+              reason: ea.monitoringReasons?.[0]
+                ? formatMonitoringReasons(ea.monitoringReasons)[0]
+                : "Live performance has materially diverged from baseline",
+              actionLabel: "Review instance",
+              color: "#EF4444",
+              onClick: () => {
+                document
+                  .getElementById(`ea-card-${ea.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              },
+            });
+            continue;
+          }
+          if (ea.strategyStatus === "UNSTABLE") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "Unstable",
+              reason: ea.monitoringReasons?.[0]
+                ? formatMonitoringReasons(ea.monitoringReasons)[0]
+                : "Health metrics show early signs of deviation",
+              actionLabel: "Review instance",
+              color: "#F59E0B",
+              onClick: () => {
+                document
+                  .getElementById(`ea-card-${ea.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              },
+            });
+            continue;
+          }
+
+          // Priority 3: Insufficient data
+          if (ea.healthStatus === "INSUFFICIENT_DATA" || ea.strategyStatus === "TESTING") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "Waiting for data",
+              reason: "More live samples are needed before evaluation",
+              actionLabel: "Wait for more data",
+              color: "#A78BFA",
+              onClick: () => {
+                document
+                  .getElementById(`ea-card-${ea.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              },
+            });
+            continue;
+          }
+
+          // Priority 4: Connection issues
+          if (ea.status === "ERROR") {
+            items.push({
+              id: ea.id,
+              identity,
+              statusLabel: "Connection error",
+              reason: ea.lastError ?? "EA reported an error state",
+              actionLabel: "Review instance",
+              color: "#EF4444",
+              onClick: () => {
+                document
+                  .getElementById(`ea-card-${ea.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              },
+            });
+            continue;
+          }
+
+          // Healthy instances are not shown
+        }
+
+        if (items.length === 0) return null;
+
+        // Determine header accent: red if any critical, amber if warnings, else muted
+        const hasRed = items.some((i) => i.color === "#EF4444");
+        const headerColor = hasRed ? "#EF4444" : "#F59E0B";
 
         return (
-          <div className="bg-[#1A0626] border border-[#F59E0B]/20 rounded-xl p-4">
+          <div
+            className="bg-[#1A0626] border rounded-xl p-4"
+            style={{ borderColor: `${headerColor}33` }}
+          >
             <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
               <p className="text-xs font-semibold text-white">Action Required</p>
               <span className="text-[10px] text-[#7C8DB0]">
-                {actionable.length}{" "}
-                {actionable.length === 1 ? "strategy requires" : "strategies require"} attention
+                {items.length} {items.length === 1 ? "instance requires" : "instances require"}{" "}
+                attention
               </span>
             </div>
             <div className="space-y-2">
-              {actionable.map((item) => (
+              {items.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between gap-3 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-medium text-[#CBD5E1] truncate">
                       {item.identity}
                     </p>
-                    <p className="text-[10px]" style={{ color: item.trust.color }}>
-                      {item.stateLabel}
+                    <p className="text-[10px] font-medium" style={{ color: item.color }}>
+                      {item.statusLabel}
                     </p>
+                    <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{item.reason}</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setLinkBaselineInstanceId(item.id)}
+                    onClick={item.onClick}
                     className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
                     style={{
-                      color: item.trust.color,
-                      borderColor: `${item.trust.color}4D`,
-                      backgroundColor: `${item.trust.color}15`,
+                      color: item.color,
+                      borderColor: `${item.color}4D`,
+                      backgroundColor: `${item.color}15`,
                     }}
                   >
-                    {item.trust.actionLabel}
+                    {item.actionLabel}
                   </button>
                 </div>
               ))}
