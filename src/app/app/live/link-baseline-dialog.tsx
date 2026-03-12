@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { showSuccess } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 
@@ -18,6 +18,7 @@ interface BacktestOption {
   fileName: string;
   eaName: string | null;
   symbol: string;
+  timeframe: string | null;
   totalTrades: number;
   winRate: number;
   profitFactor: number;
@@ -25,11 +26,74 @@ interface BacktestOption {
   createdAt: string;
 }
 
+/** Deployment context used for baseline auto-suggestion */
+export interface DeploymentContext {
+  symbol: string | null;
+  timeframe: string | null;
+  eaName: string | null;
+}
+
+/**
+ * Score a backtest against deployment context.
+ * Returns 0 (no match) to 3 (strong match).
+ * Only returns > 0 if symbol matches exactly.
+ */
+function scoreMatch(bt: BacktestOption, ctx: DeploymentContext): number {
+  if (!ctx.symbol) return 0;
+
+  // Normalize symbols: strip trailing suffixes like ".r" or "m" for broker variants
+  const normSymbol = (s: string) => s.replace(/[.\-_].*$/, "").toUpperCase();
+  if (normSymbol(bt.symbol) !== normSymbol(ctx.symbol)) return 0;
+
+  let score = 1; // symbol match
+
+  if (ctx.timeframe && bt.timeframe) {
+    const normTf = (t: string) => t.replace(/^PERIOD_/, "").toUpperCase();
+    if (normTf(bt.timeframe) === normTf(ctx.timeframe)) {
+      score += 1;
+    }
+  }
+
+  if (ctx.eaName && bt.eaName) {
+    if (bt.eaName.toLowerCase() === ctx.eaName.toLowerCase()) {
+      score += 1;
+    }
+  }
+
+  return score;
+}
+
+function findSuggestion(
+  backtests: BacktestOption[],
+  ctx: DeploymentContext | undefined
+): BacktestOption | null {
+  if (!ctx || !ctx.symbol) return null;
+
+  const scored = backtests
+    .map((bt) => ({ bt, score: scoreMatch(bt, ctx) }))
+    .filter((s) => s.score >= 2) // require at least symbol + one more match
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.bt.healthScore - a.bt.healthScore; // tie-break by health
+    });
+
+  if (scored.length === 0) return null;
+
+  // Only suggest if top match is clearly better than alternatives
+  if (scored.length > 1 && scored[0].score === scored[1].score) {
+    // Multiple equally strong matches — don't suggest ambiguously
+    return null;
+  }
+
+  return scored[0].bt;
+}
+
 export function LinkBaselineDialog({
   instanceId,
   instanceName,
   isRelink,
   deploymentLabel,
+  deploymentContext,
   onClose,
   onLinked,
 }: {
@@ -38,6 +102,8 @@ export function LinkBaselineDialog({
   isRelink?: boolean;
   /** Compact deployment identity, e.g. "EURUSD · H1 · Magic 12345" */
   deploymentLabel?: string;
+  /** Deployment fields used for auto-suggestion */
+  deploymentContext?: DeploymentContext;
   onClose: () => void;
   onLinked: (instanceId: string, baseline: BaselineData) => void;
 }) {
@@ -46,6 +112,7 @@ export function LinkBaselineDialog({
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +133,7 @@ export function LinkBaselineDialog({
             fileName: item.fileName,
             eaName: item.eaName ?? null,
             symbol: item.symbol ?? "",
+            timeframe: item.timeframe ?? null,
             totalTrades: item.totalTrades,
             winRate: item.winRate ?? 0,
             profitFactor: item.profitFactor ?? 0,
@@ -85,6 +153,18 @@ export function LinkBaselineDialog({
       cancelled = true;
     };
   }, []);
+
+  const suggestion = useMemo(
+    () => findSuggestion(backtests, deploymentContext),
+    [backtests, deploymentContext]
+  );
+
+  // Auto-select suggestion when backtests load (only if user hasn't picked yet)
+  useEffect(() => {
+    if (suggestion && !selectedRunId && !suggestionDismissed) {
+      setSelectedRunId(suggestion.runId);
+    }
+  }, [suggestion, selectedRunId, suggestionDismissed]);
 
   async function handleLink() {
     if (!selectedRunId) return;
@@ -114,6 +194,7 @@ export function LinkBaselineDialog({
   }
 
   const selected = backtests.find((b) => b.runId === selectedRunId);
+  const showSuggestion = suggestion && !suggestionDismissed;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -156,6 +237,53 @@ export function LinkBaselineDialog({
             </div>
           )}
 
+          {/* Suggestion banner */}
+          {!loading && showSuggestion && (
+            <div className="mb-3 p-3 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/25">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-[#A78BFA]">Suggested baseline</p>
+                  <p className="text-sm text-white truncate mt-0.5">
+                    {suggestion.eaName || suggestion.fileName}
+                  </p>
+                  <div className="flex items-center gap-3 text-[10px] text-[#7C8DB0] mt-1">
+                    <span>{suggestion.symbol}</span>
+                    {suggestion.timeframe && <span>{suggestion.timeframe}</span>}
+                    <span>{suggestion.totalTrades} trades</span>
+                    <span>WR {suggestion.winRate.toFixed(1)}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => {
+                      setSelectedRunId(suggestion.runId);
+                      setSuggestionDismissed(true);
+                    }}
+                    className="px-2.5 py-1 rounded text-[10px] font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSuggestionDismissed(true);
+                      if (selectedRunId === suggestion.runId) {
+                        setSelectedRunId(null);
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded text-[10px] font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-colors"
+                  >
+                    Choose different
+                  </button>
+                </div>
+              </div>
+              <p className="text-[9px] text-[#64748B] mt-2">
+                Matched on {deploymentContext?.symbol && "symbol"}
+                {deploymentContext?.timeframe && suggestion.timeframe ? " + timeframe" : ""}
+                {deploymentContext?.eaName && suggestion.eaName ? " + EA name" : ""}
+              </p>
+            </div>
+          )}
+
           {!loading && backtests.length > 0 && (
             <div className="space-y-2">
               {backtests.map((bt) => (
@@ -172,7 +300,10 @@ export function LinkBaselineDialog({
                     <span className="text-sm font-medium text-white truncate">
                       {bt.eaName || bt.fileName}
                     </span>
-                    <span className="text-[10px] text-[#7C8DB0] ml-2 shrink-0">{bt.symbol}</span>
+                    <span className="text-[10px] text-[#7C8DB0] ml-2 shrink-0">
+                      {bt.symbol}
+                      {bt.timeframe ? ` · ${bt.timeframe}` : ""}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-[#7C8DB0]">
                     <span>{bt.totalTrades} trades</span>

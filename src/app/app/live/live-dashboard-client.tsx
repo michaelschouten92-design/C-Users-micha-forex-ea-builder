@@ -11,7 +11,11 @@ import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
 import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
-import { LinkBaselineDialog, type BaselineData } from "./link-baseline-dialog";
+import {
+  LinkBaselineDialog,
+  type BaselineData,
+  type DeploymentContext,
+} from "./link-baseline-dialog";
 import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
 import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
 import { updateOperatorHold } from "./actions";
@@ -794,6 +798,7 @@ function EACard({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [haltState, setHaltState] = useState(ea.operatorHold ?? "NONE");
   const [haltLoading, setHaltLoading] = useState(false);
+  const [showHaltConfirm, setShowHaltConfirm] = useState(false);
   const trades = ea.trades ?? [];
   const heartbeats = ea.heartbeats ?? [];
   const winRate = calculateWinRate(trades);
@@ -812,8 +817,16 @@ function EACard({
     onDelete(ea.id);
   }
 
-  async function handleToggleHalt(): Promise<void> {
-    const target = haltState === "HALTED" ? "NONE" : "HALTED";
+  function handleToggleHalt(): void {
+    if (haltState === "HALTED") {
+      executeHalt("NONE");
+    } else {
+      setShowHaltConfirm(true);
+    }
+  }
+
+  async function executeHalt(target: "HALTED" | "NONE"): Promise<void> {
+    setShowHaltConfirm(false);
     setHaltLoading(true);
     const result = await updateOperatorHold(ea.id, target);
     if (result.ok) {
@@ -1195,7 +1208,7 @@ function EACard({
               }
             />
           </svg>
-          {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Halt Strategy"}
+          {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Emergency Halt"}
         </button>
 
         <button
@@ -1333,6 +1346,32 @@ function EACard({
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showHaltConfirm && (
+        <div className="mt-3 p-4 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
+          <p className="text-sm text-[#EF4444] font-medium mb-1">Emergency Halt</p>
+          <p className="text-xs text-[#CBD5E1] mb-1">
+            This will block AlgoStudio from approving trades for this strategy.
+          </p>
+          <p className="text-xs text-[#7C8DB0] mb-3">
+            Trading on the terminal will not be automatically stopped.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => executeHalt("HALTED")}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-[#EF4444] hover:bg-[#DC2626] transition-all duration-200"
+            >
+              Emergency Halt
+            </button>
+            <button
+              onClick={() => setShowHaltConfirm(false)}
               className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
             >
               Cancel
@@ -2503,22 +2542,30 @@ export function LiveDashboardClient({
       )}
 
       {/* Link Baseline Dialog */}
-      {linkBaselineInstanceId && (
-        <LinkBaselineDialog
-          instanceId={linkBaselineInstanceId}
-          instanceName={eaInstances.find((ea) => ea.id === linkBaselineInstanceId)?.eaName ?? ""}
-          isRelink={eaInstances.find((ea) => ea.id === linkBaselineInstanceId)?.relinkRequired}
-          onClose={() => setLinkBaselineInstanceId(null)}
-          onLinked={(instanceId, baseline) => {
-            setEaInstances((prev) =>
-              prev.map((ea) =>
-                ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
-              )
-            );
-            setLinkBaselineInstanceId(null);
-          }}
-        />
-      )}
+      {linkBaselineInstanceId &&
+        (() => {
+          const inst = eaInstances.find((ea) => ea.id === linkBaselineInstanceId);
+          const ctx: DeploymentContext | undefined = inst
+            ? { symbol: inst.symbol, timeframe: inst.timeframe, eaName: inst.eaName }
+            : undefined;
+          return (
+            <LinkBaselineDialog
+              instanceId={linkBaselineInstanceId}
+              instanceName={inst?.eaName ?? ""}
+              isRelink={inst?.relinkRequired}
+              deploymentContext={ctx}
+              onClose={() => setLinkBaselineInstanceId(null)}
+              onLinked={(instanceId, baseline) => {
+                setEaInstances((prev) =>
+                  prev.map((ea) =>
+                    ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
+                  )
+                );
+                setLinkBaselineInstanceId(null);
+              }}
+            />
+          );
+        })()}
     </div>
   );
 }
