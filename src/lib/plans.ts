@@ -82,13 +82,13 @@ export const PLANS = {
     name: "Free",
     tier: "FREE" as const,
     features: [
+      "Backtest health scoring",
+      "Monte Carlo risk calculator",
+      "Strategy journal",
+      "1 active project",
       "Visual strategy builder",
       "All 10 strategy templates",
-      "1 active project",
       "3 MQL5 exports per month",
-      "Monte Carlo risk calculator",
-      "Backtest health scoring",
-      "Strategy journal",
     ],
     limits: {
       maxProjects: 1,

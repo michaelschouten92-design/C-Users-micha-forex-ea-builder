@@ -125,29 +125,28 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Validate
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            For traders who want validation and live clarity.
+            Evaluate strategy viability before going live.
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Evaluate strategy viability before deployment
+            Evaluate strategy viability before going live
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Statistical validation, risk simulation, and backtest scoring. No live governance, no
+            Backtest scoring, risk simulation, and statistical validation. No live governance, no
             execution authority, no automatic intervention.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
               "Backtest health scoring",
-              "Monte Carlo risk validation",
-              "Visual strategy builder",
-              "All 10 strategy templates",
-              "1 active strategy",
-              "3 MQL5 exports per month",
+              "Monte Carlo risk simulation",
               "Strategy journal",
+              "1 active strategy",
+              "EA builder & templates",
+              "3 MQL5 exports per month",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -166,7 +165,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             href="/login?mode=register&redirect=/app/onboarding?path=backtest"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Start Validation — Free
+            Start monitoring
           </Link>
           <p className="mt-2 text-center text-xs text-[#64748B]">No credit card required.</p>
         </div>
@@ -188,7 +187,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Strategy Authority
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            For traders who want deterministic lifecycle enforcement.
+            Deterministic lifecycle authority over live strategies.
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -258,7 +257,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !proPrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
-            {loadingPlan === "PRO" ? "Loading..." : "Establish Authority"}
+            {loadingPlan === "PRO" ? "Loading..." : "Start monitoring"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
@@ -273,7 +272,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             Full Lifecycle Authority
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            For traders who want full lifecycle command.
+            Portfolio-level deterministic governance framework.
           </p>
           <div className="mt-4">
             {elitePrice ? (
@@ -345,7 +344,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             disabled={loadingPlan !== null || !elitePrice}
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border-2 border-[#A78BFA] text-white hover:bg-[rgba(167,139,250,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
           >
-            {loadingPlan === "ELITE" ? "Loading..." : "Establish Full Control"}
+            {loadingPlan === "ELITE" ? "Loading..." : "Start monitoring"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>

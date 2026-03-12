@@ -71,7 +71,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     ],
   },
   {
-    category: "Tools & Export",
+    category: "Strategy Tools",
     rows: [
       ["EA builder & strategy templates", true, true, true],
       ["MQL5 export", "3/month", "Unlimited", "Unlimited"],
@@ -185,6 +185,10 @@ export default function PricingPage() {
           <p className="mt-4 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto">
             Simple plans for strategy monitoring, verification, and governance.
           </p>
+          <p className="mt-3 text-sm text-[#71717A] max-w-2xl mx-auto">
+            AlgoStudio monitors whether your trading strategy still has an edge — and governs what
+            happens when it doesn&apos;t.
+          </p>
         </div>
 
         {/* ════════════════════════════════════════════════════════════
@@ -235,12 +239,12 @@ export default function PricingPage() {
 
             <ul className="mt-6 space-y-2.5 flex-1">
               {[
-                "1 active strategy",
                 "Backtest health scoring",
                 "Monte Carlo risk simulation",
+                "Strategy journal",
+                "1 active strategy",
                 "EA builder & templates",
                 "3 MQL5 exports / month",
-                "Strategy journal",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
                   <CheckIcon />
@@ -267,7 +271,7 @@ export default function PricingPage() {
             </div>
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Control</h3>
             <p className="text-xs text-[#71717A] mt-1">
-              Live monitoring and verified track records.
+              Deterministic lifecycle authority over live strategies.
             </p>
             <div className="mt-4">
               {proPrice ? (
@@ -302,15 +306,14 @@ export default function PricingPage() {
 
             <ul className="mt-6 space-y-2.5 flex-1">
               {[
-                "Unlimited strategies & exports",
-                "Live health monitoring",
-                "Drift detection",
-                "Verified track record (hash chain)",
-                "Strategy identity & versioning",
-                "Public proof page",
-                "Lifecycle governance (run / pause)",
+                "Execution Authority (RUN / PAUSE)",
+                "Continuous heartbeat monitoring",
+                "Structural deviation detection",
+                "Verified Track Record (hash chain)",
+                "Strategy Identity & versioning",
                 "Governance snapshot logging",
                 "Email, webhook & Telegram alerts",
+                "Unlimited strategies & exports",
                 "Priority support",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
@@ -334,7 +337,7 @@ export default function PricingPage() {
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Authority</h3>
             <p className="text-xs text-[#71717A] mt-1">
-              Portfolio-level governance and advanced analysis.
+              Portfolio-level deterministic governance framework.
             </p>
             <div className="mt-4">
               {elitePrice ? (
@@ -370,11 +373,11 @@ export default function PricingPage() {
             <ul className="mt-6 space-y-2.5 flex-1">
               {[
                 "Everything in Control",
-                "Full lifecycle control (run / pause / stop)",
-                "Portfolio-level governance",
+                "Full lifecycle authority (RUN / PAUSE / STOP)",
+                "Incident escalation framework",
                 "CUSUM drift analysis",
                 "Edge degradation detection",
-                "Automatic intervention on deviation",
+                "Portfolio authority aggregation",
                 "Embeddable proof widget",
                 "1-on-1 strategy review (1/month)",
                 "Direct developer channel",
