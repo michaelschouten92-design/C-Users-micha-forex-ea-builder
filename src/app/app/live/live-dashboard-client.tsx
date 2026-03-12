@@ -2471,6 +2471,58 @@ export function LiveDashboardClient({
         </div>
       )}
 
+      {/* Edge Health Summary */}
+      {eaInstances.length > 0 &&
+        (() => {
+          let healthy = 0;
+          let attention = 0;
+          let monitoring = 0;
+          let paused = 0;
+
+          for (const ea of eaInstances) {
+            if (ea.tradingState === "PAUSED") {
+              paused++;
+              continue;
+            }
+            const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+            if (!att) {
+              healthy++;
+            } else if (att.statusLabel === "Waiting for data") {
+              monitoring++;
+            } else {
+              attention++;
+            }
+          }
+
+          const cats = [
+            { label: "Healthy", count: healthy, color: "#10B981" },
+            { label: "Attention", count: attention, color: "#F59E0B" },
+            { label: "Monitoring", count: monitoring, color: "#A78BFA" },
+            { label: "Paused", count: paused, color: "#64748B" },
+          ];
+
+          return (
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {cats.map((c) => (
+                <div
+                  key={c.label}
+                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3"
+                >
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                    {c.label}
+                  </p>
+                  <p
+                    className="text-lg font-semibold"
+                    style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
+                  >
+                    {c.count}
+                  </p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
       {/* Action Required / Edge Health Panel */}
       {(() => {
         const items = eaInstances
