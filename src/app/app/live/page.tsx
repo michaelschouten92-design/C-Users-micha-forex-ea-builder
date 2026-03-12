@@ -8,15 +8,11 @@ import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
-import { DecisionTimeline } from "./components/decision-timeline";
-import { DecisionContextPanel } from "./components/decision-context-panel";
-import { OperatorHoldControls } from "./components/operator-hold-controls";
+import { ManualHaltStatus } from "./components/operator-hold-controls";
 import { EdgeDriftPanel } from "./components/edge-drift-panel";
-import { selectDecision } from "./select-decision";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
-import { getControlExplanation } from "@/domain/heartbeat/control-explanations";
-import type { HeartbeatReasonCode } from "@/domain/heartbeat/decide-heartbeat-action";
-import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
+import { computeLiveWinrateFromTrades, EDGE_DRIFT_TRADES_N } from "./edge-drift-helpers";
+import { computeEdgeDrift } from "@/domain/strategy/edge-drift";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -114,16 +110,7 @@ function renderDashboard(
   params: { decision?: string; relink?: string },
   tier: "FREE" | "PRO" | "ELITE"
 ) {
-  const { eaInstances, authority, analytics, recentDecisions } = data;
-
-  const { decision: selectedDecision, selectedId } = selectDecision(
-    recentDecisions,
-    authority,
-    params.decision
-  );
-  const selectedTimestamp = selectedId
-    ? recentDecisions.find((d) => d.id === selectedId)?.timestamp
-    : authority?.decidedAt;
+  const { eaInstances, authority } = data;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -143,6 +130,7 @@ function renderDashboard(
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
     strategyStatus: ea.strategyStatus as string,
+    operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     relinkRequired: ea.terminalDeployments.length > 0,
     trades: ea.trades.map((t) => ({
@@ -156,15 +144,6 @@ function renderDashboard(
   }));
 
   const relinkInstanceId = params.relink ?? null;
-
-  // ── Derive governance context from instance data ──
-  const now = new Date();
-  const hasOperatorHold = eaInstances.some((ea) => ea.operatorHold !== "NONE");
-  const suppressedInstances = eaInstances.filter(
-    (ea) => ea.monitoringSuppressedUntil && ea.monitoringSuppressedUntil > now
-  );
-  const hasSuppression = suppressedInstances.length > 0;
-  const lifecycleStates = [...new Set(eaInstances.map((ea) => ea.lifecycleState))];
 
   return (
     <div className="min-h-screen">
@@ -189,65 +168,38 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
+        {/* ── System Status strip ── */}
+        {eaInstances.length > 0 && (
+          <SystemStatusStrip instances={eaInstances} authority={authority} />
+        )}
+
         {/* ══════════════════════════════════════════════════════
-            CONTROL — Execution Authority (primary, visually dominant)
+            CONTROL — Governance card grid
             ══════════════════════════════════════════════════════ */}
         {eaInstances.length > 0 && (
-          <section className="mt-6 mb-10">
-            <div className="grid lg:grid-cols-3 gap-4">
-              {/* ── Execution Authority + Control Explanation (wide left) ── */}
-              <div className="lg:col-span-2 flex flex-col gap-4">
-                <ExecutionAuthorityCard authority={authority} />
-                <ControlExplanationPanel
-                  action={selectedDecision.action}
-                  reasonCode={selectedDecision.reasonCode}
-                  authorityReasons={authority?.authorityReasons}
-                  isHistorical={selectedId !== null}
-                />
-                <DecisionContextPanel
-                  context={selectedDecision.context}
-                  timestamp={selectedTimestamp}
-                  isHistorical={selectedId !== null}
-                />
-                <DecisionTimeline events={recentDecisions} selectedId={selectedId} />
-              </div>
-
-              {/* ── Governance Context + Authority Uptime (stacked right) ── */}
-              <div className="flex flex-col gap-4">
-                <GovernanceContextCard
-                  hasOperatorHold={hasOperatorHold}
-                  hasSuppression={hasSuppression}
-                  lifecycleStates={lifecycleStates}
-                  instanceCount={eaInstances.length}
-                />
-                <OperatorHoldControls
-                  instances={eaInstances.map((ea) => ({
-                    id: ea.id,
-                    eaName: ea.eaName,
-                    symbol: ea.symbol,
-                    operatorHold: ea.operatorHold,
-                  }))}
-                />
-                <StrategyIdentityCard
-                  instances={eaInstances.map((ea) => ({
-                    eaName: ea.eaName,
-                    strategyId: ea.strategyVersion?.strategyIdentity?.strategyId ?? null,
-                  }))}
-                />
-                <AuthorityUptimeCard analytics={analytics} />
-                <EdgeDriftPanel
-                  instances={eaInstances.map((ea) => ({
-                    id: ea.id,
-                    eaName: ea.eaName,
-                    symbol: ea.symbol,
-                    trades: ea.trades.map((t) => ({
-                      profit: t.profit,
-                      closeTime: t.closeTime?.toISOString() ?? null,
-                    })),
-                    baselineWinrate: ea.strategyVersion?.backtestBaseline?.winRate ?? null,
-                  }))}
-                />
-              </div>
+          <section className="mt-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ExecutionAuthorityCard authority={authority} />
+              <ManualHaltStatus
+                instances={eaInstances.map((ea) => ({
+                  id: ea.id,
+                  eaName: ea.eaName,
+                  symbol: ea.symbol,
+                  operatorHold: ea.operatorHold,
+                }))}
+              />
+              <EdgeDriftPanel
+                instances={eaInstances.map((ea) => ({
+                  id: ea.id,
+                  eaName: ea.eaName,
+                  symbol: ea.symbol,
+                  trades: ea.trades.map((t) => ({
+                    profit: t.profit,
+                    closeTime: t.closeTime?.toISOString() ?? null,
+                  })),
+                  baselineWinrate: ea.strategyVersion?.backtestBaseline?.winRate ?? null,
+                }))}
+              />
             </div>
           </section>
         )}
@@ -388,11 +340,11 @@ function ExecutionAuthorityCard({ authority }: { authority: AuthorityDecision | 
 
   return (
     <div
-      className="rounded-xl p-6 h-full"
+      className="rounded-xl p-4 h-full"
       style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium tracking-wider uppercase text-[#94A3B8]">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8]">
           Execution Authority
         </h3>
         {decidedAt && (
@@ -409,258 +361,73 @@ function ExecutionAuthorityCard({ authority }: { authority: AuthorityDecision | 
         )}
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 mb-2">
         <span
-          className="w-3 h-3 rounded-full flex-shrink-0"
+          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: colors.dot }}
         />
-        <span className="text-3xl font-bold" style={{ color: colors.text }}>
+        <span className="text-xl font-bold" style={{ color: colors.text }}>
           {action}
+        </span>
+        <span className="ml-2 inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
+          {reasonCode}
         </span>
       </div>
 
-      <p className="text-sm text-[#CBD5E1] leading-relaxed mb-3">{explanation}</p>
-
-      <span className="inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
-        {reasonCode}
-      </span>
+      <p className="text-xs text-[#CBD5E1] leading-relaxed">{explanation}</p>
     </div>
   );
 }
 
-const AUTHORITY_REASON_LABELS: Record<string, string> = {
-  NO_STRATEGIES: "No strategies have been created",
-  NO_LIVE_INSTANCE: "No live EA instance is connected",
-};
-
-function ControlExplanationPanel({
-  action,
-  reasonCode,
-  authorityReasons,
-  isHistorical,
-}: {
-  action: string;
-  reasonCode: string;
-  authorityReasons?: AuthorityDecision["authorityReasons"];
-  isHistorical?: boolean;
-}) {
-  const explanation = getControlExplanation(reasonCode as HeartbeatReasonCode);
-  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-
-  return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <span
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{ backgroundColor: colors.dot }}
-        />
-        <h3 className="text-sm font-medium text-white">{explanation.title}</h3>
-        {isHistorical && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(79,70,229,0.15)] border border-[rgba(79,70,229,0.25)] text-[#A78BFA]">
-            Historical
-          </span>
-        )}
-      </div>
-
-      <p className="text-sm text-[#CBD5E1] leading-relaxed mb-3">{explanation.explanation}</p>
-
-      <div className="border-t border-[rgba(79,70,229,0.15)] pt-3">
-        <p className="text-xs text-[#7C8DB0] mb-1 uppercase tracking-wider font-medium">
-          Resolution
-        </p>
-        <ul className="space-y-1.5">
-          {explanation.resolution.map((item) => (
-            <li key={item.text} className="flex items-start gap-2 text-sm text-[#94A3B8]">
-              <span className="w-1 h-1 rounded-full bg-[#A78BFA] flex-shrink-0 mt-2" />
-              {item.href ? (
-                <Link
-                  href={item.href}
-                  className="text-[#A78BFA] underline decoration-[rgba(167,139,250,0.3)] underline-offset-2 hover:text-white transition-colors"
-                >
-                  {item.text}
-                </Link>
-              ) : (
-                <span>{item.text}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {authorityReasons && authorityReasons.length > 0 && (
-        <div className="border-t border-[rgba(79,70,229,0.15)] pt-3 mt-3">
-          <p className="text-xs text-[#7C8DB0] mb-2 uppercase tracking-wider font-medium">
-            Details
-          </p>
-          <ul className="space-y-1.5">
-            {authorityReasons.map((reason) => (
-              <li key={reason} className="flex items-center gap-2 text-sm text-[#94A3B8]">
-                <span className="w-1 h-1 rounded-full bg-[#F59E0B] flex-shrink-0" />
-                {AUTHORITY_REASON_LABELS[reason] ?? reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GovernanceContextCard({
-  hasOperatorHold,
-  hasSuppression,
-  lifecycleStates,
-  instanceCount,
-}: {
-  hasOperatorHold: boolean;
-  hasSuppression: boolean;
-  lifecycleStates: string[];
-  instanceCount: number;
-}) {
-  return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
-        Governance Context
-      </h3>
-
-      <div className="space-y-2.5 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Instances</span>
-          <span className="text-[#CBD5E1] font-mono text-xs">{instanceCount}</span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Operator Hold</span>
-          <StatusPill active={hasOperatorHold} activeLabel="ACTIVE" inactiveLabel="NONE" />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Suppression</span>
-          <StatusPill active={hasSuppression} activeLabel="ACTIVE" inactiveLabel="NONE" />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Lifecycle</span>
-          <span className="text-[11px] font-mono text-[#94A3B8]">
-            {lifecycleStates.length > 0 ? lifecycleStates.join(", ") : "—"}
-          </span>
-        </div>
-      </div>
-
-      <p className="mt-4 text-[10px] text-[#64748B] leading-relaxed">
-        Control is enforced by governed rules — not discretionary interpretation.
-      </p>
-    </div>
-  );
-}
-
-function AuthorityUptimeCard({ analytics }: { analytics: HeartbeatAnalyticsResult | null }) {
-  // Fail-closed: no analytics → show breach with safe copy
-  const coverage = analytics?.coveragePct ?? 0;
-  const cadenceBreached = analytics?.cadenceBreached ?? true;
-  const longestGapMs = analytics?.longestGapMs ?? 0;
-  const runPct = analytics?.runPct ?? 0;
-
-  const coverageColor = coverage >= 95 ? "#10B981" : coverage >= 80 ? "#F59E0B" : "#EF4444";
-  const runColor = runPct >= 95 ? "#10B981" : runPct >= 80 ? "#F59E0B" : "#EF4444";
-
-  return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
-        Authority Uptime (24h)
-      </h3>
-
-      <div className="space-y-2.5 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Coverage</span>
-          <span className="font-mono text-xs" style={{ color: coverageColor }}>
-            {coverage.toFixed(1)}%
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">RUN</span>
-          <span className="font-mono text-xs" style={{ color: runColor }}>
-            {runPct.toFixed(1)}%
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[#7C8DB0]">Cadence</span>
-          {cadenceBreached ? (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#EF4444]">
-              BREACH
-            </span>
-          ) : (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.25)] text-[#10B981]">
-              OK
-            </span>
-          )}
-        </div>
-
-        {longestGapMs > 0 && (
-          <div className="flex items-center justify-between">
-            <span className="text-[#7C8DB0]">Longest gap</span>
-            <span className="font-mono text-xs text-[#94A3B8]">{formatGap(longestGapMs)}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StatusPill({
-  active,
-  activeLabel,
-  inactiveLabel,
-}: {
-  active: boolean;
-  activeLabel: string;
-  inactiveLabel: string;
-}) {
-  if (active) {
-    return (
-      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.25)] text-[#F59E0B]">
-        {activeLabel}
-      </span>
-    );
-  }
-  return <span className="text-[11px] font-mono text-[#64748B]">{inactiveLabel}</span>;
-}
-
-function formatGap(ms: number): string {
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
-  return `${(ms / 3_600_000).toFixed(1)}h`;
-}
-
-function StrategyIdentityCard({
+function SystemStatusStrip({
   instances,
+  authority,
 }: {
-  instances: { eaName: string; strategyId: string | null }[];
+  instances: {
+    status: string;
+    operatorHold: string | null;
+    trades: { profit: number | null }[];
+    strategyVersion?: { backtestBaseline?: { winRate: number | null } | null } | null;
+  }[];
+  authority: AuthorityDecision | null;
 }) {
-  const withIdentity = instances.filter((ea) => ea.strategyId !== null);
-  if (withIdentity.length === 0) return null;
+  const action = authority?.action ?? "PAUSE";
+  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
+  const halted = instances.filter((i) => i.operatorHold !== "NONE").length;
+  const online = instances.filter((i) => i.status === "ONLINE").length;
+
+  let driftCount = 0;
+  for (const inst of instances) {
+    const baselineWinrate = inst.strategyVersion?.backtestBaseline?.winRate ?? null;
+    const hasBaseline =
+      baselineWinrate !== null &&
+      Number.isFinite(baselineWinrate) &&
+      baselineWinrate >= 0 &&
+      baselineWinrate <= 100;
+    if (!hasBaseline) continue;
+    const live = computeLiveWinrateFromTrades(inst.trades.slice(0, EDGE_DRIFT_TRADES_N));
+    if (!live.ok || live.liveWinrate === undefined) continue;
+    const drift = computeEdgeDrift(baselineWinrate!, live.liveWinrate);
+    if (drift.status !== "OK") driftCount++;
+  }
+
+  const items: { label: string; value: string; color?: string }[] = [
+    { label: "Execution", value: action, color: colors.text },
+    { label: "Online", value: `${online}/${instances.length}` },
+    { label: "Halted", value: String(halted), color: halted > 0 ? "#EF4444" : undefined },
+    { label: "Drift", value: String(driftCount), color: driftCount > 0 ? "#F59E0B" : undefined },
+  ];
 
   return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
-        Strategy Identity
-      </h3>
-
-      <div className="space-y-2.5 text-sm">
-        {withIdentity.map((ea) => (
-          <div key={ea.strategyId} className="flex items-center justify-between">
-            <span className="text-[#7C8DB0] truncate mr-2">{ea.eaName}</span>
-            <Link
-              href={`/proof/${ea.strategyId}`}
-              className="text-[11px] font-mono text-[#A78BFA] hover:text-white transition-colors"
-            >
-              {ea.strategyId}
-            </Link>
-          </div>
-        ))}
-      </div>
+    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.12)]">
+      {items.map((item) => (
+        <span key={item.label} className="text-xs text-[#7C8DB0]">
+          {item.label}:{" "}
+          <span className="font-mono font-medium" style={{ color: item.color ?? "#CBD5E1" }}>
+            {item.value}
+          </span>
+        </span>
+      ))}
     </div>
   );
 }

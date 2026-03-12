@@ -16,45 +16,55 @@ interface InstanceForDrift {
 export function EdgeDriftPanel({ instances }: { instances: InstanceForDrift[] }) {
   if (instances.length === 0) return null;
 
-  // Show top 3 instances by trade count
-  const withDrift = instances
-    .map((inst) => {
-      const recentTrades = inst.trades.slice(0, EDGE_DRIFT_TRADES_N);
-      const liveResult = computeLiveWinrateFromTrades(recentTrades);
+  // Compute drift for all instances, then filter to flagged only (WARNING or HIGH)
+  const allDrift = instances.map((inst) => {
+    const recentTrades = inst.trades.slice(0, EDGE_DRIFT_TRADES_N);
+    const liveResult = computeLiveWinrateFromTrades(recentTrades);
 
-      const hasBaseline =
-        inst.baselineWinrate !== null &&
-        Number.isFinite(inst.baselineWinrate) &&
-        inst.baselineWinrate >= 0 &&
-        inst.baselineWinrate <= 100;
+    const hasBaseline =
+      inst.baselineWinrate !== null &&
+      Number.isFinite(inst.baselineWinrate) &&
+      inst.baselineWinrate >= 0 &&
+      inst.baselineWinrate <= 100;
 
-      let drift: EdgeDriftResult | null = null;
-      if (hasBaseline && liveResult.ok && liveResult.liveWinrate !== undefined) {
-        drift = computeEdgeDrift(inst.baselineWinrate!, liveResult.liveWinrate);
-      }
+    let drift: EdgeDriftResult | null = null;
+    if (hasBaseline && liveResult.ok && liveResult.liveWinrate !== undefined) {
+      drift = computeEdgeDrift(inst.baselineWinrate!, liveResult.liveWinrate);
+    }
 
-      return { inst, liveResult, hasBaseline, drift };
-    })
-    .sort((a, b) => b.liveResult.sampleSize - a.liveResult.sampleSize)
-    .slice(0, 3);
+    return { inst, liveResult, hasBaseline, drift };
+  });
+
+  const flagged = allDrift
+    .filter(({ drift }) => drift !== null && drift.status !== "OK")
+    .sort((a, b) => b.liveResult.sampleSize - a.liveResult.sampleSize);
 
   return (
     <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5">
-      <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8] mb-3">
-        Edge Drift (v0)
-      </h3>
-
-      <div className="space-y-3">
-        {withDrift.map(({ inst, liveResult, hasBaseline, drift }) => (
-          <InstanceDriftRow
-            key={inst.id}
-            label={inst.eaName || inst.symbol || inst.id.slice(0, 8)}
-            liveResult={liveResult}
-            baselineWinrate={hasBaseline ? inst.baselineWinrate! : null}
-            drift={drift}
-          />
-        ))}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8]">
+          Edge Drift (v0)
+        </h3>
+        <span className="text-[10px] font-mono text-[#64748B]">
+          {flagged.length} of {instances.length} flagged
+        </span>
       </div>
+
+      {flagged.length === 0 ? (
+        <p className="text-xs text-[#64748B]">No drift signals detected</p>
+      ) : (
+        <div className="space-y-3">
+          {flagged.map(({ inst, liveResult, hasBaseline, drift }) => (
+            <InstanceDriftRow
+              key={inst.id}
+              label={inst.eaName || inst.symbol || inst.id.slice(0, 8)}
+              liveResult={liveResult}
+              baselineWinrate={hasBaseline ? inst.baselineWinrate! : null}
+              drift={drift}
+            />
+          ))}
+        </div>
+      )}
 
       <p className="mt-3 text-[10px] text-[#64748B] leading-relaxed">
         Informational signal only — does not affect execution authority.

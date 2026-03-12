@@ -14,6 +14,7 @@ import { RegisterEADialog } from "./register-ea-dialog";
 import { LinkBaselineDialog, type BaselineData } from "./link-baseline-dialog";
 import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
 import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
+import { updateOperatorHold } from "./actions";
 
 // ============================================
 // TYPES
@@ -41,6 +42,7 @@ interface EAInstanceData {
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
   strategyStatus?: string | null;
+  operatorHold?: string;
   isExternal?: boolean;
   baseline?: BaselineData | null;
   relinkRequired?: boolean;
@@ -790,6 +792,8 @@ function EACard({
   const [pauseLoading, setPauseLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [haltState, setHaltState] = useState(ea.operatorHold ?? "NONE");
+  const [haltLoading, setHaltLoading] = useState(false);
   const trades = ea.trades ?? [];
   const heartbeats = ea.heartbeats ?? [];
   const winRate = calculateWinRate(trades);
@@ -806,6 +810,16 @@ function EACard({
   async function handleDelete(): Promise<void> {
     setDeleteLoading(true);
     onDelete(ea.id);
+  }
+
+  async function handleToggleHalt(): Promise<void> {
+    const target = haltState === "HALTED" ? "NONE" : "HALTED";
+    setHaltLoading(true);
+    const result = await updateOperatorHold(ea.id, target);
+    if (result.ok) {
+      setHaltState(target);
+    }
+    setHaltLoading(false);
   }
 
   return (
@@ -849,11 +863,26 @@ function EACard({
           {ea.strategyStatus && (
             <StrategyStatusBadge status={ea.strategyStatus as StrategyStatus} variant="compact" />
           )}
-          {ea.tradingState === "PAUSED" && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-              Paused
-            </span>
-          )}
+          {(() => {
+            const execState =
+              haltState === "HALTED" ? "HALTED" : ea.tradingState === "PAUSED" ? "PAUSED" : "RUN";
+            const execColor =
+              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
+            const execBg =
+              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
+            return (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-medium rounded-full"
+                style={{
+                  backgroundColor: `${execBg}20`,
+                  color: execColor,
+                  border: `1px solid ${execBg}4D`,
+                }}
+              >
+                {execState}
+              </span>
+            );
+          })()}
           {ea.mode === "PAPER" && (
             <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
               Paper
@@ -1142,7 +1171,31 @@ function EACard({
               />
             </svg>
           )}
-          {ea.tradingState === "PAUSED" ? "Resume" : "Pause"}
+          {ea.tradingState === "PAUSED" ? "Resume Strategy" : "Pause Strategy"}
+        </button>
+
+        <button
+          onClick={handleToggleHalt}
+          disabled={haltLoading || haltState === "OVERRIDE_PENDING"}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 disabled:opacity-50 ${
+            haltState === "HALTED"
+              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
+              : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25 hover:bg-[#EF4444]/20"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={
+                haltState === "HALTED"
+                  ? "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  : "M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+              }
+            />
+          </svg>
+          {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Halt Strategy"}
         </button>
 
         <button
