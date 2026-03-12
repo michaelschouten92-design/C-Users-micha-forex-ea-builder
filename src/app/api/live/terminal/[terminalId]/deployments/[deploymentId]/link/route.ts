@@ -164,7 +164,7 @@ export async function POST(
       );
     }
 
-    // 8. Derive baselineStatus from instance's canonical baseline chain
+    // 8. Derive baselineStatus and propagate strategyVersionId from instance
     const baselineStatus = instance.strategyVersionId ? "LINKED" : "UNLINKED";
 
     // 9. Execute the link in a transaction
@@ -174,6 +174,7 @@ export async function POST(
         data: {
           instanceId,
           baselineStatus,
+          strategyVersionId: instance.strategyVersionId,
         },
       }),
       prisma.liveEAInstance.update({

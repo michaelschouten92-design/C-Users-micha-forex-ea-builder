@@ -826,6 +826,7 @@ model StrategyVersion {
   backtestBaseline BacktestBaseline?
   binding          StrategyIdentityBinding?
   instances        LiveEAInstance[]
+  deployments      TerminalDeployment[]
 
   @@unique([strategyIdentityId, fingerprint])
   @@index([buildVersionId])
@@ -1371,21 +1372,23 @@ model TerminalConnection {
 // ============================================
 
 model TerminalDeployment {
-  id                   String         @id @default(cuid())
+  id                   String          @id @default(cuid())
   terminalConnectionId String
-  instanceId           String?        // Linked LiveEAInstance (null = detected but unlinked)
-  deploymentKey        String         // SHA-256(symbol:timeframe:magicNumber:eaName) — stable identity
+  instanceId           String?         // Linked LiveEAInstance (null = detected but unlinked)
+  strategyVersionId    String?         // Deployment-level baseline anchor (nullable — future canonical owner)
+  deploymentKey        String          // SHA-256(symbol:timeframe:magicNumber:eaName) — stable identity
   symbol               String
   timeframe            String
   magicNumber          Int
   eaName               String
-  materialFingerprint  String?        // SHA-256 of EA parameters/config — detects material changes
-  baselineStatus       BaselineStatus @default(UNLINKED)
-  firstSeenAt          DateTime       @default(now())
-  lastSeenAt           DateTime       @default(now())
+  materialFingerprint  String?         // SHA-256 of EA parameters/config — detects material changes
+  baselineStatus       BaselineStatus  @default(UNLINKED)
+  firstSeenAt          DateTime        @default(now())
+  lastSeenAt           DateTime        @default(now())
 
-  terminal TerminalConnection @relation(fields: [terminalConnectionId], references: [id], onDelete: Cascade)
-  instance LiveEAInstance?    @relation(fields: [instanceId], references: [id])
+  terminal        TerminalConnection @relation(fields: [terminalConnectionId], references: [id], onDelete: Cascade)
+  instance        LiveEAInstance?    @relation(fields: [instanceId], references: [id])
+  strategyVersion StrategyVersion?   @relation(fields: [strategyVersionId], references: [id])
 
   @@unique([terminalConnectionId, deploymentKey])
   @@index([instanceId])
