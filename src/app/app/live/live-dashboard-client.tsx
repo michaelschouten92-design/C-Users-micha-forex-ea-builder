@@ -740,7 +740,7 @@ function resolveInstanceAttention(
       reason: ea.monitoringReasons?.length
         ? monitoringReasonFormatter(ea.monitoringReasons)[0]
         : "Live performance has materially diverged from baseline",
-      actionLabel: "Review instance",
+      actionLabel: "Inspect drift",
       color: "#EF4444",
     };
   }
@@ -750,7 +750,7 @@ function resolveInstanceAttention(
       reason: ea.monitoringReasons?.length
         ? monitoringReasonFormatter(ea.monitoringReasons)[0]
         : "Health metrics show early signs of deviation",
-      actionLabel: "Review instance",
+      actionLabel: "Inspect performance",
       color: "#F59E0B",
     };
   }
@@ -758,7 +758,7 @@ function resolveInstanceAttention(
     return {
       statusLabel: "Waiting for data",
       reason: "More live samples are needed before evaluation",
-      actionLabel: "Wait for more data",
+      actionLabel: "Collect more data",
       color: "#A78BFA",
     };
   }
@@ -766,7 +766,7 @@ function resolveInstanceAttention(
     return {
       statusLabel: "Connection error",
       reason: ea.lastError ?? "EA reported an error state",
-      actionLabel: "Review instance",
+      actionLabel: "Check connection",
       color: "#EF4444",
     };
   }
