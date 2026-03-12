@@ -111,6 +111,7 @@ int    g_queueCount = 0;
 
 // State
 bool   g_initialized = false;
+bool   g_sessionStartSent = false;
 string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
@@ -201,8 +202,8 @@ int OnInit()
       SyncChainState();
    }
 
-   // Send SESSION_START
-   SendSessionStart();
+   // SESSION_START is deferred until after first heartbeat populates g_instanceId
+   // (see SendHeartbeat — sends SESSION_START once g_instanceId is known)
 
    // Create on-chart panel
    if(InpShowPanel)
@@ -257,19 +258,21 @@ void OnTimer()
 
    datetime now = TimeCurrent();
 
-   // Flush offline queue first
-   if(g_queueCount > 0)
-      FlushOfflineQueue();
-
-   // Poll for new trades (backup detection in case OnTradeTransaction missed something)
-   PollTradeChanges();
-
    // Heartbeat — always runs regardless of governance action
+   // Runs before trade polling so that g_instanceId is populated (and
+   // deferred SESSION_START sent) before any TRADE_OPEN/CLOSE events.
    if(now - g_lastHeartbeat >= InpHeartbeatSec)
    {
       SendHeartbeat();
       g_lastHeartbeat = now;
    }
+
+   // Flush offline queue after heartbeat (instanceId may now be known)
+   if(g_queueCount > 0)
+      FlushOfflineQueue();
+
+   // Poll for new trades (backup detection in case OnTradeTransaction missed something)
+   PollTradeChanges();
 
    // Governance gate: PAUSE/STOP → skip trade polling and snapshots
    if(g_govAction != "RUN")
@@ -722,6 +725,14 @@ string ComputeEventHash(string eventType, int seqNo, string prevHash,
 //+------------------------------------------------------------------+
 bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadPairs[])
 {
+   // Block all non-SESSION_START events until SESSION_START has been sent.
+   // This prevents chain corruption if a trade fires before g_instanceId is known.
+   if(!g_sessionStartSent && eventType != "SESSION_START")
+   {
+      Print("AlgoStudio Monitor: Skipping ", eventType, " — SESSION_START not yet sent");
+      return false;
+   }
+
    int nextSeq = g_seqNo + 1;
    long ts = (long)TimeGMT();
 
@@ -807,6 +818,8 @@ void SendSessionStart()
 
 void SendSessionEnd()
 {
+   if(!g_sessionStartSent) return;  // No SESSION_START sent, skip SESSION_END
+
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
    int uptime = (int)(TimeCurrent() - g_sessionStart);
@@ -1058,6 +1071,14 @@ void SendHeartbeat()
    {
       g_lastSuccessfulHb = TimeCurrent();
       g_panelError = "";
+
+      // Deferred SESSION_START: send once after first successful heartbeat
+      // populates g_instanceId (needed for correct canonical hash computation)
+      if(!g_sessionStartSent && StringLen(g_instanceId) > 0)
+      {
+         SendSessionStart();
+         g_sessionStartSent = true;
+      }
    }
 }
 

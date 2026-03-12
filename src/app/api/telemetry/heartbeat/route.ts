@@ -178,6 +178,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      instanceId: auth.instanceId,
       action: decision.action,
       reasonCode: decision.reasonCode,
     });
