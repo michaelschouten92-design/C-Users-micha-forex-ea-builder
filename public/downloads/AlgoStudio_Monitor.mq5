@@ -200,6 +200,9 @@ int OnInit()
    if(StringLen(g_instanceId) > 0 && g_seqNo > 0)
    {
       SyncChainState();
+      // Restored an active chain — SESSION_START was already sent in a prior session.
+      // Mark it so the guard in SendTrackRecordEvent doesn't block events.
+      g_sessionStartSent = true;
    }
 
    // SESSION_START is deferred until after first heartbeat populates g_instanceId
