@@ -723,7 +723,7 @@ string ComputeEventHash(string eventType, int seqNo, string prevHash,
 bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadPairs[])
 {
    int nextSeq = g_seqNo + 1;
-   long ts = (long)TimeCurrent();
+   long ts = (long)TimeGMT();
 
    string eventHash = ComputeEventHash(eventType, nextSeq, g_lastHash, ts, payloadPairs);
    if(StringLen(eventHash) == 0)
@@ -809,15 +809,21 @@ void SendSessionEnd()
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+   int uptime = (int)(TimeCurrent() - g_sessionStart);
+   if(uptime < 0) uptime = 0;
 
    string payloadPairs[];
-   ArrayResize(payloadPairs, 2);
-   payloadPairs[0] = JMoney("balance", bal);
-   payloadPairs[1] = JMoney("equity", eq);
+   ArrayResize(payloadPairs, 4);
+   payloadPairs[0] = JMoney("finalBalance", bal);
+   payloadPairs[1] = JMoney("finalEquity", eq);
+   payloadPairs[2] = JStr("reason", "DEINIT");
+   payloadPairs[3] = JInt("uptimeSeconds", uptime);
 
    string payloadJson = "{"
-      + JMoney("balance", bal) + ","
-      + JMoney("equity", eq)
+      + JMoney("finalBalance", bal) + ","
+      + JMoney("finalEquity", eq) + ","
+      + JStr("reason", "DEINIT") + ","
+      + JInt("uptimeSeconds", uptime)
       + "}";
 
    SendTrackRecordEvent("SESSION_END", payloadJson, payloadPairs);
