@@ -699,6 +699,81 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
 }
 
 // ============================================
+// INSTANCE ATTENTION RESOLVER (shared by Action Required panel + card detail box)
+// ============================================
+
+interface InstanceAttention {
+  statusLabel: string;
+  reason: string;
+  actionLabel: string;
+  color: string;
+}
+
+function resolveInstanceAttention(
+  ea: EAInstanceData,
+  monitoringReasonFormatter: (reasons: string[]) => string[]
+): InstanceAttention | null {
+  const trust = resolveInstanceBaselineTrust({
+    hasBaseline: !!ea.baseline,
+    relinkRequired: !!ea.relinkRequired,
+  });
+
+  if (trust.state === "SUSPENDED") {
+    return {
+      statusLabel: "Baseline suspended",
+      reason: "Material change invalidated baseline trust",
+      actionLabel: trust.actionLabel!,
+      color: "#F59E0B",
+    };
+  }
+  if (trust.state === "MISSING") {
+    return {
+      statusLabel: "No baseline linked",
+      reason: "No baseline is linked to this deployment",
+      actionLabel: trust.actionLabel!,
+      color: "#71717A",
+    };
+  }
+  if (ea.strategyStatus === "EDGE_DEGRADED") {
+    return {
+      statusLabel: "Edge degraded",
+      reason: ea.monitoringReasons?.length
+        ? monitoringReasonFormatter(ea.monitoringReasons)[0]
+        : "Live performance has materially diverged from baseline",
+      actionLabel: "Review instance",
+      color: "#EF4444",
+    };
+  }
+  if (ea.strategyStatus === "UNSTABLE") {
+    return {
+      statusLabel: "Unstable",
+      reason: ea.monitoringReasons?.length
+        ? monitoringReasonFormatter(ea.monitoringReasons)[0]
+        : "Health metrics show early signs of deviation",
+      actionLabel: "Review instance",
+      color: "#F59E0B",
+    };
+  }
+  if (ea.healthStatus === "INSUFFICIENT_DATA" || ea.strategyStatus === "TESTING") {
+    return {
+      statusLabel: "Waiting for data",
+      reason: "More live samples are needed before evaluation",
+      actionLabel: "Wait for more data",
+      color: "#A78BFA",
+    };
+  }
+  if (ea.status === "ERROR") {
+    return {
+      statusLabel: "Connection error",
+      reason: ea.lastError ?? "EA reported an error state",
+      actionLabel: "Review instance",
+      color: "#EF4444",
+    };
+  }
+  return null;
+}
+
+// ============================================
 // EA CARD
 // ============================================
 
@@ -819,6 +894,40 @@ function EACard({
           })()}
         </div>
       </div>
+
+      {/* Status Detail Box — compact interpretation aid for non-healthy instances */}
+      {/* Skipped for SUSPENDED (the relink warning below already covers that case) */}
+      {(() => {
+        const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
+        if (!attention || attention.statusLabel === "Baseline suspended") return null;
+        return (
+          <div
+            className="mb-4 rounded-lg p-3 flex items-start gap-3"
+            style={{
+              backgroundColor: `${attention.color}08`,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: `${attention.color}20`,
+            }}
+          >
+            <span
+              className="mt-1 w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: attention.color }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium" style={{ color: attention.color }}>
+                {attention.statusLabel}
+              </p>
+              <p className="text-[10px] text-[#94A3B8] mt-0.5 leading-relaxed">
+                {attention.reason}
+              </p>
+              <p className="text-[10px] mt-1" style={{ color: `${attention.color}CC` }}>
+                → {attention.actionLabel}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Relink required warning */}
       {ea.relinkRequired && (
@@ -2364,127 +2473,28 @@ export function LiveDashboardClient({
 
       {/* Action Required / Edge Health Panel */}
       {(() => {
-        interface ActionItem {
-          id: string;
-          identity: string;
-          statusLabel: string;
-          reason: string;
-          actionLabel: string;
-          color: string;
-          onClick: () => void;
-        }
-
-        const items: ActionItem[] = [];
-
-        for (const ea of eaInstances) {
-          const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-
-          // Priority 1: Baseline trust issues (existing logic)
-          const trust = resolveInstanceBaselineTrust({
-            hasBaseline: !!ea.baseline,
-            relinkRequired: !!ea.relinkRequired,
-          });
-          if (trust.state === "SUSPENDED") {
-            items.push({
+        const items = eaInstances
+          .map((ea) => {
+            const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
+            if (!attention) return null;
+            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+            const isBaselineAction =
+              attention.statusLabel === "Baseline suspended" ||
+              attention.statusLabel === "No baseline linked";
+            return {
               id: ea.id,
               identity,
-              statusLabel: "Baseline suspended",
-              reason: "Material change invalidated baseline trust",
-              actionLabel: trust.actionLabel!,
-              color: "#F59E0B",
-              onClick: () => setLinkBaselineInstanceId(ea.id),
-            });
-            continue; // One item per instance — most urgent wins
-          }
-          if (trust.state === "MISSING") {
-            items.push({
-              id: ea.id,
-              identity,
-              statusLabel: "No baseline linked",
-              reason: "No baseline is linked to this deployment",
-              actionLabel: trust.actionLabel!,
-              color: "#71717A",
-              onClick: () => setLinkBaselineInstanceId(ea.id),
-            });
-            continue;
-          }
-
-          // Priority 2: Edge health issues (from strategy status / health status)
-          if (ea.strategyStatus === "EDGE_DEGRADED") {
-            items.push({
-              id: ea.id,
-              identity,
-              statusLabel: "Edge degraded",
-              reason: ea.monitoringReasons?.[0]
-                ? formatMonitoringReasons(ea.monitoringReasons)[0]
-                : "Live performance has materially diverged from baseline",
-              actionLabel: "Review instance",
-              color: "#EF4444",
-              onClick: () => {
-                document
-                  .getElementById(`ea-card-${ea.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-              },
-            });
-            continue;
-          }
-          if (ea.strategyStatus === "UNSTABLE") {
-            items.push({
-              id: ea.id,
-              identity,
-              statusLabel: "Unstable",
-              reason: ea.monitoringReasons?.[0]
-                ? formatMonitoringReasons(ea.monitoringReasons)[0]
-                : "Health metrics show early signs of deviation",
-              actionLabel: "Review instance",
-              color: "#F59E0B",
-              onClick: () => {
-                document
-                  .getElementById(`ea-card-${ea.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-              },
-            });
-            continue;
-          }
-
-          // Priority 3: Insufficient data
-          if (ea.healthStatus === "INSUFFICIENT_DATA" || ea.strategyStatus === "TESTING") {
-            items.push({
-              id: ea.id,
-              identity,
-              statusLabel: "Waiting for data",
-              reason: "More live samples are needed before evaluation",
-              actionLabel: "Wait for more data",
-              color: "#A78BFA",
-              onClick: () => {
-                document
-                  .getElementById(`ea-card-${ea.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-              },
-            });
-            continue;
-          }
-
-          // Priority 4: Connection issues
-          if (ea.status === "ERROR") {
-            items.push({
-              id: ea.id,
-              identity,
-              statusLabel: "Connection error",
-              reason: ea.lastError ?? "EA reported an error state",
-              actionLabel: "Review instance",
-              color: "#EF4444",
-              onClick: () => {
-                document
-                  .getElementById(`ea-card-${ea.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
-              },
-            });
-            continue;
-          }
-
-          // Healthy instances are not shown
-        }
+              ...attention,
+              onClick: isBaselineAction
+                ? () => setLinkBaselineInstanceId(ea.id)
+                : () => {
+                    document
+                      .getElementById(`ea-card-${ea.id}`)
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  },
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null);
 
         if (items.length === 0) return null;
 
