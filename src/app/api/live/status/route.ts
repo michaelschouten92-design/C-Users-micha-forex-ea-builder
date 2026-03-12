@@ -59,9 +59,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           },
         },
         terminalDeployments: {
-          where: { baselineStatus: "RELINK_REQUIRED" },
-          select: { id: true },
-          take: 1,
+          select: {
+            id: true,
+            baselineStatus: true,
+            strategyVersion: {
+              select: {
+                backtestBaseline: {
+                  select: {
+                    winRate: true,
+                    profitFactor: true,
+                    totalTrades: true,
+                    maxDrawdownPct: true,
+                    sharpeRatio: true,
+                  },
+                },
+              },
+            },
+          },
         },
         incidents: {
           where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
@@ -91,17 +105,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       totalTrades: ea.totalTrades,
       totalProfit: ea.totalProfit,
       isExternal: ea.exportJobId === null,
-      relinkRequired: ea.terminalDeployments.length > 0,
+      relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
       monitoringReasons: ea.incidents[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
-      baseline: ea.strategyVersion?.backtestBaseline
-        ? {
-            winRate: ea.strategyVersion.backtestBaseline.winRate,
-            profitFactor: ea.strategyVersion.backtestBaseline.profitFactor,
-            totalTrades: ea.strategyVersion.backtestBaseline.totalTrades,
-            maxDrawdownPct: ea.strategyVersion.backtestBaseline.maxDrawdownPct,
-            sharpeRatio: ea.strategyVersion.backtestBaseline.sharpeRatio,
-          }
-        : null,
+      baseline: (() => {
+        const depBaseline = ea.terminalDeployments.find((d) => d.strategyVersion?.backtestBaseline)
+          ?.strategyVersion?.backtestBaseline;
+        const bl = depBaseline ?? ea.strategyVersion?.backtestBaseline;
+        return bl
+          ? {
+              winRate: bl.winRate,
+              profitFactor: bl.profitFactor,
+              totalTrades: bl.totalTrades,
+              maxDrawdownPct: bl.maxDrawdownPct,
+              sharpeRatio: bl.sharpeRatio,
+            }
+          : null;
+      })(),
       trades: ea.trades.map((t) => ({
         profit: t.profit,
         closeTime: t.closeTime?.toISOString() ?? null,

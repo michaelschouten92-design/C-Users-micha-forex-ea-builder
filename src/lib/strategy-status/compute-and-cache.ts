@@ -79,11 +79,17 @@ export async function computeAndCacheStatus(instanceId: string): Promise<Compute
     },
   });
 
-  // 3. Check if baseline exists
+  // 3. Check if baseline exists (deployment-level takes priority)
   let hasBaseline = false;
-  if (instance.strategyVersionId) {
+  const deploymentWithBaseline = await prisma.terminalDeployment.findFirst({
+    where: { instanceId, strategyVersionId: { not: null } },
+    select: { strategyVersionId: true },
+  });
+  const effectiveStrategyVersionId =
+    deploymentWithBaseline?.strategyVersionId ?? instance.strategyVersionId;
+  if (effectiveStrategyVersionId) {
     const baseline = await prisma.backtestBaseline.findUnique({
-      where: { strategyVersionId: instance.strategyVersionId },
+      where: { strategyVersionId: effectiveStrategyVersionId },
       select: { id: true },
     });
     hasBaseline = baseline !== null;

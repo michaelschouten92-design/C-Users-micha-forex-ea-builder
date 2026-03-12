@@ -96,11 +96,17 @@ export async function suspendBaselineTrust(ctx: SuspensionContext): Promise<void
     const previousStrategyVersionId = snapshot?.strategyVersionId ?? null;
     const strategyId = snapshot?.strategyVersion?.strategyIdentity?.strategyId ?? null;
 
-    // Clear strategyVersionId — severs the link
-    await prisma.liveEAInstance.update({
-      where: { id: instanceId },
-      data: { strategyVersionId: null },
-    });
+    // Clear strategyVersionId at both instance and deployment level
+    await prisma.$transaction([
+      prisma.liveEAInstance.update({
+        where: { id: instanceId },
+        data: { strategyVersionId: null },
+      }),
+      prisma.terminalDeployment.update({
+        where: { id: terminalDeploymentId },
+        data: { strategyVersionId: null },
+      }),
+    ]);
 
     log.warn(
       {

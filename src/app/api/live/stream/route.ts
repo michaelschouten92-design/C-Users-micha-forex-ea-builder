@@ -58,6 +58,23 @@ export async function GET(request: Request): Promise<Response> {
                 },
               },
             },
+            terminalDeployments: {
+              select: {
+                strategyVersion: {
+                  select: {
+                    backtestBaseline: {
+                      select: {
+                        winRate: true,
+                        profitFactor: true,
+                        totalTrades: true,
+                        maxDrawdownPct: true,
+                        sharpeRatio: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -79,15 +96,21 @@ export async function GET(request: Request): Promise<Response> {
           totalTrades: inst.totalTrades,
           totalProfit: inst.totalProfit,
           isExternal: inst.exportJobId === null,
-          baseline: inst.strategyVersion?.backtestBaseline
-            ? {
-                winRate: inst.strategyVersion.backtestBaseline.winRate,
-                profitFactor: inst.strategyVersion.backtestBaseline.profitFactor,
-                totalTrades: inst.strategyVersion.backtestBaseline.totalTrades,
-                maxDrawdownPct: inst.strategyVersion.backtestBaseline.maxDrawdownPct,
-                sharpeRatio: inst.strategyVersion.backtestBaseline.sharpeRatio,
-              }
-            : null,
+          baseline: (() => {
+            const depBaseline = inst.terminalDeployments?.find(
+              (d) => d.strategyVersion?.backtestBaseline
+            )?.strategyVersion?.backtestBaseline;
+            const bl = depBaseline ?? inst.strategyVersion?.backtestBaseline;
+            return bl
+              ? {
+                  winRate: bl.winRate,
+                  profitFactor: bl.profitFactor,
+                  totalTrades: bl.totalTrades,
+                  maxDrawdownPct: bl.maxDrawdownPct,
+                  sharpeRatio: bl.sharpeRatio,
+                }
+              : null;
+          })(),
           heartbeats: inst.heartbeats.map((h) => ({
             equity: h.equity,
             createdAt: h.createdAt.toISOString(),
