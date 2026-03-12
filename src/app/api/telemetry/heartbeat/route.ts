@@ -131,16 +131,22 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Fire-and-forget side effects: webhook and EAAlertConfig-based alerts
+    // Side effects: webhook, alerts, strategy status recomputation.
+    // Alert checks are DB-heavy (4-5 queries each) — only run on status change
+    // to avoid connection pool saturation on routine heartbeats.
     if (previousState) {
-      processHeartbeatSideEffects(auth.instanceId, auth.userId, data, previousState).catch(
-        (err) => {
-          log.error({ err, instanceId: auth.instanceId }, "Heartbeat side effects failed");
-        }
-      );
-
-      // Recompute strategy status when EA comes online from offline/error
       const statusChanged = previousState.status !== "ONLINE";
+
+      processHeartbeatSideEffects(
+        auth.instanceId,
+        auth.userId,
+        data,
+        previousState,
+        statusChanged
+      ).catch((err) => {
+        log.error({ err, instanceId: auth.instanceId }, "Heartbeat side effects failed");
+      });
+
       if (statusChanged) {
         computeAndCacheStatus(auth.instanceId).catch((err) => {
           log.error({ err, instanceId: auth.instanceId }, "Strategy status recomputation failed");
@@ -148,18 +154,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fire-and-forget deployment discovery — process only if deployment data is present
+    // Deployment discovery — await to ensure it completes before response.
+    // Only runs when deployment payload is present (SYMBOL_ONLY mode).
+    // Idempotent: safe to run on every heartbeat (upsert-based).
     if (data.deployment) {
-      processDeploymentDiscovery(
-        auth.instanceId,
-        auth.userId,
-        data.deployment,
-        previousState?.terminalConnectionId ?? null,
-        data.broker ?? null,
-        data.accountNumber ?? null
-      ).catch((err) => {
+      try {
+        await processDeploymentDiscovery(
+          auth.instanceId,
+          auth.userId,
+          data.deployment,
+          previousState?.terminalConnectionId ?? null,
+          data.broker ?? null,
+          data.accountNumber ?? null
+        );
+      } catch (err) {
         log.error({ err, instanceId: auth.instanceId }, "Deployment discovery failed");
-      });
+      }
     }
 
     // Governance decision — reuse the same pure function as internal heartbeat.
@@ -205,7 +215,8 @@ async function processHeartbeatSideEffects(
   instanceId: string,
   userId: string,
   data: { symbol?: string; balance: number; equity: number; drawdown: number; totalProfit: number },
-  prev: PreviousState
+  prev: PreviousState,
+  statusChanged: boolean
 ): Promise<void> {
   // Webhook notification via outbox
   if (prev.user.webhookUrl) {
@@ -271,24 +282,26 @@ async function processHeartbeatSideEffects(
     });
   }
 
-  // Check user-configured drawdown alerts (EAAlertConfig system)
-  if (data.drawdown > 0) {
-    checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch((err) => {
-      log.error({ err, instanceId }, "Drawdown alert check failed");
-    });
-  }
+  // Alert checks are DB-heavy — only run when EA status changed (OFFLINE→ONLINE or vice versa)
+  // to avoid saturating the connection pool on routine heartbeats.
+  if (statusChanged) {
+    if (data.drawdown > 0) {
+      checkDrawdownAlerts(userId, instanceId, prev.eaName, data.drawdown).catch((err) => {
+        log.error({ err, instanceId }, "Drawdown alert check failed");
+      });
+    }
 
-  // Check daily/weekly loss alerts and equity target alerts
-  checkDailyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
-    log.error({ err, instanceId }, "Daily loss alert check failed");
-  });
-  checkWeeklyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
-    log.error({ err, instanceId }, "Weekly loss alert check failed");
-  });
-  if (data.equity > 0) {
-    checkEquityTargetAlerts(userId, instanceId, prev.eaName, data.equity).catch((err) => {
-      log.error({ err, instanceId }, "Equity target alert check failed");
+    checkDailyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
+      log.error({ err, instanceId }, "Daily loss alert check failed");
     });
+    checkWeeklyLossAlerts(userId, instanceId, prev.eaName).catch((err) => {
+      log.error({ err, instanceId }, "Weekly loss alert check failed");
+    });
+    if (data.equity > 0) {
+      checkEquityTargetAlerts(userId, instanceId, prev.eaName, data.equity).catch((err) => {
+        log.error({ err, instanceId }, "Equity target alert check failed");
+      });
+    }
   }
 }
 
