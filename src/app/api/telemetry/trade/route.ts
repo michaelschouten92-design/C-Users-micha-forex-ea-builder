@@ -5,6 +5,7 @@ import { fireWebhook } from "@/lib/webhook";
 import { checkNewTradeAlerts } from "@/lib/alerts";
 import { logger } from "@/lib/logger";
 import { apiError, ErrorCode } from "@/lib/error-codes";
+import { resolveTradeDeploymentAttribution } from "@/lib/deployment/trade-attribution";
 import { z } from "zod";
 
 const tradeSchema = z.object({
@@ -18,6 +19,7 @@ const tradeSchema = z.object({
   openTime: z.string().or(z.number()),
   closeTime: z.string().or(z.number()).nullable().optional(),
   mode: z.string().max(16).optional(),
+  magicNumber: z.number().int().min(0).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -39,11 +41,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { ticket, symbol, type, openPrice, closePrice, lots, profit, openTime, closeTime } =
-      parsed.data;
+    const {
+      ticket,
+      symbol,
+      type,
+      openPrice,
+      closePrice,
+      lots,
+      profit,
+      openTime,
+      closeTime,
+      magicNumber,
+    } = parsed.data;
 
     // Security: auth.instanceId is derived from the API key (one key = one instance).
     // The request body has no instanceId field, preventing a leaked key from affecting other instances.
+
+    // Resolve deployment attribution (write-once at ingestion time)
+    const attribution = await resolveTradeDeploymentAttribution(
+      auth.instanceId,
+      symbol,
+      magicNumber ?? null
+    );
+
     // Upsert trade based on unique [instanceId, ticket]
     await prisma.eATrade.upsert({
       where: {
@@ -64,6 +84,8 @@ export async function POST(request: NextRequest) {
         openTime: new Date(openTime),
         closeTime: closeTime ? new Date(closeTime) : null,
         mode: parsed.data.mode ?? null,
+        magicNumber: magicNumber ?? null,
+        terminalDeploymentId: attribution.terminalDeploymentId,
       },
       update: {
         closePrice: closePrice != null ? closePrice : undefined,

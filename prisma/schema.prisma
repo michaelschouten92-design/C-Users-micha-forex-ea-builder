@@ -470,25 +470,29 @@ model EAHeartbeat {
 }
 
 model EATrade {
-  id          String   @id @default(cuid())
-  instanceId  String
-  ticket      String
-  symbol      String
-  type        String
-  openPrice   Float
-  closePrice  Float?
-  lots        Float
-  profit      Float    @default(0)
-  openTime    DateTime
-  closeTime   DateTime?
-  mode        String?   // "LIVE" | "PAPER"
-  createdAt   DateTime @default(now())
+  id                    String   @id @default(cuid())
+  instanceId            String
+  ticket                String
+  symbol                String
+  type                  String
+  openPrice             Float
+  closePrice            Float?
+  lots                  Float
+  profit                Float    @default(0)
+  openTime              DateTime
+  closeTime             DateTime?
+  mode                  String?   // "LIVE" | "PAPER"
+  magicNumber           Int?      // MT5 magic number — nullable for backwards compat
+  terminalDeploymentId  String?   // Deployment attribution — nullable (unattributed if ambiguous)
+  createdAt             DateTime @default(now())
 
-  instance    LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instance    LiveEAInstance      @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  deployment  TerminalDeployment? @relation(fields: [terminalDeploymentId], references: [id], onDelete: SetNull)
 
   @@unique([instanceId, ticket])
   @@index([instanceId, createdAt])
   @@index([instanceId, closeTime])
+  @@index([terminalDeploymentId])
 }
 
 model EAError {
@@ -1389,6 +1393,7 @@ model TerminalDeployment {
   terminal        TerminalConnection @relation(fields: [terminalConnectionId], references: [id], onDelete: Cascade)
   instance        LiveEAInstance?    @relation(fields: [instanceId], references: [id])
   strategyVersion StrategyVersion?   @relation(fields: [strategyVersionId], references: [id])
+  trades          EATrade[]
 
   @@unique([terminalConnectionId, deploymentKey])
   @@index([instanceId])
