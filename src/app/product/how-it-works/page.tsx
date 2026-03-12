@@ -29,7 +29,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 1,
         name: "Connect your strategy",
-        text: "Import trade history from a broker, upload backtest reports, or generate a strategy using the optional EA builder.",
+        text: "Upload backtest reports or install the MT5 Monitor EA to stream live trade data.",
       },
       {
         "@type": "HowToStep",
@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 3,
         name: "Monitor continuously",
-        text: "Live health scoring detects drift, drawdown anomalies, and edge degradation. Lifecycle governance responds automatically.",
+        text: "Live health scoring detects drift, drawdown anomalies, and edge degradation. A hash-chained trade log produces tamper-evident records. Lifecycle governance responds automatically.",
       },
       {
         "@type": "HowToStep",
@@ -115,14 +115,14 @@ export default function HowItWorksPage() {
                 </p>
               </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-4 ml-0 md:ml-12">
+            <div className="grid md:grid-cols-2 gap-4 ml-0 md:ml-12">
               <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
-                  Connect broker account
+                  Install the MT5 Monitor EA
                 </h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Link your trading account to import live trade data automatically. AlgoStudio
-                  begins monitoring once connected.
+                  Attach the Monitor EA to your MetaTrader 5 terminal. It streams live trade data to
+                  AlgoStudio automatically — monitoring begins once connected.
                 </p>
               </div>
               <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
@@ -134,19 +134,11 @@ export default function HowItWorksPage() {
                   and health scoring.
                 </p>
               </div>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
-                  EA Builder
-                  <span className="ml-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-wider">
-                    Optional
-                  </span>
-                </h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Generate an Expert Advisor from strategy templates if you need a strategy to
-                  evaluate. The builder is a supporting tool, not the core platform.
-                </p>
-              </div>
             </div>
+            <p className="mt-3 ml-0 md:ml-12 text-xs text-[#71717A]">
+              An optional EA builder is also available if you need to generate a strategy to
+              evaluate.
+            </p>
           </section>
 
           {/* ════════════════════════════════════════════════════════════
@@ -167,7 +159,7 @@ export default function HowItWorksPage() {
                 </p>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4 ml-0 md:ml-12">
+            <div className="grid md:grid-cols-3 gap-4 ml-0 md:ml-12">
               <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Health scoring</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
@@ -204,21 +196,6 @@ export default function HowItWorksPage() {
                   Learn more &rarr;
                 </Link>
               </div>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
-                  Track record verification
-                </h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  A hash-chained trade log begins recording every trade. Each entry is
-                  cryptographically linked to the previous one, producing a tamper-evident record.
-                </p>
-                <Link
-                  href="/product/track-record"
-                  className="inline-block mt-3 text-sm text-[#6366F1] hover:text-[#818CF8] transition-colors font-medium"
-                >
-                  Learn more &rarr;
-                </Link>
-              </div>
             </div>
           </section>
 
@@ -240,7 +217,7 @@ export default function HowItWorksPage() {
                 </p>
               </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-4 ml-0 md:ml-12">
+            <div className="grid sm:grid-cols-2 gap-4 ml-0 md:ml-12">
               <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Live health scoring</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
@@ -263,6 +240,21 @@ export default function HowItWorksPage() {
                   Strategies operate in one of three states: running, paused, or stopped.
                   Transitions are based on statistical evidence, not manual judgment.
                 </p>
+              </div>
+              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
+                  Track record verification
+                </h3>
+                <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                  A hash-chained trade log records every trade. Each entry is cryptographically
+                  linked to the previous one, producing a tamper-evident record.
+                </p>
+                <Link
+                  href="/product/track-record"
+                  className="inline-block mt-3 text-sm text-[#6366F1] hover:text-[#818CF8] transition-colors font-medium"
+                >
+                  Learn more &rarr;
+                </Link>
               </div>
             </div>
             <p className="mt-4 ml-0 md:ml-12 text-xs text-[#71717A]">

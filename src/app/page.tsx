@@ -34,20 +34,20 @@ export default async function HomePage() {
         <section className="pt-32 md:pt-36 pb-12 md:pb-16 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-[28px] md:text-[36px] font-extrabold tracking-tight leading-[1.2]">
-              Verify and monitor
+              Know when your trading strategy
               <br />
-              algorithmic trading strategies.
+              loses its edge.
             </h1>
             <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
-              AlgoStudio evaluates strategies, detects edge decay, and produces verifiable proof of
-              their performance.
+              AlgoStudio monitors algorithmic trading strategies, detects edge decay, and produces
+              verifiable proof of performance.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/strategies"
+                href="/register"
                 className="px-6 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#818CF8] transition-colors text-sm"
               >
-                Explore strategies
+                Start monitoring
               </Link>
               <Link
                 href="/p/demo"
@@ -56,8 +56,8 @@ export default async function HomePage() {
                 View example proof
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[#A1A1AA] text-center">
-              Explore real strategy proof pages and monitoring results.
+            <p className="mt-6 text-sm text-[#71717A] text-center">
+              Free plan available — no credit card required.
             </p>
           </div>
         </section>
@@ -195,7 +195,7 @@ export default async function HomePage() {
                 {
                   step: "1",
                   title: "Connect your strategy",
-                  desc: "Upload backtest reports, import trade history, or connect a live broker account.",
+                  desc: "Upload a backtest report or install the MT5 Monitor EA to stream live trade data.",
                 },
                 {
                   step: "2",
