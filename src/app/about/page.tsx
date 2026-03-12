@@ -235,7 +235,7 @@ export default function AboutPage() {
             <p className="mt-10 text-xs text-[#71717A]">
               Follow updates on{" "}
               <a
-                href="https://x.com/algostudiodev"
+                href="https://x.com/AlgoStudio_"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#A1A1AA] hover:underline"

@@ -1299,7 +1299,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             ════════════════════════════════════════════════ */}
         <div className="text-center pt-6 border-t border-[rgba(255,255,255,0.06)]">
           <Link
-            href="/"
+            href="/register"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#6366F1] text-white text-sm font-medium rounded-xl hover:bg-[#818CF8] transition-colors"
           >
             Start monitoring

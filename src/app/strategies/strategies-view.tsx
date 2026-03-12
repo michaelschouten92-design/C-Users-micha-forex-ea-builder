@@ -65,7 +65,7 @@ export function StrategiesView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="animate-pulse space-y-4 w-full max-w-5xl px-6">
           <div className="h-10 bg-[#111114] rounded-xl w-64" />
           <div className="h-64 bg-[#111114] rounded-xl" />
@@ -75,7 +75,7 @@ export function StrategiesView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090B]">
+    <div>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mb-2">Verified Strategies</h1>
         <p className="text-sm text-[#71717A] mb-6">

@@ -161,7 +161,7 @@ export default function StatusPage() {
             <p className="text-sm text-[#94A3B8]">
               For real-time status updates and incident notifications, follow us on{" "}
               <a
-                href="https://x.com/algostudio"
+                href="https://x.com/AlgoStudio_"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#22D3EE] hover:underline"

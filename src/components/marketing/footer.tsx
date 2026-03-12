@@ -17,11 +17,8 @@ const SECTIONS = [
     ],
   },
   {
-    title: "Tools",
-    links: [
-      { label: "EA Builder", href: "/product/how-it-works" },
-      { label: "MT5 Export", href: "/product/mt5-export" },
-    ],
+    title: "Features",
+    links: [{ label: "MT5 Export", href: "/product/mt5-export" }],
   },
   {
     title: "Resources",
@@ -73,9 +70,19 @@ export function Footer() {
               Monitoring &amp; Governance for Algorithmic Trading
             </span>
           </div>
-          <span className="text-sm text-[#71717A]">
-            &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.
-          </span>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://x.com/AlgoStudio_"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+            >
+              X / Twitter
+            </a>
+            <span className="text-sm text-[#71717A]">
+              &copy; {new Date().getFullYear()} AlgoStudio. All rights reserved.
+            </span>
+          </div>
         </div>
       </div>
     </footer>
