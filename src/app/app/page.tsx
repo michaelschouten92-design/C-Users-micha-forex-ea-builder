@@ -43,6 +43,9 @@ export default async function DashboardPage() {
     redirect(onboardingRedirect);
   }
 
+  // Command Center is the primary dashboard — redirect to it
+  redirect("/app/live");
+
   const data = await loadDashboardData(session.user.id);
   if (!data) {
     return <DashboardFallback session={session} error="data loading returned null" />;

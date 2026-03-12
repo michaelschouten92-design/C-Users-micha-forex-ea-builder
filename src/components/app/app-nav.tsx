@@ -18,8 +18,9 @@ const NAV_LINKS: {
   label: string;
   href: (firstProjectId: string | null) => string;
 }[] = [
-  { key: "build", label: "Build", href: (id) => (id ? `/app/projects/${id}` : "/app") },
   { key: "monitor", label: "Command Center", href: () => "/app/live" },
+  { key: "evaluate", label: "Evaluate Strategy", href: () => "/app/evaluate" },
+  { key: "build", label: "Build", href: (id) => (id ? `/app/projects/${id}` : "/app") },
   { key: "risk", label: "Risk", href: () => "/app/risk" },
   { key: "settings", label: "Settings", href: () => "/app/settings" },
 ];
@@ -48,12 +49,6 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/app/evaluate"
-              className="text-sm px-3 py-1.5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-lg transition-colors font-medium hidden sm:inline-block"
-            >
-              Evaluate Strategy
-            </Link>
             <span className="text-sm text-[#A1A1AA] hidden md:inline">{session.user.email}</span>
             <span
               className={`text-xs px-3 py-1 rounded-full font-medium border ${
