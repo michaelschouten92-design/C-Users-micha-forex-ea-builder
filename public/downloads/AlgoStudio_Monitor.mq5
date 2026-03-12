@@ -870,6 +870,7 @@ void SendTradeOpen(ulong dealTicket)
    double price    = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
    double lots     = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
    long   dealType = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+   long   magic    = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
    string ticket   = IntegerToString(dealTicket);
 
    string direction = (dealType == DEAL_TYPE_BUY) ? "BUY" : "SELL";
@@ -884,15 +885,16 @@ void SendTradeOpen(ulong dealTicket)
    }
 
    string payloadPairs[];
-   ArrayResize(payloadPairs, 6);
+   ArrayResize(payloadPairs, 7);
    payloadPairs[0] = JStr("direction", direction);
    payloadPairs[1] = JMoney("lots", lots);
-   payloadPairs[2] = JPrice("openPrice", price);
-   payloadPairs[3] = JPrice("sl", sl);
-   payloadPairs[4] = JStr("symbol", symbol);
-   payloadPairs[5] = JStr("ticket", ticket);
+   payloadPairs[2] = JInt("magicNumber", (int)magic);
+   payloadPairs[3] = JPrice("openPrice", price);
+   payloadPairs[4] = JPrice("sl", sl);
+   payloadPairs[5] = JStr("symbol", symbol);
+   payloadPairs[6] = JStr("ticket", ticket);
 
-   int pairIdx = 6;
+   int pairIdx = 7;
    if(tp != 0)
    {
       ArrayResize(payloadPairs, pairIdx + 1);
@@ -907,6 +909,7 @@ void SendTradeOpen(ulong dealTicket)
    string payloadJson = "{"
       + JStr("direction", direction) + ","
       + JMoney("lots", lots) + ","
+      + JInt("magicNumber", (int)magic) + ","
       + JPrice("openPrice", price) + ","
       + JPrice("sl", sl) + ","
       + JStr("symbol", symbol) + ","
@@ -929,6 +932,7 @@ void SendTradeClose(ulong dealTicket)
    double profit    = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
    double swap      = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
    double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+   long   magic     = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
 
    // Determine close reason from comment
    string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
@@ -945,18 +949,20 @@ void SendTradeClose(ulong dealTicket)
    string openTicket = IntegerToString(posId);
 
    string payloadPairs[];
-   ArrayResize(payloadPairs, 6);
+   ArrayResize(payloadPairs, 7);
    payloadPairs[0] = JPrice("closePrice", closePrice);
    payloadPairs[1] = JStr("closeReason", closeReason);
    payloadPairs[2] = JMoney("commission", commission);
-   payloadPairs[3] = JMoney("profit", profit);
-   payloadPairs[4] = JMoney("swap", swap);
-   payloadPairs[5] = JStr("ticket", openTicket);
+   payloadPairs[3] = JInt("magicNumber", (int)magic);
+   payloadPairs[4] = JMoney("profit", profit);
+   payloadPairs[5] = JMoney("swap", swap);
+   payloadPairs[6] = JStr("ticket", openTicket);
 
    string payloadJson = "{"
       + JPrice("closePrice", closePrice) + ","
       + JStr("closeReason", closeReason) + ","
       + JMoney("commission", commission) + ","
+      + JInt("magicNumber", (int)magic) + ","
       + JMoney("profit", profit) + ","
       + JMoney("swap", swap) + ","
       + JStr("ticket", openTicket)

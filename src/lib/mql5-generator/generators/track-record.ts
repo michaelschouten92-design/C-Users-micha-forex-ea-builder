@@ -416,11 +416,12 @@ void TrackRecordDetectTradeEvents()
          // New position opened — re-select to ensure correct position context
          PositionSelectByTicket((ulong)currentTickets[i]);
          string dir = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? "BUY" : "SELL";
+         int posMagic = (int)PositionGetInteger(POSITION_MAGIC);
          TrackRecordSendTradeOpen(currentTickets[i],
             PositionGetString(POSITION_SYMBOL), dir,
             currentLots[i],
             PositionGetDouble(POSITION_PRICE_OPEN),
-            currentSL[i], currentTP[i]);
+            currentSL[i], currentTP[i], posMagic);
       }
    }
 
@@ -465,7 +466,8 @@ void TrackRecordDetectClose(long ticket)
    {
       ulong dTicket = HistoryDealGetTicket(i);
       if(dTicket == 0) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_MAGIC) != InpMagicNumber) continue;
+      int dealMagic = (int)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
+      if(dealMagic != InpMagicNumber) continue;
       if((long)HistoryDealGetInteger(dTicket, DEAL_POSITION_ID) != ticket) continue;
       long dealEntry = HistoryDealGetInteger(dTicket, DEAL_ENTRY);
       if(dealEntry != DEAL_ENTRY_OUT && dealEntry != DEAL_ENTRY_INOUT) continue;
@@ -482,7 +484,7 @@ void TrackRecordDetectClose(long ticket)
       else if(reason == DEAL_REASON_TP) closeReason = "TP";
       else if(reason == DEAL_REASON_SO) closeReason = "SO";
 
-      TrackRecordSendTradeClose(ticket, closePrice, profit, swap, commission, closeReason);
+      TrackRecordSendTradeClose(ticket, closePrice, profit, swap, commission, closeReason, dealMagic);
       return;
    }
 }`;
@@ -646,7 +648,7 @@ void TrackRecordSendSnapshot()
 }
 
 void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
-                              double lots, double openPrice, double sl, double tp)
+                              double lots, double openPrice, double sl, double tp, int magic)
 {
    int nextSeq = g_trSeqNo + 1;
    long ts = (long)TimeCurrent();
@@ -654,6 +656,7 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
    string payload =
       TRJsonStr("direction", dir) + ShortToString(1) +
       TRJsonMoney("lots", lots) + ShortToString(1) +
+      TRJsonInt("magicNumber", magic) + ShortToString(1) +
       TRJsonPrice("openPrice", openPrice) + ShortToString(1) +
       TRJsonPrice("sl", sl) + ShortToString(1) +
       TRJsonStr("symbol", symbol) + ShortToString(1) +
@@ -672,6 +675,7 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
       + "\\"payload\\":{"
       + TRJsonStr("direction", dir) + ","
       + TRJsonMoney("lots", lots) + ","
+      + TRJsonInt("magicNumber", magic) + ","
       + TRJsonPrice("openPrice", openPrice) + ","
       + TRJsonPrice("sl", sl) + ","
       + TRJsonStr("symbol", symbol) + ","
@@ -690,7 +694,7 @@ void TrackRecordSendTradeOpen(long ticket, string symbol, string dir,
 }
 
 void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
-                               double swap, double commission, string closeReason)
+                               double swap, double commission, string closeReason, int magic)
 {
    int nextSeq = g_trSeqNo + 1;
    long ts = (long)TimeCurrent();
@@ -699,6 +703,7 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
       TRJsonPrice("closePrice", closePrice) + ShortToString(1) +
       TRJsonStr("closeReason", closeReason) + ShortToString(1) +
       TRJsonMoney("commission", commission) + ShortToString(1) +
+      TRJsonInt("magicNumber", magic) + ShortToString(1) +
       TRJsonMoney("profit", profit) + ShortToString(1) +
       TRJsonMoney("swap", swap) + ShortToString(1) +
       TRJsonStr("ticket", IntegerToString(ticket));
@@ -716,6 +721,7 @@ void TrackRecordSendTradeClose(long ticket, double closePrice, double profit,
       + TRJsonPrice("closePrice", closePrice) + ","
       + TRJsonStr("closeReason", closeReason) + ","
       + TRJsonMoney("commission", commission) + ","
+      + TRJsonInt("magicNumber", magic) + ","
       + TRJsonMoney("profit", profit) + ","
       + TRJsonMoney("swap", swap) + ","
       + TRJsonStr("ticket", IntegerToString(ticket))

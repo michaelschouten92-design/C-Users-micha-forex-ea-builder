@@ -186,6 +186,8 @@ function buildSendTradeUpdateMQL5(): string {
       ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
       string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST) ? "PAPER" : "LIVE";
 
+      int dealMagic = (int)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
+
       string json = "{"
          + TelemetryJsonPair("mode", accMode) + ","
          + TelemetryJsonPair("ticket", IntegerToString(dTicket)) + ","
@@ -195,6 +197,7 @@ function buildSendTradeUpdateMQL5(): string {
          + TelemetryJsonNum("closePrice", closePrice) + ","
          + TelemetryJsonNum("lots", HistoryDealGetDouble(dTicket, DEAL_VOLUME)) + ","
          + TelemetryJsonNum("profit", HistoryDealGetDouble(dTicket, DEAL_PROFIT)) + ","
+         + "\\"magicNumber\\":" + IntegerToString(dealMagic) + ","
          + TelemetryJsonPair("openTime", TimeToString(openTime)) + ","
          + TelemetryJsonPair("closeTime", TimeToString(closeTime))
          + "}";
