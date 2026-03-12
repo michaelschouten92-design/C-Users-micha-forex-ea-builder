@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { resolveBaselineTrust } from "@/lib/live/baseline-trust-state";
+import { LinkBaselineDialog } from "./link-baseline-dialog";
 
 // ── Types ─────────────────────────────────────────────
 
@@ -220,7 +220,8 @@ function DeploymentRow({
   terminalId: string;
   onRefresh: () => void;
 }) {
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showLinkInstanceDialog, setShowLinkInstanceDialog] = useState(false);
+  const [showBaselineDialog, setShowBaselineDialog] = useState(false);
 
   const baselineTrust = resolveBaselineTrust(deployment.baselineStatus);
   const monitoringLabel = resolveMonitoringLabel(deployment);
@@ -254,24 +255,25 @@ function DeploymentRow({
           {action.type === "link" && (
             <button
               type="button"
-              onClick={() => setShowLinkDialog(true)}
+              onClick={() => setShowLinkInstanceDialog(true)}
               className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
             >
               Action: Link instance
             </button>
           )}
           {action.type === "relink" && deployment.instanceId && (
-            <Link
-              href={`/app/live?relink=${deployment.instanceId}`}
+            <button
+              type="button"
+              onClick={() => setShowBaselineDialog(true)}
               className="text-[11px] font-medium text-[#F59E0B] hover:text-white transition-colors"
             >
               Action: {baselineTrust.actionLabel}
-            </Link>
+            </button>
           )}
-          {action.type === "link-baseline" && (
+          {action.type === "link-baseline" && deployment.instanceId && (
             <button
               type="button"
-              onClick={() => setShowLinkDialog(true)}
+              onClick={() => setShowBaselineDialog(true)}
               className="text-[11px] font-medium text-[#A78BFA] hover:text-white transition-colors"
             >
               Action: {baselineTrust.actionLabel}
@@ -280,14 +282,27 @@ function DeploymentRow({
         </div>
       )}
 
-      {showLinkDialog && (
+      {showLinkInstanceDialog && (
         <LinkInstanceDialog
           terminalId={terminalId}
           deploymentId={deployment.id}
           deploymentLabel={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe}`}
-          onClose={() => setShowLinkDialog(false)}
+          onClose={() => setShowLinkInstanceDialog(false)}
           onLinked={() => {
-            setShowLinkDialog(false);
+            setShowLinkInstanceDialog(false);
+            onRefresh();
+          }}
+        />
+      )}
+
+      {showBaselineDialog && deployment.instanceId && (
+        <LinkBaselineDialog
+          instanceId={deployment.instanceId}
+          instanceName={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe}`}
+          isRelink={deployment.baselineStatus === "RELINK_REQUIRED"}
+          onClose={() => setShowBaselineDialog(false)}
+          onLinked={() => {
+            setShowBaselineDialog(false);
             onRefresh();
           }}
         />
