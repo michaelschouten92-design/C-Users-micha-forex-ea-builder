@@ -29,12 +29,15 @@ export function LinkBaselineDialog({
   instanceId,
   instanceName,
   isRelink,
+  deploymentLabel,
   onClose,
   onLinked,
 }: {
   instanceId: string;
   instanceName: string;
   isRelink?: boolean;
+  /** Compact deployment identity, e.g. "EURUSD · H1 · Magic 12345" */
+  deploymentLabel?: string;
   onClose: () => void;
   onLinked: (instanceId: string, baseline: BaselineData) => void;
 }) {
@@ -125,6 +128,11 @@ export function LinkBaselineDialog({
               ? `Baseline trust was suspended due to a material configuration change on "${instanceName}". Select a replacement backtest baseline to restore monitoring.`
               : `Select a backtest to use as baseline for "${instanceName}". Edge drift monitoring will compare live performance against this baseline.`}
           </p>
+          {deploymentLabel && (
+            <p className="text-[10px] text-[#64748B] mt-2">
+              Deployment: <span className="text-[#94A3B8] font-medium">{deploymentLabel}</span>
+            </p>
+          )}
         </div>
 
         {/* Content */}

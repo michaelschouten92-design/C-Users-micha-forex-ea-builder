@@ -300,6 +300,7 @@ function DeploymentRow({
           instanceId={deployment.instanceId}
           instanceName={`${deployment.eaName} — ${deployment.symbol} ${deployment.timeframe}`}
           isRelink={deployment.baselineStatus === "RELINK_REQUIRED"}
+          deploymentLabel={`${deployment.symbol} · ${deployment.timeframe} · Magic ${deployment.magicNumber}`}
           onClose={() => setShowBaselineDialog(false)}
           onLinked={() => {
             setShowBaselineDialog(false);
