@@ -91,7 +91,10 @@ export function LinkBaselineDialog({
       const res = await fetch(`/api/live/${instanceId}/link-baseline`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ backtestRunId: selectedRunId }),
+        body: JSON.stringify({
+          backtestRunId: selectedRunId,
+          ...(isRelink ? { relink: true } : {}),
+        }),
       });
       const json = await res.json();
       if (!res.ok) {

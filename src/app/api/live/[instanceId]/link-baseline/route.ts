@@ -37,7 +37,7 @@ export async function POST(
     const { instanceId } = await params;
 
     // 2. Parse body
-    let body: { backtestRunId: string };
+    let body: { backtestRunId: string; relink?: boolean };
     try {
       body = await request.json();
     } catch {
@@ -46,7 +46,7 @@ export async function POST(
       });
     }
 
-    const { backtestRunId } = body;
+    const { backtestRunId, relink } = body;
     if (!backtestRunId || typeof backtestRunId !== "string") {
       return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "backtestRunId is required"), {
         status: 400,
@@ -84,14 +84,23 @@ export async function POST(
     }
 
     // 5. Check if already linked (has strategyVersionId from a previous manual link)
-    if (instance.strategyVersionId) {
+    if (instance.strategyVersionId && !relink) {
       return NextResponse.json(
         apiError(
           ErrorCode.BASELINE_ALREADY_LINKED,
-          "A baseline is already linked to this instance. Relinking is not yet supported."
+          "A baseline is already linked to this instance. Use the relink flow to replace it."
         ),
         { status: 409 }
       );
+    }
+
+    // 5a. Relink: clear existing strategyVersionId so linkExternalBaseline can proceed
+    if (instance.strategyVersionId && relink) {
+      await prisma.liveEAInstance.update({
+        where: { id: instanceId },
+        data: { strategyVersionId: null },
+      });
+      log.info({ instanceId }, "Cleared strategyVersionId for relink");
     }
 
     // 6. Validate the backtest run: exists, owned by same user, has required metrics
@@ -183,7 +192,7 @@ export async function POST(
         backtestTrades: backtestRun.totalTrades,
         backtestWinRate: backtestRun.winRate,
         instanceEaName: instance.eaName,
-        linkType: "canonical",
+        linkType: relink ? "relink" : "canonical",
       },
       ...auditCtx,
     });
