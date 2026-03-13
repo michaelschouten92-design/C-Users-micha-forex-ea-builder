@@ -17,11 +17,6 @@ const DISPLAY_PRICES = {
       currency: "eur",
       interval: "month" as const,
     },
-    yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 39900),
-      currency: "eur",
-      interval: "year" as const,
-    },
   },
   elite: {
     monthly: {
@@ -29,22 +24,12 @@ const DISPLAY_PRICES = {
       currency: "eur",
       interval: "month" as const,
     },
-    yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_ELITE_YEARLY, 79900),
-      currency: "eur",
-      interval: "year" as const,
-    },
   },
   institutional: {
     monthly: {
       amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_INSTITUTIONAL_MONTHLY, 19900),
       currency: "eur",
       interval: "month" as const,
-    },
-    yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_INSTITUTIONAL_YEARLY, 199900),
-      currency: "eur",
-      interval: "year" as const,
     },
   },
 };
@@ -54,18 +39,9 @@ function getPriceConfigWithIds() {
   // On client side or when Stripe is not enabled, return display prices without IDs
   if (typeof window !== "undefined" || !features.stripe) {
     return {
-      pro: {
-        monthly: { ...DISPLAY_PRICES.pro.monthly, priceId: "" },
-        yearly: { ...DISPLAY_PRICES.pro.yearly, priceId: "" },
-      },
-      elite: {
-        monthly: { ...DISPLAY_PRICES.elite.monthly, priceId: "" },
-        yearly: { ...DISPLAY_PRICES.elite.yearly, priceId: "" },
-      },
-      institutional: {
-        monthly: { ...DISPLAY_PRICES.institutional.monthly, priceId: "" },
-        yearly: { ...DISPLAY_PRICES.institutional.yearly, priceId: "" },
-      },
+      pro: { monthly: { ...DISPLAY_PRICES.pro.monthly, priceId: "" } },
+      elite: { monthly: { ...DISPLAY_PRICES.elite.monthly, priceId: "" } },
+      institutional: { monthly: { ...DISPLAY_PRICES.institutional.monthly, priceId: "" } },
     };
   }
 
@@ -76,19 +52,11 @@ function getPriceConfigWithIds() {
         ...DISPLAY_PRICES.pro.monthly,
         priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID!.trim(),
       },
-      yearly: {
-        ...DISPLAY_PRICES.pro.yearly,
-        priceId: env.STRIPE_PRO_YEARLY_PRICE_ID!.trim(),
-      },
     },
     elite: {
       monthly: {
         ...DISPLAY_PRICES.elite.monthly,
         priceId: env.STRIPE_ELITE_MONTHLY_PRICE_ID!.trim(),
-      },
-      yearly: {
-        ...DISPLAY_PRICES.elite.yearly,
-        priceId: env.STRIPE_ELITE_YEARLY_PRICE_ID!.trim(),
       },
     },
     institutional: {
@@ -98,13 +66,6 @@ function getPriceConfigWithIds() {
           (
             env as unknown as Record<string, string | undefined>
           ).STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID?.trim() ?? "",
-      },
-      yearly: {
-        ...DISPLAY_PRICES.institutional.yearly,
-        priceId:
-          (
-            env as unknown as Record<string, string | undefined>
-          ).STRIPE_INSTITUTIONAL_YEARLY_PRICE_ID?.trim() ?? "",
       },
     },
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
@@ -24,26 +24,10 @@ interface PricingSectionProps {
 
 export function PricingSection({ showHeader = true }: PricingSectionProps) {
   const router = useRouter();
-  const [interval, setBillingInterval] = useState<"monthly" | "yearly">(() => {
-    if (typeof window !== "undefined") {
-      return (sessionStorage.getItem("billingInterval") as "monthly" | "yearly") || "monthly";
-    }
-    return "monthly";
-  });
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  useEffect(() => {
-    sessionStorage.setItem("billingInterval", interval);
-  }, [interval]);
-
-  const proPrice = PLANS.PRO.prices?.[interval];
-  const elitePrice = PLANS.ELITE.prices?.[interval];
-  const proMonthlyTotal = (PLANS.PRO.prices?.monthly.amount ?? 0) * 12;
-  const proYearlyPrice = PLANS.PRO.prices?.yearly.amount ?? 0;
-  const proYearlySavings = proMonthlyTotal - proYearlyPrice;
-  const eliteMonthlyTotal = (PLANS.ELITE.prices?.monthly.amount ?? 0) * 12;
-  const eliteYearlyPrice = PLANS.ELITE.prices?.yearly.amount ?? 0;
-  const eliteYearlySavings = eliteMonthlyTotal - eliteYearlyPrice;
+  const proPrice = PLANS.PRO.prices?.monthly;
+  const elitePrice = PLANS.ELITE.prices?.monthly;
 
   async function handleSubscribe(plan: "PRO" | "ELITE") {
     setLoadingPlan(plan);
@@ -52,7 +36,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ plan, interval }),
+        body: JSON.stringify({ plan, interval: "monthly" }),
       });
 
       if (res.status === 401) {
@@ -87,31 +71,6 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
           </p>
         </div>
       )}
-
-      {/* Billing Toggle */}
-      <div className="flex justify-center mt-8 mb-12">
-        <div className="flex rounded-lg bg-[#0F172A] p-1">
-          <button
-            onClick={() => setBillingInterval("monthly")}
-            className={`px-6 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
-              interval === "monthly" ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingInterval("yearly")}
-            className={`px-6 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
-              interval === "yearly" ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
-            }`}
-          >
-            Yearly
-            <span className="ml-1.5 text-[10px] font-bold text-[#0F172A] bg-[#22D3EE] px-1.5 py-0.5 rounded-full">
-              Save 15%
-            </span>
-          </button>
-        </div>
-      </div>
 
       {/* Pricing Cards */}
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -195,24 +154,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                 <span className="text-4xl font-bold text-white">
                   {formatPrice(proPrice.amount, "eur")}
                 </span>
-                <span className="text-[#94A3B8] ml-2">
-                  / {interval === "monthly" ? "month" : "year"}
-                </span>
-                {interval === "yearly" && (
-                  <div className="mt-2 inline-flex items-center gap-2 bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.25)] rounded-full px-3 py-1">
-                    <span className="text-sm text-[#64748B] line-through">
-                      {formatPrice(proMonthlyTotal, "eur")}
-                    </span>
-                    <span className="text-sm text-[#22D3EE] font-semibold">
-                      Save {formatPrice(proYearlySavings, "eur")}
-                    </span>
-                  </div>
-                )}
-                {interval === "yearly" && (
-                  <p className="text-xs text-[#94A3B8] mt-1">
-                    = {formatPrice(Math.round(proYearlyPrice / 12), "eur")}/month, billed annually
-                  </p>
-                )}
+                <span className="text-[#94A3B8] ml-2">/ month</span>
               </>
             ) : (
               <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
@@ -280,24 +222,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
                 <span className="text-4xl font-bold text-white">
                   {formatPrice(elitePrice.amount, "eur")}
                 </span>
-                <span className="text-[#94A3B8] ml-2">
-                  / {interval === "monthly" ? "month" : "year"}
-                </span>
-                {interval === "yearly" && (
-                  <div className="mt-2 inline-flex items-center gap-2 bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.25)] rounded-full px-3 py-1">
-                    <span className="text-sm text-[#64748B] line-through">
-                      {formatPrice(eliteMonthlyTotal, "eur")}
-                    </span>
-                    <span className="text-sm text-[#A78BFA] font-semibold">
-                      Save {formatPrice(eliteYearlySavings, "eur")}
-                    </span>
-                  </div>
-                )}
-                {interval === "yearly" && (
-                  <p className="text-xs text-[#94A3B8] mt-1">
-                    = {formatPrice(Math.round(eliteYearlyPrice / 12), "eur")}/month, billed annually
-                  </p>
-                )}
+                <span className="text-[#94A3B8] ml-2">/ month</span>
               </>
             ) : (
               <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>

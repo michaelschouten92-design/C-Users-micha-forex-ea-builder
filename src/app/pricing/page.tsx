@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
@@ -122,26 +122,10 @@ const FAQ_ITEMS = [
 
 export default function PricingPage() {
   const router = useRouter();
-  const [interval, setBillingInterval] = useState<"monthly" | "yearly">(() => {
-    if (typeof window !== "undefined") {
-      return (sessionStorage.getItem("billingInterval") as "monthly" | "yearly") || "monthly";
-    }
-    return "monthly";
-  });
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  useEffect(() => {
-    sessionStorage.setItem("billingInterval", interval);
-  }, [interval]);
-
-  const proPrice = PLANS.PRO.prices?.[interval];
-  const elitePrice = PLANS.ELITE.prices?.[interval];
-  const proMonthlyTotal = (PLANS.PRO.prices?.monthly.amount ?? 0) * 12;
-  const proYearlyPrice = PLANS.PRO.prices?.yearly.amount ?? 0;
-  const proYearlySavings = proMonthlyTotal - proYearlyPrice;
-  const eliteMonthlyTotal = (PLANS.ELITE.prices?.monthly.amount ?? 0) * 12;
-  const eliteYearlyPrice = PLANS.ELITE.prices?.yearly.amount ?? 0;
-  const eliteYearlySavings = eliteMonthlyTotal - eliteYearlyPrice;
+  const proPrice = PLANS.PRO.prices?.monthly;
+  const elitePrice = PLANS.ELITE.prices?.monthly;
 
   async function handleSubscribe(plan: "PRO" | "ELITE") {
     setLoadingPlan(plan);
@@ -149,7 +133,7 @@ export default function PricingPage() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ plan, interval }),
+        body: JSON.stringify({ plan, interval: "monthly" }),
       });
       if (res.status === 401) {
         router.push(`/login?mode=register&redirect=/pricing`);
@@ -189,37 +173,6 @@ export default function PricingPage() {
             AlgoStudio monitors whether your trading strategy still has an edge — and governs what
             happens when it doesn&apos;t.
           </p>
-        </div>
-
-        {/* ════════════════════════════════════════════════════════════
-            BILLING TOGGLE
-            ════════════════════════════════════════════════════════════ */}
-        <div className="flex justify-center mb-10">
-          <div className="flex rounded-lg bg-[#111114] border border-[rgba(255,255,255,0.06)] p-1">
-            <button
-              onClick={() => setBillingInterval("monthly")}
-              className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
-                interval === "monthly"
-                  ? "bg-[#6366F1] text-white"
-                  : "text-[#A1A1AA] hover:text-[#FAFAFA]"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingInterval("yearly")}
-              className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
-                interval === "yearly"
-                  ? "bg-[#6366F1] text-white"
-                  : "text-[#A1A1AA] hover:text-[#FAFAFA]"
-              }`}
-            >
-              Yearly
-              <span className="ml-1.5 text-[10px] font-bold text-white bg-[#10B981] px-1.5 py-0.5 rounded-full">
-                Save 15%
-              </span>
-            </button>
-          </div>
         </div>
 
         {/* ════════════════════════════════════════════════════════════
@@ -279,25 +232,7 @@ export default function PricingPage() {
                   <span className="text-3xl font-bold text-[#FAFAFA]">
                     {formatPrice(proPrice.amount, "eur")}
                   </span>
-                  <span className="text-[#71717A] ml-2 text-sm">
-                    / {interval === "monthly" ? "month" : "year"}
-                  </span>
-                  {interval === "yearly" && (
-                    <>
-                      <div className="mt-2 inline-flex items-center gap-2 bg-[rgba(16,185,129,0.08)] border border-[rgba(16,185,129,0.20)] rounded-full px-3 py-1">
-                        <span className="text-xs text-[#71717A] line-through">
-                          {formatPrice(proMonthlyTotal, "eur")}
-                        </span>
-                        <span className="text-xs text-[#10B981] font-semibold">
-                          Save {formatPrice(proYearlySavings, "eur")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#71717A] mt-1">
-                        = {formatPrice(Math.round(proYearlyPrice / 12), "eur")}/month, billed
-                        annually
-                      </p>
-                    </>
-                  )}
+                  <span className="text-[#71717A] ml-2 text-sm">/ month</span>
                 </>
               ) : (
                 <span className="text-2xl font-bold text-[#71717A]">Coming soon</span>
@@ -345,25 +280,7 @@ export default function PricingPage() {
                   <span className="text-3xl font-bold text-[#FAFAFA]">
                     {formatPrice(elitePrice.amount, "eur")}
                   </span>
-                  <span className="text-[#71717A] ml-2 text-sm">
-                    / {interval === "monthly" ? "month" : "year"}
-                  </span>
-                  {interval === "yearly" && (
-                    <>
-                      <div className="mt-2 inline-flex items-center gap-2 bg-[rgba(16,185,129,0.08)] border border-[rgba(16,185,129,0.20)] rounded-full px-3 py-1">
-                        <span className="text-xs text-[#71717A] line-through">
-                          {formatPrice(eliteMonthlyTotal, "eur")}
-                        </span>
-                        <span className="text-xs text-[#10B981] font-semibold">
-                          Save {formatPrice(eliteYearlySavings, "eur")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#71717A] mt-1">
-                        = {formatPrice(Math.round(eliteYearlyPrice / 12), "eur")}/month, billed
-                        annually
-                      </p>
-                    </>
-                  )}
+                  <span className="text-[#71717A] ml-2 text-sm">/ month</span>
                 </>
               ) : (
                 <span className="text-2xl font-bold text-[#71717A]">Coming soon</span>

@@ -142,12 +142,12 @@ describe("validations", () => {
       expect(result.success).toBe(true);
     });
 
-    it("validates yearly interval", () => {
+    it("rejects yearly interval (monthly-only)", () => {
       const result = checkoutRequestSchema.safeParse({
         plan: "PRO",
         interval: "yearly",
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it("rejects invalid plan", () => {

@@ -167,17 +167,17 @@ const refinedEnvSchema = envSchema
   )
   .refine(
     (data) => {
-      // If Stripe is enabled (non-empty), all price IDs are required
+      // If Stripe is enabled (non-empty), monthly price IDs are required
+      // Yearly price IDs are optional (kept for backward compat with existing yearly subscribers)
       if (data.STRIPE_SECRET_KEY && data.STRIPE_SECRET_KEY !== "") {
         if (!data.STRIPE_PRO_MONTHLY_PRICE_ID) return false;
-        if (!data.STRIPE_PRO_YEARLY_PRICE_ID) return false;
         if (!data.STRIPE_ELITE_MONTHLY_PRICE_ID) return false;
-        if (!data.STRIPE_ELITE_YEARLY_PRICE_ID) return false;
       }
       return true;
     },
     {
-      message: "When STRIPE_SECRET_KEY is set, all Stripe price IDs are required",
+      message:
+        "When STRIPE_SECRET_KEY is set, monthly Stripe price IDs are required (STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_ELITE_MONTHLY_PRICE_ID)",
       path: ["STRIPE_PRO_MONTHLY_PRICE_ID"],
     }
   )
