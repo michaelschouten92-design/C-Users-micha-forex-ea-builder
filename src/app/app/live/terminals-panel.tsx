@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveBaselineTrust } from "@/lib/live/baseline-trust-state";
 import { LinkBaselineDialog } from "./link-baseline-dialog";
 
@@ -180,6 +180,7 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
             <span className="text-[10px] text-[#64748B]">
               {terminal.deployments.length} deployment{terminal.deployments.length !== 1 ? "s" : ""}
             </span>
+            <TerminalOverflowMenu terminal={terminal} onRefresh={onRefresh} />
           </div>
         </div>
       </div>
@@ -306,6 +307,313 @@ function DiscoveryGuidanceBanner({ unattributed }: { unattributed: number }) {
   );
 }
 
+// ── Terminal Overflow Menu ────────────────────────────
+
+function TerminalOverflowMenu({
+  terminal,
+  onRefresh,
+}: {
+  terminal: Terminal;
+  onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"menu" | "rename" | "confirm-delete">("menu");
+  const [renameValue, setRenameValue] = useState(terminal.label);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setMode("menu");
+        setError(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const handleRename = async () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === terminal.label) {
+      setOpen(false);
+      setMode("menu");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/live/terminal/${terminal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Rename failed");
+        return;
+      }
+      setOpen(false);
+      setMode("menu");
+      onRefresh();
+    } catch {
+      setError("Request failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/live/terminal/${terminal.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Remove failed");
+        return;
+      }
+      setOpen(false);
+      setMode("menu");
+      onRefresh();
+    } catch {
+      setError("Request failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+          setMode("menu");
+          setError(null);
+        }}
+        className="p-1 rounded hover:bg-[rgba(79,70,229,0.15)] transition-colors"
+        aria-label="Terminal actions"
+      >
+        <svg className="w-4 h-4 text-[#7C8DB0]" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-56 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
+          {error && (
+            <div className="px-3 py-2 text-[11px] text-[#EF4444] bg-[rgba(239,68,68,0.08)] border-b border-[rgba(239,68,68,0.2)]">
+              {error}
+            </div>
+          )}
+
+          {mode === "menu" && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("rename");
+                  setRenameValue(terminal.label);
+                }}
+                className="w-full text-left px-4 py-2.5 text-sm text-[#A1A1AA] hover:bg-[rgba(79,70,229,0.15)] hover:text-white transition-colors"
+              >
+                Rename terminal
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("confirm-delete")}
+                className="w-full text-left px-4 py-2.5 text-sm text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] transition-colors"
+              >
+                Remove terminal
+              </button>
+            </>
+          )}
+
+          {mode === "rename" && (
+            <div className="p-3">
+              <label className="block text-[11px] text-[#7C8DB0] mb-1.5">Terminal name</label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRename();
+                  if (e.key === "Escape") {
+                    setOpen(false);
+                    setMode("menu");
+                  }
+                }}
+                maxLength={100}
+                autoFocus
+                className="w-full px-2.5 py-1.5 rounded-md bg-[#0F0A1A] border border-[rgba(79,70,229,0.2)] text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
+              />
+              <div className="flex items-center justify-end gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setMode("menu");
+                  }}
+                  className="px-2.5 py-1 text-xs text-[#7C8DB0] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRename}
+                  disabled={saving || !renameValue.trim()}
+                  className="px-2.5 py-1 text-xs font-medium bg-[#6366F1] text-white rounded-md hover:bg-[#818CF8] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === "confirm-delete" && (
+            <div className="p-3">
+              <p className="text-xs text-[#A1A1AA] mb-1">
+                Remove <span className="font-medium text-white">{terminal.label}</span>?
+              </p>
+              <p className="text-[10px] text-[#64748B] mb-3">
+                The terminal will be hidden. Trade history and proof chains are preserved.
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setMode("menu");
+                  }}
+                  className="px-2.5 py-1 text-xs text-[#7C8DB0] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={saving}
+                  className="px-2.5 py-1 text-xs font-medium bg-[#EF4444] text-white rounded-md hover:bg-[#F87171] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Removing..." : "Remove"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Deployment Overflow Menu ─────────────────────────
+
+function DeploymentOverflowMenu({
+  terminalId,
+  deploymentId,
+  onRefresh,
+}: {
+  terminalId: string;
+  deploymentId: string;
+  onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirming(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const handleIgnore = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/live/terminal/${terminalId}/deployments/${deploymentId}/ignore`,
+        { method: "POST" }
+      );
+      if (!res.ok) return;
+      setOpen(false);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+          setConfirming(false);
+        }}
+        className="p-0.5 rounded hover:bg-[rgba(79,70,229,0.15)] transition-colors"
+        aria-label="Deployment actions"
+      >
+        <svg className="w-3.5 h-3.5 text-[#64748B]" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
+          {!confirming ? (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className="w-full text-left px-4 py-2.5 text-sm text-[#A1A1AA] hover:bg-[rgba(79,70,229,0.15)] hover:text-white transition-colors"
+            >
+              Ignore deployment
+            </button>
+          ) : (
+            <div className="p-3">
+              <p className="text-[11px] text-[#A1A1AA] mb-2">
+                Hide this deployment? It won&apos;t appear again even if new telemetry arrives.
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setConfirming(false);
+                  }}
+                  className="px-2.5 py-1 text-xs text-[#7C8DB0] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleIgnore}
+                  disabled={saving}
+                  className="px-2.5 py-1 text-xs font-medium bg-[#6366F1] text-white rounded-md hover:bg-[#818CF8] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Hiding..." : "Ignore"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Deployment Row ────────────────────────────────────
 
 function DeploymentRow({
@@ -342,6 +650,13 @@ function DeploymentRow({
             Discovered
           </span>
         )}
+        <div className="ml-auto flex-shrink-0">
+          <DeploymentOverflowMenu
+            terminalId={terminalId}
+            deploymentId={deployment.id}
+            onRefresh={onRefresh}
+          />
+        </div>
       </div>
 
       {/* Status rows */}

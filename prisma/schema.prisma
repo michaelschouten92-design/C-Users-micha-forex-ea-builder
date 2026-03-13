@@ -1390,6 +1390,7 @@ model TerminalDeployment {
   materialFingerprint  String?         // SHA-256 of EA parameters/config — detects material changes
   source               String          @default("PRECISE") // PRECISE (symbol-only) | DISCOVERED (account-wide)
   baselineStatus       BaselineStatus  @default(UNLINKED)
+  ignoredAt            DateTime?       // Soft-hide discovered deployments the user doesn't care about
   firstSeenAt          DateTime        @default(now())
   lastSeenAt           DateTime        @default(now())
 

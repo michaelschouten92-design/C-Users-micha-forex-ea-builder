@@ -27,6 +27,7 @@ export async function GET() {
       unattributedTradeCount: true,
       createdAt: true,
       deployments: {
+        where: { OR: [{ ignoredAt: null }, { NOT: { source: "DISCOVERED" } }] },
         orderBy: { lastSeenAt: "desc" },
         select: {
           id: true,

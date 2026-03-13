@@ -67,6 +67,46 @@ export async function GET(
 }
 
 /**
+ * PATCH /api/live/terminal/[terminalId] — Rename a terminal.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ terminalId: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+  }
+
+  const { terminalId } = await params;
+  const body = await request.json();
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+
+  if (!name || name.length > 100) {
+    return NextResponse.json(
+      apiError(ErrorCode.VALIDATION_FAILED, "Name must be 1–100 characters"),
+      { status: 400 }
+    );
+  }
+
+  const terminal = await prisma.terminalConnection.findUnique({
+    where: { id: terminalId },
+    select: { id: true, userId: true, deletedAt: true },
+  });
+
+  if (!terminal || terminal.deletedAt || terminal.userId !== session.user.id) {
+    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Terminal not found"), { status: 404 });
+  }
+
+  await prisma.terminalConnection.update({
+    where: { id: terminalId },
+    data: { label: name },
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
  * DELETE /api/live/terminal/[terminalId] — Soft-delete a terminal connection.
  * Does NOT cascade-delete child instances — they become standalone (terminalConnectionId = null).
  */
