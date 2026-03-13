@@ -104,6 +104,57 @@ function getMetricLabel(metric: string): string {
   return labels[metric] || metric;
 }
 
+function getInterpretation(
+  status: BacktestDetail["healthStatus"],
+  m: BacktestDetail["metrics"]
+): string {
+  const lowSample = m.totalTrades < 100;
+  const highDrawdown = m.maxDrawdownPct >= 25;
+  const strongPF = m.profitFactor >= 1.5;
+  const weakPF = m.profitFactor < 1.2;
+  const lowWinRate = m.winRate < 45;
+
+  if (status === "INSUFFICIENT_DATA") {
+    return "There is not enough trade data to produce a statistically meaningful assessment. More sample depth is needed before this strategy can be evaluated confidently for baseline definition or monitoring.";
+  }
+
+  if (status === "WEAK") {
+    const weakCount = [weakPF, highDrawdown, lowWinRate, lowSample].filter(Boolean).length;
+    if (weakCount >= 2) {
+      return "This backtest does not yet show strong statistical reliability. Weakness across multiple core metrics reduces confidence in the observed edge, and further testing is recommended before baseline use or live deployment.";
+    }
+    if (highDrawdown) {
+      return "This backtest does not yet show strong statistical reliability. Elevated drawdown is the primary concern and reduces confidence in the observed performance profile. Review risk parameters before further use.";
+    }
+    return "This backtest does not yet show strong statistical reliability. The overall performance profile falls below evaluation thresholds, and further testing is recommended before baseline use or live deployment.";
+  }
+
+  if (status === "MODERATE") {
+    if (lowSample) {
+      return "This backtest shows signs of a plausible edge, but sample depth is still limited. The observed performance may be promising, though more trades are recommended before treating this strategy as a trusted monitoring baseline.";
+    }
+    if (highDrawdown) {
+      return "This backtest shows signs of a plausible edge, but elevated drawdown reduces confidence in the overall performance profile. Review risk tolerance carefully before using this evaluation as a trusted baseline.";
+    }
+    if (weakPF) {
+      return "This backtest shows signs of a plausible edge, but return quality is below optimal thresholds. Review the score breakdown carefully before treating this strategy as a trusted baseline for monitoring.";
+    }
+    return "This backtest shows signs of a plausible edge, but some parts of the performance profile require caution. Review the score breakdown carefully before treating this strategy as a trusted baseline for monitoring.";
+  }
+
+  // ROBUST
+  if (lowSample) {
+    return "This backtest appears to demonstrate a statistically positive edge, though sample depth is still modest. Consider extending the test period to strengthen confidence before baseline definition.";
+  }
+  if (highDrawdown) {
+    return "This backtest appears to demonstrate a statistically positive edge, but drawdown levels are elevated relative to the overall profile. Evaluate risk tolerance before using this as a monitoring baseline.";
+  }
+  if (strongPF && !highDrawdown && !lowSample) {
+    return "This backtest appears to demonstrate a statistically positive edge with a balanced performance profile. Trade depth, return quality, and drawdown behavior support use as a candidate for baseline definition and robustness testing.";
+  }
+  return "This backtest appears to demonstrate a statistically positive edge with a strong overall performance profile. The strategy meets the minimum evaluation thresholds and appears suitable for robustness testing, baseline definition, and live monitoring.";
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -343,14 +394,7 @@ export default function EvaluateDetailPage() {
               AlgoStudio Interpretation
             </h3>
             <p className="text-sm text-[#E4E4E7] leading-relaxed">
-              {data.healthStatus === "ROBUST" &&
-                "This backtest appears to demonstrate a statistically positive edge with a strong overall performance profile. The strategy meets the minimum evaluation thresholds and appears suitable for robustness testing, baseline definition, and live monitoring."}
-              {data.healthStatus === "MODERATE" &&
-                "This backtest shows signs of a plausible edge, but some parts of the performance profile require caution. Review the score breakdown carefully before treating this strategy as a trusted baseline for monitoring."}
-              {data.healthStatus === "WEAK" &&
-                "This backtest does not yet show strong statistical reliability. Weakness across multiple metrics reduces confidence in the observed edge, and further testing is recommended before baseline use or live deployment."}
-              {data.healthStatus === "INSUFFICIENT_DATA" &&
-                "There is not enough trade data to produce a statistically meaningful assessment. More sample depth is needed before this strategy can be evaluated confidently for baseline definition or monitoring."}
+              {getInterpretation(data.healthStatus, data.metrics)}
             </p>
           </div>
 
