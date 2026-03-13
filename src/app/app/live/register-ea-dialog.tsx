@@ -78,7 +78,7 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#4F46E5]/40 text-[#A78BFA] hover:bg-[#4F46E5]/20 hover:border-[#4F46E5]/60 transition-all duration-200"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#4F46E5]/20 border border-[#4F46E5]/50 text-white hover:bg-[#4F46E5]/30 hover:border-[#4F46E5]/70 transition-all duration-200"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path

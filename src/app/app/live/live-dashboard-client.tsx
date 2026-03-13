@@ -1426,7 +1426,7 @@ const CONNECTION_STATUS_CONFIG: Record<
 > = {
   connecting: { color: "#F59E0B", label: "Connecting", ping: false },
   connected: { color: "#10B981", label: "Live", ping: true },
-  "fallback-polling": { color: "#3B82F6", label: "Polling", ping: false },
+  "fallback-polling": { color: "#3B82F6", label: "Last update", ping: false },
   disconnected: { color: "#EF4444", label: "Disconnected", ping: false },
 };
 
@@ -1478,10 +1478,12 @@ function ConnectionIndicator({
 
 function SummaryCard({
   label,
+  subtitle,
   value,
   isCurrency = true,
 }: {
   label: string;
+  subtitle?: string;
   value: number;
   isCurrency?: boolean;
 }) {
@@ -1493,6 +1495,7 @@ function SummaryCard({
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
+      {subtitle && <p className="text-[9px] text-[#64748B] mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -2146,12 +2149,14 @@ export function LiveDashboardClient({
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <SummaryCard
               label="Live P&L"
+              subtitle="tracked total"
               value={eaInstances
                 .filter((ea) => ea.mode === "LIVE")
                 .reduce((sum, ea) => sum + ea.totalProfit, 0)}
             />
             <SummaryCard
               label="Paper P&L"
+              subtitle="tracked total"
               value={eaInstances
                 .filter((ea) => ea.mode === "PAPER")
                 .reduce((sum, ea) => sum + ea.totalProfit, 0)}
@@ -2384,7 +2389,7 @@ export function LiveDashboardClient({
           const cats = [
             { label: "Healthy", count: healthy, color: "#10B981" },
             { label: "Attention", count: attention, color: "#F59E0B" },
-            { label: "Monitoring", count: monitoring, color: "#A78BFA" },
+            { label: "Collecting Data", count: monitoring, color: "#A78BFA" },
             { label: "Paused", count: paused, color: "#64748B" },
           ];
 
