@@ -117,8 +117,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    // Prevent downgrade via checkout (ELITE cannot buy PRO — use customer portal instead)
-    if (isActive && currentTier === "ELITE" && plan === "PRO") {
+    // Prevent downgrade via checkout — use change-plan (account settings) instead
+    const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 };
+    if (isActive && currentTier && tierOrder[currentTier] > tierOrder[plan]) {
       return NextResponse.json(
         { error: "Please manage your subscription from account settings" },
         { status: 400 }

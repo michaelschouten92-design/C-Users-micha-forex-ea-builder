@@ -62,10 +62,7 @@ function getPriceConfigWithIds() {
     institutional: {
       monthly: {
         ...DISPLAY_PRICES.institutional.monthly,
-        priceId:
-          (
-            env as unknown as Record<string, string | undefined>
-          ).STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID?.trim() ?? "",
+        priceId: env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID?.trim() ?? "",
       },
     },
   };

@@ -3,20 +3,22 @@ import { PLANS, getPlan, formatPrice } from "./plans";
 
 describe("plans", () => {
   describe("PLANS configuration", () => {
-    it("has three tiers: FREE, PRO, ELITE", () => {
-      expect(Object.keys(PLANS)).toEqual(["FREE", "PRO", "ELITE"]);
+    it("has four tiers: FREE, PRO, ELITE, INSTITUTIONAL", () => {
+      expect(Object.keys(PLANS)).toEqual(["FREE", "PRO", "ELITE", "INSTITUTIONAL"]);
     });
 
     it("FREE tier has correct limits", () => {
-      expect(PLANS.FREE.limits.maxProjects).toBe(1);
-      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(3);
+      expect(PLANS.FREE.limits.maxProjects).toBe(Infinity);
+      expect(PLANS.FREE.limits.maxExportsPerMonth).toBe(Infinity);
       expect(PLANS.FREE.limits.canExportMQL5).toBe(true);
+      expect(PLANS.FREE.limits.maxMonitoredTradingAccounts).toBe(1);
     });
 
     it("PRO tier has unlimited projects and exports", () => {
       expect(PLANS.PRO.limits.maxProjects).toBe(Infinity);
       expect(PLANS.PRO.limits.maxExportsPerMonth).toBe(Infinity);
       expect(PLANS.PRO.limits.canExportMQL5).toBe(true);
+      expect(PLANS.PRO.limits.maxMonitoredTradingAccounts).toBe(3);
     });
 
     it("FREE tier has no prices", () => {
@@ -31,24 +33,38 @@ describe("plans", () => {
       expect(PLANS.ELITE.limits.maxProjects).toBe(Infinity);
       expect(PLANS.ELITE.limits.maxExportsPerMonth).toBe(Infinity);
       expect(PLANS.ELITE.limits.canExportMQL5).toBe(true);
+      expect(PLANS.ELITE.limits.maxMonitoredTradingAccounts).toBe(10);
     });
 
     it("ELITE tier has prices", () => {
       expect(PLANS.ELITE.prices).toBeTruthy();
     });
 
+    it("INSTITUTIONAL tier has unlimited monitored accounts", () => {
+      expect(PLANS.INSTITUTIONAL.limits.maxProjects).toBe(Infinity);
+      expect(PLANS.INSTITUTIONAL.limits.maxExportsPerMonth).toBe(Infinity);
+      expect(PLANS.INSTITUTIONAL.limits.canExportMQL5).toBe(true);
+      expect(PLANS.INSTITUTIONAL.limits.maxMonitoredTradingAccounts).toBe(Infinity);
+    });
+
+    it("INSTITUTIONAL tier has prices", () => {
+      expect(PLANS.INSTITUTIONAL.prices).toBeTruthy();
+    });
+
     it("each tier has features list", () => {
       expect(PLANS.FREE.features.length).toBeGreaterThan(0);
       expect(PLANS.PRO.features.length).toBeGreaterThan(0);
       expect(PLANS.ELITE.features.length).toBeGreaterThan(0);
+      expect(PLANS.INSTITUTIONAL.features.length).toBeGreaterThan(0);
     });
   });
 
   describe("getPlan", () => {
     it("returns correct plan by tier", () => {
-      expect(getPlan("FREE").name).toBe("Free");
-      expect(getPlan("PRO").name).toBe("Pro");
-      expect(getPlan("ELITE").name).toBe("Elite");
+      expect(getPlan("FREE").name).toBe("Baseline");
+      expect(getPlan("PRO").name).toBe("Control");
+      expect(getPlan("ELITE").name).toBe("Authority");
+      expect(getPlan("INSTITUTIONAL").name).toBe("Institutional");
     });
   });
 

@@ -53,6 +53,7 @@ const envSchema = z.object({
   STRIPE_PRO_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
   STRIPE_ELITE_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
   STRIPE_ELITE_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
+  STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
 
   // Sentry (optional - for error tracking)
   SENTRY_DSN: z.string().url().optional().or(z.literal("")),
@@ -172,12 +173,13 @@ const refinedEnvSchema = envSchema
       if (data.STRIPE_SECRET_KEY && data.STRIPE_SECRET_KEY !== "") {
         if (!data.STRIPE_PRO_MONTHLY_PRICE_ID) return false;
         if (!data.STRIPE_ELITE_MONTHLY_PRICE_ID) return false;
+        if (!data.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID) return false;
       }
       return true;
     },
     {
       message:
-        "When STRIPE_SECRET_KEY is set, monthly Stripe price IDs are required (STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_ELITE_MONTHLY_PRICE_ID)",
+        "When STRIPE_SECRET_KEY is set, monthly Stripe price IDs are required (STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_ELITE_MONTHLY_PRICE_ID, STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID)",
       path: ["STRIPE_PRO_MONTHLY_PRICE_ID"],
     }
   )
@@ -302,6 +304,7 @@ function validateEnv() {
       STRIPE_PRO_YEARLY_PRICE_ID: undefined,
       STRIPE_ELITE_MONTHLY_PRICE_ID: undefined,
       STRIPE_ELITE_YEARLY_PRICE_ID: undefined,
+      STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: undefined,
       SENTRY_DSN: undefined,
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
@@ -366,6 +369,7 @@ function validateEnv() {
         STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
         STRIPE_ELITE_MONTHLY_PRICE_ID: process.env.STRIPE_ELITE_MONTHLY_PRICE_ID,
         STRIPE_ELITE_YEARLY_PRICE_ID: process.env.STRIPE_ELITE_YEARLY_PRICE_ID,
+        STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: process.env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID,
         SENTRY_DSN: process.env.SENTRY_DSN,
         NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
         UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,

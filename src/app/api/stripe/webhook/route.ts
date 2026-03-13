@@ -371,13 +371,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     priceId === env.STRIPE_ELITE_YEARLY_PRICE_ID
   ) {
     tier = "ELITE";
-  } else if (
-    priceId ===
-      (env as unknown as Record<string, string | undefined>)
-        .STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID ||
-    priceId ===
-      (env as unknown as Record<string, string | undefined>).STRIPE_INSTITUTIONAL_YEARLY_PRICE_ID
-  ) {
+  } else if (priceId === env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID) {
     tier = "INSTITUTIONAL";
   } else {
     log.error(
