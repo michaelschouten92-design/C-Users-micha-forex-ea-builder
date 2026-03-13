@@ -506,9 +506,11 @@ export default function EvaluatePage() {
                   className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-sm font-medium text-white truncate">
-                        {item.eaName || item.fileName}
+                        {[item.symbol, item.timeframe].filter(Boolean).join(" · ") ||
+                          item.eaName ||
+                          item.fileName}
                       </span>
                       {item.healthStatus && (
                         <span
@@ -522,9 +524,10 @@ export default function EvaluatePage() {
                         </span>
                       )}
                     </div>
+                    {item.symbol && item.eaName && (
+                      <div className="text-xs text-[#A1A1AA] truncate mb-0.5">{item.eaName}</div>
+                    )}
                     <div className="flex items-center gap-3 text-xs text-[#71717A]">
-                      {item.symbol && <span>{item.symbol}</span>}
-                      {item.timeframe && <span>{item.timeframe}</span>}
                       {item.totalTrades != null && <span>{item.totalTrades} trades</span>}
                       {item.profitFactor != null && <span>PF {item.profitFactor.toFixed(2)}</span>}
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
