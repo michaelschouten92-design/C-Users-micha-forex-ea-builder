@@ -234,38 +234,7 @@ export default function EvaluateDetailPage() {
         </div>
 
         <div className="space-y-6">
-          {/* Verification Result */}
-          {data.verificationSummary && (
-            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
-              <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-3">
-                Verification Result
-              </h3>
-              <p
-                className="text-lg font-semibold"
-                style={{
-                  color: data.verificationSummary.verdict === "VERIFIED" ? "#22C55E" : "#EF4444",
-                }}
-              >
-                {data.verificationSummary.verdict === "VERIFIED" ? "Verified" : "Not verified"}
-              </p>
-              <p className="text-xs text-[#A1A1AA] mt-1">
-                {data.verificationSummary.verdict === "VERIFIED"
-                  ? "Baseline is suitable as a monitoring reference."
-                  : "Baseline is not yet suitable as a monitoring reference."}
-              </p>
-              {data.verificationSummary.reasons.length > 0 && (
-                <ul className="mt-3 space-y-1">
-                  {data.verificationSummary.reasons.map((reason, i) => (
-                    <li key={i} className="text-xs text-[#71717A]">
-                      • {reason}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-
-          {/* Health Score Card */}
+          {/* Edge Quality Score Card */}
           <div
             className="rounded-2xl p-6 sm:p-8 border"
             style={{
@@ -273,6 +242,9 @@ export default function EvaluateDetailPage() {
               borderColor: `${getHealthColor(data.healthStatus)}33`,
             }}
           >
+            <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-5">
+              Edge Quality Score
+            </h3>
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {/* Score Circle */}
               <div className="flex-shrink-0">
@@ -365,13 +337,53 @@ export default function EvaluateDetailPage() {
             </div>
           </div>
 
-          {/* Risk Disclaimer */}
-          <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3">
-            <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
-              Past performance does not guarantee future results. Backtest results are hypothetical
-              and subject to model limitations.
+          {/* AlgoStudio Interpretation */}
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
+            <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-3">
+              AlgoStudio Interpretation
+            </h3>
+            <p className="text-sm text-[#E4E4E7] leading-relaxed">
+              {data.healthStatus === "ROBUST" &&
+                "This backtest appears to demonstrate a statistically positive edge with a strong overall performance profile. The strategy meets the minimum evaluation thresholds and appears suitable for robustness testing, baseline definition, and live monitoring."}
+              {data.healthStatus === "MODERATE" &&
+                "This backtest shows signs of a plausible edge, but some parts of the performance profile require caution. Review the score breakdown carefully before treating this strategy as a trusted baseline for monitoring."}
+              {data.healthStatus === "WEAK" &&
+                "This backtest does not yet show strong statistical reliability. Weakness across multiple metrics reduces confidence in the observed edge, and further testing is recommended before baseline use or live deployment."}
+              {data.healthStatus === "INSUFFICIENT_DATA" &&
+                "There is not enough trade data to produce a statistically meaningful assessment. More sample depth is needed before this strategy can be evaluated confidently for baseline definition or monitoring."}
             </p>
           </div>
+
+          {/* Verification Result */}
+          {data.verificationSummary && (
+            <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
+              <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-3">
+                Verification Result
+              </h3>
+              <p
+                className="text-lg font-semibold"
+                style={{
+                  color: data.verificationSummary.verdict === "VERIFIED" ? "#22C55E" : "#EF4444",
+                }}
+              >
+                {data.verificationSummary.verdict === "VERIFIED" ? "Verified" : "Not verified"}
+              </p>
+              <p className="text-xs text-[#A1A1AA] mt-1">
+                {data.verificationSummary.verdict === "VERIFIED"
+                  ? "Baseline is suitable as a monitoring reference."
+                  : "Baseline is not yet suitable as a monitoring reference."}
+              </p>
+              {data.verificationSummary.reasons.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {data.verificationSummary.reasons.map((reason, i) => (
+                    <li key={i} className="text-xs text-[#71717A]">
+                      • {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Extended Metrics */}
           <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
@@ -545,7 +557,7 @@ export default function EvaluateDetailPage() {
               );
             })()}
 
-          {/* Validate Strategy CTA */}
+          {/* Robustness Test CTA */}
           <Link
             href={`/app/evaluate/${id}/validate`}
             className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 hover:border-[rgba(255,255,255,0.10)] transition-all group"
@@ -569,10 +581,11 @@ export default function EvaluateDetailPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
-                    Validate Strategy
+                    Robustness Test
                   </h3>
                   <p className="text-xs text-[#71717A]">
-                    Run a Monte Carlo simulation to test survival probability
+                    Run a Monte Carlo simulation to test how sensitive the strategy&apos;s
+                    performance is to randomness and trade-order variation
                   </p>
                 </div>
               </div>
@@ -592,6 +605,52 @@ export default function EvaluateDetailPage() {
             </div>
           </Link>
 
+          {/* Define Expected Strategy Behavior */}
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
+            <h3 className="text-sm font-semibold text-white mb-2">
+              Define Expected Strategy Behavior
+            </h3>
+            <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+              A baseline defines the expected live behavior of this strategy using this evaluation
+              as the reference. Once linked, AlgoStudio monitors for:
+            </p>
+            <ul className="text-xs text-[#A1A1AA] space-y-1 mb-3 pl-3">
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#818CF8] flex-shrink-0" />
+                Edge drift from expected performance
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#818CF8] flex-shrink-0" />
+                Abnormal drawdowns beyond baseline thresholds
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#818CF8] flex-shrink-0" />
+                Performance deterioration over time
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-[#818CF8] flex-shrink-0" />
+                Deviations from expected trade behavior
+              </li>
+            </ul>
+            <p className="text-[11px] text-[#818CF8] mb-3">
+              Recommended next step: Create a baseline and begin live monitoring.
+            </p>
+            <Link
+              href="/app/live"
+              className="inline-flex items-center gap-1.5 text-xs text-[#818CF8] hover:text-white transition-colors font-medium"
+            >
+              Create Baseline in Command Center
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
+          </div>
+
           {/* Evaluation → Live Bridge */}
           <div className="flex items-center gap-3 px-5 py-3.5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl">
             <svg
@@ -608,17 +667,26 @@ export default function EvaluateDetailPage() {
               />
             </svg>
             <p className="text-xs text-[#A1A1AA]">
-              <span className="text-[#818CF8] font-medium">Next: </span>
-              Deploy this strategy live to begin the evaluation lifecycle. New strategies start at{" "}
-              <span className="text-[#818CF8] font-medium">Testing</span> status and progress as
-              they build a track record.
+              <span className="text-[#818CF8] font-medium">What happens next? </span>
+              After linking a baseline and running your EA live, AlgoStudio monitors every trade
+              against expected behavior. You&apos;ll see drift alerts, equity tracking, and
+              lifecycle progression in the{" "}
+              <Link
+                href="/app/live"
+                className="text-[#818CF8] font-medium hover:text-white transition-colors"
+              >
+                Command Center
+              </Link>
+              .
             </p>
-            <Link
-              href="/app/live"
-              className="text-xs text-[#818CF8] hover:text-white transition-colors font-medium whitespace-nowrap flex-shrink-0"
-            >
-              Set Up &rarr;
-            </Link>
+          </div>
+
+          {/* Risk Disclaimer */}
+          <div className="bg-[#111114] border border-[#F59E0B]/20 rounded-lg px-4 py-3">
+            <p className="text-[11px] text-[#F59E0B]/80 leading-relaxed">
+              Past performance does not guarantee future results. Backtest results are hypothetical
+              and subject to model limitations.
+            </p>
           </div>
 
           {/* Action Bar */}
