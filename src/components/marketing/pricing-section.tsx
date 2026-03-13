@@ -28,8 +28,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
   const proPrice = PLANS.PRO.prices?.monthly;
   const elitePrice = PLANS.ELITE.prices?.monthly;
+  const institutionalPrice = PLANS.INSTITUTIONAL.prices?.monthly;
 
-  async function handleSubscribe(plan: "PRO" | "ELITE") {
+  async function handleSubscribe(plan: "PRO" | "ELITE" | "INSTITUTIONAL") {
     setLoadingPlan(plan);
 
     try {
@@ -65,17 +66,17 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
       {showHeader && (
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Monitor more trading accounts as you scale
+            Scale the number of monitored trading accounts
           </h2>
           <p className="text-[#94A3B8]">
-            All features included on every plan. Unlimited strategies. Choose how many trading
-            accounts you want AlgoStudio to monitor.
+            All features included on every plan. Unlimited strategies. Choose how many monitored
+            trading accounts you need.
           </p>
         </div>
       )}
 
       {/* Pricing Cards */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
         {/* Baseline — Free */}
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
@@ -156,9 +157,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
             )}
           </div>
-          <p className="mt-3 text-white font-medium text-sm">
-            Monitor up to 3 live trading accounts
-          </p>
+          <p className="mt-3 text-white font-medium text-sm">Up to 3 monitored trading accounts</p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
             All platform features included. Priority support and multi-account monitoring for
             growing portfolios.
@@ -227,7 +226,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Govern up to 10 live trading accounts
+            Govern up to 10 monitored trading accounts
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
             All platform features included. Dedicated support channel, 1-on-1 strategy reviews, and
@@ -262,6 +261,73 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
             {loadingPlan === "ELITE" ? "Loading..." : "Start monitoring"}
+          </button>
+          <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
+        </div>
+
+        {/* Institutional */}
+        <div className="bg-[#1A0626] border border-[rgba(245,158,11,0.25)] rounded-xl p-8 flex flex-col">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+            <h3 className="text-xl font-semibold text-white">Institutional</h3>
+          </div>
+          <p className="text-xs text-[#F59E0B] font-medium tracking-wide uppercase mt-1">
+            Unlimited Capacity
+          </p>
+          <p className="mt-2 text-xs text-[#64748B]">
+            Unlimited monitored trading accounts with dedicated onboarding.
+          </p>
+          <div className="mt-4">
+            {institutionalPrice ? (
+              <>
+                <span className="text-4xl font-bold text-white">
+                  {formatPrice(institutionalPrice.amount, "eur")}
+                </span>
+                <span className="text-[#94A3B8] ml-2">/ month</span>
+              </>
+            ) : (
+              <span className="text-2xl font-bold text-[#94A3B8]">Coming Soon</span>
+            )}
+          </div>
+          <p className="mt-3 text-white font-medium text-sm">
+            Unlimited monitored trading accounts
+          </p>
+          <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
+            All platform features included. Custom onboarding, SLA-backed uptime, and a dedicated
+            support channel.
+          </p>
+
+          <ul className="mt-6 space-y-3 flex-1">
+            {[
+              "Unlimited monitored trading accounts",
+              "All platform features included",
+              "Unlimited strategies & exports",
+              "Priority support",
+              "1-on-1 strategy review (1/month)",
+              "Direct developer channel",
+              "Custom onboarding",
+              "SLA-backed uptime guarantee",
+              "Dedicated support channel",
+            ].map((feature, i) => (
+              <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
+                <CheckIcon className="w-5 h-5 text-[#F59E0B]" />
+                {feature}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.15)] rounded-lg px-4 py-3">
+            <p className="text-xs text-[#F59E0B]">
+              Unlimited monitored trading accounts. All features included.
+            </p>
+          </div>
+
+          <button
+            onClick={() => handleSubscribe("INSTITUTIONAL")}
+            disabled={loadingPlan !== null || !institutionalPrice}
+            className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border border-[rgba(245,158,11,0.4)] text-white hover:bg-[rgba(245,158,11,0.08)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
+          >
+            {loadingPlan === "INSTITUTIONAL" ? "Loading..." : "Start monitoring"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>

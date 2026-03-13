@@ -33,57 +33,60 @@ const DashIcon = () => (
   </svg>
 );
 
-// ── Comparison matrix ──────────────────────────────────
+// ── Comparison matrix (4 tiers) ────────────────────────
 
 type CellValue = boolean | string;
-type MatrixRow = [string, CellValue, CellValue, CellValue];
+type MatrixRow = [string, CellValue, CellValue, CellValue, CellValue];
 
 const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
   {
     category: "Plan Limits",
     rows: [
-      ["Monitored trading accounts", "1", "Up to 3", "Up to 10"],
-      ["Active strategies", "Unlimited", "Unlimited", "Unlimited"],
-      ["MQL5 exports", "Unlimited", "Unlimited", "Unlimited"],
+      ["Monitored trading accounts", "1", "Up to 3", "Up to 10", "Unlimited"],
+      ["Active strategies", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
+      ["MQL5 exports", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
     ],
   },
   {
     category: "Strategy Evaluation",
     rows: [
-      ["Backtest health scoring", true, true, true],
-      ["Monte Carlo risk simulation", true, true, true],
-      ["Strategy journal", true, true, true],
-      ["EA builder & strategy templates", true, true, true],
+      ["Backtest health scoring", true, true, true, true],
+      ["Monte Carlo risk simulation", true, true, true, true],
+      ["Strategy journal", true, true, true, true],
+      ["EA builder & strategy templates", true, true, true, true],
     ],
   },
   {
     category: "Live Monitoring & Governance",
     rows: [
-      ["Live health monitoring", true, true, true],
-      ["Drift detection", true, true, true],
-      ["Edge degradation analysis", true, true, true],
-      ["CUSUM drift analysis", true, true, true],
-      ["Lifecycle governance (RUN / PAUSE / STOP)", true, true, true],
-      ["Governance snapshot logging", true, true, true],
-      ["Portfolio-level governance", true, true, true],
+      ["Live health monitoring", true, true, true, true],
+      ["Drift detection", true, true, true, true],
+      ["Edge degradation analysis", true, true, true, true],
+      ["CUSUM drift analysis", true, true, true, true],
+      ["Lifecycle governance (RUN / PAUSE / STOP)", true, true, true, true],
+      ["Governance snapshot logging", true, true, true, true],
+      ["Portfolio-level governance", true, true, true, true],
     ],
   },
   {
     category: "Verification & Proof",
     rows: [
-      ["Strategy identity & versioning", true, true, true],
-      ["Verified track record (hash chain)", true, true, true],
-      ["Public proof page", true, true, true],
-      ["Embeddable proof widget", true, true, true],
+      ["Strategy identity & versioning", true, true, true, true],
+      ["Verified track record (hash chain)", true, true, true, true],
+      ["Public proof page", true, true, true, true],
+      ["Embeddable proof widget", true, true, true, true],
     ],
   },
   {
     category: "Support",
     rows: [
-      ["Community support", true, true, true],
-      ["Priority support", false, true, true],
-      ["1-on-1 strategy review", false, false, "1/month"],
-      ["Direct developer channel", false, false, true],
+      ["Community support", true, true, true, true],
+      ["Priority support", false, true, true, true],
+      ["1-on-1 strategy review", false, false, "1/month", "1/month"],
+      ["Direct developer channel", false, false, true, true],
+      ["Custom onboarding", false, false, false, true],
+      ["SLA-backed uptime guarantee", false, false, false, true],
+      ["Dedicated support channel", false, false, false, true],
     ],
   },
 ];
@@ -93,11 +96,11 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
 const FAQ_ITEMS = [
   {
     q: "What is the difference between the plans?",
-    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, and Authority supports up to 10. Paid plans also include priority support, with Authority adding 1-on-1 strategy reviews and direct developer access.",
+    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, Authority supports up to 10, and Institutional offers unlimited. Paid plans also include priority support, with Authority and Institutional adding 1-on-1 strategy reviews and direct developer access.",
   },
   {
     q: "What is a monitored trading account?",
-    a: "A monitored trading account is a live MetaTrader 5 trading account connected to AlgoStudio for continuous monitoring. Each connected account is tracked for health, drift, and governance events. Your plan determines how many trading accounts you can monitor simultaneously.",
+    a: "A monitored trading account is a live MetaTrader 5 trading account connected to AlgoStudio for continuous monitoring. Each connected account is tracked for health, drift, and governance events. Your plan determines how many monitored trading accounts you can run simultaneously.",
   },
   {
     q: "What is a verified track record?",
@@ -109,7 +112,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What happens if I downgrade?",
-    a: "All strategies, verified track records, and monitoring data are preserved. If you exceed your new plan\u2019s monitored trading account limit, existing accounts remain active but you cannot add new ones until you are within the limit.",
+    a: "All strategies, verified track records, and monitoring data are preserved. If you exceed your new plan\u2019s monitored trading account limit, existing monitored trading accounts remain active but you cannot add new ones until you are within the limit.",
   },
   {
     q: "Can I cancel anytime?",
@@ -129,8 +132,9 @@ export default function PricingPage() {
 
   const proPrice = PLANS.PRO.prices?.monthly;
   const elitePrice = PLANS.ELITE.prices?.monthly;
+  const institutionalPrice = PLANS.INSTITUTIONAL.prices?.monthly;
 
-  async function handleSubscribe(plan: "PRO" | "ELITE") {
+  async function handleSubscribe(plan: "PRO" | "ELITE" | "INSTITUTIONAL") {
     setLoadingPlan(plan);
     try {
       const res = await fetch("/api/stripe/checkout", {
@@ -170,8 +174,8 @@ export default function PricingPage() {
             Pricing for live strategy monitoring
           </h1>
           <p className="mt-4 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto">
-            All features included on every plan. Choose how many trading accounts you want
-            AlgoStudio to monitor.
+            All features included on every plan. Choose how many monitored trading accounts you
+            need.
           </p>
           <p className="mt-3 text-sm text-[#71717A] max-w-2xl mx-auto">
             Unlimited strategies. Unlimited exports. Billed monthly. Cancel anytime.
@@ -181,7 +185,7 @@ export default function PricingPage() {
         {/* ════════════════════════════════════════════════════════════
             2. PLAN CARDS
             ════════════════════════════════════════════════════════════ */}
-        <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto mb-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto mb-4">
           {/* Baseline — Free */}
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Baseline</h3>
@@ -319,23 +323,69 @@ export default function PricingPage() {
             </button>
             <p className="mt-2 text-center text-xs text-[#71717A]">Cancel anytime.</p>
           </div>
+
+          {/* Institutional */}
+          <div className="rounded-xl border border-[rgba(245,158,11,0.25)] bg-[#111114] p-6 flex flex-col">
+            <h3 className="text-lg font-semibold text-[#FAFAFA]">Institutional</h3>
+            <p className="text-xs text-[#71717A] mt-1">
+              Unlimited capacity with dedicated onboarding.
+            </p>
+            <div className="mt-4">
+              {institutionalPrice ? (
+                <>
+                  <span className="text-3xl font-bold text-[#FAFAFA]">
+                    {formatPrice(institutionalPrice.amount, "eur")}
+                  </span>
+                  <span className="text-[#71717A] ml-2 text-sm">/ month</span>
+                </>
+              ) : (
+                <span className="text-2xl font-bold text-[#71717A]">Coming soon</span>
+              )}
+            </div>
+
+            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.20)]">
+              <p className="text-sm font-medium text-[#FAFAFA]">
+                Unlimited monitored trading accounts
+              </p>
+            </div>
+
+            <ul className="mt-5 space-y-2.5 flex-1">
+              {[
+                "All platform features included",
+                "Unlimited strategies & exports",
+                "Priority support",
+                "1-on-1 strategy review (1/month)",
+                "Direct developer channel",
+                "Custom onboarding",
+                "SLA-backed uptime guarantee",
+                "Dedicated support channel",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
+                  <CheckIcon />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => handleSubscribe("INSTITUTIONAL")}
+              disabled={loadingPlan !== null || !institutionalPrice}
+              className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(245,158,11,0.30)] text-[#FAFAFA] hover:border-[rgba(245,158,11,0.50)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            >
+              {loadingPlan === "INSTITUTIONAL" ? "Loading..." : "Start monitoring"}
+            </button>
+            <p className="mt-2 text-center text-xs text-[#71717A]">Cancel anytime.</p>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-[#71717A] mb-4">
+        <p className="text-center text-xs text-[#71717A] mb-16">
           All prices in EUR. VAT included where applicable.
-        </p>
-        <p className="text-center text-sm text-[#A1A1AA] mb-16">
-          Need more?{" "}
-          <Link href="/contact" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
-            Contact us
-          </Link>{" "}
-          for Institutional plans with unlimited monitored trading accounts.
         </p>
 
         {/* ════════════════════════════════════════════════════════════
             3. COMPARISON MATRIX
             ════════════════════════════════════════════════════════════ */}
-        <div className="max-w-5xl mx-auto mb-16">
+        <div className="max-w-6xl mx-auto mb-16">
           <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-8 tracking-tight">
             Plan comparison
           </h2>
@@ -356,6 +406,9 @@ export default function PricingPage() {
                   <th className="text-center py-3 px-4 text-[#A1A1AA] font-medium text-xs">
                     Authority
                   </th>
+                  <th className="text-center py-3 px-4 text-[#A1A1AA] font-medium text-xs">
+                    Institutional
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -364,18 +417,18 @@ export default function PricingPage() {
                     <tr key={`cat-${section.category}`}>
                       <td
                         className="py-2 px-4 text-[11px] font-semibold text-[#71717A] uppercase tracking-wider pt-5"
-                        colSpan={4}
+                        colSpan={5}
                       >
                         {section.category}
                       </td>
                     </tr>
-                    {section.rows.map(([label, free, pro, elite]) => (
+                    {section.rows.map(([label, baseline, control, authority, institutional]) => (
                       <tr
                         key={label as string}
                         className="border-b border-[rgba(255,255,255,0.04)]"
                       >
                         <td className="py-2.5 px-4 text-[#A1A1AA] text-[13px]">{label}</td>
-                        {[free, pro, elite].map((val, i) => (
+                        {[baseline, control, authority, institutional].map((val, i) => (
                           <td key={i} className="py-2.5 px-4 text-center">
                             {typeof val === "boolean" ? (
                               val ? (
