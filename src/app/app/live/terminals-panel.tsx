@@ -77,6 +77,14 @@ export function TerminalsPanel() {
     fetchTerminals();
   }, [fetchTerminals]);
 
+  // Single shared tick for heartbeat-relative-time rendering across all cards.
+  // Re-renders the list every 5s so displayed ages stay current without per-card intervals.
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -122,7 +130,7 @@ export function TerminalsPanel() {
   return (
     <div className="space-y-4">
       {terminals.map((terminal) => (
-        <TerminalCard key={terminal.id} terminal={terminal} onRefresh={fetchTerminals} />
+        <TerminalCard key={terminal.id} terminal={terminal} now={now} onRefresh={fetchTerminals} />
       ))}
     </div>
   );
@@ -130,7 +138,15 @@ export function TerminalsPanel() {
 
 // ── Terminal Card ──────────────────────────────────────
 
-function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: () => void }) {
+function TerminalCard({
+  terminal,
+  now,
+  onRefresh,
+}: {
+  terminal: Terminal;
+  now: number;
+  onRefresh: () => void;
+}) {
   const discoveredDeployments = terminal.deployments.filter((d) => d.source === "DISCOVERED");
   const preciseDeployments = terminal.deployments.filter((d) => d.source !== "DISCOVERED");
   const hasDiscovery = discoveredDeployments.length > 0 || terminal.unattributedTradeCount > 0;
@@ -139,24 +155,38 @@ function TerminalCard({ terminal, onRefresh }: { terminal: Terminal; onRefresh: 
     (d) => d.baselineStatus === "RELINK_REQUIRED"
   ).length;
 
+  const hbStatus = resolveHeartbeatStatus(terminal.lastHeartbeat, now);
+
   return (
     <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-[rgba(79,70,229,0.1)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <StatusDot status={terminal.status} />
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: hbStatus ? hbStatus.color : "#71717A" }}
+            />
             <div>
               <h3 className="text-sm font-medium text-white">{terminal.label}</h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] text-[#7C8DB0]">
-                  {terminal.status === "ONLINE" ? "Connected" : "Disconnected"}
-                </span>
-                {terminal.lastHeartbeat && (
-                  <span className="text-[10px] text-[#64748B]">
-                    · Last heartbeat {formatTimeAgo(terminal.lastHeartbeat)}
+                {hbStatus && (
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      color: hbStatus.color,
+                      backgroundColor: hbStatus.bg,
+                      border: `1px solid ${hbStatus.border}`,
+                    }}
+                  >
+                    {hbStatus.label}
                   </span>
                 )}
+                <span className="text-[10px] text-[#7C8DB0]">
+                  {hbStatus
+                    ? `Last heartbeat: ${formatHeartbeatAgo(terminal.lastHeartbeat!, now)}`
+                    : "No heartbeat received"}
+                </span>
                 {terminal.broker && (
                   <span className="text-[10px] text-[#64748B]">· {terminal.broker}</span>
                 )}
@@ -902,6 +932,58 @@ function LinkInstanceDialog({
 function StatusDot({ status }: { status: string }) {
   const color = status === "ONLINE" ? "#10B981" : status === "ERROR" ? "#EF4444" : "#71717A";
   return <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />;
+}
+
+/** Returns null for missing or unparseable timestamps. Negative age (clock skew) is clamped to 0. */
+function resolveHeartbeatStatus(
+  lastHeartbeat: string | null,
+  now: number
+): { label: string; color: string; bg: string; border: string } | null {
+  if (!lastHeartbeat) return null;
+  const ts = new Date(lastHeartbeat).getTime();
+  if (Number.isNaN(ts)) return null;
+  const ageSec = Math.max(0, (now - ts) / 1000);
+  if (ageSec < 30) {
+    return {
+      label: "LIVE",
+      color: "#10B981",
+      bg: "rgba(16,185,129,0.1)",
+      border: "rgba(16,185,129,0.25)",
+    };
+  }
+  if (ageSec < 120) {
+    return {
+      label: "DELAYED",
+      color: "#F59E0B",
+      bg: "rgba(245,158,11,0.1)",
+      border: "rgba(245,158,11,0.25)",
+    };
+  }
+  if (ageSec < 600) {
+    return {
+      label: "STALE",
+      color: "#71717A",
+      bg: "rgba(113,113,122,0.1)",
+      border: "rgba(113,113,122,0.2)",
+    };
+  }
+  return {
+    label: "OFFLINE",
+    color: "#EF4444",
+    bg: "rgba(239,68,68,0.1)",
+    border: "rgba(239,68,68,0.2)",
+  };
+}
+
+function formatHeartbeatAgo(iso: string, now: number): string {
+  const diffSec = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const mins = Math.floor(diffSec / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function formatTimeAgo(iso: string): string {
