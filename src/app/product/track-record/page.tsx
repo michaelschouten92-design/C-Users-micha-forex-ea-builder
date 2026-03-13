@@ -39,7 +39,7 @@ const faqItems = [
   },
   {
     q: "Which plans include the Verified Track Record?",
-    a: "The core track record — automatic trade recording and hash chain verification — is built into every EA on all plans, including Free. Proof sharing and public verification links are available on Pro and Elite plans.",
+    a: "The full Verified Track Record — automatic trade recording, hash chain verification, proof sharing, and public verification links — is included on all plans, including Baseline.",
   },
   {
     q: "How is this different from a regular trade journal?",
@@ -47,7 +47,7 @@ const faqItems = [
   },
   {
     q: "How does proof sharing work?",
-    a: "On Pro and Elite plans, you can generate a shareable proof bundle from your track record. This bundle contains the full event chain, cryptographic hashes, HMAC checkpoints, and digital signatures. You share a link, and anyone — investors, prop firms, other traders — can independently verify your performance without needing an AlgoStudio account.",
+    a: "On all plans, you can generate a shareable proof bundle from your track record. This bundle contains the full event chain, cryptographic hashes, HMAC checkpoints, and digital signatures. You share a link, and anyone — investors, prop firms, other traders — can independently verify your performance without needing an AlgoStudio account.",
   },
   {
     q: "What are the risk-adjusted metrics?",
@@ -63,7 +63,7 @@ const faqItems = [
   },
   {
     q: "Is the track record really free?",
-    a: "Yes. The core track record — automatic trade recording, hash chain verification, and risk-adjusted metrics — is built into every EA on all plans. Proof sharing (generating shareable links and proof bundles for others to verify) is available on Pro and Elite plans.",
+    a: "Yes. The full track record — automatic trade recording, hash chain verification, risk-adjusted metrics, and proof sharing — is included on all plans, including Baseline.",
   },
 ];
 

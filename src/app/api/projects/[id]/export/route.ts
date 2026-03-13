@@ -122,7 +122,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         apiError(
           ErrorCode.EXPORT_LIMIT,
           "Export limit reached",
-          `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to Pro for unlimited exports.`
+          `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to increase your limits.`
         ),
         { status: 403 }
       );
@@ -327,7 +327,7 @@ export async function POST(request: NextRequest, { params }: Props) {
         apiError(
           ErrorCode.EXPORT_LIMIT,
           "Export limit reached",
-          `You've reached your monthly export limit. Upgrade to Pro for unlimited exports.`
+          `You've reached your monthly export limit. Upgrade to increase your limits.`
         ),
         { status: 403 }
       );

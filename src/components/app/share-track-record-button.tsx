@@ -36,11 +36,6 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       });
 
-      if (res.status === 403) {
-        showError("Pro or Elite subscription required to share track records");
-        return;
-      }
-
       if (!res.ok) {
         showError("Failed to generate share link");
         return;

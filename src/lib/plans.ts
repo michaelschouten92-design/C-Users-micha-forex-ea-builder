@@ -13,12 +13,12 @@ const parsePrice = (envVal: string | undefined, fallback: number) => {
 const DISPLAY_PRICES = {
   pro: {
     monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 2900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 3900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 29900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 39900),
       currency: "eur",
       interval: "year" as const,
     },
@@ -239,7 +239,7 @@ export const TIER_ORDER: Record<PlanTier, number> = {
  * Single source of truth — used by admin stats and cron reports.
  */
 export const TIER_MRR_PRICES: Record<string, number> = {
-  PRO: 29,
+  PRO: 39,
   ELITE: 79,
   INSTITUTIONAL: 199,
 };

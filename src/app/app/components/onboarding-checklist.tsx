@@ -102,7 +102,7 @@ export function OnboardingChecklist({
       label: "Go live and start monitoring",
       description:
         tier === "FREE"
-          ? "Upgrade to Pro to start tracking live performance."
+          ? "Upgrade to start tracking live performance."
           : hasLiveEAs
             ? "Your strategy is live. Track record building in progress."
             : "Deploy your EA and start building a verified track record.",

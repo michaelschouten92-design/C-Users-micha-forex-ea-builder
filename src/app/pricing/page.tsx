@@ -102,7 +102,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Are EA builder and MQL5 export included in all plans?",
-    a: "Yes. The EA builder and strategy templates are available on all plans including Baseline. Baseline includes 3 MQL5 exports per month. Control and Authority include unlimited exports.",
+    a: "Yes. The EA builder, strategy templates, and unlimited MQL5 exports are included on all plans, including Baseline.",
   },
   {
     q: "What happens if I downgrade?",
@@ -242,9 +242,9 @@ export default function PricingPage() {
                 "Backtest health scoring",
                 "Monte Carlo risk simulation",
                 "Strategy journal",
-                "1 active strategy",
+                "All features included",
                 "EA builder & templates",
-                "3 MQL5 exports / month",
+                "1 monitored trading account",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
                   <CheckIcon />

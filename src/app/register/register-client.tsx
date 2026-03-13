@@ -165,8 +165,8 @@ function RegisterFormInner({
           {[
             "All 6 strategy templates",
             "Full visual strategy builder",
-            "1 active project",
-            "1 MQL5 export per month",
+            "All features included",
+            "1 monitored trading account",
             "Clean, commented source code",
           ].map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-xs text-[#CBD5E1]">
@@ -388,7 +388,9 @@ function RegisterFormInner({
                 ))}
               </ul>
             )}
-            <p className="text-xs text-[#94A3B8] mt-1">Free plan: 1 project, 1 export/month.</p>
+            <p className="text-xs text-[#94A3B8] mt-1">
+              All features included. 1 monitored trading account.
+            </p>
           </div>
 
           <div>

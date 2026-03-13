@@ -305,7 +305,7 @@ export function ExportButton({
         }`}
         title={
           exportDisabledReason ??
-          (!canExportMQL5 ? "Upgrade for unlimited exports" : "Export Code — MQL5")
+          (!canExportMQL5 ? "Upgrade to increase your export limit" : "Export Code — MQL5")
         }
       >
         {exporting ? (
@@ -426,11 +426,11 @@ export function ExportButton({
                   <div>
                     <h4 className="text-xl font-bold text-white mb-2">Export limit reached</h4>
                     <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
-                      You&apos;ve used all free exports. Upgrade to Pro for unlimited MQL5 exports,
-                      unlimited projects, and priority support.
+                      You&apos;ve used all exports for this month. Upgrade to increase your limits
+                      and monitor more trading accounts.
                     </p>
                     <p className="text-[#64748B] text-xs mt-2">
-                      Your free export resets on the 1st of next month.
+                      Your export allowance resets on the 1st of next month.
                     </p>
                   </div>
                   <div className="flex flex-col items-center gap-3">
@@ -743,14 +743,13 @@ export function ExportButton({
                         </span>
                       </div>
                       <p className="text-sm text-[#CBD5E1]">
-                        Ready to build and test multiple systems? Unlock unlimited exports and
-                        unlimited projects.
+                        Need to monitor more trading accounts? Upgrade your plan.
                       </p>
                       <Link
                         href="/pricing"
                         className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
                       >
-                        Upgrade to Pro
+                        Upgrade
                         <svg
                           className="w-4 h-4"
                           fill="none"

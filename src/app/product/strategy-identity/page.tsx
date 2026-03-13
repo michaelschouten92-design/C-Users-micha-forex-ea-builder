@@ -38,7 +38,7 @@ const faqItems = [
   },
   {
     q: "Which plans include Strategy Identity?",
-    a: "Strategy Identity with full version history is available on the Pro and Elite plans. The Free plan assigns strategy IDs but does not include version history tracking.",
+    a: "Strategy Identity with full version history is included on all plans, including Baseline.",
   },
   {
     q: "How does Strategy Identity connect to the Track Record?",
@@ -194,11 +194,7 @@ export default function StrategyIdentityPage() {
               </div>
             </div>
             <p className="text-sm text-[#64748B] mt-4 text-center">
-              Full version history requires{" "}
-              <Link href="/pricing" className="text-[#A78BFA] hover:underline">
-                Pro or Elite plan
-              </Link>
-              .
+              Full version history is included on all plans.
             </p>
           </section>
         </div>

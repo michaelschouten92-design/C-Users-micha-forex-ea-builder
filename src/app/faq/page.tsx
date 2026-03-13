@@ -89,18 +89,18 @@ const faqItems = [
 
   // Pricing
   {
-    q: "What do I get with the free plan?",
-    a: "Access to basic monitoring, 1 project, backtest health scoring, and Monte Carlo risk analysis. No credit card required.",
+    q: "What do I get with the Baseline plan?",
+    a: "All features are included on every plan — the only difference between tiers is the number of monitored trading accounts. Baseline includes 1 monitored trading account. No credit card required.",
     category: "Pricing" as const,
   },
   {
-    q: "What's included in Pro?",
-    a: "Unlimited projects, Strategy Identity, Verified Track Record, live monitoring, and priority support. Everything you need to monitor strategies with confidence.",
+    q: "What's included in Control?",
+    a: "All the same features as every plan — monitoring, Strategy Identity, Verified Track Record, and priority support. Control gives you up to 5 monitored trading accounts.",
     category: "Pricing" as const,
   },
   {
-    q: "What's included in Elite?",
-    a: "Everything in Pro, plus Strategy Health Monitor, edge degradation alerts, and public Verified Strategy Pages. Designed for traders who run strategies with real capital and need ongoing monitoring.",
+    q: "What's included in Authority?",
+    a: "All features included, same as every plan. Authority gives you up to 15 monitored trading accounts — designed for traders who run strategies across multiple accounts.",
     category: "Pricing" as const,
   },
   {

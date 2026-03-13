@@ -23,8 +23,8 @@ function getVariantConfig(
   switch (variant) {
     case "export-limit":
       return {
-        message: `You've used ${exportsUsed ?? 0} of ${exportLimit ?? 3} exports this month. Upgrade for unlimited exports.`,
-        cta: "Upgrade to Pro",
+        message: `You've used ${exportsUsed ?? 0} of ${exportLimit ?? 3} exports this month. Upgrade to monitor more trading accounts.`,
+        cta: "Upgrade",
         storageKey: "upsell-dismissed-export-limit",
       };
     case "trade-management":

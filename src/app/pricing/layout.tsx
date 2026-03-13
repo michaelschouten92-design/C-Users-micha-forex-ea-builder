@@ -22,23 +22,22 @@ const jsonLd = {
         name: "Free",
         price: "0",
         priceCurrency: "EUR",
-        description:
-          "All 6 strategy templates, full builder access, 1 project, 1 MQL5 export per month",
+        description: "All features included, 1 monitored trading account",
       },
       {
         "@type": "Offer",
-        name: "Pro",
+        name: "Control",
         price: "39",
         priceCurrency: "EUR",
-        description: "Unlimited projects, unlimited MQL5 exports, priority support",
+        description: "All features included, up to 5 monitored trading accounts, priority support",
       },
       {
         "@type": "Offer",
-        name: "Elite",
+        name: "Authority",
         price: "79",
         priceCurrency: "EUR",
         description:
-          "Everything in Pro plus early feature access, prop firm presets, direct developer support",
+          "All features included, up to 15 monitored trading accounts, early feature access, direct developer support",
       },
     ],
   },

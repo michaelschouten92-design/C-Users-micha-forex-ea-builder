@@ -357,7 +357,7 @@ function LoginFormInner({
             {isRegistration && !fieldErrors.password && (
               <p className="text-xs text-[#94A3B8] mt-1">
                 Must be at least 8 characters with an uppercase letter, a lowercase letter, and a
-                number. Free plan: 1 project, 1 export/month.
+                number. All features included. 1 monitored trading account.
               </p>
             )}
           </div>

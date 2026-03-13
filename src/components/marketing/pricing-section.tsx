@@ -144,9 +144,9 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Backtest health scoring",
               "Monte Carlo risk simulation",
               "Strategy journal",
-              "1 active strategy",
+              "All features included",
               "EA builder & templates",
-              "3 MQL5 exports per month",
+              "1 monitored trading account",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />

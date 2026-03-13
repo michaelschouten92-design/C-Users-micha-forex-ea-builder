@@ -153,7 +153,7 @@ export async function POST(request: Request) {
         apiError(
           ErrorCode.PROJECT_LIMIT,
           "Project limit reached",
-          `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to Pro for unlimited projects.`
+          `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to increase your limits.`
         ),
         { status: 403 }
       );
