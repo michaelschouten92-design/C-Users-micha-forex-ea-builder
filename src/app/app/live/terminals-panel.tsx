@@ -127,8 +127,37 @@ export function TerminalsPanel() {
     );
   }
 
+  const healthCounts = { LIVE: 0, DELAYED: 0, STALE: 0, OFFLINE: 0 };
+  for (const t of terminals) {
+    const status = resolveHeartbeatStatus(t.lastHeartbeat, now);
+    const bucket = (status?.label ?? "OFFLINE") as keyof typeof healthCounts;
+    healthCounts[bucket]++;
+  }
+
   return (
     <div className="space-y-4">
+      {terminals.length > 1 && (
+        <div className="flex items-center gap-4 px-5 py-2.5 rounded-lg bg-[#1A0626] border border-[rgba(79,70,229,0.1)]">
+          <span className="text-[10px] font-medium text-[#64748B] uppercase tracking-wide">
+            Terminal Health
+          </span>
+          {(
+            [
+              { key: "LIVE", color: "#10B981" },
+              { key: "DELAYED", color: "#F59E0B" },
+              { key: "STALE", color: "#71717A" },
+              { key: "OFFLINE", color: "#EF4444" },
+            ] as const
+          ).map(({ key, color }) => (
+            <span key={key} className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-[10px] text-[#7C8DB0]">
+                {key} <span className="font-semibold text-[#A1A1AA]">{healthCounts[key]}</span>
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
       {terminals.map((terminal) => (
         <TerminalCard key={terminal.id} terminal={terminal} now={now} onRefresh={fetchTerminals} />
       ))}
