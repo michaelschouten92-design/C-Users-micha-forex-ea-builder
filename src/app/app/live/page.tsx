@@ -179,7 +179,14 @@ function renderDashboard(
         {eaInstances.length > 0 && (
           <section className="mt-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ExecutionAuthorityCard authority={authority} />
+              <ExecutionAuthorityCard
+                authority={authority}
+                instances={eaInstances.map((ea) => ({
+                  eaName: ea.eaName,
+                  symbol: ea.symbol,
+                  timeframe: ea.timeframe,
+                }))}
+              />
               <ManualHaltStatus
                 instances={eaInstances.map((ea) => ({
                   id: ea.id,
@@ -330,11 +337,21 @@ const AUTHORITY_COLORS: Record<string, { bg: string; border: string; text: strin
     },
   };
 
-function ExecutionAuthorityCard({ authority }: { authority: AuthorityDecision | null }) {
-  // Fail-closed: no authority data → PAUSE with COMPUTATION_FAILED
+function ExecutionAuthorityCard({
+  authority,
+  instances,
+}: {
+  authority: AuthorityDecision | null;
+  instances: { eaName: string; symbol: string | null; timeframe: string | null }[];
+}) {
+  // Null authority = no heartbeat decisions recorded yet → setup state, not a system failure.
+  const isSetupRequired = !authority;
+
   const action = authority?.action ?? "PAUSE";
   const reasonCode = authority?.reasonCode ?? "COMPUTATION_FAILED";
-  const explanation = explainReasonCode(reasonCode);
+  const explanation = isSetupRequired
+    ? "Monitoring is paused until required baselines are linked."
+    : explainReasonCode(reasonCode);
   const decidedAt = authority?.decidedAt ?? null;
   const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
 
@@ -369,12 +386,29 @@ function ExecutionAuthorityCard({ authority }: { authority: AuthorityDecision | 
         <span className="text-xl font-bold" style={{ color: colors.text }}>
           {action}
         </span>
-        <span className="ml-2 inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
-          {reasonCode}
-        </span>
+        {isSetupRequired ? (
+          <span className="ml-1 text-sm font-medium text-[#F59E0B]">— Setup required</span>
+        ) : (
+          <span className="ml-2 inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
+            {reasonCode}
+          </span>
+        )}
       </div>
 
       <p className="text-xs text-[#CBD5E1] leading-relaxed">{explanation}</p>
+
+      {isSetupRequired && instances.length > 0 && (
+        <div className="mt-2 space-y-0.5">
+          {instances.slice(0, 2).map((inst, i) => (
+            <p key={i} className="text-[11px] text-[#94A3B8] font-mono truncate">
+              {[inst.eaName, inst.symbol, inst.timeframe].filter(Boolean).join(" · ")}
+            </p>
+          ))}
+          {instances.length > 2 && (
+            <p className="text-[10px] text-[#64748B]">+{instances.length - 2} more</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
