@@ -6,6 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Link from "next/link";
 
+/** Validate redirect param: must be a relative path starting with "/" */
+function getSafeRedirect(param: string | null): string {
+  if (!param) return "/app";
+  // Block protocol-relative URLs (//evil.com), absolute URLs, and non-path values
+  if (!param.startsWith("/") || param.startsWith("//")) return "/app";
+  return param;
+}
+
 function LoginFormInner({
   hasGoogle,
   captchaSiteKey,
@@ -17,6 +25,7 @@ function LoginFormInner({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectUrl = getSafeRedirect(searchParams.get("redirect"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -138,7 +147,7 @@ function LoginFormInner({
           "Something went wrong. Please try again or contact support@algo-studio.com for help."
       );
     } else {
-      router.push("/app");
+      router.push(redirectUrl);
       router.refresh();
     }
   }
@@ -148,7 +157,7 @@ function LoginFormInner({
     setError("");
 
     await signIn(provider, {
-      callbackUrl: "/app",
+      callbackUrl: redirectUrl,
     });
   }
 
