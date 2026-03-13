@@ -13,6 +13,7 @@ import { EdgeDriftPanel } from "./components/edge-drift-panel";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { computeLiveWinrateFromTrades, EDGE_DRIFT_TRADES_N } from "./edge-drift-helpers";
 import { computeEdgeDrift } from "@/domain/strategy/edge-drift";
+import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -172,6 +173,11 @@ function renderDashboard(
         {eaInstances.length > 0 && (
           <SystemStatusStrip instances={eaInstances} authority={authority} />
         )}
+
+        {/* ══════════════════════════════════════════════════════
+            ONBOARDING — Activation checklist (auto-hides)
+            ══════════════════════════════════════════════════════ */}
+        <ActivationPanel />
 
         {/* ══════════════════════════════════════════════════════
             CONTROL — Governance card grid

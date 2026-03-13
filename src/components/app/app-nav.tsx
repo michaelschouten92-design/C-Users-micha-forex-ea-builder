@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/lib/auth";
 import { MobileNavMenu } from "@/app/app/components/mobile-nav-menu";
 import { NotificationBell } from "./notification-bell";
+import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
 
 export type NavItem = "build" | "evaluate" | "monitor" | "risk" | "settings";
 
@@ -87,6 +88,7 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
                 )}
               </Link>
             ))}
+            <OnboardingHelpButton />
             <NotificationBell />
             <form
               action={async () => {
