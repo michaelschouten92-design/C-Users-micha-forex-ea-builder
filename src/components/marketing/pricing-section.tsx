@@ -64,48 +64,51 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
     <div>
       {showHeader && (
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white mb-4">Choose Your Governance Depth</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Monitor more trading accounts as you scale
+          </h2>
           <p className="text-[#94A3B8]">
-            From strategy validation to deterministic lifecycle authority. Start free, upgrade when
-            your strategies go live.
+            All features included on every plan. Unlimited strategies. Choose how many trading
+            accounts you want AlgoStudio to monitor.
           </p>
         </div>
       )}
 
       {/* Pricing Cards */}
       <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {/* Free — Learn & Explore */}
+        {/* Baseline — Free */}
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
             <h3 className="text-xl font-semibold text-white">Baseline</h3>
           </div>
           <p className="text-xs text-[#22D3EE] font-medium tracking-wide uppercase mt-1">
-            Validate
+            Evaluate & Validate
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            Evaluate strategy viability before going live.
+            Full platform access with 1 monitored trading account.
           </p>
           <div className="mt-4">
             <span className="text-4xl font-bold text-white">{formatPrice(0, "eur")}</span>
             <span className="text-[#94A3B8] ml-2">/ forever</span>
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Evaluate strategy viability before going live
+            Full access to all platform features
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Backtest scoring, risk simulation, and statistical validation. No live governance, no
-            execution authority, no automatic intervention.
+            Strategy evaluation, live monitoring, governance, verified track records, and the EA
+            builder — all included with 1 monitored trading account.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
+              "1 monitored trading account",
+              "All platform features included",
+              "Unlimited strategies & exports",
               "Backtest health scoring",
               "Monte Carlo risk simulation",
-              "Strategy journal",
-              "All features included",
               "EA builder & templates",
-              "1 monitored trading account",
+              "Strategy journal",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -116,7 +119,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Scope:</strong> Validation only. No lifecycle governance.
+              1 monitored trading account. All features included.
             </p>
           </div>
 
@@ -124,29 +127,22 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             href="/login?mode=register&redirect=/app/onboarding?path=backtest"
             className="mt-4 w-full py-3 px-4 rounded-lg font-medium border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200 block text-center"
           >
-            Start monitoring
+            Start free
           </Link>
           <p className="mt-2 text-center text-xs text-[#64748B]">No credit card required.</p>
         </div>
 
-        {/* Pro — Build & Run (Most Popular) */}
-        <div className="bg-gradient-to-b from-[#1A0626] to-[#1A0626]/80 border-2 border-[#4F46E5] rounded-xl p-8 relative flex flex-col shadow-[0_0_30px_rgba(79,70,229,0.15)]">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="bg-[#4F46E5] text-white text-xs font-medium px-4 py-1 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.4)]">
-              Most Popular
-            </span>
-          </div>
+        {/* Control — Pro */}
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-8 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
-            <h3 className="text-xl font-semibold text-white">
-              <span className="sr-only">Most popular plan - </span>Control
-            </h3>
+            <h3 className="text-xl font-semibold text-white">Control</h3>
           </div>
           <p className="text-xs text-[#4F46E5] font-medium tracking-wide uppercase mt-1">
-            Strategy Authority
+            Multi-Account Monitoring
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            Deterministic lifecycle authority over live strategies.
+            Monitor multiple live strategies with priority support.
           </p>
           <div className="mt-4">
             {proPrice ? (
@@ -161,24 +157,20 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Deterministic lifecycle authority over live strategies
+            Monitor up to 3 live trading accounts
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Execution authority (RUN/PAUSE), verified track records, continuous structural
-            monitoring, and governance snapshot logging.
+            All platform features included. Priority support and multi-account monitoring for
+            growing portfolios.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Execution Authority (RUN / PAUSE)",
-              "Continuous heartbeat monitoring",
-              "Structural deviation detection",
-              "Verified Track Record (hash chain)",
-              "Strategy Identity & versioning",
-              "Governance snapshot logging",
-              "Email, webhook & Telegram alerts",
+              "Up to 3 monitored trading accounts",
+              "All platform features included",
               "Unlimited strategies & exports",
               "Priority support",
+              "Email, webhook & Telegram alerts",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />
@@ -189,32 +181,38 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Scope:</strong> Strategy-level governance with deterministic execution
-              authority.
+              Up to 3 monitored trading accounts. All features included.
             </p>
           </div>
 
           <button
             onClick={() => handleSubscribe("PRO")}
             disabled={loadingPlan !== null || !proPrice}
-            className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
+            className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border border-[rgba(79,70,229,0.5)] text-white hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
           >
             {loadingPlan === "PRO" ? "Loading..." : "Start monitoring"}
           </button>
           <p className="mt-2 text-center text-xs text-[#64748B]">Cancel anytime. No lock-in.</p>
         </div>
 
-        {/* Elite — Protect Capital */}
-        <div className="bg-[#1A0626] border border-[rgba(167,139,250,0.3)] rounded-xl p-8 flex flex-col">
+        {/* Authority — Elite (Most Popular) */}
+        <div className="bg-gradient-to-b from-[#1A0626] to-[#1A0626]/80 border-2 border-[#4F46E5] rounded-xl p-8 relative flex flex-col shadow-[0_0_30px_rgba(79,70,229,0.15)]">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <span className="bg-[#4F46E5] text-white text-xs font-medium px-4 py-1 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.4)]">
+              Most Popular
+            </span>
+          </div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#A78BFA]" />
-            <h3 className="text-xl font-semibold text-white">Authority</h3>
+            <h3 className="text-xl font-semibold text-white">
+              <span className="sr-only">Most popular plan - </span>Authority
+            </h3>
           </div>
           <p className="text-xs text-[#A78BFA] font-medium tracking-wide uppercase mt-1">
-            Full Lifecycle Authority
+            Portfolio-Scale Governance
           </p>
           <p className="mt-2 text-xs text-[#64748B]">
-            Portfolio-level deterministic governance framework.
+            Govern strategy portfolios at scale with dedicated support.
           </p>
           <div className="mt-4">
             {elitePrice ? (
@@ -229,24 +227,19 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
             )}
           </div>
           <p className="mt-3 text-white font-medium text-sm">
-            Portfolio-level deterministic governance framework
+            Govern up to 10 live trading accounts
           </p>
           <p className="mt-2 text-[#94A3B8] text-sm leading-relaxed">
-            Everything in Pro, plus full lifecycle control (RUN/PAUSE/STOP), incident escalation,
-            portfolio authority aggregation, and cadence analytics.
+            All platform features included. Dedicated support channel, 1-on-1 strategy reviews, and
+            portfolio-scale monitoring.
           </p>
 
           <ul className="mt-6 space-y-3 flex-1">
             {[
-              "Everything in Control",
-              "Full lifecycle authority (RUN/PAUSE/STOP)",
-              "Incident escalation framework",
-              "CUSUM drift analysis",
-              "Advanced cadence analytics",
-              "Portfolio authority aggregation",
-              "Edge degradation detection",
-              "Lifecycle state transitions",
-              "Embeddable proof widget",
+              "Up to 10 monitored trading accounts",
+              "All platform features included",
+              "Unlimited strategies & exports",
+              "Priority support",
               "1-on-1 strategy review (1/month)",
               "Direct developer channel",
             ].map((feature, i) => (
@@ -259,15 +252,14 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
 
           <div className="mt-6 bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.15)] rounded-lg px-4 py-3">
             <p className="text-xs text-[#A78BFA]">
-              <strong>Scope:</strong> Portfolio-level deterministic governance with full lifecycle
-              control.
+              Up to 10 monitored trading accounts. All features included.
             </p>
           </div>
 
           <button
             onClick={() => handleSubscribe("ELITE")}
             disabled={loadingPlan !== null || !elitePrice}
-            className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold border-2 border-[#A78BFA] text-white hover:bg-[rgba(167,139,250,0.1)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base"
+            className="mt-4 w-full py-3.5 px-4 rounded-lg font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] text-base"
           >
             {loadingPlan === "ELITE" ? "Loading..." : "Start monitoring"}
           </button>

@@ -40,42 +40,41 @@ type MatrixRow = [string, CellValue, CellValue, CellValue];
 
 const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
   {
-    category: "Strategy Monitoring",
+    category: "Plan Limits",
     rows: [
-      ["Active strategies", "1", "Unlimited", "Unlimited"],
+      ["Monitored trading accounts", "1", "Up to 3", "Up to 10"],
+      ["Active strategies", "Unlimited", "Unlimited", "Unlimited"],
+      ["MQL5 exports", "Unlimited", "Unlimited", "Unlimited"],
+    ],
+  },
+  {
+    category: "Strategy Evaluation",
+    rows: [
       ["Backtest health scoring", true, true, true],
       ["Monte Carlo risk simulation", true, true, true],
-      ["Live health monitoring", false, true, true],
-      ["Drift detection", false, true, true],
-      ["Edge degradation alerts", false, false, true],
-      ["CUSUM drift analysis", false, false, true],
+      ["Strategy journal", true, true, true],
+      ["EA builder & strategy templates", true, true, true],
+    ],
+  },
+  {
+    category: "Live Monitoring & Governance",
+    rows: [
+      ["Live health monitoring", true, true, true],
+      ["Drift detection", true, true, true],
+      ["Edge degradation analysis", true, true, true],
+      ["CUSUM drift analysis", true, true, true],
+      ["Lifecycle governance (RUN / PAUSE / STOP)", true, true, true],
+      ["Governance snapshot logging", true, true, true],
+      ["Portfolio-level governance", true, true, true],
     ],
   },
   {
     category: "Verification & Proof",
     rows: [
-      ["Strategy identity & versioning", false, true, true],
-      ["Verified track record (hash chain)", false, true, true],
-      ["Public proof page", false, true, true],
-      ["Embeddable proof widget", false, false, true],
-    ],
-  },
-  {
-    category: "Lifecycle Governance",
-    rows: [
-      ["Lifecycle states (run / pause)", false, true, true],
-      ["Full lifecycle control (run / pause / stop)", false, false, true],
-      ["Governance snapshot logging", false, true, true],
-      ["Automatic intervention on deviation", false, false, true],
-      ["Portfolio-level governance", false, false, true],
-    ],
-  },
-  {
-    category: "Strategy Tools",
-    rows: [
-      ["EA builder & strategy templates", true, true, true],
-      ["MQL5 export", "3/month", "Unlimited", "Unlimited"],
-      ["Strategy journal", true, true, true],
+      ["Strategy identity & versioning", true, true, true],
+      ["Verified track record (hash chain)", true, true, true],
+      ["Public proof page", true, true, true],
+      ["Embeddable proof widget", true, true, true],
     ],
   },
   {
@@ -93,20 +92,24 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
 
 const FAQ_ITEMS = [
   {
-    q: "What is the difference between the three plans?",
-    a: "Baseline provides strategy evaluation tools: health scoring, Monte Carlo simulation, and the EA builder. Control adds live monitoring, verified track records, public proof pages, and lifecycle governance for individual strategies. Authority extends governance to the portfolio level with full lifecycle control, advanced drift analysis, and incident handling.",
+    q: "What is the difference between the plans?",
+    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, and Authority supports up to 10. Paid plans also include priority support, with Authority adding 1-on-1 strategy reviews and direct developer access.",
+  },
+  {
+    q: "What is a monitored trading account?",
+    a: "A monitored trading account is a live MetaTrader 5 trading account connected to AlgoStudio for continuous monitoring. Each connected account is tracked for health, drift, and governance events. Your plan determines how many trading accounts you can monitor simultaneously.",
   },
   {
     q: "What is a verified track record?",
-    a: "Every trade is recorded in a tamper-resistant hash chain. Each entry is cryptographically linked to the previous one, producing a verifiable history. Control and Authority plans include public proof pages where this track record can be independently audited.",
+    a: "Every trade is recorded in a tamper-resistant hash chain. Each entry is cryptographically linked to the previous one, producing a verifiable history that can be independently audited via public proof pages.",
   },
   {
-    q: "Are EA builder and MQL5 export included in all plans?",
-    a: "Yes. The EA builder, strategy templates, and unlimited MQL5 exports are included on all plans, including Baseline.",
+    q: "Are all features really included on the free plan?",
+    a: "Yes. Every platform feature \u2014 backtest scoring, Monte Carlo simulation, live monitoring, drift detection, lifecycle governance, verified track records, EA builder, and unlimited exports \u2014 is included on Baseline. The only limit is the number of monitored trading accounts.",
   },
   {
     q: "What happens if I downgrade?",
-    a: "All strategies and verified track records are preserved. Active monitoring and governance features revert to the capabilities of your new plan. You can upgrade again at any time.",
+    a: "All strategies, verified track records, and monitoring data are preserved. If you exceed your new plan\u2019s monitored trading account limit, existing accounts remain active but you cannot add new ones until you are within the limit.",
   },
   {
     q: "Can I cancel anytime?",
@@ -164,14 +167,14 @@ export default function PricingPage() {
             ════════════════════════════════════════════════════════════ */}
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h1 className="text-[28px] md:text-[36px] font-extrabold tracking-tight leading-[1.2]">
-            Pricing
+            Pricing for live strategy monitoring
           </h1>
           <p className="mt-4 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto">
-            Simple plans for strategy monitoring, verification, and governance.
+            All features included on every plan. Choose how many trading accounts you want
+            AlgoStudio to monitor.
           </p>
           <p className="mt-3 text-sm text-[#71717A] max-w-2xl mx-auto">
-            AlgoStudio monitors whether your trading strategy still has an edge — and governs what
-            happens when it doesn&apos;t.
+            Unlimited strategies. Unlimited exports. Billed monthly. Cancel anytime.
           </p>
         </div>
 
@@ -182,22 +185,24 @@ export default function PricingPage() {
           {/* Baseline — Free */}
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Baseline</h3>
-            <p className="text-xs text-[#71717A] mt-1">
-              Evaluate strategy viability before going live.
-            </p>
+            <p className="text-xs text-[#71717A] mt-1">Evaluate and validate before going live.</p>
             <div className="mt-4">
               <span className="text-3xl font-bold text-[#FAFAFA]">{formatPrice(0, "eur")}</span>
               <span className="text-[#71717A] ml-2 text-sm">/ forever</span>
             </div>
 
-            <ul className="mt-6 space-y-2.5 flex-1">
+            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <p className="text-sm font-medium text-[#FAFAFA]">1 monitored trading account</p>
+            </div>
+
+            <ul className="mt-5 space-y-2.5 flex-1">
               {[
+                "All platform features included",
+                "Unlimited strategies & exports",
                 "Backtest health scoring",
                 "Monte Carlo risk simulation",
-                "Strategy journal",
-                "All features included",
                 "EA builder & templates",
-                "1 monitored trading account",
+                "Strategy journal",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
                   <CheckIcon />
@@ -210,22 +215,15 @@ export default function PricingPage() {
               href="/register"
               className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] hover:border-[rgba(255,255,255,0.20)] transition-colors block text-center text-sm"
             >
-              Start monitoring
+              Start free
             </Link>
             <p className="mt-2 text-center text-xs text-[#71717A]">No credit card required.</p>
           </div>
 
           {/* Control — Pro */}
-          <div className="rounded-xl border border-[#6366F1] bg-[#111114] p-6 relative flex flex-col">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#6366F1] text-white text-[11px] font-semibold px-3 py-1 rounded-full">
-                Recommended
-              </span>
-            </div>
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Control</h3>
-            <p className="text-xs text-[#71717A] mt-1">
-              Deterministic lifecycle authority over live strategies.
-            </p>
+            <p className="text-xs text-[#71717A] mt-1">Monitor multiple live strategies.</p>
             <div className="mt-4">
               {proPrice ? (
                 <>
@@ -239,17 +237,18 @@ export default function PricingPage() {
               )}
             </div>
 
-            <ul className="mt-6 space-y-2.5 flex-1">
+            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <p className="text-sm font-medium text-[#FAFAFA]">
+                Up to 3 monitored trading accounts
+              </p>
+            </div>
+
+            <ul className="mt-5 space-y-2.5 flex-1">
               {[
-                "Execution Authority (RUN / PAUSE)",
-                "Continuous heartbeat monitoring",
-                "Structural deviation detection",
-                "Verified Track Record (hash chain)",
-                "Strategy Identity & versioning",
-                "Governance snapshot logging",
-                "Email, webhook & Telegram alerts",
+                "All platform features included",
                 "Unlimited strategies & exports",
                 "Priority support",
+                "Email, webhook & Telegram alerts",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
                   <CheckIcon />
@@ -261,19 +260,22 @@ export default function PricingPage() {
             <button
               onClick={() => handleSubscribe("PRO")}
               disabled={loadingPlan !== null || !proPrice}
-              className="mt-6 w-full py-3 rounded-lg font-medium bg-[#6366F1] text-white hover:bg-[#818CF8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] hover:border-[rgba(255,255,255,0.20)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               {loadingPlan === "PRO" ? "Loading..." : "Start monitoring"}
             </button>
             <p className="mt-2 text-center text-xs text-[#71717A]">Cancel anytime.</p>
           </div>
 
-          {/* Authority — Elite */}
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
+          {/* Authority — Elite (Most Popular) */}
+          <div className="rounded-xl border border-[#6366F1] bg-[#111114] p-6 relative flex flex-col">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="bg-[#6366F1] text-white text-[11px] font-semibold px-3 py-1 rounded-full">
+                Most Popular
+              </span>
+            </div>
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Authority</h3>
-            <p className="text-xs text-[#71717A] mt-1">
-              Portfolio-level deterministic governance framework.
-            </p>
+            <p className="text-xs text-[#71717A] mt-1">Govern strategy portfolios at scale.</p>
             <div className="mt-4">
               {elitePrice ? (
                 <>
@@ -287,15 +289,17 @@ export default function PricingPage() {
               )}
             </div>
 
-            <ul className="mt-6 space-y-2.5 flex-1">
+            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.20)]">
+              <p className="text-sm font-medium text-[#FAFAFA]">
+                Up to 10 monitored trading accounts
+              </p>
+            </div>
+
+            <ul className="mt-5 space-y-2.5 flex-1">
               {[
-                "Everything in Control",
-                "Full lifecycle authority (RUN / PAUSE / STOP)",
-                "Incident escalation framework",
-                "CUSUM drift analysis",
-                "Edge degradation detection",
-                "Portfolio authority aggregation",
-                "Embeddable proof widget",
+                "All platform features included",
+                "Unlimited strategies & exports",
+                "Priority support",
                 "1-on-1 strategy review (1/month)",
                 "Direct developer channel",
               ].map((f) => (
@@ -309,7 +313,7 @@ export default function PricingPage() {
             <button
               onClick={() => handleSubscribe("ELITE")}
               disabled={loadingPlan !== null || !elitePrice}
-              className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] hover:border-[rgba(255,255,255,0.20)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="mt-6 w-full py-3 rounded-lg font-medium bg-[#6366F1] text-white hover:bg-[#818CF8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               {loadingPlan === "ELITE" ? "Loading..." : "Start monitoring"}
             </button>
@@ -317,8 +321,15 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#71717A] mb-16">
+        <p className="text-center text-xs text-[#71717A] mb-4">
           All prices in EUR. VAT included where applicable.
+        </p>
+        <p className="text-center text-sm text-[#A1A1AA] mb-16">
+          Need more?{" "}
+          <Link href="/contact" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
+            Contact us
+          </Link>{" "}
+          for Institutional plans with unlimited monitored trading accounts.
         </p>
 
         {/* ════════════════════════════════════════════════════════════
