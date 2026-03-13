@@ -14,9 +14,10 @@ interface PlanLimitConfig {
 }
 
 const TIER_LABELS: Record<string, { name: string; color: string }> = {
-  FREE: { name: "Free", color: "border-[#71717A]/50" },
-  PRO: { name: "Pro", color: "border-[#6366F1]/50" },
-  ELITE: { name: "Elite", color: "border-[#818CF8]/50" },
+  FREE: { name: "Baseline", color: "border-[#71717A]/50" },
+  PRO: { name: "Control", color: "border-[#6366F1]/50" },
+  ELITE: { name: "Authority", color: "border-[#818CF8]/50" },
+  INSTITUTIONAL: { name: "Institutional", color: "border-[#F59E0B]/50" },
 };
 
 export function PlanLimitsTab() {

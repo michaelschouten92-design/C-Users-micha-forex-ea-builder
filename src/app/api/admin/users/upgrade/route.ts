@@ -19,7 +19,7 @@ import {
 
 const upgradeSchema = z.object({
   email: z.string().email(),
-  tier: z.enum(["FREE", "PRO", "ELITE"]),
+  tier: z.enum(["FREE", "PRO", "ELITE", "INSTITUTIONAL"]),
 });
 
 // POST /api/admin/users/upgrade - Upgrade/downgrade a user's tier (admin only)
@@ -118,13 +118,13 @@ export async function POST(request: Request) {
     );
 
     // Log audit event
-    const isUpgrade =
-      (previousTier === "FREE" && tier !== "FREE") || (previousTier === "PRO" && tier === "ELITE");
+    const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 };
+    const isUpgrade = (tierOrder[tier] ?? 0) > (tierOrder[previousTier] ?? 0);
 
     const previousStatus = user.subscription?.status ?? "active";
     logSubscriptionTransition(
       user.id,
-      { status: previousStatus, tier: previousTier as "FREE" | "PRO" | "ELITE" },
+      { status: previousStatus, tier: previousTier as "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL" },
       { status: "active", tier },
       isUpgrade ? "admin_upgrade" : "admin_downgrade"
     );

@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLANS } from "@/lib/plans";
+import { PLANS, TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError, showSuccess } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
-  tier: "FREE" | "PRO" | "ELITE";
+  tier: PlanTier;
   subscriptionStatus?: string;
   projectCount: number;
   exportCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
-  scheduledDowngradeTier?: "PRO" | "ELITE" | null;
+  scheduledDowngradeTier?: string | null;
 };
 
 export function SubscriptionPanel({
@@ -28,7 +28,7 @@ export function SubscriptionPanel({
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
   const [cancelPeriodEnd, setCancelPeriodEnd] = useState<string | null>(null);
-  const [pendingDowngrade, setPendingDowngrade] = useState<"PRO" | "ELITE" | null>(
+  const [pendingDowngrade, setPendingDowngrade] = useState<string | null>(
     scheduledDowngradeTier ?? null
   );
   const plan = PLANS[tier];
@@ -208,7 +208,9 @@ export function SubscriptionPanel({
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-[#F59E0B]">
                     Your plan will change to{" "}
-                    <span className="font-medium">{PLANS[pendingDowngrade].name}</span>
+                    <span className="font-medium">
+                      {PLANS[pendingDowngrade as keyof typeof PLANS]?.name ?? pendingDowngrade}
+                    </span>
                     {currentPeriodEnd && (
                       <>
                         {" "}
@@ -229,16 +231,16 @@ export function SubscriptionPanel({
             )}
             <p className="text-sm text-[#A1A1AA]">
               {tier === "FREE"
-                ? "Upgrade for unlimited projects, verified track records, and live monitoring."
-                : tier === "PRO"
-                  ? "Unlimited exports, verified track records, and live monitoring. Upgrade to Elite for the Strategy Health Monitor with edge degradation detection."
-                  : "You have access to all features including the Strategy Health Monitor and capital protection tools."}
+                ? "All features included. Upgrade to monitor more trading accounts."
+                : tier === "INSTITUTIONAL"
+                  ? "Unlimited monitored trading accounts with dedicated support."
+                  : `All features included with ${plan.limits.maxMonitoredTradingAccounts} monitored trading account${plan.limits.maxMonitoredTradingAccounts === 1 ? "" : "s"}. Upgrade to monitor more.`}
             </p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2">
-            {tier === "FREE" ? (
+            {tier !== "INSTITUTIONAL" && (
               <Link
                 href="/pricing"
                 className="inline-flex items-center gap-2 bg-[#6366F1] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
@@ -251,43 +253,11 @@ export function SubscriptionPanel({
                     d="M5 10l7-7m0 0l7 7m-7-7v18"
                   />
                 </svg>
-                Upgrade
+                {tier === "FREE" ? "Upgrade" : "Change Plan"}
               </Link>
-            ) : (
+            )}
+            {tier !== "FREE" && (
               <>
-                {tier === "PRO" && (
-                  <Link
-                    href="/pricing"
-                    className="inline-flex items-center gap-2 bg-[#818CF8] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6366F1] transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 10l7-7m0 0l7 7m-7-7v18"
-                      />
-                    </svg>
-                    Upgrade to Elite
-                  </Link>
-                )}
-                {tier === "ELITE" && hasStripeSubscription && (
-                  <button
-                    onClick={() => setConfirmAction("downgrade")}
-                    disabled={loading || !!cancelPeriodEnd || !!pendingDowngrade}
-                    className="inline-flex items-center gap-2 border border-[rgba(245,158,11,0.5)] text-[#F59E0B] px-5 py-2.5 rounded-lg font-medium hover:bg-[rgba(245,158,11,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                      />
-                    </svg>
-                    Downgrade to Pro
-                  </button>
-                )}
                 {hasStripeSubscription && !cancelPeriodEnd && (
                   <button
                     onClick={() => setConfirmAction("cancel")}
@@ -428,29 +398,18 @@ export function SubscriptionPanel({
             {exportLimit === Infinity && (
               <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
             )}
-            {tier === "FREE" && exportLimit !== Infinity && exportPercentage < 80 && (
-              <p className="text-xs text-[#71717A] mt-1">
-                Free plan: 3 exports per month. Resets on the 1st.
-              </p>
-            )}
           </div>
         </div>
 
-        {/* Feature Highlight */}
-        {tier === "FREE" && (
-          <div className="mt-4 p-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-lg">
-            <p className="text-xs text-[#818CF8]">
-              <span className="font-medium">Upgrade to unlock:</span> Unlimited projects & exports,
-              verified track records, live EA monitoring, and priority support
-            </p>
-          </div>
-        )}
-        {tier === "PRO" && (
+        {/* Upgrade Hint */}
+        {tier !== "INSTITUTIONAL" && (
           <div className="mt-4 p-3 bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.20)] rounded-lg">
             <p className="text-xs text-[#818CF8]">
-              <span className="font-medium">Elite includes:</span> Strategy Health Monitor, edge
-              degradation detection, CUSUM drift analysis, advanced drawdown alerts, embeddable
-              proof widget, 1-on-1 strategy review (1/month), and direct developer channel
+              <span className="font-medium">Need more monitored accounts?</span>{" "}
+              <Link href="/pricing" className="underline hover:text-white">
+                View plans
+              </Link>{" "}
+              to increase your limit.
             </p>
           </div>
         )}
@@ -468,13 +427,13 @@ export function SubscriptionPanel({
           >
             {confirmAction === "downgrade" ? (
               <>
-                <h3 className="text-lg font-semibold text-white mb-3">Downgrade to Pro?</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">Downgrade Plan?</h3>
                 <p className="text-sm text-[#A1A1AA] mb-4">
-                  Your plan will change to Pro at the end of your billing period
+                  Your plan will change at the end of your billing period
                   {currentPeriodEnd && <> ({formatDate(currentPeriodEnd)})</>}. You&apos;ll keep
-                  full Elite access until then, including Strategy Health Monitor, edge degradation
-                  alerts, advanced drawdown monitoring, 1-on-1 strategy reviews, and direct
-                  developer support. No data will be deleted.
+                  full access until then. Your monitored account limit will decrease — existing
+                  accounts are preserved but you won&apos;t be able to add new ones if over the new
+                  limit.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
@@ -482,7 +441,7 @@ export function SubscriptionPanel({
                     disabled={loading}
                     className="px-4 py-2 text-sm text-[#FAFAFA] border border-[rgba(255,255,255,0.10)] rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors disabled:opacity-50"
                   >
-                    Keep Elite
+                    Keep Current Plan
                   </button>
                   <button
                     onClick={handleDowngradeToPro}
@@ -520,8 +479,8 @@ export function SubscriptionPanel({
                       ? formatDate(periodEndDisplay)
                       : "the end of your billing period"}
                   </span>
-                  . After that, Free plan limits will apply (1 project, 3 exports/month). Your
-                  existing projects won&apos;t be deleted.
+                  . After that, Baseline plan limits apply (1 monitored trading account). Your
+                  existing data won&apos;t be deleted.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button

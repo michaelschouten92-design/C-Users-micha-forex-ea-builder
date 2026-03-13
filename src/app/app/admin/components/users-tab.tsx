@@ -33,9 +33,10 @@ interface UserData {
   churnRisk?: boolean;
 }
 
-type Tier = "FREE" | "PRO" | "ELITE";
+type Tier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
 
 const TIER_COLORS: Record<string, string> = {
+  INSTITUTIONAL: "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/50",
   ELITE: "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50",
   PRO: "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50",
   FREE: "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]",
@@ -325,9 +326,10 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
           className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366F1] transition-colors"
         >
           <option value="ALL">All Tiers</option>
-          <option value="FREE">FREE</option>
-          <option value="PRO">PRO</option>
-          <option value="ELITE">ELITE</option>
+          <option value="FREE">Baseline</option>
+          <option value="PRO">Control</option>
+          <option value="ELITE">Authority</option>
+          <option value="INSTITUTIONAL">Institutional</option>
         </select>
         <select
           value={loginFilter}

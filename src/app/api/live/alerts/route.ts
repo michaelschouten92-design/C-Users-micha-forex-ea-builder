@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
-import { getCachedTier } from "@/lib/plan-limits";
 import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
 import { transitionAlertState } from "@/lib/ea/trading-state";
@@ -48,14 +47,6 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
   }
 
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Live EA monitoring requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
-  }
-
   const configs = await prisma.eAAlertConfig.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
@@ -84,14 +75,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Live EA monitoring requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
   }
 
   const body = await request.json().catch(() => null);
@@ -187,14 +170,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
   }
 
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Live EA monitoring requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
-  }
-
   const body = await request.json().catch(() => null);
   if (!body) {
     return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON body"), {
@@ -287,14 +262,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Live EA monitoring requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
   }
 
   const body = await request.json().catch(() => null);

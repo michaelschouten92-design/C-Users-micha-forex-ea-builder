@@ -17,19 +17,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   const { id } = await params;
 
-  // Check subscription tier — Elite only
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  const tier = subscription?.tier ?? "FREE";
-  if (tier !== "ELITE") {
-    return NextResponse.json(
-      { error: "AI Strategy Optimizer requires an Elite subscription" },
-      { status: 403 }
-    );
-  }
-
   // Rate limit
   const rateLimitResult = await checkRateLimit(
     aiOptimizationEliteRateLimiter,

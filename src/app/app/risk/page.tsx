@@ -23,14 +23,7 @@ export default async function RiskPage() {
     where: { userId: session.user.id },
   });
 
-  let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
-  if (tier !== "FREE") {
-    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-    if (!isActive || isExpired) {
-      tier = "FREE";
-    }
-  }
+  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
 
   return (
     <div className="min-h-screen">

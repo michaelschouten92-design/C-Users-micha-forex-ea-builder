@@ -8,7 +8,7 @@ interface OnboardingChecklistProps {
   hasBacktests: boolean;
   hasExports: boolean;
   hasLiveEAs: boolean;
-  tier: "FREE" | "PRO" | "ELITE";
+  tier: string;
   firstProjectId: string | null;
 }
 

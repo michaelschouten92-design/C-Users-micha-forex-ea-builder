@@ -3,7 +3,7 @@ import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
+import { canMonitorAdditionalTradingAccount } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   checkRateLimit,
@@ -13,8 +13,6 @@ import {
 } from "@/lib/rate-limit";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import { logAuditEvent } from "@/lib/audit";
-
-const MAX_TERMINALS_PER_USER = 10;
 
 const registerSchema = z.object({
   label: z
@@ -57,18 +55,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Upgrade required",
-        "Terminal connections require a Pro or Elite plan."
-      ),
-      { status: 403, headers: rateLimitHeaders }
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -87,16 +73,13 @@ export async function POST(request: NextRequest) {
   const { label, broker, accountNumber } = validation.data;
 
   try {
-    const terminalCount = await prisma.terminalConnection.count({
-      where: { userId: session.user.id, deletedAt: null },
-    });
-
-    if (terminalCount >= MAX_TERMINALS_PER_USER) {
+    const accountCheck = await canMonitorAdditionalTradingAccount(session.user.id);
+    if (!accountCheck.allowed) {
       return NextResponse.json(
         apiError(
           ErrorCode.PLAN_REQUIRED,
-          "Terminal limit reached",
-          `You can register up to ${MAX_TERMINALS_PER_USER} terminals. Remove unused terminals to add more.`
+          "Account limit reached",
+          `Your ${accountCheck.tierDisplayName} plan allows ${accountCheck.max === -1 ? "unlimited" : accountCheck.max} monitored trading account${accountCheck.max === 1 ? "" : "s"}. Upgrade to monitor more accounts.`
         ),
         { status: 403, headers: rateLimitHeaders }
       );

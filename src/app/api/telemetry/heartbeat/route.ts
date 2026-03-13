@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { canMonitorAdditionalTradingAccount } from "@/lib/plan-limits";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { enqueueNotification } from "@/lib/outbox";
 import { logger } from "@/lib/logger";
@@ -379,6 +380,24 @@ async function processDeploymentDiscovery(
     // This hash is synthetic (not for X-Terminal-Key auth) — just satisfies the unique constraint.
     const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
 
+    // Check if this synthetic terminal already exists before enforcing limits
+    const existingSynthetic = await prisma.terminalConnection.findUnique({
+      where: { apiKeyHash: syntheticHash },
+      select: { id: true },
+    });
+
+    // Only enforce account limit for genuinely new terminals
+    if (!existingSynthetic) {
+      const accountCheck = await canMonitorAdditionalTradingAccount(userId);
+      if (!accountCheck.allowed) {
+        log.warn(
+          { userId, tier: accountCheck.tier, current: accountCheck.current, max: accountCheck.max },
+          "Auto-creation blocked: monitored account limit reached"
+        );
+        return; // Silently skip — don't break heartbeat processing
+      }
+    }
+
     const label = [broker, accountNumber].filter(Boolean).join(" ") || "Monitor EA";
 
     // Use upsert to handle race conditions (concurrent heartbeats)
@@ -539,6 +558,24 @@ async function processDiscoveredDeployments(
   let terminalId = existingTerminalId;
   if (!terminalId) {
     const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
+
+    // Check if this synthetic terminal already exists before enforcing limits
+    const existingSynthetic = await prisma.terminalConnection.findUnique({
+      where: { apiKeyHash: syntheticHash },
+      select: { id: true },
+    });
+
+    if (!existingSynthetic) {
+      const accountCheck = await canMonitorAdditionalTradingAccount(userId);
+      if (!accountCheck.allowed) {
+        log.warn(
+          { userId, tier: accountCheck.tier, current: accountCheck.current, max: accountCheck.max },
+          "Discovered deployment auto-creation blocked: monitored account limit reached"
+        );
+        return;
+      }
+    }
+
     const label = [broker, accountNumber].filter(Boolean).join(" ") || "Monitor EA";
 
     const terminal = await prisma.terminalConnection.upsert({

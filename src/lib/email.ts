@@ -481,17 +481,22 @@ export async function sendContactFormEmail(
 
 const PLAN_WELCOME_FEATURES: Record<string, string[]> = {
   PRO: [
-    "Unlimited projects",
-    "Unlimited MQL5 exports",
-    "MQL5 source code export",
+    "3 monitored trading accounts",
+    "Multi-strategy portfolio view",
+    "Email, webhook & Telegram alerts",
     "Priority support",
   ],
   ELITE: [
-    "Everything in Pro",
-    "Early access to new features",
-    "Prop firm configuration presets",
-    "Direct developer support",
-    "Weekly Elite members call",
+    "10 monitored trading accounts",
+    "Embeddable proof widget",
+    "1-on-1 strategy review (1/month)",
+    "Direct developer channel",
+  ],
+  INSTITUTIONAL: [
+    "Unlimited monitored trading accounts",
+    "Custom onboarding",
+    "Dedicated support channel",
+    "SLA-backed uptime guarantee",
   ],
 };
 
@@ -513,9 +518,10 @@ export async function sendPlanChangeEmail(
   const safePreviousPlan = esc(previousPlan);
   const safeNewPlan = esc(newPlan);
 
-  // Use tier-specific welcome email for upgrades to PRO or ELITE
+  // Use tier-specific welcome email for upgrades to paid tiers
   const tierKey = newPlan.toUpperCase();
-  const isUpgradeWithWelcome = isUpgrade && (tierKey === "PRO" || tierKey === "ELITE");
+  const isUpgradeWithWelcome =
+    isUpgrade && (tierKey === "PRO" || tierKey === "ELITE" || tierKey === "INSTITUTIONAL");
   const features = PLAN_WELCOME_FEATURES[tierKey] ?? [];
 
   const subject = isUpgradeWithWelcome

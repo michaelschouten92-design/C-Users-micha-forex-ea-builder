@@ -1,4 +1,7 @@
 // Subscription plans configuration
+// DB enum: FREE | PRO | ELITE | INSTITUTIONAL
+// Display names: Baseline | Control | Authority | Institutional
+// Billing metric: monitored trading accounts (TerminalConnection)
 import { env, features } from "./env";
 
 // Display prices — override via env vars (amounts in cents), fallback to defaults
@@ -10,12 +13,12 @@ const parsePrice = (envVal: string | undefined, fallback: number) => {
 const DISPLAY_PRICES = {
   pro: {
     monthly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 3900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_MONTHLY, 2900),
       currency: "eur",
       interval: "month" as const,
     },
     yearly: {
-      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 39900),
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_PRO_YEARLY, 29900),
       currency: "eur",
       interval: "year" as const,
     },
@@ -28,6 +31,18 @@ const DISPLAY_PRICES = {
     },
     yearly: {
       amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_ELITE_YEARLY, 79900),
+      currency: "eur",
+      interval: "year" as const,
+    },
+  },
+  institutional: {
+    monthly: {
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_INSTITUTIONAL_MONTHLY, 19900),
+      currency: "eur",
+      interval: "month" as const,
+    },
+    yearly: {
+      amount: parsePrice(process.env.NEXT_PUBLIC_PRICE_INSTITUTIONAL_YEARLY, 199900),
       currency: "eur",
       interval: "year" as const,
     },
@@ -46,6 +61,10 @@ function getPriceConfigWithIds() {
       elite: {
         monthly: { ...DISPLAY_PRICES.elite.monthly, priceId: "" },
         yearly: { ...DISPLAY_PRICES.elite.yearly, priceId: "" },
+      },
+      institutional: {
+        monthly: { ...DISPLAY_PRICES.institutional.monthly, priceId: "" },
+        yearly: { ...DISPLAY_PRICES.institutional.yearly, priceId: "" },
       },
     };
   }
@@ -72,42 +91,84 @@ function getPriceConfigWithIds() {
         priceId: env.STRIPE_ELITE_YEARLY_PRICE_ID!.trim(),
       },
     },
+    institutional: {
+      monthly: {
+        ...DISPLAY_PRICES.institutional.monthly,
+        priceId:
+          (
+            env as unknown as Record<string, string | undefined>
+          ).STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID?.trim() ?? "",
+      },
+      yearly: {
+        ...DISPLAY_PRICES.institutional.yearly,
+        priceId:
+          (
+            env as unknown as Record<string, string | undefined>
+          ).STRIPE_INSTITUTIONAL_YEARLY_PRICE_ID?.trim() ?? "",
+      },
+    },
   };
 }
 
 const priceConfig = getPriceConfigWithIds();
 
+// ============================================
+// TIER DISPLAY NAMES
+// DB enum values → user-facing names
+// ============================================
+
+export const TIER_DISPLAY_NAMES: Record<PlanTier, string> = {
+  FREE: "Baseline",
+  PRO: "Control",
+  ELITE: "Authority",
+  INSTITUTIONAL: "Institutional",
+};
+
+// ============================================
+// MONITORED TRADING ACCOUNT LIMITS
+// The single billing metric. null = unlimited.
+// ============================================
+
+export const TIER_ACCOUNT_LIMITS: Record<PlanTier, number | null> = {
+  FREE: 1,
+  PRO: 3,
+  ELITE: 10,
+  INSTITUTIONAL: null, // unlimited
+};
+
+// ============================================
+// PLAN DEFINITIONS
+// All features are included in every tier.
+// Tiers differ only by number of monitored trading accounts.
+// ============================================
+
 export const PLANS = {
   FREE: {
-    name: "Free",
+    name: "Baseline",
     tier: "FREE" as const,
     features: [
-      "Backtest health scoring",
-      "Monte Carlo risk calculator",
-      "Strategy journal",
-      "1 active project",
-      "Visual strategy builder",
-      "All 10 strategy templates",
-      "3 MQL5 exports per month",
+      "All platform features included",
+      "Backtest health scoring & Monte Carlo",
+      "Strategy Identity & versioning",
+      "Live EA monitoring dashboard",
+      "Edge degradation detection",
+      "Verified Track Record",
+      "1 monitored trading account",
     ],
     limits: {
-      maxProjects: 1,
-      maxExportsPerMonth: 3,
+      maxProjects: Infinity,
+      maxExportsPerMonth: Infinity,
       canExportMQL5: true,
+      maxMonitoredTradingAccounts: 1,
     },
     prices: null,
   },
   PRO: {
-    name: "Pro",
+    name: "Control",
     tier: "PRO" as const,
     features: [
-      "Unlimited projects & exports",
-      "Strategy Identity & versioning",
-      "Verified Track Record",
-      "Public Verified Strategy Page",
-      "Track Record sharing link",
-      "Live EA monitoring dashboard",
-      "External EA monitoring",
+      "All platform features included",
+      "3 monitored trading accounts",
       "Multi-strategy portfolio view",
       "Email, webhook & Telegram alerts",
       "Priority support",
@@ -116,47 +177,84 @@ export const PLANS = {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
+      maxMonitoredTradingAccounts: 3,
     },
     prices: priceConfig.pro,
   },
   ELITE: {
-    name: "Elite",
+    name: "Authority",
     tier: "ELITE" as const,
     features: [
-      "Everything in Pro",
-      "Strategy Health Monitor",
-      "Edge degradation detection",
-      "CUSUM drift analysis",
-      "Advanced drawdown alerts",
-      "Pre-retirement warnings",
+      "All platform features included",
+      "10 monitored trading accounts",
       "Embeddable proof widget",
       "1-on-1 strategy review (1/month)",
       "Direct developer channel",
-      "Priority feature requests",
+    ],
+    mostPopular: true,
+    limits: {
+      maxProjects: Infinity,
+      maxExportsPerMonth: Infinity,
+      canExportMQL5: true,
+      maxMonitoredTradingAccounts: 10,
+    },
+    prices: priceConfig.elite,
+  },
+  INSTITUTIONAL: {
+    name: "Institutional",
+    tier: "INSTITUTIONAL" as const,
+    features: [
+      "All platform features included",
+      "Unlimited monitored trading accounts",
+      "Custom onboarding",
+      "Dedicated support channel",
+      "SLA-backed uptime guarantee",
     ],
     limits: {
       maxProjects: Infinity,
       maxExportsPerMonth: Infinity,
       canExportMQL5: true,
+      maxMonitoredTradingAccounts: Infinity,
     },
-    prices: priceConfig.elite,
+    prices: priceConfig.institutional,
   },
 } as const;
 
-export type PlanTier = keyof typeof PLANS;
+export type PlanTier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
 export type Plan = (typeof PLANS)[PlanTier];
+
+/**
+ * Tier ordering for upgrade/downgrade comparison.
+ * Higher number = higher tier.
+ */
+export const TIER_ORDER: Record<PlanTier, number> = {
+  FREE: 0,
+  PRO: 1,
+  ELITE: 2,
+  INSTITUTIONAL: 3,
+};
 
 /**
  * Monthly MRR prices per tier (in EUR, for revenue calculations).
  * Single source of truth — used by admin stats and cron reports.
  */
 export const TIER_MRR_PRICES: Record<string, number> = {
-  PRO: 39,
+  PRO: 29,
   ELITE: 79,
+  INSTITUTIONAL: 199,
 };
 
 export function getPlan(tier: PlanTier): Plan {
   return PLANS[tier];
+}
+
+export function getTierDisplayName(tier: PlanTier): string {
+  return TIER_DISPLAY_NAMES[tier];
+}
+
+export function getMaxMonitoredAccounts(tier: PlanTier): number {
+  const limit = TIER_ACCOUNT_LIMITS[tier];
+  return limit === null ? Infinity : limit;
 }
 
 export function formatPrice(amount: number, currency: string): string {

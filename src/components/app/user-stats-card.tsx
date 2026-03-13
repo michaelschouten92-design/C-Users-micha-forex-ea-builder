@@ -5,7 +5,7 @@ import { fetcher } from "@/lib/swr";
 import { PLANS } from "@/lib/plans";
 
 type UserStatsCardProps = {
-  tier: "FREE" | "PRO" | "ELITE";
+  tier: string;
 };
 
 interface StatsData {
@@ -22,7 +22,7 @@ export function UserStatsCard({ tier }: UserStatsCardProps) {
     dedupingInterval: 60000,
   });
 
-  const plan = PLANS[tier];
+  const plan = PLANS[tier as keyof typeof PLANS] ?? PLANS.FREE;
   const exportLimit = plan.limits.maxExportsPerMonth;
   const exportsUsed = data?.exportsThisMonth ?? 0;
   const exportPercentage = exportLimit === Infinity ? 0 : (exportsUsed / exportLimit) * 100;

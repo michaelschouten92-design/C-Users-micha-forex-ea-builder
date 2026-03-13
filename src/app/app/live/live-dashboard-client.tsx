@@ -82,7 +82,7 @@ interface AlertConfig {
 
 interface LiveDashboardClientProps {
   initialData: EAInstanceData[];
-  tier?: "FREE" | "PRO" | "ELITE";
+  tier?: string;
   initialRelinkInstanceId?: string | null;
 }
 
@@ -2131,7 +2131,7 @@ export function LiveDashboardClient({
           </button>
 
           {/* Connect external EA */}
-          {tier && tier !== "FREE" && <RegisterEADialog onSuccess={fetchUpdate} />}
+          <RegisterEADialog onSuccess={fetchUpdate} />
 
           {/* Manual refresh */}
           <button

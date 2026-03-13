@@ -20,6 +20,7 @@ enum PlanTier {
   FREE
   PRO
   ELITE
+  INSTITUTIONAL
 }
 
 enum LadderLevel {

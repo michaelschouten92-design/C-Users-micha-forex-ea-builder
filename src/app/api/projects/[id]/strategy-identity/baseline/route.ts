@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
-import { ErrorCode, apiError } from "@/lib/error-codes";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,18 +13,6 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Backtest baseline requires Pro or Elite",
-        "Upgrade to Pro to access backtest baselines."
-      ),
-      { status: 403 }
-    );
   }
 
   const identity = await prisma.strategyIdentity.findUnique({

@@ -1,5 +1,12 @@
 import { prisma } from "./prisma";
-import { PLANS, type PlanTier, getEffectiveLimits } from "./plans";
+import {
+  PLANS,
+  type PlanTier,
+  getEffectiveLimits,
+  getMaxMonitoredAccounts,
+  getTierDisplayName,
+  TIER_DISPLAY_NAMES,
+} from "./plans";
 
 // ============================================
 // SUBSCRIPTION TIER CACHE (15 second TTL)
@@ -149,7 +156,90 @@ export async function getUserPlanLimits(userId: string) {
   return {
     tier, // Always reflects actual active tier (expired/cancelled → FREE)
     plan: plan.name,
+    displayName: getTierDisplayName(tier),
     limits,
     subscription: subscription ?? null,
+  };
+}
+
+// ============================================
+// MONITORED TRADING ACCOUNT ENFORCEMENT
+// ============================================
+
+/**
+ * Count active (non-deleted) TerminalConnections for a user.
+ * This is the billable unit — each TerminalConnection represents
+ * one monitored trading account (broker/MT5 account).
+ */
+export async function getMonitoredTradingAccountUsage(userId: string): Promise<number> {
+  return prisma.terminalConnection.count({
+    where: { userId, deletedAt: null },
+  });
+}
+
+/**
+ * Advisory pre-check: can the user add another monitored trading account?
+ * Uses cached tier (15s TTL). For authoritative checks at mutation points,
+ * use checkMonitoredAccountLimitTx() within a transaction.
+ */
+export async function canMonitorAdditionalTradingAccount(userId: string): Promise<{
+  allowed: boolean;
+  current: number;
+  max: number;
+  tier: PlanTier;
+  tierDisplayName: string;
+}> {
+  const [tier, current] = await Promise.all([
+    getCachedTier(userId),
+    getMonitoredTradingAccountUsage(userId),
+  ]);
+
+  const max = getMaxMonitoredAccounts(tier);
+
+  return {
+    allowed: current < max,
+    current,
+    max: max === Infinity ? -1 : max,
+    tier,
+    tierDisplayName: getTierDisplayName(tier),
+  };
+}
+
+/**
+ * Full plan usage summary for UI display.
+ * Includes tier info, account usage, and next tier suggestion.
+ */
+export async function getPlanUsageSummary(userId: string) {
+  const [tier, subscription, accountCount] = await Promise.all([
+    getCachedTier(userId),
+    prisma.subscription.findUnique({ where: { userId } }),
+    getMonitoredTradingAccountUsage(userId),
+  ]);
+
+  const max = getMaxMonitoredAccounts(tier);
+  const atLimit = max !== Infinity && accountCount >= max;
+
+  // Determine next upgrade tier
+  const tierOrder: PlanTier[] = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
+  const currentIndex = tierOrder.indexOf(tier);
+  const nextTier = currentIndex < tierOrder.length - 1 ? tierOrder[currentIndex + 1] : null;
+
+  return {
+    tier,
+    tierDisplayName: getTierDisplayName(tier),
+    monitoredAccounts: {
+      current: accountCount,
+      max: max === Infinity ? -1 : max,
+      atLimit,
+      unlimited: max === Infinity,
+    },
+    subscription: subscription ?? null,
+    upgrade: nextTier
+      ? {
+          tier: nextTier,
+          displayName: getTierDisplayName(nextTier),
+          maxAccounts: getMaxMonitoredAccounts(nextTier),
+        }
+      : null,
   };
 }

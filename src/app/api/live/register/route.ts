@@ -3,7 +3,6 @@ import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   checkRateLimit,
@@ -47,19 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Rate limit exceeded", details: formatRateLimitError(rateLimitResult) },
       { status: 429, headers: rateLimitHeaders }
-    );
-  }
-
-  // Plan check: PRO or ELITE only
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Upgrade required",
-        "Connecting external EAs requires a Pro or Elite plan."
-      ),
-      { status: 403, headers: rateLimitHeaders }
     );
   }
 

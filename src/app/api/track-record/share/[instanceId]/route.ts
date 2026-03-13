@@ -16,19 +16,6 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   const { instanceId } = await params;
 
-  // Check subscription tier (Pro+ only)
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-    select: { tier: true },
-  });
-
-  if (!subscription || subscription.tier === "FREE") {
-    return NextResponse.json(
-      { error: "Sharing track records requires a Pro or Elite subscription" },
-      { status: 403 }
-    );
-  }
-
   // Verify ownership
   const instance = await prisma.liveEAInstance.findFirst({
     where: { id: instanceId, userId: session.user.id, deletedAt: null },

@@ -49,51 +49,7 @@ export default async function LiveEADashboardPage({
 
   const { subscription } = data;
 
-  let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
-  if (tier !== "FREE") {
-    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-    if (!isActive || isExpired) {
-      tier = "FREE";
-    }
-  }
-
-  // FREE tier: institutional governance gating
-  if (tier === "FREE") {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="max-w-md text-center">
-          <div className="w-16 h-16 bg-[rgba(79,70,229,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-8 h-8 text-[#A78BFA]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Command Center</h1>
-          <p className="text-[#94A3B8] mb-2">
-            Lifecycle governance, execution authority, and structural deviation monitoring for live
-            algorithmic strategies.
-          </p>
-          <p className="text-[#64748B] text-sm mb-6">Available on Pro and Elite plans.</p>
-          <Link
-            href="/pricing"
-            className="inline-block bg-[#4F46E5] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6366F1] transition-all duration-200"
-          >
-            View Plans
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
 
   try {
     return renderDashboard(session, data, params, tier);
@@ -109,7 +65,7 @@ function renderDashboard(
   session: { user: { id: string; email?: string | null } },
   data: NonNullable<Awaited<ReturnType<typeof loadMonitorData>>>,
   params: { decision?: string; relink?: string },
-  tier: "FREE" | "PRO" | "ELITE"
+  tier: import("@/lib/plans").PlanTier
 ) {
   const { eaInstances, authority } = data;
 

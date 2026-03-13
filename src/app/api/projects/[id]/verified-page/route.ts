@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
+
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   computeLadderLevel,
@@ -30,18 +30,6 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Verified Strategy Page requires Pro or Elite",
-        "Upgrade to Pro to create a public Verified Strategy Page and share your verified track record."
-      ),
-      { status: 403 }
-    );
   }
 
   let body: unknown;
@@ -165,18 +153,6 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Verified Strategy Page requires Pro or Elite",
-        "Upgrade to Pro to access Verified Strategy Page settings."
-      ),
-      { status: 403 }
-    );
   }
 
   const identity = await prisma.strategyIdentity.findUnique({

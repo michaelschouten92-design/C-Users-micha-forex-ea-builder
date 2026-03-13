@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 
-type Tier = "FREE" | "PRO" | "ELITE";
+type Tier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
 
 interface UserDetail {
   id: string;
@@ -361,9 +361,10 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                     onChange={(e) => setSelectedTier(e.target.value as Tier)}
                     className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
                   >
-                    <option value="FREE">FREE</option>
-                    <option value="PRO">PRO</option>
-                    <option value="ELITE">ELITE</option>
+                    <option value="FREE">Baseline</option>
+                    <option value="PRO">Control</option>
+                    <option value="ELITE">Authority</option>
+                    <option value="INSTITUTIONAL">Institutional</option>
                   </select>
                   <button
                     onClick={handleTierChange}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
+
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { z } from "zod";
 import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
@@ -25,14 +25,6 @@ export async function GET(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Strategy lifecycle requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
   }
 
   const instance = await prisma.liveEAInstance.findFirst({
@@ -70,14 +62,6 @@ export async function POST(request: NextRequest, { params }: Props) {
 
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(ErrorCode.PLAN_REQUIRED, "Strategy lifecycle requires a Pro or Elite subscription"),
-      { status: 403 }
-    );
   }
 
   const body = await request.json().catch(() => null);

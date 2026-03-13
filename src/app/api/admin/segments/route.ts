@@ -10,7 +10,7 @@ import { checkContentType, safeReadJson } from "@/lib/validations";
 
 const segmentFiltersSchema = z
   .object({
-    tier: z.enum(["FREE", "PRO", "ELITE"]).optional(),
+    tier: z.enum(["FREE", "PRO", "ELITE", "INSTITUTIONAL"]).optional(),
   })
   .strict();
 

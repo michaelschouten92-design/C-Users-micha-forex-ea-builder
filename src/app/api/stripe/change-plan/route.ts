@@ -18,7 +18,7 @@ import {
 } from "@/lib/rate-limit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
 
-const tierOrder = { FREE: 0, PRO: 1, ELITE: 2 } as const;
+const tierOrder = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 } as const;
 
 export async function POST(request: NextRequest) {
   const session = await auth();

@@ -17,7 +17,7 @@ import {
 
 const bulkUpgradeSchema = z.object({
   emails: z.array(z.string().email()).min(1).max(500),
-  tier: z.enum(["FREE", "PRO", "ELITE"]),
+  tier: z.enum(["FREE", "PRO", "ELITE", "INSTITUTIONAL"]),
 });
 
 // POST /api/admin/users/bulk-upgrade - Bulk change tier for multiple users
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
           invalidateSubscriptionCache(user.id);
 
           // Audit the tier change (fire-and-forget)
-          const tierOrder = ["FREE", "PRO", "ELITE"];
+          const tierOrder = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
           const isUpgrade = tierOrder.indexOf(tier) > tierOrder.indexOf(previousTier);
           const auditFn = isUpgrade ? audit.subscriptionUpgrade : audit.subscriptionDowngrade;
           auditFn(user.id, previousTier, tier).catch((err) => {
@@ -104,7 +104,10 @@ export async function POST(request: Request) {
           const previousStatus = user.subscription?.status ?? "active";
           logSubscriptionTransition(
             user.id,
-            { status: previousStatus, tier: previousTier as "FREE" | "PRO" | "ELITE" },
+            {
+              status: previousStatus,
+              tier: previousTier as "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL",
+            },
             { status: "active", tier },
             isUpgrade ? "admin_bulk_upgrade" : "admin_bulk_downgrade"
           );

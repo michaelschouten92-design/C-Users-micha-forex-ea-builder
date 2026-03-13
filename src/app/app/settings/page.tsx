@@ -37,14 +37,7 @@ export default async function SettingsPage() {
     }),
   ]);
 
-  let tier: "FREE" | "PRO" | "ELITE" = (subscription?.tier as "FREE" | "PRO" | "ELITE") ?? "FREE";
-  if (tier !== "FREE") {
-    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-    const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < new Date();
-    if (!isActive || isExpired) {
-      tier = "FREE";
-    }
-  }
+  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
 
   return (
     <div className="min-h-screen">
@@ -62,9 +55,8 @@ export default async function SettingsPage() {
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
           scheduledDowngradeTier={
-            subscription?.scheduledDowngradeTier === "PRO" ||
-            subscription?.scheduledDowngradeTier === "ELITE"
-              ? subscription.scheduledDowngradeTier
+            subscription?.scheduledDowngradeTier && subscription.scheduledDowngradeTier !== "FREE"
+              ? (subscription.scheduledDowngradeTier as string)
               : null
           }
         />

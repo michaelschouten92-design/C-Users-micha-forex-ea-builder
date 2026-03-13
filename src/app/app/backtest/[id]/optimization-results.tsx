@@ -44,7 +44,7 @@ export function OptimizationResults({
   const [error, setError] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
-  const isElite = tier === "ELITE";
+  const hasAccess = true; // All tiers have access to all features
 
   async function handleOptimize() {
     setLoading(true);
@@ -67,8 +67,8 @@ export function OptimizationResults({
     }
   }
 
-  // Upsell for non-Elite users
-  if (!isElite && !optimizations) {
+  // Show CTA when no optimizations exist yet
+  if (!hasAccess && !optimizations) {
     return (
       <div className="bg-gradient-to-r from-[rgba(167,139,250,0.1)] to-[rgba(79,70,229,0.1)] border border-[rgba(167,139,250,0.25)] rounded-xl p-6">
         <div className="flex items-center gap-3">

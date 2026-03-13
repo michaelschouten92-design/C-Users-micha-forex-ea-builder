@@ -9,10 +9,10 @@ import { PLANS } from "@/lib/plans";
 import { checkContentType, safeReadJson } from "@/lib/validations";
 import type { PlanTier } from "@prisma/client";
 
-const TIERS: PlanTier[] = ["FREE", "PRO", "ELITE"];
+const TIERS: PlanTier[] = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
 
 const planLimitSchema = z.object({
-  tier: z.enum(["FREE", "PRO", "ELITE"]),
+  tier: z.enum(["FREE", "PRO", "ELITE", "INSTITUTIONAL"]),
   maxProjects: z.number().int().min(0).max(999999),
   maxExportsPerMonth: z.number().int().min(0).max(999999),
   canExportMQL5: z.boolean(),

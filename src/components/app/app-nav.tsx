@@ -3,13 +3,14 @@ import { signOut } from "@/lib/auth";
 import { MobileNavMenu } from "@/app/app/components/mobile-nav-menu";
 import { NotificationBell } from "./notification-bell";
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
+import { TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 
 export type NavItem = "build" | "evaluate" | "monitor" | "risk" | "settings";
 
 interface AppNavProps {
   activeItem?: NavItem;
   session: { user: { email?: string | null } };
-  tier: "FREE" | "PRO" | "ELITE";
+  tier: PlanTier;
   firstProjectId: string | null;
   monitorStatus?: "healthy" | "warning" | "critical";
 }
@@ -53,14 +54,16 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
             <span className="text-sm text-[#A1A1AA] hidden md:inline">{session.user.email}</span>
             <span
               className={`text-xs px-3 py-1 rounded-full font-medium border ${
-                tier === "ELITE"
-                  ? "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50"
-                  : tier === "PRO"
-                    ? "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50"
-                    : "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]"
+                tier === "INSTITUTIONAL"
+                  ? "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/50"
+                  : tier === "ELITE"
+                    ? "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50"
+                    : tier === "PRO"
+                      ? "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50"
+                      : "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]"
               }`}
             >
-              {tier}
+              {TIER_DISPLAY_NAMES[tier]}
             </span>
             {NAV_LINKS.map((link) => (
               <Link

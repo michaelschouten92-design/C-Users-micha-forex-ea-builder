@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { getCachedTier } from "@/lib/plan-limits";
-import { ErrorCode, apiError } from "@/lib/error-codes";
+
 import { generateProofBundle } from "@/lib/track-record/proof-bundle";
 import {
   exportRateLimiter,
@@ -28,18 +27,6 @@ export async function GET(request: NextRequest, { params }: Props) {
     return NextResponse.json(
       { error: formatRateLimitError(rl) },
       { status: 429, headers: createRateLimitHeaders(rl) }
-    );
-  }
-
-  const tier = await getCachedTier(session.user.id);
-  if (tier === "FREE") {
-    return NextResponse.json(
-      apiError(
-        ErrorCode.PLAN_REQUIRED,
-        "Verified Track Record requires Pro or Elite",
-        "Upgrade to Pro to download proof bundles and verified track record reports."
-      ),
-      { status: 403 }
     );
   }
 

@@ -26,6 +26,8 @@ type SortOption = "updated" | "created" | "name";
 const TIER_COLORS: Record<string, string> = {
   FREE: "bg-[rgba(16,185,129,0.15)] text-[#10B981] border-[rgba(16,185,129,0.3)]",
   PRO: "bg-[rgba(129,140,248,0.15)] text-[#818CF8] border-[rgba(129,140,248,0.3)]",
+  ELITE: "bg-[rgba(129,140,248,0.15)] text-[#818CF8] border-[rgba(129,140,248,0.3)]",
+  INSTITUTIONAL: "bg-[rgba(245,158,11,0.15)] text-[#F59E0B] border-[rgba(245,158,11,0.3)]",
 };
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = {
