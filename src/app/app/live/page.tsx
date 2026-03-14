@@ -8,8 +8,6 @@ import { LiveDashboardClient } from "./live-dashboard-client";
 import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
-import { ManualHaltStatus } from "./components/operator-hold-controls";
-import { EdgeDriftPanel } from "./components/edge-drift-panel";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { computeLiveWinrateFromTrades, EDGE_DRIFT_TRADES_N } from "./edge-drift-helpers";
 import { computeEdgeDrift } from "@/domain/strategy/edge-drift";
@@ -135,55 +133,64 @@ function renderDashboard(
             ══════════════════════════════════════════════════════ */}
         <ActivationPanel />
 
-        {/* ══════════════════════════════════════════════════════
-            CONTROL — Governance card grid
-            ══════════════════════════════════════════════════════ */}
-        {eaInstances.length > 0 && (
-          <section className="mt-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ExecutionAuthorityCard
-                authority={authority}
-                instances={eaInstances.map((ea) => ({
-                  eaName: ea.eaName,
-                  symbol: ea.symbol,
-                  timeframe: ea.timeframe,
-                }))}
-              />
-              <ManualHaltStatus
-                instances={eaInstances.map((ea) => ({
-                  id: ea.id,
-                  eaName: ea.eaName,
-                  symbol: ea.symbol,
-                  operatorHold: ea.operatorHold,
-                }))}
-              />
-              <EdgeDriftPanel
-                instances={eaInstances.map((ea) => ({
-                  id: ea.id,
-                  eaName: ea.eaName,
-                  symbol: ea.symbol,
-                  trades: ea.trades.map((t) => ({
-                    profit: t.profit,
-                    closeTime: t.closeTime?.toISOString() ?? null,
-                  })),
-                  baselineWinrate: ea.strategyVersion?.backtestBaseline?.winRate ?? null,
-                }))}
-              />
-            </div>
-          </section>
-        )}
+        {/* ── Governance Alerts (compact — only shown when action needed) ── */}
+        {eaInstances.length > 0 &&
+          (() => {
+            const action = authority?.action ?? "PAUSE";
+            const isSetupRequired = !authority;
+            const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
+            const halted = eaInstances.filter((ea) => ea.operatorHold !== "NONE");
 
-        {/* ══════════════════════════════════════════════════════
-            OBSERVABILITY — Diagnostics (secondary)
-            ══════════════════════════════════════════════════════ */}
-        <section>
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Observability</h2>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Diagnostics and structural signals used to inform governance — not to override it.
-            </p>
-          </div>
+            const showAuthority = action !== "RUN";
+            const showHalted = halted.length > 0;
 
+            if (!showAuthority && !showHalted) return null;
+
+            const explanation = isSetupRequired
+              ? "Monitoring is paused until required baselines are linked."
+              : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
+
+            return (
+              <section className="mt-4 space-y-2">
+                {showAuthority && (
+                  <div
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg"
+                    style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: colors.dot }}
+                    />
+                    <span className="text-sm font-bold" style={{ color: colors.text }}>
+                      {action}
+                    </span>
+                    {isSetupRequired && (
+                      <span className="text-xs font-medium text-[#F59E0B]">Setup required</span>
+                    )}
+                    <span className="text-xs text-[#94A3B8]">{explanation}</span>
+                  </div>
+                )}
+                {showHalted && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#EF4444]" />
+                    <span className="text-sm font-medium text-[#EF4444]">
+                      {halted.length} halted
+                    </span>
+                    <span className="text-xs text-[#94A3B8]">
+                      {halted
+                        .slice(0, 3)
+                        .map((h) => h.eaName || h.symbol || h.id.slice(0, 8))
+                        .join(", ")}
+                      {halted.length > 3 && ` +${halted.length - 3} more`}
+                    </span>
+                  </div>
+                )}
+              </section>
+            );
+          })()}
+
+        {/* ── Strategies, Terminals, Journal ── */}
+        <section className="mt-6">
           <MonitorTabs>
             <LiveDashboardClient
               initialData={serializedInstances}
@@ -298,82 +305,6 @@ const AUTHORITY_COLORS: Record<string, { bg: string; border: string; text: strin
       dot: "#EF4444",
     },
   };
-
-function ExecutionAuthorityCard({
-  authority,
-  instances,
-}: {
-  authority: AuthorityDecision | null;
-  instances: { eaName: string; symbol: string | null; timeframe: string | null }[];
-}) {
-  // Null authority = no heartbeat decisions recorded yet → setup state, not a system failure.
-  const isSetupRequired = !authority;
-
-  const action = authority?.action ?? "PAUSE";
-  const reasonCode = authority?.reasonCode ?? "COMPUTATION_FAILED";
-  const explanation = isSetupRequired
-    ? "Monitoring is paused until required baselines are linked."
-    : explainReasonCode(reasonCode);
-  const decidedAt = authority?.decidedAt ?? null;
-  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-
-  return (
-    <div
-      className="rounded-xl p-4 h-full"
-      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-medium tracking-wider uppercase text-[#94A3B8]">
-          Execution Authority
-        </h3>
-        {decidedAt && (
-          <span className="text-[10px] text-[#64748B] font-mono">
-            {new Date(decidedAt).toLocaleString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: false,
-            })}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 mb-2">
-        <span
-          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: colors.dot }}
-        />
-        <span className="text-xl font-bold" style={{ color: colors.text }}>
-          {action}
-        </span>
-        {isSetupRequired ? (
-          <span className="ml-1 text-sm font-medium text-[#F59E0B]">— Setup required</span>
-        ) : (
-          <span className="ml-2 inline-block text-[11px] font-mono text-[#64748B] px-2 py-0.5 rounded bg-[rgba(79,70,229,0.08)] border border-[rgba(79,70,229,0.15)]">
-            {reasonCode}
-          </span>
-        )}
-      </div>
-
-      <p className="text-xs text-[#CBD5E1] leading-relaxed">{explanation}</p>
-
-      {isSetupRequired && instances.length > 0 && (
-        <div className="mt-2 space-y-0.5">
-          {instances.slice(0, 2).map((inst, i) => (
-            <p key={i} className="text-[11px] text-[#94A3B8] font-mono truncate">
-              {[inst.eaName, inst.symbol, inst.timeframe].filter(Boolean).join(" · ")}
-            </p>
-          ))}
-          {instances.length > 2 && (
-            <p className="text-[10px] text-[#64748B]">+{instances.length - 2} more</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function SystemStatusStrip({
   instances,
