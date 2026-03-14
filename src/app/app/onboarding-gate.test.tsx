@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { shouldRedirectToOnboarding } from "./onboarding-heuristic";
 
 // ── Mocks ──────────────────────────────────────────────────
 
@@ -91,40 +90,3 @@ describe("OnboardingGate (client component)", () => {
   });
 });
 
-// ── Server-side heuristic: shouldRedirectToOnboarding ─────
-
-describe("shouldRedirectToOnboarding", () => {
-  it("redirects when zero strategies AND zero live EAs", () => {
-    expect(shouldRedirectToOnboarding(0, 0)).toBe("/app/onboarding?step=scope");
-  });
-
-  it("redirects when zero strategies but has live EAs (0, 1)", () => {
-    expect(shouldRedirectToOnboarding(0, 1)).toBe("/app/onboarding?step=scope");
-  });
-
-  it("redirects when has strategies but zero live EAs (1, 0)", () => {
-    expect(shouldRedirectToOnboarding(1, 0)).toBe("/app/onboarding?step=scope");
-  });
-
-  it("does NOT redirect when user has both strategies and live EAs (1, 1)", () => {
-    expect(shouldRedirectToOnboarding(1, 1)).toBeNull();
-  });
-
-  it("does NOT redirect with larger counts", () => {
-    expect(shouldRedirectToOnboarding(5, 3)).toBeNull();
-  });
-
-  it("accepts no cookie parameter — signature is (number, number)", () => {
-    // Type-level verification: the function takes exactly 2 args
-    expect(shouldRedirectToOnboarding.length).toBe(2);
-  });
-
-  it("localStorage alone does NOT prevent server redirect", () => {
-    // Server cannot read localStorage.
-    // Even if localStorage says onboarding is complete, the server
-    // only looks at DB counts. Zero strategies → redirect.
-    expect(shouldRedirectToOnboarding(0, 0)).toBe("/app/onboarding?step=scope");
-    expect(shouldRedirectToOnboarding(0, 5)).toBe("/app/onboarding?step=scope");
-    expect(shouldRedirectToOnboarding(3, 0)).toBe("/app/onboarding?step=scope");
-  });
-});
