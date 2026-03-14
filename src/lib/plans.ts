@@ -50,13 +50,13 @@ function getPriceConfigWithIds() {
     pro: {
       monthly: {
         ...DISPLAY_PRICES.pro.monthly,
-        priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID!.trim(),
+        priceId: env.STRIPE_PRO_MONTHLY_PRICE_ID?.trim() ?? "",
       },
     },
     elite: {
       monthly: {
         ...DISPLAY_PRICES.elite.monthly,
-        priceId: env.STRIPE_ELITE_MONTHLY_PRICE_ID!.trim(),
+        priceId: env.STRIPE_ELITE_MONTHLY_PRICE_ID?.trim() ?? "",
       },
     },
     institutional: {
