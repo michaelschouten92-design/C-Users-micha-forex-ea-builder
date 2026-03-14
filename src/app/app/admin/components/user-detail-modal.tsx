@@ -195,30 +195,11 @@ function ActionsSection({
 }) {
   const router = useRouter();
   const { update: updateSession } = useSession();
-  const [selectedTier, setSelectedTier] = useState<Tier>(
-    (user.subscription?.tier || "FREE") as Tier
-  );
-  const [upgrading, setUpgrading] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspending, setSuspending] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [extendDays, setExtendDays] = useState(30);
   const [extending, setExtending] = useState(false);
-
-  async function handleTierChange() {
-    if (upgrading) return;
-    setUpgrading(true);
-    try {
-      await apiClient.post("/api/admin/users/upgrade", { email: user.email, tier: selectedTier });
-      showSuccess("Tier updated", `${user.email} is now ${TIER_LABELS[selectedTier]}`);
-      onRefresh();
-      await onRefetchUser();
-    } catch (err) {
-      showError("Failed", err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setUpgrading(false);
-    }
-  }
 
   async function handleVerify() {
     try {
@@ -312,25 +293,6 @@ function ActionsSection({
     <section>
       <SectionHeader>Actions</SectionHeader>
       <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedTier}
-            onChange={(e) => setSelectedTier(e.target.value as Tier)}
-            className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
-          >
-            <option value="FREE">Baseline</option>
-            <option value="PRO">Control</option>
-            <option value="ELITE">Authority</option>
-            <option value="INSTITUTIONAL">Institutional</option>
-          </select>
-          <button
-            onClick={handleTierChange}
-            disabled={upgrading}
-            className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
-          >
-            {upgrading ? "Updating..." : "Change Tier"}
-          </button>
-        </div>
         {!user.emailVerified && (
           <button
             onClick={handleVerify}

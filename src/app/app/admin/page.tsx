@@ -14,7 +14,6 @@ import { LiveEAsTab } from "./components/live-eas-tab";
 import { PlanLimitsTab } from "./components/plan-limits-tab";
 import { SystemHealthTab } from "./components/system-health-tab";
 import { UserDetailModal } from "./components/user-detail-modal";
-import { HealthRadar } from "./components/health-radar";
 import { StrategyDistributionPanel } from "./components/strategy-distribution-panel";
 import { AttentionQueue } from "./components/attention-queue";
 import { IncidentsTab } from "./components/incidents-tab";
@@ -372,9 +371,6 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-
-        {/* Health Radar */}
-        <HealthRadar />
 
         {/* Tab navigation */}
         <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
