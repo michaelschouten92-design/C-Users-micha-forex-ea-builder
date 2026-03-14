@@ -466,9 +466,9 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${TIER_BADGE_COLORS[user.subscription.tier] ?? TIER_COLORS.FREE}`}
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${TIER_BADGE_COLORS[user.subscription.tier as Tier] ?? TIER_BADGE_COLORS.FREE}`}
                     >
-                      {TIER_LABELS[user.subscription.tier] ?? user.subscription.tier}
+                      {TIER_LABELS[user.subscription.tier as Tier] ?? user.subscription.tier}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[#A1A1AA]">{user.subscription.status}</td>
