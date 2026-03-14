@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+import { type Tier, TIER_LABELS } from "../admin-constants";
 
-type Tier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
+// ── Types ──────────────────────────────────────────────
 
 interface UserDetail {
   id: string;
@@ -63,6 +64,8 @@ interface UserDetail {
   }[];
 }
 
+// ── Constants ──────────────────────────────────────────
+
 const STATUS_BADGE: Record<string, string> = {
   DONE: "text-emerald-400",
   FAILED: "text-red-400",
@@ -76,61 +79,140 @@ const EA_STATUS_DOT: Record<string, string> = {
   ERROR: "#EF4444",
 };
 
-interface UserDetailModalProps {
-  userId: string;
-  onClose: () => void;
-  onRefresh: () => void;
+// ── Section Components ─────────────────────────────────
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
+      {children}
+    </h3>
+  );
 }
 
-export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalProps) {
+function AccountSection({ user }: { user: UserDetail }) {
+  return (
+    <section>
+      <SectionHeader>Account</SectionHeader>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <span className="text-[#71717A]">Email:</span>{" "}
+          <span className="text-white">{user.email}</span>
+        </div>
+        <div>
+          <span className="text-[#71717A]">Verified:</span>{" "}
+          <span className={user.emailVerified ? "text-emerald-400" : "text-yellow-400"}>
+            {user.emailVerified ? "Yes" : "No"}
+          </span>
+        </div>
+        <div>
+          <span className="text-[#71717A]">Role:</span>{" "}
+          <span className="text-white">{user.role}</span>
+        </div>
+        <div>
+          <span className="text-[#71717A]">Joined:</span>{" "}
+          <span className="text-white">{new Date(user.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div>
+          <span className="text-[#71717A]">Last Login:</span>{" "}
+          <span className="text-white">
+            {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
+          </span>
+        </div>
+        {user.referralCode && (
+          <div>
+            <span className="text-[#71717A]">Referral Code:</span>{" "}
+            <span className="text-[#818CF8] font-mono">{user.referralCode}</span>
+          </div>
+        )}
+        {user.referredBy && (
+          <div>
+            <span className="text-[#71717A]">Referred By:</span>{" "}
+            <span className="text-[#818CF8] font-mono">{user.referredBy}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SubscriptionSection({ user }: { user: UserDetail }) {
+  return (
+    <section>
+      <SectionHeader>Subscription</SectionHeader>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <span className="text-[#71717A]">Tier:</span>{" "}
+          <span className="text-white">
+            {TIER_LABELS[(user.subscription?.tier || "FREE") as Tier]}
+          </span>
+        </div>
+        <div>
+          <span className="text-[#71717A]">Status:</span>{" "}
+          <span className="text-white">{user.subscription?.status || "active"}</span>
+        </div>
+        {user.subscription?.stripeCustomerId && (
+          <div className="col-span-2">
+            <span className="text-[#71717A]">Stripe:</span>{" "}
+            <a
+              href={`https://dashboard.stripe.com/customers/${user.subscription.stripeCustomerId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#818CF8] hover:text-[#818CF8]/80 text-xs font-mono transition-colors"
+            >
+              {user.subscription.stripeCustomerId}
+            </a>
+          </div>
+        )}
+        {user.subscription?.currentPeriodStart && (
+          <div>
+            <span className="text-[#71717A]">Period Start:</span>{" "}
+            <span className="text-white">
+              {new Date(user.subscription.currentPeriodStart).toLocaleDateString()}
+            </span>
+          </div>
+        )}
+        {user.subscription?.currentPeriodEnd && (
+          <div>
+            <span className="text-[#71717A]">Period End:</span>{" "}
+            <span className="text-white">
+              {new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ActionsSection({
+  user,
+  onRefresh,
+  onRefetchUser,
+}: {
+  user: UserDetail;
+  onRefresh: () => void;
+  onRefetchUser: () => Promise<void>;
+}) {
   const router = useRouter();
   const { update: updateSession } = useSession();
-  const [user, setUser] = useState<UserDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<Tier>("FREE");
+  const [selectedTier, setSelectedTier] = useState<Tier>(
+    (user.subscription?.tier || "FREE") as Tier
+  );
   const [upgrading, setUpgrading] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [savingNotes, setSavingNotes] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspending, setSuspending] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [extendDays, setExtendDays] = useState(30);
   const [extending, setExtending] = useState(false);
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
-        setUser(res);
-        setSelectedTier((res.subscription?.tier || "FREE") as Tier);
-        setNotes(res.adminNotes || "");
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, [userId]);
-
   async function handleTierChange() {
-    if (!user || upgrading) return;
+    if (upgrading) return;
     setUpgrading(true);
     try {
       await apiClient.post("/api/admin/users/upgrade", { email: user.email, tier: selectedTier });
-      showSuccess("Tier updated", `${user.email} is now ${selectedTier}`);
+      showSuccess("Tier updated", `${user.email} is now ${TIER_LABELS[selectedTier]}`);
       onRefresh();
-      // Refetch
-      const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
-      setUser(res);
+      await onRefetchUser();
     } catch (err) {
       showError("Failed", err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -139,20 +221,18 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   }
 
   async function handleVerify() {
-    if (!user) return;
     try {
       await apiClient.post("/api/admin/users/verify-email", { email: user.email });
       showSuccess("Verified", `${user.email} verified`);
       onRefresh();
-      const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
-      setUser(res);
+      await onRefetchUser();
     } catch (err) {
       showError("Failed", err instanceof Error ? err.message : "Unknown error");
     }
   }
 
   async function handleSuspend() {
-    if (!user || suspending) return;
+    if (suspending) return;
     setSuspending(true);
     try {
       if (user.suspended) {
@@ -171,8 +251,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
         showSuccess("Suspended", `${user.email} has been suspended`);
       }
       onRefresh();
-      const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
-      setUser(res);
+      await onRefetchUser();
       setSuspendReason("");
     } catch (err) {
       showError("Failed", err instanceof Error ? err.message : "Unknown error");
@@ -182,7 +261,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   }
 
   async function handlePasswordReset() {
-    if (!user || resettingPassword) return;
+    if (resettingPassword) return;
     setResettingPassword(true);
     try {
       await apiClient.post("/api/admin/users/reset-password", { email: user.email });
@@ -194,30 +273,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
     }
   }
 
-  async function handleExtendSubscription() {
-    if (!user || extending) return;
-    setExtending(true);
-    try {
-      const res = await apiClient.post<{ newEnd: string }>("/api/admin/users/extend-subscription", {
-        email: user.email,
-        days: extendDays,
-      });
-      showSuccess(
-        "Extended",
-        `Subscription extended to ${new Date(res.newEnd).toLocaleDateString()}`
-      );
-      onRefresh();
-      const detail = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
-      setUser(detail);
-    } catch (err) {
-      showError("Failed", err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setExtending(false);
-    }
-  }
-
   async function handleImpersonate() {
-    if (!user) return;
     try {
       const res = await apiClient.post<{ impersonate: { userId: string; email: string } }>(
         "/api/admin/users/impersonate",
@@ -230,6 +286,393 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
       showError("Failed", err instanceof Error ? err.message : "Unknown error");
     }
   }
+
+  async function handleExtendSubscription() {
+    if (extending) return;
+    setExtending(true);
+    try {
+      const res = await apiClient.post<{ newEnd: string }>("/api/admin/users/extend-subscription", {
+        email: user.email,
+        days: extendDays,
+      });
+      showSuccess(
+        "Extended",
+        `Subscription extended to ${new Date(res.newEnd).toLocaleDateString()}`
+      );
+      onRefresh();
+      await onRefetchUser();
+    } catch (err) {
+      showError("Failed", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setExtending(false);
+    }
+  }
+
+  return (
+    <section>
+      <SectionHeader>Actions</SectionHeader>
+      <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedTier}
+            onChange={(e) => setSelectedTier(e.target.value as Tier)}
+            className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
+          >
+            <option value="FREE">Baseline</option>
+            <option value="PRO">Control</option>
+            <option value="ELITE">Authority</option>
+            <option value="INSTITUTIONAL">Institutional</option>
+          </select>
+          <button
+            onClick={handleTierChange}
+            disabled={upgrading}
+            className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+          >
+            {upgrading ? "Updating..." : "Change Tier"}
+          </button>
+        </div>
+        {!user.emailVerified && (
+          <button
+            onClick={handleVerify}
+            className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded transition-colors"
+          >
+            Verify Email
+          </button>
+        )}
+        <button
+          onClick={handleImpersonate}
+          className="text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded transition-colors"
+        >
+          Impersonate
+        </button>
+        <button
+          onClick={handlePasswordReset}
+          disabled={resettingPassword}
+          className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+        >
+          {resettingPassword ? "Sending..." : "Send Password Reset"}
+        </button>
+      </div>
+
+      {/* Suspend/Unsuspend */}
+      <div className="mt-3 flex items-center gap-2">
+        {!user.suspended ? (
+          <>
+            <input
+              type="text"
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              placeholder="Suspension reason..."
+              className="flex-1 bg-[#09090B] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-red-500"
+            />
+            <button
+              onClick={handleSuspend}
+              disabled={suspending}
+              className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+            >
+              {suspending ? "Suspending..." : "Suspend User"}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleSuspend}
+            disabled={suspending}
+            className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+          >
+            {suspending ? "Unsuspending..." : "Unsuspend User"}
+          </button>
+        )}
+      </div>
+      {user.suspended && user.suspendedReason && (
+        <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-xs">
+          <span className="text-red-400 font-medium">Suspended:</span>{" "}
+          <span className="text-white">{user.suspendedReason}</span>
+          {user.suspendedAt && (
+            <span className="text-[#71717A] ml-2">
+              ({new Date(user.suspendedAt).toLocaleString()})
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Extend Subscription */}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="text-xs text-[#A1A1AA]">Extend subscription by</span>
+        <input
+          type="number"
+          min={1}
+          max={365}
+          value={extendDays}
+          onChange={(e) => setExtendDays(Number(e.target.value))}
+          className="w-16 bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#6366F1]"
+        />
+        <span className="text-xs text-[#A1A1AA]">days</span>
+        <button
+          onClick={handleExtendSubscription}
+          disabled={extending}
+          className="text-xs text-[#818CF8] hover:text-[#818CF8]/80 border border-[#818CF8]/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+        >
+          {extending ? "Extending..." : "Extend"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function NotesSection({ user }: { user: UserDetail }) {
+  const [notes, setNotes] = useState(user.adminNotes || "");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  return (
+    <section>
+      <SectionHeader>Admin Notes</SectionHeader>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Add private notes about this user..."
+        rows={3}
+        className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] transition-colors resize-y"
+      />
+      <button
+        onClick={async () => {
+          setSavingNotes(true);
+          try {
+            await apiClient.patch(`/api/admin/users/${user.id}`, { adminNotes: notes });
+            showSuccess("Saved", "Notes updated");
+          } catch (err) {
+            showError("Failed", err instanceof Error ? err.message : "Unknown error");
+          } finally {
+            setSavingNotes(false);
+          }
+        }}
+        disabled={savingNotes}
+        className="mt-2 bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
+      >
+        {savingNotes ? "Saving..." : "Save Notes"}
+      </button>
+    </section>
+  );
+}
+
+function ProjectsSection({ projects }: { projects: UserDetail["projects"] }) {
+  return (
+    <section>
+      <SectionHeader>Projects ({projects.length})</SectionHeader>
+      {projects.length === 0 ? (
+        <div className="text-[#71717A] text-sm">No projects</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Versions</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Exports</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((p) => (
+                <tr key={p.id} className="border-b border-[rgba(255,255,255,0.06)]">
+                  <td className="px-3 py-2 text-white">{p.name}</td>
+                  <td className="px-3 py-2 text-right text-[#FAFAFA]">{p._count.versions}</td>
+                  <td className="px-3 py-2 text-right text-[#FAFAFA]">{p._count.exports}</td>
+                  <td className="px-3 py-2 text-[#A1A1AA]">
+                    {new Date(p.updatedAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ExportsSection({ exports }: { exports: UserDetail["exports"] }) {
+  return (
+    <section>
+      <SectionHeader>Recent Exports ({exports.length})</SectionHeader>
+      {exports.length === 0 ? (
+        <div className="text-[#71717A] text-sm">No exports</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Project</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Type</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exports.map((exp) => (
+                <tr key={exp.id} className="border-b border-[rgba(255,255,255,0.06)]">
+                  <td className="px-3 py-2 text-[#A1A1AA]">
+                    {new Date(exp.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-3 py-2 text-white">{exp.project.name}</td>
+                  <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">{exp.exportType}</td>
+                  <td className="px-3 py-2">
+                    <span className={STATUS_BADGE[exp.status] || "text-[#A1A1AA]"}>
+                      {exp.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function LiveStrategiesSection({ liveEAs }: { liveEAs: UserDetail["liveEAs"] }) {
+  return (
+    <section>
+      <SectionHeader>Live Strategies ({liveEAs?.length ?? 0})</SectionHeader>
+      {!liveEAs || liveEAs.length === 0 ? (
+        <div className="text-[#71717A] text-sm">No live strategies</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Symbol</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Health</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Strategy</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Lifecycle</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Trades</th>
+                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Profit</th>
+                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Heartbeat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liveEAs.map((ea) => {
+                const health = ea.healthSnapshots?.[0];
+                return (
+                  <tr key={ea.id} className="border-b border-[rgba(255,255,255,0.06)]">
+                    <td className="px-3 py-2 text-white">{ea.eaName}</td>
+                    <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">
+                      {ea.symbol || "-"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: EA_STATUS_DOT[ea.status] || "#71717A" }}
+                        />
+                        <span className="text-[#FAFAFA] text-xs">{ea.status}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {health ? (
+                        <span
+                          className={
+                            health.status === "HEALTHY"
+                              ? "text-emerald-400"
+                              : health.status === "WARNING"
+                                ? "text-yellow-400"
+                                : health.status === "DEGRADED"
+                                  ? "text-red-400"
+                                  : "text-[#A1A1AA]"
+                          }
+                        >
+                          {health.overallScore.toFixed(0)}
+                        </span>
+                      ) : (
+                        <span className="text-[#71717A]">-</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-[#FAFAFA] text-xs">{ea.strategyStatus}</td>
+                    <td className="px-3 py-2 text-[#FAFAFA] text-xs">{ea.lifecyclePhase}</td>
+                    <td className="px-3 py-2 text-right text-[#FAFAFA]">{ea.totalTrades}</td>
+                    <td className="px-3 py-2 text-right">
+                      <span className={ea.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"}>
+                        {ea.totalProfit >= 0 ? "+" : ""}
+                        {ea.totalProfit.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-[#A1A1AA] text-xs">
+                      {ea.lastHeartbeat ? new Date(ea.lastHeartbeat).toLocaleString() : "Never"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ActivityLogSection({ logs }: { logs: UserDetail["auditLogs"] }) {
+  return (
+    <section>
+      <SectionHeader>Activity Log ({logs.length})</SectionHeader>
+      {logs.length === 0 ? (
+        <div className="text-[#71717A] text-sm">No activity</div>
+      ) : (
+        <div className="space-y-1 max-h-60 overflow-y-auto">
+          {logs.map((log) => (
+            <div
+              key={log.id}
+              className="flex items-center gap-3 text-xs py-1.5 border-b border-[rgba(255,255,255,0.06)]"
+            >
+              <span className="text-[#71717A] whitespace-nowrap">
+                {new Date(log.createdAt).toLocaleString()}
+              </span>
+              <span className="text-[#818CF8] font-medium">{log.eventType}</span>
+              {log.resourceType && <span className="text-[#A1A1AA]">{log.resourceType}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Main Modal ─────────────────────────────────────────
+
+interface UserDetailModalProps {
+  userId: string;
+  onClose: () => void;
+  onRefresh: () => void;
+}
+
+export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalProps) {
+  const [user, setUser] = useState<UserDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  async function fetchUser() {
+    try {
+      const res = await apiClient.get<UserDetail>(`/api/admin/users/${userId}`);
+      setUser(res);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -256,447 +699,14 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
           <div className="p-6 text-center text-red-400">User not found</div>
         ) : (
           <div className="p-6 space-y-6">
-            {/* Account */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Account
-              </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-[#71717A]">Email:</span>{" "}
-                  <span className="text-white">{user.email}</span>
-                </div>
-                <div>
-                  <span className="text-[#71717A]">Verified:</span>{" "}
-                  <span className={user.emailVerified ? "text-emerald-400" : "text-yellow-400"}>
-                    {user.emailVerified ? "Yes" : "No"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[#71717A]">Role:</span>{" "}
-                  <span className="text-white">{user.role}</span>
-                </div>
-                <div>
-                  <span className="text-[#71717A]">Joined:</span>{" "}
-                  <span className="text-white">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[#71717A]">Last Login:</span>{" "}
-                  <span className="text-white">
-                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
-                  </span>
-                </div>
-                {user.referralCode && (
-                  <div>
-                    <span className="text-[#71717A]">Referral Code:</span>{" "}
-                    <span className="text-[#818CF8] font-mono">{user.referralCode}</span>
-                  </div>
-                )}
-                {user.referredBy && (
-                  <div>
-                    <span className="text-[#71717A]">Referred By:</span>{" "}
-                    <span className="text-[#818CF8] font-mono">{user.referredBy}</span>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Subscription */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Subscription
-              </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-[#71717A]">Tier:</span>{" "}
-                  <span className="text-white">{user.subscription?.tier || "FREE"}</span>
-                </div>
-                <div>
-                  <span className="text-[#71717A]">Status:</span>{" "}
-                  <span className="text-white">{user.subscription?.status || "active"}</span>
-                </div>
-                {user.subscription?.stripeCustomerId && (
-                  <div className="col-span-2">
-                    <span className="text-[#71717A]">Stripe:</span>{" "}
-                    <a
-                      href={`https://dashboard.stripe.com/customers/${user.subscription.stripeCustomerId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#818CF8] hover:text-[#818CF8]/80 text-xs font-mono transition-colors"
-                    >
-                      {user.subscription.stripeCustomerId}
-                    </a>
-                  </div>
-                )}
-                {user.subscription?.currentPeriodStart && (
-                  <div>
-                    <span className="text-[#71717A]">Period Start:</span>{" "}
-                    <span className="text-white">
-                      {new Date(user.subscription.currentPeriodStart).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-                {user.subscription?.currentPeriodEnd && (
-                  <div>
-                    <span className="text-[#71717A]">Period End:</span>{" "}
-                    <span className="text-white">
-                      {new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Actions */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Actions
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedTier}
-                    onChange={(e) => setSelectedTier(e.target.value as Tier)}
-                    className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
-                  >
-                    <option value="FREE">Baseline</option>
-                    <option value="PRO">Control</option>
-                    <option value="ELITE">Authority</option>
-                    <option value="INSTITUTIONAL">Institutional</option>
-                  </select>
-                  <button
-                    onClick={handleTierChange}
-                    disabled={upgrading}
-                    className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
-                  >
-                    {upgrading ? "Updating..." : "Change Tier"}
-                  </button>
-                </div>
-                {!user.emailVerified && (
-                  <button
-                    onClick={handleVerify}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded transition-colors"
-                  >
-                    Verify Email
-                  </button>
-                )}
-                <button
-                  onClick={handleImpersonate}
-                  className="text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded transition-colors"
-                >
-                  Impersonate
-                </button>
-                <button
-                  onClick={handlePasswordReset}
-                  disabled={resettingPassword}
-                  className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                >
-                  {resettingPassword ? "Sending..." : "Send Password Reset"}
-                </button>
-              </div>
-
-              {/* Suspend/Unsuspend */}
-              <div className="mt-3 flex items-center gap-2">
-                {!user.suspended ? (
-                  <>
-                    <input
-                      type="text"
-                      value={suspendReason}
-                      onChange={(e) => setSuspendReason(e.target.value)}
-                      placeholder="Suspension reason..."
-                      className="flex-1 bg-[#09090B] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-red-500"
-                    />
-                    <button
-                      onClick={handleSuspend}
-                      disabled={suspending}
-                      className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                    >
-                      {suspending ? "Suspending..." : "Suspend User"}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleSuspend}
-                    disabled={suspending}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                  >
-                    {suspending ? "Unsuspending..." : "Unsuspend User"}
-                  </button>
-                )}
-              </div>
-              {user.suspended && user.suspendedReason && (
-                <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-xs">
-                  <span className="text-red-400 font-medium">Suspended:</span>{" "}
-                  <span className="text-white">{user.suspendedReason}</span>
-                  {user.suspendedAt && (
-                    <span className="text-[#71717A] ml-2">
-                      ({new Date(user.suspendedAt).toLocaleString()})
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Extend Subscription */}
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs text-[#A1A1AA]">Extend subscription by</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={extendDays}
-                  onChange={(e) => setExtendDays(Number(e.target.value))}
-                  className="w-16 bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#6366F1]"
-                />
-                <span className="text-xs text-[#A1A1AA]">days</span>
-                <button
-                  onClick={handleExtendSubscription}
-                  disabled={extending}
-                  className="text-xs text-[#818CF8] hover:text-[#818CF8]/80 border border-[#818CF8]/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                >
-                  {extending ? "Extending..." : "Extend"}
-                </button>
-              </div>
-            </section>
-
-            {/* Admin Notes */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Admin Notes
-              </h3>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add private notes about this user..."
-                rows={3}
-                className="w-full bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-2 text-sm text-white placeholder-[#71717A] focus:outline-none focus:border-[#6366F1] transition-colors resize-y"
-              />
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  setSavingNotes(true);
-                  try {
-                    await apiClient.patch(`/api/admin/users/${user.id}`, { adminNotes: notes });
-                    showSuccess("Saved", "Notes updated");
-                  } catch (err) {
-                    showError("Failed", err instanceof Error ? err.message : "Unknown error");
-                  } finally {
-                    setSavingNotes(false);
-                  }
-                }}
-                disabled={savingNotes}
-                className="mt-2 bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded transition-colors"
-              >
-                {savingNotes ? "Saving..." : "Save Notes"}
-              </button>
-            </section>
-
-            {/* Projects */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Projects ({user.projects.length})
-              </h3>
-              {user.projects.length === 0 ? (
-                <div className="text-[#71717A] text-sm">No projects</div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
-                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">
-                          Versions
-                        </th>
-                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Exports</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Updated</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {user.projects.map((p) => (
-                        <tr key={p.id} className="border-b border-[rgba(255,255,255,0.06)]">
-                          <td className="px-3 py-2 text-white">{p.name}</td>
-                          <td className="px-3 py-2 text-right text-[#FAFAFA]">
-                            {p._count.versions}
-                          </td>
-                          <td className="px-3 py-2 text-right text-[#FAFAFA]">
-                            {p._count.exports}
-                          </td>
-                          <td className="px-3 py-2 text-[#A1A1AA]">
-                            {new Date(p.updatedAt).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            {/* Recent Exports */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Recent Exports ({user.exports.length})
-              </h3>
-              {user.exports.length === 0 ? (
-                <div className="text-[#71717A] text-sm">No exports</div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Project</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Type</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {user.exports.map((exp) => (
-                        <tr key={exp.id} className="border-b border-[rgba(255,255,255,0.06)]">
-                          <td className="px-3 py-2 text-[#A1A1AA]">
-                            {new Date(exp.createdAt).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-white">{exp.project.name}</td>
-                          <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">
-                            {exp.exportType}
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className={STATUS_BADGE[exp.status] || "text-[#A1A1AA]"}>
-                              {exp.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            {/* Live Strategies */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Live Strategies ({user.liveEAs?.length ?? 0})
-              </h3>
-              {!user.liveEAs || user.liveEAs.length === 0 ? (
-                <div className="text-[#71717A] text-sm">No live strategies</div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Symbol</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
-                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Health</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Strategy</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">
-                          Lifecycle
-                        </th>
-                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Trades</th>
-                        <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Profit</th>
-                        <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">
-                          Heartbeat
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {user.liveEAs.map((ea) => {
-                        const health = ea.healthSnapshots?.[0];
-                        return (
-                          <tr key={ea.id} className="border-b border-[rgba(255,255,255,0.06)]">
-                            <td className="px-3 py-2 text-white">{ea.eaName}</td>
-                            <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">
-                              {ea.symbol || "-"}
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="flex items-center gap-1.5">
-                                <div
-                                  className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: EA_STATUS_DOT[ea.status] || "#71717A" }}
-                                />
-                                <span className="text-[#FAFAFA] text-xs">{ea.status}</span>
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {health ? (
-                                <span
-                                  className={
-                                    health.status === "HEALTHY"
-                                      ? "text-emerald-400"
-                                      : health.status === "WARNING"
-                                        ? "text-yellow-400"
-                                        : health.status === "DEGRADED"
-                                          ? "text-red-400"
-                                          : "text-[#A1A1AA]"
-                                  }
-                                >
-                                  {health.overallScore.toFixed(0)}
-                                </span>
-                              ) : (
-                                <span className="text-[#71717A]">-</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-[#FAFAFA] text-xs">
-                              {ea.strategyStatus}
-                            </td>
-                            <td className="px-3 py-2 text-[#FAFAFA] text-xs">
-                              {ea.lifecyclePhase}
-                            </td>
-                            <td className="px-3 py-2 text-right text-[#FAFAFA]">
-                              {ea.totalTrades}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <span
-                                className={
-                                  ea.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"
-                                }
-                              >
-                                {ea.totalProfit >= 0 ? "+" : ""}
-                                {ea.totalProfit.toFixed(2)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-[#A1A1AA] text-xs">
-                              {ea.lastHeartbeat
-                                ? new Date(ea.lastHeartbeat).toLocaleString()
-                                : "Never"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            {/* Activity Log */}
-            <section>
-              <h3 className="text-sm font-semibold text-[#818CF8] uppercase tracking-wider mb-3">
-                Activity Log ({user.auditLogs.length})
-              </h3>
-              {user.auditLogs.length === 0 ? (
-                <div className="text-[#71717A] text-sm">No activity</div>
-              ) : (
-                <div className="space-y-1 max-h-60 overflow-y-auto">
-                  {user.auditLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-center gap-3 text-xs py-1.5 border-b border-[rgba(255,255,255,0.06)]"
-                    >
-                      <span className="text-[#71717A] whitespace-nowrap">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </span>
-                      <span className="text-[#818CF8] font-medium">{log.eventType}</span>
-                      {log.resourceType && (
-                        <span className="text-[#A1A1AA]">{log.resourceType}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            <AccountSection user={user} />
+            <SubscriptionSection user={user} />
+            <ActionsSection user={user} onRefresh={onRefresh} onRefetchUser={fetchUser} />
+            <NotesSection user={user} />
+            <ProjectsSection projects={user.projects} />
+            <ExportsSection exports={user.exports} />
+            <LiveStrategiesSection liveEAs={user.liveEAs} />
+            <ActivityLogSection logs={user.auditLogs} />
           </div>
         )}
       </div>

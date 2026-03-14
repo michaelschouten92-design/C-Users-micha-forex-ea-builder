@@ -13,12 +13,7 @@ interface PlanLimitConfig {
   updatedAt: string;
 }
 
-const TIER_LABELS: Record<string, { name: string; color: string }> = {
-  FREE: { name: "Baseline", color: "border-[#71717A]/50" },
-  PRO: { name: "Control", color: "border-[#6366F1]/50" },
-  ELITE: { name: "Authority", color: "border-[#818CF8]/50" },
-  INSTITUTIONAL: { name: "Institutional", color: "border-[#F59E0B]/50" },
-};
+import { TIER_LABELS, TIER_BORDER_COLORS } from "../admin-constants";
 
 export function PlanLimitsTab() {
   const [configs, setConfigs] = useState<PlanLimitConfig[]>([]);
@@ -97,8 +92,11 @@ export function PlanLimitsTab() {
           const label = TIER_LABELS[tier];
           const hasEdits = !!edits[tier];
           return (
-            <div key={tier} className={`rounded-lg border ${label.color} bg-[#111114] p-6`}>
-              <h3 className="text-lg font-bold text-white mb-4">{label.name}</h3>
+            <div
+              key={tier}
+              className={`rounded-lg border ${TIER_BORDER_COLORS[tier]} bg-[#111114] p-6`}
+            >
+              <h3 className="text-lg font-bold text-white mb-4">{label}</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-[#A1A1AA] mb-1">Max Projects</label>

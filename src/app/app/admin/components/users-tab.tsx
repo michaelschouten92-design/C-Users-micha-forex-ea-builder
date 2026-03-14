@@ -33,21 +33,7 @@ interface UserData {
   churnRisk?: boolean;
 }
 
-type Tier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
-
-const TIER_COLORS: Record<string, string> = {
-  INSTITUTIONAL: "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/50",
-  ELITE: "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/50",
-  PRO: "bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/50",
-  FREE: "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]",
-};
-
-const TIER_LABELS: Record<string, string> = {
-  FREE: "Baseline",
-  PRO: "Control",
-  ELITE: "Authority",
-  INSTITUTIONAL: "Institutional",
-};
+import { type Tier, TIER_BADGE_COLORS, TIER_LABELS } from "../admin-constants";
 
 interface UsersTabProps {
   users: UserData[];
@@ -479,7 +465,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${TIER_COLORS[user.subscription.tier] ?? TIER_COLORS.FREE}`}
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${TIER_BADGE_COLORS[user.subscription.tier] ?? TIER_COLORS.FREE}`}
                     >
                       {TIER_LABELS[user.subscription.tier] ?? user.subscription.tier}
                     </span>
