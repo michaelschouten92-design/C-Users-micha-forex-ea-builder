@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   startOfMonth.setUTCDate(1);
   startOfMonth.setUTCHours(0, 0, 0, 0);
 
-  const [subscription, projectCount, exportCount, user] = await Promise.all([
+  const [subscription, projectCount, exportCount, user, monitoredAccountCount] = await Promise.all([
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
     }),
@@ -34,6 +34,9 @@ export default async function SettingsPage() {
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { emailVerified: true },
+    }),
+    prisma.terminalConnection.count({
+      where: { userId: session.user.id, deletedAt: null },
     }),
   ]);
 
@@ -52,6 +55,7 @@ export default async function SettingsPage() {
           subscriptionStatus={subscription?.status ?? undefined}
           projectCount={projectCount}
           exportCount={exportCount}
+          monitoredAccountCount={monitoredAccountCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
           scheduledDowngradeTier={

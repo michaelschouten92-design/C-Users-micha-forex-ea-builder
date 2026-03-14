@@ -11,6 +11,7 @@ type SubscriptionPanelProps = {
   subscriptionStatus?: string;
   projectCount: number;
   exportCount: number;
+  monitoredAccountCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
@@ -21,6 +22,7 @@ export function SubscriptionPanel({
   subscriptionStatus,
   projectCount,
   exportCount,
+  monitoredAccountCount,
   hasStripeSubscription,
   currentPeriodEnd,
   scheduledDowngradeTier,
@@ -35,11 +37,16 @@ export function SubscriptionPanel({
 
   const projectLimit = plan.limits.maxProjects;
   const exportLimit = plan.limits.maxExportsPerMonth;
+  const accountLimit = plan.limits.maxMonitoredTradingAccounts;
 
   const projectPercentage =
     projectLimit === Infinity || projectLimit <= 0 ? 0 : (projectCount / projectLimit) * 100;
   const exportPercentage =
     exportLimit === Infinity || exportLimit <= 0 ? 0 : (exportCount / exportLimit) * 100;
+  const accountPercentage =
+    accountLimit === Infinity || accountLimit <= 0
+      ? 0
+      : (monitoredAccountCount / accountLimit) * 100;
 
   async function handleManageSubscription() {
     setLoading(true);
@@ -303,7 +310,7 @@ export function SubscriptionPanel({
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
           {/* Projects Usage */}
           <div>
             <div className="flex justify-between text-sm mb-2">
@@ -396,6 +403,54 @@ export function SubscriptionPanel({
               </p>
             )}
             {exportLimit === Infinity && (
+              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
+            )}
+          </div>
+
+          {/* Monitored Accounts Usage */}
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-[#A1A1AA]">Monitored accounts</span>
+              <span className="text-white">
+                {monitoredAccountCount} / {accountLimit === Infinity ? "\u221E" : accountLimit}
+              </span>
+            </div>
+            {accountLimit !== Infinity && (
+              <div
+                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={monitoredAccountCount}
+                aria-valuemin={0}
+                aria-valuemax={accountLimit}
+                aria-label={`Monitored accounts: ${monitoredAccountCount} of ${accountLimit}`}
+              >
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    accountPercentage >= 100
+                      ? "bg-[#EF4444]"
+                      : accountPercentage >= 80
+                        ? "bg-[#F59E0B]"
+                        : "bg-[#6366F1]"
+                  }`}
+                  style={{ width: `${Math.min(accountPercentage, 100)}%` }}
+                />
+              </div>
+            )}
+            {accountLimit !== Infinity && accountPercentage >= 80 && accountPercentage < 100 && (
+              <p className="text-xs text-[#F59E0B] mt-1">
+                {accountLimit - monitoredAccountCount} account
+                {accountLimit - monitoredAccountCount !== 1 ? "s" : ""} remaining
+              </p>
+            )}
+            {accountLimit !== Infinity && accountPercentage >= 100 && (
+              <p className="text-xs text-[#EF4444] mt-1">
+                Account limit reached —{" "}
+                <Link href="/pricing" className="underline hover:text-white">
+                  upgrade
+                </Link>
+              </p>
+            )}
+            {accountLimit === Infinity && (
               <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
             )}
           </div>
