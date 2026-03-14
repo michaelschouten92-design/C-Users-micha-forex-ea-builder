@@ -33,7 +33,7 @@ interface FeatureUsage {
 }
 
 interface AnalyticsTabProps {
-  sharedUsers?: UserData[];
+  sharedUsers: UserData[];
 }
 
 // Categorize node types by color
@@ -77,13 +77,9 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const usersPromise = sharedUsers
-          ? Promise.resolve(sharedUsers)
-          : apiClient.get<{ data: UserData[] }>("/api/admin/users").then((res) => res.data);
-
         const [statsRes, usersData, funnelRes, usageRes] = await Promise.all([
           apiClient.get<StatsData>("/api/admin/stats"),
-          usersPromise,
+          Promise.resolve(sharedUsers),
           apiClient
             .get<{ funnel: FunnelStep[] }>("/api/admin/funnel")
             .catch(() => ({ funnel: [] })),

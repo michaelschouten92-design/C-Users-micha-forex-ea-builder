@@ -43,7 +43,7 @@ interface SharedUserData {
 }
 
 interface RevenueTabProps {
-  sharedUsers?: SharedUserData[];
+  sharedUsers: SharedUserData[];
 }
 
 function MRRChart({ snapshots }: { snapshots: RevenueSnapshot[] }) {
@@ -60,42 +60,52 @@ function MRRChart({ snapshots }: { snapshots: RevenueSnapshot[] }) {
   const maxMrr = Math.max(...mrrs);
   const range = maxMrr - minMrr || 1;
 
-  const width = 600;
-  const height = 140;
-  const padding = 4;
+  // Use a percentage-based coordinate system (0-100) so the chart
+  // scales naturally with any container width via viewBox.
+  const vw = 100;
+  const vh = 40;
+  const px = 1; // horizontal padding
+  const py = 2; // vertical padding
 
   const points = snapshots.map((s, i) => {
-    const x = padding + (i / (snapshots.length - 1)) * (width - padding * 2);
-    const y = height - padding - ((s.mrr - minMrr) / range) * (height - padding * 2);
+    const x = px + (i / (snapshots.length - 1)) * (vw - px * 2);
+    const y = vh - py - ((s.mrr - minMrr) / range) * (vh - py * 2);
     return `${x},${y}`;
   });
 
   const isPositive = mrrs[mrrs.length - 1] >= mrrs[0];
+  const color = isPositive ? "#10B981" : "#EF4444";
 
   return (
-    <div className="w-full overflow-hidden">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-40" preserveAspectRatio="none">
+    <div className="w-full">
+      <svg
+        viewBox={`0 0 ${vw} ${vh}`}
+        className="w-full"
+        style={{ aspectRatio: "5 / 2" }}
+        preserveAspectRatio="none"
+      >
         <defs>
           <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={isPositive ? "#10B981" : "#EF4444"} stopOpacity="0" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
         <polygon
-          points={`${padding},${height - padding} ${points.join(" ")} ${width - padding},${height - padding}`}
+          points={`${px},${vh - py} ${points.join(" ")} ${vw - px},${vh - py}`}
           fill="url(#mrrGrad)"
         />
         <polyline
           points={points.join(" ")}
           fill="none"
-          stroke={isPositive ? "#10B981" : "#EF4444"}
-          strokeWidth="2"
+          stroke={color}
+          strokeWidth="0.5"
+          vectorEffect="non-scaling-stroke"
         />
       </svg>
       <div className="flex justify-between text-xs text-[#A1A1AA] mt-1 px-1">
         <span>{new Date(snapshots[0].date).toLocaleDateString()}</span>
         <span>
-          &euro;{minMrr.toLocaleString()} - &euro;{maxMrr.toLocaleString()}
+          &euro;{minMrr.toLocaleString()} &ndash; &euro;{maxMrr.toLocaleString()}
         </span>
         <span>{new Date(snapshots[snapshots.length - 1].date).toLocaleDateString()}</span>
       </div>
@@ -117,11 +127,10 @@ export function RevenueTab({ sharedUsers }: RevenueTabProps) {
           apiClient.get<{ data: RevenueSnapshot[] }>("/api/admin/revenue-history"),
         ];
 
-        const usersPromise = sharedUsers
-          ? Promise.resolve(sharedUsers)
-          : apiClient.get<{ data: SharedUserData[] }>("/api/admin/users").then((res) => res.data);
-
-        const [statsRes, historyRes, usersData] = await Promise.all([...fetches, usersPromise]);
+        const [statsRes, historyRes, usersData] = await Promise.all([
+          ...fetches,
+          Promise.resolve(sharedUsers),
+        ]);
 
         setStats(statsRes);
         setRevenueHistory(historyRes.data);
