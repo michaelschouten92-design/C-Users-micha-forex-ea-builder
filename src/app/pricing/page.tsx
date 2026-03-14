@@ -62,7 +62,6 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
       ["Live health monitoring", true, true, true, true],
       ["Drift detection", true, true, true, true],
       ["Edge degradation analysis", true, true, true, true],
-      ["CUSUM drift analysis", true, true, true, true],
       ["Lifecycle governance (RUN / PAUSE / STOP)", true, true, true, true],
       ["Governance snapshot logging", true, true, true, true],
       ["Portfolio-level governance", true, true, true, true],
@@ -80,13 +79,9 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
   {
     category: "Support",
     rows: [
-      ["Community support", true, true, true, true],
       ["Priority support", false, true, true, true],
-      ["1-on-1 strategy review", false, false, "1/month", "1/month"],
-      ["Direct developer channel", false, false, true, true],
+      ["Direct developer channel", false, false, false, true],
       ["Custom onboarding", false, false, false, true],
-      ["SLA-backed uptime guarantee", false, false, false, true],
-      ["Dedicated support channel", false, false, false, true],
     ],
   },
 ];
