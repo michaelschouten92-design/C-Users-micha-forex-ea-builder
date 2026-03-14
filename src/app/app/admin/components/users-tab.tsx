@@ -176,16 +176,12 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
   }
 
   async function handleDelete(email: string) {
-    setDeleteInProgress(true);
     try {
       await apiClient.post("/api/admin/users/delete", { email });
       showSuccess("User deleted", `${email} has been removed`);
-      setDeletingUser(null);
       onRefresh();
     } catch (err) {
       showError("Delete failed", err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setDeleteInProgress(false);
     }
   }
 
