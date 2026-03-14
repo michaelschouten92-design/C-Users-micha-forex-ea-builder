@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+import { ConfirmDialog } from "./confirm-dialog";
 
 interface Segment {
   id: string;
@@ -49,8 +50,6 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedTier, setSelectedTier] = useState<Tier>("FREE");
   const [upgrading, setUpgrading] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<string | null>(null);
-  const [deleteInProgress, setDeleteInProgress] = useState(false);
   const [verifyingUser, setVerifyingUser] = useState<string | null>(null);
   const [impersonating, setImpersonating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,6 +67,12 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkTier, setBulkTier] = useState<Tier>("PRO");
   const [bulkUpgrading, setBulkUpgrading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    message: string;
+    variant: "danger" | "default";
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     apiClient
@@ -408,10 +413,10 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
+      <div className="overflow-x-auto overflow-y-auto max-h-[70vh] rounded-lg border border-[rgba(255,255,255,0.06)]">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)]">
               <th className="px-4 py-3 w-8">
                 <input
                   type="checkbox"
@@ -438,7 +443,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               return (
                 <tr
                   key={user.id}
-                  className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                  className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(99,102,241,0.06)] transition-colors cursor-pointer"
                 >
                   <td className="px-4 py-3">
                     <input
@@ -526,34 +531,19 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                         </button>
                       )}
                       {!isAdmin && (
-                        <>
-                          {deletingUser === user.id ? (
-                            <span className="flex items-center gap-1">
-                              <span className="text-xs text-red-400">Delete?</span>
-                              <button
-                                onClick={() => handleDelete(user.email)}
-                                disabled={deleteInProgress}
-                                className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 font-semibold transition-colors"
-                              >
-                                Yes
-                              </button>
-                              <button
-                                onClick={() => setDeletingUser(null)}
-                                disabled={deleteInProgress}
-                                className="text-xs text-[#A1A1AA] hover:text-white disabled:opacity-50 transition-colors"
-                              >
-                                No
-                              </button>
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => setDeletingUser(user.id)}
-                              className="text-xs text-red-400 hover:text-red-300 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </>
+                        <button
+                          onClick={() =>
+                            setConfirmAction({
+                              title: "Delete User",
+                              message: `Permanently delete ${user.email}? This cannot be undone.`,
+                              variant: "danger",
+                              onConfirm: () => handleDelete(user.email),
+                            })
+                          }
+                          className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          Delete
+                        </button>
                       )}
                     </div>
                   </td>
@@ -585,14 +575,37 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               <option value="INSTITUTIONAL">Institutional</option>
             </select>
             <button
-              onClick={handleUpgrade}
+              onClick={() => {
+                const user = users.find((u) => u.id === selectedUser);
+                if (!user) return;
+                setConfirmAction({
+                  title: "Change Tier",
+                  message: `Change ${user.email} to ${TIER_LABELS[selectedTier] ?? selectedTier}?`,
+                  variant: "default",
+                  onConfirm: handleUpgrade,
+                });
+              }}
               disabled={upgrading}
               className="bg-[#6366F1] hover:bg-[#6366F1] disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded transition-colors"
             >
-              {upgrading ? "Updating..." : "Confirm"}
+              {upgrading ? "Updating..." : "Change Tier"}
             </button>
           </div>
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.title}
+          message={confirmAction.message}
+          variant={confirmAction.variant}
+          confirmLabel={confirmAction.variant === "danger" ? "Delete" : "Confirm"}
+          onConfirm={() => {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );

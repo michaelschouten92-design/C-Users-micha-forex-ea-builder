@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { apiClient } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
 import { type Tier, TIER_LABELS } from "../admin-constants";
+import { ConfirmDialog } from "./confirm-dialog";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -200,6 +201,12 @@ function ActionsSection({
   const [resettingPassword, setResettingPassword] = useState(false);
   const [extendDays, setExtendDays] = useState(30);
   const [extending, setExtending] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    message: string;
+    variant: "danger" | "default";
+    onConfirm: () => void;
+  } | null>(null);
 
   async function handleVerify() {
     try {
@@ -308,7 +315,14 @@ function ActionsSection({
           Impersonate
         </button>
         <button
-          onClick={handlePasswordReset}
+          onClick={() =>
+            setConfirmAction({
+              title: "Password Reset",
+              message: `Send a password reset email to ${user.email}?`,
+              variant: "default",
+              onConfirm: handlePasswordReset,
+            })
+          }
           disabled={resettingPassword}
           className="text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
         >
@@ -328,7 +342,14 @@ function ActionsSection({
               className="flex-1 bg-[#09090B] border border-red-500/30 rounded px-2 py-1 text-xs text-white placeholder-[#71717A] focus:outline-none focus:border-red-500"
             />
             <button
-              onClick={handleSuspend}
+              onClick={() =>
+                setConfirmAction({
+                  title: "Suspend User",
+                  message: `Suspend ${user.email}? They will lose access.`,
+                  variant: "danger",
+                  onConfirm: handleSuspend,
+                })
+              }
               disabled={suspending}
               className="text-xs text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
             >
@@ -377,6 +398,20 @@ function ActionsSection({
           {extending ? "Extending..." : "Extend"}
         </button>
       </div>
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.title}
+          message={confirmAction.message}
+          variant={confirmAction.variant}
+          confirmLabel={confirmAction.variant === "danger" ? "Confirm" : "Send"}
+          onConfirm={() => {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </section>
   );
 }
@@ -608,9 +643,21 @@ interface UserDetailModalProps {
   onRefresh: () => void;
 }
 
+const MODAL_SECTIONS = [
+  { id: "account", label: "Account" },
+  { id: "subscription", label: "Subscription" },
+  { id: "actions", label: "Actions" },
+  { id: "notes", label: "Notes" },
+  { id: "projects", label: "Projects" },
+  { id: "exports", label: "Exports" },
+  { id: "live", label: "Live EAs" },
+  { id: "activity", label: "Activity" },
+] as const;
+
 export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalProps) {
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<string>("account");
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -636,16 +683,26 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  function scrollToSection(id: string) {
+    setActiveSection(id);
+    document
+      .getElementById(`modal-section-${id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-[rgba(255,255,255,0.10)] bg-[#111114] shadow-2xl">
+      <div className="relative w-full max-w-4xl max-h-[90vh] rounded-xl border border-[rgba(255,255,255,0.10)] bg-[#111114] shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-[#111114] border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex justify-between items-center z-10">
-          <h2 className="text-lg font-bold text-white">User Detail</h2>
+        <div className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
+          <h2 className="text-lg font-bold text-white">
+            User Detail
+            {user && <span className="ml-3 text-sm font-normal text-[#71717A]">{user.email}</span>}
+          </h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -656,19 +713,80 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
         </div>
 
         {loading ? (
-          <div className="p-6 text-center text-[#A1A1AA]">Loading user details...</div>
+          <div className="p-6 space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-16 bg-[#18181B] rounded-lg animate-pulse" />
+            ))}
+          </div>
         ) : !user ? (
           <div className="p-6 text-center text-red-400">User not found</div>
         ) : (
-          <div className="p-6 space-y-6">
-            <AccountSection user={user} />
-            <SubscriptionSection user={user} />
-            <ActionsSection user={user} onRefresh={onRefresh} onRefetchUser={fetchUser} />
-            <NotesSection user={user} />
-            <ProjectsSection projects={user.projects} />
-            <ExportsSection exports={user.exports} />
-            <LiveStrategiesSection liveEAs={user.liveEAs} />
-            <ActivityLogSection logs={user.auditLogs} />
+          <div className="flex flex-1 overflow-hidden">
+            {/* Sidebar nav */}
+            <nav className="hidden md:flex flex-col w-40 flex-shrink-0 border-r border-[rgba(255,255,255,0.06)] py-4 px-2 gap-0.5">
+              {MODAL_SECTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => scrollToSection(s.id)}
+                  className={`text-left text-xs px-3 py-2 rounded transition-colors ${
+                    activeSection === s.id
+                      ? "bg-[rgba(99,102,241,0.15)] text-[#818CF8] font-medium"
+                      : "text-[#71717A] hover:text-[#A1A1AA]"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </nav>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              <div id="modal-section-account">
+                <AccountSection user={user} />
+              </div>
+              <div
+                id="modal-section-subscription"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <SubscriptionSection user={user} />
+              </div>
+              <div
+                id="modal-section-actions"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <ActionsSection user={user} onRefresh={onRefresh} onRefetchUser={fetchUser} />
+              </div>
+              <div
+                id="modal-section-notes"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <NotesSection user={user} />
+              </div>
+              <div
+                id="modal-section-projects"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <ProjectsSection projects={user.projects} />
+              </div>
+              <div
+                id="modal-section-exports"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <ExportsSection exports={user.exports} />
+              </div>
+              <div
+                id="modal-section-live"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <LiveStrategiesSection liveEAs={user.liveEAs} />
+              </div>
+              <div
+                id="modal-section-activity"
+                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
+              >
+                <ActivityLogSection logs={user.auditLogs} />
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -222,11 +222,46 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 mx-auto mb-3 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[#A1A1AA]">Loading admin panel...</p>
+      <div className="min-h-screen bg-[#09090B]">
+        <div className="sticky top-0 z-20 bg-[#09090B] border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+          <div className="h-7 w-48 bg-[#111114] rounded animate-pulse" />
         </div>
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <div className="h-8 w-64 bg-[#111114] rounded animate-pulse mb-2" />
+          <div className="h-4 w-80 bg-[#111114] rounded animate-pulse mb-8" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
+              >
+                <div className="h-3 w-16 bg-[#18181B] rounded animate-pulse" />
+                <div className="h-7 w-12 bg-[#18181B] rounded animate-pulse mt-3" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
+              >
+                <div className="h-3 w-16 bg-[#18181B] rounded animate-pulse" />
+                <div className="h-7 w-20 bg-[#18181B] rounded animate-pulse mt-3" />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-9 w-24 bg-[#111114] rounded-full animate-pulse" />
+            ))}
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-12 bg-[#111114] rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -314,60 +349,60 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              Total Users
-            </div>
-            <div className="text-2xl font-bold text-[#FAFAFA] mt-1 tabular-nums">{stats.total}</div>
+        {/* Stats — Users */}
+        <div className="mb-6">
+          <h3 className="text-xs font-semibold tracking-wider uppercase text-[#71717A] mb-3">
+            Users
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {(
+              [
+                { label: "Total", value: stats.total, color: "#FAFAFA" },
+                { label: "New This Week", value: stats.newThisWeek, color: "#10B981" },
+                { label: "Control", value: stats.control, color: "#6366F1" },
+                { label: "Authority", value: stats.authority, color: "#818CF8" },
+                { label: "Institutional", value: stats.institutional, color: "#F59E0B" },
+              ] as const
+            ).map((card) => (
+              <div
+                key={card.label}
+                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
+              >
+                <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
+                  {card.label}
+                </div>
+                <div
+                  className="text-2xl font-bold mt-1.5 tabular-nums"
+                  style={{ color: card.color }}
+                >
+                  {card.value}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              New This Week
+        </div>
+
+        {/* Stats — Revenue */}
+        <div className="mb-8">
+          <h3 className="text-xs font-semibold tracking-wider uppercase text-[#71717A] mb-3">
+            Revenue
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+              <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
+                MRR
+              </div>
+              <div className="text-2xl font-bold text-[#10B981] mt-1.5 tabular-nums">
+                {extraStats ? `\u20AC${extraStats.mrr.toLocaleString()}` : "\u2014"}
+              </div>
             </div>
-            <div className="text-2xl font-bold text-[#10B981] mt-1 tabular-nums">
-              {stats.newThisWeek}
-            </div>
-          </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              Control
-            </div>
-            <div className="text-2xl font-bold text-[#6366F1] mt-1 tabular-nums">
-              {stats.control}
-            </div>
-          </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              Authority
-            </div>
-            <div className="text-2xl font-bold text-[#818CF8] mt-1 tabular-nums">
-              {stats.authority}
-            </div>
-          </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              Institutional
-            </div>
-            <div className="text-2xl font-bold text-[#F59E0B] mt-1 tabular-nums">
-              {stats.institutional}
-            </div>
-          </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              MRR
-            </div>
-            <div className="text-2xl font-bold text-[#10B981] mt-1 tabular-nums">
-              {extraStats ? `\u20AC${extraStats.mrr.toLocaleString()}` : "\u2014"}
-            </div>
-          </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              Exports Today
-            </div>
-            <div className="text-2xl font-bold text-[#FAFAFA] mt-1 tabular-nums">
-              {extraStats ? extraStats.exportsToday : "\u2014"}
+            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+              <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
+                Exports Today
+              </div>
+              <div className="text-2xl font-bold text-[#FAFAFA] mt-1.5 tabular-nums">
+                {extraStats ? extraStats.exportsToday : "\u2014"}
+              </div>
             </div>
           </div>
         </div>
