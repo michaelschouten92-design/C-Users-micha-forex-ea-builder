@@ -129,13 +129,26 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
   // Look for the header row pattern: "Symbol", "Period", etc. in table cells
   const allCells = root.querySelectorAll("td");
   for (let i = 0; i < allCells.length; i++) {
-    const cellText = allCells[i].text.trim().toLowerCase();
+    const cellText = allCells[i].text
+      .trim()
+      .replace(/\s*:\s*$/, "")
+      .toLowerCase();
     const nextCell = allCells[i + 1];
     const nextText = nextCell?.text?.trim() || "";
 
     if (!nextText) continue;
 
     if (
+      cellText === "expert" ||
+      cellText === "experte" ||
+      cellText === "эксперт" ||
+      cellText === "asesor experto"
+    ) {
+      // EA name from "Expert:" row (common in MT5 Strategy Tester reports)
+      if (!metadata.eaName) {
+        metadata.eaName = nextText;
+      }
+    } else if (
       cellText === "symbol" ||
       cellText === "символ" ||
       cellText === "símbolo" ||
