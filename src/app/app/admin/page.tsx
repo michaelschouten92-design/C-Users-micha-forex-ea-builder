@@ -215,8 +215,9 @@ export default function AdminPage() {
     return {
       total: users.length,
       newThisWeek: users.filter((u) => new Date(u.createdAt) >= oneWeekAgo).length,
-      pro: users.filter((u) => u.subscription.tier === "PRO").length,
-      elite: users.filter((u) => u.subscription.tier === "ELITE").length,
+      control: users.filter((u) => u.subscription.tier === "PRO").length,
+      authority: users.filter((u) => u.subscription.tier === "ELITE").length,
+      institutional: users.filter((u) => u.subscription.tier === "INSTITUTIONAL").length,
     };
   }, [users]);
 
@@ -332,15 +333,27 @@ export default function AdminPage() {
           </div>
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
             <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              PRO
+              Control
             </div>
-            <div className="text-2xl font-bold text-[#6366F1] mt-1 tabular-nums">{stats.pro}</div>
+            <div className="text-2xl font-bold text-[#6366F1] mt-1 tabular-nums">
+              {stats.control}
+            </div>
           </div>
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
             <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-              ELITE
+              Authority
             </div>
-            <div className="text-2xl font-bold text-[#818CF8] mt-1 tabular-nums">{stats.elite}</div>
+            <div className="text-2xl font-bold text-[#818CF8] mt-1 tabular-nums">
+              {stats.authority}
+            </div>
+          </div>
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
+              Institutional
+            </div>
+            <div className="text-2xl font-bold text-[#F59E0B] mt-1 tabular-nums">
+              {stats.institutional}
+            </div>
           </div>
           <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
             <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">

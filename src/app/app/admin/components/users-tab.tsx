@@ -42,6 +42,13 @@ const TIER_COLORS: Record<string, string> = {
   FREE: "bg-[rgba(255,255,255,0.06)] text-[#818CF8] border-[rgba(255,255,255,0.10)]",
 };
 
+const TIER_LABELS: Record<string, string> = {
+  FREE: "Baseline",
+  PRO: "Control",
+  ELITE: "Authority",
+  INSTITUTIONAL: "Institutional",
+};
+
 interface UsersTabProps {
   users: UserData[];
   adminEmail: string | null;
@@ -388,9 +395,10 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
             onChange={(e) => setBulkTier(e.target.value as Tier)}
             className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-2 py-1 text-sm text-white focus:outline-none"
           >
-            <option value="FREE">FREE</option>
-            <option value="PRO">PRO</option>
-            <option value="ELITE">ELITE</option>
+            <option value="FREE">Baseline</option>
+            <option value="PRO">Control</option>
+            <option value="ELITE">Authority</option>
+            <option value="INSTITUTIONAL">Institutional</option>
           </select>
           <button
             onClick={handleBulkUpgrade}
@@ -473,7 +481,7 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                     <span
                       className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${TIER_COLORS[user.subscription.tier] ?? TIER_COLORS.FREE}`}
                     >
-                      {user.subscription.tier}
+                      {TIER_LABELS[user.subscription.tier] ?? user.subscription.tier}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[#A1A1AA]">{user.subscription.status}</td>
@@ -585,9 +593,10 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               onChange={(e) => setSelectedTier(e.target.value as Tier)}
               className="bg-[#09090B] border border-[rgba(255,255,255,0.10)] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[#6366F1]"
             >
-              <option value="FREE">FREE</option>
-              <option value="PRO">PRO</option>
-              <option value="ELITE">ELITE</option>
+              <option value="FREE">Baseline</option>
+              <option value="PRO">Control</option>
+              <option value="ELITE">Authority</option>
+              <option value="INSTITUTIONAL">Institutional</option>
             </select>
             <button
               onClick={handleUpgrade}

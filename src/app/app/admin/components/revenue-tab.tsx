@@ -224,7 +224,7 @@ export function RevenueTab({ sharedUsers }: RevenueTabProps) {
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-white mb-3">Tier Breakdown</h3>
         <div className="flex h-8 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.06)]">
-          {(["FREE", "PRO", "ELITE"] as const).map((tier) => {
+          {(["FREE", "PRO", "ELITE", "INSTITUTIONAL"] as const).map((tier) => {
             const count = stats.usersByTier[tier] || 0;
             const pct = (count / totalTierUsers) * 100;
             if (pct === 0) return null;
@@ -232,31 +232,45 @@ export function RevenueTab({ sharedUsers }: RevenueTabProps) {
               FREE: "bg-[#71717A]",
               PRO: "bg-[#6366F1]",
               ELITE: "bg-[#818CF8]",
+              INSTITUTIONAL: "bg-[#F59E0B]",
+            };
+            const labels: Record<string, string> = {
+              FREE: "Baseline",
+              PRO: "Control",
+              ELITE: "Authority",
+              INSTITUTIONAL: "Institutional",
             };
             return (
               <div
                 key={tier}
                 className={`${colors[tier]} flex items-center justify-center text-xs text-white font-medium`}
                 style={{ width: `${pct}%` }}
-                title={`${tier}: ${count} users (${pct.toFixed(1)}%)`}
+                title={`${labels[tier]}: ${count} users (${pct.toFixed(1)}%)`}
               >
-                {pct > 8 && `${tier} ${count}`}
+                {pct > 8 && `${labels[tier]} ${count}`}
               </div>
             );
           })}
         </div>
         <div className="flex gap-4 mt-2">
-          {(["FREE", "PRO", "ELITE"] as const).map((tier) => {
+          {(["FREE", "PRO", "ELITE", "INSTITUTIONAL"] as const).map((tier) => {
             const count = stats.usersByTier[tier] || 0;
             const dotColors: Record<string, string> = {
               FREE: "bg-[#71717A]",
               PRO: "bg-[#6366F1]",
               ELITE: "bg-[#818CF8]",
+              INSTITUTIONAL: "bg-[#F59E0B]",
+            };
+            const labels: Record<string, string> = {
+              FREE: "Baseline",
+              PRO: "Control",
+              ELITE: "Authority",
+              INSTITUTIONAL: "Institutional",
             };
             return (
               <span key={tier} className="flex items-center gap-1.5 text-xs text-[#A1A1AA]">
                 <span className={`w-2 h-2 rounded-full ${dotColors[tier]}`} />
-                {tier}: {count}
+                {labels[tier]}: {count}
               </span>
             );
           })}
