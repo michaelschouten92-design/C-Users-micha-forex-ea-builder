@@ -124,6 +124,17 @@ const FAQ_ITEMS = [
   },
 ];
 
+// ── Card feature rows (unified across all plans) ──────
+// [label, baseline, control, authority, institutional]
+const CARD_FEATURES: [string, boolean, boolean, boolean, boolean][] = [
+  ["All platform features included", true, true, true, true],
+  ["Unlimited strategies & exports", true, true, true, true],
+  ["Priority support", false, true, true, true],
+  ["Email, webhook & Telegram alerts", false, true, true, true],
+  ["Direct developer channel", false, false, false, true],
+  ["Custom onboarding", false, false, false, true],
+];
+
 // ── Page ───────────────────────────────────────────────
 
 export default function PricingPage() {
@@ -200,17 +211,10 @@ export default function PricingPage() {
             </div>
 
             <ul className="mt-5 space-y-2.5 flex-1">
-              {[
-                "All platform features included",
-                "Unlimited strategies & exports",
-                "Backtest health scoring",
-                "Monte Carlo risk simulation",
-                "EA builder & templates",
-                "Strategy journal",
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
-                  <CheckIcon />
-                  {f}
+              {CARD_FEATURES.map(([label, included]) => (
+                <li key={label} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
+                  {included ? <CheckIcon /> : <DashIcon />}
+                  <span className={included ? undefined : "text-[#52525B]"}>{label}</span>
                 </li>
               ))}
             </ul>
@@ -248,15 +252,10 @@ export default function PricingPage() {
             </div>
 
             <ul className="mt-5 space-y-2.5 flex-1">
-              {[
-                "All platform features included",
-                "Unlimited strategies & exports",
-                "Priority support",
-                "Email, webhook & Telegram alerts",
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
-                  <CheckIcon />
-                  {f}
+              {CARD_FEATURES.map(([label, , included]) => (
+                <li key={label} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
+                  {included ? <CheckIcon /> : <DashIcon />}
+                  <span className={included ? undefined : "text-[#52525B]"}>{label}</span>
                 </li>
               ))}
             </ul>
@@ -300,16 +299,10 @@ export default function PricingPage() {
             </div>
 
             <ul className="mt-5 space-y-2.5 flex-1">
-              {[
-                "All platform features included",
-                "Unlimited strategies & exports",
-                "Priority support",
-                "1-on-1 strategy review (1/month)",
-                "Direct developer channel",
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
-                  <CheckIcon />
-                  {f}
+              {CARD_FEATURES.map(([label, , , included]) => (
+                <li key={label} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
+                  {included ? <CheckIcon /> : <DashIcon />}
+                  <span className={included ? undefined : "text-[#52525B]"}>{label}</span>
                 </li>
               ))}
             </ul>
@@ -350,19 +343,10 @@ export default function PricingPage() {
             </div>
 
             <ul className="mt-5 space-y-2.5 flex-1">
-              {[
-                "All platform features included",
-                "Unlimited strategies & exports",
-                "Priority support",
-                "1-on-1 strategy review (1/month)",
-                "Direct developer channel",
-                "Custom onboarding",
-                "SLA-backed uptime guarantee",
-                "Dedicated support channel",
-              ].map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
-                  <CheckIcon />
-                  {f}
+              {CARD_FEATURES.map(([label, , , , included]) => (
+                <li key={label} className="flex items-start gap-2.5 text-sm text-[#A1A1AA]">
+                  {included ? <CheckIcon /> : <DashIcon />}
+                  <span className={included ? undefined : "text-[#52525B]"}>{label}</span>
                 </li>
               ))}
             </ul>
