@@ -72,6 +72,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           select: { reasonCodes: true },
           take: 1,
         },
+        healthSnapshots: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { driftDetected: true, driftSeverity: true, status: true },
+        },
       },
     });
 
@@ -119,6 +124,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       heartbeats: ea.heartbeats.map((h) => ({
         equity: h.equity,
         createdAt: h.createdAt.toISOString(),
+      })),
+      healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
+        driftDetected: hs.driftDetected,
+        driftSeverity: hs.driftSeverity,
+        status: hs.status,
       })),
     }));
 

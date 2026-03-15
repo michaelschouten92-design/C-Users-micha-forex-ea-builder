@@ -96,6 +96,11 @@ function renderDashboard(
       equity: h.equity,
       createdAt: h.createdAt.toISOString(),
     })),
+    healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
+      driftDetected: hs.driftDetected,
+      driftSeverity: hs.driftSeverity,
+      status: hs.status,
+    })),
   }));
 
   const relinkInstanceId = params.relink ?? null;

@@ -211,11 +211,11 @@ function queryEaInstances(userId: string) {
           },
         },
       },
-      // CUSUM drift: latest health snapshot for drift status
+      // CUSUM drift: latest health snapshot for drift & monitoring status
       healthSnapshots: {
         orderBy: { createdAt: "desc" as const },
         take: 1,
-        select: { driftDetected: true },
+        select: { driftDetected: true, driftSeverity: true, status: true },
       },
       // Terminal deployment baseline status (derived read-only flag for UI)
       terminalDeployments: {

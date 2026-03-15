@@ -48,6 +48,7 @@ interface EAInstanceData {
     magicNumber: number | null;
   }[];
   heartbeats: { equity: number; createdAt: string }[];
+  healthSnapshots?: { driftDetected: boolean; driftSeverity: number; status: string }[];
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
   strategyStatus?: string | null;
@@ -973,6 +974,44 @@ function AccountCard({
               Paper
             </span>
           )}
+          {/* Edge monitoring status badge */}
+          {(() => {
+            const latestSnapshot = instances
+              .map((ea) => ea.healthSnapshots?.[0])
+              .filter(Boolean)[0];
+            if (!latestSnapshot) return null;
+            const { driftDetected, driftSeverity, status } = latestSnapshot;
+            if (driftDetected) {
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-pulse" />
+                  Drift detected
+                </span>
+              );
+            }
+            if (driftSeverity > 0.3 || status === "WARNING") {
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
+                  Monitoring: Warning
+                </span>
+              );
+            }
+            if (status === "DEGRADED") {
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+                  Monitoring: Degraded
+                </span>
+              );
+            }
+            return (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                Monitoring: OK
+              </span>
+            );
+          })()}
         </div>
       </div>
 
