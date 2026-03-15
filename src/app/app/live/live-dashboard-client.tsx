@@ -57,6 +57,15 @@ interface EAInstanceData {
   baseline?: BaselineData | null;
   relinkRequired?: boolean;
   monitoringReasons?: string[];
+  deployments?: {
+    id: string;
+    symbol: string;
+    magicNumber: number;
+    eaName: string;
+    timeframe: string;
+    baselineStatus: string;
+    strategyVersionId: string | null;
+  }[];
 }
 
 interface TradeRecord {
@@ -916,6 +925,26 @@ function AccountCard({
     }
   }
 
+  async function handleUnlinkBaseline(instanceId: string, deploymentId: string) {
+    try {
+      const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ deploymentId }),
+      });
+      if (res.ok) {
+        showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
+        // Reload to reflect changes
+        window.location.reload();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError("Failed to unlink", data.message ?? "Something went wrong");
+      }
+    } catch {
+      showError("Failed to unlink", "Network error");
+    }
+  }
+
   const lastHeartbeat = instances
     .map((ea) => ea.lastHeartbeat)
     .filter(Boolean)
@@ -1137,13 +1166,14 @@ function AccountCard({
             ) : (
               <>
                 {/* Header row */}
-                <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
                   <span>Strategy</span>
                   <span className="text-right">P&L</span>
                   <span className="text-right">Trades</span>
                   <span className="text-right">Win Rate</span>
                   <span className="text-right">PF</span>
                   <span className="text-right">Last Trade</span>
+                  <span className="text-right">Baseline</span>
                 </div>
                 {/* Strategy rows */}
                 {strategyGroups.map((sg) => {
@@ -1155,10 +1185,18 @@ function AccountCard({
                     .filter(Boolean)
                     .sort()
                     .pop();
+                  // Find matching deployment for baseline status
+                  const allDeployments = instances.flatMap((ea) => ea.deployments ?? []);
+                  const deployment = allDeployments.find(
+                    (d) =>
+                      d.symbol.toUpperCase() === sg.symbol.toUpperCase() &&
+                      (sg.magicNumber === null || d.magicNumber === sg.magicNumber)
+                  );
+                  const isLinked = deployment?.baselineStatus === "LINKED";
                   return (
                     <div
                       key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
-                      className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
+                      className="grid grid-cols-[1fr_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-[#CBD5E1] truncate">{sg.symbol}</p>
@@ -1187,6 +1225,30 @@ function AccountCard({
                       <p className="text-[10px] text-[#7C8DB0] text-right self-center">
                         {lastTrade ? formatRelativeTime(lastTrade) : "—"}
                       </p>
+                      <div className="flex items-center justify-end self-center">
+                        {isLinked ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#10B981]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                              Linked
+                            </span>
+                            <button
+                              onClick={() => handleUnlinkBaseline(primary.id, deployment!.id)}
+                              className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors"
+                              title="Unlink baseline"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => onLinkBaseline(primary.id)}
+                            className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                          >
+                            Link
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

@@ -217,11 +217,18 @@ function queryEaInstances(userId: string) {
         take: 1,
         select: { driftDetected: true, driftSeverity: true, status: true },
       },
-      // Terminal deployment baseline status (derived read-only flag for UI)
+      // Terminal deployments — used for per-strategy baseline linking UI
       terminalDeployments: {
-        where: { baselineStatus: "RELINK_REQUIRED" },
-        select: { id: true },
-        take: 1,
+        where: { ignoredAt: null },
+        select: {
+          id: true,
+          symbol: true,
+          magicNumber: true,
+          eaName: true,
+          timeframe: true,
+          baselineStatus: true,
+          strategyVersionId: true,
+        },
       },
     },
   });

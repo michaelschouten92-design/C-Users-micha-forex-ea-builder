@@ -85,7 +85,16 @@ function renderDashboard(
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
-    relinkRequired: ea.terminalDeployments.length > 0,
+    relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
+    deployments: ea.terminalDeployments.map((d) => ({
+      id: d.id,
+      symbol: d.symbol,
+      magicNumber: d.magicNumber,
+      eaName: d.eaName,
+      timeframe: d.timeframe,
+      baselineStatus: d.baselineStatus,
+      strategyVersionId: d.strategyVersionId,
+    })),
     trades: ea.trades.map((t) => ({
       profit: t.profit,
       closeTime: t.closeTime?.toISOString() ?? null,
