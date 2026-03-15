@@ -25,7 +25,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       include: {
         trades: {
           where: { closeTime: { not: null } },
-          select: { profit: true, closeTime: true },
+          select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
           take: 500,
           orderBy: { closeTime: "desc" },
         },
@@ -113,6 +113,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       trades: ea.trades.map((t) => ({
         profit: t.profit,
         closeTime: t.closeTime?.toISOString() ?? null,
+        symbol: t.symbol,
+        magicNumber: t.magicNumber ?? null,
       })),
       heartbeats: ea.heartbeats.map((h) => ({
         equity: h.equity,

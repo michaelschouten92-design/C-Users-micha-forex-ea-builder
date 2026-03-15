@@ -41,7 +41,12 @@ interface EAInstanceData {
   openTrades: number;
   totalTrades: number;
   totalProfit: number;
-  trades: { profit: number; closeTime: string | null }[];
+  trades: {
+    profit: number;
+    closeTime: string | null;
+    symbol: string;
+    magicNumber: number | null;
+  }[];
   heartbeats: { equity: number; createdAt: string }[];
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
@@ -852,8 +857,27 @@ function AccountCard({
   const winRate = calculateWinRate(allTrades);
   const profitFactor = calculateProfitFactor(allTrades);
   const maxDrawdown = calculateMaxDrawdown(allHeartbeats);
-  // Show all instances as expandable rows when there are multiple
-  const strategies = instances.length > 1 ? instances : [];
+  // Group trades by symbol + magicNumber to identify unique strategies
+  const strategyGroups = (() => {
+    const map = new Map<
+      string,
+      { symbol: string; magicNumber: number | null; trades: typeof allTrades }
+    >();
+    for (const t of allTrades) {
+      const key = `${t.symbol}|${t.magicNumber ?? "none"}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.trades.push(t);
+      } else {
+        map.set(key, { symbol: t.symbol, magicNumber: t.magicNumber, trades: [t] });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const pnlA = a.trades.reduce((s, t) => s + t.profit, 0);
+      const pnlB = b.trades.reduce((s, t) => s + t.profit, 0);
+      return Math.abs(pnlB) - Math.abs(pnlA);
+    });
+  })();
 
   const statusChanged = instances.some((ea) => changedIds.has(ea.id));
   const onlineCount = instances.filter((ea) => ea.status === "ONLINE").length;
@@ -1045,7 +1069,7 @@ function AccountCard({
       </div>
 
       {/* Expand strategies toggle */}
-      {strategies.length > 0 && (
+      {strategyGroups.length > 0 && (
         <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">
           <button
             onClick={() => setExpanded(!expanded)}
@@ -1059,7 +1083,7 @@ function AccountCard({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            Show strategies ({strategies.length})
+            Show strategies ({strategyGroups.length})
           </button>
 
           {expanded && (
@@ -1071,39 +1095,40 @@ function AccountCard({
                 <span className="text-right">Trades</span>
                 <span className="text-right">Win Rate</span>
                 <span className="text-right">PF</span>
-                <span className="text-right">Baseline</span>
+                <span className="text-right">Last Trade</span>
               </div>
               {/* Strategy rows */}
-              {strategies.map((ea) => {
-                const wr = calculateWinRate(ea.trades ?? []);
-                const pf = calculateProfitFactor(ea.trades ?? []);
-                const trust = resolveInstanceBaselineTrust({
-                  hasBaseline: !!ea.baseline,
-                  relinkRequired: !!ea.relinkRequired,
-                });
+              {strategyGroups.map((sg) => {
+                const pnl = sg.trades.reduce((s, t) => s + t.profit, 0);
+                const wr = calculateWinRate(sg.trades);
+                const pf = calculateProfitFactor(sg.trades);
+                const lastTrade = sg.trades
+                  .map((t) => t.closeTime)
+                  .filter(Boolean)
+                  .sort()
+                  .pop();
                 return (
                   <div
-                    key={ea.id}
+                    key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
                     className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-[#CBD5E1] truncate">
-                        {ea.symbol ?? ea.eaName}
-                        {ea.timeframe && (
-                          <span className="text-[#7C8DB0] ml-1">{ea.timeframe}</span>
-                        )}
-                      </p>
-                      <p className="text-[10px] text-[#64748B] truncate">{ea.eaName}</p>
+                      <p className="text-xs font-medium text-[#CBD5E1] truncate">{sg.symbol}</p>
+                      {sg.magicNumber != null && (
+                        <p className="text-[10px] text-[#64748B] truncate">
+                          Magic: {sg.magicNumber}
+                        </p>
+                      )}
                     </div>
                     <p
                       className={`text-xs font-medium text-right self-center ${
-                        ea.totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                        pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
                       }`}
                     >
-                      {formatCurrency(ea.totalProfit)}
+                      {formatCurrency(pnl)}
                     </p>
                     <p className="text-xs text-[#CBD5E1] text-right self-center">
-                      {ea.totalTrades}
+                      {sg.trades.length}
                     </p>
                     <p className="text-xs text-[#CBD5E1] text-right self-center">
                       {wr.toFixed(1)}%
@@ -1111,18 +1136,9 @@ function AccountCard({
                     <p className="text-xs text-[#CBD5E1] text-right self-center">
                       {pf === Infinity ? "∞" : pf.toFixed(2)}
                     </p>
-                    <div className="flex justify-end self-center">
-                      <span
-                        className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium rounded-full"
-                        style={{
-                          backgroundColor: `${trust.color}20`,
-                          color: trust.color,
-                          border: `1px solid ${trust.color}4D`,
-                        }}
-                      >
-                        {trust.label}
-                      </span>
-                    </div>
+                    <p className="text-[10px] text-[#7C8DB0] text-right self-center">
+                      {lastTrade ? formatRelativeTime(lastTrade) : "—"}
+                    </p>
                   </div>
                 );
               })}
