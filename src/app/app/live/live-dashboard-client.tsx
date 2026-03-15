@@ -44,8 +44,8 @@ interface EAInstanceData {
   trades: {
     profit: number;
     closeTime: string | null;
-    symbol: string;
-    magicNumber: number | null;
+    symbol?: string | null;
+    magicNumber?: number | null;
   }[];
   heartbeats: { equity: number; createdAt: string }[];
   healthSnapshots?: { driftDetected: boolean; driftSeverity: number; status: string }[];

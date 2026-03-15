@@ -89,7 +89,7 @@ function renderDashboard(
     trades: ea.trades.map((t) => ({
       profit: t.profit,
       closeTime: t.closeTime?.toISOString() ?? null,
-      symbol: t.symbol,
+      symbol: t.symbol ?? null,
       magicNumber: t.magicNumber ?? null,
     })),
     heartbeats: ea.heartbeats.map((h) => ({
