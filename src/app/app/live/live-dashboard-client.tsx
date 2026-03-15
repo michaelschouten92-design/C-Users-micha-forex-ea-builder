@@ -1160,9 +1160,19 @@ function AccountCard({
         {expanded && (
           <div className="mt-3 space-y-1">
             {strategyGroups.length === 0 ? (
-              <p className="text-xs text-[#64748B] italic px-3 py-2">
-                No closed trades yet — strategies will appear once trades are recorded.
-              </p>
+              <div className="px-3 py-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 w-2 h-2 rounded-full bg-[#10B981] animate-pulse flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
+                    <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
+                      Your Monitor EA is connected and listening for trades. Once your EA opens and
+                      closes a trade, the strategy will appear here automatically. You can then link
+                      a baseline to activate edge monitoring.
+                    </p>
+                  </div>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Header row */}

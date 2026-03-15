@@ -22,6 +22,7 @@ export async function GET() {
         exportJobId: true,
         strategyVersionId: true,
         lastHeartbeat: true,
+        totalTrades: true,
         terminalDeployments: {
           select: { baselineStatus: true },
           take: 1,
@@ -35,6 +36,7 @@ export async function GET() {
     (i) => i.lastHeartbeat && i.lastHeartbeat > fiveMinutesAgo
   );
   const baselineLinked = instances.some((i) => i.strategyVersionId !== null);
+  const hasTrades = instances.some((i) => i.totalTrades > 0);
 
   // Find first instance eligible for baseline linking:
   // external (no exportJobId), no baseline yet, not in relink state
@@ -48,6 +50,7 @@ export async function GET() {
   return NextResponse.json({
     hasBacktest: backtestCount > 0,
     monitorConnected,
+    hasTrades,
     baselineLinked,
     firstLinkable: linkable
       ? {
