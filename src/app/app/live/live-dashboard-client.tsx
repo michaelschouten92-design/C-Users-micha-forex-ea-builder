@@ -852,7 +852,8 @@ function AccountCard({
   const winRate = calculateWinRate(allTrades);
   const profitFactor = calculateProfitFactor(allTrades);
   const maxDrawdown = calculateMaxDrawdown(allHeartbeats);
-  const strategies = instances.filter((ea) => ea.symbol !== null);
+  // Show all instances as expandable rows when there are multiple
+  const strategies = instances.length > 1 ? instances : [];
 
   const statusChanged = instances.some((ea) => changedIds.has(ea.id));
   const onlineCount = instances.filter((ea) => ea.status === "ONLINE").length;
@@ -2639,88 +2640,6 @@ export function LiveDashboardClient({
               </div>
             );
           })()}
-        </div>
-      )}
-
-      {/* Workflow Navigation */}
-      {eaInstances.length > 0 && (
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-1.5">
-              <Link
-                href="/app"
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
-              >
-                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
-                  <svg
-                    className="w-2.5 h-2.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-                Build
-              </Link>
-              <svg
-                className="w-3 h-3 text-[#4F46E5]/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <span className="flex items-center gap-1 px-2 py-1 rounded bg-[#4F46E5]/20 text-[10px] font-semibold text-[#A78BFA]">
-                <span className="w-4 h-4 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[8px]">
-                  2
-                </span>
-                Deploy
-              </span>
-              <svg
-                className="w-3 h-3 text-[#4F46E5]/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-              <Link
-                href="/app/journal"
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
-              >
-                <span className="w-4 h-4 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
-                  3
-                </span>
-                Monitor
-              </Link>
-            </div>
-            <Link
-              href="/app/journal"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-[#22D3EE] border border-[#22D3EE]/30 rounded-lg hover:bg-[#22D3EE]/10 transition-all duration-200"
-            >
-              Trade Journal
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </Link>
-          </div>
         </div>
       )}
 
