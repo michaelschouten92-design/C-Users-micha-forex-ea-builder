@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "LiveEAInstance" ADD COLUMN "baselineDecay" DOUBLE PRECISION NOT NULL DEFAULT 0.75;

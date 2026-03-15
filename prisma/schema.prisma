@@ -413,6 +413,9 @@ model LiveEAInstance {
   peakScore         Float     @default(0)
   peakScoreAt       DateTime?
 
+  // Baseline decay: fraction of backtest performance expected live (0.0–1.0)
+  baselineDecay     Float     @default(0.75)
+
   // Deployment Status (computed, cached per instance).
   // HISTORICAL NAME: "strategyStatus" is a legacy column name. Semantically this
   // is an instance-level (deployment-level) computed status, NOT a strategy-wide

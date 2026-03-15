@@ -204,16 +204,18 @@ function queryEaInstances(userId: string) {
         select: { equity: true, createdAt: true },
       },
       exportJobId: true,
-      // Edge drift: baseline winrate from validated backtest (same path for all strategies)
       strategyVersion: {
         select: {
-          backtestBaseline: {
-            select: { winRate: true },
-          },
           strategyIdentity: {
             select: { strategyId: true },
           },
         },
+      },
+      // CUSUM drift: latest health snapshot for drift status
+      healthSnapshots: {
+        orderBy: { createdAt: "desc" as const },
+        take: 1,
+        select: { driftDetected: true },
       },
       // Terminal deployment baseline status (derived read-only flag for UI)
       terminalDeployments: {

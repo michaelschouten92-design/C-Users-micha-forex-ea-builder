@@ -66,7 +66,7 @@ export const MIN_TRADES_FOR_ASSESSMENT = 10;
 export const MIN_DAYS_FOR_ASSESSMENT = 7;
 
 /** Minimum time between health evaluations (milliseconds) */
-export const HEALTH_EVAL_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+export const HEALTH_EVAL_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 /** Maximum staleness before on-demand recalculation (milliseconds) */
 export const HEALTH_STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes

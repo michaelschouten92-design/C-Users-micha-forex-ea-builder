@@ -9,8 +9,6 @@ import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
-import { computeLiveWinrateFromTrades, EDGE_DRIFT_TRADES_N } from "./edge-drift-helpers";
-import { computeEdgeDrift } from "@/domain/strategy/edge-drift";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 
 export default async function LiveEADashboardPage({
@@ -313,8 +311,7 @@ function SystemStatusStrip({
   instances: {
     status: string;
     operatorHold: string | null;
-    trades: { profit: number | null }[];
-    strategyVersion?: { backtestBaseline?: { winRate: number | null } | null } | null;
+    healthSnapshots?: { driftDetected: boolean }[];
   }[];
   authority: AuthorityDecision | null;
 }) {
@@ -323,20 +320,8 @@ function SystemStatusStrip({
   const halted = instances.filter((i) => i.operatorHold !== "NONE").length;
   const online = instances.filter((i) => i.status === "ONLINE").length;
 
-  let driftCount = 0;
-  for (const inst of instances) {
-    const baselineWinrate = inst.strategyVersion?.backtestBaseline?.winRate ?? null;
-    const hasBaseline =
-      baselineWinrate !== null &&
-      Number.isFinite(baselineWinrate) &&
-      baselineWinrate >= 0 &&
-      baselineWinrate <= 100;
-    if (!hasBaseline) continue;
-    const live = computeLiveWinrateFromTrades(inst.trades.slice(0, EDGE_DRIFT_TRADES_N));
-    if (!live.ok || live.liveWinrate === undefined) continue;
-    const drift = computeEdgeDrift(baselineWinrate!, live.liveWinrate);
-    if (drift.status !== "OK") driftCount++;
-  }
+  // Count instances where CUSUM detected drift (latest snapshot)
+  const driftCount = instances.filter((i) => i.healthSnapshots?.[0]?.driftDetected === true).length;
 
   const items: { label: string; value: string; color?: string }[] = [
     { label: "Execution", value: action, color: colors.text },
