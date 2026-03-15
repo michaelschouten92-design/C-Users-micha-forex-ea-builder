@@ -1112,83 +1112,89 @@ function AccountCard({
       </div>
 
       {/* Expand strategies toggle */}
-      {strategyGroups.length > 0 && (
-        <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-xs font-medium text-[#A78BFA] hover:text-white transition-colors"
+      <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 text-xs font-medium text-[#A78BFA] hover:text-white transition-colors"
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <svg
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            Show strategies ({strategyGroups.length})
-          </button>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          Show strategies ({strategyGroups.length})
+        </button>
 
-          {expanded && (
-            <div className="mt-3 space-y-1">
-              {/* Header row */}
-              <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
-                <span>Strategy</span>
-                <span className="text-right">P&L</span>
-                <span className="text-right">Trades</span>
-                <span className="text-right">Win Rate</span>
-                <span className="text-right">PF</span>
-                <span className="text-right">Last Trade</span>
-              </div>
-              {/* Strategy rows */}
-              {strategyGroups.map((sg) => {
-                const pnl = sg.trades.reduce((s, t) => s + t.profit, 0);
-                const wr = calculateWinRate(sg.trades);
-                const pf = calculateProfitFactor(sg.trades);
-                const lastTrade = sg.trades
-                  .map((t) => t.closeTime)
-                  .filter(Boolean)
-                  .sort()
-                  .pop();
-                return (
-                  <div
-                    key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
-                    className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-[#CBD5E1] truncate">{sg.symbol}</p>
-                      {sg.magicNumber != null && (
-                        <p className="text-[10px] text-[#64748B] truncate">
-                          Magic: {sg.magicNumber}
-                        </p>
-                      )}
-                    </div>
-                    <p
-                      className={`text-xs font-medium text-right self-center ${
-                        pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
-                      }`}
+        {expanded && (
+          <div className="mt-3 space-y-1">
+            {strategyGroups.length === 0 ? (
+              <p className="text-xs text-[#64748B] italic px-3 py-2">
+                No closed trades yet — strategies will appear once trades are recorded.
+              </p>
+            ) : (
+              <>
+                {/* Header row */}
+                <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                  <span>Strategy</span>
+                  <span className="text-right">P&L</span>
+                  <span className="text-right">Trades</span>
+                  <span className="text-right">Win Rate</span>
+                  <span className="text-right">PF</span>
+                  <span className="text-right">Last Trade</span>
+                </div>
+                {/* Strategy rows */}
+                {strategyGroups.map((sg) => {
+                  const pnl = sg.trades.reduce((s, t) => s + t.profit, 0);
+                  const wr = calculateWinRate(sg.trades);
+                  const pf = calculateProfitFactor(sg.trades);
+                  const lastTrade = sg.trades
+                    .map((t) => t.closeTime)
+                    .filter(Boolean)
+                    .sort()
+                    .pop();
+                  return (
+                    <div
+                      key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
+                      className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
                     >
-                      {formatCurrency(pnl)}
-                    </p>
-                    <p className="text-xs text-[#CBD5E1] text-right self-center">
-                      {sg.trades.length}
-                    </p>
-                    <p className="text-xs text-[#CBD5E1] text-right self-center">
-                      {wr.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-[#CBD5E1] text-right self-center">
-                      {pf === Infinity ? "∞" : pf.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-[#7C8DB0] text-right self-center">
-                      {lastTrade ? formatRelativeTime(lastTrade) : "—"}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-[#CBD5E1] truncate">{sg.symbol}</p>
+                        {sg.magicNumber != null && (
+                          <p className="text-[10px] text-[#64748B] truncate">
+                            Magic: {sg.magicNumber}
+                          </p>
+                        )}
+                      </div>
+                      <p
+                        className={`text-xs font-medium text-right self-center ${
+                          pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                        }`}
+                      >
+                        {formatCurrency(pnl)}
+                      </p>
+                      <p className="text-xs text-[#CBD5E1] text-right self-center">
+                        {sg.trades.length}
+                      </p>
+                      <p className="text-xs text-[#CBD5E1] text-right self-center">
+                        {wr.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-[#CBD5E1] text-right self-center">
+                        {pf === Infinity ? "∞" : pf.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-[#7C8DB0] text-right self-center">
+                        {lastTrade ? formatRelativeTime(lastTrade) : "—"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
