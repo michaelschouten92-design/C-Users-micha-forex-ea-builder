@@ -31,6 +31,7 @@ export type AuditEventType =
   | "live.api_key_rotated"
   | "live.strategy_status_change"
   | "live.baseline_linked"
+  | "live.baseline_unlinked"
   // Terminal
   | "live.terminal_registered"
   | "live.terminal_deleted"
