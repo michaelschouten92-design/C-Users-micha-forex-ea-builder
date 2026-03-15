@@ -2,21 +2,19 @@
 
 import { useState } from "react";
 import { JournalContent } from "../journal/page";
-import { TerminalsPanel } from "./terminals-panel";
 
-type Tab = "strategies" | "journal" | "terminals";
+type Tab = "accounts" | "journal";
 
 interface MonitorTabsProps {
   defaultTab?: Tab;
   children: React.ReactNode;
 }
 
-export function MonitorTabs({ defaultTab = "strategies", children }: MonitorTabsProps) {
+export function MonitorTabs({ defaultTab = "accounts", children }: MonitorTabsProps) {
   const [tab, setTab] = useState<Tab>(defaultTab);
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "strategies", label: "Strategies" },
-    { key: "terminals", label: "Terminals" },
+    { key: "accounts", label: "Accounts" },
     { key: "journal", label: "Journal" },
   ];
 
@@ -38,8 +36,7 @@ export function MonitorTabs({ defaultTab = "strategies", children }: MonitorTabs
         ))}
       </div>
 
-      {tab === "strategies" && <>{children}</>}
-      {tab === "terminals" && <TerminalsPanel />}
+      {tab === "accounts" && <>{children}</>}
       {tab === "journal" && <JournalContent />}
     </div>
   );

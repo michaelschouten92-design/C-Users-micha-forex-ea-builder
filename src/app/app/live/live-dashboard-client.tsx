@@ -773,6 +773,367 @@ function resolveInstanceAttention(
 }
 
 // ============================================
+// ACCOUNT GROUPING
+// ============================================
+
+interface AccountGroup {
+  key: string;
+  broker: string | null;
+  accountNumber: string | null;
+  instances: EAInstanceData[];
+  /** Account-wide instance (symbol === null) if present, otherwise first instance */
+  primary: EAInstanceData;
+}
+
+function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
+  const map = new Map<string, EAInstanceData[]>();
+  for (const ea of instances) {
+    const key = `${ea.broker ?? "Unknown"}|${ea.accountNumber ?? ea.id}`;
+    const group = map.get(key) ?? [];
+    group.push(ea);
+    map.set(key, group);
+  }
+  return Array.from(map.entries()).map(([key, group]) => {
+    // Use account-wide instance as primary if available, otherwise first
+    const accountWide = group.find((ea) => ea.symbol === null);
+    const primary = accountWide ?? group[0];
+    return {
+      key,
+      broker: primary.broker,
+      accountNumber: primary.accountNumber,
+      instances: group,
+      primary,
+    };
+  });
+}
+
+// ============================================
+// ACCOUNT CARD
+// ============================================
+
+function AccountCard({
+  account,
+  changedIds,
+  onTogglePause,
+  onDelete,
+  onLinkBaseline,
+}: {
+  account: AccountGroup;
+  changedIds: Set<string>;
+  onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
+  onDelete: (instanceId: string) => void;
+  onLinkBaseline: (instanceId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const { primary, instances } = account;
+
+  // Account-level metrics: use primary (account-wide if available), else aggregate
+  const isAccountWide = primary.symbol === null;
+  const balance = isAccountWide
+    ? primary.balance
+    : instances.reduce((sum, ea) => sum + (ea.balance ?? 0), 0) || null;
+  const equity = isAccountWide
+    ? primary.equity
+    : instances.reduce((sum, ea) => sum + (ea.equity ?? 0), 0) || null;
+  const totalProfit = isAccountWide
+    ? primary.totalProfit
+    : instances.reduce((sum, ea) => sum + ea.totalProfit, 0);
+  const totalTrades = isAccountWide
+    ? primary.totalTrades
+    : instances.reduce((sum, ea) => sum + ea.totalTrades, 0);
+  const openTrades = isAccountWide
+    ? primary.openTrades
+    : instances.reduce((sum, ea) => sum + ea.openTrades, 0);
+
+  const allHeartbeats = isAccountWide
+    ? primary.heartbeats
+    : instances.flatMap((ea) => ea.heartbeats ?? []);
+  const allTrades = isAccountWide ? primary.trades : instances.flatMap((ea) => ea.trades ?? []);
+  const winRate = calculateWinRate(allTrades);
+  const profitFactor = calculateProfitFactor(allTrades);
+  const maxDrawdown = calculateMaxDrawdown(allHeartbeats);
+  const strategies = instances.filter((ea) => ea.symbol !== null);
+
+  const statusChanged = instances.some((ea) => changedIds.has(ea.id));
+  const onlineCount = instances.filter((ea) => ea.status === "ONLINE").length;
+  const accountStatus: "ONLINE" | "OFFLINE" | "ERROR" =
+    onlineCount > 0
+      ? "ONLINE"
+      : instances.some((ea) => ea.status === "ERROR")
+        ? "ERROR"
+        : "OFFLINE";
+
+  // Account-level pause/halt
+  const allPaused = instances.every((ea) => ea.tradingState === "PAUSED");
+  const anyHalted = instances.some((ea) => (ea.operatorHold ?? "NONE") !== "NONE");
+  const [pauseLoading, setPauseLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  async function handleAccountPause() {
+    setPauseLoading(true);
+    const target = allPaused ? "TRADING" : "PAUSED";
+    for (const ea of instances) {
+      await onTogglePause(ea.id, target);
+    }
+    setPauseLoading(false);
+  }
+
+  async function handleAccountDelete() {
+    setDeleteLoading(true);
+    for (const ea of instances) {
+      await onDelete(ea.id);
+    }
+  }
+
+  const lastHeartbeat = instances
+    .map((ea) => ea.lastHeartbeat)
+    .filter(Boolean)
+    .sort()
+    .pop();
+
+  return (
+    <div
+      className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
+        statusChanged
+          ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
+          : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+      }`}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
+            {primary.symbol ? (
+              <span>{primary.symbol}</span>
+            ) : (
+              <span className="text-[#7C8DB0]/70 italic">Account-wide (portfolio mode)</span>
+            )}
+            {account.broker && (
+              <>
+                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span>{account.broker}</span>
+              </>
+            )}
+            {account.accountNumber && (
+              <>
+                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span>#{account.accountNumber}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={accountStatus} animate={statusChanged} />
+          {(() => {
+            const execState = anyHalted ? "HALTED" : allPaused ? "PAUSED" : "RUN";
+            const execColor =
+              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
+            return (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-medium rounded-full"
+                style={{
+                  backgroundColor: `${execColor}20`,
+                  color: execColor,
+                  border: `1px solid ${execColor}4D`,
+                }}
+              >
+                {execState}
+              </span>
+            );
+          })()}
+          {instances.some((ea) => ea.mode === "PAPER") && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
+              Paper
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Financial metrics */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Balance</p>
+          <p className="text-lg font-semibold text-white">{formatCurrency(balance)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Equity</p>
+          <p className="text-lg font-semibold text-white">{formatCurrency(equity)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit</p>
+          <p
+            className={`text-lg font-semibold ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+          >
+            {formatCurrency(totalProfit)}
+          </p>
+        </div>
+      </div>
+
+      {/* Mini equity chart */}
+      <div className="mb-4 bg-[#0A0118] rounded-lg p-2">
+        <MiniEquityChart heartbeats={allHeartbeats} />
+      </div>
+
+      {/* Performance metrics */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Trades</p>
+          <p className="text-sm font-semibold text-white">{totalTrades}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Win Rate</p>
+          <p className="text-sm font-semibold text-white">{winRate.toFixed(1)}%</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit Factor</p>
+          <p className="text-sm font-semibold text-white">
+            {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Max Drawdown</p>
+          <p className="text-sm font-semibold text-white">{maxDrawdown.toFixed(1)}%</p>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        <button
+          onClick={handleAccountPause}
+          disabled={pauseLoading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+            allPaused
+              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
+              : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
+          }`}
+        >
+          {allPaused ? "▶ Resume All" : "⏸ Pause All"}
+        </button>
+
+        {showDeleteConfirm ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#EF4444]">Delete all instances?</span>
+            <button
+              onClick={handleAccountDelete}
+              disabled={deleteLoading}
+              className="px-2 py-1 text-xs font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626]"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-2 py-1 text-xs font-medium text-[#94A3B8] hover:text-white"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-all duration-200"
+          >
+            🗑 Delete
+          </button>
+        )}
+
+        <span className="ml-auto text-[10px] text-[#64748B]">
+          Last heartbeat: {formatRelativeTime(lastHeartbeat ?? null)}
+        </span>
+      </div>
+
+      {/* Expand strategies toggle */}
+      {strategies.length > 0 && (
+        <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-2 text-xs font-medium text-[#A78BFA] hover:text-white transition-colors"
+          >
+            <svg
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Show strategies ({strategies.length})
+          </button>
+
+          {expanded && (
+            <div className="mt-3 space-y-1">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                <span>Strategy</span>
+                <span className="text-right">P&L</span>
+                <span className="text-right">Trades</span>
+                <span className="text-right">Win Rate</span>
+                <span className="text-right">PF</span>
+                <span className="text-right">Baseline</span>
+              </div>
+              {/* Strategy rows */}
+              {strategies.map((ea) => {
+                const wr = calculateWinRate(ea.trades ?? []);
+                const pf = calculateProfitFactor(ea.trades ?? []);
+                const trust = resolveInstanceBaselineTrust({
+                  hasBaseline: !!ea.baseline,
+                  relinkRequired: !!ea.relinkRequired,
+                });
+                return (
+                  <div
+                    key={ea.id}
+                    className="grid grid-cols-[1fr_80px_70px_70px_70px_90px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[#CBD5E1] truncate">
+                        {ea.symbol ?? ea.eaName}
+                        {ea.timeframe && (
+                          <span className="text-[#7C8DB0] ml-1">{ea.timeframe}</span>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-[#64748B] truncate">{ea.eaName}</p>
+                    </div>
+                    <p
+                      className={`text-xs font-medium text-right self-center ${
+                        ea.totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                      }`}
+                    >
+                      {formatCurrency(ea.totalProfit)}
+                    </p>
+                    <p className="text-xs text-[#CBD5E1] text-right self-center">
+                      {ea.totalTrades}
+                    </p>
+                    <p className="text-xs text-[#CBD5E1] text-right self-center">
+                      {wr.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-[#CBD5E1] text-right self-center">
+                      {pf === Infinity ? "∞" : pf.toFixed(2)}
+                    </p>
+                    <div className="flex justify-end self-center">
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 text-[9px] font-medium rounded-full"
+                        style={{
+                          backgroundColor: `${trust.color}20`,
+                          color: trust.color,
+                          border: `1px solid ${trust.color}4D`,
+                        }}
+                      >
+                        {trust.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // EA CARD
 // ============================================
 
@@ -2525,14 +2886,13 @@ export function LiveDashboardClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {(modeFilter === "ALL"
-            ? eaInstances
-            : eaInstances.filter((ea) => ea.mode === modeFilter)
-          ).map((ea) => (
-            <EACard
-              key={ea.id}
-              ea={ea}
-              statusChanged={changedIds.has(ea.id)}
+          {groupByAccount(
+            modeFilter === "ALL" ? eaInstances : eaInstances.filter((ea) => ea.mode === modeFilter)
+          ).map((account) => (
+            <AccountCard
+              key={account.key}
+              account={account}
+              changedIds={changedIds}
               onTogglePause={handleTogglePause}
               onDelete={handleDelete}
               onLinkBaseline={setLinkBaselineInstanceId}
