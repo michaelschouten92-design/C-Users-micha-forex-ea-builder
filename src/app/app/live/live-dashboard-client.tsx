@@ -870,7 +870,11 @@ function AccountCard({
       if (existing) {
         existing.trades.push(t);
       } else {
-        map.set(key, { symbol: t.symbol, magicNumber: t.magicNumber, trades: [t] });
+        map.set(key, {
+          symbol: t.symbol ?? "UNKNOWN",
+          magicNumber: t.magicNumber ?? null,
+          trades: [t],
+        });
       }
     }
     return Array.from(map.values()).sort((a, b) => {
