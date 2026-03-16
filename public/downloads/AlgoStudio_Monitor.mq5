@@ -113,6 +113,8 @@ int    g_queueCount = 0;
 // State
 bool   g_initialized = false;
 bool   g_sessionStartSent = false;
+bool   g_chainDegraded = false;    // True after event drop — chain stalled until resync
+int    g_droppedEvents = 0;        // Cumulative dropped events (persisted across restarts)
 string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
@@ -1220,6 +1222,8 @@ void SendHeartbeat()
       + JMoney("totalProfit", totalPL) + ","
       + JMoney("drawdown", dd) + ","
       + JInt("spread", spread)
+      + (g_droppedEvents > 0 ? "," + JInt("droppedEvents", g_droppedEvents) : "")
+      + (g_chainDegraded ? ",\"chainStalled\":true" : "")
       + deployJson
       + discoveryJson
       + "}";
@@ -1443,6 +1447,7 @@ void SyncChainState()
       }
    }
 
+   g_chainDegraded = false;
    SaveState();
    Print("AlgoStudio Monitor: Chain synced. seqNo=", g_seqNo, " hash=", StringSubstr(g_lastHash, 0, 16), "...");
 }
@@ -1455,6 +1460,8 @@ void EnqueueEvent(string json)
    if(g_queueCount >= MAX_QUEUE_SIZE)
    {
       Print("AlgoStudio Monitor: Offline queue full (", MAX_QUEUE_SIZE, "). Dropping oldest event.");
+      g_droppedEvents++;
+      g_chainDegraded = true;
       // Shift array left
       for(int i = 0; i < g_queueCount - 1; i++)
       {
@@ -1509,6 +1516,8 @@ void FlushOfflineQueue()
             Print("AlgoStudio Monitor: Dropping poison queued event after ",
                   g_queueRetryCount[i], " permanent failures (last status: ", status,
                   "). Event discarded to unblock queue.");
+            g_droppedEvents++;
+            g_chainDegraded = true;
             consumed++;
          }
          else
@@ -1618,6 +1627,8 @@ void SaveState()
    FileWriteString(handle, IntegerToString(g_seqNo) + "\n");
    FileWriteString(handle, g_lastHash + "\n");
    FileWriteString(handle, g_instanceId + "\n");
+   FileWriteString(handle, IntegerToString(g_droppedEvents) + "\n");
+   FileWriteString(handle, (g_chainDegraded ? "1" : "0") + "\n");
 
    FileClose(handle);
 }
@@ -1656,10 +1667,21 @@ void LoadState()
             if(StringLen(instId) > 0)
                g_instanceId = instId;
          }
+         // Lines 4-5: hardening state (optional — backward compatible with older state files)
+         if(!FileIsEnding(handle))
+         {
+            g_droppedEvents = (int)StringToInteger(FileReadString(handle));
+         }
+         if(!FileIsEnding(handle))
+         {
+            g_chainDegraded = (FileReadString(handle) == "1");
+         }
          FileClose(handle);
 
          Print("AlgoStudio Monitor: Restored state. seqNo=", g_seqNo,
-               " instanceId=", StringLen(g_instanceId) > 0 ? g_instanceId : "(pending)");
+               " instanceId=", StringLen(g_instanceId) > 0 ? g_instanceId : "(pending)",
+               (g_droppedEvents > 0 ? " droppedEvents=" + IntegerToString(g_droppedEvents) : ""),
+               (g_chainDegraded ? " CHAIN_DEGRADED" : ""));
       }
    }
 
