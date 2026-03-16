@@ -79,31 +79,23 @@ export async function POST(
       );
     }
 
-    // 6. Clear the strategyVersionId on the instance
-    await prisma.liveEAInstance.update({
-      where: { id: instanceId },
-      data: { strategyVersionId: null },
-    });
-
-    // 7. Reset deployment baseline status if deploymentId provided
-    if (body.deploymentId) {
-      await prisma.terminalDeployment.update({
-        where: { id: body.deploymentId },
-        data: {
-          baselineStatus: "UNLINKED",
-          strategyVersionId: null,
-        },
-      });
-    } else {
-      // Reset all deployments for this instance
-      await prisma.terminalDeployment.updateMany({
-        where: { instanceId },
-        data: {
-          baselineStatus: "UNLINKED",
-          strategyVersionId: null,
-        },
-      });
-    }
+    // 6. Clear instance baseline + reset deployments atomically
+    const txOps = [
+      prisma.liveEAInstance.update({
+        where: { id: instanceId },
+        data: { strategyVersionId: null },
+      }),
+      body.deploymentId
+        ? prisma.terminalDeployment.update({
+            where: { id: body.deploymentId },
+            data: { baselineStatus: "UNLINKED", strategyVersionId: null },
+          })
+        : prisma.terminalDeployment.updateMany({
+            where: { instanceId },
+            data: { baselineStatus: "UNLINKED", strategyVersionId: null },
+          }),
+    ];
+    await prisma.$transaction(txOps);
 
     // 8. Audit
     const auditCtx = getAuditContext(request);
