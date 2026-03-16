@@ -22,7 +22,7 @@ const faqItems = [
   // General
   {
     q: "What is AlgoStudio?",
-    a: "AlgoStudio is a monitoring and governance platform for algorithmic trading strategies. It monitors live strategy performance against validated baselines, detects structural deviation, verifies track records with cryptographic proof, and provides lifecycle governance for deployed strategies.",
+    a: "AlgoStudio is a monitoring and governance platform for algorithmic trading strategies. It monitors live strategy performance against validated baselines, detects structural deviation, verifies track records with cryptographic proof, and provides lifecycle monitoring and health signals for deployed strategies.",
     category: "General" as const,
   },
   {

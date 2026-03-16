@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
         "@type": "HowToStep",
         position: 3,
         name: "Monitor continuously",
-        text: "Live health scoring detects drift, drawdown anomalies, and edge degradation. A hash-chained trade log produces tamper-evident records. Lifecycle governance responds automatically.",
+        text: "Live health scoring detects drift, drawdown anomalies, and edge degradation. A hash-chained trade log produces tamper-evident records. Lifecycle signals alert you when strategy health changes.",
       },
       {
         "@type": "HowToStep",
@@ -237,8 +237,9 @@ export default function HowItWorksPage() {
                   Lifecycle governance
                 </h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Strategies operate in one of three states: running, paused, or stopped.
-                  Transitions are based on statistical evidence, not manual judgment.
+                  Strategies operate in one of three states: running, paused, or stopped. Status
+                  recommendations are based on statistical evidence, giving you clear signals to act
+                  on.
                 </p>
               </div>
               <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">

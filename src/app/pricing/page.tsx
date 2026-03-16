@@ -62,7 +62,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
       ["Live health monitoring", true, true, true, true],
       ["Drift detection", true, true, true, true],
       ["Edge degradation analysis", true, true, true, true],
-      ["Lifecycle governance (RUN / PAUSE / STOP)", true, true, true, true],
+      ["Lifecycle status tracking (RUN / PAUSE / STOP)", true, true, true, true],
       ["Governance snapshot logging", true, true, true, true],
       ["Portfolio-level governance", true, true, true, true],
     ],

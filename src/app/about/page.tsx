@@ -99,7 +99,7 @@ export default function AboutPage() {
               <p>
                 When deviation is detected, the platform records it, scores its severity, and
                 surfaces it through lifecycle governance — a structured framework that maps strategy
-                health to operational status.
+                health to operational insight.
               </p>
             </div>
 
@@ -115,7 +115,7 @@ export default function AboutPage() {
                 },
                 {
                   label: "Govern",
-                  desc: "Lifecycle framework that maps strategy health to operational decisions.",
+                  desc: "Lifecycle framework that maps strategy health to operational insight.",
                 },
               ].map((item) => (
                 <div
