@@ -196,6 +196,8 @@ function queryEaInstances(userId: string) {
       lifecycleState: true,
       trades: {
         where: { closeTime: { not: null } },
+        orderBy: { closeTime: "desc" },
+        take: 1000,
         select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
       },
       heartbeats: {
