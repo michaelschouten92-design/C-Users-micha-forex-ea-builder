@@ -17,10 +17,6 @@ const SECTIONS = [
     ],
   },
   {
-    title: "Features",
-    links: [{ label: "MT5 Export", href: "/product/mt5-export" }],
-  },
-  {
     title: "Resources",
     links: [
       { label: "Blog", href: "/blog" },

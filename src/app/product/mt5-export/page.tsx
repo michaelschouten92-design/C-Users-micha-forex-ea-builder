@@ -8,8 +8,9 @@ import { CTASection } from "@/components/marketing/cta-section";
 export const metadata: Metadata = {
   title: "MQL5 Export — Clean Code You Own | AlgoStudio",
   description:
-    "AlgoStudio's EA builder exports clean, well-commented MQL5 source code. No dependencies. Compatible with any MT5 broker. Learn what you get and how it works.",
+    "Export clean, well-commented MQL5 source code from AlgoStudio. No dependencies. Compatible with any MT5 broker. Learn what you get and how it works.",
   alternates: { canonical: "/product/mt5-export" },
+  robots: { index: false, follow: false },
 };
 
 const breadcrumbs = [
@@ -115,8 +116,8 @@ export default function MT5ExportPage() {
               {[
                 {
                   step: "1",
-                  title: "Build your EA",
-                  desc: "Choose a template and adjust settings in the AlgoStudio EA builder. Your strategy is validated in real-time.",
+                  title: "Configure your EA",
+                  desc: "Choose a template and adjust settings. Your strategy is validated in real-time.",
                 },
                 {
                   step: "2",

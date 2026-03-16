@@ -135,10 +135,6 @@ export default function HowItWorksPage() {
                 </p>
               </div>
             </div>
-            <p className="mt-3 ml-0 md:ml-12 text-xs text-[#71717A]">
-              An optional EA builder is also available if you need to generate a strategy to
-              evaluate.
-            </p>
           </section>
 
           {/* ════════════════════════════════════════════════════════════

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Sign In",
   description:
-    "Sign in or create an AlgoStudio account. Build MetaTrader 5 & 4 Expert Advisors with our visual strategy builder.",
+    "Sign in or create an AlgoStudio account. Monitor, govern, and verify your MetaTrader 5 trading strategies.",
   alternates: { canonical: "/login" },
   robots: { index: false, follow: false },
 };

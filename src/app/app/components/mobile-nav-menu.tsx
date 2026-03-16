@@ -3,11 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-interface MobileNavMenuProps {
-  firstProjectId: string | null;
-}
-
-export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
+export function MobileNavMenu() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -68,21 +64,6 @@ export function MobileNavMenu({ firstProjectId }: MobileNavMenuProps) {
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-56 bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-2 overflow-hidden">
-          <Link
-            href={firstProjectId ? `/app/projects/${firstProjectId}` : "/app"}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#818CF8] font-medium hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-              />
-            </svg>
-            Build
-          </Link>
           <Link
             href="/app/evaluate"
             onClick={() => setOpen(false)}

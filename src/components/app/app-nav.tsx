@@ -5,24 +5,22 @@ import { NotificationBell } from "./notification-bell";
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
 import { TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 
-export type NavItem = "build" | "evaluate" | "monitor" | "risk" | "settings";
+export type NavItem = "evaluate" | "monitor" | "risk" | "settings";
 
 interface AppNavProps {
   activeItem?: NavItem;
   session: { user: { email?: string | null } };
   tier: PlanTier;
-  firstProjectId: string | null;
   monitorStatus?: "healthy" | "warning" | "critical";
 }
 
 const NAV_LINKS: {
   key: NavItem;
   label: string;
-  href: (firstProjectId: string | null) => string;
+  href: () => string;
 }[] = [
   { key: "monitor", label: "Command Center", href: () => "/app/live" },
   { key: "evaluate", label: "Evaluate Strategy", href: () => "/app/evaluate" },
-  { key: "build", label: "Build", href: (id) => (id ? `/app/projects/${id}` : "/app") },
   { key: "risk", label: "Risk", href: () => "/app/risk" },
   { key: "settings", label: "Settings", href: () => "/app/settings" },
 ];
@@ -33,7 +31,7 @@ const MONITOR_DOT_COLOR: Record<string, string> = {
   critical: "#EF4444",
 };
 
-export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatus }: AppNavProps) {
+export function AppNav({ activeItem, session, tier, monitorStatus }: AppNavProps) {
   return (
     <nav
       role="navigation"
@@ -68,7 +66,7 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.key}
-                href={link.href(firstProjectId)}
+                href={link.href()}
                 className={`text-sm transition-colors duration-200 hidden sm:inline-flex items-center gap-1.5 ${
                   activeItem === link.key
                     ? "text-[#818CF8] font-medium"
@@ -107,7 +105,7 @@ export function AppNav({ activeItem, session, tier, firstProjectId, monitorStatu
                 Sign Out
               </button>
             </form>
-            <MobileNavMenu firstProjectId={firstProjectId} />
+            <MobileNavMenu />
           </div>
         </div>
       </div>

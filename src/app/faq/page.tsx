@@ -78,7 +78,7 @@ const faqItems = [
   // Technical
   {
     q: "How do strategies enter AlgoStudio?",
-    a: "Strategies can enter through broker connection, backtest report upload, or the optional built-in EA builder. The EA builder exports standard .mq5 files for MetaTrader 5, but it is one input method \u2014 not the core of the platform.",
+    a: "Strategies can enter through broker connection or backtest report upload. Connect your MT5 account to stream live performance data, or upload an MT5 Strategy Tester report (.html) for instant evaluation.",
     category: "Technical" as const,
   },
   {

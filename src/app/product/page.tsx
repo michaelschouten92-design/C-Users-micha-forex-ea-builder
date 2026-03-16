@@ -246,18 +246,6 @@ export default function ProductPage() {
                   scoring and backtest evaluation.
                 </p>
               </div>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">
-                  EA Builder
-                  <span className="ml-2 text-[11px] font-semibold text-[#71717A] uppercase tracking-wider">
-                    Optional
-                  </span>
-                </h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Generate Expert Advisors from templates if you need a strategy to monitor. The
-                  builder is a supporting tool — not the core platform.
-                </p>
-              </div>
             </div>
           </section>
 

@@ -44,7 +44,6 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     rows: [
       ["Monitored trading accounts", "1", "Up to 3", "Up to 10", "Unlimited"],
       ["Active strategies", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
-      ["MQL5 exports", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
     ],
   },
   {
@@ -53,7 +52,6 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
       ["Backtest health scoring", true, true, true, true],
       ["Monte Carlo risk simulation", true, true, true, true],
       ["Strategy journal", true, true, true, true],
-      ["EA builder & strategy templates", true, true, true, true],
     ],
   },
   {
@@ -103,7 +101,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Are all features really included on the free plan?",
-    a: "Yes. Every platform feature \u2014 backtest scoring, Monte Carlo simulation, live monitoring, drift detection, lifecycle status tracking, verified track records, EA builder, and unlimited exports \u2014 is included on Baseline. The only limit is the number of monitored trading accounts.",
+    a: "Yes. Every platform feature \u2014 backtest scoring, Monte Carlo simulation, live monitoring, drift detection, lifecycle status tracking, verified track records \u2014 is included on Baseline. The only limit is the number of monitored trading accounts.",
   },
   {
     q: "What happens if I downgrade?",
@@ -123,7 +121,7 @@ const FAQ_ITEMS = [
 // [label, baseline, control, authority, institutional]
 const CARD_FEATURES: [string, boolean, boolean, boolean, boolean][] = [
   ["All platform features included", true, true, true, true],
-  ["Unlimited strategies & exports", true, true, true, true],
+  ["Unlimited strategies", true, true, true, true],
   ["Priority support", false, true, true, true],
   ["Email, webhook & Telegram alerts", false, true, true, true],
   ["Direct developer channel", false, false, false, true],
@@ -184,7 +182,7 @@ export default function PricingPage() {
             need.
           </p>
           <p className="mt-3 text-sm text-[#71717A] max-w-2xl mx-auto">
-            Unlimited strategies. Unlimited exports. Billed monthly. Cancel anytime.
+            Unlimited strategies. Billed monthly. Cancel anytime.
           </p>
         </div>
 

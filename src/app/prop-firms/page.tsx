@@ -294,18 +294,6 @@ export default function PropFirmsPage() {
                   verification scoring.
                 </p>
               </div>
-              <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-sm font-semibold text-[#FAFAFA]">EA Builder</h3>
-                  <span className="text-[10px] font-medium text-[#71717A] border border-[rgba(255,255,255,0.06)] rounded px-1.5 py-0.5">
-                    Optional
-                  </span>
-                </div>
-                <p className="text-sm text-[#71717A] leading-relaxed">
-                  Build a strategy using the built-in EA builder and export MQL5 code. This is one
-                  input method — not the core of the platform.
-                </p>
-              </div>
             </div>
           </section>
 

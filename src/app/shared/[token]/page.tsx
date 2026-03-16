@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${share.project.name} — Shared Strategy | AlgoStudio`,
     description:
-      share.project.description ?? "View this shared trading strategy built with AlgoStudio.",
+      share.project.description ?? "View this shared trading strategy verified with AlgoStudio.",
     robots: { index: false, follow: false },
   };
 }
@@ -149,16 +149,16 @@ export default async function SharedProjectPage({ params }: Props) {
 
           {/* CTA */}
           <div className="bg-gradient-to-r from-[#4F46E5]/20 to-[#A78BFA]/20 border border-[rgba(79,70,229,0.3)] rounded-xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-white mb-3">Build Your Own EA</h2>
+            <h2 className="text-2xl font-bold text-white mb-3">Monitor Your Strategy</h2>
             <p className="text-[#94A3B8] mb-6 max-w-lg mx-auto">
-              Create your own Expert Advisor with our visual strategy builder. No coding required.
-              Start with a template and customize to your style.
+              Track live performance, detect edge drift, and build a verified track record for your
+              MetaTrader 5 strategy.
             </p>
             <Link
               href="/login?mode=register"
               className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] text-white font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
             >
-              Start Building Free
+              Start Monitoring Free
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"

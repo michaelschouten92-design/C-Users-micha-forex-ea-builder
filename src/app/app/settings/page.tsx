@@ -44,7 +44,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen">
-      <AppNav activeItem="settings" session={session} tier={tier} firstProjectId={null} />
+      <AppNav activeItem="settings" session={session} tier={tier} />
 
       <main id="main-content" className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
         <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Settings" }]} />

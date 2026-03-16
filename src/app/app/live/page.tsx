@@ -120,7 +120,6 @@ function renderDashboard(
         activeItem="monitor"
         session={session}
         tier={tier}
-        firstProjectId={null}
         monitorStatus={
           eaInstances.length === 0
             ? undefined
@@ -244,9 +243,7 @@ function DegradedFallback({
 } = {}) {
   return (
     <div className="min-h-screen">
-      {session?.user ? (
-        <AppNav activeItem="monitor" session={session} tier="FREE" firstProjectId={null} />
-      ) : null}
+      {session?.user ? <AppNav activeItem="monitor" session={session} tier="FREE" /> : null}
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <AppBreadcrumbs
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}

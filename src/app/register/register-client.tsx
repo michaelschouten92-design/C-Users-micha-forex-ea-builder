@@ -163,11 +163,10 @@ function RegisterFormInner({
         <p className="text-xs font-medium text-[#A78BFA] mb-2">What you get for free:</p>
         <ul className="space-y-1.5">
           {[
-            "All 6 strategy templates",
-            "Full visual strategy builder",
+            "Full backtest evaluation",
             "All features included",
             "1 monitored trading account",
-            "Clean, commented source code",
+            "Verified track records",
           ].map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-xs text-[#CBD5E1]">
               <svg
