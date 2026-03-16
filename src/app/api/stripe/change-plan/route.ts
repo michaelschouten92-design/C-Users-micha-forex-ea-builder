@@ -16,7 +16,8 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
-import { invalidateSubscriptionCache } from "@/lib/plan-limits";
+import { invalidateSubscriptionCache, getMonitoredTradingAccountUsage } from "@/lib/plan-limits";
+import { getMaxMonitoredAccounts, getTierDisplayName } from "@/lib/plans";
 
 const tierOrder = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 } as const;
 
@@ -112,6 +113,19 @@ export async function POST(request: NextRequest) {
 
     if (isDowngrade) {
       // --- DOWNGRADE: Schedule tier change at period end via Subscription Schedules ---
+
+      // Block downgrade if user exceeds the target plan's account limit
+      const accountUsage = await getMonitoredTradingAccountUsage(session.user.id);
+      const newMaxAccounts = getMaxMonitoredAccounts(plan);
+      if (accountUsage > newMaxAccounts) {
+        return NextResponse.json(
+          {
+            error: `You currently have ${accountUsage} monitored trading account${accountUsage !== 1 ? "s" : ""}. The ${getTierDisplayName(plan)} plan allows ${newMaxAccounts}. Please remove ${accountUsage - newMaxAccounts} account${accountUsage - newMaxAccounts !== 1 ? "s" : ""} before downgrading.`,
+            code: "ACCOUNT_LIMIT_EXCEEDED",
+          },
+          { status: 400 }
+        );
+      }
 
       // Check for existing pending downgrade
       if (subscription.scheduledDowngradeTier === plan) {
