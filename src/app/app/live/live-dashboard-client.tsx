@@ -1224,7 +1224,7 @@ function AccountCard({
                         {formatCurrency(pnl)}
                       </p>
                       <p className="text-xs text-[#CBD5E1] text-right self-center">
-                        {sg.trades.length}
+                        {sg.trades.length >= 1000 ? "1000+" : sg.trades.length}
                       </p>
                       <p className="text-xs text-[#CBD5E1] text-right self-center">
                         {wr.toFixed(1)}%
@@ -1303,7 +1303,7 @@ function EACard({
   const winRate = calculateWinRate(trades);
   const profitFactor = calculateProfitFactor(trades);
   const maxDrawdown = calculateMaxDrawdown(heartbeats);
-  const closedCount = trades.filter((t) => t.closeTime !== null).length;
+  const closedCount = ea.totalTrades;
 
   async function handleTogglePause(): Promise<void> {
     setPauseLoading(true);
