@@ -19,7 +19,7 @@ const breadcrumbs = [
 const faqItems = [
   {
     q: "What does AlgoStudio monitor for prop firm strategies?",
-    a: "AlgoStudio tracks strategy performance against validated baselines — drawdown levels, win rate, trade frequency, and profit factor. When metrics drift outside expected bounds, the platform surfaces the deviation through lifecycle governance.",
+    a: "AlgoStudio tracks strategy performance against validated baselines — drawdown levels, win rate, trade frequency, and profit factor. When metrics drift outside expected bounds, the platform surfaces the deviation through lifecycle signals and alerts.",
   },
   {
     q: "Does AlgoStudio place trades on my prop firm account?",

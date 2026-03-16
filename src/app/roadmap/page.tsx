@@ -25,6 +25,13 @@ interface RoadmapItem {
 
 const SHIPPED: RoadmapItem[] = [
   {
+    title: "Automated Drift Detection",
+    description:
+      "Continuous monitoring that flags when live performance deviates from backtest baselines.",
+    tag: "Monitoring",
+    shipped: "Q1 2026",
+  },
+  {
     title: "Public Proof Pages",
     description:
       "Share independently verifiable strategy proof pages with hash-chain integrity and Monte Carlo analysis.",
@@ -73,15 +80,7 @@ const SHIPPED: RoadmapItem[] = [
   },
 ];
 
-const IN_PROGRESS: RoadmapItem[] = [
-  {
-    title: "Automated Drift Detection",
-    description:
-      "Continuous monitoring that flags when live performance deviates from backtest baselines.",
-    tag: "Monitoring",
-    timeline: "Q2 2026",
-  },
-];
+const IN_PROGRESS: RoadmapItem[] = [];
 
 const PLANNED: RoadmapItem[] = [
   {
@@ -99,8 +98,7 @@ const PLANNED: RoadmapItem[] = [
   },
   {
     title: "Custom Risk Rules",
-    description:
-      "Define governance rules that trigger alerts or pauses when risk thresholds are breached.",
+    description: "Define custom risk thresholds that signal alerts when conditions are breached.",
     tag: "Governance",
     timeline: "Q4 2026",
   },

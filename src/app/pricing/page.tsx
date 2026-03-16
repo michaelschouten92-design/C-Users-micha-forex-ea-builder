@@ -103,7 +103,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Are all features really included on the free plan?",
-    a: "Yes. Every platform feature \u2014 backtest scoring, Monte Carlo simulation, live monitoring, drift detection, lifecycle governance, verified track records, EA builder, and unlimited exports \u2014 is included on Baseline. The only limit is the number of monitored trading accounts.",
+    a: "Yes. Every platform feature \u2014 backtest scoring, Monte Carlo simulation, live monitoring, drift detection, lifecycle status tracking, verified track records, EA builder, and unlimited exports \u2014 is included on Baseline. The only limit is the number of monitored trading accounts.",
   },
   {
     q: "What happens if I downgrade?",
