@@ -28,8 +28,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           lastLoginAt: true,
           adminNotes: true,
           role: true,
-          referralCode: true,
-          referredBy: true,
           suspended: true,
           suspendedAt: true,
           suspendedReason: true,

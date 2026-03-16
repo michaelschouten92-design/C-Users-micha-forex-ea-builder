@@ -25,7 +25,6 @@ interface UserData {
   emailVerified: boolean;
   createdAt: string;
   lastLoginAt: string | null;
-  referredBy?: string;
   suspended?: boolean;
   subscription: { tier: string; status: string };
   projectCount: number;
@@ -427,7 +426,6 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
               <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Activity</th>
               <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Projects</th>
               <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Exports</th>
-              <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Referred By</th>
               <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Last Login</th>
               <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Joined</th>
               <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Actions</th>
@@ -490,7 +488,6 @@ export function UsersTab({ users, adminEmail, onRefresh, onUserClick }: UsersTab
                   </td>
                   <td className="px-4 py-3 text-right text-[#FAFAFA]">{user.projectCount}</td>
                   <td className="px-4 py-3 text-right text-[#FAFAFA]">{user.exportCount}</td>
-                  <td className="px-4 py-3 text-[#A1A1AA] text-xs">{user.referredBy || "-"}</td>
                   <td className="px-4 py-3 text-[#A1A1AA] text-xs">
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
                   </td>

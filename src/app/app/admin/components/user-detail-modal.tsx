@@ -18,8 +18,6 @@ interface UserDetail {
   lastLoginAt: string | null;
   adminNotes: string | null;
   role: string;
-  referralCode: string | null;
-  referredBy: string | null;
   suspended: boolean;
   suspendedAt: string | null;
   suspendedReason: string | null;
@@ -119,18 +117,6 @@ function AccountSection({ user }: { user: UserDetail }) {
             {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "Never"}
           </span>
         </div>
-        {user.referralCode && (
-          <div>
-            <span className="text-[#71717A]">Referral Code:</span>{" "}
-            <span className="text-[#818CF8] font-mono">{user.referralCode}</span>
-          </div>
-        )}
-        {user.referredBy && (
-          <div>
-            <span className="text-[#71717A]">Referred By:</span>{" "}
-            <span className="text-[#818CF8] font-mono">{user.referredBy}</span>
-          </div>
-        )}
       </div>
     </section>
   );

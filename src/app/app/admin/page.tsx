@@ -24,7 +24,6 @@ interface UserData {
   emailVerified: boolean;
   createdAt: string;
   lastLoginAt: string | null;
-  referredBy?: string;
   subscription: { tier: string; status: string };
   projectCount: number;
   exportCount: number;

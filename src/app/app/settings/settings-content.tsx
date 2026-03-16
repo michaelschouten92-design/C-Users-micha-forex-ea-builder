@@ -5,7 +5,6 @@ import { PushNotificationToggle } from "@/components/app/push-notification-toggl
 import { HandleSetting } from "@/components/app/handle-setting";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
-import { ReferralsSection } from "./referrals-section";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -87,9 +86,6 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
 
       {/* Webhook */}
       <WebhookSection />
-
-      {/* Referral Program */}
-      <ReferralsSection />
 
       {/* Change Password */}
       <ChangePasswordSection />

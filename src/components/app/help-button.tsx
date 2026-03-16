@@ -34,7 +34,7 @@ const HELP_LINKS = [
   },
   {
     label: "Contact Support",
-    href: "mailto:support@algo-studio.com",
+    href: "/contact",
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path

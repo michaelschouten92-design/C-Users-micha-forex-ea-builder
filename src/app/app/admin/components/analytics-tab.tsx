@@ -8,65 +8,19 @@ interface StatsData {
   webhookEventsLast24h: number;
 }
 
-interface UserData {
-  email: string;
-  referralCode?: string;
-  referredBy?: string;
-  subscription: { tier: string };
-}
-
-interface ReferralStat {
-  email: string;
-  referralCode: string;
-  referred: number;
-  paidConverted: number;
-}
-
 interface AnalyticsTabProps {
-  sharedUsers: UserData[];
+  sharedUsers: { email: string; subscription: { tier: string } }[];
 }
 
 export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
   const [stats, setStats] = useState<StatsData | null>(null);
-  const [referralStats, setReferralStats] = useState<ReferralStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, usersData] = await Promise.all([
-          apiClient.get<StatsData>("/api/admin/stats"),
-          Promise.resolve(sharedUsers),
-        ]);
+        const statsRes = await apiClient.get<StatsData>("/api/admin/stats");
         setStats(statsRes);
-
-        // Calculate referral stats from users data
-        const usersWithReferralCode = usersData.filter((u) => u.referralCode);
-        const referralMap: Record<string, ReferralStat> = {};
-
-        for (const user of usersWithReferralCode) {
-          referralMap[user.referralCode!] = {
-            email: user.email,
-            referralCode: user.referralCode!,
-            referred: 0,
-            paidConverted: 0,
-          };
-        }
-
-        for (const user of usersData) {
-          if (user.referredBy && referralMap[user.referredBy]) {
-            referralMap[user.referredBy].referred++;
-            if (user.subscription.tier !== "FREE") {
-              referralMap[user.referredBy].paidConverted++;
-            }
-          }
-        }
-
-        setReferralStats(
-          Object.values(referralMap)
-            .filter((r) => r.referred > 0)
-            .sort((a, b) => b.referred - a.referred)
-        );
       } catch {
         setStats(null);
       } finally {
@@ -143,46 +97,6 @@ export function AnalyticsTab({ sharedUsers }: AnalyticsTabProps) {
             <div className="text-2xl font-bold text-white mt-1">{stats.webhookEventsLast24h}</div>
           </div>
         </div>
-      </div>
-
-      {/* Referral stats */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-3">Referral Tracking</h3>
-        {referralStats.length === 0 ? (
-          <div className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 text-center text-[#71717A]">
-            No referrals yet
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)]">
-                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Referrer</th>
-                  <th className="text-left px-4 py-3 text-[#A1A1AA] font-medium">Code</th>
-                  <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">Referred</th>
-                  <th className="text-right px-4 py-3 text-[#A1A1AA] font-medium">
-                    Converted to Paid
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {referralStats.map((ref) => (
-                  <tr
-                    key={ref.referralCode}
-                    className="border-b border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-white">{ref.email}</td>
-                    <td className="px-4 py-3 text-[#818CF8] font-mono text-xs">
-                      {ref.referralCode}
-                    </td>
-                    <td className="px-4 py-3 text-right text-[#FAFAFA]">{ref.referred}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">{ref.paidConverted}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );

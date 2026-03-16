@@ -51,7 +51,6 @@ export function NotificationBell() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [total, setTotal] = useState(0);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchAlerts = useCallback(async () => {
@@ -68,8 +67,9 @@ export function NotificationBell() {
 
   // Initial fetch + poll every 60s
   useEffect(() => {
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 60_000);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount is intentional
+    void fetchAlerts();
+    const interval = setInterval(() => void fetchAlerts(), 60_000);
     return () => clearInterval(interval);
   }, [fetchAlerts]);
 
@@ -85,32 +85,32 @@ export function NotificationBell() {
   }, [open]);
 
   const acknowledge = async (alertId: string) => {
-    setLoading(true);
+    // Optimistic update — remove immediately from UI
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+    setTotal((prev) => Math.max(0, prev - 1));
     try {
       const res = await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "POST" });
-      if (res.ok) {
-        setAlerts((prev) => prev.filter((a) => a.id !== alertId));
-        setTotal((prev) => Math.max(0, prev - 1));
+      if (!res.ok) {
+        // Revert on failure — re-fetch server state
+        await fetchAlerts();
       }
     } catch {
-      // Silently fail
-    } finally {
-      setLoading(false);
+      await fetchAlerts();
     }
   };
 
   const acknowledgeAll = async () => {
-    setLoading(true);
+    const prevAlerts = alerts;
+    // Optimistic update
+    setAlerts([]);
+    setTotal(0);
     try {
       await Promise.all(
-        alerts.map((a) => fetch(`/api/alerts/${a.id}/acknowledge`, { method: "POST" }))
+        prevAlerts.map((a) => fetch(`/api/alerts/${a.id}/acknowledge`, { method: "POST" }))
       );
-      setAlerts([]);
-      setTotal(0);
     } catch {
-      // Silently fail
-    } finally {
-      setLoading(false);
+      // Revert on failure
+      await fetchAlerts();
     }
   };
 
@@ -152,7 +152,7 @@ export function NotificationBell() {
               <button
                 type="button"
                 onClick={acknowledgeAll}
-                disabled={loading}
+                disabled={false}
                 className="text-[10px] text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
               >
                 Dismiss all
@@ -208,7 +208,7 @@ export function NotificationBell() {
                         e.stopPropagation();
                         acknowledge(alert.id);
                       }}
-                      disabled={loading}
+                      disabled={false}
                       className="flex-shrink-0 text-[10px] text-[#71717A] hover:text-white transition-colors px-1.5 py-0.5 rounded disabled:opacity-50"
                       title="Dismiss"
                     >
