@@ -30,7 +30,9 @@ export type ControlLayerAlertType =
   | "DEPLOYMENT_REVIEW"
   | "MONITOR_OFFLINE"
   | "BASELINE_MISSING"
-  | "VERSION_OUTDATED";
+  | "VERSION_OUTDATED"
+  | "HEALTH_DEGRADED"
+  | "HEALTH_CRITICAL";
 
 // ── Summaries ────────────────────────────────────────────
 
@@ -41,6 +43,8 @@ const ALERT_SUMMARIES: Record<ControlLayerAlertType, string> = {
   MONITOR_OFFLINE: "Deployment went offline. No heartbeat received.",
   BASELINE_MISSING: "No baseline linked. Monitoring is limited without backtest reference.",
   VERSION_OUTDATED: "Running an outdated strategy version.",
+  HEALTH_DEGRADED: "Strategy health has degraded. Performance deviating from baseline.",
+  HEALTH_CRITICAL: "Strategy health is critical. Sustained degradation detected.",
 };
 
 // ── Public API ───────────────────────────────────────────
@@ -109,6 +113,8 @@ const ALERT_SEVERITY: Record<ControlLayerAlertType, string> = {
   MONITOR_OFFLINE: "MEDIUM",
   BASELINE_MISSING: "LOW",
   VERSION_OUTDATED: "LOW",
+  HEALTH_DEGRADED: "HIGH",
+  HEALTH_CRITICAL: "CRITICAL",
 };
 
 /** Alert types that should trigger outbound notifications (email/telegram/slack) */
@@ -117,6 +123,8 @@ const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
   "DEPLOYMENT_RESTRICTED",
   "DEPLOYMENT_REVIEW",
   "MONITOR_OFFLINE",
+  "HEALTH_DEGRADED",
+  "HEALTH_CRITICAL",
 ]);
 
 // ── Multi-channel delivery ───────────────────────────────

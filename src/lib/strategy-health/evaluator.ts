@@ -10,6 +10,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { triggerAlert } from "@/lib/alerts";
+import { emitControlLayerAlert } from "@/lib/alerts/control-layer-alerts";
 import { collectLiveMetrics } from "./collector";
 import { computeHealth } from "./scorer";
 import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
@@ -184,6 +185,19 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
 
     if (isDegrading) {
       const scoreStr = Math.round(result.overallScore * 100);
+
+      // Control-layer alert: deduplicated, delivers via email/telegram/slack/webhook
+      emitControlLayerAlert(prisma, {
+        userId: instance.userId,
+        instanceId,
+        alertType: "HEALTH_DEGRADED",
+        reasons: [`Health changed from ${prev} to ${result.status} (score: ${scoreStr}%)`],
+      }).catch((err) => {
+        logger.error({ err, instanceId }, "Failed to emit HEALTH_DEGRADED control-layer alert");
+        Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_DEGRADED" } });
+      });
+
+      // Legacy EAAlertConfig path (fires if user has matching alert configs)
       triggerAlert({
         userId: instance.userId,
         instanceId,
@@ -206,6 +220,21 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     consecutiveDegraded % ESCALATION_THRESHOLD === 0
   ) {
     const scoreStr = Math.round(result.overallScore * 100);
+
+    // Control-layer alert: deduplicated, delivers via email/telegram/slack/webhook
+    emitControlLayerAlert(prisma, {
+      userId: instance.userId,
+      instanceId,
+      alertType: "HEALTH_CRITICAL",
+      reasons: [
+        `DEGRADED for ${consecutiveDegraded + 1} consecutive evaluations (score: ${scoreStr}%)`,
+      ],
+    }).catch((err) => {
+      logger.error({ err, instanceId }, "Failed to emit HEALTH_CRITICAL control-layer alert");
+      Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_CRITICAL" } });
+    });
+
+    // Legacy EAAlertConfig path (fires if user has matching alert configs)
     triggerAlert({
       userId: instance.userId,
       instanceId,
