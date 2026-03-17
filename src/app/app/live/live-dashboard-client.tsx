@@ -170,27 +170,6 @@ function calculateProfitFactor(trades: { profit: number; closeTime: string | nul
   return grossProfit / grossLoss;
 }
 
-function calculateMaxDrawdown(heartbeats: { equity: number; createdAt: string }[]): number {
-  if (heartbeats.length === 0) return 0;
-
-  const sorted = [...heartbeats].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
-
-  let peak = sorted[0].equity;
-  let maxDD = 0;
-
-  for (const hb of sorted) {
-    if (hb.equity > peak) peak = hb.equity;
-    if (peak > 0) {
-      const dd = ((peak - hb.equity) / peak) * 100;
-      if (dd > maxDD) maxDD = dd;
-    }
-  }
-
-  return maxDD;
-}
-
 // ============================================
 // MINI EQUITY CHART
 // ============================================
@@ -1442,8 +1421,8 @@ function EACard({
   const heartbeats = ea.heartbeats ?? [];
   const winRate = calculateWinRate(trades);
   const profitFactor = calculateProfitFactor(trades);
-  const maxDrawdown = calculateMaxDrawdown(heartbeats);
   const closedCount = ea.totalTrades;
+  const isEdgeAtRisk = ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED";
 
   async function handleTogglePause(): Promise<void> {
     setPauseLoading(true);
@@ -1759,8 +1738,12 @@ function EACard({
           </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Max Drawdown</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{maxDrawdown.toFixed(1)}%</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Edge Status</p>
+          <p
+            className={`text-sm font-medium ${isEdgeAtRisk ? "text-[#EF4444]" : "text-[#10B981]"}`}
+          >
+            {isEdgeAtRisk ? "At Risk" : "Healthy"}
+          </p>
         </div>
       </div>
 
@@ -2708,12 +2691,10 @@ export function LiveDashboardClient({
     }
   }
 
-  // Calculate portfolio-level max drawdown for display
-  const portfolioMaxDrawdown = (() => {
-    const allHeartbeats = eaInstances.flatMap((ea) => ea.heartbeats ?? []);
-    if (allHeartbeats.length === 0) return 0;
-    return calculateMaxDrawdown(allHeartbeats);
-  })();
+  // Count portfolio-level Edge at Risk strategies
+  const portfolioEdgeAtRiskCount = eaInstances.filter(
+    (ea) => ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -2836,19 +2817,18 @@ export function LiveDashboardClient({
               value={eaInstances.reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />
-            {/* Portfolio Max Drawdown */}
+            {/* Portfolio Edge at Risk */}
             <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Max Drawdown
+                Edge at Risk
               </p>
               <p
                 className={`text-lg font-semibold ${
-                  portfolioMaxDrawdown > (parseFloat(globalDrawdownThreshold) || 0)
-                    ? "text-[#EF4444]"
-                    : "text-white"
+                  portfolioEdgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-white"
                 }`}
               >
-                {portfolioMaxDrawdown.toFixed(1)}%
+                {portfolioEdgeAtRiskCount}{" "}
+                {portfolioEdgeAtRiskCount === 1 ? "strategy" : "strategies"}
               </p>
             </div>
           </div>

@@ -79,7 +79,14 @@ function getBannerState(step: number, g: GuidedData): BannerState {
 export function OnboardingBanner() {
   const [guided, setGuided] = useState<GuidedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("algostudio-onboarding-banner-dismissed") === "true";
+    } catch {
+      return false;
+    }
+  });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -176,7 +183,14 @@ export function OnboardingBanner() {
             </svg>
           </Link>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={() => {
+              setDismissed(true);
+              try {
+                localStorage.setItem("algostudio-onboarding-banner-dismissed", "true");
+              } catch {
+                /* ignore */
+              }
+            }}
             className="p-1.5 text-[#7C8DB0] hover:text-white transition-colors rounded"
             aria-label="Dismiss"
           >
