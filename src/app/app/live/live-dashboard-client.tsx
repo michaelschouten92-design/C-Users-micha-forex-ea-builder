@@ -991,11 +991,30 @@ function AccountCard({
         map.set(key, { symbol: ctx.symbol, magicNumber: null, trades: [] });
       }
     }
-    return Array.from(map.values()).sort((a, b) => {
-      const pnlA = a.trades.reduce((s, t) => s + t.profit, 0);
-      const pnlB = b.trades.reduce((s, t) => s + t.profit, 0);
-      return Math.abs(pnlB) - Math.abs(pnlA);
-    });
+    return Array.from(map.entries())
+      .sort(([keyA, a], [keyB, b]) => {
+        // Match strategy group to its owning instance for priority sorting
+        const matchInstance = (k: string): EAInstanceData | undefined => {
+          if (k.startsWith("ctx:")) return instances.find((ea) => ea.id === k.slice(4));
+          const [sym] = k.split("|");
+          return instances.find(
+            (ea) =>
+              ea.symbol?.toUpperCase() === sym?.toUpperCase() ||
+              ea.deployments?.some((d) => d.symbol.toUpperCase() === sym?.toUpperCase())
+          );
+        };
+        const instA = matchInstance(keyA);
+        const instB = matchInstance(keyB);
+        if (instA && instB) {
+          const cmp = compareInstances(instA, instB);
+          if (cmp !== 0) return cmp;
+        }
+        // Fallback: PnL magnitude for rows without a matching instance
+        const pnlA = a.trades.reduce((s, t) => s + t.profit, 0);
+        const pnlB = b.trades.reduce((s, t) => s + t.profit, 0);
+        return Math.abs(pnlB) - Math.abs(pnlA);
+      })
+      .map(([, v]) => v);
   })();
 
   const statusChanged = instances.some((ea) => changedIds.has(ea.id));
