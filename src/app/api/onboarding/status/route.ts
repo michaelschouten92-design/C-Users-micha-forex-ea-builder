@@ -11,8 +11,30 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [backtestCount, instances, terminalConnections] = await Promise.all([
+  const [backtestCount, recentBacktests, instances, terminalConnections] = await Promise.all([
     prisma.backtestUpload.count({ where: { userId } }),
+    prisma.backtestUpload.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        fileName: true,
+        createdAt: true,
+        runs: {
+          take: 1,
+          select: {
+            id: true,
+            eaName: true,
+            symbol: true,
+            totalTrades: true,
+            winRate: true,
+            profitFactor: true,
+            healthScore: true,
+          },
+        },
+      },
+    }),
     prisma.liveEAInstance.findMany({
       where: { userId, deletedAt: null },
       select: {
@@ -117,6 +139,15 @@ export async function GET() {
 
     // Guided onboarding fields
     guided: {
+      currentStep: !hasTerminal
+        ? 1
+        : !hasDiscoveredStrategy
+          ? 2
+          : !hasBaselineLinked
+            ? 3
+            : !hasMonitoringActive
+              ? 4
+              : 5,
       hasTerminal,
       hasDiscoveredStrategy,
       hasBaselineLinked,
@@ -128,6 +159,22 @@ export async function GET() {
           }
         : null,
       discoveredStrategies,
+      hasBacktest: backtestCount > 0,
+      availableBaselines: recentBacktests
+        .filter((b) => b.runs.length > 0 && (b.runs[0].totalTrades ?? 0) >= 30)
+        .map((b) => {
+          const run = b.runs[0];
+          return {
+            fileName: b.fileName,
+            eaName: run.eaName,
+            symbol: run.symbol,
+            totalTrades: run.totalTrades,
+            winRate: run.winRate,
+            profitFactor: run.profitFactor,
+            healthScore: run.healthScore,
+            createdAt: b.createdAt.toISOString(),
+          };
+        }),
       monitoringInstance: monitoringInstance
         ? {
             instanceId: monitoringInstance.id,

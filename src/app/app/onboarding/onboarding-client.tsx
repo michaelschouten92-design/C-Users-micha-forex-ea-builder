@@ -14,11 +14,25 @@ interface DiscoveredStrategy {
   driftDetected: boolean;
 }
 
+interface AvailableBaseline {
+  fileName: string;
+  eaName: string | null;
+  symbol: string;
+  totalTrades: number;
+  winRate: number;
+  profitFactor: number;
+  healthScore: number;
+  createdAt: string;
+}
+
 interface GuidedData {
+  currentStep: 1 | 2 | 3 | 4 | 5;
   hasTerminal: boolean;
   hasDiscoveredStrategy: boolean;
   hasBaselineLinked: boolean;
   hasMonitoringActive: boolean;
+  hasBacktest: boolean;
+  availableBaselines: AvailableBaseline[];
   terminal: { broker: string | null; accountNumber: string | null } | null;
   discoveredStrategies: DiscoveredStrategy[];
   monitoringInstance: {
@@ -35,16 +49,6 @@ interface OnboardingStatus {
 }
 
 const TOTAL_STEPS = 5;
-
-// ── Step resolution ───────────────────────────────────────
-
-function resolveCurrentStep(g: GuidedData): 1 | 2 | 3 | 4 | 5 {
-  if (!g.hasTerminal) return 1;
-  if (!g.hasDiscoveredStrategy) return 2;
-  if (!g.hasBaselineLinked) return 3;
-  if (!g.hasMonitoringActive) return 4;
-  return 5;
-}
 
 // ── Polling hook ──────────────────────────────────────────
 
@@ -346,45 +350,125 @@ function StepStrategyDiscovered({
 function StepLinkBaseline({
   complete,
   strategies,
+  hasBacktest,
+  availableBaselines,
 }: {
   complete: boolean;
   strategies: DiscoveredStrategy[];
+  hasBacktest: boolean;
+  availableBaselines: AvailableBaseline[];
 }) {
   // Find the first strategy that doesn't have a baseline yet (not in monitoring states)
   const MONITORING_STATES = new Set(["LIVE_MONITORING", "EDGE_AT_RISK", "INVALIDATED"]);
   const linkableStrategy = strategies.find((s) => !MONITORING_STATES.has(s.lifecycleState));
   const displayStrategy = linkableStrategy ?? strategies[0];
+  const hasLinkableBaseline = availableBaselines.length > 0;
+  const bestBaseline = availableBaselines[0] ?? null;
 
   return (
     <div className="space-y-5">
       <StepHeader
         stepNumber={4}
-        title="Link baseline"
+        title={
+          complete
+            ? "Baseline linked"
+            : hasLinkableBaseline
+              ? "Baseline ready to link"
+              : "Add a baseline backtest"
+        }
         subtitle={
           complete
             ? "Baseline linked to strategy"
-            : "Connect your backtest results to this strategy so AlgoStudio can verify live performance."
+            : hasLinkableBaseline
+              ? "Link your backtest baseline to activate monitoring for your discovered strategy."
+              : "AlgoStudio compares live behavior against a baseline backtest. This enables health scoring, drift detection, and edge-at-risk alerts."
         }
         complete={complete}
       />
 
-      {!complete && (
+      {!complete && !hasLinkableBaseline && (
         <>
           <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
-            <p className="text-sm text-[#94A3B8]">
-              Linking a baseline tells AlgoStudio what your strategy&apos;s expected performance
-              looks like. This is how edge drift, health scoring, and governance work.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-[#94A3B8]">
+                A baseline is your strategy&apos;s backtest report from MetaTrader. AlgoStudio uses
+                it to detect when live performance drifts from what you tested.
+              </p>
+              <p className="text-sm text-[#94A3B8]">
+                Without a baseline, monitoring cannot score health or detect edge drift.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
+              <Link
+                href="/app/evaluate"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                Upload backtest report
+              </Link>
+              {!hasBacktest && (
+                <span className="text-[10px] text-[#7C8DB0]">MT5 Strategy Tester HTML report</span>
+              )}
+            </div>
+          </div>
+
+          <WaitingPulse message="Upload a backtest to continue..." />
+        </>
+      )}
+
+      {!complete && hasLinkableBaseline && (
+        <>
+          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+            {/* Show best available baseline */}
+            {bestBaseline && (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-[#10B981]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white">
+                    {bestBaseline.eaName ?? bestBaseline.symbol}
+                    {bestBaseline.eaName && bestBaseline.symbol !== bestBaseline.eaName && (
+                      <span className="text-[#7C8DB0] font-normal"> ({bestBaseline.symbol})</span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[11px] text-[#7C8DB0]">
+                    <span>{bestBaseline.totalTrades} trades</span>
+                    <span>WR {(bestBaseline.winRate * 100).toFixed(0)}%</span>
+                    <span>PF {bestBaseline.profitFactor.toFixed(2)}</span>
+                    <span>Score {bestBaseline.healthScore}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {displayStrategy && (
               <div className="flex items-center justify-between pt-3 border-t border-[rgba(79,70,229,0.1)]">
                 <div className="min-w-0">
+                  <p className="text-xs text-[#7C8DB0]">Link to strategy</p>
                   <p className="text-sm font-medium text-white truncate">
                     {displayStrategy.symbol ?? displayStrategy.eaName}
                   </p>
-                  {displayStrategy.symbol && displayStrategy.eaName !== displayStrategy.symbol && (
-                    <p className="text-xs text-[#7C8DB0]">{displayStrategy.eaName}</p>
-                  )}
                 </div>
                 <Link
                   href={`/app/live?relink=${displayStrategy.instanceId}`}
@@ -403,7 +487,7 @@ function StepLinkBaseline({
                       d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                     />
                   </svg>
-                  Link baseline
+                  Link baseline backtest
                 </Link>
               </div>
             )}
@@ -635,7 +719,7 @@ export function OnboardingClient() {
     );
   }
 
-  const currentStep = resolveCurrentStep(data);
+  const currentStep = data.currentStep;
 
   return (
     <div className="space-y-6">
@@ -668,9 +752,21 @@ export function OnboardingClient() {
         <StepStrategyDiscovered complete={false} strategies={data.discoveredStrategies} />
       )}
 
-      {currentStep >= 5 && <StepLinkBaseline complete strategies={data.discoveredStrategies} />}
+      {currentStep >= 5 && (
+        <StepLinkBaseline
+          complete
+          strategies={data.discoveredStrategies}
+          hasBacktest={data.hasBacktest}
+          availableBaselines={data.availableBaselines}
+        />
+      )}
       {currentStep === 4 && (
-        <StepLinkBaseline complete={false} strategies={data.discoveredStrategies} />
+        <StepLinkBaseline
+          complete={false}
+          strategies={data.discoveredStrategies}
+          hasBacktest={data.hasBacktest}
+          availableBaselines={data.availableBaselines}
+        />
       )}
 
       {currentStep === 5 && <StepMonitoringActive instance={data.monitoringInstance} />}

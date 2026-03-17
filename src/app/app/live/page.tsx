@@ -10,7 +10,7 @@ import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
-import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
+import { OnboardingBanner } from "@/components/onboarding/OnboardingBanner";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -151,10 +151,10 @@ function renderDashboard(
           <SystemStatusStrip instances={eaInstances} authority={authority} />
         )}
 
-        {/* ══════════════════════════════════════════════════════
-            ONBOARDING — Activation checklist (auto-hides)
-            ══════════════════════════════════════════════════════ */}
-        <ActivationPanel />
+        {/* ── Onboarding progress banner (auto-hides when complete) ── */}
+        <div className="mt-4">
+          <OnboardingBanner />
+        </div>
 
         {/* ── Governance Alerts (compact — only shown when action needed) ── */}
         {eaInstances.length > 0 &&
