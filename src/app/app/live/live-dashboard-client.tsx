@@ -825,6 +825,97 @@ function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
 }
 
 // ============================================
+// PRIORITY SORTING
+// ============================================
+
+/**
+ * Compute a numeric priority for an instance. Lower = more urgent.
+ *
+ * Priority buckets:
+ *   0 — EDGE_AT_RISK lifecycle
+ *   1 — DEGRADED health (product label: "Edge at Risk")
+ *   2 — WARNING health
+ *   3 — Discovered / Draft / needs activation
+ *   4 — Active healthy strategies (LIVE_MONITORING + HEALTHY)
+ *   5 — Inactive / paused / no signal
+ */
+function instancePriority(ea: EAInstanceData): number {
+  // Bucket 0: lifecycle EDGE_AT_RISK
+  if (ea.lifecycleState === "EDGE_AT_RISK") return 0;
+
+  // Bucket 1: health DEGRADED
+  const healthStatus = ea.healthSnapshots?.[0]?.status ?? ea.healthStatus ?? null;
+  if (healthStatus === "DEGRADED") return 1;
+
+  // Bucket 2: health WARNING
+  if (healthStatus === "WARNING") return 2;
+
+  // Bucket 3: discovered / draft / needs baseline
+  if (ea.isAutoDiscovered || ea.lifecycleState === "DRAFT") return 3;
+
+  // Bucket 4: active healthy
+  if (
+    ea.status === "ONLINE" &&
+    (healthStatus === "HEALTHY" || healthStatus === "INSUFFICIENT_DATA" || healthStatus === null)
+  ) {
+    return 4;
+  }
+
+  // Bucket 5: everything else (offline, inactive, etc.)
+  return 5;
+}
+
+/**
+ * Tie-breaker comparator within the same priority bucket.
+ * Negative = a before b.
+ */
+function instanceTieBreaker(a: EAInstanceData, b: EAInstanceData): number {
+  // 1. Drift detected first
+  const aDrift = a.healthSnapshots?.[0]?.driftDetected === true ? 0 : 1;
+  const bDrift = b.healthSnapshots?.[0]?.driftDetected === true ? 0 : 1;
+  if (aDrift !== bDrift) return aDrift - bDrift;
+
+  // 2. Worse health score first (lower score = worse)
+  const aScore = a.healthSnapshots?.[0] ? 1 - (a.healthSnapshots[0].driftSeverity ?? 0) : 1;
+  const bScore = b.healthSnapshots?.[0] ? 1 - (b.healthSnapshots[0].driftSeverity ?? 0) : 1;
+  if (aScore !== bScore) return aScore - bScore;
+
+  // 3. More recent heartbeat first
+  const aTime = a.lastHeartbeat ? new Date(a.lastHeartbeat).getTime() : 0;
+  const bTime = b.lastHeartbeat ? new Date(b.lastHeartbeat).getTime() : 0;
+  if (aTime !== bTime) return bTime - aTime;
+
+  // 4. Stable fallback: id
+  return a.id.localeCompare(b.id);
+}
+
+function compareInstances(a: EAInstanceData, b: EAInstanceData): number {
+  const pa = instancePriority(a);
+  const pb = instancePriority(b);
+  if (pa !== pb) return pa - pb;
+  return instanceTieBreaker(a, b);
+}
+
+/**
+ * Sort account groups by the highest-priority instance within each group.
+ * Also sorts instances within each group by priority.
+ */
+function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
+  // Sort instances within each group
+  for (const group of groups) {
+    group.instances.sort(compareInstances);
+  }
+
+  // Sort groups by their highest-priority (first) instance
+  return groups.sort((a, b) => {
+    const bestA = a.instances[0];
+    const bestB = b.instances[0];
+    if (!bestA || !bestB) return 0;
+    return compareInstances(bestA, bestB);
+  });
+}
+
+// ============================================
 // ACCOUNT CARD
 // ============================================
 
@@ -2988,8 +3079,12 @@ export function LiveDashboardClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {groupByAccount(
-            modeFilter === "ALL" ? eaInstances : eaInstances.filter((ea) => ea.mode === modeFilter)
+          {sortByPriority(
+            groupByAccount(
+              modeFilter === "ALL"
+                ? eaInstances
+                : eaInstances.filter((ea) => ea.mode === modeFilter)
+            )
           ).map((account) => (
             <AccountCard
               key={account.key}
