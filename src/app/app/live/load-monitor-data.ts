@@ -230,6 +230,7 @@ function queryEaInstances(userId: string) {
           timeframe: true,
           baselineStatus: true,
           strategyVersionId: true,
+          materialFingerprint: true,
         },
       },
     },

@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
@@ -85,6 +86,15 @@ function renderDashboard(
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
+    lifecycleState: ea.lifecycleState ?? null,
+    isAutoDiscovered:
+      ea.lifecycleState === "DRAFT" &&
+      ea.terminalDeployments.some((d) => {
+        const expected = createHash("sha256")
+          .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
+          .digest("hex");
+        return d.materialFingerprint === expected;
+      }),
     relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
     deployments: ea.terminalDeployments.map((d) => ({
       id: d.id,

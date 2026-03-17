@@ -94,7 +94,9 @@ export function StrategyHeader({ data }: StrategyHeaderProps) {
                 borderColor: "rgba(79,70,229,0.15)",
               }}
             >
-              {LIFECYCLE_LABELS[data.lifecycleState] ?? data.lifecycleState}
+              {data.isAutoDiscovered
+                ? "Discovered"
+                : (LIFECYCLE_LABELS[data.lifecycleState] ?? data.lifecycleState)}
             </span>
             {data.symbol && <span className="text-[10px] text-[#7C8DB0]">{data.symbol}</span>}
             {data.timeframe && (

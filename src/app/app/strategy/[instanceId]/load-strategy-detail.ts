@@ -9,6 +9,7 @@
  * context — no client-side API fan-out.
  */
 
+import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import {
   resolveInstanceMonitoringStatus,
@@ -114,6 +115,7 @@ export interface StrategyDetailData {
 
   // Governance
   lifecycleState: string;
+  isAutoDiscovered: boolean;
   lifecyclePhase: string;
   operatorHold: string;
   phaseEnteredAt: string;
@@ -298,6 +300,10 @@ export async function loadStrategyDetail(
       peakScoreAt: true,
       monitoringSuppressedUntil: true,
       strategyVersionId: true,
+      terminalDeployments: {
+        where: { ignoredAt: null },
+        select: { symbol: true, magicNumber: true, materialFingerprint: true },
+      },
       healthSnapshots: {
         take: 20,
         orderBy: { createdAt: "desc" as const },
@@ -585,6 +591,14 @@ export async function loadStrategyDetail(
     status: instance.status as "ONLINE" | "OFFLINE" | "ERROR",
     lastHeartbeat: instance.lastHeartbeat?.toISOString() ?? null,
     lifecycleState: instance.lifecycleState,
+    isAutoDiscovered:
+      instance.lifecycleState === "DRAFT" &&
+      instance.terminalDeployments.some((d) => {
+        const expected = createHash("sha256")
+          .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
+          .digest("hex");
+        return d.materialFingerprint === expected;
+      }),
     lifecyclePhase: instance.lifecyclePhase,
     operatorHold: instance.operatorHold,
     phaseEnteredAt: instance.phaseEnteredAt.toISOString(),

@@ -13,10 +13,10 @@ type Props = {
   params: Promise<{ instanceId: string }>;
 };
 
-const retireSchema = z.object({
-  action: z.literal("retire"),
-  reason: z.literal("manual"),
-});
+const actionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("retire"), reason: z.literal("manual") }),
+  z.object({ action: z.literal("activate") }),
+]);
 
 // GET /api/live/[instanceId]/lifecycle — lifecycle state
 export async function GET(request: NextRequest, { params }: Props) {
@@ -71,12 +71,12 @@ export async function POST(request: NextRequest, { params }: Props) {
     });
   }
 
-  const parsed = retireSchema.safeParse(body);
+  const parsed = actionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       apiError(
         ErrorCode.VALIDATION_FAILED,
-        "Invalid request. Expected: { action: 'retire', reason: 'manual' }"
+        "Invalid request. Expected: { action: 'retire', reason: 'manual' } or { action: 'activate' }"
       ),
       { status: 400 }
     );
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       id: true,
       lifecyclePhase: true,
       lifecycleState: true,
+      strategyVersionId: true,
       strategyVersion: {
         select: { strategyIdentity: { select: { strategyId: true } } },
       },
@@ -98,6 +99,61 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Instance not found"), { status: 404 });
   }
 
+  // ── Activate: DRAFT → BACKTESTED → VERIFIED → LIVE_MONITORING ──
+  if (parsed.data.action === "activate") {
+    if (instance.lifecycleState !== "DRAFT") {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "Only DRAFT strategies can be activated"),
+        { status: 400 }
+      );
+    }
+    if (!instance.strategyVersionId) {
+      return NextResponse.json(
+        apiError(ErrorCode.VALIDATION_FAILED, "Link a baseline before activating"),
+        { status: 400 }
+      );
+    }
+
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          await performLifecycleTransitionInTx(
+            tx,
+            instanceId,
+            "DRAFT",
+            "BACKTESTED",
+            "auto-discovery activation",
+            "operator"
+          );
+          await performLifecycleTransitionInTx(
+            tx,
+            instanceId,
+            "BACKTESTED",
+            "VERIFIED",
+            "auto-discovery activation",
+            "operator"
+          );
+          await performLifecycleTransitionInTx(
+            tx,
+            instanceId,
+            "VERIFIED",
+            "LIVE_MONITORING",
+            "auto-discovery activation",
+            "operator"
+          );
+        },
+        { isolationLevel: "Serializable" }
+      );
+    } catch {
+      return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Failed to activate strategy"), {
+        status: 500,
+      });
+    }
+
+    return NextResponse.json({ success: true, lifecycleState: "LIVE_MONITORING" });
+  }
+
+  // ── Retire: current state → INVALIDATED ──
   if (instance.lifecyclePhase === "RETIRED") {
     return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "Strategy is already retired"), {
       status: 400,
@@ -150,7 +206,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       },
       { isolationLevel: "Serializable" }
     );
-  } catch (err) {
+  } catch {
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Failed to retire strategy"), {
       status: 500,
     });

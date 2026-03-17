@@ -51,6 +51,8 @@ interface EAInstanceData {
   healthSnapshots?: { driftDetected: boolean; driftSeverity: number; status: string }[];
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
+  lifecycleState?: string | null;
+  isAutoDiscovered?: boolean;
   strategyStatus?: string | null;
   operatorHold?: string;
   isExternal?: boolean;
@@ -1057,6 +1059,12 @@ function AccountCard({
               </span>
             );
           })()}
+          {/* Auto-discovered strategy badge */}
+          {instances.some((ea) => ea.isAutoDiscovered) && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30">
+              Discovered
+            </span>
+          )}
         </div>
       </div>
 
@@ -1438,6 +1446,12 @@ function EACard({
               </span>
             );
           })()}
+          {/* Auto-discovered strategy badge */}
+          {ea.isAutoDiscovered && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30">
+              Discovered
+            </span>
+          )}
         </div>
       </div>
 
@@ -1661,66 +1675,71 @@ function EACard({
 
       {/* Controls Row */}
       <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
-        <button
-          onClick={handleTogglePause}
-          disabled={pauseLoading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            ea.tradingState === "PAUSED"
-              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-              : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
-          } disabled:opacity-50`}
-        >
-          {ea.tradingState === "PAUSED" ? (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          )}
-          {ea.tradingState === "PAUSED" ? "Resume Strategy" : "Pause Strategy"}
-        </button>
+        {/* Suppress pause/halt for DRAFT strategies — governance already returns PAUSE */}
+        {ea.lifecycleState !== "DRAFT" && (
+          <>
+            <button
+              onClick={handleTogglePause}
+              disabled={pauseLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                ea.tradingState === "PAUSED"
+                  ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
+                  : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
+              } disabled:opacity-50`}
+            >
+              {ea.tradingState === "PAUSED" ? (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+              {ea.tradingState === "PAUSED" ? "Resume Strategy" : "Pause Strategy"}
+            </button>
 
-        <button
-          onClick={handleToggleHalt}
-          disabled={haltLoading || haltState === "OVERRIDE_PENDING"}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 disabled:opacity-50 ${
-            haltState === "HALTED"
-              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-              : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25 hover:bg-[#EF4444]/20"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d={
+            <button
+              onClick={handleToggleHalt}
+              disabled={haltLoading || haltState === "OVERRIDE_PENDING"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 disabled:opacity-50 ${
                 haltState === "HALTED"
-                  ? "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  : "M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
-              }
-            />
-          </svg>
-          {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Emergency Halt"}
-        </button>
+                  ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
+                  : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25 hover:bg-[#EF4444]/20"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={
+                    haltState === "HALTED"
+                      ? "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      : "M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                  }
+                />
+              </svg>
+              {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Emergency Halt"}
+            </button>
+          </>
+        )}
 
         <button
           onClick={() => setShowTradeLog(!showTradeLog)}
@@ -1794,7 +1813,22 @@ function EACard({
           {showProof ? "Hide Proof" : "Proof"}
         </button>
 
-        {ea.isExternal && !ea.baseline && !ea.relinkRequired && onLinkBaseline && (
+        {ea.isAutoDiscovered && onLinkBaseline ? (
+          <button
+            onClick={() => onLinkBaseline(ea.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#8B5CF6]/40 text-[#A78BFA] hover:bg-[#8B5CF6]/20 hover:border-[#8B5CF6]/60 transition-all duration-200"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            Link &amp; Activate
+          </button>
+        ) : ea.isExternal && !ea.baseline && !ea.relinkRequired && onLinkBaseline ? (
           <button
             onClick={() => onLinkBaseline(ea.id)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.3)] text-[#818CF8] hover:bg-[#4F46E5]/20 hover:border-[#4F46E5]/50 transition-all duration-200"
@@ -1809,7 +1843,7 @@ function EACard({
             </svg>
             Link baseline
           </button>
-        )}
+        ) : null}
 
         <div className="flex-1 min-w-0" />
 
@@ -2988,12 +3022,52 @@ export function LiveDashboardClient({
               isRelink={inst?.relinkRequired}
               deploymentContext={ctx}
               onClose={() => setLinkBaselineInstanceId(null)}
-              onLinked={(instanceId, baseline) => {
-                setEaInstances((prev) =>
-                  prev.map((ea) =>
-                    ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
-                  )
-                );
+              onLinked={async (instanceId, baseline) => {
+                // Check if this is an auto-discovered DRAFT instance — activate after linking
+                const inst = eaInstances.find((ea) => ea.id === instanceId);
+                if (inst?.isAutoDiscovered) {
+                  try {
+                    const res = await fetch(`/api/live/${instanceId}/lifecycle`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "activate" }),
+                    });
+                    if (res.ok) {
+                      setEaInstances((prev) =>
+                        prev.map((ea) =>
+                          ea.id === instanceId
+                            ? {
+                                ...ea,
+                                baseline,
+                                relinkRequired: false,
+                                lifecycleState: "LIVE_MONITORING",
+                              }
+                            : ea
+                        )
+                      );
+                    } else {
+                      // Activation failed — still update baseline state
+                      setEaInstances((prev) =>
+                        prev.map((ea) =>
+                          ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
+                        )
+                      );
+                    }
+                  } catch {
+                    // Network error — still update baseline state
+                    setEaInstances((prev) =>
+                      prev.map((ea) =>
+                        ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
+                      )
+                    );
+                  }
+                } else {
+                  setEaInstances((prev) =>
+                    prev.map((ea) =>
+                      ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
+                    )
+                  );
+                }
                 setLinkBaselineInstanceId(null);
               }}
             />

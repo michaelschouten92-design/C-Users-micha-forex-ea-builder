@@ -39,7 +39,9 @@ export function GovernanceContextPanel({ data }: GovernanceContextPanelProps) {
             <div>
               <span className="text-[10px] text-[#7C8DB0]">State</span>
               <p className="text-white font-medium">
-                {LIFECYCLE_LABELS[data.lifecycleState] ?? data.lifecycleState}
+                {data.isAutoDiscovered
+                  ? "Discovered"
+                  : (LIFECYCLE_LABELS[data.lifecycleState] ?? data.lifecycleState)}
               </p>
             </div>
             <div>
