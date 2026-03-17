@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 
 const log = logger.child({ module: "outbox" });
 
-type NotificationChannel = "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH";
+type NotificationChannel = "EMAIL" | "WEBHOOK" | "TELEGRAM" | "SLACK" | "BROWSER_PUSH";
 
 interface EnqueueParams {
   userId: string;

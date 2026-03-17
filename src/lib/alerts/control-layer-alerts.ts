@@ -17,6 +17,8 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { fireWebhookWithResult } from "@/lib/webhook";
+import { enqueueNotification } from "@/lib/outbox";
+import { decrypt, isEncrypted } from "@/lib/crypto";
 
 const log = logger.child({ service: "control-layer-alerts" });
 
@@ -90,81 +92,171 @@ export async function emitControlLayerAlert(
     return;
   }
 
-  // Fire-and-forget webhook delivery — never blocks or throws
+  // Fire-and-forget: deliver via all configured channels — never blocks or throws
   if (alertId) {
-    deliverAlertWebhook(alertId, userId, instanceId, alertType, reasons).catch((err) => {
-      log.error({ err, alertId }, "Webhook delivery background task failed");
+    deliverAlertAllChannels(alertId, userId, instanceId, alertType, reasons).catch((err) => {
+      log.error({ err, alertId }, "Alert delivery background task failed");
     });
   }
 }
 
-// ── Webhook delivery ─────────────────────────────────────
+// ── Severity labels ──────────────────────────────────────
+
+const ALERT_SEVERITY: Record<ControlLayerAlertType, string> = {
+  DEPLOYMENT_INVALIDATED: "CRITICAL",
+  DEPLOYMENT_RESTRICTED: "HIGH",
+  DEPLOYMENT_REVIEW: "MEDIUM",
+  MONITOR_OFFLINE: "MEDIUM",
+  BASELINE_MISSING: "LOW",
+  VERSION_OUTDATED: "LOW",
+};
+
+/** Alert types that should trigger outbound notifications (email/telegram/slack) */
+const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
+  "DEPLOYMENT_INVALIDATED",
+  "DEPLOYMENT_RESTRICTED",
+  "DEPLOYMENT_REVIEW",
+  "MONITOR_OFFLINE",
+]);
+
+// ── Multi-channel delivery ───────────────────────────────
 
 /**
- * Attempt webhook delivery for a newly created alert.
- * Looks up user's webhookUrl; if absent, marks SKIPPED.
- * On success/failure, updates the alert's delivery tracking fields.
+ * Deliver a newly created alert via all configured channels.
+ * Channels: webhook (direct), email + telegram + slack (via outbox).
+ *
+ * Deduplication is already handled upstream — if we reach this function,
+ * the ControlLayerAlert was successfully created (P2002 = silently skipped).
  */
-async function deliverAlertWebhook(
+async function deliverAlertAllChannels(
   alertId: string,
   userId: string,
   instanceId: string,
   alertType: ControlLayerAlertType,
   reasons?: string[]
 ): Promise<void> {
-  // Look up user webhook URL and instance name
+  // Load user notification settings + instance name in one query pair
   const [user, instance] = await Promise.all([
     defaultPrisma.user.findUnique({
       where: { id: userId },
-      select: { webhookUrl: true },
+      select: {
+        email: true,
+        webhookUrl: true,
+        telegramBotToken: true,
+        telegramChatId: true,
+        slackWebhookUrl: true,
+      },
     }),
     defaultPrisma.liveEAInstance.findUnique({
       where: { id: instanceId },
-      select: { eaName: true },
+      select: { eaName: true, symbol: true },
     }),
   ]);
 
-  if (!user?.webhookUrl) {
+  if (!user) return;
+
+  const eaName = instance?.eaName ?? "Unknown Strategy";
+  const symbol = instance?.symbol ?? "";
+  const summary = ALERT_SUMMARIES[alertType];
+  const severity = ALERT_SEVERITY[alertType];
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
+  const investigateUrl = `${appUrl}/app/strategy/${instanceId}`;
+
+  // ── Webhook (direct delivery with status tracking) ──
+  if (user.webhookUrl) {
+    const webhookPayload = {
+      event: "control_layer_alert",
+      alertId,
+      alertType,
+      summary,
+      severity,
+      reasons: reasons ?? [],
+      deploymentId: instanceId,
+      deploymentName: eaName,
+      createdAt: new Date().toISOString(),
+    };
+
+    const result = await fireWebhookWithResult(user.webhookUrl, webhookPayload);
+    const now = new Date();
     await defaultPrisma.controlLayerAlert
       .update({
         where: { id: alertId },
-        data: { webhookStatus: "SKIPPED", webhookAt: new Date() },
-      })
-      .catch(() => {});
-    return;
-  }
-
-  const payload = {
-    event: "control_layer_alert",
-    alertId,
-    alertType,
-    summary: ALERT_SUMMARIES[alertType],
-    reasons: reasons ?? [],
-    deploymentId: instanceId,
-    deploymentName: instance?.eaName ?? null,
-    createdAt: new Date().toISOString(),
-  };
-
-  const result = await fireWebhookWithResult(user.webhookUrl, payload);
-  const now = new Date();
-  if (result.ok) {
-    await defaultPrisma.controlLayerAlert
-      .update({
-        where: { id: alertId },
-        data: { webhookStatus: "DELIVERED", webhookAt: now },
+        data: {
+          webhookStatus: result.ok ? "DELIVERED" : "FAILED",
+          webhookAt: now,
+          ...(result.ok ? {} : { webhookError: result.error.slice(0, 200) }),
+        },
       })
       .catch(() => {});
   } else {
     await defaultPrisma.controlLayerAlert
       .update({
         where: { id: alertId },
-        data: {
-          webhookStatus: "FAILED",
-          webhookAt: now,
-          webhookError: result.error.slice(0, 200),
-        },
+        data: { webhookStatus: "SKIPPED", webhookAt: new Date() },
       })
       .catch(() => {});
+  }
+
+  // Skip outbound notifications for low-priority alert types
+  if (!OUTBOUND_ALERT_TYPES.has(alertType)) return;
+
+  const reasonText =
+    reasons && reasons.length > 0 ? reasons.join(", ") : "See strategy detail for more info.";
+
+  // ── Email (via outbox) ──
+  if (user.email) {
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    await enqueueNotification({
+      userId,
+      channel: "EMAIL",
+      destination: user.email,
+      subject: `[${severity}] ${eaName}${symbol ? ` (${symbol})` : ""} — ${summary}`,
+      payload: {
+        html:
+          `<h2 style="margin:0 0 12px">${esc(eaName)}${symbol ? ` <span style="color:#7C8DB0">(${esc(symbol)})</span>` : ""}</h2>` +
+          `<p style="margin:0 0 8px"><strong>Severity:</strong> ${severity}</p>` +
+          `<p style="margin:0 0 8px">${esc(summary)}</p>` +
+          `<p style="margin:0 0 16px;color:#64748B">${esc(reasonText)}</p>` +
+          `<a href="${esc(investigateUrl)}" style="display:inline-block;padding:10px 20px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px">Investigate Strategy</a>`,
+      },
+    });
+  }
+
+  // ── Telegram (via outbox) ──
+  if (user.telegramBotToken && user.telegramChatId) {
+    const rawToken = user.telegramBotToken;
+    const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
+    if (botToken) {
+      const tgMessage =
+        `<b>[${severity}] ${eaName}</b>${symbol ? ` (${symbol})` : ""}\n\n` +
+        `${summary}\n\n` +
+        `${reasonText}\n\n` +
+        `<a href="${investigateUrl}">Investigate</a>`;
+
+      await enqueueNotification({
+        userId,
+        channel: "TELEGRAM",
+        destination: user.telegramChatId,
+        payload: { botToken, message: tgMessage },
+      });
+    }
+  }
+
+  // ── Slack (via outbox) ──
+  if (user.slackWebhookUrl) {
+    const slackMessage =
+      `*[${severity}] ${eaName}*${symbol ? ` (${symbol})` : ""}\n` +
+      `${summary}\n` +
+      `${reasonText}\n` +
+      `<${investigateUrl}|Investigate Strategy>`;
+
+    await enqueueNotification({
+      userId,
+      channel: "SLACK",
+      destination: user.slackWebhookUrl,
+      payload: { message: slackMessage },
+    });
   }
 }
 

@@ -5,6 +5,7 @@ import { timingSafeEqual } from "@/lib/csrf";
 import { sendWithRetryForOutbox } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
 import { sendTelegramAlert } from "@/lib/telegram";
+import { sendSlackMessage } from "@/lib/slack";
 import { sendPushNotification } from "@/lib/push";
 
 const log = logger.child({ route: "/api/cron/process-outbox" });
@@ -200,6 +201,13 @@ async function handleProcessOutbox(request: NextRequest) {
             const message = payload.message as string;
             if (botToken && message) {
               success = await sendTelegramAlert(botToken, entry.destination, message);
+            }
+            break;
+          }
+          case "SLACK": {
+            const slackText = payload.message as string;
+            if (slackText) {
+              success = await sendSlackMessage(entry.destination, slackText);
             }
             break;
           }
