@@ -61,7 +61,7 @@ interface HealthDetailPanelProps {
 const STATUS_CONFIG = {
   HEALTHY: { color: "#10B981", bg: "#10B981", label: "Healthy" },
   WARNING: { color: "#F59E0B", bg: "#F59E0B", label: "Warning" },
-  DEGRADED: { color: "#EF4444", bg: "#EF4444", label: "Degraded" },
+  DEGRADED: { color: "#EF4444", bg: "#EF4444", label: "Edge at Risk" },
   INSUFFICIENT_DATA: { color: "#7C8DB0", bg: "#7C8DB0", label: "Insufficient Data" },
 } as const;
 
@@ -78,7 +78,7 @@ const METRIC_LABELS: Record<
 
 const METRIC_TOOLTIPS: Record<string, string> = {
   "Health Score":
-    "Composite score (0–100%) measuring live performance against backtest baseline. Above 70% is healthy, below 40% is degraded.",
+    "Composite score (0–100%) measuring live performance against backtest baseline. Above 70% is healthy, below 40% is edge at risk.",
   Confidence:
     "Statistical confidence interval for the health score. Wider ranges mean fewer trades have been sampled.",
   "CUSUM Drift":

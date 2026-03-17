@@ -191,7 +191,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
         userId: instance.userId,
         instanceId,
         alertType: "HEALTH_DEGRADED",
-        reasons: [`Health changed from ${prev} to ${result.status} (score: ${scoreStr}%)`],
+        reasons: [`Health score dropped to ${scoreStr}% — edge performance needs attention`],
       }).catch((err) => {
         logger.error({ err, instanceId }, "Failed to emit HEALTH_DEGRADED control-layer alert");
         Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_DEGRADED" } });
@@ -204,8 +204,8 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
         eaName: instance.eaName,
         alertType: "HEALTH_DEGRADED",
         message:
-          `Strategy health changed from ${prev} to ${result.status} (score: ${scoreStr}%). ` +
-          `Check your live performance metrics.`,
+          `Strategy edge at risk — health score dropped to ${scoreStr}%. ` +
+          `Review your live performance metrics.`,
       }).catch((err) => {
         logger.error({ err, instanceId }, "Failed to trigger health degradation alert");
         Sentry.captureException(err, { extra: { instanceId, alertType: "HEALTH_DEGRADED" } });
@@ -227,7 +227,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       instanceId,
       alertType: "HEALTH_CRITICAL",
       reasons: [
-        `DEGRADED for ${consecutiveDegraded + 1} consecutive evaluations (score: ${scoreStr}%)`,
+        `Edge at risk for ${consecutiveDegraded + 1} consecutive evaluations (score: ${scoreStr}%)`,
       ],
     }).catch((err) => {
       logger.error({ err, instanceId }, "Failed to emit HEALTH_CRITICAL control-layer alert");
@@ -241,7 +241,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       eaName: instance.eaName,
       alertType: "HEALTH_CRITICAL",
       message:
-        `Strategy has been DEGRADED for ${consecutiveDegraded + 1} consecutive evaluations ` +
+        `Strategy edge has been at risk for ${consecutiveDegraded + 1} consecutive evaluations ` +
         `(score: ${scoreStr}%). Consider pausing live trading.`,
     }).catch((err) => {
       logger.error({ err, instanceId }, "Failed to trigger health critical alert");

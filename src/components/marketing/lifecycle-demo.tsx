@@ -58,7 +58,7 @@ const phases: Phase[] = [
     color: "#EF4444",
     bgMuted: "rgba(239,68,68,0.1)",
     borderMuted: "rgba(239,68,68,0.3)",
-    description: "Edge degraded. Auto-retired to protect capital.",
+    description: "Edge at risk. Auto-retired to protect capital.",
     detail: null,
   },
 ];

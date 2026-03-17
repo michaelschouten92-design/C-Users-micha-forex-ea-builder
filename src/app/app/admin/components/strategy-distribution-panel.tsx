@@ -21,7 +21,7 @@ const STATUS_CONFIG: { key: StrategyStatus; label: string; color: string }[] = [
   { key: "MONITORING", label: "Monitoring", color: "#3B82F6" },
   { key: "TESTING", label: "Testing", color: "#818CF8" },
   { key: "UNSTABLE", label: "Unstable", color: "#F59E0B" },
-  { key: "EDGE_DEGRADED", label: "Edge Degraded", color: "#EF4444" },
+  { key: "EDGE_DEGRADED", label: "Edge at Risk", color: "#EF4444" },
   { key: "INACTIVE", label: "Inactive", color: "#71717A" },
 ];
 

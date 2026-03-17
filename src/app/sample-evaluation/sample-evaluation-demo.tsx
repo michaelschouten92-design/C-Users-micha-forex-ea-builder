@@ -75,7 +75,7 @@ const DEMO = {
 const STATUS_COLORS = {
   HEALTHY: { color: "#10B981", label: "Healthy" },
   WARNING: { color: "#F59E0B", label: "Warning" },
-  DEGRADED: { color: "#EF4444", label: "Degraded" },
+  DEGRADED: { color: "#EF4444", label: "Edge at Risk" },
 } as const;
 
 function ScoreBar({ score, label }: { score: number; label: string }) {

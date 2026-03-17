@@ -135,7 +135,7 @@ export function generateDailyInsights(
     insights.push({
       type: "warning",
       icon: "alert",
-      message: `${degradedStrategies.length} strategy${degradedStrategies.length > 1 ? "s have" : " has"} degraded edge — review performance`,
+      message: `${degradedStrategies.length} strategy${degradedStrategies.length > 1 ? "s" : ""} at risk — edge performance needs review`,
       detail: names,
       linkHref: "/app/monitor",
       linkLabel: "View Strategies",

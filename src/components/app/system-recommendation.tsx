@@ -25,7 +25,7 @@ const RECOMMENDATION_CONFIG: Record<
   INVESTIGATE: {
     color: "#EF4444",
     icon: "\u25B2",
-    label: "Investigate Degradation",
+    label: "Investigate Edge",
   },
   STOP: { color: "#EF4444", icon: "\u25A0", label: "Stop Deployment" },
 };

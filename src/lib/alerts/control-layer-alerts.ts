@@ -43,8 +43,8 @@ const ALERT_SUMMARIES: Record<ControlLayerAlertType, string> = {
   MONITOR_OFFLINE: "Deployment went offline. No heartbeat received.",
   BASELINE_MISSING: "No baseline linked. Monitoring is limited without backtest reference.",
   VERSION_OUTDATED: "Running an outdated strategy version.",
-  HEALTH_DEGRADED: "Strategy health has degraded. Performance deviating from baseline.",
-  HEALTH_CRITICAL: "Strategy health is critical. Sustained degradation detected.",
+  HEALTH_DEGRADED: "Strategy edge is at risk. Performance deviating from baseline.",
+  HEALTH_CRITICAL: "Strategy edge is critical. Sustained performance decline detected.",
 };
 
 // ── Public API ───────────────────────────────────────────

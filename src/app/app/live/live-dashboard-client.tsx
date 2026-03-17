@@ -752,7 +752,7 @@ function resolveInstanceAttention(
   }
   if (ea.strategyStatus === "EDGE_DEGRADED") {
     return {
-      statusLabel: "Edge degraded",
+      statusLabel: "Edge at risk",
       reason: ea.monitoringReasons?.length
         ? monitoringReasonFormatter(ea.monitoringReasons)[0]
         : "Live performance has materially diverged from baseline",
@@ -1158,7 +1158,7 @@ function AccountCard({
               return (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-                  Monitoring: Degraded
+                  Monitoring: Edge at Risk
                 </span>
               );
             }

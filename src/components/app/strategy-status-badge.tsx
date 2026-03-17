@@ -101,7 +101,7 @@ const STATUS_CONFIG: Record<StrategyStatus, StatusConfig> = {
   MONITORING: { color: "#6366F1", label: "Monitoring", icon: EyeIcon },
   TESTING: { color: "#A78BFA", label: "Testing", icon: FlaskIcon },
   UNSTABLE: { color: "#F59E0B", label: "Unstable", icon: WarningIcon },
-  EDGE_DEGRADED: { color: "#EF4444", label: "Edge Degraded", icon: TrendingDownIcon },
+  EDGE_DEGRADED: { color: "#EF4444", label: "Edge at Risk", icon: TrendingDownIcon },
   INACTIVE: { color: "#7C8DB0", label: "Inactive", icon: PauseIcon },
 };
 

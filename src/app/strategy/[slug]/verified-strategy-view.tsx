@@ -101,7 +101,7 @@ const LIFECYCLE_BADGE: Record<string, { color: string; label: string }> = {
 const HEALTH_COLORS: Record<string, { color: string; label: string }> = {
   HEALTHY: { color: "#10B981", label: "Healthy" },
   WARNING: { color: "#F59E0B", label: "Warning" },
-  DEGRADED: { color: "#EF4444", label: "Degraded" },
+  DEGRADED: { color: "#EF4444", label: "Edge at Risk" },
   INSUFFICIENT_DATA: { color: "#7C8DB0", label: "Insufficient Data" },
 };
 

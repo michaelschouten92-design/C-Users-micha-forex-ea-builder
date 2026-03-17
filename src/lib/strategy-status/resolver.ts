@@ -134,7 +134,7 @@ export function getStatusExplanation(status: StrategyStatus, input: Partial<Stat
     case "EDGE_DEGRADED":
       return input.driftDetected
         ? "Edge drift detected — strategy expectancy has persistently declined"
-        : "Health has degraded significantly — review performance";
+        : "Edge at risk — performance has diverged from baseline";
     case "INACTIVE":
       if (input.lifecyclePhase === "RETIRED") return "Strategy has been retired due to edge expiry";
       if (input.deletedAt) return "Strategy has been removed";
