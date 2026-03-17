@@ -3,99 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-// ── Dropdown data ─────────────────────────────────────────
-
-const PLATFORM_ITEMS = [
-  { label: "Overview", href: "/product" },
-  { label: "How It Works", href: "/product/how-it-works" },
-  { label: "Monitoring", href: "/product/health-monitor" },
-  { label: "Strategy Identity", href: "/product/strategy-identity" },
-  { label: "Track Record", href: "/product/track-record" },
-  { label: "Monte Carlo", href: "/product/monte-carlo" },
-];
-
-const STRATEGIES_ITEMS = [
-  { label: "Strategies", href: "/strategies" },
-  { label: "Example Proof", href: "/p/demo" },
-];
-
-const RESOURCES_ITEMS = [
-  { label: "Blog", href: "/blog" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Roadmap", href: "/roadmap" },
-  { label: "System Status", href: "/status" },
-  { label: "Contact", href: "/contact" },
-];
-
-// ── Desktop dropdown ──────────────────────────────────────
-
-function NavDropdown({
-  label,
-  items,
-}: {
-  label: string;
-  items: Array<{ label: string; href: string }>;
-}) {
-  const [open, setOpen] = useState(false);
-  const timeout = useRef<ReturnType<typeof setTimeout>>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const enter = () => {
-    if (timeout.current) clearTimeout(timeout.current);
-    setOpen(true);
-  };
-
-  const leave = () => {
-    timeout.current = setTimeout(() => setOpen(false), 150);
-  };
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open]);
-
-  return (
-    <div ref={containerRef} className="relative" onMouseEnter={enter} onMouseLeave={leave}>
-      <button
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1] flex items-center gap-1"
-      >
-        {label}
-        <svg
-          className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute top-full left-0 mt-2 min-w-[200px] bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg shadow-lg py-1.5 z-50">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.04)] transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Mobile nav ────────────────────────────────────────────
 
 function MobileNavMenu() {
@@ -153,8 +60,6 @@ function MobileNavMenu() {
 
   const linkClass =
     "text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]";
-  const sectionClass =
-    "text-[10px] font-semibold text-[#71717A] uppercase tracking-wider mt-3 mb-1.5 first:mt-0";
 
   return (
     <div className="md:hidden">
@@ -194,39 +99,22 @@ function MobileNavMenu() {
             role="dialog"
             aria-modal="true"
             aria-label="Mobile navigation menu"
-            className="absolute top-16 left-0 right-0 bg-[#09090B]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex flex-col gap-1 z-50"
+            className="absolute top-16 left-0 right-0 bg-[#09090B]/95 backdrop-blur-md border-b border-[rgba(255,255,255,0.06)] px-6 py-4 flex flex-col gap-2 z-50"
           >
-            {/* Platform */}
-            <p className={sectionClass}>Platform</p>
-            {PLATFORM_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} onClick={close} className={linkClass}>
-                {item.label}
-              </Link>
-            ))}
+            <Link href="/how-it-works" onClick={close} className={linkClass}>
+              How It Works
+            </Link>
+            <Link href="/pricing" onClick={close} className={linkClass}>
+              Pricing
+            </Link>
+            <Link href="/faq" onClick={close} className={linkClass}>
+              FAQ
+            </Link>
+            <Link href="/strategies" onClick={close} className={linkClass}>
+              Strategies
+            </Link>
 
-            {/* Strategies */}
-            <p className={sectionClass}>Strategies</p>
-            {STRATEGIES_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} onClick={close} className={linkClass}>
-                {item.label}
-              </Link>
-            ))}
-
-            {/* Resources */}
-            <p className={sectionClass}>Resources</p>
-            {RESOURCES_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} onClick={close} className={linkClass}>
-                {item.label}
-              </Link>
-            ))}
-
-            <div className="border-t border-[rgba(255,255,255,0.06)] mt-3 pt-3 flex flex-col gap-2">
-              <Link href="/pricing" onClick={close} className={linkClass}>
-                Pricing
-              </Link>
-              <Link href="/about" onClick={close} className={linkClass}>
-                About
-              </Link>
+            <div className="border-t border-[rgba(255,255,255,0.06)] mt-2 pt-3 flex flex-col gap-2">
               <Link href="/login" onClick={close} className={linkClass}>
                 Log in
               </Link>
@@ -235,7 +123,7 @@ function MobileNavMenu() {
                 onClick={close}
                 className="text-sm bg-[#6366F1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818CF8] transition-colors text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
               >
-                Start monitoring
+                Get started
               </Link>
             </div>
           </div>
@@ -248,6 +136,9 @@ function MobileNavMenu() {
 // ── SiteNav ───────────────────────────────────────────────
 
 export function SiteNav() {
+  const linkClass =
+    "text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]";
+
   return (
     <nav
       role="navigation"
@@ -270,35 +161,29 @@ export function SiteNav() {
 
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center gap-6">
-          <NavDropdown label="Platform" items={PLATFORM_ITEMS} />
-          <NavDropdown label="Strategies" items={STRATEGIES_ITEMS} />
-          <Link
-            href="/pricing"
-            className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
-          >
+          <Link href="/how-it-works" className={linkClass}>
+            How It Works
+          </Link>
+          <Link href="/pricing" className={linkClass}>
             Pricing
           </Link>
-          <NavDropdown label="Resources" items={RESOURCES_ITEMS} />
-          <Link
-            href="/about"
-            className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
-          >
-            About
+          <Link href="/faq" className={linkClass}>
+            FAQ
+          </Link>
+          <Link href="/strategies" className={linkClass}>
+            Strategies
           </Link>
 
           {/* Right-side actions */}
           <div className="border-l border-[rgba(255,255,255,0.06)] pl-6 flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
-            >
+            <Link href="/login" className={linkClass}>
               Log in
             </Link>
             <Link
               href="/register"
               className="text-sm bg-[#6366F1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818CF8] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
-              Start monitoring
+              Get started
             </Link>
           </div>
         </div>

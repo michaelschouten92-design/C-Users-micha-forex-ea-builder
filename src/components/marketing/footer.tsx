@@ -4,23 +4,16 @@ const SECTIONS = [
   {
     title: "Platform",
     links: [
-      { label: "Overview", href: "/product" },
-      { label: "How It Works", href: "/product/how-it-works" },
+      { label: "How It Works", href: "/how-it-works" },
       { label: "Pricing", href: "/pricing" },
-    ],
-  },
-  {
-    title: "Proof",
-    links: [
-      { label: "Verified Strategies", href: "/strategies" },
-      { label: "Verified Track Record", href: "/product/track-record" },
+      { label: "Strategies", href: "/strategies" },
+      { label: "FAQ", href: "/faq" },
     ],
   },
   {
     title: "Resources",
     links: [
       { label: "Blog", href: "/blog" },
-      { label: "FAQ", href: "/faq" },
       { label: "Roadmap", href: "/roadmap" },
       { label: "System Status", href: "/status" },
       { label: "Contact", href: "/contact" },

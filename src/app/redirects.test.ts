@@ -20,11 +20,22 @@ async function getRedirects(): Promise<
 
 describe("next.config marketing consolidation redirects", () => {
   const expectedRedirects = [
-    { source: "/compare-platforms", destination: "/product/how-it-works" },
-    { source: "/compare-platforms/:slug", destination: "/product/how-it-works" },
-    { source: "/templates", destination: "/product/mt5-export" },
-    { source: "/templates/:slug", destination: "/product/mt5-export" },
-    { source: "/trading-strategy-templates-mt5", destination: "/product/mt5-export" },
+    // Legacy marketing pages
+    { source: "/compare-platforms", destination: "/how-it-works" },
+    { source: "/compare-platforms/:slug", destination: "/how-it-works" },
+    { source: "/product/mt5-export", destination: "/how-it-works" },
+    { source: "/templates", destination: "/how-it-works" },
+    { source: "/templates/:slug", destination: "/how-it-works" },
+    { source: "/trading-strategy-templates-mt5", destination: "/how-it-works" },
+    // Product page consolidation
+    { source: "/product", destination: "/how-it-works" },
+    { source: "/product/how-it-works", destination: "/how-it-works" },
+    { source: "/product/health-monitor", destination: "/how-it-works" },
+    { source: "/product/monte-carlo", destination: "/how-it-works" },
+    { source: "/product/strategy-identity", destination: "/how-it-works" },
+    { source: "/product/track-record", destination: "/how-it-works" },
+    { source: "/product/simplicity", destination: "/how-it-works" },
+    // Other consolidation
     { source: "/low-drawdown", destination: "/verified" },
     { source: "/top-robust", destination: "/verified" },
     { source: "/rising", destination: "/verified" },

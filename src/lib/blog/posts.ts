@@ -31,7 +31,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Takes profit at a 2:1 risk-reward ratio</li>
         <li>Only trades during the London session for optimal liquidity</li>
       </ul>
-      <p>This is the same strategy used in our <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a> — one of the most popular and well-tested approaches in forex trading.</p>
+      <p>This is the same strategy used in our <a href="/how-it-works">Moving Average Crossover template</a> — one of the most popular and well-tested approaches in forex trading.</p>
 
       <h2>Step 1: Create a New Project</h2>
       <p>After signing up for a free account (no credit card required), you'll land on your dashboard. Click <strong>"New Project"</strong> and give it a descriptive name like "MA Crossover Strategy." This helps you stay organized as you build more EAs later.</p>
@@ -93,7 +93,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Add an ADX filter</strong> to only trade when there's a strong trend (ADX above 25)</li>
         <li><strong>Test different MA periods</strong> — try 8/21, 10/30, or 20/50 combinations</li>
         <li><strong>Try different pairs</strong> — GBPUSD and USDJPY also trend well</li>
-        <li><strong>Explore other strategies</strong> — try the <a href="/templates/rsi-ea-template">RSI Mean Reversion template</a> or the <a href="/templates/breakout-ea-template">Breakout EA template</a></li>
+        <li><strong>Explore other strategies</strong> — try the <a href="/how-it-works">RSI Mean Reversion template</a> or the <a href="/how-it-works">Breakout EA template</a></li>
       </ul>
       <p>Each change takes seconds in AlgoStudio's <a href="/">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
 
@@ -125,7 +125,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Dynamic support/resistance:</strong> Use the 50 or 200 MA as a trailing stop level.</li>
       </ul>
       <p><strong>Best periods:</strong> 10/50 for short-term, 20/100 for medium-term, 50/200 for long-term trend identification.</p>
-      <p><strong>Best for:</strong> Trend-following strategies on H1 and H4 timeframes. See our <a href="/templates/moving-average-crossover-ea">MA Crossover EA template</a> for a ready-to-use implementation.</p>
+      <p><strong>Best for:</strong> Trend-following strategies on H1 and H4 timeframes. See our <a href="/how-it-works">MA Crossover EA template</a> for a ready-to-use implementation.</p>
 
       <h2>2. RSI (Relative Strength Index)</h2>
       <p>The RSI is a momentum oscillator that measures the speed and magnitude of recent price changes on a scale from 0 to 100. It's the go-to indicator for mean-reversion strategies — an entirely different approach to trading than trend-following.</p>
@@ -140,7 +140,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Divergence:</strong> Price makes a new high but RSI doesn't — a potential reversal signal. Harder to automate but powerful.</li>
       </ul>
       <p><strong>Best periods:</strong> 14 (standard), 10 (more sensitive), 21 (smoother). Test 25/75 or 35/65 oversold/overbought levels for different signal frequencies.</p>
-      <p><strong>Best for:</strong> Mean-reversion strategies, entry filtering. See our <a href="/templates/rsi-ea-template">RSI EA template</a> for a complete implementation with EMA trend filter.</p>
+      <p><strong>Best for:</strong> Mean-reversion strategies, entry filtering. See our <a href="/how-it-works">RSI EA template</a> for a complete implementation with EMA trend filter.</p>
 
       <h2>3. Stochastic Oscillator</h2>
       <p>The Stochastic Oscillator is similar to RSI but adds a second dimension with its %K and %D lines. It measures where the current close sits relative to the high-low range over a specified period. This dual-line system provides crossover signals that RSI alone cannot generate.</p>
@@ -211,7 +211,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p><strong>Important:</strong> More than 3 indicators increases <a href="/blog/avoid-overfitting-expert-advisor">overfitting risk</a> significantly. Keep it simple — 2-3 indicators with 4-6 total parameters is the sweet spot.</p>
 
-      <p>Ready to put these indicators to work? Try our <a href="/templates/rsi-ea-template">RSI EA template</a> or <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in AlgoStudio's <a href="/">visual builder</a>.</p>
+      <p>Ready to put these indicators to work? Try our <a href="/how-it-works">RSI EA template</a> or <a href="/how-it-works">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in AlgoStudio's <a href="/">visual builder</a>.</p>
     `,
   },
   {
@@ -243,7 +243,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Choose your Expert Advisor from the dropdown. If you just exported from AlgoStudio, make sure you compiled it in MetaEditor first (press F7). Your EA should appear in the list immediately after compilation.</p>
 
       <h3>Symbol and Timeframe</h3>
-      <p>Select the currency pair and timeframe your strategy is designed for. If you built an <a href="/templates/moving-average-crossover-ea">MA Crossover EA</a> for EURUSD H1, test on exactly that. Testing on the wrong timeframe will give misleading results.</p>
+      <p>Select the currency pair and timeframe your strategy is designed for. If you built an <a href="/how-it-works">MA Crossover EA</a> for EURUSD H1, test on exactly that. Testing on the wrong timeframe will give misleading results.</p>
 
       <h3>Tick Model</h3>
       <p>This is the most important setting and the one most beginners get wrong:</p>
@@ -421,7 +421,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Getting Started with Your First EA</h2>
       <p>The best approach for beginners follows a disciplined, step-by-step process:</p>
       <ol>
-        <li><strong>Choose a simple strategy:</strong> Start with an <a href="/templates/moving-average-crossover-ea">MA crossover</a> or <a href="/templates/rsi-ea-template">RSI mean reversion</a>. Don't try to build a complex multi-indicator system on your first attempt.</li>
+        <li><strong>Choose a simple strategy:</strong> Start with an <a href="/how-it-works">MA crossover</a> or <a href="/how-it-works">RSI mean reversion</a>. Don't try to build a complex multi-indicator system on your first attempt.</li>
         <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
         <li><strong>Export the MQL5 file:</strong> Download and compile in MetaTrader 5's MetaEditor.</li>
         <li><strong>Backtest on 2+ years of data:</strong> Use "Every tick based on real ticks" for accurate results. Look for profit factor above 1.3 and drawdown below 25%.</li>
@@ -536,7 +536,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h2>Daily Trade Limits</h2>
       <p>Limiting the number of trades per day prevents your EA from overtrading in unusual market conditions — choppy price action, low liquidity sessions, or extreme volatility events. Without a limit, an EA can open dozens of losing trades in a single day.</p>
-      <p>A daily limit of <strong>3-5 trades</strong> is common for most strategies. For <a href="/templates/breakout-ea-template">breakout strategies</a>, 1 trade per day is typical. AlgoStudio's "Max Trades Per Day" setting makes this easy — configure it in the Strategy Settings panel.</p>
+      <p>A daily limit of <strong>3-5 trades</strong> is common for most strategies. For <a href="/how-it-works">breakout strategies</a>, 1 trade per day is typical. AlgoStudio's "Max Trades Per Day" setting makes this easy — configure it in the Strategy Settings panel.</p>
 
       <h2>Maximum Open Positions</h2>
       <p>Never have too many positions open at once. If your EA opens positions on correlated pairs (like EURUSD, GBPUSD, and EURGBP), you're essentially taking one massive position in the same direction. These three pairs are roughly 70-80% correlated — a move against one is a move against all three.</p>
@@ -557,7 +557,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Build these rules into your EA from the start — not as an afterthought. In AlgoStudio, you can configure all of these in the Strategy Settings and Trade Management blocks. Every <a href="/templates">EA template</a> includes pre-configured risk management that follows these principles.</p>
 
-      <p>Want to see these principles in action? Our <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> and <a href="/templates/rsi-ea-template">RSI template</a> both use ATR-based stops, risk-based sizing, and daily trade limits by default. Also read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating</a> — poor risk management is #2 on the list.</p>
+      <p>Want to see these principles in action? Our <a href="/how-it-works">MA Crossover template</a> and <a href="/how-it-works">RSI template</a> both use ATR-based stops, risk-based sizing, and daily trade limits by default. Also read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating</a> — poor risk management is #2 on the list.</p>
     `,
   },
   {
@@ -738,7 +738,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p><strong>Winner: MT5.</strong></p>
 
       <h2>Order Types</h2>
-      <p>MT4 supports 4 pending order types: Buy Limit, Sell Limit, Buy Stop, Sell Stop. MT5 adds 2 more: <strong>Buy Stop Limit</strong> and <strong>Sell Stop Limit</strong>. These combined orders let your EA wait for a breakout (stop trigger) and then enter at a better price (limit execution). This is particularly valuable for <a href="/templates/breakout-ea-template">breakout strategies</a>.</p>
+      <p>MT4 supports 4 pending order types: Buy Limit, Sell Limit, Buy Stop, Sell Stop. MT5 adds 2 more: <strong>Buy Stop Limit</strong> and <strong>Sell Stop Limit</strong>. These combined orders let your EA wait for a breakout (stop trigger) and then enter at a better price (limit execution). This is particularly valuable for <a href="/how-it-works">breakout strategies</a>.</p>
       <p><strong>Winner: MT5.</strong></p>
 
       <h2>Market Coverage</h2>
@@ -814,7 +814,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h3>Best Period Combinations</h3>
       <ul>
         <li><strong>8/21 EMA:</strong> Aggressive short-term crossover. More signals, more noise. Good for scalping on M15-H1.</li>
-        <li><strong>10/50 EMA:</strong> Classic short-term crossover. Strong default for H1. This is what we use in our <a href="/templates/moving-average-crossover-ea">MA Crossover template</a>.</li>
+        <li><strong>10/50 EMA:</strong> Classic short-term crossover. Strong default for H1. This is what we use in our <a href="/how-it-works">MA Crossover template</a>.</li>
         <li><strong>20/50 EMA:</strong> Balanced approach. Fewer signals but less whipsaw than 10/50.</li>
         <li><strong>20/100 EMA:</strong> Medium-term. Fewer signals but higher quality. Good for H4.</li>
         <li><strong>50/200 SMA:</strong> The "Golden Cross / Death Cross" — long-term trend identification on daily charts. Used by institutional traders.</li>
@@ -883,7 +883,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>If your backtest shows 90%+ win rates or 500% annual returns, you've almost certainly overfitted. A realistic MA crossover won't make you rich overnight, but it provides a solid, proven foundation that compounds over time. Many professional traders started with MA crossovers and built more complex strategies on top of this base.</p>
 
-      <p>Want to skip the setup? Use our ready-made <a href="/templates/moving-average-crossover-ea">Moving Average Crossover EA template</a> — pre-configured with 10/50 EMA, ATR-based stops, and London session timing. Or compare this approach with <a href="/blog/rsi-vs-macd-for-automated-trading">RSI vs MACD strategies</a>.</p>
+      <p>Want to skip the setup? Use our ready-made <a href="/how-it-works">Moving Average Crossover EA template</a> — pre-configured with 10/50 EMA, ATR-based stops, and London session timing. Or compare this approach with <a href="/blog/rsi-vs-macd-for-automated-trading">RSI vs MACD strategies</a>.</p>
     `,
   },
   {
@@ -964,7 +964,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>A robust strategy shows a smooth performance surface, not an isolated spike.</p>
 
       <h3>5. Multi-Symbol Testing</h3>
-      <p>Test your EA on similar pairs without re-optimizing. An <a href="/templates/moving-average-crossover-ea">MA crossover</a> optimized on EURUSD should show some profitability on GBPUSD or AUDUSD. If it only works on one pair, it's overfitted to that pair's specific price history.</p>
+      <p>Test your EA on similar pairs without re-optimizing. An <a href="/how-it-works">MA crossover</a> optimized on EURUSD should show some profitability on GBPUSD or AUDUSD. If it only works on one pair, it's overfitted to that pair's specific price history.</p>
       <p>You're not looking for identical performance — just directionally profitable results on correlated instruments.</p>
 
       <h3>6. Minimum Trade Count</h3>
@@ -1040,7 +1040,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h3>1. EUR/USD — The King of Forex</h3>
       <p>The world's most traded pair with the tightest spreads available (often 0.1-0.5 pips on ECN brokers). EUR/USD is excellent for all EA types and should be your <strong>first choice for testing any new strategy</strong>. It trends cleanly during the London and New York sessions, ranges during Asia, and has enough volatility for meaningful trade targets without the chaos of more volatile pairs.</p>
-      <p><strong>Best for:</strong> All strategy types — <a href="/templates/moving-average-crossover-ea">MA crossover</a>, <a href="/templates/rsi-ea-template">RSI mean-reversion</a>, and <a href="/templates/breakout-ea-template">breakout strategies</a>. Peak liquidity during London/NY overlap (13:00-17:00 GMT).</p>
+      <p><strong>Best for:</strong> All strategy types — <a href="/how-it-works">MA crossover</a>, <a href="/how-it-works">RSI mean-reversion</a>, and <a href="/how-it-works">breakout strategies</a>. Peak liquidity during London/NY overlap (13:00-17:00 GMT).</p>
 
       <h3>2. GBP/USD — The Mover</h3>
       <p>Higher volatility than EUR/USD — approximately 30-50% larger daily ranges. This means larger potential profits per trade but also larger drawdowns. Spreads are tight (0.5-1.5 pips on good brokers). GBP/USD trends aggressively during the London session when UK economic data is released.</p>
@@ -1121,7 +1121,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h3>Tokyo Session (00:00 - 09:00 GMT)</h3>
       <p>The Tokyo session overlaps with Sydney and adds significant volume, especially for JPY pairs. USD/JPY, EUR/JPY, and AUD/JPY see their highest activity. Price action during Tokyo tends to be smoother than during London, with fewer false breakouts and more predictable ranges.</p>
-      <p>Importantly, the Tokyo session creates the <strong>"Asian range"</strong> — the consolidation zone that many <a href="/templates/breakout-ea-template">breakout strategies</a> use as a setup for the London open.</p>
+      <p>Importantly, the Tokyo session creates the <strong>"Asian range"</strong> — the consolidation zone that many <a href="/how-it-works">breakout strategies</a> use as a setup for the London open.</p>
       <p><strong>Best EA types:</strong> Trend-following on JPY pairs, range-building for breakout setups, mean-reversion strategies.</p>
 
       <h3>London Session (08:00 - 17:00 GMT)</h3>
@@ -1168,7 +1168,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Trade the breakout direction with a stop loss inside the range</li>
         <li>Limit entries to the first 4 hours of London (08:00-12:00 GMT) for highest conviction breakouts</li>
       </ol>
-      <p>This strategy works because the transition from low volatility (Asia) to high volatility (London) is one of the most predictable patterns in forex. Our <a href="/templates/breakout-ea-template">Breakout EA template</a> implements this exact approach with ATR-based stops and range size filters.</p>
+      <p>This strategy works because the transition from low volatility (Asia) to high volatility (London) is one of the most predictable patterns in forex. Our <a href="/how-it-works">Breakout EA template</a> implements this exact approach with ATR-based stops and range size filters.</p>
 
       <h3>London Close Strategy</h3>
       <p>Near the end of the London session (around 16:00-17:00 GMT), institutional traders close their intraday positions. This unwinding can create a reversal of the day's trend — price that moved up during London often pulls back as positions are liquidated. Mean-reversion EAs can profit from this predictable pattern.</p>
@@ -1186,9 +1186,9 @@ export const BLOG_POSTS: BlogPost[] = [
           <tr><th>EA Type</th><th>Best Session</th><th>Why</th></tr>
         </thead>
         <tbody>
-          <tr><td>Trend-following (<a href="/templates/moving-average-crossover-ea">MA crossover</a>)</td><td>London, NY Overlap</td><td>Strongest trends, highest momentum, institutional flow</td></tr>
-          <tr><td>Mean-reversion (<a href="/templates/rsi-ea-template">RSI</a>)</td><td>London, Late NY</td><td>Clear overbought/oversold levels with enough liquidity for execution</td></tr>
-          <tr><td>Breakout (<a href="/templates/breakout-ea-template">Asian range</a>)</td><td>London Open (08:00-12:00)</td><td>Volatility expansion from Asian consolidation</td></tr>
+          <tr><td>Trend-following (<a href="/how-it-works">MA crossover</a>)</td><td>London, NY Overlap</td><td>Strongest trends, highest momentum, institutional flow</td></tr>
+          <tr><td>Mean-reversion (<a href="/how-it-works">RSI</a>)</td><td>London, Late NY</td><td>Clear overbought/oversold levels with enough liquidity for execution</td></tr>
+          <tr><td>Breakout (<a href="/how-it-works">Asian range</a>)</td><td>London Open (08:00-12:00)</td><td>Volatility expansion from Asian consolidation</td></tr>
           <tr><td>Scalping</td><td>London, NY Overlap</td><td>Tightest spreads, highest liquidity, fastest execution</td></tr>
         </tbody>
       </table>
@@ -1249,7 +1249,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Session:</strong> London session only (08:00-17:00 GMT)</li>
         <li><strong>Risk:</strong> 1% per trade, max 3 trades per day</li>
       </ul>
-      <p>This is the same strategy used in our <a href="/templates/rsi-ea-template">RSI EA template</a>. It's a proven approach that works well on EURUSD H1.</p>
+      <p>This is the same strategy used in our <a href="/how-it-works">RSI EA template</a>. It's a proven approach that works well on EURUSD H1.</p>
 
       <h2>Step 1: Create Your Project</h2>
       <p>Sign up for a free AlgoStudio account (no credit card required) and click <strong>"New Project"</strong> on your dashboard. Name it something descriptive like "RSI Mean Reversion London" — this helps you stay organized as you build more EAs.</p>
@@ -1332,7 +1332,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p>Drag a new block, connect it, re-export — no code to debug, no syntax errors to fix. This rapid iteration cycle is what makes visual building so powerful. You can test 10 variations in the time it would take to code one.</p>
 
-      <p>For a ready-to-use starting point, check out our <a href="/templates/rsi-ea-template">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/templates/moving-average-crossover-ea">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize. New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through the basics. And if you're wondering why we build for MT5 instead of MT4, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a>.</p>
+      <p>For a ready-to-use starting point, check out our <a href="/how-it-works">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/how-it-works">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize. New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through the basics. And if you're wondering why we build for MT5 instead of MT4, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a>.</p>
     `,
   },
   {
@@ -1471,8 +1471,8 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Try Both Approaches</h2>
       <p>The best way to decide is to build and backtest both. In AlgoStudio's <a href="/">visual builder</a>, add the blocks to the canvas and compare results on the same pair and timeframe.</p>
       <ul>
-        <li><strong>RSI strategy:</strong> Start with our <a href="/templates/rsi-ea-template">RSI EA template</a> — pre-configured with EMA trend filter and London session timing</li>
-        <li><strong>Trend-following:</strong> Try the <a href="/templates/moving-average-crossover-ea">Moving Average Crossover template</a> — uses similar trend-following logic as MACD</li>
+        <li><strong>RSI strategy:</strong> Start with our <a href="/how-it-works">RSI EA template</a> — pre-configured with EMA trend filter and London session timing</li>
+        <li><strong>Trend-following:</strong> Try the <a href="/how-it-works">Moving Average Crossover template</a> — uses similar trend-following logic as MACD</li>
       </ul>
       <p>Many traders end up running both strategies simultaneously — RSI on range-bound pairs like EUR/GBP and MA crossover on trending pairs like GBP/USD. Read more about <a href="/blog/best-indicators-for-forex-ea">the best indicators for forex EAs</a>. And whichever indicator you choose, make sure you're running it on the right platform — our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a> explains why MT5's Strategy Tester makes a real difference for optimization.</p>
     `,
@@ -1835,7 +1835,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </tbody>
       </table>
 
-      <p>Ready to start? Try one of our pre-built templates as a starting point: <a href="/templates/moving-average-crossover-ea">Moving Average Crossover</a> (trend-following), <a href="/templates/rsi-ea-template">RSI Mean Reversion</a> (counter-trend), or <a href="/templates/breakout-ea-template">Breakout Strategy</a> (session-based). Each gives you a proven strategy you can customize and take through all 7 phases.</p>
+      <p>Ready to start? Try one of our pre-built templates as a starting point: <a href="/how-it-works">Moving Average Crossover</a> (trend-following), <a href="/how-it-works">RSI Mean Reversion</a> (counter-trend), or <a href="/how-it-works">Breakout Strategy</a> (session-based). Each gives you a proven strategy you can customize and take through all 7 phases.</p>
 
       <p>New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
     `,
@@ -1902,7 +1902,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Building It in AlgoStudio</h2>
       <p>In AlgoStudio, you can build a complete EMA crossover EA in under 5 minutes:</p>
       <ol>
-        <li>Select the <a href="/templates/moving-average-crossover-ea">EMA Crossover template</a></li>
+        <li>Select the <a href="/how-it-works">EMA Crossover template</a></li>
         <li>Set your fast and slow EMA periods</li>
         <li>Enable the ADX filter and set the threshold to 25</li>
         <li>Configure ATR-based stop loss and your preferred risk-reward ratio</li>
@@ -2184,7 +2184,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>Building It in AlgoStudio</h2>
-      <p>AlgoStudio's <a href="/templates/rsi-ea-template">RSI Reversal template</a> includes all the settings described in this guide:</p>
+      <p>AlgoStudio's <a href="/how-it-works">RSI Reversal template</a> includes all the settings described in this guide:</p>
       <ol>
         <li>Set RSI period and overbought/oversold levels</li>
         <li>Enable the higher-timeframe trend filter</li>
@@ -2226,7 +2226,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>This combination is responsive and generates frequent signals. Best suited for M15 to H1 timeframes. It catches trends early but produces more false signals in ranging markets. Ideal for scalping and intraday strategies where you want to capture quick moves.</p>
 
       <h3>Medium-Term: 10/50 or 20/50</h3>
-      <p>The workhorse combination for most forex EAs. Balances signal frequency with reliability. Works well on H1 and H4 timeframes. The 10/50 combination is more responsive, while 20/50 is smoother with fewer whipsaws. This is the combination used in our <a href="/templates/moving-average-crossover-ea">MA Crossover template</a>.</p>
+      <p>The workhorse combination for most forex EAs. Balances signal frequency with reliability. Works well on H1 and H4 timeframes. The 10/50 combination is more responsive, while 20/50 is smoother with fewer whipsaws. This is the combination used in our <a href="/how-it-works">MA Crossover template</a>.</p>
 
       <h3>Long-Term: 50/200</h3>
       <p>The classic golden cross and death cross combination used by institutional traders. Generates very few signals per year but they tend to capture major trend changes. Best for D1 timeframe and swing trading strategies. The trade-off is that entries come late because the 200-period MA is extremely slow to react.</p>
@@ -2289,7 +2289,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>Building It in AlgoStudio</h2>
       <p>Creating an MA crossover EA in AlgoStudio takes under 3 minutes:</p>
       <ol>
-        <li>Select the <a href="/templates/moving-average-crossover-ea">EMA Crossover</a> entry strategy</li>
+        <li>Select the <a href="/how-it-works">EMA Crossover</a> entry strategy</li>
         <li>Set your preferred fast and slow EMA periods</li>
         <li>Add an ADX trend filter for signal quality</li>
         <li>Configure ATR-based stop loss and risk-reward take profit</li>
@@ -2569,10 +2569,10 @@ export const BLOG_POSTS: BlogPost[] = [
       <h3>Start with a Template</h3>
       <p>If your strategy is based on a common approach, use a pre-built template as your starting point. Templates are fully configured with sensible default parameters and risk management. Available templates include:</p>
       <ul>
-        <li><a href="/templates/moving-average-crossover-ea">EMA Crossover</a>: trend-following with fast/slow EMA</li>
-        <li><a href="/templates/rsi-ea-template">RSI Reversal</a>: mean-reversion with RSI oversold/overbought</li>
-        <li><a href="/templates/breakout-ea-template">Breakout</a>: range breakout with pending orders</li>
-        <li><a href="/templates/bollinger-band-reversal-ea">Bollinger Bands</a>: volatility-based entries</li>
+        <li><a href="/how-it-works">EMA Crossover</a>: trend-following with fast/slow EMA</li>
+        <li><a href="/how-it-works">RSI Reversal</a>: mean-reversion with RSI oversold/overbought</li>
+        <li><a href="/how-it-works">Breakout</a>: range breakout with pending orders</li>
+        <li><a href="/how-it-works">Bollinger Bands</a>: volatility-based entries</li>
       </ul>
       <p>Templates save significant time and come with proven parameter ranges. You customize them by adjusting periods, levels, and risk settings rather than building from zero.</p>
 

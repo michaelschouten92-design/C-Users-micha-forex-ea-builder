@@ -108,7 +108,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "Unlimited strategies & exports",
               "Backtest health scoring",
               "Monte Carlo risk simulation",
-              "EA builder & templates",
+              "Strategy evaluation & scoring",
               "Strategy journal",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">

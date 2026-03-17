@@ -13,32 +13,68 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/no-code-mt5-ea-builder",
-        destination: "/product",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/no-code-ea-builder",
-        destination: "/product",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/visual-strategy-builder",
-        destination: "/product",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/automated-trading-for-beginners",
-        destination: "/product/simplicity",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/features",
-        destination: "/product",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/help",
-        destination: "/product/how-it-works",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      // Product page consolidation — all product routes → /how-it-works
+      {
+        source: "/product",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/how-it-works",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/health-monitor",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/monte-carlo",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/strategy-identity",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/track-record",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/simplicity",
+        destination: "/how-it-works",
         permanent: true,
       },
       // App restructuring redirects
@@ -75,27 +111,32 @@ const nextConfig: NextConfig = {
       // Marketing consolidation redirects
       {
         source: "/compare-platforms",
-        destination: "/product/how-it-works",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/compare-platforms/:slug",
-        destination: "/product/how-it-works",
+        destination: "/how-it-works",
+        permanent: true,
+      },
+      {
+        source: "/product/mt5-export",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/templates",
-        destination: "/product/mt5-export",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/templates/:slug",
-        destination: "/product/mt5-export",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
         source: "/trading-strategy-templates-mt5",
-        destination: "/product/mt5-export",
+        destination: "/how-it-works",
         permanent: true,
       },
       {
@@ -124,9 +165,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Cache public marketing pages (homepage, pricing, templates, product, blog, etc.)
+        // Cache public marketing pages (homepage, pricing, how-it-works, blog, etc.)
         source:
-          "/(|pricing|product|product/:slug*|blog|blog/:slug*|about|faq|contact|privacy|terms|verified)",
+          "/(|pricing|how-it-works|blog|blog/:slug*|about|faq|contact|privacy|terms|verified)",
         headers: [
           {
             key: "Cache-Control",
