@@ -1,0 +1,29 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { AppNav } from "@/components/app/app-nav";
+import { OnboardingClient } from "./onboarding-client";
+
+export default async function OnboardingPage() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login?expired=true");
+  }
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+
+  return (
+    <div className="min-h-screen bg-[#09090B]">
+      <AppNav session={session} tier={tier} />
+
+      <main className="max-w-2xl mx-auto py-10 px-4 sm:px-6">
+        <OnboardingClient />
+      </main>
+    </div>
+  );
+}
