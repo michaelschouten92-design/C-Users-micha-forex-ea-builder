@@ -92,9 +92,33 @@ export async function POST(request: NextRequest) {
     // Security: auth.instanceId is derived from the API key (one key = one instance).
     // The request body has no instanceId field, preventing a leaked key from affecting other instances.
 
+    // Manifest mode: resolve a per-fingerprint context instance so each deployed strategy
+    // gets its own instanceId for isolated governance, tracking, and Command Center display.
+    const effectiveInstanceId = data.deployment?.materialFingerprint
+      ? await resolveManifestContextInstance(auth.instanceId, auth.userId, {
+          symbol: data.deployment.symbol,
+          timeframe: data.deployment.timeframe,
+          magicNumber: data.deployment.magicNumber,
+          eaName: data.deployment.eaName,
+          materialFingerprint: data.deployment.materialFingerprint,
+        })
+      : auth.instanceId;
+    const isManifestContext = effectiveInstanceId !== auth.instanceId;
+
+    // TODO: remove after manifest instanceId validation
+    log.info(
+      {
+        baseInstanceId: auth.instanceId,
+        fingerprint: data.deployment?.materialFingerprint ?? null,
+        effectiveInstanceId,
+        isManifestContext,
+      },
+      "heartbeat:instance-resolution"
+    );
+
     // Fetch instance state before the update for status change detection
     const previousState = await prisma.liveEAInstance.findUnique({
-      where: { id: auth.instanceId },
+      where: { id: effectiveInstanceId },
       select: {
         status: true,
         tradingState: true,
@@ -109,13 +133,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Atomically update instance + insert heartbeat record
-    await prisma.$transaction([
+    // Atomically update instance + insert heartbeat record.
+    // In manifest mode, also pulse the base instance so the terminal doesn't go OFFLINE.
+    const now = new Date();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const txOps: any[] = [
       prisma.liveEAInstance.update({
-        where: { id: auth.instanceId },
+        where: { id: effectiveInstanceId },
         data: {
           status: "ONLINE",
-          lastHeartbeat: new Date(),
+          lastHeartbeat: now,
           symbol: data.symbol ?? undefined,
           timeframe: data.timeframe ?? undefined,
           broker: data.broker ?? undefined,
@@ -130,7 +157,7 @@ export async function POST(request: NextRequest) {
       }),
       prisma.eAHeartbeat.create({
         data: {
-          instanceId: auth.instanceId,
+          instanceId: effectiveInstanceId,
           balance: data.balance,
           equity: data.equity,
           openTrades: data.openTrades,
@@ -140,7 +167,16 @@ export async function POST(request: NextRequest) {
           spread: data.spread,
         },
       }),
-    ]);
+    ];
+    if (isManifestContext) {
+      txOps.push(
+        prisma.liveEAInstance.update({
+          where: { id: auth.instanceId },
+          data: { status: "ONLINE", lastHeartbeat: now },
+        })
+      );
+    }
+    await prisma.$transaction(txOps);
 
     // Side effects: webhook, alerts, strategy status recomputation.
     // Alert checks are DB-heavy (4-5 queries each) — only run on status change
@@ -149,18 +185,21 @@ export async function POST(request: NextRequest) {
       const statusChanged = previousState.status !== "ONLINE";
 
       processHeartbeatSideEffects(
-        auth.instanceId,
+        effectiveInstanceId,
         auth.userId,
         data,
         previousState,
         statusChanged
       ).catch((err) => {
-        log.error({ err, instanceId: auth.instanceId }, "Heartbeat side effects failed");
+        log.error({ err, instanceId: effectiveInstanceId }, "Heartbeat side effects failed");
       });
 
       if (statusChanged) {
-        computeAndCacheStatus(auth.instanceId).catch((err) => {
-          log.error({ err, instanceId: auth.instanceId }, "Strategy status recomputation failed");
+        computeAndCacheStatus(effectiveInstanceId).catch((err) => {
+          log.error(
+            { err, instanceId: effectiveInstanceId },
+            "Strategy status recomputation failed"
+          );
         });
       }
     }
@@ -171,6 +210,7 @@ export async function POST(request: NextRequest) {
     if (data.deployment) {
       try {
         await processDeploymentDiscovery(
+          effectiveInstanceId,
           auth.instanceId,
           auth.userId,
           data.deployment,
@@ -179,7 +219,7 @@ export async function POST(request: NextRequest) {
           data.accountNumber ?? null
         );
       } catch (err) {
-        log.error({ err, instanceId: auth.instanceId }, "Deployment discovery failed");
+        log.error({ err, instanceId: effectiveInstanceId }, "Deployment discovery failed");
       }
     }
 
@@ -188,6 +228,7 @@ export async function POST(request: NextRequest) {
     if (data.discoveredDeployments && data.discoveredDeployments.length > 0) {
       try {
         await processDiscoveredDeployments(
+          effectiveInstanceId,
           auth.instanceId,
           auth.userId,
           data.discoveredDeployments,
@@ -197,14 +238,16 @@ export async function POST(request: NextRequest) {
           data.unattributedTradeCount ?? 0
         );
       } catch (err) {
-        log.error({ err, instanceId: auth.instanceId }, "Account-wide deployment discovery failed");
+        log.error(
+          { err, instanceId: effectiveInstanceId },
+          "Account-wide deployment discovery failed"
+        );
       }
     }
 
     // Governance decision — reuse the same pure function as internal heartbeat.
     // The telemetry endpoint authenticates by API key (instance is confirmed to exist),
     // so authorityReady is always true here.
-    const now = new Date();
     const decision = previousState
       ? decideHeartbeatAction({
           lifecycleState: previousState.lifecycleState,
@@ -215,9 +258,15 @@ export async function POST(request: NextRequest) {
         })
       : { action: "PAUSE" as const, reasonCode: "NO_INSTANCE" as const };
 
+    // TODO: remove after manifest instanceId validation
+    log.info(
+      { responseInstanceId: effectiveInstanceId, action: decision.action },
+      "heartbeat:response"
+    );
+
     return NextResponse.json({
       success: true,
-      instanceId: auth.instanceId,
+      instanceId: effectiveInstanceId,
       action: decision.action,
       reasonCode: decision.reasonCode,
     });
@@ -225,6 +274,52 @@ export async function POST(request: NextRequest) {
     log.error({ err, instanceId: auth.instanceId }, "Heartbeat processing failed");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
+}
+
+// ── Manifest Context Instance Resolution ─────────────────────────────
+
+/**
+ * Resolve or create a per-context LiveEAInstance for manifest mode.
+ *
+ * In manifest mode the EA sends one heartbeat per strategy context (fingerprint).
+ * Each context needs its own instanceId for isolated governance, tracking, and display.
+ * Instance identity = SHA-256("manifest-ctx-key:v1:" + baseInstanceId + ":" + fingerprint).
+ *
+ * The synthetic apiKeyHash is not usable for authentication — no real API key maps to it.
+ * Idempotent: safe to call on every heartbeat.
+ */
+async function resolveManifestContextInstance(
+  baseInstanceId: string,
+  userId: string,
+  deployment: {
+    symbol: string;
+    timeframe: string;
+    magicNumber: number;
+    eaName: string;
+    materialFingerprint: string;
+  }
+): Promise<string> {
+  const syntheticKeyHash = createHash("sha256")
+    .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
+    .digest("hex");
+
+  const ctx = await prisma.liveEAInstance.upsert({
+    where: { apiKeyHash: syntheticKeyHash },
+    create: {
+      userId,
+      apiKeyHash: syntheticKeyHash,
+      eaName: deployment.eaName,
+      symbol: deployment.symbol.toUpperCase(),
+      timeframe: deployment.timeframe.toUpperCase(),
+      // Start in LIVE_MONITORING so governance returns RUN immediately.
+      // Manifest context instances represent actively deployed live strategies.
+      lifecycleState: "LIVE_MONITORING",
+    },
+    update: {},
+    select: { id: true },
+  });
+
+  return ctx.id;
 }
 
 interface PreviousState {
@@ -355,9 +450,13 @@ function computeDeploymentKey(d: {
  *
  * Resolve or auto-create a TerminalConnection for this instance,
  * then upsert the TerminalDeployment. Idempotent — safe to call on every heartbeat.
+ *
+ * terminalAnchorInstanceId: base instance used for terminal synthetic hash. In manifest
+ * mode this is always auth.instanceId so all contexts share one TerminalConnection.
  */
 async function processDeploymentDiscovery(
   instanceId: string,
+  terminalAnchorInstanceId: string,
   userId: string,
   deployment: {
     symbol: string;
@@ -377,8 +476,11 @@ async function processDeploymentDiscovery(
   let terminalId = existingTerminalId;
   if (!terminalId) {
     // Auto-create terminal — use deterministic apiKeyHash so repeated calls are safe.
-    // This hash is synthetic (not for X-Terminal-Key auth) — just satisfies the unique constraint.
-    const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
+    // Key is anchored to terminalAnchorInstanceId (base instance) so all manifest contexts
+    // from the same terminal share one TerminalConnection.
+    const syntheticHash = createHash("sha256")
+      .update(`auto:instance:${terminalAnchorInstanceId}`)
+      .digest("hex");
 
     // Check if this synthetic terminal already exists before enforcing limits
     const existingSynthetic = await prisma.terminalConnection.findUnique({
@@ -542,9 +644,13 @@ function computeDiscoveredDeploymentKey(d: {
  * Process discovered deployments from account-wide monitoring.
  * Each candidate is a symbol+magicNumber group from trade history.
  * Creates TerminalDeployment entries with source="DISCOVERED".
+ *
+ * terminalAnchorInstanceId: base instance used for terminal synthetic hash (same as
+ * processDeploymentDiscovery — always auth.instanceId so contexts share one terminal).
  */
 async function processDiscoveredDeployments(
   instanceId: string,
+  terminalAnchorInstanceId: string,
   userId: string,
   deployments: { symbol: string; magicNumber: number; eaHint?: string; tradeCount?: number }[],
   existingTerminalId: string | null,
@@ -557,7 +663,9 @@ async function processDiscoveredDeployments(
   // Step 1: Resolve or auto-create TerminalConnection (same logic as precise discovery)
   let terminalId = existingTerminalId;
   if (!terminalId) {
-    const syntheticHash = createHash("sha256").update(`auto:instance:${instanceId}`).digest("hex");
+    const syntheticHash = createHash("sha256")
+      .update(`auto:instance:${terminalAnchorInstanceId}`)
+      .digest("hex");
 
     // Check if this synthetic terminal already exists before enforcing limits
     const existingSynthetic = await prisma.terminalConnection.findUnique({

@@ -25,6 +25,22 @@ enum ENUM_MONITOR_MODE
 };
 
 //+------------------------------------------------------------------+
+//| PER-STRATEGY CONTEXT  (Milestone B — manifest mode)              |
+//+------------------------------------------------------------------+
+struct StrategyContext
+{
+   long     magicNumber;    // Primary routing key
+   string   symbol;         // Chart symbol ("" = any symbol)
+   string   timeframe;      // Timeframe string, e.g. "M15"
+   string   eaName;         // Human label
+   string   fingerprint;    // SHA-256 of material config fields
+   string   instanceId;     // Server-assigned; populated after first heartbeat
+   string   govAction;      // "RUN" | "PAUSE" | "STOP"
+   string   govReason;      // reasonCode from last heartbeat response
+   datetime govReceivedAt;  // When last governance state was received
+};
+
+//+------------------------------------------------------------------+
 //| INPUT PARAMETERS                                                 |
 //+------------------------------------------------------------------+
 input string InpApiKey        = "";              // API Key (from AlgoStudio dashboard)
@@ -41,6 +57,11 @@ input bool   InpExcludeManual = false;           // Exclude manual trades (magic
 // Deployment identity (optional — enables deployment discovery)
 input string InpTrackedEaName = "";              // Name of the EA being monitored (optional)
 
+// Multi-strategy manifest (Milestone B — takes priority over single-strategy inputs when non-empty)
+// Format: magic|symbol|timeframe|label  (comma-separated for multiple strategies)
+// Example: 12345|EURUSD|M15|MomentumV3,20001|XAUUSD|M5|ReversionX
+input string InpStrategyManifest = "";           // Strategy manifest (magic|sym|tf|label, CSV)
+
 // On-chart panel
 input bool   InpShowPanel     = true;             // Show monitor panel on chart
 input ENUM_BASE_CORNER InpPanelCorner = CORNER_RIGHT_UPPER; // Panel corner
@@ -54,6 +75,7 @@ input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 #define MAX_QUEUE_SIZE 500
 #define POISON_DROP_THRESHOLD 3
 #define MAX_DISCOVERED_DEPLOYMENTS 50
+#define MAX_MANIFEST_CONTEXTS 5
 #define STATE_FILE_PREFIX "AlgoStudio_Monitor_"
 #define LOCK_GV_PREFIX "AS_MONITOR_LOCK_"
 #define MONITOR_VERSION "1.0.0"
@@ -140,6 +162,11 @@ long     g_deployMagic      = 0;
 string   g_deployEaName     = "";
 string   g_deployFingerprint = "";  // SHA-256 of material config fields
 
+// Multi-strategy manifest mode (Milestone B)
+StrategyContext g_contexts[];
+int    g_contextCount = 0;
+bool   g_manifestMode = false;
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -176,8 +203,12 @@ int OnInit()
    // Parse magic number filter
    ParseMagicFilter();
 
-   // Evaluate deployment discovery eligibility (session-bound — never re-evaluated)
-   EvaluateDeploymentEligibility();
+   // Parse multi-strategy manifest — sets g_manifestMode when InpStrategyManifest is non-empty
+   ParseManifest();
+
+   // Legacy single-strategy deployment eligibility — skipped in manifest mode
+   if(!g_manifestMode)
+      EvaluateDeploymentEligibility();
 
    if(InpMonitorMode != MODE_SYMBOL_ONLY)
       Print("AlgoStudio Monitor: Account-wide monitoring mode active — automatic deployment discovery enabled, baseline monitoring requires linking");
@@ -265,11 +296,23 @@ void OnTimer()
    datetime now = TimeCurrent();
 
    // Heartbeat — always runs regardless of governance action
-   // Runs before trade polling so that g_instanceId is populated (and
-   // deferred SESSION_START sent) before any TRADE_OPEN/CLOSE events.
    if(now - g_lastHeartbeat >= InpHeartbeatSec)
    {
-      SendHeartbeat();
+      if(g_manifestMode)
+      {
+         // Manifest mode: one heartbeat per strategy context.
+         // Per-context governance is stored in each context only —
+         // g_govAction is NOT modified from manifest context responses.
+         for(int i = 0; i < g_contextCount; i++)
+            SendContextHeartbeat(g_contexts[i]);
+      }
+      else
+      {
+         // Legacy mode: single heartbeat with deferred SESSION_START.
+         // Runs before trade polling so g_instanceId is populated before
+         // any TRADE_OPEN/CLOSE events.
+         SendHeartbeat();
+      }
       g_lastHeartbeat = now;
    }
 
@@ -278,7 +321,9 @@ void OnTimer()
       FlushOfflineQueue();
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
-   PollTradeChanges();
+   // Skipped in manifest mode — per-context chain routing comes in Milestone C
+   if(!g_manifestMode)
+      PollTradeChanges();
 
    // Governance gate: PAUSE/STOP → skip trade polling and snapshots
    if(g_govAction != "RUN")
@@ -288,8 +333,8 @@ void OnTimer()
       return;
    }
 
-   // Snapshot for track record
-   if(now - g_lastSnapshot >= InpSnapshotSec)
+   // Snapshot for track record — legacy mode only; per-context snapshots come in Milestone C
+   if(!g_manifestMode && now - g_lastSnapshot >= InpSnapshotSec)
    {
       SendSnapshot();
       g_lastSnapshot = now;
@@ -316,6 +361,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeResult& result)
 {
    if(!g_initialized) return;
+   if(g_manifestMode) return;        // per-context chain routing comes in Milestone C
    if(g_govAction != "RUN") return;  // Governance gate: no trade events when paused/stopped
    g_processingTrade = true;
 
@@ -452,6 +498,122 @@ void EvaluateDeploymentEligibility()
          g_deploySymbol, ":", g_deployTimeframe, ":", IntegerToString(g_deployMagic),
          ":", g_deployEaName,
          " fingerprint=", StringSubstr(g_deployFingerprint, 0, 16), "...");
+}
+
+//+------------------------------------------------------------------+
+//| PARSE STRATEGY MANIFEST  (Milestone B)                          |
+//| Populates g_contexts[] from InpStrategyManifest.                 |
+//| Sets g_manifestMode = true when at least one valid context loads.|
+//| Format per entry: magic|symbol|timeframe|label                   |
+//| Entries are comma-separated.                                     |
+//+------------------------------------------------------------------+
+void ParseManifest()
+{
+   g_contextCount = 0;
+   g_manifestMode = false;
+   if(StringLen(InpStrategyManifest) == 0) return;
+
+   string tokens[];
+   int tokenCount = StringSplit(InpStrategyManifest, ',', tokens);
+   ArrayResize(g_contexts, tokenCount);
+
+   for(int i = 0; i < tokenCount; i++)
+   {
+      StringTrimLeft(tokens[i]);
+      StringTrimRight(tokens[i]);
+      if(StringLen(tokens[i]) == 0) continue;
+
+      string parts[];
+      int partCount = StringSplit(tokens[i], '|', parts);
+      if(partCount < 4)
+      {
+         Print("AlgoStudio Monitor: Skipping malformed manifest entry (need magic|sym|tf|label): '",
+               tokens[i], "'");
+         continue;
+      }
+
+      long magic = StringToInteger(parts[0]);
+      if(magic <= 0)
+      {
+         Print("AlgoStudio Monitor: Skipping manifest entry — magic must be > 0: '", tokens[i], "'");
+         continue;
+      }
+
+      StrategyContext ctx;
+      ctx.magicNumber   = magic;
+      ctx.symbol        = parts[1];
+      ctx.timeframe     = parts[2];
+      ctx.eaName        = parts[3];
+      ctx.instanceId    = "";
+      ctx.govAction     = "RUN";
+      ctx.govReason     = "";
+      ctx.govReceivedAt = 0;
+
+      // Fingerprint uses same material fields as single-context EvaluateDeploymentEligibility
+      string canonical = StringFormat("%s:%s:%d:%s:%s:%s",
+         ctx.symbol, ctx.timeframe, (int)ctx.magicNumber, ctx.eaName,
+         InpCommentFilter, InpExcludeManual ? "true" : "false");
+      ctx.fingerprint = SHA256(canonical);
+
+      // Guard: max context count
+      if(g_contextCount >= MAX_MANIFEST_CONTEXTS)
+      {
+         Print("AlgoStudio Monitor: Manifest limit (", MAX_MANIFEST_CONTEXTS,
+               ") reached. Ignoring remaining entries.");
+         break;
+      }
+
+      // Guard: duplicate fingerprint
+      bool duplicate = false;
+      for(int j = 0; j < g_contextCount; j++)
+      {
+         if(g_contexts[j].fingerprint == ctx.fingerprint)
+         {
+            Print("AlgoStudio Monitor: Skipping duplicate (fingerprint matches context [",
+                  j, "] ", g_contexts[j].eaName, "): '", tokens[i], "'");
+            duplicate = true;
+            break;
+         }
+      }
+      if(duplicate) continue;
+
+      Print("AlgoStudio Monitor: Context [", g_contextCount, "] ",
+            ctx.symbol, ":", ctx.timeframe,
+            " magic=", ctx.magicNumber, " label=", ctx.eaName,
+            " fingerprint=", StringSubstr(ctx.fingerprint, 0, 16), "...");
+
+      g_contexts[g_contextCount++] = ctx;
+   }
+
+   ArrayResize(g_contexts, g_contextCount);
+
+   if(g_contextCount > 0)
+   {
+      g_manifestMode = true;
+      Print("AlgoStudio Monitor: Manifest mode active. ", g_contextCount, " context(s) loaded.");
+   }
+   else
+   {
+      Print("AlgoStudio Monitor: Manifest non-empty but no valid contexts parsed. "
+            "Falling back to single-strategy mode.");
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Return worst-case governance across all contexts (display only). |
+//| STOP > PAUSE > RUN.                                              |
+//| Does NOT modify g_govAction — per-context governance is          |
+//| authoritative per-context only in Milestone B.                  |
+//+------------------------------------------------------------------+
+string GetWorstContextGovAction()
+{
+   string worst = "RUN";
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      if(g_contexts[i].govAction == "STOP")  return "STOP";
+      if(g_contexts[i].govAction == "PAUSE")   worst = "PAUSE";
+   }
+   return worst;
 }
 
 //+------------------------------------------------------------------+
@@ -1244,12 +1406,139 @@ void SendHeartbeat()
 }
 
 //+------------------------------------------------------------------+
-//| HTTP POST with retry + exponential backoff                       |
-//| Returns HTTP status code (200-599), or -1 for network failure.   |
-//| Callers decide how to interpret the status.                      |
+//| PER-CONTEXT HEARTBEAT  (Milestone B)                            |
+//| Sends one heartbeat for a single strategy context.              |
+//| Parses instanceId and governance from the response into ctx.    |
+//| Does NOT send SESSION_START or any chain events — Milestone C.  |
 //+------------------------------------------------------------------+
-int HttpPostEx(string endpoint, string jsonBody)
+void SendContextHeartbeat(StrategyContext &ctx)
 {
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   if(dd < 0) dd = 0;
+
+   // Use context symbol for spread lookup; fall back to chart symbol if empty
+   string spreadSym = (StringLen(ctx.symbol) > 0) ? ctx.symbol : _Symbol;
+   int spread = (int)SymbolInfoInteger(spreadSym, SYMBOL_SPREAD);
+
+   ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+   string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST)
+                    ? "PAPER" : "LIVE";
+
+   // Per-context open position count (filtered by magic + symbol)
+   int myOpen = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(StringLen(ctx.symbol) > 0 &&
+         PositionGetString(POSITION_SYMBOL) != ctx.symbol) continue;
+      if((long)PositionGetInteger(POSITION_MAGIC) != ctx.magicNumber) continue;
+      myOpen++;
+   }
+
+   // Per-context closed trade stats (filtered by magic + symbol)
+   HistorySelect(0, TimeCurrent());
+   int    totalClosed = 0;
+   double totalPL     = 0;
+   for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
+   {
+      ulong dTicket = HistoryDealGetTicket(i);
+      if(dTicket == 0) continue;
+      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+      if((long)HistoryDealGetInteger(dTicket, DEAL_MAGIC) != ctx.magicNumber) continue;
+      if(StringLen(ctx.symbol) > 0 &&
+         HistoryDealGetString(dTicket, DEAL_SYMBOL) != ctx.symbol) continue;
+      totalClosed++;
+      totalPL += HistoryDealGetDouble(dTicket, DEAL_PROFIT);
+   }
+
+   // Strategy deployment identity for this context
+   string deployJson = ",\"deployment\":{"
+      + JStr("symbol", ctx.symbol) + ","
+      + JStr("timeframe", ctx.timeframe) + ","
+      + JInt("magicNumber", (int)ctx.magicNumber) + ","
+      + JStr("eaName", ctx.eaName) + ","
+      + JStr("materialFingerprint", ctx.fingerprint)
+      + "}";
+
+   string json = "{"
+      + JStr("mode", accMode) + ","
+      + JStr("symbol", ctx.symbol) + ","
+      + JStr("timeframe", ctx.timeframe) + ","
+      + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
+      + JStr("accountNumber", IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))) + ","
+      + JMoney("balance", bal) + ","
+      + JMoney("equity", eq) + ","
+      + JInt("openTrades", myOpen) + ","
+      + JInt("totalTrades", totalClosed) + ","
+      + JMoney("totalProfit", totalPL) + ","
+      + JMoney("drawdown", dd) + ","
+      + JInt("spread", spread)
+      + deployJson
+      + "}";
+
+   string response = "";
+   int status = HttpPostCore("/api/telemetry/heartbeat", json, response);
+
+   if(status >= 200 && status < 300)
+   {
+      g_lastSuccessfulHb = TimeCurrent();
+      g_panelError = "";
+
+      // Assign instanceId once (stable after first server assignment)
+      if(StringLen(ctx.instanceId) == 0)
+      {
+         string id = ParseJsonString(response, "instanceId");
+         if(StringLen(id) > 0)
+         {
+            ctx.instanceId = id;
+            Print("AlgoStudio Monitor [", ctx.eaName, "]: instanceId assigned: ", id);
+         }
+      }
+
+      // Parse governance into this context
+      string action = ParseJsonString(response, "action");
+      if(action == "RUN" || action == "PAUSE" || action == "STOP")
+      {
+         if(action != ctx.govAction)
+         {
+            Print("AlgoStudio Monitor [", ctx.eaName, "]: Governance: ",
+                  ctx.govAction, " -> ", action);
+            ctx.govReason = "";
+         }
+         ctx.govAction     = action;
+         ctx.govReceivedAt = TimeCurrent();
+      }
+      else if(StringLen(action) == 0)
+      {
+         // No governance field — default to RUN (fail-safe)
+         ctx.govAction = "RUN";
+         ctx.govReason = "";
+      }
+      // Unrecognized value: keep previous action
+
+      string reason = ParseJsonString(response, "reasonCode");
+      if(StringLen(reason) > 0)
+         ctx.govReason = reason;
+   }
+   else if(status != -1)
+   {
+      // HTTP error (not a network failure) — surface in panel
+      g_panelError = "HTTP " + IntegerToString(status) + " [" + ctx.eaName + "]";
+   }
+}
+
+//+------------------------------------------------------------------+
+//| HTTP TRANSPORT CORE — retry + backoff, returns response body.   |
+//| Pure transport: no global state side-effects.                   |
+//| Callers are responsible for parsing the response.               |
+//+------------------------------------------------------------------+
+int HttpPostCore(string endpoint, string jsonBody, string &responseBody)
+{
+   responseBody = "";
    string url = InpBaseUrl + endpoint;
    string headers = "Content-Type: application/json\r\nX-EA-Key: " + InpApiKey;
 
@@ -1281,7 +1570,8 @@ int HttpPostEx(string endpoint, string jsonBody)
          if(err == 4014)
          {
             g_panelError = "WebRequest not allowed — check Options";
-            Print("AlgoStudio Monitor: Add ", InpBaseUrl, " to Tools > Options > Expert Advisors > Allow WebRequest");
+            Print("AlgoStudio Monitor: Add ", InpBaseUrl,
+                  " to Tools > Options > Expert Advisors > Allow WebRequest");
             return -1;  // Config error — don't retry
          }
          if(attempt < maxRetries) continue;
@@ -1297,20 +1587,36 @@ int HttpPostEx(string endpoint, string jsonBody)
          return res;
       }
 
-      // Always parse response for governance fields + instanceId
-      string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+      responseBody = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+      return res;
+   }
 
+   return -1;
+}
+
+//+------------------------------------------------------------------+
+//| Legacy HttpPostEx — wraps HttpPostCore and updates global state. |
+//| Used by chain event senders (SendTrackRecordEvent) and queue     |
+//| flush (FlushOfflineQueue). Legacy single-context heartbeat also  |
+//| routes through here so its global ParseInstanceId /             |
+//| ParseGovernanceAction side-effects are preserved unchanged.     |
+//+------------------------------------------------------------------+
+int HttpPostEx(string endpoint, string jsonBody)
+{
+   string response = "";
+   int status = HttpPostCore(endpoint, jsonBody, response);
+
+   if(status >= 200 && status < 300)
+   {
       if(StringLen(g_instanceId) == 0)
          ParseInstanceId(response);
 
       // Parse governance action from heartbeat responses
       if(StringFind(endpoint, "/heartbeat") >= 0)
          ParseGovernanceAction(response);
-
-      return res;
    }
 
-   return -1;
+   return status;
 }
 
 //+------------------------------------------------------------------+
@@ -1866,18 +2172,21 @@ void PanelUpdate()
    }
    PanelSetValue(0, status, statusClr);
 
-   // Row 1: Governance — action from backend heartbeat response
+   // Row 1: Governance
+   // Manifest mode: worst-case across contexts (display only; does not gate runtime).
+   // Legacy mode: terminal-level g_govAction from backend heartbeat response.
+   string displayGov = g_manifestMode ? GetWorstContextGovAction() : g_govAction;
    string govLabel;
    color  govClr;
-   if(g_govAction == "RUN")
+   if(displayGov == "RUN")
    {
       govLabel = "RUN";
       govClr = OVL_GREEN;
    }
-   else if(g_govAction == "PAUSE")
+   else if(displayGov == "PAUSE")
    {
       govLabel = "PAUSED";
-      if(StringLen(g_govReason) > 0)
+      if(!g_manifestMode && StringLen(g_govReason) > 0)
          govLabel = govLabel + "  " + g_govReason;
       if(StringLen(govLabel) > 40)
          govLabel = StringSubstr(govLabel, 0, 37) + "...";
@@ -1886,7 +2195,7 @@ void PanelUpdate()
    else
    {
       govLabel = "STOPPED";
-      if(StringLen(g_govReason) > 0)
+      if(!g_manifestMode && StringLen(g_govReason) > 0)
          govLabel = govLabel + "  " + g_govReason;
       if(StringLen(govLabel) > 40)
          govLabel = StringSubstr(govLabel, 0, 37) + "...";
@@ -1912,10 +2221,16 @@ void PanelUpdate()
    }
    PanelSetValue(2, hbText, OVL_VALUE_COLOR);
 
-   // Row 3: Instance
-   string instLabel = "(pending)";
-   if(StringLen(g_instanceId) > 0)
-      instLabel = g_instanceId;
+   // Row 3: Instance — context count in manifest mode, instanceId in legacy mode
+   string instLabel;
+   if(g_manifestMode)
+      instLabel = IntegerToString(g_contextCount) + " context" + (g_contextCount != 1 ? "s" : "");
+   else
+   {
+      instLabel = "(pending)";
+      if(StringLen(g_instanceId) > 0)
+         instLabel = g_instanceId;
+   }
    PanelSetValue(3, instLabel, OVL_VALUE_COLOR);
 
    // Row 4: Account — login | server
