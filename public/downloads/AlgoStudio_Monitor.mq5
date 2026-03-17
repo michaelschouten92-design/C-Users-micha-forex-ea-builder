@@ -38,6 +38,23 @@ struct StrategyContext
    string   govAction;      // "RUN" | "PAUSE" | "STOP"
    string   govReason;      // reasonCode from last heartbeat response
    datetime govReceivedAt;  // When last governance state was received
+   // Per-context chain state (Milestone C)
+   int      seqNo;          // Chain sequence number for this context
+   string   lastHash;       // Previous event hash for this context
+   bool     sessionStartSent; // Per-context SESSION_START gate
+};
+
+//+------------------------------------------------------------------+
+//| DISCOVERY CANDIDATE  (internal — used by ScanActivityCandidates) |
+//+------------------------------------------------------------------+
+struct DiscoveryCandidate
+{
+   string symbol;
+   long   magicNumber;
+   string eaHint;          // From deal/position comment (bracket-stripped)
+   int    tradeCount;      // closed DEAL_ENTRY_OUT count + open-position count
+                           // (matches original DiscoverDeploymentsFromActivity JSON shape)
+   bool   hasOpenPosition; // true if >= 1 open position (for noise filter)
 };
 
 //+------------------------------------------------------------------+
@@ -206,7 +223,11 @@ int OnInit()
    // Parse multi-strategy manifest — sets g_manifestMode when InpStrategyManifest is non-empty
    ParseManifest();
 
-   // Legacy single-strategy deployment eligibility — skipped in manifest mode
+   // Auto-discovery fallback — runs only when no manifest was provided
+   if(!g_manifestMode)
+      AutoDiscoverContexts();
+
+   // Legacy single-strategy deployment eligibility — skipped in manifest/auto-discovery mode
    if(!g_manifestMode)
       EvaluateDeploymentEligibility();
 
@@ -321,22 +342,27 @@ void OnTimer()
       FlushOfflineQueue();
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
-   // Skipped in manifest mode — per-context chain routing comes in Milestone C
-   if(!g_manifestMode)
-      PollTradeChanges();
+   PollTradeChanges();
 
-   // Governance gate: PAUSE/STOP → skip trade polling and snapshots
-   if(g_govAction != "RUN")
+   // Governance gate: PAUSE/STOP → skip snapshots (legacy mode only)
+   // In manifest mode, per-context governance is checked inside SendContextTrackRecordEvent.
+   if(!g_manifestMode && g_govAction != "RUN")
    {
       if(InpShowPanel)
          PanelUpdate();
       return;
    }
 
-   // Snapshot for track record — legacy mode only; per-context snapshots come in Milestone C
-   if(!g_manifestMode && now - g_lastSnapshot >= InpSnapshotSec)
+   // Snapshots — per-context in manifest mode, global in legacy mode
+   if(now - g_lastSnapshot >= InpSnapshotSec)
    {
-      SendSnapshot();
+      if(g_manifestMode)
+      {
+         for(int i = 0; i < g_contextCount; i++)
+            SendContextSnapshot(i);
+      }
+      else
+         SendSnapshot();
       g_lastSnapshot = now;
    }
 
@@ -361,8 +387,9 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeResult& result)
 {
    if(!g_initialized) return;
-   if(g_manifestMode) return;        // per-context chain routing comes in Milestone C
-   if(g_govAction != "RUN") return;  // Governance gate: no trade events when paused/stopped
+   // In manifest mode, per-context governance is checked in SendContextTrackRecordEvent.
+   // In legacy mode, global governance gate still applies.
+   if(!g_manifestMode && g_govAction != "RUN") return;
    g_processingTrade = true;
 
    // We care about deal additions
@@ -381,28 +408,32 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       if(!PassesFilter(dealTicket)) return;
 
       ENUM_DEAL_ENTRY entry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+      bool accepted = false;
 
       if(entry == DEAL_ENTRY_IN)
       {
          // New position opened
-         SendTradeOpen(dealTicket);
+         accepted = SendTradeOpen(dealTicket);
          BuildKnownPositions();
       }
       else if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY)
       {
          // Position closed
-         SendTradeClose(dealTicket);
+         accepted = SendTradeClose(dealTicket);
          BuildKnownPositions();
       }
       else if(entry == DEAL_ENTRY_INOUT)
       {
          // Partial fill via close-and-reopen (netting mode or partial close)
-         SendTradeClose(dealTicket);
+         accepted = SendTradeClose(dealTicket);
          BuildKnownPositions();
       }
 
-      // Mark deal as known
-      AddKnownDeal(dealTicket);
+      // Only mark deal as known if event was accepted (sent or queued).
+      // If context instanceId is not yet assigned, leave deal unmarked
+      // so PollTradeChanges retries it after heartbeat assigns the instanceId.
+      if(accepted)
+         AddKnownDeal(dealTicket);
    }
 
    g_processingTrade = false;
@@ -548,6 +579,9 @@ void ParseManifest()
       ctx.govAction     = "RUN";
       ctx.govReason     = "";
       ctx.govReceivedAt = 0;
+      ctx.seqNo         = 0;
+      ctx.lastHash      = GENESIS_HASH;
+      ctx.sessionStartSent = false;
 
       // Fingerprint uses same material fields as single-context EvaluateDeploymentEligibility
       string canonical = StringFormat("%s:%s:%d:%s:%s:%s",
@@ -600,6 +634,106 @@ void ParseManifest()
 }
 
 //+------------------------------------------------------------------+
+//| Automatic zero-config context discovery.                         |
+//| Runs only when no manifest is provided.                          |
+//| Scans full account history + open positions, applies noise       |
+//| filter (tradeCount >= 2 OR hasOpenPosition), converts qualifying |
+//| candidates into StrategyContext entries, and sets g_manifestMode.|
+//+------------------------------------------------------------------+
+void AutoDiscoverContexts()
+{
+   g_manifestMode = false;
+   g_contextCount = 0;
+   ArrayResize(g_contexts, 0);
+
+   DiscoveryCandidate candidates[];
+   int unattributed = 0;
+   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+
+   if(found == 0)
+   {
+      Print("AlgoStudio Monitor: Auto-discovery: no EA-attributed activity (magic > 0) found on this account.");
+      return;
+   }
+
+   ArrayResize(g_contexts, MathMin(found, MAX_MANIFEST_CONTEXTS));
+
+   for(int i = 0; i < found; i++)
+   {
+      // Noise filter: suppress one-off historical signals
+      if(candidates[i].tradeCount < 2 && !candidates[i].hasOpenPosition)
+         continue;
+
+      // Cap
+      if(g_contextCount >= MAX_MANIFEST_CONTEXTS)
+      {
+         Print("AlgoStudio Monitor: Auto-discovery limit (", MAX_MANIFEST_CONTEXTS,
+               ") reached. Remaining candidates skipped.");
+         break;
+      }
+
+      StrategyContext ctx;
+      ctx.magicNumber   = candidates[i].magicNumber;
+      ctx.symbol        = candidates[i].symbol;
+      ctx.timeframe     = "";   // not recoverable from trade history
+      ctx.eaName        = StringLen(candidates[i].eaHint) > 0
+                          ? candidates[i].eaHint
+                          : "Magic " + IntegerToString((int)candidates[i].magicNumber);
+      ctx.instanceId    = "";
+      ctx.govAction     = "RUN";
+      ctx.govReason     = "";
+      ctx.govReceivedAt = 0;
+      ctx.seqNo         = 0;
+      ctx.lastHash      = GENESIS_HASH;
+      ctx.sessionStartSent = false;
+
+      // AUTO fingerprint — intentionally different from manifest fingerprints.
+      // timeframe is excluded (unknown). Backend scopes by base instance.
+      string canonical = "AUTO:v1:" + ctx.symbol + ":"
+                         + IntegerToString((int)ctx.magicNumber);
+      ctx.fingerprint   = SHA256(canonical);
+
+      // Dedup by fingerprint (same guard as ParseManifest)
+      bool duplicate = false;
+      for(int j = 0; j < g_contextCount; j++)
+      {
+         if(g_contexts[j].fingerprint == ctx.fingerprint)
+         {
+            duplicate = true;
+            break;
+         }
+      }
+      if(duplicate)
+      {
+         Print("AlgoStudio Monitor: Auto-discovery: skipping duplicate fingerprint — ",
+               candidates[i].symbol, " magic=", candidates[i].magicNumber);
+         continue;
+      }
+
+      Print("AlgoStudio Monitor: Auto-discovered [", g_contextCount, "] ",
+            ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName,
+            " trades=", candidates[i].tradeCount,
+            " openPos=", candidates[i].hasOpenPosition ? "yes" : "no",
+            " fp=", StringSubstr(ctx.fingerprint, 0, 16), "...");
+
+      g_contexts[g_contextCount++] = ctx;
+   }
+
+   ArrayResize(g_contexts, g_contextCount);
+
+   if(g_contextCount > 0)
+   {
+      g_manifestMode = true;
+      Print("AlgoStudio Monitor: Auto-discovery active. ", g_contextCount, " context(s) created.");
+   }
+   else
+   {
+      Print("AlgoStudio Monitor: Auto-discovery: all candidates filtered by noise filter. "
+            "Falling back to single-strategy mode.");
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Return worst-case governance across all contexts (display only). |
 //| STOP > PAUSE > RUN.                                              |
 //| Does NOT modify g_govAction — per-context governance is          |
@@ -617,40 +751,57 @@ string GetWorstContextGovAction()
 }
 
 //+------------------------------------------------------------------+
-//| Discover deployment candidates from account-wide trade activity  |
-//| Groups closed deals by symbol+magicNumber where magic > 0.       |
-//| Returns JSON fragment: ,"discoveredDeployments":[...],"unattrib.."|
-//| Returns empty string if not in ACCOUNT_WIDE mode or no activity. |
+//| Find matching strategy context for a deal's symbol + magic.      |
+//| Returns index into g_contexts[] or -1 if no match.               |
+//| Same matching rule as SendContextHeartbeat:                       |
+//|   1. magicNumber must match exactly                               |
+//|   2. if ctx.symbol is non-empty, symbol must match exactly        |
 //+------------------------------------------------------------------+
-string DiscoverDeploymentsFromActivity()
+int FindContextForDeal(string dealSymbol, long dealMagic)
 {
-   if(InpMonitorMode != MODE_ACCOUNT_WIDE) return "";
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      if(g_contexts[i].magicNumber != dealMagic) continue;
+      if(StringLen(g_contexts[i].symbol) > 0 &&
+         g_contexts[i].symbol != dealSymbol) continue;
+      return i;
+   }
+   return -1;
+}
 
+//+------------------------------------------------------------------+
+//| Scan account activity into typed DiscoveryCandidate array.       |
+//| Used by both DiscoverDeploymentsFromActivity() (JSON) and        |
+//| AutoDiscoverContexts() (StrategyContext creation).               |
+//| Returns number of candidates found.                              |
+//+------------------------------------------------------------------+
+int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &unattributed)
+{
    HistorySelect(0, TimeCurrent());
    int total = HistoryDealsTotal();
 
-   // Parallel arrays for grouping (MQL5 has no hash maps)
-   string  disc_symbols[];
-   long    disc_magics[];
-   string  disc_eaHints[];
-   int     disc_counts[];
-   int     discoveredCount = 0;
-   int     unattributed = 0;
+   ArrayResize(candidates, maxCount);
+   int discoveredCount = 0;
+   unattributed = 0;
 
-   ArrayResize(disc_symbols, MAX_DISCOVERED_DEPLOYMENTS);
-   ArrayResize(disc_magics,  MAX_DISCOVERED_DEPLOYMENTS);
-   ArrayResize(disc_eaHints, MAX_DISCOVERED_DEPLOYMENTS);
-   ArrayResize(disc_counts,  MAX_DISCOVERED_DEPLOYMENTS);
+   // Zero-init all slots
+   for(int k = 0; k < maxCount; k++)
+   {
+      candidates[k].symbol         = "";
+      candidates[k].magicNumber    = 0;
+      candidates[k].eaHint         = "";
+      candidates[k].tradeCount     = 0;
+      candidates[k].hasOpenPosition = false;
+   }
 
+   // ── Closed deals ──────────────────────────────────────────────
    for(int i = 0; i < total; i++)
    {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
 
-      // Only count completed trades (DEAL_ENTRY_OUT)
       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
-      // Skip balance/credit operations
       ENUM_DEAL_TYPE dtype = (ENUM_DEAL_TYPE)HistoryDealGetInteger(ticket, DEAL_TYPE);
       if(dtype == DEAL_TYPE_BALANCE || dtype == DEAL_TYPE_CREDIT ||
          dtype == DEAL_TYPE_CHARGE  || dtype == DEAL_TYPE_CORRECTION ||
@@ -661,45 +812,30 @@ string DiscoverDeploymentsFromActivity()
       string sym   = HistoryDealGetString(ticket, DEAL_SYMBOL);
 
       if(StringLen(sym) == 0) continue;
+      if(magic == 0) { unattributed++; continue; }
 
-      // magic == 0 → unattributed (manual or no EA identity)
-      if(magic == 0)
-      {
-         unattributed++;
-         continue;
-      }
-
-      // Find existing group
       int idx = -1;
       for(int j = 0; j < discoveredCount; j++)
-      {
-         if(disc_symbols[j] == sym && disc_magics[j] == magic)
-         {
-            idx = j;
-            break;
-         }
-      }
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
 
       if(idx >= 0)
       {
-         disc_counts[idx]++;
+         candidates[idx].tradeCount++;
       }
-      else if(discoveredCount < MAX_DISCOVERED_DEPLOYMENTS)
+      else if(discoveredCount < maxCount)
       {
-         disc_symbols[discoveredCount] = sym;
-         disc_magics[discoveredCount]  = magic;
-         disc_counts[discoveredCount]  = 1;
-         // Use deal comment as EA name hint (first non-empty wins)
+         candidates[discoveredCount].symbol      = sym;
+         candidates[discoveredCount].magicNumber = magic;
+         candidates[discoveredCount].tradeCount  = 1;
+         candidates[discoveredCount].hasOpenPosition = false;
          string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
-         // Strip broker suffixes like "[sl]", "[tp]", position ticket refs
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0)
-            comment = "";
-         disc_eaHints[discoveredCount] = comment;
+         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
    }
 
-   // Scan open positions — catches strategies before their first closed deal
+   // ── Open positions (catches strategies before first closed deal) ──
    for(int p = PositionsTotal() - 1; p >= 0; p--)
    {
       ulong posTicket = PositionGetTicket(p);
@@ -710,53 +846,59 @@ string DiscoverDeploymentsFromActivity()
       long   magic = (long)PositionGetInteger(POSITION_MAGIC);
 
       if(StringLen(sym) == 0) continue;
+      if(magic == 0) { unattributed++; continue; }
 
-      if(magic == 0)
-      {
-         unattributed++;
-         continue;
-      }
-
-      // Find existing group or create new
       int idx = -1;
       for(int j = 0; j < discoveredCount; j++)
-      {
-         if(disc_symbols[j] == sym && disc_magics[j] == magic)
-         {
-            idx = j;
-            break;
-         }
-      }
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
 
       if(idx >= 0)
       {
-         disc_counts[idx]++;
+         candidates[idx].tradeCount++;       // preserves original JSON tradeCount semantics
+         candidates[idx].hasOpenPosition = true;
       }
-      else if(discoveredCount < MAX_DISCOVERED_DEPLOYMENTS)
+      else if(discoveredCount < maxCount)
       {
-         disc_symbols[discoveredCount] = sym;
-         disc_magics[discoveredCount]  = magic;
-         disc_counts[discoveredCount]  = 1;
+         candidates[discoveredCount].symbol         = sym;
+         candidates[discoveredCount].magicNumber    = magic;
+         candidates[discoveredCount].tradeCount     = 1;
+         candidates[discoveredCount].hasOpenPosition = true;
          string comment = PositionGetString(POSITION_COMMENT);
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0)
-            comment = "";
-         disc_eaHints[discoveredCount] = comment;
+         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
    }
 
+   ArrayResize(candidates, discoveredCount);
+   return discoveredCount;
+}
+
+//+------------------------------------------------------------------+
+//| Discover deployment candidates from account-wide trade activity. |
+//| Serializes ScanActivityCandidates() output to JSON fragment.     |
+//| External JSON shape is unchanged from the original implementation.|
+//| Returns empty string if not in ACCOUNT_WIDE mode or no activity. |
+//+------------------------------------------------------------------+
+string DiscoverDeploymentsFromActivity()
+{
+   if(InpMonitorMode != MODE_ACCOUNT_WIDE) return "";
+
+   DiscoveryCandidate candidates[];
+   int unattributed = 0;
+   int discoveredCount = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+
    if(discoveredCount == 0 && unattributed == 0) return "";
 
-   // Build JSON fragment
    string json = ",\"discoveredDeployments\":[";
    for(int i = 0; i < discoveredCount; i++)
    {
       if(i > 0) json += ",";
       json += "{"
-         + JStr("symbol", disc_symbols[i]) + ","
-         + JInt("magicNumber", (int)disc_magics[i]) + ","
-         + JStr("eaHint", disc_eaHints[i]) + ","
-         + JInt("tradeCount", disc_counts[i])
+         + JStr("symbol",      candidates[i].symbol) + ","
+         + JInt("magicNumber", (int)candidates[i].magicNumber) + ","
+         + JStr("eaHint",      candidates[i].eaHint) + ","
+         + JInt("tradeCount",  candidates[i].tradeCount)
          + "}";
    }
    json += "]";
@@ -911,13 +1053,16 @@ void PollTradeChanges()
       if(!PassesFilter(ticket)) continue;
 
       ENUM_DEAL_ENTRY entry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(ticket, DEAL_ENTRY);
+      bool accepted = false;
 
       if(entry == DEAL_ENTRY_IN)
-         SendTradeOpen(ticket);
+         accepted = SendTradeOpen(ticket);
       else if(entry == DEAL_ENTRY_OUT || entry == DEAL_ENTRY_OUT_BY || entry == DEAL_ENTRY_INOUT)
-         SendTradeClose(ticket);
+         accepted = SendTradeClose(ticket);
 
-      AddKnownDeal(ticket);
+      // Only mark as known if accepted — retries on next poll if instanceId pending
+      if(accepted)
+         AddKnownDeal(ticket);
    }
 
    BuildKnownPositions();
@@ -981,7 +1126,7 @@ string JLong(string key, long val)
 //+------------------------------------------------------------------+
 //| COMPUTE EVENT HASH (canonical JSON, sorted alphabetically)       |
 //+------------------------------------------------------------------+
-string ComputeEventHash(string eventType, int seqNo, string prevHash,
+string ComputeEventHash(string instanceId, string eventType, int seqNo, string prevHash,
                         long timestamp, string &payloadPairs[])
 {
    // Collect all pairs: core fields + payload
@@ -992,8 +1137,8 @@ string ComputeEventHash(string eventType, int seqNo, string prevHash,
    ArrayResize(pairs, 5 + payloadCount);
 
    // Core fields
-   if(StringLen(g_instanceId) > 0)
-      pairs[count++] = JStr("eaInstanceId", g_instanceId);
+   if(StringLen(instanceId) > 0)
+      pairs[count++] = JStr("eaInstanceId", instanceId);
    pairs[count++] = JStr("eventType", eventType);
    pairs[count++] = JStr("prevHash", prevHash);
    pairs[count++] = JInt("seqNo", seqNo);
@@ -1053,7 +1198,7 @@ bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadP
    int nextSeq = g_seqNo + 1;
    long ts = (long)TimeGMT();
 
-   string eventHash = ComputeEventHash(eventType, nextSeq, g_lastHash, ts, payloadPairs);
+   string eventHash = ComputeEventHash(g_instanceId, eventType, nextSeq, g_lastHash, ts, payloadPairs);
    if(StringLen(eventHash) == 0)
    {
       Print("AlgoStudio Monitor: Failed to compute event hash");
@@ -1089,6 +1234,171 @@ bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadP
    }
 
    return sent;
+}
+
+//+------------------------------------------------------------------+
+//| PER-CONTEXT TRACK RECORD EVENT  (Milestone C)                    |
+//| Uses context's own chain state (seqNo, lastHash, instanceId).    |
+//| Includes context identity in ingest payload for backend routing. |
+//| Automatically sends SESSION_START on first event for a context.  |
+//+------------------------------------------------------------------+
+bool SendContextTrackRecordEvent(int ctxIdx, string eventType,
+                                 string payloadJson, string &payloadPairs[])
+{
+   // Context must have instanceId assigned by heartbeat
+   if(StringLen(g_contexts[ctxIdx].instanceId) == 0)
+   {
+      Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+            "]: Skipping ", eventType, " — instanceId not yet assigned");
+      return false;
+   }
+
+   // Per-context governance gate
+   if(g_contexts[ctxIdx].govAction != "RUN")
+   {
+      Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+            "]: Skipping ", eventType, " — governance: ", g_contexts[ctxIdx].govAction);
+      return false;
+   }
+
+   // Auto-send SESSION_START before first chain event for this context
+   if(!g_contexts[ctxIdx].sessionStartSent && eventType != "SESSION_START")
+   {
+      SendContextSessionStart(ctxIdx);
+      if(!g_contexts[ctxIdx].sessionStartSent)
+         return false;  // SESSION_START failed — block subsequent events
+   }
+
+   int nextSeq = g_contexts[ctxIdx].seqNo + 1;
+   long ts = (long)TimeGMT();
+
+   string eventHash = ComputeEventHash(g_contexts[ctxIdx].instanceId,
+                         eventType, nextSeq, g_contexts[ctxIdx].lastHash, ts, payloadPairs);
+   if(StringLen(eventHash) == 0)
+   {
+      Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+            "]: Failed to compute event hash");
+      return false;
+   }
+
+   // Context identity for backend routing
+   string contextJson = ",\"context\":{"
+      + JStr("materialFingerprint", g_contexts[ctxIdx].fingerprint) + ","
+      + JStr("timeframe", g_contexts[ctxIdx].timeframe)
+      + "}";
+
+   string json = "{"
+      + "\"eventType\":\"" + eventType + "\","
+      + "\"seqNo\":" + IntegerToString(nextSeq) + ","
+      + "\"prevHash\":\"" + g_contexts[ctxIdx].lastHash + "\","
+      + "\"eventHash\":\"" + eventHash + "\","
+      + "\"timestamp\":" + IntegerToString(ts) + ","
+      + "\"payload\":" + payloadJson
+      + contextJson
+      + "}";
+
+   bool sent = HttpPost("/api/track-record/ingest", json);
+
+   // Advance context chain state regardless of send outcome
+   g_contexts[ctxIdx].seqNo = nextSeq;
+   g_contexts[ctxIdx].lastHash = eventHash;
+
+   if(!sent)
+      EnqueueEvent(json);
+
+   SaveState();
+   return sent;
+}
+
+//+------------------------------------------------------------------+
+//| Per-context SESSION_START  (Milestone C)                          |
+//+------------------------------------------------------------------+
+void SendContextSessionStart(int ctxIdx)
+{
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   string broker = AccountInfoString(ACCOUNT_COMPANY);
+   string account = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+
+   ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+   string mode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST)
+                 ? "PAPER" : "LIVE";
+
+   string symbol = g_contexts[ctxIdx].symbol;
+   if(StringLen(symbol) == 0) symbol = "MULTI";
+   string tf = g_contexts[ctxIdx].timeframe;
+   if(StringLen(tf) == 0) tf = "NA";
+   string accountMode = (ENUM_ACCOUNT_MARGIN_MODE)AccountInfoInteger(ACCOUNT_MARGIN_MODE) == ACCOUNT_MARGIN_MODE_RETAIL_HEDGING ? "HEDGING" : "NETTING";
+
+   string payloadPairs[];
+   ArrayResize(payloadPairs, 8);
+   payloadPairs[0] = JStr("account", account);
+   payloadPairs[1] = JStr("accountMode", accountMode);
+   payloadPairs[2] = JMoney("balance", bal);
+   payloadPairs[3] = JStr("broker", broker);
+   payloadPairs[4] = JStr("eaVersion", "Monitor-1.0");
+   payloadPairs[5] = JStr("mode", mode);
+   payloadPairs[6] = JStr("symbol", symbol);
+   payloadPairs[7] = JStr("timeframe", tf);
+
+   string payloadJson = "{"
+      + JStr("account", account) + ","
+      + JStr("accountMode", accountMode) + ","
+      + JMoney("balance", bal) + ","
+      + JStr("broker", broker) + ","
+      + JStr("eaVersion", "Monitor-1.0") + ","
+      + JStr("mode", mode) + ","
+      + JStr("symbol", symbol) + ","
+      + JStr("timeframe", tf)
+      + "}";
+
+   if(SendContextTrackRecordEvent(ctxIdx, "SESSION_START", payloadJson, payloadPairs))
+      g_contexts[ctxIdx].sessionStartSent = true;
+}
+
+//+------------------------------------------------------------------+
+//| Per-context SNAPSHOT  (Milestone C)                               |
+//| Counts only positions matching this context's symbol + magic.    |
+//+------------------------------------------------------------------+
+void SendContextSnapshot(int ctxIdx)
+{
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   if(dd < 0) dd = 0;
+
+   // Count positions matching this context
+   int openCount = 0;
+   double unrealizedPnL = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if(!PositionSelectByTicket(ticket)) continue;
+      if((long)PositionGetInteger(POSITION_MAGIC) != g_contexts[ctxIdx].magicNumber) continue;
+      if(StringLen(g_contexts[ctxIdx].symbol) > 0 &&
+         PositionGetString(POSITION_SYMBOL) != g_contexts[ctxIdx].symbol) continue;
+      openCount++;
+      unrealizedPnL += PositionGetDouble(POSITION_PROFIT)
+                     + PositionGetDouble(POSITION_SWAP);
+   }
+
+   string payloadPairs[];
+   ArrayResize(payloadPairs, 5);
+   payloadPairs[0] = JMoney("balance", bal);
+   payloadPairs[1] = JMoney("drawdown", dd);
+   payloadPairs[2] = JMoney("equity", eq);
+   payloadPairs[3] = JInt("openTrades", openCount);
+   payloadPairs[4] = JMoney("unrealizedPnL", unrealizedPnL);
+
+   string payloadJson = "{"
+      + JMoney("balance", bal) + ","
+      + JMoney("drawdown", dd) + ","
+      + JMoney("equity", eq) + ","
+      + JInt("openTrades", openCount) + ","
+      + JMoney("unrealizedPnL", unrealizedPnL)
+      + "}";
+
+   SendContextTrackRecordEvent(ctxIdx, "SNAPSHOT", payloadJson, payloadPairs);
 }
 
 //+------------------------------------------------------------------+
@@ -1198,9 +1508,9 @@ void SendSnapshot()
    SendTrackRecordEvent("SNAPSHOT", payloadJson, payloadPairs);
 }
 
-void SendTradeOpen(ulong dealTicket)
+bool SendTradeOpen(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return;
+   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
 
    string symbol   = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
    double price    = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1253,15 +1563,27 @@ void SendTradeOpen(ulong dealTicket)
       + JPrice("tp", tp)
       + "}";
 
-   SendTrackRecordEvent("TRADE_OPEN", payloadJson, payloadPairs);
+   // Per-context routing (Milestone C)
+   // Returns false only when context matched but instanceId not yet assigned —
+   // caller must NOT mark deal as known so PollTradeChanges retries after heartbeat.
+   int ctxIdx = (g_contextCount > 0) ? FindContextForDeal(symbol, magic) : -1;
+   bool accepted = true;
+   if(ctxIdx >= 0)
+      accepted = SendContextTrackRecordEvent(ctxIdx, "TRADE_OPEN", payloadJson, payloadPairs);
+   else if(!g_manifestMode)
+      SendTrackRecordEvent("TRADE_OPEN", payloadJson, payloadPairs);
+   else
+      Print("AlgoStudio Monitor: Unmatched TRADE_OPEN (", symbol, " magic=", magic,
+            ") — no context found, skipping");
 
    Print("AlgoStudio Monitor: TRADE_OPEN ", direction, " ", symbol,
          " ", DoubleToString(lots, 2), " lots @ ", DoubleToString(price, 5));
+   return accepted;
 }
 
-void SendTradeClose(ulong dealTicket)
+bool SendTradeClose(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return;
+   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
 
    string ticket    = IntegerToString(dealTicket);
    double closePrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1304,11 +1626,24 @@ void SendTradeClose(ulong dealTicket)
       + JStr("ticket", openTicket)
       + "}";
 
-   SendTrackRecordEvent("TRADE_CLOSE", payloadJson, payloadPairs);
+   // Per-context routing (Milestone C)
+   // Returns false only when context matched but instanceId not yet assigned —
+   // caller must NOT mark deal as known so PollTradeChanges retries after heartbeat.
+   string sym = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+   int ctxIdx = (g_contextCount > 0) ? FindContextForDeal(sym, magic) : -1;
+   bool accepted = true;
+   if(ctxIdx >= 0)
+      accepted = SendContextTrackRecordEvent(ctxIdx, "TRADE_CLOSE", payloadJson, payloadPairs);
+   else if(!g_manifestMode)
+      SendTrackRecordEvent("TRADE_CLOSE", payloadJson, payloadPairs);
+   else
+      Print("AlgoStudio Monitor: Unmatched TRADE_CLOSE (", sym, " magic=", magic,
+            ") — no context found, skipping");
 
    Print("AlgoStudio Monitor: TRADE_CLOSE ticket=", openTicket,
          " profit=", DoubleToString(profit, 2),
          " reason=", closeReason);
+   return accepted;
 }
 
 //+------------------------------------------------------------------+
@@ -1409,7 +1744,8 @@ void SendHeartbeat()
 //| PER-CONTEXT HEARTBEAT  (Milestone B)                            |
 //| Sends one heartbeat for a single strategy context.              |
 //| Parses instanceId and governance from the response into ctx.    |
-//| Does NOT send SESSION_START or any chain events — Milestone C.  |
+//| Does NOT send chain events — chain routing is in Milestone C    |
+//| functions (SendContextTrackRecordEvent et al.).                 |
 //+------------------------------------------------------------------+
 void SendContextHeartbeat(StrategyContext &ctx)
 {
@@ -1936,6 +2272,19 @@ void SaveState()
    FileWriteString(handle, IntegerToString(g_droppedEvents) + "\n");
    FileWriteString(handle, (g_chainDegraded ? "1" : "0") + "\n");
 
+   // Per-context chain state (Milestone C)
+   // Format: count on line 6, then one line per context: fingerprint|seqNo|lastHash|instanceId|sessionStartSent
+   FileWriteString(handle, IntegerToString(g_contextCount) + "\n");
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      FileWriteString(handle, g_contexts[i].fingerprint
+         + "|" + IntegerToString(g_contexts[i].seqNo)
+         + "|" + g_contexts[i].lastHash
+         + "|" + g_contexts[i].instanceId
+         + "|" + (g_contexts[i].sessionStartSent ? "1" : "0")
+         + "\n");
+   }
+
    FileClose(handle);
 }
 
@@ -1982,6 +2331,40 @@ void LoadState()
          {
             g_chainDegraded = (FileReadString(handle) == "1");
          }
+         // Per-context chain state restoration (Milestone C)
+         if(!FileIsEnding(handle))
+         {
+            int savedCtxCount = (int)StringToInteger(FileReadString(handle));
+            for(int c = 0; c < savedCtxCount && !FileIsEnding(handle); c++)
+            {
+               string line = FileReadString(handle);
+               // Parse: fingerprint|seqNo|lastHash|instanceId|sessionStartSent
+               string parts[];
+               int partCount = StringSplit(line, '|', parts);
+               if(partCount < 5) continue;
+
+               string fp = parts[0];
+               // Match to current context by fingerprint
+               for(int j = 0; j < g_contextCount; j++)
+               {
+                  if(g_contexts[j].fingerprint == fp)
+                  {
+                     g_contexts[j].seqNo    = (int)StringToInteger(parts[1]);
+                     if(StringLen(parts[2]) == 64)
+                        g_contexts[j].lastHash = parts[2];
+                     if(StringLen(parts[3]) > 0)
+                        g_contexts[j].instanceId = parts[3];
+                     g_contexts[j].sessionStartSent = (parts[4] == "1");
+                     Print("AlgoStudio Monitor: Restored context [", g_contexts[j].eaName,
+                           "] seqNo=", g_contexts[j].seqNo,
+                           " instanceId=", StringLen(g_contexts[j].instanceId) > 0
+                              ? g_contexts[j].instanceId : "(pending)");
+                     break;
+                  }
+               }
+            }
+         }
+
          FileClose(handle);
 
          Print("AlgoStudio Monitor: Restored state. seqNo=", g_seqNo,
