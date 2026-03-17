@@ -863,11 +863,14 @@ function AccountCard({
   const allHeartbeats = isAccountWide
     ? primary.heartbeats
     : instances.flatMap((ea) => ea.heartbeats ?? []);
-  const allTrades = isAccountWide ? primary.trades : instances.flatMap((ea) => ea.trades ?? []);
+  // Always aggregate trades from all instances so manifest context instance trades
+  // (Milestone C) are included alongside account-wide trades.
+  const allTrades = instances.flatMap((ea) => ea.trades ?? []);
   const winRate = calculateWinRate(allTrades);
   const profitFactor = calculateProfitFactor(allTrades);
   const maxDrawdown = calculateMaxDrawdown(allHeartbeats);
-  // Group trades by symbol + magicNumber to identify unique strategies
+  // Group trades by symbol + magicNumber to identify unique strategies.
+  // Also includes manifest context instances as rows even before any trades exist.
   const strategyGroups = (() => {
     const map = new Map<
       string,
@@ -884,6 +887,15 @@ function AccountCard({
           magicNumber: t.magicNumber ?? null,
           trades: [t],
         });
+      }
+    }
+    // Manifest mode: add context instances (non-primary, with symbol set) as strategy rows
+    // so strategies appear immediately after the first heartbeat, before any trades.
+    for (const ctx of instances) {
+      if (ctx.id === primary.id || !ctx.symbol) continue;
+      const key = `ctx:${ctx.id}`;
+      if (!map.has(key)) {
+        map.set(key, { symbol: ctx.symbol, magicNumber: null, trades: [] });
       }
     }
     return Array.from(map.values()).sort((a, b) => {
