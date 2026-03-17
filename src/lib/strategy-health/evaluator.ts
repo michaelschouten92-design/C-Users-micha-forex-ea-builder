@@ -1,5 +1,10 @@
 /**
  * Health evaluator — orchestrates live metric collection, baseline loading, scoring, and storage.
+ *
+ * This module is intentionally informational only. It evaluates health, detects drift,
+ * and persists HealthSnapshots. It does NOT mutate lifecycle phase, lifecycle state,
+ * or governance. Lifecycle transitions are owned by the monitoring system
+ * (run-monitoring.ts) and the lifecycle API.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -7,17 +12,9 @@ import { logger } from "@/lib/logger";
 import { triggerAlert } from "@/lib/alerts";
 import { collectLiveMetrics } from "./collector";
 import { computeHealth } from "./scorer";
-import {
-  HEALTH_EVAL_COOLDOWN_MS,
-  HEALTH_STALE_THRESHOLD_MS,
-  PROVEN_CONSECUTIVE_HEALTHY,
-  PROVEN_MIN_TRADES,
-  RETIRED_CONSECUTIVE_DEGRADED,
-} from "./thresholds";
+import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
 import type { BaselineMetrics, HealthResult, HealthStatusType } from "./types";
 import { computeAndCacheStatus } from "@/lib/strategy-status/compute-and-cache";
-import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
-import type { StrategyLifecycleState } from "@/lib/strategy-lifecycle/transitions";
 import * as Sentry from "@sentry/nextjs";
 
 /** Number of recent snapshots to consider for EWMA trend computation */
@@ -52,182 +49,6 @@ function computeScoreTrend(
   return "stable";
 }
 
-/** Valid lifecycle phases */
-type LifecyclePhase = "NEW" | "PROVING" | "PROVEN" | "RETIRED";
-
-/**
- * Count consecutive leading snapshots with a given status.
- * `currentStatus` is prepended since the current result hasn't been stored yet.
- */
-function countConsecutiveLeading(
-  currentStatus: string,
-  recentSnapshots: Array<{ status: string }>,
-  targetStatus: string
-): number {
-  if (currentStatus !== targetStatus) return 0;
-  let count = 1; // current counts
-  for (const snap of recentSnapshots) {
-    if (snap.status === targetStatus) count++;
-    else break;
-  }
-  return count;
-}
-
-/**
- * Update lifecycle phase based on health evaluation results.
- * Called after health scoring but before snapshot storage.
- */
-async function updateLifecyclePhase(
-  instanceId: string,
-  instance: {
-    lifecyclePhase: string;
-    lifecycleState: string;
-    peakScore: number;
-    userId: string;
-    eaName: string;
-    totalTrades: number;
-  },
-  result: HealthResult,
-  recentSnapshots: Array<{ status: string; overallScore: number }>
-): Promise<void> {
-  const currentPhase = instance.lifecyclePhase as LifecyclePhase;
-  const updateData: Record<string, unknown> = {};
-
-  // Track peak score
-  if (result.overallScore > instance.peakScore) {
-    updateData.peakScore = result.overallScore;
-    updateData.peakScoreAt = new Date();
-  }
-
-  // Monitoring system owns lifecycle transitions for LIVE_MONITORING and EDGE_AT_RISK states.
-  // Health evaluator still tracks peak scores but must not perform lifecycle transitions
-  // when the strategy is in these states — only MonitoringRun can transition them.
-  const monitoringOwnedStates = ["LIVE_MONITORING", "EDGE_AT_RISK"];
-  if (monitoringOwnedStates.includes(instance.lifecycleState)) {
-    if (Object.keys(updateData).length > 0) {
-      await prisma.liveEAInstance.update({
-        where: { id: instanceId },
-        data: updateData,
-      });
-    }
-    return;
-  }
-
-  if (currentPhase === "NEW") {
-    // Transition to PROVING once we get a real assessment (not INSUFFICIENT_DATA)
-    if (result.status !== "INSUFFICIENT_DATA") {
-      updateData.lifecyclePhase = "PROVING";
-      updateData.phaseEnteredAt = new Date();
-      logger.info({ instanceId, from: "NEW", to: "PROVING" }, "Lifecycle phase transition");
-    }
-  } else if (currentPhase === "PROVING") {
-    // Transition to PROVEN after consecutive HEALTHY evaluations + minimum trades
-    const consecutiveHealthy = countConsecutiveLeading(result.status, recentSnapshots, "HEALTHY");
-    if (
-      consecutiveHealthy >= PROVEN_CONSECUTIVE_HEALTHY &&
-      instance.totalTrades >= PROVEN_MIN_TRADES
-    ) {
-      updateData.lifecyclePhase = "PROVEN";
-      updateData.phaseEnteredAt = new Date();
-      updateData.provenAt = new Date();
-      logger.info(
-        {
-          instanceId,
-          from: "PROVING",
-          to: "PROVEN",
-          consecutiveHealthy,
-          totalTrades: instance.totalTrades,
-        },
-        "Lifecycle phase transition"
-      );
-    }
-  } else if (currentPhase === "PROVEN") {
-    // Transition to RETIRED after consecutive DEGRADED evaluations
-    const consecutiveDegraded = countConsecutiveLeading(result.status, recentSnapshots, "DEGRADED");
-
-    // Fire pre-retirement warning when approaching threshold
-    if (
-      consecutiveDegraded >= RETIRED_CONSECUTIVE_DEGRADED - 2 &&
-      consecutiveDegraded < RETIRED_CONSECUTIVE_DEGRADED
-    ) {
-      const remaining = RETIRED_CONSECUTIVE_DEGRADED - consecutiveDegraded;
-      triggerAlert({
-        userId: instance.userId,
-        instanceId,
-        eaName: instance.eaName,
-        alertType: "STRATEGY_RETIREMENT_WARNING",
-        message:
-          `Strategy has ${consecutiveDegraded} consecutive DEGRADED evaluations. ` +
-          `It will be automatically retired after ${remaining} more. Review your strategy now.`,
-      }).catch((err) => {
-        logger.error({ err, instanceId }, "Failed to trigger retirement warning alert");
-        Sentry.captureException(err, {
-          extra: { instanceId, alertType: "STRATEGY_RETIREMENT_WARNING" },
-        });
-      });
-    }
-
-    if (consecutiveDegraded >= RETIRED_CONSECUTIVE_DEGRADED) {
-      updateData.lifecyclePhase = "RETIRED";
-      updateData.phaseEnteredAt = new Date();
-      updateData.retiredAt = new Date();
-      updateData.retiredReason = "drift";
-      logger.info(
-        { instanceId, from: "PROVEN", to: "RETIRED", consecutiveDegraded },
-        "Lifecycle phase transition — strategy retired due to edge drift"
-      );
-
-      await performLifecycleTransition(
-        instanceId,
-        instance.lifecycleState as StrategyLifecycleState,
-        "EDGE_AT_RISK",
-        "drift"
-      );
-
-      // Fire retirement alert
-      triggerAlert({
-        userId: instance.userId,
-        instanceId,
-        eaName: instance.eaName,
-        alertType: "STRATEGY_RETIRED",
-        message:
-          `Strategy has been automatically retired after ${consecutiveDegraded} consecutive DEGRADED evaluations. ` +
-          `The trading edge appears to have expired. Review your strategy or pause live trading.`,
-      }).catch((err) => {
-        logger.error({ err, instanceId }, "Failed to trigger strategy retired alert");
-        Sentry.captureException(err, { extra: { instanceId, alertType: "STRATEGY_RETIRED" } });
-      });
-    }
-  } else if (currentPhase === "RETIRED") {
-    // RETIRED can transition back to PROVING if strategy shows sustained recovery
-    const consecutiveHealthy = countConsecutiveLeading(result.status, recentSnapshots, "HEALTHY");
-    if (consecutiveHealthy >= PROVEN_CONSECUTIVE_HEALTHY) {
-      updateData.lifecyclePhase = "PROVING";
-      updateData.phaseEnteredAt = new Date();
-      updateData.retiredAt = null;
-      updateData.retiredReason = null;
-      logger.info(
-        { instanceId, from: "RETIRED", to: "PROVING", consecutiveHealthy },
-        "Lifecycle phase transition — strategy recovered from retirement"
-      );
-
-      await performLifecycleTransition(
-        instanceId,
-        instance.lifecycleState as StrategyLifecycleState,
-        "LIVE_MONITORING",
-        "recovery"
-      );
-    }
-  }
-
-  if (Object.keys(updateData).length > 0) {
-    await prisma.liveEAInstance.update({
-      where: { id: instanceId },
-      data: updateData,
-    });
-  }
-}
-
 /**
  * Evaluate health for an instance, rate-limited to once per hour.
  * Called fire-and-forget after TRADE_CLOSE events.
@@ -253,7 +74,7 @@ export async function evaluateHealthIfDue(instanceId: string): Promise<void> {
  * Returns the health result (also stored in DB).
  */
 export async function evaluateHealth(instanceId: string): Promise<HealthResult> {
-  // Load instance with strategy version info + user context for alerts + lifecycle
+  // Load instance with strategy version info + user context for alerts
   const instance = await prisma.liveEAInstance.findUnique({
     where: { id: instanceId },
     select: {
@@ -261,10 +82,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       status: true,
       userId: true,
       eaName: true,
-      lifecyclePhase: true,
-      lifecycleState: true,
       peakScore: true,
-      totalTrades: true,
       baselineDecay: true,
     },
   });
@@ -402,8 +220,13 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     });
   }
 
-  // Update lifecycle phase (before snapshot storage so recentSnapshots reflects history)
-  await updateLifecyclePhase(instanceId, instance, result, recentSnapshots);
+  // Track peak score (informational only — no lifecycle mutation)
+  if (result.overallScore > instance.peakScore) {
+    await prisma.liveEAInstance.update({
+      where: { id: instanceId },
+      data: { peakScore: result.overallScore, peakScoreAt: new Date() },
+    });
+  }
 
   // Store snapshot
   await prisma.healthSnapshot.create({
