@@ -27,6 +27,8 @@
     "analyze": "ANALYZE=true next build",
     "demo:seed": "tsx scripts/demo-seed.ts",
     "demo:teardown": "tsx scripts/demo-seed.ts --teardown",
+    "demo:screenshots": "npx tsx scripts/demo-seed-screenshots.ts",
+    "demo:screenshots:teardown": "npx tsx scripts/demo-seed-screenshots.ts --teardown",
     "prepare": "husky"
   },
   "dependencies": {
