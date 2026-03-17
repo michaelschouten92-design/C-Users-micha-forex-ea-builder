@@ -13,6 +13,7 @@ import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
 import { GovernancePanel } from "@/components/app/governance-panel";
+import { InvestigationPanel } from "@/components/app/investigation-panel";
 
 interface PageProps {
   params: Promise<{ instanceId: string }>;
@@ -45,13 +46,20 @@ export default async function StrategyDetailPage({ params }: PageProps) {
         {/* 3. Governance Verdict — control-layer conclusion */}
         <GovernancePanel governance={data.governance} />
 
+        {/* 4. Investigation — why is this strategy flagged? (shown only when WARNING/DEGRADED/drift) */}
+        <InvestigationPanel
+          health={data.health}
+          healthHistory={data.healthHistory}
+          lifecycleState={data.lifecycleState}
+        />
+
         {/* ── Monitoring Truth ──────────────────────────────── */}
 
         <p className="text-[10px] font-semibold text-[#52525B] uppercase tracking-wider pt-2">
           Monitoring
         </p>
 
-        {/* 4 + 5. Live Performance + Baseline vs Live — side by side on desktop */}
+        {/* 5 + 6. Live Performance + Baseline vs Live — side by side on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <LivePerformanceGrid health={data.health} />
           <BaselineComparison health={data.health} />
