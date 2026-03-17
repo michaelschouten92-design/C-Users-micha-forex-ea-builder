@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { createHash } from "crypto";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
@@ -18,6 +19,9 @@ import { validatePayload } from "@/lib/track-record/payload-schemas";
 import { checkRateLimit } from "@/lib/track-record/rate-limiter";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
 import * as Sentry from "@sentry/nextjs";
+
+/** Strict hex hash: 64 chars (SHA-256 output). */
+const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
 
 const ingestSchema = z.object({
   eventType: z.enum([
@@ -38,6 +42,15 @@ const ingestSchema = z.object({
   eventHash: z.string().length(64),
   timestamp: z.number().int().positive(),
   payload: z.record(z.unknown()),
+  // Optional strategy context identity — enables per-context chain routing.
+  // When present, the event is stored under the resolved context instanceId
+  // instead of the base terminal instance.
+  context: z
+    .object({
+      materialFingerprint: z.string().regex(HEX_HASH_RE),
+      timeframe: z.string().max(10).default(""),
+    })
+    .optional(),
 });
 
 // POST /api/track-record/ingest — accept events from EA, verify chain, store
@@ -45,10 +58,11 @@ export async function POST(request: NextRequest) {
   const auth = await authenticateTelemetry(request);
   if (!auth.success) return auth.response;
 
-  const { instanceId } = auth;
+  const baseInstanceId = auth.instanceId;
 
-  // Per-instance rate limiting (100 events/minute)
-  const rateLimitError = await checkRateLimit(instanceId);
+  // Per-instance rate limiting (100 events/minute) — scoped to base instance
+  // so one API key can't bypass limits by splitting across contexts
+  const rateLimitError = await checkRateLimit(baseInstanceId);
   if (rateLimitError) {
     return NextResponse.json(apiError(ErrorCode.RATE_LIMITED, rateLimitError), { status: 429 });
   }
@@ -57,8 +71,10 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch (err) {
-    logger.error({ err, instanceId }, "Track record ingest: malformed JSON body");
-    Sentry.captureException(err, { extra: { instanceId, context: "track-record-json-parse" } });
+    logger.error({ err, instanceId: baseInstanceId }, "Track record ingest: malformed JSON body");
+    Sentry.captureException(err, {
+      extra: { instanceId: baseInstanceId, context: "track-record-json-parse" },
+    });
     return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON"), { status: 400 });
   }
 
@@ -75,6 +91,13 @@ export async function POST(request: NextRequest) {
   }
 
   const { eventType, seqNo, prevHash, eventHash, timestamp, payload } = validation.data;
+
+  // Resolve per-context instanceId when strategy context identity is present.
+  // Read-only lookup — heartbeat is responsible for creating context instances.
+  // Falls back to base instance if context not yet created or not provided.
+  const effectiveInstanceId = validation.data.context
+    ? await resolveContextInstanceForIngest(baseInstanceId, validation.data.context)
+    : baseInstanceId;
 
   // Per-event-type payload validation
   const payloadError = validatePayload(eventType, payload);
@@ -113,22 +136,22 @@ export async function POST(request: NextRequest) {
       async (tx) => {
         // Acquire row-level lock on this instance's state row (prevents concurrent writes
         // to the same instance while allowing parallel ingests for different instances)
-        await tx.$queryRaw`SELECT 1 FROM "TrackRecordState" WHERE "instanceId" = ${instanceId} FOR UPDATE`;
+        await tx.$queryRaw`SELECT 1 FROM "TrackRecordState" WHERE "instanceId" = ${effectiveInstanceId} FOR UPDATE`;
 
         // Load or create state (inside transaction — locked against concurrent writes)
         let dbState = await tx.trackRecordState.findUnique({
-          where: { instanceId },
+          where: { instanceId: effectiveInstanceId },
         });
 
         if (!dbState) {
           dbState = await tx.trackRecordState.create({
-            data: { instanceId },
+            data: { instanceId: effectiveInstanceId },
           });
         }
 
         // Validate timestamp against instance creation date
         const instance = await tx.liveEAInstance.findUnique({
-          where: { id: instanceId },
+          where: { id: effectiveInstanceId },
           select: { createdAt: true },
         });
         if (instance) {
@@ -149,7 +172,9 @@ export async function POST(request: NextRequest) {
         // Server-side receive time should not regress for sequential events
         if (dbState.lastSeqNo > 0) {
           const lastEvent = await tx.trackRecordEvent.findUnique({
-            where: { instanceId_seqNo: { instanceId, seqNo: dbState.lastSeqNo } },
+            where: {
+              instanceId_seqNo: { instanceId: effectiveInstanceId, seqNo: dbState.lastSeqNo },
+            },
             select: { receivedAt: true },
           });
           if (lastEvent) {
@@ -158,7 +183,12 @@ export async function POST(request: NextRequest) {
             // Allow 1 second tolerance for clock jitter between requests
             if (nowMs < lastReceivedMs - 1000) {
               logger.warn(
-                { instanceId, seqNo, lastReceivedAt: lastEvent.receivedAt.toISOString(), nowMs },
+                {
+                  instanceId: effectiveInstanceId,
+                  seqNo,
+                  lastReceivedAt: lastEvent.receivedAt.toISOString(),
+                  nowMs,
+                },
                 "receivedAt monotonicity violation: server clock may have regressed"
               );
             }
@@ -169,7 +199,9 @@ export async function POST(request: NextRequest) {
         if (seqNo <= dbState.lastSeqNo) {
           if (seqNo === dbState.lastSeqNo) {
             const existingEvent = await tx.trackRecordEvent.findUnique({
-              where: { instanceId_seqNo: { instanceId, seqNo } },
+              where: {
+                instanceId_seqNo: { instanceId: effectiveInstanceId, seqNo },
+              },
               select: { eventHash: true },
             });
             if (existingEvent?.eventHash === eventHash) {
@@ -195,7 +227,7 @@ export async function POST(request: NextRequest) {
         // Verify chain integrity
         const verification = verifySingleEvent(
           { eventType, seqNo, prevHash, eventHash, timestamp, payload },
-          instanceId,
+          effectiveInstanceId,
           dbState.lastSeqNo,
           dbState.lastEventHash
         );
@@ -227,7 +259,7 @@ export async function POST(request: NextRequest) {
           const knownOpen = state.openPositions.some((p) => p.ticket === ticketStr);
           if (!knownOpen) {
             logger.warn(
-              { instanceId, eventType, ticket: ticketStr, seqNo },
+              { instanceId: effectiveInstanceId, eventType, ticket: ticketStr, seqNo },
               "Cross-event warning: ticket not found in open positions"
             );
           }
@@ -246,13 +278,13 @@ export async function POST(request: NextRequest) {
 
         // Build checkpoint if needed
         const checkpoint = shouldCreateCheckpoint(eventType, seqNo)
-          ? buildCheckpointData(instanceId, state)
+          ? buildCheckpointData(effectiveInstanceId, state)
           : null;
 
         // Store event + update state + optional checkpoint (all inside the same tx)
         await tx.trackRecordEvent.create({
           data: {
-            instanceId,
+            instanceId: effectiveInstanceId,
             seqNo,
             eventType,
             eventHash,
@@ -263,7 +295,7 @@ export async function POST(request: NextRequest) {
         });
 
         await tx.trackRecordState.update({
-          where: { instanceId },
+          where: { instanceId: effectiveInstanceId },
           data: stateUpdate,
         });
 
@@ -273,8 +305,15 @@ export async function POST(request: NextRequest) {
 
         // Build ledger commitment if due (every 500 events)
         if (shouldCreateCommitment(seqNo)) {
-          const stateHmac = checkpoint ? checkpoint.hmac : computeCheckpointHmac(instanceId, state);
-          const commitment = buildCommitmentData(instanceId, seqNo, state.lastEventHash, stateHmac);
+          const stateHmac = checkpoint
+            ? checkpoint.hmac
+            : computeCheckpointHmac(effectiveInstanceId, state);
+          const commitment = buildCommitmentData(
+            effectiveInstanceId,
+            seqNo,
+            state.lastEventHash,
+            stateHmac
+          );
           await tx.ledgerCommitment.create({ data: commitment });
         }
 
@@ -292,9 +331,12 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget: evaluate health after trade closes (outside tx)
     if (result.status === 200 && eventType === "TRADE_CLOSE") {
-      evaluateHealthIfDue(instanceId).catch((err) => {
-        logger.error({ err, instanceId }, "Health evaluation failed after trade close");
-        Sentry.captureException(err, { extra: { instanceId, eventType } });
+      evaluateHealthIfDue(effectiveInstanceId).catch((err) => {
+        logger.error(
+          { err, instanceId: effectiveInstanceId },
+          "Health evaluation failed after trade close"
+        );
+        Sentry.captureException(err, { extra: { instanceId: effectiveInstanceId, eventType } });
       });
     }
 
@@ -323,4 +365,30 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
+}
+
+// ── Context Instance Resolution (read-only) ──────────────────────────
+
+/**
+ * Resolve the effectiveInstanceId for a strategy context.
+ *
+ * Uses the same synthetic-key formula as heartbeat route's
+ * resolveManifestContextInstance / resolveAutoDiscoveredContextInstance.
+ * Read-only: does NOT create instances — heartbeat is responsible for that.
+ * Falls back to baseInstanceId if context instance doesn't exist yet.
+ */
+async function resolveContextInstanceForIngest(
+  baseInstanceId: string,
+  context: { materialFingerprint: string; timeframe: string }
+): Promise<string> {
+  const syntheticKeyHash = createHash("sha256")
+    .update(`manifest-ctx-key:v1:${baseInstanceId}:${context.materialFingerprint}`)
+    .digest("hex");
+
+  const ctx = await prisma.liveEAInstance.findUnique({
+    where: { apiKeyHash: syntheticKeyHash },
+    select: { id: true },
+  });
+
+  return ctx?.id ?? baseInstanceId;
 }
