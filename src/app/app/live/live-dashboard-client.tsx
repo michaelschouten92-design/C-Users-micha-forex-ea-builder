@@ -961,7 +961,10 @@ function AccountCard({
   const allTrades = instances.flatMap((ea) => ea.trades ?? []);
   const winRate = calculateWinRate(allTrades);
   const profitFactor = calculateProfitFactor(allTrades);
-  const maxDrawdown = calculateMaxDrawdown(allHeartbeats);
+  // Count strategies flagged as Edge at Risk (lifecycle or health DEGRADED).
+  const edgeAtRiskCount = instances.filter(
+    (ea) => ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED"
+  ).length;
   // Group trades by symbol + magicNumber to identify unique strategies.
   // Also includes manifest context instances as rows even before any trades exist.
   const strategyGroups = (() => {
@@ -1220,8 +1223,15 @@ function AccountCard({
           </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Max Drawdown</p>
-          <p className="text-sm font-semibold text-white">{maxDrawdown.toFixed(1)}%</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Edge at Risk</p>
+          <p
+            className={`text-sm font-semibold ${edgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-white"}`}
+          >
+            {edgeAtRiskCount} {edgeAtRiskCount === 1 ? "strategy" : "strategies"}
+          </p>
+          <p className="text-[9px] text-[#64748B]">
+            {edgeAtRiskCount > 0 ? "Investigation recommended" : "All strategies healthy"}
+          </p>
         </div>
       </div>
 

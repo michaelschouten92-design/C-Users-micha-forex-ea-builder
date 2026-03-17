@@ -19,7 +19,7 @@ const TYPE_STYLES: Record<string, string> = {
 function loadDismissed(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const stored = sessionStorage.getItem("dismissed-announcements");
+    const stored = localStorage.getItem("dismissed-announcements");
     if (stored) return new Set(JSON.parse(stored));
   } catch {
     // ignore
@@ -47,7 +47,7 @@ export function AnnouncementBanner() {
     next.add(id);
     setDismissed(next);
     try {
-      sessionStorage.setItem("dismissed-announcements", JSON.stringify([...next]));
+      localStorage.setItem("dismissed-announcements", JSON.stringify([...next]));
     } catch {
       // ignore
     }
