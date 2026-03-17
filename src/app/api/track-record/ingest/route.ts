@@ -18,6 +18,7 @@ import { shouldCreateCommitment, buildCommitmentData } from "@/lib/track-record/
 import { validatePayload } from "@/lib/track-record/payload-schemas";
 import { checkRateLimit } from "@/lib/track-record/rate-limiter";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
+import { evaluateHealthLifecycleTrigger } from "@/domain/monitoring/health-lifecycle-trigger";
 import * as Sentry from "@sentry/nextjs";
 
 /** Strict hex hash: 64 chars (SHA-256 output). */
@@ -331,13 +332,18 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget: evaluate health after trade closes (outside tx)
     if (result.status === 200 && eventType === "TRADE_CLOSE") {
-      evaluateHealthIfDue(effectiveInstanceId).catch((err) => {
-        logger.error(
-          { err, instanceId: effectiveInstanceId },
-          "Health evaluation failed after trade close"
-        );
-        Sentry.captureException(err, { extra: { instanceId: effectiveInstanceId, eventType } });
-      });
+      evaluateHealthIfDue(effectiveInstanceId)
+        .then(() => {
+          // After health snapshot is persisted, check if lifecycle trigger should fire
+          return evaluateHealthLifecycleTrigger(effectiveInstanceId);
+        })
+        .catch((err) => {
+          logger.error(
+            { err, instanceId: effectiveInstanceId },
+            "Health evaluation or lifecycle trigger failed after trade close"
+          );
+          Sentry.captureException(err, { extra: { instanceId: effectiveInstanceId, eventType } });
+        });
     }
 
     return NextResponse.json(result.body, { status: result.status });
