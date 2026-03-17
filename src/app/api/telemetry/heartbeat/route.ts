@@ -30,7 +30,7 @@ const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
 
 const deploymentSchema = z.object({
   symbol: z.string().min(1).max(20).trim(),
-  timeframe: z.string().min(1).max(10).trim(),
+  timeframe: z.string().max(10).trim(), // Allow "" for auto-discovered contexts
   magicNumber: z.number().int().min(1), // Must be > 0 — magic=0 is excluded by product rules
   eaName: z.string().min(1).max(100).trim(),
   /** Optional SHA-256 hash of EA material configuration. Reported by Monitor EA. */
@@ -92,17 +92,29 @@ export async function POST(request: NextRequest) {
     // Security: auth.instanceId is derived from the API key (one key = one instance).
     // The request body has no instanceId field, preventing a leaked key from affecting other instances.
 
-    // Manifest mode: resolve a per-fingerprint context instance so each deployed strategy
-    // gets its own instanceId for isolated governance, tracking, and Command Center display.
-    const effectiveInstanceId = data.deployment?.materialFingerprint
-      ? await resolveManifestContextInstance(auth.instanceId, auth.userId, {
-          symbol: data.deployment.symbol,
-          timeframe: data.deployment.timeframe,
-          magicNumber: data.deployment.magicNumber,
-          eaName: data.deployment.eaName,
-          materialFingerprint: data.deployment.materialFingerprint,
+    // Resolve per-context instance: manifest mode (has materialFingerprint + timeframe)
+    // or auto-discovery mode (has materialFingerprint + empty timeframe).
+    const isAutoDiscovered =
+      data.deployment?.materialFingerprint != null && data.deployment.timeframe === "";
+    const isManifestDeploy =
+      data.deployment?.materialFingerprint != null && data.deployment.timeframe !== "";
+
+    const effectiveInstanceId = isAutoDiscovered
+      ? await resolveAutoDiscoveredContextInstance(auth.instanceId, auth.userId, {
+          symbol: data.deployment!.symbol,
+          magicNumber: data.deployment!.magicNumber,
+          eaName: data.deployment!.eaName,
+          materialFingerprint: data.deployment!.materialFingerprint!,
         })
-      : auth.instanceId;
+      : isManifestDeploy
+        ? await resolveManifestContextInstance(auth.instanceId, auth.userId, {
+            symbol: data.deployment!.symbol,
+            timeframe: data.deployment!.timeframe,
+            magicNumber: data.deployment!.magicNumber,
+            eaName: data.deployment!.eaName,
+            materialFingerprint: data.deployment!.materialFingerprint!,
+          })
+        : auth.instanceId;
     const isManifestContext = effectiveInstanceId !== auth.instanceId;
 
     // TODO: remove after manifest instanceId validation
@@ -314,6 +326,49 @@ async function resolveManifestContextInstance(
       // Start in LIVE_MONITORING so governance returns RUN immediately.
       // Manifest context instances represent actively deployed live strategies.
       lifecycleState: "LIVE_MONITORING",
+    },
+    update: {},
+    select: { id: true },
+  });
+
+  return ctx.id;
+}
+
+// ── Auto-Discovered Context Instance Resolution ──────────────────────
+
+/**
+ * Resolve or create a per-context LiveEAInstance for auto-discovered strategies.
+ *
+ * Auto-discovered contexts use fingerprint = SHA256("AUTO:v1:" + symbol + ":" + magicNumber),
+ * computed EA-side. The backend scopes instance identity by baseInstanceId so contexts from
+ * different terminals remain isolated.
+ *
+ * Created with lifecycleState = "DRAFT" — governance returns PAUSE until the user links a baseline.
+ * Idempotent: safe to call on every heartbeat. Does not overwrite lifecycleState on update.
+ */
+async function resolveAutoDiscoveredContextInstance(
+  baseInstanceId: string,
+  userId: string,
+  deployment: {
+    symbol: string;
+    magicNumber: number;
+    eaName: string;
+    materialFingerprint: string;
+  }
+): Promise<string> {
+  const syntheticKeyHash = createHash("sha256")
+    .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
+    .digest("hex");
+
+  const ctx = await prisma.liveEAInstance.upsert({
+    where: { apiKeyHash: syntheticKeyHash },
+    create: {
+      userId,
+      apiKeyHash: syntheticKeyHash,
+      eaName: deployment.eaName,
+      symbol: deployment.symbol.toUpperCase(),
+      timeframe: "",
+      lifecycleState: "DRAFT",
     },
     update: {},
     select: { id: true },

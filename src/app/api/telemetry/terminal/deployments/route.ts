@@ -16,7 +16,7 @@ const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
 
 const deploymentSchema = z.object({
   symbol: z.string().min(1).max(20).trim(),
-  timeframe: z.string().min(1).max(10).trim(),
+  timeframe: z.string().max(10).trim(), // Allow "" for auto-discovered contexts
   magicNumber: z.number().int().min(0),
   eaName: z.string().min(1).max(100).trim(),
   /** Optional SHA-256 hash of EA parameters/config. Reported by Monitor EA. */
