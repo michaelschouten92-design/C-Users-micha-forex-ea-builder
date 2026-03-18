@@ -190,6 +190,7 @@ function queryEaInstances(userId: string) {
       totalProfit: true,
       strategyStatus: true,
       mode: true,
+      parentInstanceId: true,
       // Governance fields
       operatorHold: true,
       monitoringSuppressedUntil: true,

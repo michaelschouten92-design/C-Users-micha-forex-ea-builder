@@ -87,6 +87,7 @@ function renderDashboard(
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     lifecycleState: ea.lifecycleState ?? null,
+    parentInstanceId: ea.parentInstanceId ?? null,
     isAutoDiscovered:
       ea.lifecycleState === "DRAFT" &&
       ea.terminalDeployments.some((d) => {

@@ -335,10 +335,26 @@ async function resolveManifestContextInstance(
       // Start in LIVE_MONITORING so governance returns RUN immediately.
       // Manifest context instances represent actively deployed live strategies.
       lifecycleState: "LIVE_MONITORING",
+      parentInstanceId: baseInstanceId,
     },
-    update: {},
+    update: {
+      // Backfill parentInstanceId for instances created before this field existed
+      parentInstanceId: baseInstanceId,
+    },
     select: { id: true },
   });
+
+  // Guard: child must never be its own parent — clear if upsert self-referenced
+  if (ctx.id === baseInstanceId) {
+    log.error(
+      { instanceId: ctx.id },
+      "manifest context resolved to base instance — clearing self-parent"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: ctx.id },
+      data: { parentInstanceId: null },
+    });
+  }
 
   return ctx.id;
 }
@@ -382,14 +398,28 @@ async function resolveAutoDiscoveredContextInstance(
       lifecycleState: "DRAFT",
       broker: deployment.broker ?? undefined,
       accountNumber: deployment.accountNumber ?? undefined,
+      parentInstanceId: baseInstanceId,
     },
     update: {
-      // Backfill broker/accountNumber if missing (handles instances created before this fix)
+      // Backfill broker/accountNumber and parentInstanceId for pre-existing instances
       ...(deployment.broker != null && { broker: deployment.broker }),
       ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+      parentInstanceId: baseInstanceId,
     },
     select: { id: true },
   });
+
+  // Guard: child must never be its own parent — clear if upsert self-referenced
+  if (ctx.id === baseInstanceId) {
+    log.error(
+      { instanceId: ctx.id },
+      "auto-discovered context resolved to base instance — clearing self-parent"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: ctx.id },
+      data: { parentInstanceId: null },
+    });
+  }
 
   return ctx.id;
 }

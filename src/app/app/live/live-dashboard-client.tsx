@@ -52,6 +52,7 @@ interface EAInstanceData {
   healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
   healthScore?: number | null;
   lifecycleState?: string | null;
+  parentInstanceId?: string | null;
   isAutoDiscovered?: boolean;
   strategyStatus?: string | null;
   operatorHold?: string;
@@ -783,8 +784,25 @@ interface AccountGroup {
 
 function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
   const map = new Map<string, EAInstanceData[]>();
+
+  // Identify known parent ids: instances that at least one child points to
+  const knownParentIds = new Set(
+    instances.map((ea) => ea.parentInstanceId).filter((id): id is string => id != null)
+  );
+
   for (const ea of instances) {
-    const key = `${ea.broker ?? "Unknown"}|${ea.accountNumber ?? ea.id}`;
+    let key: string;
+    if (ea.parentInstanceId) {
+      // Child with explicit parent link — group under parent
+      key = ea.parentInstanceId;
+    } else if (knownParentIds.has(ea.id)) {
+      // This instance is a known parent (children point to it) — group by own id
+      key = ea.id;
+    } else {
+      // Standalone or legacy instance without parent relation — group by broker|accountNumber
+      key = `${ea.broker ?? "Unknown"}|${ea.accountNumber ?? ea.id}`;
+    }
+
     const group = map.get(key) ?? [];
     group.push(ea);
     map.set(key, group);

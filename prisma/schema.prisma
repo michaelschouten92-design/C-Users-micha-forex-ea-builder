@@ -403,6 +403,7 @@ model LiveEAInstance {
 
   strategyVersionId      String?
   terminalConnectionId   String?   // Physical terminal this instance belongs to (null = standalone)
+  parentInstanceId       String?   // Base/uploaded instance that owns this auto-discovered child
 
   // Strategy Lifecycle
   lifecyclePhase    String    @default("NEW")  // NEW | PROVING | PROVEN | RETIRED
@@ -429,6 +430,8 @@ model LiveEAInstance {
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   strategyVersion     StrategyVersion?    @relation(fields: [strategyVersionId], references: [id])
   terminalConnection  TerminalConnection? @relation(fields: [terminalConnectionId], references: [id])
+  parentInstance      LiveEAInstance?     @relation("InstanceChildren", fields: [parentInstanceId], references: [id])
+  childInstances      LiveEAInstance[]    @relation("InstanceChildren")
   heartbeats     EAHeartbeat[]
   trades         EATrade[]
   errors         EAError[]
@@ -455,6 +458,7 @@ model LiveEAInstance {
   @@index([apiKeyHashPrev, keyGracePeriodEnd])
   @@index([operatorHold])
   @@index([terminalConnectionId])
+  @@index([parentInstanceId])
 }
 
 model EAHeartbeat {
