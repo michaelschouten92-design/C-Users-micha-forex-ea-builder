@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { loadTrackRecord, type TrackRecordData } from "./load-track-record";
+import { EquityChart } from "./equity-chart";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -85,13 +86,8 @@ export default async function TrackRecordPage({ params }: Props) {
 
   if (!data) notFound();
 
-  const { account, performance, equityCurve, strategies, monthlyReturns, recentTrades } = data;
-
-  // Equity curve bounds for SVG
-  const eqValues = equityCurve.map((p) => p.equity);
-  const eqMin = eqValues.length > 0 ? Math.min(...eqValues) : 0;
-  const eqMax = eqValues.length > 0 ? Math.max(...eqValues) : 1;
-  const eqRange = eqMax - eqMin || 1;
+  const { account, performance, coverage, equityCurve, strategies, monthlyReturns, recentTrades } =
+    data;
 
   return (
     <div className="min-h-screen bg-[#0A0118] text-white">
@@ -174,6 +170,31 @@ export default async function TrackRecordPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Data coverage */}
+      {coverage.firstHeartbeatAt && (
+        <div className="max-w-4xl mx-auto px-6 pb-4">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] text-[#7C8DB0]">
+            <span>
+              Track record since{" "}
+              <span className="text-[#CBD5E1]">
+                {new Date(coverage.firstHeartbeatAt).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </span>
+            {coverage.lastHeartbeatAt && (
+              <span>
+                Last update{" "}
+                <span className="text-[#CBD5E1]">
+                  {new Date(coverage.lastHeartbeatAt).toLocaleString()}
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Equity curve */}
       {equityCurve.length > 0 && (
         <div className="max-w-4xl mx-auto px-6 pb-6">
@@ -184,28 +205,7 @@ export default async function TrackRecordPage({ params }: Props) {
                 Equity: {formatCurrency(equityCurve[0].equity)} — awaiting more data points
               </p>
             ) : (
-              <>
-                <svg
-                  viewBox={`0 0 ${equityCurve.length} 100`}
-                  className="w-full h-32"
-                  preserveAspectRatio="none"
-                >
-                  <polyline
-                    fill="none"
-                    stroke="#818CF8"
-                    strokeWidth="0.5"
-                    points={equityCurve
-                      .map((p, i) => `${i},${100 - ((p.equity - eqMin) / eqRange) * 90 - 5}`)
-                      .join(" ")}
-                  />
-                </svg>
-                <div className="flex justify-between text-[9px] text-[#64748B] mt-1">
-                  <span>{new Date(equityCurve[0].createdAt).toLocaleDateString()}</span>
-                  <span>
-                    {new Date(equityCurve[equityCurve.length - 1].createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </>
+              <EquityChart data={equityCurve} />
             )}
           </div>
         </div>

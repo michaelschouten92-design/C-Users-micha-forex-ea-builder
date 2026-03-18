@@ -22,6 +22,10 @@ export interface TrackRecordData {
     strategyCount: number;
     durationDays: number | null;
   };
+  coverage: {
+    firstHeartbeatAt: string | null;
+    lastHeartbeatAt: string | null;
+  };
   equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
   monthlyReturns: Array<{ month: string; returnPct: number }>;
   recentTrades: Array<{ closeTime: string; symbol: string; profit: number }>;
@@ -216,6 +220,11 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       maxDrawdownAbs,
       strategyCount: children.length,
       durationDays,
+    },
+    coverage: {
+      firstHeartbeatAt: heartbeats.length > 0 ? heartbeats[0].createdAt.toISOString() : null,
+      lastHeartbeatAt:
+        heartbeats.length > 0 ? heartbeats[heartbeats.length - 1].createdAt.toISOString() : null,
     },
     equityCurve: heartbeats.map((hb) => ({
       equity: hb.equity,
