@@ -115,10 +115,14 @@ export default async function TrackRecordPage({ params }: Props) {
             {account.status}
           </span>
           {account.lastHeartbeat && (
-            <span>Last heartbeat: {formatTimeAgo(account.lastHeartbeat)}</span>
+            <span>Last update: {new Date(account.lastHeartbeat).toLocaleString()}</span>
           )}
         </div>
         <p className="text-[10px] text-[#64748B] mt-1">Monitored by AlgoStudio</p>
+        <p className="text-[10px] text-[#64748B] mt-0.5">
+          This page reflects monitored account activity aggregated across all linked strategy
+          instances.
+        </p>
       </div>
 
       {/* Metrics grid */}

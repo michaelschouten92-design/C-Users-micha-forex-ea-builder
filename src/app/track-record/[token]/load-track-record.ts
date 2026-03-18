@@ -163,11 +163,18 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     }
   }
 
-  // Recent trades (20 most recent closed trades across all children)
+  // Recent trades (20 most recent closed trades across all children, sorted account-wide)
   const recentTrades = allTrades
     .filter(
       (t): t is { profit: number; closeTime: Date; symbol: string | null } => t.closeTime != null
     )
+    .sort((a, b) => {
+      const ta =
+        a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
+      const tb =
+        b.closeTime instanceof Date ? b.closeTime.getTime() : new Date(b.closeTime).getTime();
+      return tb - ta;
+    })
     .slice(0, 20)
     .map((t) => ({
       closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
