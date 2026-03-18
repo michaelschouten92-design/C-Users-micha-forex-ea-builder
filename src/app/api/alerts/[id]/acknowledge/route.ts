@@ -1,8 +1,12 @@
 /**
- * POST /api/alerts/[id]/acknowledge — Acknowledge a control-layer alert.
+ * POST /api/alerts/[id]/acknowledge — Dismiss a control-layer alert.
  *
- * Sets acknowledgedAt timestamp. Idempotent — re-acknowledging is a no-op.
- * Only the alert owner can acknowledge.
+ * Deletes the alert row, freeing the dedupeKey so the same condition can
+ * re-alert on the next monitoring cycle if it still persists. This is
+ * correct governance behavior: dismissing without fixing should re-alert.
+ *
+ * Idempotent — dismissing an already-deleted alert returns success.
+ * Only the alert owner can dismiss.
  */
 
 import { auth } from "@/lib/auth";
@@ -20,21 +24,20 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   const alert = await prisma.controlLayerAlert.findUnique({
     where: { id },
-    select: { userId: true, acknowledgedAt: true },
+    select: { userId: true },
   });
 
-  if (!alert || alert.userId !== session.user.id) {
-    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Alert not found"), { status: 404 });
-  }
-
-  // Idempotent
-  if (alert.acknowledgedAt) {
+  if (!alert) {
+    // Already deleted — idempotent success
     return NextResponse.json({ success: true });
   }
 
-  await prisma.controlLayerAlert.update({
+  if (alert.userId !== session.user.id) {
+    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Alert not found"), { status: 404 });
+  }
+
+  await prisma.controlLayerAlert.delete({
     where: { id },
-    data: { acknowledgedAt: new Date() },
   });
 
   return NextResponse.json({ success: true });

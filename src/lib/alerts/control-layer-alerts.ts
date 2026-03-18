@@ -338,10 +338,11 @@ export async function emitMonitoringSignalAlerts(
 
 /**
  * Clear a dedupeKey when the condition resolves (e.g., baseline linked, back online).
- * Deletes the unacknowledged alert so a fresh one can fire if the condition recurs.
+ * Deletes the alert row (regardless of acknowledgment) so a fresh one can fire
+ * if the condition recurs later.
  */
 export async function clearAlertByDedupe(db: PrismaClient, dedupeKey: string): Promise<void> {
   await db.controlLayerAlert.deleteMany({
-    where: { dedupeKey, acknowledgedAt: null },
+    where: { dedupeKey },
   });
 }
