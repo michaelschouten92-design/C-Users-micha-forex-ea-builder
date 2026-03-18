@@ -168,9 +168,7 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
 
   // Recent trades (20 most recent closed trades across all children, sorted account-wide)
   const recentTrades = allTrades
-    .filter(
-      (t): t is { profit: number; closeTime: Date; symbol: string | null } => t.closeTime != null
-    )
+    .filter((t): t is { profit: number; closeTime: Date; symbol: string } => t.closeTime != null)
     .sort((a, b) => {
       const ta =
         a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
