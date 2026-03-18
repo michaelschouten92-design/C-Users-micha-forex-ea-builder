@@ -982,13 +982,21 @@ function AccountCard({
         });
       }
     }
-    // Manifest mode: add context instances (non-primary, with symbol set) as strategy rows
-    // so strategies appear immediately after the first heartbeat, before any trades.
+    // Manifest/auto-discovered mode: add context instances (non-primary, with symbol set)
+    // as strategy rows so strategies appear immediately after the first heartbeat, before
+    // any trades. Resolve magicNumber from the instance's deployment if available.
     for (const ctx of instances) {
       if (ctx.id === primary.id || !ctx.symbol) continue;
       const key = `ctx:${ctx.id}`;
       if (!map.has(key)) {
-        map.set(key, { symbol: ctx.symbol, magicNumber: null, trades: [] });
+        const dep = ctx.deployments?.find(
+          (d) => d.symbol.toUpperCase() === ctx.symbol!.toUpperCase()
+        );
+        map.set(key, {
+          symbol: ctx.symbol,
+          magicNumber: dep?.magicNumber ?? null,
+          trades: [],
+        });
       }
     }
     return Array.from(map.entries())
@@ -1346,12 +1354,15 @@ function AccountCard({
                       className="grid grid-cols-[1fr_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
                     >
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#CBD5E1] truncate">{sg.symbol}</p>
-                        {sg.magicNumber != null && (
-                          <p className="text-[10px] text-[#64748B] truncate">
-                            Magic: {sg.magicNumber}
-                          </p>
-                        )}
+                        <p className="text-xs font-medium text-[#CBD5E1] truncate">
+                          {sg.symbol}
+                          {sg.magicNumber != null && (
+                            <span className="text-[#64748B] font-normal">
+                              {" "}
+                              · Magic {sg.magicNumber}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <p
                         className={`text-xs font-medium text-right self-center ${
