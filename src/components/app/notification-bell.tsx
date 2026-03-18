@@ -51,13 +51,14 @@ export function NotificationBell() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [total, setTotal] = useState(0);
   const [open, setOpen] = useState(false);
-  const [mutating, setMutating] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
+  const mutatingRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchAlerts = useCallback(async () => {
     // Skip fetch while an acknowledge operation is in flight to prevent
     // stale server state from overwriting the optimistic UI update.
-    if (mutating) return;
+    if (mutatingRef.current) return;
     try {
       const res = await fetch("/api/alerts?limit=10");
       if (!res.ok) return;
@@ -67,7 +68,7 @@ export function NotificationBell() {
     } catch {
       // Silently fail — non-critical UI feature
     }
-  }, [mutating]);
+  }, []);
 
   // Initial fetch + poll every 60s
   useEffect(() => {
@@ -92,21 +93,21 @@ export function NotificationBell() {
     // Optimistic update — remove immediately from UI
     setAlerts((prev) => prev.filter((a) => a.id !== alertId));
     setTotal((prev) => Math.max(0, prev - 1));
-    setMutating(true);
+    mutatingRef.current = true;
     try {
       const res = await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "POST" });
       if (!res.ok) {
         // Revert on failure — re-fetch server state
-        setMutating(false);
+        mutatingRef.current = false;
         await fetchAlerts();
         return;
       }
     } catch {
-      setMutating(false);
+      mutatingRef.current = false;
       await fetchAlerts();
       return;
     }
-    setMutating(false);
+    mutatingRef.current = false;
   };
 
   const acknowledgeAll = async () => {
@@ -114,18 +115,21 @@ export function NotificationBell() {
     // Optimistic update
     setAlerts([]);
     setTotal(0);
-    setMutating(true);
+    mutatingRef.current = true;
+    setDismissing(true);
     try {
       await Promise.all(
         prevAlerts.map((a) => fetch(`/api/alerts/${a.id}/acknowledge`, { method: "POST" }))
       );
     } catch {
       // Revert on failure
-      setMutating(false);
+      mutatingRef.current = false;
+      setDismissing(false);
       await fetchAlerts();
       return;
     }
-    setMutating(false);
+    mutatingRef.current = false;
+    setDismissing(false);
   };
 
   return (
@@ -166,10 +170,10 @@ export function NotificationBell() {
               <button
                 type="button"
                 onClick={acknowledgeAll}
-                disabled={mutating}
+                disabled={dismissing}
                 className="text-[10px] text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
               >
-                {mutating ? "Dismissing..." : "Dismiss all"}
+                {dismissing ? "Dismissing..." : "Dismiss all"}
               </button>
             )}
           </div>
