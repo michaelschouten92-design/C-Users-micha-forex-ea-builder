@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
 import { redirect } from "next/navigation";
@@ -10,7 +9,7 @@ import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
-import { OnboardingBanner } from "@/components/onboarding/OnboardingBanner";
+import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -86,32 +85,11 @@ function renderDashboard(
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
-    lifecycleState: ea.lifecycleState ?? null,
-    parentInstanceId: ea.parentInstanceId ?? null,
-    apiKeySuffix: ea.apiKeySuffix ?? null,
-    trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
-    isAutoDiscovered:
-      ea.lifecycleState === "DRAFT" &&
-      ea.terminalDeployments.some((d) => {
-        const expected = createHash("sha256")
-          .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
-          .digest("hex");
-        return d.materialFingerprint === expected;
-      }),
-    relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
-    deployments: ea.terminalDeployments.map((d) => ({
-      id: d.id,
-      symbol: d.symbol,
-      magicNumber: d.magicNumber,
-      eaName: d.eaName,
-      timeframe: d.timeframe,
-      baselineStatus: d.baselineStatus,
-      strategyVersionId: d.strategyVersionId,
-    })),
+    relinkRequired: ea.terminalDeployments.length > 0,
     trades: ea.trades.map((t) => ({
       profit: t.profit,
       closeTime: t.closeTime?.toISOString() ?? null,
-      symbol: t.symbol ?? null,
+      symbol: t.symbol,
       magicNumber: t.magicNumber ?? null,
     })),
     heartbeats: ea.heartbeats.map((h) => ({
@@ -154,10 +132,10 @@ function renderDashboard(
           <SystemStatusStrip instances={eaInstances} authority={authority} />
         )}
 
-        {/* ── Onboarding progress banner (auto-hides when complete) ── */}
-        <div className="mt-4">
-          <OnboardingBanner />
-        </div>
+        {/* ══════════════════════════════════════════════════════
+            ONBOARDING — Activation checklist (auto-hides)
+            ══════════════════════════════════════════════════════ */}
+        <ActivationPanel />
 
         {/* ── Governance Alerts (compact — only shown when action needed) ── */}
         {eaInstances.length > 0 &&
