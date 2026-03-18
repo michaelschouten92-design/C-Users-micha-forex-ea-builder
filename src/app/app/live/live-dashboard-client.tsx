@@ -951,6 +951,134 @@ const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot
 };
 
 // ============================================
+// INVESTIGATION PANEL
+// ============================================
+
+function deriveSignalSummary(
+  health: StrategyHealthLabel,
+  snap: EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never,
+  isLinked: boolean
+): string {
+  if (!isLinked) return "Baseline not linked — health monitoring inactive";
+  if (!snap) return "Awaiting first monitoring evaluation";
+  switch (health) {
+    case "Healthy":
+      return "Snapshot status: HEALTHY";
+    case "Elevated":
+      return snap.driftDetected
+        ? "Drift detected by CUSUM monitoring"
+        : `Snapshot status: ${snap.status}`;
+    case "Edge at Risk":
+      return `Snapshot status: ${snap.status} — drift detected: ${snap.driftDetected ? "yes" : "no"}`;
+    case "Pending":
+      return "No health snapshot available";
+  }
+}
+
+function InvestigationPanel({
+  instance,
+  trades,
+  health,
+  isLinked,
+}: {
+  instance: EAInstanceData;
+  trades: { profit: number; closeTime: string | null }[];
+  health: StrategyHealthLabel;
+  isLinked: boolean;
+}) {
+  const snap = instance.healthSnapshots?.[0];
+  const recentTrades = trades
+    .filter((t) => t.closeTime)
+    .sort((a, b) => (b.closeTime! > a.closeTime! ? 1 : b.closeTime! < a.closeTime! ? -1 : 0))
+    .slice(0, 10);
+  const wins = recentTrades.filter((t) => t.profit > 0).length;
+  const losses = recentTrades.filter((t) => t.profit < 0).length;
+  const hs = HEALTH_STYLES[health];
+
+  return (
+    <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] space-y-3">
+      {/* Status Header */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+        <span className={`inline-flex items-center gap-1 font-medium ${hs.text}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+          {health}
+        </span>
+        <span className="text-[#7C8DB0]">
+          Lifecycle: <span className="text-[#CBD5E1]">{instance.lifecycleState ?? "—"}</span>
+        </span>
+        {snap && (
+          <span className="text-[#7C8DB0]">
+            Snapshot: <span className="text-[#CBD5E1]">{snap.status}</span>
+          </span>
+        )}
+        <span className="text-[#7C8DB0]">
+          Baseline: <span className="text-[#CBD5E1]">{isLinked ? "Linked" : "Not linked"}</span>
+        </span>
+      </div>
+
+      {/* Signal Summary */}
+      <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+        {deriveSignalSummary(health, snap, isLinked)}
+      </p>
+
+      {/* Drift Context */}
+      {snap && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px]">
+          <span className="text-[#7C8DB0]">
+            CUSUM severity: <span className="text-[#CBD5E1]">{snap.driftSeverity.toFixed(3)}</span>
+          </span>
+          <span className="text-[#7C8DB0]">
+            Drift detected:{" "}
+            <span className="text-[#CBD5E1]">{snap.driftDetected ? "Yes" : "No"}</span>
+          </span>
+        </div>
+      )}
+
+      {/* Recent Evidence */}
+      {recentTrades.length > 0 && (
+        <div className="text-[10px]">
+          <span className="text-[#7C8DB0]">Last {recentTrades.length} trades: </span>
+          <span className="text-[#10B981]">{wins}W</span>
+          <span className="text-[#64748B]"> / </span>
+          <span className="text-[#EF4444]">{losses}L</span>
+          <span className="text-[#64748B]"> · Net: </span>
+          <span
+            className={
+              recentTrades.reduce((s, t) => s + t.profit, 0) >= 0
+                ? "text-[#10B981]"
+                : "text-[#EF4444]"
+            }
+          >
+            {formatCurrency(recentTrades.reduce((s, t) => s + t.profit, 0))}
+          </span>
+        </div>
+      )}
+
+      {/* Monitoring Integrity */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px] text-[#7C8DB0] border-t border-[rgba(79,70,229,0.08)] pt-2">
+        <span>
+          Status:{" "}
+          <span className={instance.status === "ONLINE" ? "text-[#10B981]" : "text-[#EF4444]"}>
+            {instance.status}
+          </span>
+        </span>
+        <span>
+          Heartbeat:{" "}
+          <span className="text-[#CBD5E1]">
+            {instance.lastHeartbeat ? formatRelativeTime(instance.lastHeartbeat) : "Never"}
+          </span>
+        </span>
+        {instance.operatorHold && instance.operatorHold !== "NONE" && (
+          <span>
+            Hold: <span className="text-[#F59E0B]">{instance.operatorHold}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // ACCOUNT CARD
 // ============================================
 
@@ -968,6 +1096,7 @@ function AccountCard({
   onLinkBaseline: (instanceId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [expandedStrategyKey, setExpandedStrategyKey] = useState<string | null>(null);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
   const [rotateLoading, setRotateLoading] = useState(false);
   const [showRotateConfirm, setShowRotateConfirm] = useState(false);
@@ -1540,73 +1669,100 @@ function AccountCard({
                     : undefined;
                   const health = deriveStrategyHealth(owningInstance);
                   const hs = HEALTH_STYLES[health];
+                  const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
+                  const isExpanded = expandedStrategyKey === rowKey;
                   return (
-                    <div
-                      key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
-                      className="grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#CBD5E1] truncate">
-                          {sg.symbol}
-                          {sg.magicNumber != null && (
-                            <span className="text-[#64748B] font-normal">
-                              {" "}
-                              · Magic {sg.magicNumber}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="self-center">
-                        <span
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                          {health}
-                        </span>
-                      </div>
-                      <p
-                        className={`text-xs font-medium text-right self-center ${
-                          pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                    <div key={rowKey}>
+                      <div
+                        onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
+                        className={`grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border cursor-pointer transition-colors ${
+                          isExpanded
+                            ? "border-[rgba(79,70,229,0.4)] bg-[#0A0118]/80"
+                            : "border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)]"
                         }`}
                       >
-                        {formatCurrency(pnl)}
-                      </p>
-                      <p className="text-xs text-[#CBD5E1] text-right self-center">
-                        {sg.trades.length >= 1000 ? "1000+" : sg.trades.length}
-                      </p>
-                      <p className="text-xs text-[#CBD5E1] text-right self-center">
-                        {wr.toFixed(1)}%
-                      </p>
-                      <p className="text-xs text-[#CBD5E1] text-right self-center">
-                        {pf === Infinity ? "∞" : pf.toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-[#7C8DB0] text-right self-center">
-                        {lastTrade ? formatRelativeTime(lastTrade) : "—"}
-                      </p>
-                      <div className="flex items-center justify-end self-center">
-                        {isLinked ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#10B981]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                              Linked
-                            </span>
-                            <button
-                              onClick={() => handleUnlinkBaseline(primary.id, deployment!.id)}
-                              className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors"
-                              title="Unlink baseline"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => onLinkBaseline(primary.id)}
-                            className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-[#CBD5E1] truncate">
+                            {sg.symbol}
+                            {sg.magicNumber != null && (
+                              <span className="text-[#64748B] font-normal">
+                                {" "}
+                                · Magic {sg.magicNumber}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="self-center">
+                          <span
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}
                           >
-                            Link
-                          </button>
-                        )}
+                            <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                            {health}
+                          </span>
+                        </div>
+                        <p
+                          className={`text-xs font-medium text-right self-center ${
+                            pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                          }`}
+                        >
+                          {formatCurrency(pnl)}
+                        </p>
+                        <p className="text-xs text-[#CBD5E1] text-right self-center">
+                          {sg.trades.length >= 1000 ? "1000+" : sg.trades.length}
+                        </p>
+                        <p className="text-xs text-[#CBD5E1] text-right self-center">
+                          {wr.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-[#CBD5E1] text-right self-center">
+                          {pf === Infinity ? "∞" : pf.toFixed(2)}
+                        </p>
+                        <p className="text-[10px] text-[#7C8DB0] text-right self-center">
+                          {lastTrade ? formatRelativeTime(lastTrade) : "—"}
+                        </p>
+                        <div className="flex items-center justify-end self-center">
+                          {isLinked ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#10B981]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                                Linked
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnlinkBaseline(primary.id, deployment!.id);
+                                }}
+                                className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors"
+                                title="Unlink baseline"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onLinkBaseline(primary.id);
+                              }}
+                              className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                            >
+                              Link
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {isExpanded && owningInstance && (
+                        <InvestigationPanel
+                          instance={owningInstance}
+                          trades={sg.trades}
+                          health={health}
+                          isLinked={isLinked}
+                        />
+                      )}
+                      {isExpanded && !owningInstance && (
+                        <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] text-[11px] text-[#64748B]">
+                          No instance data available for investigation.
+                        </div>
+                      )}
                     </div>
                   );
                 })}
