@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await loadTrackRecord(token);
   if (!data) return { title: "Track Record Not Found | AlgoStudio" };
 
-  const title = `${data.account.eaName} — Verified Track Record | AlgoStudio`;
+  const title = `${data.account.eaName} — Verified Live Track Record | AlgoStudio`;
   return {
     title,
     description: `Verified live track record for ${data.account.eaName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by AlgoStudio.`,

@@ -312,8 +312,8 @@ export default async function HomePage() {
               Verified Live Track Record
             </h2>
             <p className="mt-3 text-sm text-[#A1A1AA] text-center max-w-xl mx-auto">
-              AlgoStudio monitors algorithmic trading accounts and produces verifiable track records
-              from live trading activity.
+              AlgoStudio monitors algorithmic trading accounts and produces verified track records
+              from real trading activity.
             </p>
 
             <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
