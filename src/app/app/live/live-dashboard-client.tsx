@@ -914,6 +914,43 @@ function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
 }
 
 // ============================================
+// STRATEGY HEALTH DISPLAY
+// ============================================
+
+type StrategyHealthLabel = "Healthy" | "Elevated" | "Edge at Risk" | "Pending";
+
+function deriveStrategyHealth(instance: EAInstanceData | undefined): StrategyHealthLabel {
+  if (!instance) return "Pending";
+
+  // Lifecycle state is the strongest signal
+  if (instance.lifecycleState === "EDGE_AT_RISK" || instance.lifecycleState === "INVALIDATED") {
+    return "Edge at Risk";
+  }
+
+  // Latest health snapshot
+  const snap = instance.healthSnapshots?.[0];
+  if (snap) {
+    if (snap.status === "AT_RISK" || snap.status === "DEGRADED") return "Edge at Risk";
+    if (snap.status === "WARNING" || snap.driftDetected) return "Elevated";
+    if (snap.status === "HEALTHY") return "Healthy";
+  }
+
+  // Fallback: strategy status
+  if (instance.strategyStatus === "EDGE_DEGRADED") return "Edge at Risk";
+  if (instance.strategyStatus === "UNSTABLE") return "Elevated";
+
+  // No explicit health confirmation — treat as pending
+  return "Pending";
+}
+
+const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot: string }> = {
+  Healthy: { bg: "bg-[#10B981]/10", text: "text-[#10B981]", dot: "bg-[#10B981]" },
+  Elevated: { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]", dot: "bg-[#F59E0B]" },
+  "Edge at Risk": { bg: "bg-[#EF4444]/10", text: "text-[#EF4444]", dot: "bg-[#EF4444]" },
+  Pending: { bg: "bg-[#64748B]/10", text: "text-[#64748B]", dot: "bg-[#64748B]" },
+};
+
+// ============================================
 // ACCOUNT CARD
 // ============================================
 
@@ -972,7 +1009,12 @@ function AccountCard({
   const strategyGroups = (() => {
     const map = new Map<
       string,
-      { symbol: string; magicNumber: number | null; trades: typeof allTrades }
+      {
+        symbol: string;
+        magicNumber: number | null;
+        trades: typeof allTrades;
+        instanceId: string | null;
+      }
     >();
     for (const t of allTrades) {
       const key = `${t.symbol}|${t.magicNumber ?? "none"}`;
@@ -980,10 +1022,17 @@ function AccountCard({
       if (existing) {
         existing.trades.push(t);
       } else {
+        // Match trade to owning instance
+        const inst = instances.find(
+          (ea) =>
+            ea.symbol?.toUpperCase() === (t.symbol ?? "").toUpperCase() ||
+            ea.deployments?.some((d) => d.symbol.toUpperCase() === (t.symbol ?? "").toUpperCase())
+        );
         map.set(key, {
           symbol: t.symbol ?? "UNKNOWN",
           magicNumber: t.magicNumber ?? null,
           trades: [t],
+          instanceId: inst?.id ?? null,
         });
       }
     }
@@ -1001,6 +1050,7 @@ function AccountCard({
           symbol: ctx.symbol,
           magicNumber: dep?.magicNumber ?? null,
           trades: [],
+          instanceId: ctx.id,
         });
       }
     }
@@ -1422,8 +1472,9 @@ function AccountCard({
             ) : (
               <>
                 {/* Header row */}
-                <div className="grid grid-cols-[1fr_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                <div className="grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
                   <span>Strategy</span>
+                  <span>Health</span>
                   <span className="text-right">P&L</span>
                   <span className="text-right">Trades</span>
                   <span className="text-right">Win Rate</span>
@@ -1449,10 +1500,16 @@ function AccountCard({
                       (sg.magicNumber === null || d.magicNumber === sg.magicNumber)
                   );
                   const isLinked = deployment?.baselineStatus === "LINKED";
+                  // Resolve health badge from owning instance
+                  const owningInstance = sg.instanceId
+                    ? instances.find((ea) => ea.id === sg.instanceId)
+                    : undefined;
+                  const health = deriveStrategyHealth(owningInstance);
+                  const hs = HEALTH_STYLES[health];
                   return (
                     <div
                       key={`${sg.symbol}|${sg.magicNumber ?? "none"}`}
-                      className="grid grid-cols-[1fr_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
+                      className="grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)] transition-colors"
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-[#CBD5E1] truncate">
@@ -1464,6 +1521,14 @@ function AccountCard({
                             </span>
                           )}
                         </p>
+                      </div>
+                      <div className="self-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                          {health}
+                        </span>
                       </div>
                       <p
                         className={`text-xs font-medium text-right self-center ${
