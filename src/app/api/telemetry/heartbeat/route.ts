@@ -105,6 +105,8 @@ export async function POST(request: NextRequest) {
           magicNumber: data.deployment!.magicNumber,
           eaName: data.deployment!.eaName,
           materialFingerprint: data.deployment!.materialFingerprint!,
+          broker: data.broker ?? null,
+          accountNumber: data.accountNumber ?? null,
         })
       : isManifestDeploy
         ? await resolveManifestContextInstance(auth.instanceId, auth.userId, {
@@ -354,6 +356,8 @@ async function resolveAutoDiscoveredContextInstance(
     magicNumber: number;
     eaName: string;
     materialFingerprint: string;
+    broker: string | null;
+    accountNumber: string | null;
   }
 ): Promise<string> {
   const syntheticKeyHash = createHash("sha256")
@@ -369,8 +373,14 @@ async function resolveAutoDiscoveredContextInstance(
       symbol: deployment.symbol.toUpperCase(),
       timeframe: "",
       lifecycleState: "DRAFT",
+      broker: deployment.broker ?? undefined,
+      accountNumber: deployment.accountNumber ?? undefined,
     },
-    update: {},
+    update: {
+      // Backfill broker/accountNumber if missing (handles instances created before this fix)
+      ...(deployment.broker != null && { broker: deployment.broker }),
+      ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+    },
     select: { id: true },
   });
 
