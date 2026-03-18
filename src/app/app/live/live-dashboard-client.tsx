@@ -3280,7 +3280,7 @@ export function LiveDashboardClient({
         <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <SummaryCard
-              label="Live P&L"
+              label="Tracked P&L"
               subtitle="tracked total"
               value={eaInstances
                 .filter((ea) => ea.mode === "LIVE")
