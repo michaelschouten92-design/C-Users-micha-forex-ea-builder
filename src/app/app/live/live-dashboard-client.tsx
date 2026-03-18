@@ -2559,7 +2559,7 @@ const CONNECTION_STATUS_CONFIG: Record<
   { color: string; label: string; ping: boolean }
 > = {
   connecting: { color: "#F59E0B", label: "Connecting", ping: false },
-  connected: { color: "#10B981", label: "Live", ping: true },
+  connected: { color: "#10B981", label: "Receiving", ping: true },
   "fallback-polling": { color: "#3B82F6", label: "Last update", ping: false },
   disconnected: { color: "#EF4444", label: "Disconnected", ping: false },
 };
