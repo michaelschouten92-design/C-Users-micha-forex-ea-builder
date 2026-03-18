@@ -6,12 +6,10 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
-const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000; // 24 hours
-
 /**
  * POST /api/live/[instanceId]/rotate-key
- * Rotates the API key for an EA instance.
- * The old key remains valid for 24 hours (grace period).
+ * Regenerates the API key for an EA instance.
+ * The old key is invalidated immediately (no grace period).
  */
 export async function POST(
   _request: NextRequest,
@@ -38,16 +36,15 @@ export async function POST(
   const newApiKey = randomBytes(32).toString("hex");
   const newHash = createHash("sha256").update(newApiKey).digest("hex");
   const now = new Date();
-  const gracePeriodEnd = new Date(now.getTime() + GRACE_PERIOD_MS);
 
   await prisma.liveEAInstance.update({
     where: { id: instanceId },
     data: {
-      apiKeyHashPrev: instance.apiKeyHash,
+      apiKeyHashPrev: null,
       apiKeyHash: newHash,
       apiKeySuffix: newApiKey.slice(-4),
       keyRotatedAt: now,
-      keyGracePeriodEnd: gracePeriodEnd,
+      keyGracePeriodEnd: null,
     },
   });
 
@@ -56,13 +53,10 @@ export async function POST(
     eventType: "live.api_key_rotated",
     resourceType: "live_ea_instance",
     resourceId: instanceId,
-    metadata: { action: "key_rotation", eaName: instance.eaName },
+    metadata: { action: "key_regenerated", eaName: instance.eaName },
   }).catch((err) => {
-    logger.error({ err, instanceId }, "Audit log failed: key_rotation");
+    logger.error({ err, instanceId }, "Audit log failed: key_regenerated");
   });
 
-  return NextResponse.json({
-    apiKey: newApiKey,
-    gracePeriodEnd: gracePeriodEnd.toISOString(),
-  });
+  return NextResponse.json({ apiKey: newApiKey });
 }
