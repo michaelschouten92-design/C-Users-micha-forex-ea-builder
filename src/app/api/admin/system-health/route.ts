@@ -23,24 +23,9 @@ export async function GET() {
       dbStatus = "error";
     }
 
-    // Redis check (via rate limiter ping - if available)
-    let redisLatency = 0;
-    let redisStatus: "ok" | "error" | "unconfigured" = "unconfigured";
-    try {
-      const { Redis } = await import("@upstash/redis");
-      if (process.env.UPSTASH_REDIS_REST_URL) {
-        const redis = new Redis({
-          url: process.env.UPSTASH_REDIS_REST_URL,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
-        });
-        const redisStart = Date.now();
-        await redis.ping();
-        redisLatency = Date.now() - redisStart;
-        redisStatus = "ok";
-      }
-    } catch {
-      redisStatus = "error";
-    }
+    // Redis removed — using in-memory rate limiting
+    const redisLatency = 0;
+    const redisStatus: "ok" | "error" | "unconfigured" = "unconfigured";
 
     // Stripe check
     let stripeLatency = 0;
