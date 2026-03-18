@@ -302,10 +302,15 @@ export const adminOtpIpRateLimiter = createRateLimiter({
  * Pre-auth rate limiter for telemetry endpoints.
  * Keyed by hashed client IP — applies to ALL requests regardless of key validity.
  * Prevents brute-force key enumeration.
- * Limits: 60 requests per minute per IP
+ * Limits: 300 requests per minute per IP
+ *
+ * Account-wide monitoring sends heartbeats for base + N auto-discovered
+ * contexts every ~5s, plus track-record ingest events. With 6 contexts
+ * that is 72+ heartbeats/min from one IP before ingest events.
+ * 300/min accommodates up to ~25 contexts with headroom.
  */
 export const telemetryPreauthRateLimiter = createRateLimiter({
-  limit: 60,
+  limit: 300,
   windowMs: 60 * 1000, // 1 minute
 });
 
