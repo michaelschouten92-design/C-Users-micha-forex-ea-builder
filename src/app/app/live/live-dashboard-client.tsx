@@ -956,7 +956,7 @@ const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot
 
 function deriveSignalSummary(
   health: StrategyHealthLabel,
-  snap: EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never,
+  snap: (EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never) | undefined,
   isLinked: boolean
 ): string {
   if (!isLinked) return "Baseline not linked — health monitoring inactive";
