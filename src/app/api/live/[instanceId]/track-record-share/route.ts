@@ -34,7 +34,7 @@ export async function POST(
   }
 
   // Check for existing share
-  const existing = await prisma.accountTrackRecordShare.findFirst({
+  const existing = await prisma.accountTrackRecordShare.findUnique({
     where: { baseInstanceId: instanceId },
     select: { id: true, token: true, isPublic: true },
   });

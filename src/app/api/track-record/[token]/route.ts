@@ -73,8 +73,7 @@ export async function GET(request: NextRequest, { params }: Props) {
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        take: 500,
-        select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
+        select: { profit: true },
       },
       healthSnapshots: {
         orderBy: { createdAt: "desc" },

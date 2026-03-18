@@ -974,7 +974,7 @@ model SharedProofBundle {
 model AccountTrackRecordShare {
   id              String   @id @default(cuid())
   token           String   @unique @default(cuid())
-  baseInstanceId  String
+  baseInstanceId  String   @unique
   userId          String
   isPublic        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -982,8 +982,6 @@ model AccountTrackRecordShare {
 
   baseInstance LiveEAInstance @relation(fields: [baseInstanceId], references: [id], onDelete: Cascade)
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([baseInstanceId])
 }
 
 // ============================================
