@@ -72,7 +72,6 @@ export function NotificationBell() {
 
   // Initial fetch + poll every 60s
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount is intentional
     void fetchAlerts();
     const interval = setInterval(() => void fetchAlerts(), 60_000);
     return () => clearInterval(interval);
@@ -118,14 +117,16 @@ export function NotificationBell() {
     mutatingRef.current = true;
     setDismissing(true);
     try {
-      await Promise.all(
-        prevAlerts.map((a) => fetch(`/api/alerts/${a.id}/acknowledge`, { method: "POST" }))
-      );
+      // Single server-side query acknowledges ALL unacknowledged alerts,
+      // not just the loaded page of 10.
+      const res = await fetch("/api/alerts/acknowledge-all", { method: "POST" });
+      if (!res.ok) throw new Error("acknowledge-all failed");
     } catch {
       // Revert on failure
       mutatingRef.current = false;
       setDismissing(false);
-      await fetchAlerts();
+      setAlerts(prevAlerts);
+      setTotal(prevAlerts.length);
       return;
     }
     mutatingRef.current = false;
