@@ -31,13 +31,13 @@ export async function POST(
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(apiError(ErrorCode.VALIDATION_ERROR, "Invalid JSON"), { status: 400 });
+    return NextResponse.json(apiError(ErrorCode.INVALID_JSON, "Invalid JSON"), { status: 400 });
   }
 
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      apiError(ErrorCode.VALIDATION_ERROR, 'action must be "publish" or "unpublish"'),
+      apiError(ErrorCode.VALIDATION_FAILED, 'action must be "publish" or "unpublish"'),
       { status: 400 }
     );
   }
