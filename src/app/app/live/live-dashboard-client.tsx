@@ -1165,6 +1165,24 @@ function AccountCard({
     }
   }
 
+  // Aggregate health counts from child strategy instances
+  const healthCounts = (() => {
+    const counts: Record<StrategyHealthLabel, number> = {
+      Healthy: 0,
+      Elevated: 0,
+      "Edge at Risk": 0,
+      Pending: 0,
+    };
+    for (const ea of instances) {
+      if (ea.id === primary.id && !ea.symbol) continue; // skip account-wide parent
+      counts[deriveStrategyHealth(ea)]++;
+    }
+    return counts;
+  })();
+  const healthSummaryParts = (
+    ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
+  ).filter((label) => healthCounts[label] > 0);
+
   const lastHeartbeat = instances
     .map((ea) => ea.lastHeartbeat)
     .filter(Boolean)
@@ -1202,6 +1220,22 @@ function AccountCard({
               </>
             )}
           </div>
+          {healthSummaryParts.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              {healthSummaryParts.map((label) => {
+                const hs = HEALTH_STYLES[label];
+                return (
+                  <span
+                    key={label}
+                    className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                    {healthCounts[label]} {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={accountStatus} animate={statusChanged} />
