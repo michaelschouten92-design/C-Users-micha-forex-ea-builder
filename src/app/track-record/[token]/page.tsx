@@ -1,38 +1,28 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { loadTrackRecord, type TrackRecordData } from "./load-track-record";
 
-interface TrackRecordData {
-  account: {
-    eaName: string;
-    broker: string | null;
-    accountNumber: string | null;
-    balance: number | null;
-    equity: number | null;
-    status: string;
-    lastHeartbeat: string | null;
-  };
-  performance: {
-    totalTrades: number;
-    totalProfit: number;
-    winRate: number;
-    profitFactor: number | null;
-    maxDrawdownPct: number;
-    strategyCount: number;
-  };
-  equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
-  strategies: Array<{
-    symbol: string | null;
-    magicNumber: number | null;
-    totalTrades: number;
-    totalProfit: number;
-    healthSnapshot: { driftDetected: boolean; driftSeverity: number; status: string } | null;
-    lifecycleState: string | null;
-    strategyStatus: string | null;
-  }>;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface Props {
+  params: Promise<{ token: string }>;
 }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { token } = await params;
+  const data = await loadTrackRecord(token);
+  if (!data) return { title: "Track Record Not Found | AlgoStudio" };
+
+  const title = `${data.account.eaName} — Track Record | AlgoStudio`;
+  return {
+    title,
+    description: `Account track record for ${data.account.eaName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by AlgoStudio.`,
+  };
+}
+
+// ── Helpers ──
 
 type HealthLabel = "Healthy" | "Elevated" | "Edge at Risk" | "Pending";
 
@@ -76,48 +66,17 @@ function formatTimeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
-export default function TrackRecordPage() {
-  const { token } = useParams<{ token: string }>();
-  const [data, setData] = useState<TrackRecordData | null>(null);
-  const [error, setError] = useState(false);
+// ── Page ──
 
-  useEffect(() => {
-    fetch(`/api/track-record/${token}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Not found");
-        return r.json();
-      })
-      .then(setData)
-      .catch(() => setError(true));
-  }, [token]);
+export default async function TrackRecordPage({ params }: Props) {
+  const { token } = await params;
+  const data = await loadTrackRecord(token);
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-xl font-semibold text-white mb-2">Track Record Not Found</h1>
-          <p className="text-sm text-[#7C8DB0]">
-            This track record may have been unpublished or does not exist.
-          </p>
-          <Link href="/" className="text-sm text-[#818CF8] hover:text-white mt-4 inline-block">
-            Go to AlgoStudio
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-[#0A0118] flex items-center justify-center">
-        <p className="text-sm text-[#7C8DB0]">Loading track record...</p>
-      </div>
-    );
-  }
+  if (!data) notFound();
 
   const { account, performance, equityCurve, strategies } = data;
 
-  // Compute equity curve bounds for SVG rendering
+  // Equity curve bounds for SVG
   const eqValues = equityCurve.map((p) => p.equity);
   const eqMin = eqValues.length > 0 ? Math.min(...eqValues) : 0;
   const eqMax = eqValues.length > 0 ? Math.max(...eqValues) : 1;
@@ -167,10 +126,7 @@ export default function TrackRecordPage() {
             { label: "Trades", value: performance.totalTrades.toLocaleString() },
             { label: "Strategies", value: String(performance.strategyCount) },
             { label: "Win Rate", value: `${performance.winRate.toFixed(1)}%` },
-            {
-              label: "Profit Factor",
-              value: performance.profitFactor != null ? performance.profitFactor.toFixed(2) : "—",
-            },
+            { label: "Profit Factor", value: performance.profitFactorDisplay },
             { label: "Max Drawdown", value: `${performance.maxDrawdownPct.toFixed(1)}%` },
           ].map((m) => (
             <div
