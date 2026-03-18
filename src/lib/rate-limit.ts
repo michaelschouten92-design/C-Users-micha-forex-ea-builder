@@ -316,11 +316,13 @@ export const telemetryPreauthRateLimiter = createRateLimiter({
 
 /**
  * Post-auth rate limiter for telemetry endpoints (EA heartbeats, trades, errors)
- * Keyed by verified instanceId — throttles individual EA instances.
- * Limits: 20 requests per minute per instance
+ * Keyed by verified instanceId (base instance in account-wide mode).
+ * All context heartbeats share the base instanceId for auth, so the limit
+ * must accommodate N contexts x cycles/min + ingest events.
+ * Limits: 120 requests per minute per instance
  */
 export const telemetryRateLimiter = createRateLimiter({
-  limit: 20,
+  limit: 120,
   windowMs: 60 * 1000, // 1 minute
 });
 
