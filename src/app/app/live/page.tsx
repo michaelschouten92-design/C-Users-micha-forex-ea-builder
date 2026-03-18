@@ -88,6 +88,7 @@ function renderDashboard(
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     lifecycleState: ea.lifecycleState ?? null,
     parentInstanceId: ea.parentInstanceId ?? null,
+    apiKeySuffix: ea.apiKeySuffix ?? null,
     isAutoDiscovered:
       ea.lifecycleState === "DRAFT" &&
       ea.terminalDeployments.some((d) => {

@@ -377,6 +377,7 @@ model LiveEAInstance {
   exportJobId   String?   @unique
   userId        String
   apiKeyHash        String    @unique
+  apiKeySuffix      String?   // Last 4 chars of plaintext key for masked display
   apiKeyHashPrev    String?   // Previous key hash (valid during grace period)
   keyRotatedAt      DateTime? // When rotation happened
   keyGracePeriodEnd DateTime? // When previous key stops working

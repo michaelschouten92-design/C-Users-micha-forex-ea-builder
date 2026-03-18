@@ -53,6 +53,7 @@ interface EAInstanceData {
   healthScore?: number | null;
   lifecycleState?: string | null;
   parentInstanceId?: string | null;
+  apiKeySuffix?: string | null;
   isAutoDiscovered?: boolean;
   strategyStatus?: string | null;
   operatorHold?: string;
@@ -930,6 +931,10 @@ function AccountCard({
   onLinkBaseline: (instanceId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [rotatedKey, setRotatedKey] = useState<string | null>(null);
+  const [rotateLoading, setRotateLoading] = useState(false);
+  const [showRotateConfirm, setShowRotateConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { primary, instances } = account;
 
   // Account-level metrics: use primary (account-wide if available), else aggregate
@@ -1074,6 +1079,39 @@ function AccountCard({
       }
     } catch {
       showError("Failed to unlink", "Network error");
+    }
+  }
+
+  async function handleRotateKey() {
+    setRotateLoading(true);
+    try {
+      const res = await fetch(`/api/live/${primary.id}/rotate-key`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRotatedKey(data.apiKey);
+        setShowRotateConfirm(false);
+        showSuccess("API key regenerated", "Copy your new key now — it won't be shown again.");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError("Key rotation failed", data.message ?? "Something went wrong");
+      }
+    } catch {
+      showError("Key rotation failed", "Network error");
+    }
+    setRotateLoading(false);
+  }
+
+  async function handleCopyKey() {
+    if (!rotatedKey) return;
+    try {
+      await navigator.clipboard.writeText(rotatedKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showError("Copy failed", "Could not copy to clipboard");
     }
   }
 
@@ -1284,6 +1322,69 @@ function AccountCard({
           Last heartbeat: {formatRelativeTime(lastHeartbeat ?? null)}
         </span>
       </div>
+
+      {/* API Key management — only for root/parent instances (not child/discovered) */}
+      {!primary.parentInstanceId && (
+        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">API Key</p>
+              {rotatedKey ? (
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono text-[#10B981] truncate max-w-[280px]">
+                    {rotatedKey}
+                  </code>
+                  <button
+                    onClick={handleCopyKey}
+                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors shrink-0"
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                  <button
+                    onClick={() => setRotatedKey(null)}
+                    className="text-[10px] text-[#64748B] hover:text-white transition-colors shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs font-mono text-[#64748B]">
+                  ••••••••••••{primary.apiKeySuffix ?? "••••"}
+                </p>
+              )}
+            </div>
+            {!rotatedKey && (
+              <div className="shrink-0">
+                {showRotateConfirm ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[#F59E0B]">Invalidate current key?</span>
+                    <button
+                      onClick={handleRotateKey}
+                      disabled={rotateLoading}
+                      className="px-2 py-1 text-[10px] font-medium text-white bg-[#F59E0B] rounded hover:bg-[#D97706] disabled:opacity-50"
+                    >
+                      {rotateLoading ? "..." : "Confirm"}
+                    </button>
+                    <button
+                      onClick={() => setShowRotateConfirm(false)}
+                      className="px-2 py-1 text-[10px] text-[#94A3B8] hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowRotateConfirm(true)}
+                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    Regenerate
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Expand strategies toggle */}
       <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">

@@ -191,6 +191,7 @@ function queryEaInstances(userId: string) {
       strategyStatus: true,
       mode: true,
       parentInstanceId: true,
+      apiKeySuffix: true,
       // Governance fields
       operatorHold: true,
       monitoringSuppressedUntil: true,

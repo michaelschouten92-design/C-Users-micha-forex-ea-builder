@@ -45,6 +45,7 @@ export async function POST(
     data: {
       apiKeyHashPrev: instance.apiKeyHash,
       apiKeyHash: newHash,
+      apiKeySuffix: newApiKey.slice(-4),
       keyRotatedAt: now,
       keyGracePeriodEnd: gracePeriodEnd,
     },

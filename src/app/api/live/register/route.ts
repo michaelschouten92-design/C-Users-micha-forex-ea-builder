@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
           exportJobId: null,
           userId: session.user.id,
           apiKeyHash,
+          apiKeySuffix: apiKey.slice(-4),
           eaName,
           mode: "LIVE",
         },
