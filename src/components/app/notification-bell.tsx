@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 interface AlertItem {
   id: string;
@@ -94,7 +95,10 @@ export function NotificationBell() {
     setTotal((prev) => Math.max(0, prev - 1));
     mutatingRef.current = true;
     try {
-      const res = await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "POST" });
+      const res = await fetch(`/api/alerts/${alertId}/acknowledge`, {
+        method: "POST",
+        headers: getCsrfHeaders(),
+      });
       if (!res.ok) {
         // Revert on failure — re-fetch server state
         mutatingRef.current = false;
@@ -119,7 +123,10 @@ export function NotificationBell() {
     try {
       // Single server-side query acknowledges ALL unacknowledged alerts,
       // not just the loaded page of 10.
-      const res = await fetch("/api/alerts/acknowledge-all", { method: "POST" });
+      const res = await fetch("/api/alerts/acknowledge-all", {
+        method: "POST",
+        headers: getCsrfHeaders(),
+      });
       if (!res.ok) throw new Error("acknowledge-all failed");
     } catch {
       // Revert on failure
