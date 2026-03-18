@@ -5,6 +5,7 @@ export interface TrackRecordData {
     eaName: string;
     broker: string | null;
     accountNumber: string | null;
+    accountNumberMasked: string | null;
     balance: number | null;
     equity: number | null;
     status: string;
@@ -17,9 +18,13 @@ export interface TrackRecordData {
     profitFactor: number | null;
     profitFactorDisplay: string;
     maxDrawdownPct: number;
+    maxDrawdownAbs: number;
     strategyCount: number;
+    durationDays: number | null;
   };
   equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
+  monthlyReturns: Array<{ month: string; returnPct: number }>;
+  recentTrades: Array<{ closeTime: string; symbol: string; profit: number }>;
   strategies: Array<{
     symbol: string | null;
     magicNumber: number | null;
@@ -72,7 +77,7 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        select: { profit: true },
+        select: { profit: true, closeTime: true, symbol: true },
       },
       healthSnapshots: {
         orderBy: { createdAt: "desc" },
@@ -109,18 +114,69 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
   const profitFactorDisplay =
     profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
 
-  // Max drawdown from equity curve
+  // Max drawdown from equity curve (peak-to-trough, both % and absolute)
   let maxDrawdownPct = 0;
+  let maxDrawdownAbs = 0;
   if (heartbeats.length > 0) {
     let peak = heartbeats[0].equity;
     for (const hb of heartbeats) {
       if (hb.equity > peak) peak = hb.equity;
       if (peak > 0) {
-        const dd = ((peak - hb.equity) / peak) * 100;
-        if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+        const ddPct = ((peak - hb.equity) / peak) * 100;
+        const ddAbs = peak - hb.equity;
+        if (ddPct > maxDrawdownPct) {
+          maxDrawdownPct = ddPct;
+          maxDrawdownAbs = ddAbs;
+        }
       }
     }
   }
+
+  // Duration from first heartbeat
+  let durationDays: number | null = null;
+  if (heartbeats.length > 0) {
+    const firstHb = new Date(heartbeats[0].createdAt);
+    durationDays = Math.floor((Date.now() - firstHb.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  // Monthly returns derived from equity curve
+  const monthlyReturns: Array<{ month: string; returnPct: number }> = [];
+  if (heartbeats.length > 0) {
+    const byMonth = new Map<string, { first: number; last: number }>();
+    for (const hb of heartbeats) {
+      const d = new Date(hb.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const existing = byMonth.get(key);
+      if (!existing) {
+        byMonth.set(key, { first: hb.equity, last: hb.equity });
+      } else {
+        existing.last = hb.equity;
+      }
+    }
+    // Compute return for each month using previous month's last equity as base
+    let prevEquity: number | null = null;
+    for (const [month, { first, last }] of byMonth) {
+      const base = prevEquity ?? first;
+      const returnPct = base > 0 ? ((last - base) / base) * 100 : 0;
+      monthlyReturns.push({ month, returnPct });
+      prevEquity = last;
+    }
+  }
+
+  // Recent trades (20 most recent closed trades across all children)
+  const recentTrades = allTrades
+    .filter(
+      (t): t is { profit: number; closeTime: Date; symbol: string | null } => t.closeTime != null
+    )
+    .slice(0, 20)
+    .map((t) => ({
+      closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
+      symbol: t.symbol ?? "—",
+      profit: t.profit,
+    }));
+
+  // Mask account number: show only last 5 chars
+  const accountNumberMasked = base.accountNumber ? `•••${base.accountNumber.slice(-5)}` : null;
 
   const strategies = children.map((c) => ({
     symbol: c.symbol,
@@ -137,6 +193,7 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       eaName: base.eaName,
       broker: base.broker,
       accountNumber: base.accountNumber,
+      accountNumberMasked,
       balance: base.balance,
       equity: base.equity,
       status: base.status,
@@ -149,13 +206,17 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       profitFactor: profitFactor === Infinity ? null : profitFactor,
       profitFactorDisplay,
       maxDrawdownPct,
+      maxDrawdownAbs,
       strategyCount: children.length,
+      durationDays,
     },
     equityCurve: heartbeats.map((hb) => ({
       equity: hb.equity,
       balance: hb.balance,
       createdAt: hb.createdAt.toISOString(),
     })),
+    monthlyReturns,
+    recentTrades,
     strategies,
   };
 }
