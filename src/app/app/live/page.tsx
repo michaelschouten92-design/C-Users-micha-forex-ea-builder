@@ -89,6 +89,7 @@ function renderDashboard(
     lifecycleState: ea.lifecycleState ?? null,
     parentInstanceId: ea.parentInstanceId ?? null,
     apiKeySuffix: ea.apiKeySuffix ?? null,
+    trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
     isAutoDiscovered:
       ea.lifecycleState === "DRAFT" &&
       ea.terminalDeployments.some((d) => {

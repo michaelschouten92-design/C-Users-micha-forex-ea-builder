@@ -54,6 +54,7 @@ interface EAInstanceData {
   lifecycleState?: string | null;
   parentInstanceId?: string | null;
   apiKeySuffix?: string | null;
+  trackRecordToken?: string | null;
   isAutoDiscovered?: boolean;
   strategyStatus?: string | null;
   operatorHold?: string;
@@ -1101,6 +1102,11 @@ function AccountCard({
   const [rotateLoading, setRotateLoading] = useState(false);
   const [showRotateConfirm, setShowRotateConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [trackRecordToken, setTrackRecordToken] = useState<string | null>(
+    primary.trackRecordToken ?? null
+  );
+  const [trackRecordLoading, setTrackRecordLoading] = useState(false);
+  const [trackRecordCopied, setTrackRecordCopied] = useState(false);
   const { primary, instances } = account;
 
   // Account-level metrics: use primary (account-wide if available), else aggregate
@@ -1289,6 +1295,37 @@ function AccountCard({
       await navigator.clipboard.writeText(rotatedKey);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showError("Copy failed", "Could not copy to clipboard");
+    }
+  }
+
+  async function handlePublishTrackRecord() {
+    setTrackRecordLoading(true);
+    try {
+      const res = await fetch(`/api/live/${primary.id}/track-record-share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrackRecordToken(data.isPublic ? data.token : null);
+      } else {
+        showError("Failed", "Could not update track record share");
+      }
+    } catch {
+      showError("Failed", "Network error");
+    }
+    setTrackRecordLoading(false);
+  }
+
+  async function handleCopyTrackRecordUrl() {
+    if (!trackRecordToken) return;
+    const url = `${window.location.origin}/track-record/${trackRecordToken}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setTrackRecordCopied(true);
+      setTimeout(() => setTrackRecordCopied(false), 2000);
     } catch {
       showError("Copy failed", "Could not copy to clipboard");
     }
@@ -1595,6 +1632,59 @@ function AccountCard({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Track Record share — only for root instances */}
+      {!primary.parentInstanceId && (
+        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                Track Record
+              </p>
+              {trackRecordToken ? (
+                <p className="text-[10px] text-[#10B981]">Published</p>
+              ) : (
+                <p className="text-[10px] text-[#64748B]">Not published</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {trackRecordToken ? (
+                <>
+                  <a
+                    href={`/track-record/${trackRecordToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    View ↗
+                  </a>
+                  <button
+                    onClick={handleCopyTrackRecordUrl}
+                    className="text-[10px] text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    {trackRecordCopied ? "Copied!" : "Copy link"}
+                  </button>
+                  <button
+                    onClick={handlePublishTrackRecord}
+                    disabled={trackRecordLoading}
+                    className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors disabled:opacity-50"
+                  >
+                    Unpublish
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handlePublishTrackRecord}
+                  disabled={trackRecordLoading}
+                  className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {trackRecordLoading ? "Publishing..." : "Publish Track Record"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -151,7 +151,8 @@ model User {
   alertConfigs   EAAlertConfig[]
   templateRatings TemplateRating[]
   tradeJournals      TradeJournal[]
-  sharedProofBundles SharedProofBundle[]
+  sharedProofBundles        SharedProofBundle[]
+  accountTrackRecordShares  AccountTrackRecordShare[]
   backtestUploads    BacktestUpload[]
   pushSubscriptions  PushSubscription[]
   outboxEntries      NotificationOutbox[]
@@ -444,7 +445,8 @@ model LiveEAInstance {
   trackRecordState       TrackRecordState?
   ledgerCommitments      LedgerCommitment[]
   healthSnapshots        HealthSnapshot[]
-  sharedProofBundles     SharedProofBundle[]
+  sharedProofBundles          SharedProofBundle[]
+  accountTrackRecordShares    AccountTrackRecordShare[]
   tradeFacts             TradeFact[]
   monitoringRuns         MonitoringRun[]
   incidents              Incident[]
@@ -963,6 +965,25 @@ model SharedProofBundle {
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([instanceId])
+}
+
+// ============================================
+// ACCOUNT TRACK RECORD SHARE
+// ============================================
+
+model AccountTrackRecordShare {
+  id              String   @id @default(cuid())
+  token           String   @unique @default(cuid())
+  baseInstanceId  String
+  userId          String
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  baseInstance LiveEAInstance @relation(fields: [baseInstanceId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([baseInstanceId])
 }
 
 // ============================================

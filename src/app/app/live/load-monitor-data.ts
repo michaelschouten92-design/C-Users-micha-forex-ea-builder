@@ -192,6 +192,11 @@ function queryEaInstances(userId: string) {
       mode: true,
       parentInstanceId: true,
       apiKeySuffix: true,
+      accountTrackRecordShares: {
+        where: { isPublic: true },
+        take: 1,
+        select: { token: true },
+      },
       // Governance fields
       operatorHold: true,
       monitoringSuppressedUntil: true,
