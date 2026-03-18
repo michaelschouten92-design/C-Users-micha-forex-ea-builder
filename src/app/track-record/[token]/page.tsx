@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { loadTrackRecord, type TrackRecordData } from "./load-track-record";
 import { EquityChart } from "./equity-chart";
+import { ShareActions } from "./share-actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -333,6 +334,7 @@ export default async function TrackRecordPage({ params }: Props) {
             AlgoStudio
           </Link>
         </p>
+        <ShareActions />
       </div>
     </div>
   );

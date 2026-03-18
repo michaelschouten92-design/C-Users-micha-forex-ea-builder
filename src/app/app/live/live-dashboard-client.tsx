@@ -1670,6 +1670,14 @@ function AccountCard({
                   >
                     {trackRecordCopied ? "✓ Copied" : "Copy link"}
                   </button>
+                  <a
+                    href={`https://x.com/intent/tweet?text=${encodeURIComponent("Verified live account track record monitored by AlgoStudio.")}&url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/track-record/${trackRecordToken}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    Share on X
+                  </a>
                   <button
                     onClick={() => handleTrackRecordAction("unpublish")}
                     disabled={trackRecordLoading}
