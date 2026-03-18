@@ -1648,10 +1648,12 @@ function AccountCard({
               {trackRecordToken ? (
                 <p className="text-[10px] text-[#10B981]">Published</p>
               ) : (
-                <p className="text-[10px] text-[#64748B]">Not published</p>
+                <p className="text-[10px] text-[#64748B]">
+                  Share a verified live track record monitored by AlgoStudio.
+                </p>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               {trackRecordToken ? (
                 <>
                   <a
@@ -1660,13 +1662,13 @@ function AccountCard({
                     rel="noopener noreferrer"
                     className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
                   >
-                    Track Record ↗
+                    View Track Record ↗
                   </a>
                   <button
                     onClick={handleCopyTrackRecordUrl}
                     className="text-[10px] text-[#818CF8] hover:text-white transition-colors"
                   >
-                    {trackRecordCopied ? "Copied!" : "Copy link"}
+                    {trackRecordCopied ? "✓ Copied" : "Copy link"}
                   </button>
                   <button
                     onClick={() => handleTrackRecordAction("unpublish")}
@@ -1682,7 +1684,7 @@ function AccountCard({
                   disabled={trackRecordLoading}
                   className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
                 >
-                  {trackRecordLoading ? "Publishing..." : "Publish Track Record"}
+                  {trackRecordLoading ? "Sharing..." : "Share Track Record"}
                 </button>
               )}
             </div>
