@@ -4,7 +4,6 @@ export interface TrackRecordData {
   account: {
     eaName: string;
     broker: string | null;
-    accountNumber: string | null;
     accountNumberMasked: string | null;
     balance: number | null;
     equity: number | null;
@@ -102,10 +101,10 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     select: { equity: true, balance: true, createdAt: true },
   });
 
-  // Compute aggregates
+  // Compute aggregates from closed trades (same scope as winRate/profitFactor)
   const allTrades = children.flatMap((c) => c.trades);
-  const totalTrades = children.reduce((sum, c) => sum + c.totalTrades, 0);
-  const totalProfit = children.reduce((sum, c) => sum + c.totalProfit, 0);
+  const totalTrades = allTrades.length;
+  const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
 
   const wins = allTrades.filter((t) => t.profit > 0).length;
   const winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
@@ -203,7 +202,6 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     account: {
       eaName: base.eaName,
       broker: base.broker,
-      accountNumber: base.accountNumber,
       accountNumberMasked,
       balance: base.balance,
       equity: base.equity,
