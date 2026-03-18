@@ -3280,11 +3280,11 @@ export function LiveDashboardClient({
         <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <SummaryCard
-              label="Tracked P&L"
-              subtitle="tracked total"
+              label="Floating P&L"
+              subtitle="unrealized"
               value={eaInstances
-                .filter((ea) => ea.mode === "LIVE")
-                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
+                .filter((ea) => ea.mode === "LIVE" && ea.equity != null && ea.balance != null)
+                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
             />
             <SummaryCard
               label="Paper P&L"
