@@ -193,6 +193,12 @@ export async function POST(request: NextRequest) {
             // so all instances share the same grouping key in the Command Center.
             ...(data.broker != null && { broker: data.broker }),
             ...(data.accountNumber != null && { accountNumber: data.accountNumber }),
+            // Propagate account-level metrics so the base instance card shows live values.
+            balance: data.balance,
+            equity: data.equity,
+            openTrades: data.openTrades,
+            totalTrades: data.totalTrades,
+            totalProfit: data.totalProfit,
           },
         })
       );
