@@ -3283,7 +3283,13 @@ export function LiveDashboardClient({
               label="Floating P&L"
               subtitle="unrealized"
               value={eaInstances
-                .filter((ea) => ea.mode === "LIVE" && ea.equity != null && ea.balance != null)
+                .filter(
+                  (ea) =>
+                    ea.mode === "LIVE" &&
+                    !ea.parentInstanceId &&
+                    ea.equity != null &&
+                    ea.balance != null
+                )
                 .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
             />
             <SummaryCard
