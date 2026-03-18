@@ -186,7 +186,14 @@ export async function POST(request: NextRequest) {
       txOps.push(
         prisma.liveEAInstance.update({
           where: { id: auth.instanceId },
-          data: { status: "ONLINE", lastHeartbeat: now },
+          data: {
+            status: "ONLINE",
+            lastHeartbeat: now,
+            // Propagate broker/accountNumber to the base (account-wide) instance
+            // so all instances share the same grouping key in the Command Center.
+            ...(data.broker != null && { broker: data.broker }),
+            ...(data.accountNumber != null && { accountNumber: data.accountNumber }),
+          },
         })
       );
     }
