@@ -304,7 +304,65 @@ export default async function HomePage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            7. FINAL CTA
+            7. VERIFIED TRACK RECORD
+            ════════════════════════════════════════════════════════════ */}
+        <section className="py-12 md:py-16 px-6">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-xl font-bold text-[#FAFAFA] tracking-tight text-center">
+              Verified Live Track Record
+            </h2>
+            <p className="mt-3 text-sm text-[#A1A1AA] text-center max-w-xl mx-auto">
+              AlgoStudio monitors algorithmic trading accounts and produces verifiable track records
+              from live trading activity.
+            </p>
+
+            <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
+              <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-[#7C8DB0]">
+                <span className="text-sm font-semibold text-white">IC Markets Live</span>
+                <span>IC Markets (EU) Ltd</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Trades
+                  </p>
+                  <p className="text-sm font-semibold text-[#CBD5E1]">1,247</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Return
+                  </p>
+                  <p className="text-sm font-semibold text-[#10B981]">+18.4%</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Max Drawdown
+                  </p>
+                  <p className="text-sm font-semibold text-[#CBD5E1]">6.2%</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+                    Strategies
+                  </p>
+                  <p className="text-sm font-semibold text-[#CBD5E1]">5</p>
+                </div>
+              </div>
+              <div className="mt-5">
+                {/* TODO: Replace with actual published track record token URL */}
+                <Link
+                  href="/track-record/example"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
+                >
+                  View Track Record
+                  <span aria-hidden="true">↗</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════════
+            8. FINAL CTA
             ════════════════════════════════════════════════════════════ */}
         <section className="py-12 md:py-16 px-6">
           <div className="max-w-2xl mx-auto text-center">
