@@ -1,13 +1,10 @@
 /**
- * Rate limiter with Upstash Redis support for production
- * and in-memory fallback for development.
+ * In-memory rate limiter.
  *
- * Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
- * environment variables to enable Redis-based rate limiting.
+ * Each Vercel instance maintains its own counters. At single-user scale
+ * this provides sufficient protection. For multi-tenant production with
+ * many concurrent users, consider adding a distributed backend.
  */
-
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 
 // ============================================
 // TYPES
@@ -28,7 +25,7 @@ interface RateLimitResult {
 }
 
 // ============================================
-// IN-MEMORY FALLBACK (development / single instance)
+// IN-MEMORY RATE LIMITER
 // ============================================
 
 interface RateLimitEntry {
@@ -98,91 +95,22 @@ class InMemoryRateLimiter {
 }
 
 // ============================================
-// UPSTASH REDIS RATE LIMITER
+// FACTORY
 // ============================================
-
-class UpstashRateLimiter {
-  private ratelimit: Ratelimit;
-  private config: RateLimitConfig;
-
-  constructor(config: RateLimitConfig, redis: Redis) {
-    this.config = config;
-
-    // Convert windowMs to seconds for Upstash sliding window
-    const windowSec = Math.ceil(config.windowMs / 1000);
-    this.ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(config.limit, `${windowSec} s`),
-      analytics: false,
-    });
-  }
-
-  async checkAsync(key: string): Promise<RateLimitResult> {
-    const result = await this.ratelimit.limit(key);
-    return {
-      success: result.success,
-      limit: result.limit,
-      remaining: result.remaining,
-      resetAt: new Date(result.reset),
-    };
-  }
-
-  // Synchronous check is not supported with Upstash Redis.
-  // All callers MUST use checkRateLimit() (async) instead.
-  check(_key: string): RateLimitResult {
-    throw new Error(
-      "UpstashRateLimiter requires async check. Use checkRateLimit() instead of limiter.check()."
-    );
-  }
-}
-
-// ============================================
-// FACTORY: Create rate limiter based on environment
-// ============================================
-
-const useRedis = Boolean(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-);
-
-if (!useRedis && process.env.NODE_ENV === "production") {
-  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-  if (!isBuildPhase) {
-    throw new Error(
-      "[rate-limit] FATAL: UPSTASH_REDIS_REST_URL/TOKEN not configured. " +
-        "In-memory rate limiting does NOT work across multiple Vercel instances. " +
-        "Configure Upstash Redis for production."
-    );
-  }
-}
-
-let redis: Redis | null = null;
-if (useRedis) {
-  redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
-}
 
 interface RateLimiter {
   check(key: string): RateLimitResult;
-  checkAsync?(key: string): Promise<RateLimitResult>;
 }
 
 function createRateLimiter(config: RateLimitConfig): RateLimiter {
-  if (useRedis && redis) {
-    return new UpstashRateLimiter(config, redis);
-  }
   return new InMemoryRateLimiter(config);
 }
 
 /**
- * Async-aware rate limit check.
- * Uses Redis when available, falls back to in-memory.
+ * Async-compatible rate limit check.
+ * Returns synchronously via the in-memory backend.
  */
 export async function checkRateLimit(limiter: RateLimiter, key: string): Promise<RateLimitResult> {
-  if (limiter.checkAsync) {
-    return limiter.checkAsync(key);
-  }
   return limiter.check(key);
 }
 
