@@ -1096,6 +1096,7 @@ function AccountCard({
   onDelete: (instanceId: string) => void;
   onLinkBaseline: (instanceId: string) => void;
 }) {
+  const { primary, instances } = account;
   const [expanded, setExpanded] = useState(false);
   const [expandedStrategyKey, setExpandedStrategyKey] = useState<string | null>(null);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
@@ -1107,7 +1108,6 @@ function AccountCard({
   );
   const [trackRecordLoading, setTrackRecordLoading] = useState(false);
   const [trackRecordCopied, setTrackRecordCopied] = useState(false);
-  const { primary, instances } = account;
 
   // Account-level metrics: use primary (account-wide if available), else aggregate
   const isAccountWide = primary.symbol === null;
