@@ -1300,12 +1300,13 @@ function AccountCard({
     }
   }
 
-  async function handlePublishTrackRecord() {
+  async function handleTrackRecordAction(action: "publish" | "unpublish") {
     setTrackRecordLoading(true);
     try {
       const res = await fetch(`/api/live/${primary.id}/track-record-share`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ action }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1636,13 +1637,13 @@ function AccountCard({
         </div>
       )}
 
-      {/* Track Record share — only for root instances */}
+      {/* Public Track Record share — only for root instances */}
       {!primary.parentInstanceId && (
         <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-                Track Record
+                Public Track Record
               </p>
               {trackRecordToken ? (
                 <p className="text-[10px] text-[#10B981]">Published</p>
@@ -1659,7 +1660,7 @@ function AccountCard({
                     rel="noopener noreferrer"
                     className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
                   >
-                    View ↗
+                    Track Record ↗
                   </a>
                   <button
                     onClick={handleCopyTrackRecordUrl}
@@ -1668,7 +1669,7 @@ function AccountCard({
                     {trackRecordCopied ? "Copied!" : "Copy link"}
                   </button>
                   <button
-                    onClick={handlePublishTrackRecord}
+                    onClick={() => handleTrackRecordAction("unpublish")}
                     disabled={trackRecordLoading}
                     className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors disabled:opacity-50"
                   >
@@ -1677,7 +1678,7 @@ function AccountCard({
                 </>
               ) : (
                 <button
-                  onClick={handlePublishTrackRecord}
+                  onClick={() => handleTrackRecordAction("publish")}
                   disabled={trackRecordLoading}
                   className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
                 >

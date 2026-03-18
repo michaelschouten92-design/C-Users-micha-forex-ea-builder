@@ -149,7 +149,7 @@ export default function TrackRecordPage() {
 
       {/* Metrics grid */}
       <div className="max-w-4xl mx-auto px-6 pb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {[
             {
               label: "Balance",
@@ -165,6 +165,7 @@ export default function TrackRecordPage() {
               color: performance.totalProfit >= 0 ? "#10B981" : "#EF4444",
             },
             { label: "Trades", value: performance.totalTrades.toLocaleString() },
+            { label: "Strategies", value: String(performance.strategyCount) },
             { label: "Win Rate", value: `${performance.winRate.toFixed(1)}%` },
             {
               label: "Profit Factor",
