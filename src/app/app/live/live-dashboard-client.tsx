@@ -3365,12 +3365,11 @@ export function LiveDashboardClient({
           {/* Per-Symbol Breakdown */}
           {(() => {
             const symbolMap = new Map<string, { pnl: number; count: number; openTrades: number }>();
-            const filtered =
-              modeFilter === "ALL"
-                ? eaInstances
-                : eaInstances.filter((ea) => ea.mode === modeFilter);
+            const filtered = eaInstances.filter(
+              (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
+            );
             for (const ea of filtered) {
-              const sym = ea.symbol || "Unknown";
+              const sym = ea.symbol!;
               const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
               existing.pnl += ea.totalProfit;
               existing.count += 1;
