@@ -95,10 +95,7 @@ function renderDashboard(
     ),
     monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
     baseline: (() => {
-      const depBaseline = ea.terminalDeployments.find(
-        (d: { strategyVersion?: { backtestBaseline?: unknown } }) =>
-          d.strategyVersion?.backtestBaseline
-      )?.strategyVersion?.backtestBaseline as
+      const bl = ea.strategyVersion?.backtestBaseline as
         | {
             winRate: number | null;
             profitFactor: number | null;
@@ -107,7 +104,6 @@ function renderDashboard(
             sharpeRatio: number | null;
           }
         | undefined;
-      const bl = depBaseline ?? (ea.strategyVersion?.backtestBaseline as typeof depBaseline);
       return bl
         ? {
             winRate: bl.winRate,
