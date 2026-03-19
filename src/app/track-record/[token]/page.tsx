@@ -113,6 +113,18 @@ export default async function TrackRecordPage({ params }: Props) {
           <span className={account.status === "ONLINE" ? "text-[#10B981]" : "text-[#EF4444]"}>
             {account.status}
           </span>
+          {coverage.firstHeartbeatAt && (
+            <span>
+              Monitoring active since:{" "}
+              <span className="text-[#CBD5E1]">
+                {new Date(coverage.firstHeartbeatAt).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            </span>
+          )}
           {account.lastHeartbeat && (
             <span>Last update: {new Date(account.lastHeartbeat).toLocaleString()}</span>
           )}
