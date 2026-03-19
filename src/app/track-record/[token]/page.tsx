@@ -288,7 +288,7 @@ export default async function TrackRecordPage({ params }: Props) {
                   <p className="text-xs text-[#CBD5E1] truncate">
                     {s.symbol ?? "—"}
                     {s.magicNumber != null && (
-                      <span className="text-[#64748B]"> · Magic {s.magicNumber}</span>
+                      <span className="text-[#64748B]"> · Strategy ID {s.magicNumber}</span>
                     )}
                   </p>
                   <p
@@ -306,10 +306,12 @@ export default async function TrackRecordPage({ params }: Props) {
                         className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: HEALTH_COLORS[health] }}
                       />
-                      {health}
+                      {health === "Pending" ? "Initializing" : health}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#7C8DB0] text-right">{s.lifecycleState ?? "—"}</p>
+                  <p className="text-[10px] text-[#7C8DB0] text-right">
+                    {s.lifecycleState === "DRAFT" ? "Monitoring setup" : (s.lifecycleState ?? "—")}
+                  </p>
                 </div>
               );
             })}
