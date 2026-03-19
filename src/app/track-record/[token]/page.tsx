@@ -241,20 +241,24 @@ export default async function TrackRecordPage({ params }: Props) {
       )}
 
       {/* Equity curve */}
-      {equityCurve.length > 0 && (
-        <div className="max-w-4xl mx-auto px-6 pb-6">
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">Equity Curve</p>
-            {equityCurve.length === 1 ? (
-              <p className="text-[11px] text-[#64748B]">
-                Equity: {formatCurrency(equityCurve[0].equity)} — awaiting more data points
-              </p>
-            ) : (
-              <EquityChart data={equityCurve} />
-            )}
-          </div>
+      <div className="max-w-4xl mx-auto px-6 pb-6">
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Equity Curve</p>
+          <p className="text-[10px] text-[#64748B] mb-3">Account equity based on closed trades.</p>
+          {performance.totalTrades === 0 ? (
+            <p className="text-[11px] text-[#64748B]">
+              Equity curve will appear once trades start closing.
+            </p>
+          ) : equityCurve.length <= 1 ? (
+            <p className="text-[11px] text-[#64748B]">
+              Equity: {equityCurve[0] ? formatCurrency(equityCurve[0].equity) : "—"} — awaiting more
+              data points
+            </p>
+          ) : (
+            <EquityChart data={equityCurve} />
+          )}
         </div>
-      )}
+      </div>
 
       {/* Monthly returns */}
       {monthlyReturns.length > 0 && (
