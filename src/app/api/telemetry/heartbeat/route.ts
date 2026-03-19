@@ -200,6 +200,20 @@ export async function POST(request: NextRequest) {
             totalTrades: data.totalTrades,
             totalProfit: data.totalProfit,
           },
+        }),
+        // Also create a heartbeat record for the base instance so the SSE
+        // live stream detects the update and pushes it to the client.
+        prisma.eAHeartbeat.create({
+          data: {
+            instanceId: auth.instanceId,
+            balance: data.balance,
+            equity: data.equity,
+            openTrades: data.openTrades,
+            totalTrades: data.totalTrades,
+            totalProfit: data.totalProfit,
+            drawdown: data.drawdown,
+            spread: data.spread,
+          },
         })
       );
     }
