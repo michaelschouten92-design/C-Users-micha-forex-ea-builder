@@ -1729,6 +1729,8 @@ void SendHeartbeat()
    {
       g_lastSuccessfulHb = TimeCurrent();
       g_panelError = "";
+      Print("AlgoStudio Monitor: Heartbeat OK — bal=", DoubleToString(bal, 2),
+            " eq=", DoubleToString(eq, 2), " open=", myOpen, " closed=", totalClosed);
 
       // Deferred SESSION_START: send once after first successful heartbeat
       // populates g_instanceId (needed for correct canonical hash computation)
@@ -1737,6 +1739,10 @@ void SendHeartbeat()
          SendSessionStart();
          g_sessionStartSent = true;
       }
+   }
+   else
+   {
+      Print("AlgoStudio Monitor: Heartbeat FAILED — ", g_panelError);
    }
 }
 
@@ -1823,6 +1829,9 @@ void SendContextHeartbeat(StrategyContext &ctx)
    {
       g_lastSuccessfulHb = TimeCurrent();
       g_panelError = "";
+      Print("AlgoStudio Monitor [", ctx.eaName, "]: Heartbeat OK — bal=",
+            DoubleToString(bal, 2), " eq=", DoubleToString(eq, 2),
+            " open=", myOpen, " closed=", totalClosed);
 
       // Assign instanceId once (stable after first server assignment)
       if(StringLen(ctx.instanceId) == 0)
@@ -1864,6 +1873,11 @@ void SendContextHeartbeat(StrategyContext &ctx)
    {
       // HTTP error (not a network failure) — surface in panel
       g_panelError = "HTTP " + IntegerToString(status) + " [" + ctx.eaName + "]";
+      Print("AlgoStudio Monitor [", ctx.eaName, "]: Heartbeat FAILED — HTTP ", status);
+   }
+   else
+   {
+      Print("AlgoStudio Monitor [", ctx.eaName, "]: Heartbeat FAILED — ", g_panelError);
    }
 }
 
