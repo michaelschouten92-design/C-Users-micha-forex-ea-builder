@@ -1718,7 +1718,7 @@ function AccountCard({
         </button>
 
         {expanded && (
-          <div className="mt-3 space-y-1">
+          <div className="mt-3 space-y-1 overflow-x-auto">
             {strategyGroups.length === 0 ? (
               <div className="px-3 py-3">
                 <div className="flex items-start gap-2.5">
@@ -1734,7 +1734,7 @@ function AccountCard({
                 </div>
               </div>
             ) : (
-              <>
+              <div className="min-w-[640px]">
                 {/* Header row */}
                 <div className="grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
                   <span>Strategy</span>
@@ -1825,7 +1825,7 @@ function AccountCard({
                             <div className="flex items-center gap-1.5">
                               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#10B981]">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                                Linked
+                                Baseline linked
                               </span>
                               <button
                                 onClick={(e) => {
@@ -1846,7 +1846,7 @@ function AccountCard({
                               }}
                               className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
                             >
-                              Link
+                              Link baseline
                             </button>
                           )}
                         </div>
@@ -1867,7 +1867,7 @@ function AccountCard({
                     </div>
                   );
                 })}
-              </>
+              </div>
             )}
           </div>
         )}
@@ -3291,20 +3291,7 @@ export function LiveDashboardClient({
       {/* Portfolio Summary */}
       {eaInstances.length > 0 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <SummaryCard
-              label="Floating P&L"
-              subtitle="unrealized"
-              value={eaInstances
-                .filter(
-                  (ea) =>
-                    ea.mode === "LIVE" &&
-                    !ea.parentInstanceId &&
-                    ea.equity != null &&
-                    ea.balance != null
-                )
-                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-            />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <SummaryCard
               label="Paper P&L"
               subtitle="tracked total"
@@ -3456,6 +3443,83 @@ export function LiveDashboardClient({
         </div>
       )}
 
+      {/* Action Required / Edge Health Panel */}
+      {(() => {
+        const items = eaInstances
+          .map((ea) => {
+            const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
+            if (!attention) return null;
+            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+            const isBaselineAction =
+              attention.statusLabel === "Baseline suspended" ||
+              attention.statusLabel === "No baseline linked";
+            return {
+              id: ea.id,
+              identity,
+              ...attention,
+              onClick: isBaselineAction
+                ? () => setLinkBaselineInstanceId(ea.id)
+                : () => {
+                    document
+                      .getElementById(`ea-card-${ea.id}`)
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  },
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null);
+
+        if (items.length === 0) return null;
+
+        const hasRed = items.some((i) => i.color === "#EF4444");
+        const headerColor = hasRed ? "#EF4444" : "#F59E0B";
+
+        return (
+          <div
+            className="bg-[#1A0626] border rounded-xl p-4"
+            style={{ borderColor: `${headerColor}33` }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
+              <p className="text-xs font-semibold text-white">Action Required</p>
+              <span className="text-[10px] text-[#7C8DB0]">
+                {items.length} {items.length === 1 ? "instance requires" : "instances require"}{" "}
+                attention
+              </span>
+            </div>
+            <div className="space-y-2">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium text-[#CBD5E1] truncate">
+                      {item.identity}
+                    </p>
+                    <p className="text-[10px] font-medium" style={{ color: item.color }}>
+                      {item.statusLabel}
+                    </p>
+                    <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{item.reason}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={item.onClick}
+                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
+                    style={{
+                      color: item.color,
+                      borderColor: `${item.color}4D`,
+                      backgroundColor: `${item.color}15`,
+                    }}
+                  >
+                    {item.actionLabel}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Edge Health Summary */}
       {eaInstances.length > 0 &&
         (() => {
@@ -3507,84 +3571,6 @@ export function LiveDashboardClient({
             </div>
           );
         })()}
-
-      {/* Action Required / Edge Health Panel */}
-      {(() => {
-        const items = eaInstances
-          .map((ea) => {
-            const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!attention) return null;
-            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-            const isBaselineAction =
-              attention.statusLabel === "Baseline suspended" ||
-              attention.statusLabel === "No baseline linked";
-            return {
-              id: ea.id,
-              identity,
-              ...attention,
-              onClick: isBaselineAction
-                ? () => setLinkBaselineInstanceId(ea.id)
-                : () => {
-                    document
-                      .getElementById(`ea-card-${ea.id}`)
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  },
-            };
-          })
-          .filter((item): item is NonNullable<typeof item> => item !== null);
-
-        if (items.length === 0) return null;
-
-        // Determine header accent: red if any critical, amber if warnings, else muted
-        const hasRed = items.some((i) => i.color === "#EF4444");
-        const headerColor = hasRed ? "#EF4444" : "#F59E0B";
-
-        return (
-          <div
-            className="bg-[#1A0626] border rounded-xl p-4"
-            style={{ borderColor: `${headerColor}33` }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
-              <p className="text-xs font-semibold text-white">Action Required</p>
-              <span className="text-[10px] text-[#7C8DB0]">
-                {items.length} {items.length === 1 ? "instance requires" : "instances require"}{" "}
-                attention
-              </span>
-            </div>
-            <div className="space-y-2">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-[#CBD5E1] truncate">
-                      {item.identity}
-                    </p>
-                    <p className="text-[10px] font-medium" style={{ color: item.color }}>
-                      {item.statusLabel}
-                    </p>
-                    <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{item.reason}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={item.onClick}
-                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
-                    style={{
-                      color: item.color,
-                      borderColor: `${item.color}4D`,
-                      backgroundColor: `${item.color}15`,
-                    }}
-                  >
-                    {item.actionLabel}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
