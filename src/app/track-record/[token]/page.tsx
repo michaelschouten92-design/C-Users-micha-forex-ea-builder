@@ -132,6 +132,19 @@ export default async function TrackRecordPage({ params }: Props) {
         </p>
       </div>
 
+      {/* Initializing notice */}
+      {performance.totalTrades === 0 && (
+        <div className="max-w-4xl mx-auto px-6 pb-2">
+          <div className="bg-[#1A0626] border border-[rgba(245,158,11,0.2)] rounded-lg px-4 py-3">
+            <p className="text-xs font-semibold text-[#F59E0B] mb-1">Track record initializing</p>
+            <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+              Monitoring is active but no closed trades have been recorded yet. Performance
+              statistics will appear once trades are completed.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Metrics grid */}
       <div className="max-w-4xl mx-auto px-6 py-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
