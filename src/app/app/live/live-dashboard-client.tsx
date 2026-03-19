@@ -1007,7 +1007,7 @@ function deriveSignalSummary(
         ? "Drift detected by CUSUM monitoring"
         : `Snapshot status: ${snap.status}`;
     case "Edge at Risk":
-      return `Snapshot status: ${snap.status} — drift detected: ${snap.driftDetected ? "yes" : "no"}`;
+      return `Snapshot status: ${snap.status} — drift detected: ${snap.driftDetected ? "yes" : "no"} — manual review required`;
     case "Pending":
       return "No health snapshot available";
   }
