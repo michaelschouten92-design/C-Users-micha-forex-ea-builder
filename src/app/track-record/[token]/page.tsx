@@ -115,10 +115,20 @@ export default async function TrackRecordPage({ params }: Props) {
             <span>Last update: {new Date(account.lastHeartbeat).toLocaleString()}</span>
           )}
         </div>
-        <p className="text-[10px] text-[#64748B] mt-1">Monitored by AlgoStudio</p>
-        <p className="text-[10px] text-[#64748B] mt-0.5">
-          This page reflects monitored account activity aggregated across all linked strategy
-          instances.
+      </div>
+
+      {/* Verification explainer */}
+      <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
+          <p className="text-xs font-semibold text-[#818CF8] mb-1">Verified by AlgoStudio</p>
+          <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+            This track record is derived from monitored account activity captured by AlgoStudio.
+            Performance shown on this page is based on immutable trade records and linked strategy
+            monitoring.
+          </p>
+        </div>
+        <p className="text-[10px] text-[#64748B] mt-2">
+          Monitored account activity aggregated across all linked strategy instances.
         </p>
       </div>
 
@@ -328,12 +338,9 @@ export default async function TrackRecordPage({ params }: Props) {
 
       {/* Footer */}
       <div className="max-w-4xl mx-auto px-6 pb-8 text-center">
-        <p className="text-[10px] text-[#64748B]">
-          Verified by{" "}
-          <Link href="/" className="text-[#818CF8] hover:text-white transition-colors">
-            AlgoStudio
-          </Link>
-        </p>
+        <Link href="/" className="text-[10px] text-[#818CF8] hover:text-white transition-colors">
+          AlgoStudio
+        </Link>
         <ShareActions />
       </div>
     </div>
