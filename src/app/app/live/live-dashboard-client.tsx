@@ -1347,23 +1347,19 @@ function AccountCard({
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
-            {primary.symbol ? (
-              <span>{primary.symbol}</span>
-            ) : (
-              <span className="text-[#7C8DB0]/70 italic">Account-wide (portfolio mode)</span>
-            )}
-            {account.broker && (
-              <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
-                <span>{account.broker}</span>
-              </>
-            )}
+            {account.broker && <span>{account.broker}</span>}
             {account.accountNumber && (
               <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
-                <span>#{account.accountNumber}</span>
+                {account.broker && <span className="text-[rgba(79,70,229,0.4)]">•</span>}
+                <span>Account #{account.accountNumber}</span>
               </>
             )}
+            <>
+              {(account.broker || account.accountNumber) && (
+                <span className="text-[rgba(79,70,229,0.4)]">•</span>
+              )}
+              <span className="text-[#7C8DB0]/70 italic">Portfolio mode</span>
+            </>
           </div>
           {healthSummaryParts.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
