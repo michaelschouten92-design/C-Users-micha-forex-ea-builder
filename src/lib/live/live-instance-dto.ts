@@ -101,6 +101,30 @@ export interface LiveHeartbeatPatch {
   lastHeartbeat: string | null;
 }
 
+// ── Update helpers ───────────────────────────────────────
+
+/**
+ * Apply a heartbeat patch to a live instance.
+ * Centralizes the field mapping so SSE and any future update path
+ * cannot silently drop fields.
+ */
+export function applyHeartbeatPatch<T extends LiveInstanceDTO>(
+  instance: T,
+  patch: LiveHeartbeatPatch
+): T {
+  return {
+    ...instance,
+    equity: patch.equity,
+    balance: patch.balance,
+    openTrades: patch.openTrades,
+    totalTrades: patch.totalTrades,
+    totalProfit: patch.totalProfit,
+    status: patch.status as T["status"],
+    tradingState: patch.tradingState as T["tradingState"],
+    lastHeartbeat: patch.lastHeartbeat,
+  };
+}
+
 // ── Selectors ────────────────────────────────────────────
 
 /**

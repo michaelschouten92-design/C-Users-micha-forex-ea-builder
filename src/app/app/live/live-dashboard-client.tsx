@@ -22,6 +22,7 @@ import {
   type LiveInstanceDTO,
   type LiveHeartbeatPatch,
   isAccountContainer,
+  applyHeartbeatPatch,
 } from "@/lib/live/live-instance-dto";
 import { updateOperatorHold } from "./actions";
 
@@ -3096,21 +3097,7 @@ export function LiveDashboardClient({
     onHeartbeat: (data) => {
       const hb = data as LiveHeartbeatPatch;
       setEaInstances((prev) =>
-        prev.map((ea) =>
-          ea.id === hb.instanceId
-            ? {
-                ...ea,
-                equity: hb.equity,
-                balance: hb.balance,
-                openTrades: hb.openTrades,
-                totalTrades: hb.totalTrades,
-                totalProfit: hb.totalProfit,
-                status: hb.status as EAInstanceData["status"],
-                tradingState: hb.tradingState as EAInstanceData["tradingState"],
-                lastHeartbeat: hb.lastHeartbeat,
-              }
-            : ea
-        )
+        prev.map((ea) => (ea.id === hb.instanceId ? applyHeartbeatPatch(ea, hb) : ea))
       );
     },
     onTrade: (data) => {
