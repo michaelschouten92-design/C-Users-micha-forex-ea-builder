@@ -275,8 +275,11 @@ export default async function TrackRecordPage({ params }: Props) {
       {strategies.length > 0 && (
         <div className="max-w-4xl mx-auto px-6 pb-6">
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
-              Strategies ({performance.strategyCount})
+            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+              Tracked strategies ({performance.strategyCount})
+            </p>
+            <p className="text-[10px] text-[#64748B] mb-3">
+              Monitored strategy instances linked to this public track record.
             </p>
             <div className="grid grid-cols-[1fr_80px_80px_80px_90px] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
               <span>Strategy</span>
