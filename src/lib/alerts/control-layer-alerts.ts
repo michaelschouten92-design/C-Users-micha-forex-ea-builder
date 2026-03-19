@@ -24,6 +24,7 @@ const log = logger.child({ service: "control-layer-alerts" });
 
 // ── Alert types ──────────────────────────────────────────
 
+import type { ControlLayerAlertType } from "./alert-severity";
 export type { ControlLayerAlertType } from "./alert-severity";
 
 // ── Summaries ────────────────────────────────────────────
