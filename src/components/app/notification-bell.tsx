@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
+import { getAlertSeverity } from "@/lib/alerts/alert-severity";
 
 interface AlertItem {
   id: string;
@@ -28,14 +29,39 @@ const WEBHOOK_STATUS_LABEL: Record<string, { text: string; color: string }> = {
   SKIPPED: { text: "No webhook", color: "#71717A" },
 };
 
-const ALERT_TYPE_COLORS: Record<string, string> = {
-  DEPLOYMENT_INVALIDATED: "#EF4444",
-  DEPLOYMENT_RESTRICTED: "#F59E0B",
-  DEPLOYMENT_REVIEW: "#F59E0B",
-  MONITOR_OFFLINE: "#71717A",
-  BASELINE_MISSING: "#7C8DB0",
-  VERSION_OUTDATED: "#7C8DB0",
+const SEVERITY_STYLES: Record<
+  string,
+  { dot: string; border: string; pill: string; label: string }
+> = {
+  CRITICAL: {
+    dot: "#EF4444",
+    border: "border-l-[#EF4444]",
+    pill: "bg-[#EF4444]/15 text-[#EF4444]",
+    label: "Critical",
+  },
+  HIGH: {
+    dot: "#F97316",
+    border: "border-l-[#F97316]",
+    pill: "bg-[#F97316]/15 text-[#F97316]",
+    label: "High",
+  },
+  MEDIUM: {
+    dot: "#F59E0B",
+    border: "border-l-[#F59E0B]",
+    pill: "bg-[#F59E0B]/15 text-[#F59E0B]",
+    label: "Medium",
+  },
+  LOW: {
+    dot: "#7C8DB0",
+    border: "border-l-[#7C8DB0]",
+    pill: "bg-[#7C8DB0]/15 text-[#7C8DB0]",
+    label: "Low",
+  },
 };
+
+function getSeverityStyle(alertType: string) {
+  return SEVERITY_STYLES[getAlertSeverity(alertType)] ?? SEVERITY_STYLES.LOW;
+}
 
 function formatTimeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -193,56 +219,64 @@ export function NotificationBell() {
                 <p className="text-xs text-[#71717A]">No unread alerts</p>
               </div>
             ) : (
-              alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="px-4 py-3 border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{
-                            backgroundColor: ALERT_TYPE_COLORS[alert.alertType] ?? "#7C8DB0",
-                          }}
-                        />
-                        <span className="text-xs font-medium text-white truncate">
-                          {alert.instance.eaName}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#A1A1AA] leading-relaxed">{alert.summary}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-[#71717A]">
-                          {formatTimeAgo(alert.createdAt)}
-                        </span>
-                        {alert.webhookStatus && WEBHOOK_STATUS_LABEL[alert.webhookStatus] && (
+              alerts.map((alert) => {
+                const sev = getSeverityStyle(alert.alertType);
+                return (
+                  <div
+                    key={alert.id}
+                    className={`px-4 py-3 border-b border-[rgba(255,255,255,0.04)] border-l-2 ${sev.border} hover:bg-[rgba(255,255,255,0.02)] transition-colors`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
                           <span
-                            className="text-[9px]"
-                            style={{
-                              color: WEBHOOK_STATUS_LABEL[alert.webhookStatus].color,
-                            }}
-                          >
-                            {WEBHOOK_STATUS_LABEL[alert.webhookStatus].text}
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: sev.dot }}
+                          />
+                          <span className="text-xs font-medium text-white truncate">
+                            {alert.instance.eaName}
                           </span>
-                        )}
+                          <span
+                            className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${sev.pill}`}
+                          >
+                            {sev.label}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+                          {alert.summary}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-[#71717A]">
+                            {formatTimeAgo(alert.createdAt)}
+                          </span>
+                          {alert.webhookStatus && WEBHOOK_STATUS_LABEL[alert.webhookStatus] && (
+                            <span
+                              className="text-[9px]"
+                              style={{
+                                color: WEBHOOK_STATUS_LABEL[alert.webhookStatus].color,
+                              }}
+                            >
+                              {WEBHOOK_STATUS_LABEL[alert.webhookStatus].text}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          acknowledge(alert.id);
+                        }}
+                        disabled={false}
+                        className="flex-shrink-0 text-[10px] text-[#71717A] hover:text-white transition-colors px-1.5 py-0.5 rounded disabled:opacity-50"
+                        title="Dismiss"
+                      >
+                        &times;
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        acknowledge(alert.id);
-                      }}
-                      disabled={false}
-                      className="flex-shrink-0 text-[10px] text-[#71717A] hover:text-white transition-colors px-1.5 py-0.5 rounded disabled:opacity-50"
-                      title="Dismiss"
-                    >
-                      &times;
-                    </button>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

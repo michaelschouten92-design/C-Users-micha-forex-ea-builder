@@ -3177,10 +3177,23 @@ export function LiveDashboardClient({
     }
   }
 
-  // Count portfolio-level Edge at Risk strategies
-  const portfolioEdgeAtRiskCount = eaInstances.filter(
-    (ea) => ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED"
-  ).length;
+  // Portfolio-level strategy health summary (excludes base/account containers)
+  const portfolioHealthCounts = (() => {
+    const counts: Record<StrategyHealthLabel, number> = {
+      Healthy: 0,
+      Elevated: 0,
+      "Edge at Risk": 0,
+      Pending: 0,
+    };
+    for (const ea of eaInstances) {
+      if (!ea.symbol) continue; // skip account-wide parent containers
+      counts[deriveStrategyHealth(ea)]++;
+    }
+    return counts;
+  })();
+  const portfolioHealthParts = (
+    ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
+  ).filter((label) => portfolioHealthCounts[label] > 0);
 
   return (
     <div className="space-y-6">
@@ -3309,19 +3322,29 @@ export function LiveDashboardClient({
               value={eaInstances.reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />
-            {/* Portfolio Edge at Risk */}
+            {/* Strategy Health Summary */}
             <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
               <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Edge at Risk
+                Strategy Health
               </p>
-              <p
-                className={`text-lg font-semibold ${
-                  portfolioEdgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-white"
-                }`}
-              >
-                {portfolioEdgeAtRiskCount}{" "}
-                {portfolioEdgeAtRiskCount === 1 ? "strategy" : "strategies"}
-              </p>
+              {portfolioHealthParts.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {portfolioHealthParts.map((label) => {
+                    const hs = HEALTH_STYLES[label];
+                    return (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1 text-sm font-semibold ${hs.text}`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
+                        {portfolioHealthCounts[label]} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
+              )}
             </div>
           </div>
 

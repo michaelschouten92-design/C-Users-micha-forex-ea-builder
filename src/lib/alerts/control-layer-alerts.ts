@@ -24,15 +24,7 @@ const log = logger.child({ service: "control-layer-alerts" });
 
 // ── Alert types ──────────────────────────────────────────
 
-export type ControlLayerAlertType =
-  | "DEPLOYMENT_INVALIDATED"
-  | "DEPLOYMENT_RESTRICTED"
-  | "DEPLOYMENT_REVIEW"
-  | "MONITOR_OFFLINE"
-  | "BASELINE_MISSING"
-  | "VERSION_OUTDATED"
-  | "HEALTH_DEGRADED"
-  | "HEALTH_CRITICAL";
+export type { ControlLayerAlertType } from "./alert-severity";
 
 // ── Summaries ────────────────────────────────────────────
 
@@ -106,16 +98,7 @@ export async function emitControlLayerAlert(
 
 // ── Severity labels ──────────────────────────────────────
 
-const ALERT_SEVERITY: Record<ControlLayerAlertType, string> = {
-  DEPLOYMENT_INVALIDATED: "CRITICAL",
-  DEPLOYMENT_RESTRICTED: "HIGH",
-  DEPLOYMENT_REVIEW: "MEDIUM",
-  MONITOR_OFFLINE: "MEDIUM",
-  BASELINE_MISSING: "LOW",
-  VERSION_OUTDATED: "LOW",
-  HEALTH_DEGRADED: "HIGH",
-  HEALTH_CRITICAL: "CRITICAL",
-};
+import { ALERT_SEVERITY } from "./alert-severity";
 
 /** Alert types that should trigger outbound notifications (email/telegram/slack) */
 const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
