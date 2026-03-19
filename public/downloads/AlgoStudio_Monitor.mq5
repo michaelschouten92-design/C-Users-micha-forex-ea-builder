@@ -321,7 +321,10 @@ void OnTimer()
    {
       if(g_manifestMode)
       {
-         // Manifest mode: one heartbeat per strategy context.
+         // Account-level heartbeat first — updates base instance with
+         // aggregated openTrades, totalTrades, totalProfit.
+         SendHeartbeat();
+         // Per-context heartbeats — update each strategy context instance.
          // Per-context governance is stored in each context only —
          // g_govAction is NOT modified from manifest context responses.
          for(int i = 0; i < g_contextCount; i++)
