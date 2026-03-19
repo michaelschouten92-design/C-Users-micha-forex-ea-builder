@@ -3291,7 +3291,21 @@ export function LiveDashboardClient({
       {/* Portfolio Summary */}
       {eaInstances.length > 0 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <SummaryCard
+              label="Floating P&L"
+              subtitle="unrealized"
+              value={eaInstances
+                .filter(
+                  (ea) =>
+                    ea.mode === "LIVE" &&
+                    !ea.parentInstanceId &&
+                    !ea.symbol &&
+                    ea.equity != null &&
+                    ea.balance != null
+                )
+                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
+            />
             <SummaryCard
               label="Paper P&L"
               subtitle="tracked total"
