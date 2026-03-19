@@ -3375,12 +3375,16 @@ export function LiveDashboardClient({
             />
             <SummaryCard
               label="Total Trades"
-              value={eaInstances.reduce((sum, ea) => sum + ea.totalTrades, 0)}
+              value={eaInstances
+                .filter((ea) => !ea.parentInstanceId && !ea.symbol)
+                .reduce((sum, ea) => sum + ea.totalTrades, 0)}
               isCurrency={false}
             />
             <SummaryCard
               label="Open Trades"
-              value={eaInstances.reduce((sum, ea) => sum + ea.openTrades, 0)}
+              value={eaInstances
+                .filter((ea) => !ea.parentInstanceId && !ea.symbol)
+                .reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />
             {/* Strategy Health Summary */}
