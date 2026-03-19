@@ -10,8 +10,7 @@
  *   LIVE_MONITORING + HEALTHY       → NO_TRANSITION
  *   EDGE_AT_RISK   + INVALIDATED   → INVALIDATED
  *   EDGE_AT_RISK   + AT_RISK       → NO_TRANSITION (already at risk)
- *   EDGE_AT_RISK   + HEALTHY (≥N)  → LIVE_MONITORING (recovery)
- *   EDGE_AT_RISK   + HEALTHY (<N)  → NO_TRANSITION (recovering)
+ *   EDGE_AT_RISK   + HEALTHY       → NO_TRANSITION (manual recovery only)
  *   Other states   + any           → NO_TRANSITION (state not eligible)
  */
 
@@ -76,16 +75,6 @@ export function decideMonitoringTransition(input: TransitionInput): TransitionDe
     return { type: "NO_TRANSITION", reason: "already_at_risk" };
   }
 
-  // HEALTHY — check recovery threshold
-  if (consecutiveHealthyRuns >= recoveryRunsRequired) {
-    return {
-      type: "TRANSITION",
-      from: "EDGE_AT_RISK",
-      to: "LIVE_MONITORING",
-      reason: `Recovered after ${consecutiveHealthyRuns} consecutive healthy runs`,
-      proofEventType: "STRATEGY_RECOVERED",
-    };
-  }
-
-  return { type: "NO_TRANSITION", reason: "recovering" };
+  // HEALTHY — no automatic recovery; manual operator action required
+  return { type: "NO_TRANSITION", reason: "edge_at_risk_manual_recovery_only" };
 }
