@@ -218,6 +218,15 @@ function queryEaInstances(userId: string) {
           strategyIdentity: {
             select: { strategyId: true },
           },
+          backtestBaseline: {
+            select: {
+              winRate: true,
+              profitFactor: true,
+              totalTrades: true,
+              maxDrawdownPct: true,
+              sharpeRatio: true,
+            },
+          },
         },
       },
       // Active incidents for monitoring reasons
