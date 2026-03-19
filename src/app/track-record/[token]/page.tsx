@@ -104,10 +104,12 @@ export default async function TrackRecordPage({ params }: Props) {
         <p className="text-[10px] uppercase tracking-widest text-[#818CF8] mb-1">
           Verified Trading Record
         </p>
-        <h1 className="text-lg font-semibold text-white">{account.eaName}</h1>
+        <h1 className="text-lg font-semibold text-white">
+          {account.broker && account.accountNumberMasked
+            ? `${account.broker} Account ${account.accountNumberMasked}`
+            : account.eaName}
+        </h1>
         <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-[#7C8DB0]">
-          {account.broker && <span>{account.broker}</span>}
-          {account.accountNumberMasked && <span>Account {account.accountNumberMasked}</span>}
           <span className={account.status === "ONLINE" ? "text-[#10B981]" : "text-[#EF4444]"}>
             {account.status}
           </span>
