@@ -17,10 +17,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await loadTrackRecord(token);
   if (!data) return { title: "Track Record Not Found | AlgoStudio" };
 
-  const title = `${data.account.eaName} — Verified Trading Record | AlgoStudio`;
+  const displayName =
+    data.account.broker && data.account.accountNumberMasked
+      ? `${data.account.broker} Account ${data.account.accountNumberMasked}`
+      : data.account.eaName;
+  const title = `${displayName} — Verified Trading Record | AlgoStudio`;
+  const description = `Verified trading record for ${displayName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by AlgoStudio.`;
   return {
     title,
-    description: `Verified live track record for ${data.account.eaName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by AlgoStudio.`,
+    description,
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

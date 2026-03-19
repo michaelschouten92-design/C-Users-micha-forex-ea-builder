@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio Verified Live Track Record";
+export const alt = "AlgoStudio Verified Trading Record";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -52,6 +52,8 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
 
   const eaName = (account.eaName as string) || "Account";
   const broker = (account.broker as string) || "";
+  const maskedAccount = (account.accountNumberMasked as string) || "";
+  const displayName = broker && maskedAccount ? `${broker} Account ${maskedAccount}` : eaName;
   const totalProfit = Number(perf.totalProfit ?? 0);
   const totalTrades = Number(perf.totalTrades ?? 0);
   const maxDD = Number(perf.maxDrawdownPct ?? 0);
@@ -102,15 +104,20 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
           marginBottom: "8px",
         }}
       >
-        Verified Live Track Record
+        Verified Trading Record
       </div>
 
-      {/* Account name */}
-      <div style={{ fontSize: 32, fontWeight: 700, color: "#FAFAFA", marginBottom: "4px" }}>
-        {eaName}
+      {/* Account identity */}
+      <div style={{ fontSize: 28, fontWeight: 700, color: "#FAFAFA", marginBottom: "4px" }}>
+        {displayName}
       </div>
-      {broker && (
-        <div style={{ fontSize: 14, color: "#7C8DB0", marginBottom: "32px" }}>{broker}</div>
+      {broker && maskedAccount && (
+        <div style={{ fontSize: 13, color: "#7C8DB0", marginBottom: "32px" }}>
+          Monitored by AlgoStudio
+        </div>
+      )}
+      {!(broker && maskedAccount) && broker && (
+        <div style={{ fontSize: 13, color: "#7C8DB0", marginBottom: "32px" }}>{broker}</div>
       )}
 
       {/* Metrics */}
