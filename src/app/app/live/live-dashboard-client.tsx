@@ -952,6 +952,43 @@ const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot
 };
 
 // ============================================
+// EDGE STATUS INDICATOR
+// ============================================
+
+type EdgeStatusLabel = "Stable" | "Degrading" | "At Risk" | "No baseline" | "Collecting data";
+
+function deriveEdgeStatus(
+  instance: EAInstanceData | undefined,
+  isLinked: boolean
+): EdgeStatusLabel {
+  if (!instance) return "Collecting data";
+  if (!isLinked) return "No baseline";
+
+  if (instance.lifecycleState === "EDGE_AT_RISK" || instance.lifecycleState === "INVALIDATED")
+    return "At Risk";
+
+  const snap = instance.healthSnapshots?.[0];
+  if (!snap) return "Collecting data";
+
+  if (snap.status === "AT_RISK" || snap.status === "DEGRADED") return "At Risk";
+  if (snap.driftDetected) return "Degrading";
+  if (snap.status === "HEALTHY") return "Stable";
+
+  if (instance.strategyStatus === "EDGE_DEGRADED") return "At Risk";
+  if (instance.strategyStatus === "UNSTABLE") return "Degrading";
+
+  return "Collecting data";
+}
+
+const EDGE_STYLES: Record<EdgeStatusLabel, { text: string; dot: string }> = {
+  Stable: { text: "text-[#10B981]", dot: "bg-[#10B981]" },
+  Degrading: { text: "text-[#F59E0B]", dot: "bg-[#F59E0B]" },
+  "At Risk": { text: "text-[#EF4444]", dot: "bg-[#EF4444]" },
+  "No baseline": { text: "text-[#64748B]", dot: "bg-[#64748B]" },
+  "Collecting data": { text: "text-[#64748B]", dot: "bg-[#64748B]" },
+};
+
+// ============================================
 // INVESTIGATION PANEL
 // ============================================
 
@@ -1802,6 +1839,18 @@ function AccountCard({
                               </span>
                             )}
                           </p>
+                          {(() => {
+                            const edgeStatus = deriveEdgeStatus(owningInstance, isLinked);
+                            const es = EDGE_STYLES[edgeStatus];
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 text-[9px] ${es.text}`}
+                              >
+                                <span className={`w-1 h-1 rounded-full ${es.dot}`} />
+                                {edgeStatus}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div className="self-center">
                           <span
