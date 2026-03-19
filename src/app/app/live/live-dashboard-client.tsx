@@ -18,60 +18,22 @@ import {
 } from "./link-baseline-dialog";
 import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
 import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
+import {
+  type LiveInstanceDTO,
+  type LiveHeartbeatPatch,
+  isAccountContainer,
+} from "@/lib/live/live-instance-dto";
 import { updateOperatorHold } from "./actions";
 
 // ============================================
 // TYPES
 // ============================================
 
-interface EAInstanceData {
-  id: string;
-  eaName: string;
-  symbol: string | null;
-  timeframe: string | null;
-  broker: string | null;
-  accountNumber: string | null;
-  status: "ONLINE" | "OFFLINE" | "ERROR";
-  mode: "LIVE" | "PAPER";
-  tradingState: "TRADING" | "PAUSED";
-  lastHeartbeat: string | null;
-  lastError: string | null;
-  balance: number | null;
-  equity: number | null;
-  openTrades: number;
-  totalTrades: number;
-  totalProfit: number;
-  trades: {
-    profit: number;
-    closeTime: string | null;
-    symbol?: string | null;
-    magicNumber?: number | null;
-  }[];
-  heartbeats: { equity: number; createdAt: string }[];
-  healthSnapshots?: { driftDetected: boolean; driftSeverity: number; status: string }[];
-  healthStatus?: "HEALTHY" | "WARNING" | "DEGRADED" | "INSUFFICIENT_DATA" | null;
+// EAInstanceData extends LiveInstanceDTO with optional UI-specific fields
+// that may not be present in every data source.
+type EAInstanceData = LiveInstanceDTO & {
   healthScore?: number | null;
-  lifecycleState?: string | null;
-  parentInstanceId?: string | null;
-  apiKeySuffix?: string | null;
-  trackRecordToken?: string | null;
-  isAutoDiscovered?: boolean;
-  strategyStatus?: string | null;
-  operatorHold?: string;
-  isExternal?: boolean;
-  baseline?: BaselineData | null;
-  relinkRequired?: boolean;
-  monitoringReasons?: string[];
-  deployments?: {
-    id: string;
-    symbol: string;
-    magicNumber: number;
-    eaName: string;
-    timeframe: string;
-    baselineStatus: string;
-    strategyVersionId: string | null;
-  }[];
-}
+};
 
 interface TradeRecord {
   id: string;
@@ -3132,17 +3094,7 @@ export function LiveDashboardClient({
       processUpdate(data as EAInstanceData[]);
     },
     onHeartbeat: (data) => {
-      const hb = data as {
-        instanceId: string;
-        equity: number;
-        balance: number;
-        openTrades: number;
-        totalTrades: number;
-        totalProfit: number;
-        status: string;
-        tradingState: string;
-        lastHeartbeat: string | null;
-      };
+      const hb = data as LiveHeartbeatPatch;
       setEaInstances((prev) =>
         prev.map((ea) =>
           ea.id === hb.instanceId
@@ -3371,14 +3323,7 @@ export function LiveDashboardClient({
               label="Floating P&L"
               subtitle="unrealized"
               value={eaInstances
-                .filter(
-                  (ea) =>
-                    ea.mode === "LIVE" &&
-                    !ea.parentInstanceId &&
-                    !ea.symbol &&
-                    ea.equity != null &&
-                    ea.balance != null
-                )
+                .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
                 .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
             />
             <SummaryCard
@@ -3391,14 +3336,14 @@ export function LiveDashboardClient({
             <SummaryCard
               label="Total Trades"
               value={eaInstances
-                .filter((ea) => !ea.parentInstanceId && !ea.symbol)
+                .filter(isAccountContainer)
                 .reduce((sum, ea) => sum + ea.totalTrades, 0)}
               isCurrency={false}
             />
             <SummaryCard
               label="Open Trades"
               value={eaInstances
-                .filter((ea) => !ea.parentInstanceId && !ea.symbol)
+                .filter(isAccountContainer)
                 .reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />

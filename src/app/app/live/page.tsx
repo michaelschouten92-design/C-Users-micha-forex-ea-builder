@@ -84,7 +84,40 @@ function renderDashboard(
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
-    relinkRequired: ea.terminalDeployments.length > 0,
+    parentInstanceId: ea.parentInstanceId ?? null,
+    lifecycleState: ea.lifecycleState ?? null,
+    apiKeySuffix: ea.apiKeySuffix ?? null,
+    trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
+    healthStatus: ea.healthSnapshots?.[0]?.status ?? null,
+    isExternal: ea.exportJobId === null,
+    relinkRequired: ea.terminalDeployments.some(
+      (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
+    ),
+    monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
+    baseline: (() => {
+      const depBaseline = ea.terminalDeployments.find(
+        (d: { strategyVersion?: { backtestBaseline?: unknown } }) =>
+          d.strategyVersion?.backtestBaseline
+      )?.strategyVersion?.backtestBaseline as
+        | {
+            winRate: number | null;
+            profitFactor: number | null;
+            totalTrades: number | null;
+            maxDrawdownPct: number | null;
+            sharpeRatio: number | null;
+          }
+        | undefined;
+      const bl = depBaseline ?? (ea.strategyVersion?.backtestBaseline as typeof depBaseline);
+      return bl
+        ? {
+            winRate: bl.winRate,
+            profitFactor: bl.profitFactor,
+            totalTrades: bl.totalTrades,
+            maxDrawdownPct: bl.maxDrawdownPct,
+            sharpeRatio: bl.sharpeRatio,
+          }
+        : null;
+    })(),
     trades: ea.trades.map((t) => ({
       profit: t.profit,
       closeTime: t.closeTime?.toISOString() ?? null,
