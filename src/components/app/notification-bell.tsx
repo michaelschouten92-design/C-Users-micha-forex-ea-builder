@@ -7,7 +7,7 @@
  * with recent unacknowledged alerts. Each alert can be acknowledged inline.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { getAlertSeverity } from "@/lib/alerts/alert-severity";
 
@@ -166,6 +166,27 @@ export function NotificationBell() {
     setDismissing(false);
   };
 
+  // Group duplicate alerts by instanceId + alertType + summary for display.
+  // Raw alerts state is unchanged; grouping is presentation-only.
+  const groupedAlerts = useMemo(() => {
+    const groups = new Map<string, { representative: AlertItem; ids: string[]; count: number }>();
+    for (const alert of alerts) {
+      const key = `${alert.instanceId}|${alert.alertType}|${alert.summary}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.count++;
+        existing.ids.push(alert.id);
+        // Keep newest createdAt as the representative
+        if (alert.createdAt > existing.representative.createdAt) {
+          existing.representative = alert;
+        }
+      } else {
+        groups.set(key, { representative: alert, ids: [alert.id], count: 1 });
+      }
+    }
+    return [...groups.values()];
+  }, [alerts]);
+
   return (
     <div ref={dropdownRef} className="relative">
       {/* Bell button */}
@@ -219,7 +240,8 @@ export function NotificationBell() {
                 <p className="text-xs text-[#71717A]">No unread alerts</p>
               </div>
             ) : (
-              alerts.map((alert) => {
+              groupedAlerts.map((group) => {
+                const alert = group.representative;
                 const sev = getSeverityStyle(alert.alertType);
                 return (
                   <div
@@ -241,6 +263,9 @@ export function NotificationBell() {
                           >
                             {sev.label}
                           </span>
+                          {group.count > 1 && (
+                            <span className="text-[9px] text-[#71717A]">×{group.count}</span>
+                          )}
                         </div>
                         <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
                           {alert.summary}
@@ -265,11 +290,12 @@ export function NotificationBell() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          acknowledge(alert.id);
+                          // Dismiss all alerts in this group
+                          for (const id of group.ids) acknowledge(id);
                         }}
                         disabled={false}
                         className="flex-shrink-0 text-[10px] text-[#71717A] hover:text-white transition-colors px-1.5 py-0.5 rounded disabled:opacity-50"
-                        title="Dismiss"
+                        title={group.count > 1 ? `Dismiss all ${group.count}` : "Dismiss"}
                       >
                         &times;
                       </button>

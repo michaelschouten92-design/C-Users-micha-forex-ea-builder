@@ -3346,6 +3346,22 @@ export function LiveDashboardClient({
                 <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
               )}
             </div>
+            {/* Exposure Summary */}
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Exposure</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
+                  <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
+                  Strategies
+                </span>
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#CBD5E1]">
+                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
+                  Strategies
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Global Floating Drawdown Alert */}
