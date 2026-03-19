@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
-import { PortfolioHeatmap } from "./portfolio-heatmap";
 import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
@@ -201,23 +200,6 @@ function renderDashboard(
               tier={tier}
               initialRelinkInstanceId={relinkInstanceId}
             />
-
-            {/* Portfolio Correlation Heatmap (shown when multiple symbols are trading) */}
-            {(() => {
-              const symbols = [
-                ...new Set(
-                  eaInstances
-                    .map((ea) => ea.symbol)
-                    .filter((s): s is string => s !== null && s !== "")
-                ),
-              ];
-              if (symbols.length < 2) return null;
-              return (
-                <div className="mt-6">
-                  <PortfolioHeatmap symbols={symbols} />
-                </div>
-              );
-            })()}
           </MonitorTabs>
         </section>
       </main>
