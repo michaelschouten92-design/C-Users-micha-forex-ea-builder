@@ -23,6 +23,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
       orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
       include: {
+        accountTrackRecordShares: {
+          where: { isPublic: true },
+          select: { token: true },
+          take: 1,
+        },
         trades: {
           where: { closeTime: { not: null } },
           select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
@@ -98,6 +103,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       openTrades: ea.openTrades,
       totalTrades: ea.totalTrades,
       totalProfit: ea.totalProfit,
+      parentInstanceId: ea.parentInstanceId,
+      lifecycleState: ea.lifecycleState,
+      strategyStatus: ea.strategyStatus,
+      operatorHold: ea.operatorHold,
+      apiKeySuffix: ea.apiKeySuffix,
+      trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
+      healthStatus: ea.healthSnapshots?.[0]?.status ?? null,
       isExternal: ea.exportJobId === null,
       relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
       monitoringReasons: ea.incidents[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
