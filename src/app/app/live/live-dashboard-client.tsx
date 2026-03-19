@@ -1089,15 +1089,21 @@ function AccountCard({
   onTogglePause,
   onDelete,
   onLinkBaseline,
+  forceExpandId,
 }: {
   account: AccountGroup;
   changedIds: Set<string>;
   onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
   onDelete: (instanceId: string) => void;
   onLinkBaseline: (instanceId: string) => void;
+  forceExpandId?: string | null;
 }) {
   const { primary, instances } = account;
-  const [expanded, setExpanded] = useState(false);
+  const shouldForceExpand =
+    forceExpandId != null &&
+    (forceExpandId === primary.id || instances.some((ea) => ea.id === forceExpandId));
+  const [manualExpanded, setExpanded] = useState(false);
+  const expanded = manualExpanded || shouldForceExpand;
   const [expandedStrategyKey, setExpandedStrategyKey] = useState<string | null>(null);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
   const [rotateLoading, setRotateLoading] = useState(false);
@@ -1358,6 +1364,7 @@ function AccountCard({
 
   return (
     <div
+      id={`account-card-${primary.id}`}
       className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
         statusChanged
           ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
@@ -1772,14 +1779,17 @@ function AccountCard({
                   const hs = HEALTH_STYLES[health];
                   const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
                   const isExpanded = expandedStrategyKey === rowKey;
+                  const isHighlighted = forceExpandId != null && sg.instanceId === forceExpandId;
                   return (
                     <div key={rowKey}>
                       <div
                         onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
                         className={`grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border cursor-pointer transition-colors ${
-                          isExpanded
-                            ? "border-[rgba(79,70,229,0.4)] bg-[#0A0118]/80"
-                            : "border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)]"
+                          isHighlighted
+                            ? "border-[#F59E0B]/50 bg-[#F59E0B]/5 ring-1 ring-[#F59E0B]/20"
+                            : isExpanded
+                              ? "border-[rgba(79,70,229,0.4)] bg-[#0A0118]/80"
+                              : "border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)]"
                         }`}
                       >
                         <div className="min-w-0">
@@ -2984,6 +2994,7 @@ export function LiveDashboardClient({
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [scrollExpandId, setScrollExpandId] = useState<string | null>(null);
   const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(() => {
     // Auto-open LinkBaselineDialog from ?relink= query param
     if (initialRelinkInstanceId && initialData.some((ea) => ea.id === initialRelinkInstanceId)) {
@@ -3474,8 +3485,10 @@ export function LiveDashboardClient({
               onClick: isBaselineAction
                 ? () => setLinkBaselineInstanceId(ea.id)
                 : () => {
+                    const cardId = ea.parentInstanceId || ea.id;
+                    if (ea.parentInstanceId) setScrollExpandId(ea.id);
                     document
-                      .getElementById(`ea-card-${ea.id}`)
+                      .getElementById(`account-card-${cardId}`)
                       ?.scrollIntoView({ behavior: "smooth", block: "center" });
                   },
             };
@@ -3632,6 +3645,7 @@ export function LiveDashboardClient({
               onTogglePause={handleTogglePause}
               onDelete={handleDelete}
               onLinkBaseline={setLinkBaselineInstanceId}
+              forceExpandId={scrollExpandId}
             />
           ))}
         </div>
