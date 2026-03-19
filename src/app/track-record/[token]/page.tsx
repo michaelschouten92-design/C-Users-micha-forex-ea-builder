@@ -164,13 +164,20 @@ export default async function TrackRecordPage({ params }: Props) {
             },
             { label: "Trades", value: performance.totalTrades.toLocaleString() },
             { label: "Strategies", value: String(performance.strategyCount) },
-            { label: "Win Rate", value: `${performance.winRate.toFixed(1)}%` },
-            { label: "Profit Factor", value: performance.profitFactorDisplay },
+            {
+              label: "Win Rate",
+              value: performance.totalTrades > 0 ? `${performance.winRate.toFixed(1)}%` : "—",
+            },
+            {
+              label: "Profit Factor",
+              value: performance.totalTrades > 0 ? performance.profitFactorDisplay : "—",
+            },
             {
               label: "Max Drawdown",
-              value: `${performance.maxDrawdownPct.toFixed(1)}%`,
+              value:
+                performance.totalTrades > 0 ? `${performance.maxDrawdownPct.toFixed(1)}%` : "—",
               sub:
-                performance.maxDrawdownAbs > 0
+                performance.totalTrades > 0 && performance.maxDrawdownAbs > 0
                   ? `(${formatCurrency(performance.maxDrawdownAbs)})`
                   : undefined,
             },
