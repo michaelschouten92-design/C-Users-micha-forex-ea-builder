@@ -918,39 +918,6 @@ const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot
 // EDGE STATUS INDICATOR
 // ============================================
 
-type EdgeStatusLabel = "Stable" | "Degrading" | "At Risk" | "No baseline" | "Collecting data";
-
-function deriveEdgeStatus(
-  instance: EAInstanceData | undefined,
-  isLinked: boolean
-): EdgeStatusLabel {
-  if (!instance) return "Collecting data";
-  if (!isLinked) return "No baseline";
-
-  if (instance.lifecycleState === "EDGE_AT_RISK" || instance.lifecycleState === "INVALIDATED")
-    return "At Risk";
-
-  const snap = instance.healthSnapshots?.[0];
-  if (!snap) return "Collecting data";
-
-  if (snap.status === "AT_RISK" || snap.status === "DEGRADED") return "At Risk";
-  if (snap.driftDetected) return "Degrading";
-  if (snap.status === "HEALTHY") return "Stable";
-
-  if (instance.strategyStatus === "EDGE_DEGRADED") return "At Risk";
-  if (instance.strategyStatus === "UNSTABLE") return "Degrading";
-
-  return "Collecting data";
-}
-
-const EDGE_STYLES: Record<EdgeStatusLabel, { text: string; dot: string }> = {
-  Stable: { text: "text-[#10B981]", dot: "bg-[#10B981]" },
-  Degrading: { text: "text-[#F59E0B]", dot: "bg-[#F59E0B]" },
-  "At Risk": { text: "text-[#EF4444]", dot: "bg-[#EF4444]" },
-  "No baseline": { text: "text-[#64748B]", dot: "bg-[#64748B]" },
-  "Collecting data": { text: "text-[#64748B]", dot: "bg-[#64748B]" },
-};
-
 // ============================================
 // INVESTIGATION PANEL
 // ============================================
@@ -1725,7 +1692,7 @@ function AccountCard({
         </button>
 
         {expanded && (
-          <div className="mt-3 space-y-1 overflow-x-auto">
+          <div className="mt-3 space-y-1">
             {strategyGroups.length === 0 ? (
               <div className="px-3 py-3">
                 <div className="flex items-start gap-2.5">
@@ -1741,28 +1708,15 @@ function AccountCard({
                 </div>
               </div>
             ) : (
-              <div className="min-w-[640px]">
+              <div>
                 {/* Header row */}
-                <div className="grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
-                  <span>Strategy</span>
-                  <span>Health</span>
-                  <span className="text-right">P&L</span>
-                  <span className="text-right">Trades</span>
-                  <span className="text-right">Win Rate</span>
-                  <span className="text-right">PF</span>
-                  <span className="text-right">Last Trade</span>
-                  <span className="text-right">Baseline</span>
+                <div className="grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                  <span>Symbol</span>
+                  <span>Edge Status</span>
+                  <span>Baseline</span>
                 </div>
                 {/* Strategy rows */}
                 {strategyGroups.map((sg) => {
-                  const pnl = sg.trades.reduce((s, t) => s + t.profit, 0);
-                  const wr = calculateWinRate(sg.trades);
-                  const pf = calculateProfitFactor(sg.trades);
-                  const lastTrade = sg.trades
-                    .map((t) => t.closeTime)
-                    .filter(Boolean)
-                    .sort()
-                    .pop();
                   // Find matching deployment for baseline status
                   const allDeployments = instances.flatMap((ea) => ea.deployments ?? []);
                   const deployment = allDeployments.find(
@@ -1777,6 +1731,7 @@ function AccountCard({
                     : undefined;
                   const health = deriveStrategyHealth(owningInstance);
                   const hs = HEALTH_STYLES[health];
+                  const baselineTrades = owningInstance?.baseline?.totalTrades;
                   const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
                   const isExpanded = expandedStrategyKey === rowKey;
                   const isHighlighted = forceExpandId != null && sg.instanceId === forceExpandId;
@@ -1784,7 +1739,7 @@ function AccountCard({
                     <div key={rowKey}>
                       <div
                         onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
-                        className={`grid grid-cols-[1fr_90px_80px_70px_70px_70px_90px_100px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border cursor-pointer transition-colors ${
+                        className={`grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border cursor-pointer transition-colors ${
                           isHighlighted
                             ? "border-[#F59E0B]/50 bg-[#F59E0B]/5 ring-1 ring-[#F59E0B]/20"
                             : isExpanded
@@ -1792,29 +1747,9 @@ function AccountCard({
                               : "border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)]"
                         }`}
                       >
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#CBD5E1] truncate">
-                            {sg.symbol}
-                            {sg.magicNumber != null && (
-                              <span className="text-[#64748B] font-normal">
-                                {" "}
-                                · Magic {sg.magicNumber}
-                              </span>
-                            )}
-                          </p>
-                          {(() => {
-                            const edgeStatus = deriveEdgeStatus(owningInstance, isLinked);
-                            const es = EDGE_STYLES[edgeStatus];
-                            return (
-                              <span
-                                className={`inline-flex items-center gap-1 text-[9px] ${es.text}`}
-                              >
-                                <span className={`w-1 h-1 rounded-full ${es.dot}`} />
-                                {edgeStatus}
-                              </span>
-                            );
-                          })()}
-                        </div>
+                        <p className="text-xs font-semibold text-[#CBD5E1] truncate self-center">
+                          {sg.symbol}
+                        </p>
                         <div className="self-center">
                           <span
                             className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}
@@ -1824,54 +1759,12 @@ function AccountCard({
                           </span>
                         </div>
                         <p
-                          className={`text-xs font-medium text-right self-center ${
-                            pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
-                          }`}
+                          className={`text-xs self-center ${isLinked ? "text-[#10B981] font-medium" : "text-[#64748B]"}`}
                         >
-                          {formatCurrency(pnl)}
+                          {isLinked
+                            ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
+                            : "Missing"}
                         </p>
-                        <p className="text-xs text-[#CBD5E1] text-right self-center">
-                          {sg.trades.length >= 1000 ? "1000+" : sg.trades.length}
-                        </p>
-                        <p className="text-xs text-[#CBD5E1] text-right self-center">
-                          {wr.toFixed(1)}%
-                        </p>
-                        <p className="text-xs text-[#CBD5E1] text-right self-center">
-                          {pf === Infinity ? "∞" : pf.toFixed(2)}
-                        </p>
-                        <p className="text-[10px] text-[#7C8DB0] text-right self-center">
-                          {lastTrade ? formatRelativeTime(lastTrade) : "—"}
-                        </p>
-                        <div className="flex items-center justify-end self-center">
-                          {isLinked ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#10B981]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                                Baseline linked
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUnlinkBaseline(primary.id, deployment!.id);
-                                }}
-                                className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors"
-                                title="Unlink baseline"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onLinkBaseline(primary.id);
-                              }}
-                              className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
-                            >
-                              Link baseline
-                            </button>
-                          )}
-                        </div>
                       </div>
                       {isExpanded && owningInstance && (
                         <InvestigationPanel
