@@ -1069,7 +1069,11 @@ function AccountCard({
   const shouldForceExpand =
     forceExpandId != null &&
     (forceExpandId === primary.id || instances.some((ea) => ea.id === forceExpandId));
-  const [manualExpanded, setExpanded] = useState(false);
+  const hasRiskyStrategy = instances.some((ea) => {
+    const h = deriveStrategyHealth(ea);
+    return h === "Edge at Risk" || h === "Elevated";
+  });
+  const [manualExpanded, setExpanded] = useState(hasRiskyStrategy);
   const expanded = manualExpanded || shouldForceExpand;
   const [expandedStrategyKey, setExpandedStrategyKey] = useState<string | null>(null);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
