@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { loadTrackRecord, type TrackRecordData } from "./load-track-record";
 import { EquityChart } from "./equity-chart";
 import { ShareActions } from "./share-actions";
+import { CollapsibleSection } from "./collapsible-section";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -303,56 +304,57 @@ export default async function TrackRecordPage({ params }: Props) {
       {strategies.length > 0 && (
         <div className="max-w-4xl mx-auto px-6 pb-6">
           <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-              Tracked strategies ({performance.strategyCount})
-            </p>
             <p className="text-[10px] text-[#64748B] mb-3">
               Monitored strategy instances linked to this public track record.
             </p>
-            <div className="grid grid-cols-[1fr_80px_80px_80px_90px] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
-              <span>Strategy</span>
-              <span className="text-right">P&L</span>
-              <span className="text-right">Trades</span>
-              <span className="text-right">Health</span>
-              <span className="text-right">Status</span>
-            </div>
-            {strategies.map((s, i) => {
-              const health = deriveHealth(s);
-              return (
-                <div
-                  key={i}
-                  className="grid grid-cols-[1fr_80px_80px_80px_90px] gap-2 px-2 py-2 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors"
-                >
-                  <p className="text-xs text-[#CBD5E1] truncate">
-                    {s.symbol ?? "—"}
-                    {s.magicNumber != null && (
-                      <span className="text-[#64748B]"> · Strategy ID {s.magicNumber}</span>
-                    )}
-                  </p>
-                  <p
-                    className={`text-xs text-right ${s.totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+            <CollapsibleSection label="strategies" count={strategies.length}>
+              <div className="grid grid-cols-[1fr_80px_80px_80px_90px] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
+                <span>Strategy</span>
+                <span className="text-right">P&L</span>
+                <span className="text-right">Trades</span>
+                <span className="text-right">Health</span>
+                <span className="text-right">Status</span>
+              </div>
+              {strategies.map((s, i) => {
+                const health = deriveHealth(s);
+                return (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[1fr_80px_80px_80px_90px] gap-2 px-2 py-2 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors"
                   >
-                    {formatCurrency(s.totalProfit)}
-                  </p>
-                  <p className="text-xs text-[#CBD5E1] text-right">{s.totalTrades}</p>
-                  <div className="flex items-center justify-end">
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] font-medium"
-                      style={{ color: HEALTH_COLORS[health] }}
+                    <p className="text-xs text-[#CBD5E1] truncate">
+                      {s.symbol ?? "—"}
+                      {s.magicNumber != null && (
+                        <span className="text-[#64748B]"> · Strategy ID {s.magicNumber}</span>
+                      )}
+                    </p>
+                    <p
+                      className={`text-xs text-right ${s.totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
                     >
+                      {formatCurrency(s.totalProfit)}
+                    </p>
+                    <p className="text-xs text-[#CBD5E1] text-right">{s.totalTrades}</p>
+                    <div className="flex items-center justify-end">
                       <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: HEALTH_COLORS[health] }}
-                      />
-                      {health === "Pending" ? "Initializing" : health}
-                    </span>
+                        className="inline-flex items-center gap-1 text-[10px] font-medium"
+                        style={{ color: HEALTH_COLORS[health] }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: HEALTH_COLORS[health] }}
+                        />
+                        {health === "Pending" ? "Initializing" : health}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#7C8DB0] text-right">
+                      {s.lifecycleState === "DRAFT"
+                        ? "Monitoring setup"
+                        : (s.lifecycleState ?? "—")}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-[#7C8DB0] text-right">
-                    {s.lifecycleState === "DRAFT" ? "Monitoring setup" : (s.lifecycleState ?? "—")}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </CollapsibleSection>
           </div>
         </div>
       )}
