@@ -3132,7 +3132,17 @@ export function LiveDashboardClient({
       processUpdate(data as EAInstanceData[]);
     },
     onHeartbeat: (data) => {
-      const hb = data as { instanceId: string; equity: number; balance: number; status: string };
+      const hb = data as {
+        instanceId: string;
+        equity: number;
+        balance: number;
+        openTrades: number;
+        totalTrades: number;
+        totalProfit: number;
+        status: string;
+        tradingState: string;
+        lastHeartbeat: string | null;
+      };
       setEaInstances((prev) =>
         prev.map((ea) =>
           ea.id === hb.instanceId
@@ -3140,7 +3150,12 @@ export function LiveDashboardClient({
                 ...ea,
                 equity: hb.equity,
                 balance: hb.balance,
+                openTrades: hb.openTrades,
+                totalTrades: hb.totalTrades,
+                totalProfit: hb.totalProfit,
                 status: hb.status as EAInstanceData["status"],
+                tradingState: hb.tradingState as EAInstanceData["tradingState"],
+                lastHeartbeat: hb.lastHeartbeat,
               }
             : ea
         )
