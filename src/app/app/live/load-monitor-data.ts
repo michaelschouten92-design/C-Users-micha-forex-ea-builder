@@ -220,6 +220,13 @@ function queryEaInstances(userId: string) {
           },
         },
       },
+      // Active incidents for monitoring reasons
+      incidents: {
+        where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
+        orderBy: { openedAt: "desc" as const },
+        select: { reasonCodes: true },
+        take: 1,
+      },
       // CUSUM drift: latest health snapshot for drift & monitoring status
       healthSnapshots: {
         orderBy: { createdAt: "desc" as const },
