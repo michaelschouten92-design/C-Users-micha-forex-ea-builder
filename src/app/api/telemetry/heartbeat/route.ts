@@ -194,11 +194,11 @@ export async function POST(request: NextRequest) {
             ...(data.broker != null && { broker: data.broker }),
             ...(data.accountNumber != null && { accountNumber: data.accountNumber }),
             // Propagate account-level metrics so the base instance card shows live values.
+            // Only balance/equity are truly account-level; openTrades/totalTrades/totalProfit
+            // are strategy-level and must NOT overwrite the base instance (the last context
+            // heartbeat would clobber values reported by the account-wide heartbeat).
             balance: data.balance,
             equity: data.equity,
-            openTrades: data.openTrades,
-            totalTrades: data.totalTrades,
-            totalProfit: data.totalProfit,
           },
         }),
         // Also create a heartbeat record for the base instance so the SSE
