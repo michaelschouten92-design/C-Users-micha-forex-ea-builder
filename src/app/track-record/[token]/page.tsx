@@ -145,11 +145,13 @@ export default async function TrackRecordPage({ params }: Props) {
       {/* Verification explainer */}
       <div className="max-w-4xl mx-auto px-6 py-4">
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
-          <p className="text-xs font-semibold text-[#818CF8] mb-1">Verified by AlgoStudio</p>
+          <p className="text-xs font-semibold text-[#818CF8] mb-1">
+            Independently Monitored Track Record
+          </p>
           <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-            This track record is derived from monitored account activity captured by AlgoStudio.
-            Performance shown on this page is based on immutable trade records and linked strategy
-            monitoring.
+            This trading record is independently monitored and verified by AlgoStudio. All
+            performance data is derived from immutable, proof-chained trade events captured directly
+            from a live trading account.
           </p>
         </div>
         <p className="text-[10px] text-[#64748B] mt-2">
