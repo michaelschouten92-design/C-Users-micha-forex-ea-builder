@@ -1332,13 +1332,15 @@ function AccountCard({
     <div
       id={`account-card-${primary.id}`}
       className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
-        statusChanged
-          ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
-          : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+        healthCounts["Edge at Risk"] > 0
+          ? "border-l-2 border-l-[#EF4444]/60 border-[rgba(79,70,229,0.2)]"
+          : statusChanged
+            ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
+            : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
       }`}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
@@ -1356,22 +1358,6 @@ function AccountCard({
               <span className="text-[#7C8DB0]/70 italic">Portfolio mode</span>
             </>
           </div>
-          {healthSummaryParts.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              {healthSummaryParts.map((label) => {
-                const hs = HEALTH_STYLES[label];
-                return (
-                  <span
-                    key={label}
-                    className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                    {healthCounts[label]} {label}
-                  </span>
-                );
-              })}
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={accountStatus} animate={statusChanged} />
@@ -1443,6 +1429,24 @@ function AccountCard({
           )}
         </div>
       </div>
+
+      {/* Strategy health summary */}
+      {healthSummaryParts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)]">
+          {healthSummaryParts.map((label) => {
+            const hs = HEALTH_STYLES[label];
+            return (
+              <span
+                key={label}
+                className={`inline-flex items-center gap-1.5 text-xs font-medium ${hs.text}`}
+              >
+                <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
+                {healthCounts[label]} {label}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Financial metrics */}
       <div className="grid grid-cols-3 gap-4 mb-4">
