@@ -136,11 +136,14 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
   const allInstanceIds = [base.id, ...children.map((c) => c.id)];
 
   const [heartbeats, ledgerEventsRaw] = await Promise.all([
-    prisma.eAHeartbeat.findMany({
-      where: { instanceId: base.id },
-      orderBy: { createdAt: "asc" },
-      select: { equity: true, balance: true, createdAt: true },
-    }),
+    prisma.eAHeartbeat
+      .findMany({
+        where: { instanceId: base.id },
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+        select: { equity: true, balance: true, createdAt: true },
+      })
+      .then((rows) => rows.reverse()),
     prisma.trackRecordEvent.findMany({
       where: { instanceId: { in: allInstanceIds } },
       orderBy: { timestamp: "desc" },

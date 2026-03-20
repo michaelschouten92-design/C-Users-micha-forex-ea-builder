@@ -204,12 +204,12 @@ function queryEaInstances(userId: string) {
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        take: 1000,
+        take: 50,
         select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
       },
       heartbeats: {
         orderBy: { createdAt: "desc" },
-        take: 200,
+        take: 50,
         select: { equity: true, createdAt: true },
       },
       exportJobId: true,
