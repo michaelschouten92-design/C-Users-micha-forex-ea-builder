@@ -151,22 +151,48 @@ export default async function TrackRecordPage({ params }: Props) {
           <p className="text-[11px] text-[#94A3B8] leading-relaxed">
             This trading record is independently monitored and verified by AlgoStudio. All
             performance data is derived from immutable, proof-chained trade events captured directly
-            from a live trading account.
+            from a live trading account. Results are aggregated across all linked strategy
+            instances.
           </p>
+          {(coverage.firstHeartbeatAt || coverage.lastHeartbeatAt) && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-[#7C8DB0]">
+              {coverage.firstHeartbeatAt && (
+                <span>
+                  Monitoring since{" "}
+                  <span className="text-[#CBD5E1]">
+                    {new Date(coverage.firstHeartbeatAt).toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </span>
+              )}
+              {coverage.lastHeartbeatAt && (
+                <span>
+                  Last verified{" "}
+                  <span className="text-[#CBD5E1]">{formatTimeAgo(coverage.lastHeartbeatAt)}</span>
+                </span>
+              )}
+              {performance.strategyCount > 0 && (
+                <span>
+                  <span className="text-[#CBD5E1]">{performance.strategyCount}</span>{" "}
+                  {performance.strategyCount === 1 ? "strategy" : "strategies"} linked
+                </span>
+              )}
+            </div>
+          )}
         </div>
-        <p className="text-[10px] text-[#64748B] mt-2">
-          Monitored account activity aggregated across all linked strategy instances.
-        </p>
       </div>
 
       {/* Initializing notice */}
       {performance.totalTrades === 0 && (
         <div className="max-w-4xl mx-auto px-6 pb-2">
           <div className="bg-[#1A0626] border border-[rgba(245,158,11,0.2)] rounded-lg px-4 py-3">
-            <p className="text-xs font-semibold text-[#F59E0B] mb-1">Track record initializing</p>
+            <p className="text-xs font-semibold text-[#F59E0B] mb-1">Collecting data</p>
             <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-              Monitoring is active but no closed trades have been recorded yet. Performance
-              statistics will appear once trades are completed.
+              Live monitoring is active. Trade statistics will populate automatically as positions
+              are opened and closed on this account.
             </p>
           </div>
         </div>
@@ -174,7 +200,7 @@ export default async function TrackRecordPage({ params }: Props) {
 
       {/* Metrics grid */}
       <div className="max-w-4xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {
               label: "Balance",
@@ -190,7 +216,6 @@ export default async function TrackRecordPage({ params }: Props) {
               color: performance.totalProfit >= 0 ? "#10B981" : "#EF4444",
             },
             { label: "Trades", value: performance.totalTrades.toLocaleString() },
-            { label: "Strategies", value: String(performance.strategyCount) },
             {
               label: "Win Rate",
               value: performance.totalTrades > 0 ? `${performance.winRate.toFixed(1)}%` : "—",
@@ -228,44 +253,21 @@ export default async function TrackRecordPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Data coverage */}
-      {coverage.firstHeartbeatAt && (
-        <div className="max-w-4xl mx-auto px-6 pb-4">
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] text-[#7C8DB0]">
-            <span>
-              Track record since{" "}
-              <span className="text-[#CBD5E1]">
-                {new Date(coverage.firstHeartbeatAt).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
-            </span>
-            {coverage.lastHeartbeatAt && (
-              <span>
-                Last update{" "}
-                <span className="text-[#CBD5E1]">
-                  {new Date(coverage.lastHeartbeatAt).toLocaleString()}
-                </span>
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Equity curve */}
       <div className="max-w-4xl mx-auto px-6 pb-6">
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Equity Curve</p>
-          <p className="text-[10px] text-[#64748B] mb-3">Account equity based on closed trades.</p>
+          <p className="text-[10px] text-[#64748B] mb-3">
+            Live account equity captured from broker heartbeats.
+          </p>
           {equityCurve.length === 0 ? (
             <p className="text-[11px] text-[#64748B]">
-              Equity curve will appear once monitoring data is collected.
+              Awaiting first equity snapshot from the live account.
             </p>
           ) : equityCurve.length <= 1 ? (
             <p className="text-[11px] text-[#64748B]">
-              Equity: {equityCurve[0] ? formatCurrency(equityCurve[0].equity) : "—"} — awaiting more
-              data points
+              Current equity: {equityCurve[0] ? formatCurrency(equityCurve[0].equity) : "—"} — chart
+              requires at least two data points.
             </p>
           ) : (
             <EquityChart data={equityCurve} />
