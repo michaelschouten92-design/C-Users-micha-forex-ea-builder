@@ -242,7 +242,7 @@ export async function GET(request: Request): Promise<Response> {
           clearInterval(pollInterval);
           clearInterval(keepAlive);
         }
-      }, 5000);
+      }, 15000);
 
       // Keep-alive every 30s
       const keepAlive = setInterval(() => {
