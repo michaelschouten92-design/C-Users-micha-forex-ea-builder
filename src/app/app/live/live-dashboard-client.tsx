@@ -863,18 +863,13 @@ function compareInstances(a: EAInstanceData, b: EAInstanceData): number {
  * Also sorts instances within each group by priority.
  */
 function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
-  // Sort instances within each group
+  // Sort instances within each group (strategies inside an account)
   for (const group of groups) {
     group.instances.sort(compareInstances);
   }
 
-  // Sort groups by their highest-priority (first) instance
-  return groups.sort((a, b) => {
-    const bestA = a.instances[0];
-    const bestB = b.instances[0];
-    if (!bestA || !bestB) return 0;
-    return compareInstances(bestA, bestB);
-  });
+  // Account order is stable (createdAt asc from DB) — do not re-sort groups.
+  return groups;
 }
 
 // ============================================

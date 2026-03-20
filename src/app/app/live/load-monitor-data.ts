@@ -171,7 +171,7 @@ export function extractDecisionContext(
 function queryEaInstances(userId: string) {
   return prisma.liveEAInstance.findMany({
     where: { userId, deletedAt: null },
-    orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       eaName: true,
