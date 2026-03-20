@@ -2920,6 +2920,7 @@ export function LiveDashboardClient({
       }
     }
   }, [initialRelinkInstanceId]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -3364,6 +3365,7 @@ export function LiveDashboardClient({
       {/* Action Required / Edge Health Panel */}
       {(() => {
         const items = eaInstances
+          .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
           .map((ea) => {
             const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
             if (!attention) return null;
@@ -3390,6 +3392,33 @@ export function LiveDashboardClient({
 
         if (items.length === 0) return null;
 
+        // Group items by composite key (statusLabel + reason + actionLabel)
+        const groups = new Map<
+          string,
+          {
+            statusLabel: string;
+            reason: string;
+            actionLabel: string;
+            color: string;
+            members: typeof items;
+          }
+        >();
+        for (const item of items) {
+          const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+          const existing = groups.get(groupKey);
+          if (existing) {
+            existing.members.push(item);
+          } else {
+            groups.set(groupKey, {
+              statusLabel: item.statusLabel,
+              reason: item.reason,
+              actionLabel: item.actionLabel,
+              color: item.color,
+              members: [item],
+            });
+          }
+        }
+
         const hasRed = items.some((i) => i.color === "#EF4444");
         const headerColor = hasRed ? "#EF4444" : "#F59E0B";
 
@@ -3402,37 +3431,65 @@ export function LiveDashboardClient({
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
               <p className="text-xs font-semibold text-white">Action Required</p>
               <span className="text-[10px] text-[#7C8DB0]">
-                {items.length} {items.length === 1 ? "instance requires" : "instances require"}{" "}
+                {items.length} {items.length === 1 ? "strategy requires" : "strategies require"}{" "}
                 attention
               </span>
             </div>
             <div className="space-y-2">
-              {items.map((item) => (
+              {[...groups.values()].map((group) => (
                 <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
+                  key={group.statusLabel}
+                  className="rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-[#CBD5E1] truncate">
-                      {item.identity}
-                    </p>
-                    <p className="text-[10px] font-medium" style={{ color: item.color }}>
-                      {item.statusLabel}
-                    </p>
-                    <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{item.reason}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium" style={{ color: group.color }}>
+                        {group.statusLabel}
+                        <span className="text-[#7C8DB0] font-normal">
+                          {" "}
+                          ({group.members.length}{" "}
+                          {group.members.length === 1 ? "strategy" : "strategies"})
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{group.reason}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={group.members[0].onClick}
+                        className="text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
+                        style={{
+                          color: group.color,
+                          borderColor: `${group.color}4D`,
+                          backgroundColor: `${group.color}15`,
+                        }}
+                      >
+                        {group.actionLabel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDismissedAlerts(
+                            (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
+                          )
+                        }
+                        className="text-[10px] text-[#64748B] hover:text-[#CBD5E1] transition-colors p-1"
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={item.onClick}
-                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
-                    style={{
-                      color: item.color,
-                      borderColor: `${item.color}4D`,
-                      backgroundColor: `${item.color}15`,
-                    }}
-                  >
-                    {item.actionLabel}
-                  </button>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {group.members.map((m) => (
+                      <span
+                        key={m.id}
+                        className="text-[10px] text-[#CBD5E1] bg-[#1A0626] px-1.5 py-0.5 rounded"
+                      >
+                        {m.identity}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
