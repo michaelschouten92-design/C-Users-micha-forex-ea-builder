@@ -74,6 +74,13 @@ input bool   InpExcludeManual = false;           // Exclude manual trades (magic
 // Deployment identity (optional — enables deployment discovery)
 input string InpTrackedEaName = "";              // Name of the EA being monitored (optional)
 
+// Strategy self-identification (single strategy — takes priority over auto-discovery)
+// Set magic > 0 to make strategy visible immediately, before any trades.
+input int    InpStrategyMagic     = 0;            // Strategy magic number (0=auto-discover)
+input string InpStrategySymbol    = "";            // Strategy symbol (empty=chart symbol)
+input string InpStrategyTimeframe = "";            // Strategy timeframe e.g. M15 (empty=chart TF)
+input string InpStrategyLabel     = "";            // Strategy label (empty=EA name or magic)
+
 // Multi-strategy manifest (Milestone B — takes priority over single-strategy inputs when non-empty)
 // Format: magic|symbol|timeframe|label  (comma-separated for multiple strategies)
 // Example: 12345|EURUSD|M15|MomentumV3,20001|XAUUSD|M5|ReversionX
@@ -223,7 +230,12 @@ int OnInit()
    // Parse multi-strategy manifest — sets g_manifestMode when InpStrategyManifest is non-empty
    ParseManifest();
 
-   // Auto-discovery fallback — runs only when no manifest was provided
+   // Self-identification — creates a single context from InpStrategyMagic when set.
+   // Runs only when no manifest was provided. Skips auto-discovery.
+   if(!g_manifestMode)
+      BuildSelfIdentifiedContext();
+
+   // Auto-discovery fallback — runs only when no manifest or self-identification
    if(!g_manifestMode)
       AutoDiscoverContexts();
 
@@ -634,6 +646,83 @@ void ParseManifest()
       Print("AlgoStudio Monitor: Manifest non-empty but no valid contexts parsed. "
             "Falling back to single-strategy mode.");
    }
+}
+
+//+------------------------------------------------------------------+
+//| STRATEGY SELF-IDENTIFICATION                                     |
+//| Builds a single context from InpStrategyMagic when set (> 0).   |
+//| Uses explicit inputs (InpStrategySymbol, InpStrategyTimeframe,   |
+//| InpStrategyLabel) with chart symbol/timeframe/EA name fallback.  |
+//| Runs after ParseManifest, before AutoDiscoverContexts.           |
+//| Sets g_manifestMode = true so auto-discovery is skipped.         |
+//+------------------------------------------------------------------+
+void BuildSelfIdentifiedContext()
+{
+   if(InpStrategyMagic <= 0) return;
+
+   // Symbol: explicit input > chart symbol (normalized: trimmed + uppercase)
+   string sym = InpStrategySymbol;
+   StringTrimLeft(sym);
+   StringTrimRight(sym);
+   if(StringLen(sym) == 0) sym = _Symbol;
+   StringToUpper(sym);
+   if(StringLen(sym) == 0)
+   {
+      Print("AlgoStudio Monitor: Self-identification skipped — no symbol available.");
+      return;
+   }
+
+   // Timeframe: explicit input > chart timeframe (normalized: trimmed + uppercase, strip PERIOD_ prefix)
+   string tf;
+   string rawInputTf = InpStrategyTimeframe;
+   StringTrimLeft(rawInputTf);
+   StringTrimRight(rawInputTf);
+   if(StringLen(rawInputTf) > 0)
+   {
+      StringToUpper(rawInputTf);
+      tf = rawInputTf;
+   }
+   else
+   {
+      string rawTf = EnumToString((ENUM_TIMEFRAMES)Period());
+      tf = (StringFind(rawTf, "PERIOD_") == 0) ? StringSubstr(rawTf, 7) : rawTf;
+   }
+
+   // Label: explicit input > EA name > magic fallback
+   string label = StringLen(InpStrategyLabel) > 0
+                  ? InpStrategyLabel
+                  : StringLen(InpTrackedEaName) > 0
+                     ? InpTrackedEaName
+                     : "Magic " + IntegerToString(InpStrategyMagic);
+
+   StrategyContext ctx;
+   ctx.magicNumber      = InpStrategyMagic;
+   ctx.symbol           = sym;
+   ctx.timeframe        = tf;
+   ctx.eaName           = label;
+   ctx.instanceId       = "";
+   ctx.govAction        = "RUN";
+   ctx.govReason        = "";
+   ctx.govReceivedAt    = 0;
+   ctx.seqNo            = 0;
+   ctx.lastHash         = GENESIS_HASH;
+   ctx.sessionStartSent = false;
+
+   // Fingerprint: label-independent so renaming does not create a new context
+   string canonical = StringFormat("%s:%s:%d:%s:%s",
+      ctx.symbol, ctx.timeframe, (int)ctx.magicNumber,
+      InpCommentFilter, InpExcludeManual ? "true" : "false");
+   ctx.fingerprint = SHA256(canonical);
+
+   ArrayResize(g_contexts, 1);
+   g_contexts[0]  = ctx;
+   g_contextCount = 1;
+   g_manifestMode = true;
+
+   Print("AlgoStudio Monitor: Self-identified strategy [0] ",
+         ctx.symbol, ":", ctx.timeframe,
+         " magic=", ctx.magicNumber, " label=", ctx.eaName,
+         " fingerprint=", StringSubstr(ctx.fingerprint, 0, 16), "...");
 }
 
 //+------------------------------------------------------------------+
