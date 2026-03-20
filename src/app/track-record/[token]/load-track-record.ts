@@ -27,7 +27,22 @@ export interface TrackRecordData {
   };
   equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
   monthlyReturns: Array<{ month: string; returnPct: number }>;
-  recentTrades: Array<{ closeTime: string; symbol: string; profit: number }>;
+  closedTrades: Array<{
+    closeTime: string;
+    openTime: string;
+    symbol: string;
+    type: string;
+    lots: number;
+    openPrice: number;
+    closePrice: number | null;
+    profit: number;
+  }>;
+  ledgerEvents: Array<{
+    timestamp: string;
+    eventType: string;
+    seqNo: number;
+    payload: Record<string, unknown>;
+  }>;
   strategies: Array<{
     symbol: string | null;
     magicNumber: number | null;
@@ -65,7 +80,16 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        select: { profit: true, closeTime: true, symbol: true },
+        select: {
+          profit: true,
+          closeTime: true,
+          openTime: true,
+          symbol: true,
+          type: true,
+          lots: true,
+          openPrice: true,
+          closePrice: true,
+        },
       },
     },
   });
@@ -85,7 +109,16 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        select: { profit: true, closeTime: true, symbol: true },
+        select: {
+          profit: true,
+          closeTime: true,
+          openTime: true,
+          symbol: true,
+          type: true,
+          lots: true,
+          openPrice: true,
+          closePrice: true,
+        },
       },
       healthSnapshots: {
         orderBy: { createdAt: "desc" },
@@ -100,11 +133,21 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     },
   });
 
-  const heartbeats = await prisma.eAHeartbeat.findMany({
-    where: { instanceId: base.id },
-    orderBy: { createdAt: "asc" },
-    select: { equity: true, balance: true, createdAt: true },
-  });
+  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
+
+  const [heartbeats, ledgerEventsRaw] = await Promise.all([
+    prisma.eAHeartbeat.findMany({
+      where: { instanceId: base.id },
+      orderBy: { createdAt: "asc" },
+      select: { equity: true, balance: true, createdAt: true },
+    }),
+    prisma.trackRecordEvent.findMany({
+      where: { instanceId: { in: allInstanceIds } },
+      orderBy: { timestamp: "desc" },
+      take: 50,
+      select: { eventType: true, timestamp: true, seqNo: true, payload: true },
+    }),
+  ]);
 
   // Compute aggregates from closed trades (base instance + all child instances)
   const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
@@ -171,9 +214,9 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     }
   }
 
-  // Recent trades (20 most recent closed trades across all children, sorted account-wide)
-  const recentTrades = allTrades
-    .filter((t): t is { profit: number; closeTime: Date; symbol: string } => t.closeTime != null)
+  // Closed trades (newest first, capped at 200 for public page)
+  const closedTrades = allTrades
+    .filter((t): t is typeof t & { closeTime: Date; openTime: Date } => t.closeTime != null)
     .sort((a, b) => {
       const ta =
         a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
@@ -181,10 +224,15 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
         b.closeTime instanceof Date ? b.closeTime.getTime() : new Date(b.closeTime).getTime();
       return tb - ta;
     })
-    .slice(0, 20)
+    .slice(0, 200)
     .map((t) => ({
       closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
+      openTime: t.openTime instanceof Date ? t.openTime.toISOString() : String(t.openTime),
       symbol: t.symbol ?? "—",
+      type: t.type ?? "—",
+      lots: t.lots ?? 0,
+      openPrice: t.openPrice ?? 0,
+      closePrice: t.closePrice ?? null,
       profit: t.profit,
     }));
 
@@ -233,7 +281,13 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       createdAt: hb.createdAt.toISOString(),
     })),
     monthlyReturns,
-    recentTrades,
+    closedTrades,
+    ledgerEvents: ledgerEventsRaw.map((e) => ({
+      timestamp: e.timestamp.toISOString(),
+      eventType: e.eventType,
+      seqNo: e.seqNo,
+      payload: (e.payload ?? {}) as Record<string, unknown>,
+    })),
     strategies,
   };
 }
