@@ -258,9 +258,9 @@ export default async function TrackRecordPage({ params }: Props) {
         <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Equity Curve</p>
           <p className="text-[10px] text-[#64748B] mb-3">Account equity based on closed trades.</p>
-          {performance.totalTrades === 0 ? (
+          {equityCurve.length === 0 ? (
             <p className="text-[11px] text-[#64748B]">
-              Equity curve will appear once trades start closing.
+              Equity curve will appear once monitoring data is collected.
             </p>
           ) : equityCurve.length <= 1 ? (
             <p className="text-[11px] text-[#64748B]">

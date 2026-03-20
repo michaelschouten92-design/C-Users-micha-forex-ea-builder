@@ -62,6 +62,11 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       equity: true,
       status: true,
       lastHeartbeat: true,
+      trades: {
+        where: { closeTime: { not: null } },
+        orderBy: { closeTime: "desc" },
+        select: { profit: true, closeTime: true, symbol: true },
+      },
     },
   });
 
@@ -101,8 +106,8 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     select: { equity: true, balance: true, createdAt: true },
   });
 
-  // Compute aggregates from closed trades (same scope as winRate/profitFactor)
-  const allTrades = children.flatMap((c) => c.trades);
+  // Compute aggregates from closed trades (base instance + all child instances)
+  const allTrades = [...base.trades, ...children.flatMap((c) => c.trades)];
   const totalTrades = allTrades.length;
   const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
 
