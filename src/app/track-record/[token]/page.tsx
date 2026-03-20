@@ -544,34 +544,42 @@ export default async function TrackRecordPage({ params }: Props) {
               Verification Ledger
             </p>
             <p className="text-[10px] text-[#64748B] mb-3">
-              Recent monitored events from the proof-chained audit trail.
+              Recent monitored events recorded by the AlgoStudio monitoring layer.
             </p>
             <CollapsibleSection label="events" count={ledgerEvents.length}>
               <div className="overflow-x-auto">
                 <div className="min-w-[500px]">
-                  <div className="grid grid-cols-[120px_120px_1fr] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
+                  <div className="grid grid-cols-[120px_120px_70px_1fr] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
                     <span>Timestamp</span>
                     <span>Event</span>
+                    <span>Scope</span>
                     <span>Details</span>
                   </div>
-                  {ledgerEvents.map((e, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-[120px_120px_1fr] gap-2 px-2 py-1.5 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors"
-                    >
-                      <p className="text-[10px] text-[#CBD5E1]">
-                        {new Date(e.timestamp).toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-[#818CF8] font-medium">
-                        {LEDGER_LABELS[e.eventType] ?? e.eventType}
-                      </p>
-                      <p className="text-[10px] text-[#7C8DB0] truncate">
-                        {ledgerDetail(e.eventType, e.payload) || (
-                          <span className="text-[#475569]">seq #{e.seqNo}</span>
-                        )}
-                      </p>
-                    </div>
-                  ))}
+                  {ledgerEvents.map((e, i) => {
+                    const scope =
+                      typeof e.payload.symbol === "string" && e.payload.symbol
+                        ? e.payload.symbol
+                        : "Account";
+                    return (
+                      <div
+                        key={i}
+                        className="grid grid-cols-[120px_120px_70px_1fr] gap-2 px-2 py-1.5 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors"
+                      >
+                        <p className="text-[10px] text-[#CBD5E1]">
+                          {new Date(e.timestamp).toLocaleString()}
+                        </p>
+                        <p className="text-[10px] text-[#818CF8] font-medium">
+                          {LEDGER_LABELS[e.eventType] ?? e.eventType}
+                        </p>
+                        <p className="text-[10px] text-[#CBD5E1] truncate">{scope}</p>
+                        <p className="text-[10px] text-[#7C8DB0] truncate">
+                          {ledgerDetail(e.eventType, e.payload) || (
+                            <span className="text-[#475569]">seq #{e.seqNo}</span>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CollapsibleSection>

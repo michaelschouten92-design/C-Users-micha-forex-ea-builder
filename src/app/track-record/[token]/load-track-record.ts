@@ -216,7 +216,10 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
 
   // Closed trades (newest first, capped at 200 for public page)
   const closedTrades = allTrades
-    .filter((t): t is typeof t & { closeTime: Date; openTime: Date } => t.closeTime != null)
+    .filter(
+      (t): t is typeof t & { closeTime: Date; openTime: Date } =>
+        t.closeTime != null && t.openTime != null
+    )
     .sort((a, b) => {
       const ta =
         a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
