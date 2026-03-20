@@ -12,7 +12,9 @@ export async function GET() {
     where: { userId: session.user.id, deletedAt: null },
     take: 10,
     orderBy: { updatedAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      eaName: true,
       heartbeats: {
         orderBy: { createdAt: "asc" },
         take: 100,

@@ -279,12 +279,10 @@ export async function GET(request: NextRequest, { params }: Props) {
     : null;
 
   // Chain integrity: verify event count matches lastSeqNo (no gaps)
+  // Reuses chainLength from the earlier count query (same instanceId).
   let chainIntegrity = false;
-  if (trackRecord && (trackRecord.lastSeqNo ?? 0) > 0 && page.pinnedInstanceId) {
-    const eventCount = await prisma.trackRecordEvent.count({
-      where: { instanceId: page.pinnedInstanceId },
-    });
-    chainIntegrity = eventCount === trackRecord.lastSeqNo;
+  if (trackRecord && (trackRecord.lastSeqNo ?? 0) > 0 && chainInfo) {
+    chainIntegrity = chainInfo.length === trackRecord.lastSeqNo;
   }
 
   // Score collapse: check if health score ever dropped below stability threshold

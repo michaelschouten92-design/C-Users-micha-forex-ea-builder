@@ -246,14 +246,7 @@ function queryEaInstances(userId: string) {
       terminalDeployments: {
         where: { ignoredAt: null },
         select: {
-          id: true,
-          symbol: true,
-          magicNumber: true,
-          eaName: true,
-          timeframe: true,
           baselineStatus: true,
-          strategyVersionId: true,
-          materialFingerprint: true,
         },
       },
     },

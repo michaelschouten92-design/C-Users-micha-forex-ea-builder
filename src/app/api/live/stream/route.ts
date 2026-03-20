@@ -37,9 +37,34 @@ export async function GET(request: Request): Promise<Response> {
       try {
         const instances = await prisma.liveEAInstance.findMany({
           where: { userId, deletedAt: null },
-          include: {
-            heartbeats: { orderBy: { createdAt: "desc" }, take: 20 },
-            trades: { orderBy: { createdAt: "desc" }, take: 20 },
+          select: {
+            id: true,
+            eaName: true,
+            symbol: true,
+            timeframe: true,
+            broker: true,
+            accountNumber: true,
+            status: true,
+            mode: true,
+            tradingState: true,
+            lastHeartbeat: true,
+            lastError: true,
+            balance: true,
+            equity: true,
+            openTrades: true,
+            totalTrades: true,
+            totalProfit: true,
+            exportJobId: true,
+            heartbeats: {
+              orderBy: { createdAt: "desc" },
+              take: 20,
+              select: { equity: true, createdAt: true },
+            },
+            trades: {
+              orderBy: { createdAt: "desc" },
+              take: 20,
+              select: { profit: true, closeTime: true },
+            },
             strategyVersion: {
               select: {
                 backtestBaseline: {
