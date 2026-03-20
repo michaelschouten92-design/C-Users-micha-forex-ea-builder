@@ -107,7 +107,7 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
   });
 
   // Compute aggregates from closed trades (base instance + all child instances)
-  const allTrades = [...base.trades, ...children.flatMap((c) => c.trades)];
+  const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
   const totalTrades = allTrades.length;
   const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
 
