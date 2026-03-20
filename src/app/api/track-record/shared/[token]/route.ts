@@ -63,15 +63,20 @@ export async function GET(request: NextRequest, { params }: Props) {
       logger.error({ err, bundleId: shared.id }, "Failed to increment shared bundle access count");
     });
 
-  return NextResponse.json({
-    bundle: shared.bundleJson,
-    metadata: {
-      eaName: shared.instance.eaName,
-      symbol: shared.instance.symbol,
-      broker: shared.instance.broker,
-      createdAt: shared.createdAt,
-      expiresAt: shared.expiresAt,
-      accessCount: shared.accessCount + 1,
+  return NextResponse.json(
+    {
+      bundle: shared.bundleJson,
+      metadata: {
+        eaName: shared.instance.eaName,
+        symbol: shared.instance.symbol,
+        broker: shared.instance.broker,
+        createdAt: shared.createdAt,
+        expiresAt: shared.expiresAt,
+        accessCount: shared.accessCount + 1,
+      },
     },
-  });
+    {
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+    }
+  );
 }
