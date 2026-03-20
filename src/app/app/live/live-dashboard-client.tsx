@@ -3419,6 +3419,19 @@ export function LiveDashboardClient({
           }
         }
 
+        // Sort groups by operational priority (urgent first)
+        const ALERT_PRIORITY: Record<string, number> = {
+          "Edge at risk": 0,
+          Unstable: 1,
+          "Connection error": 2,
+          "Baseline suspended": 3,
+          "Waiting for data": 4,
+          "No baseline linked": 5,
+        };
+        const sortedGroups = [...groups.values()].sort(
+          (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+        );
+
         const hasRed = items.some((i) => i.color === "#EF4444");
         const headerColor = hasRed ? "#EF4444" : "#F59E0B";
 
@@ -3436,7 +3449,7 @@ export function LiveDashboardClient({
               </span>
             </div>
             <div className="space-y-2">
-              {[...groups.values()].map((group) => (
+              {sortedGroups.map((group) => (
                 <div
                   key={group.statusLabel}
                   className="rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
