@@ -395,6 +395,42 @@ export default async function TrackRecordPage({ params }: Props) {
         </div>
       )}
 
+      {/* Verification layer */}
+      <div className="max-w-4xl mx-auto px-6 pb-6">
+        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-2">
+            Verification Layer
+          </p>
+          <p className="text-[11px] text-[#94A3B8] leading-relaxed mb-2">
+            This page is generated from monitored event data. All figures are derived from the
+            following independently captured sources:
+          </p>
+          <ul className="space-y-1 text-[11px] text-[#94A3B8]">
+            <li className="flex items-start gap-2">
+              <span className="text-[#818CF8] mt-px">&#8226;</span>
+              <span>Immutable, proof-chained trade events recorded at execution time</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#818CF8] mt-px">&#8226;</span>
+              <span>Broker equity and balance heartbeats captured at regular intervals</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#818CF8] mt-px">&#8226;</span>
+              <span>Per-strategy health snapshots monitored by the AlgoStudio control layer</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#818CF8] mt-px">&#8226;</span>
+              <span>No manual edits — all data is write-once and append-only</span>
+            </li>
+          </ul>
+          {coverage.lastHeartbeatAt && (
+            <p className="text-[10px] text-[#64748B] mt-2">
+              Last verification event: {new Date(coverage.lastHeartbeatAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="max-w-4xl mx-auto px-6 pb-8 text-center">
         <Link href="/" className="text-[10px] text-[#818CF8] hover:text-white transition-colors">
