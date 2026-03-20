@@ -1464,11 +1464,6 @@ function AccountCard({
         </div>
       </div>
 
-      {/* Mini equity chart */}
-      <div className="mb-4 bg-[#0A0118] rounded-lg p-2">
-        <MiniEquityChart heartbeats={allHeartbeats} />
-      </div>
-
       {/* Performance metrics */}
       <div className="grid grid-cols-4 gap-4 mb-4">
         <div>
