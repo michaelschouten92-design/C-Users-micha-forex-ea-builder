@@ -3369,10 +3369,7 @@ export function LiveDashboardClient({
               {actionItems.length > 0 && (
                 <div
                   className="border rounded-md p-3"
-                  style={{
-                    borderColor: `${alertBorderColor}30`,
-                    backgroundColor: `${alertBorderColor}08`,
-                  }}
+                  style={{ borderColor: `${alertBorderColor}25` }}
                 >
                   <div className="flex items-center gap-2 mb-2.5">
                     <span
@@ -3388,7 +3385,7 @@ export function LiveDashboardClient({
                     {sortedGroups.map((group) => (
                       <div
                         key={group.statusLabel}
-                        className="flex items-center justify-between gap-3 rounded px-2.5 py-1.5 bg-black/20"
+                        className="flex items-center justify-between gap-3 rounded px-2.5 py-1.5"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">

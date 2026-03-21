@@ -20,7 +20,10 @@ function getActiveStep(s: OnboardingStatus): 1 | 2 | 3 {
 export function ActivationPanel() {
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [successDismissed, setSuccessDismissed] = useState(false);
+  const [successDismissed, setSuccessDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("algostudio:monitoring-banner-dismissed") === "1";
+  });
   const [panelDismissed, setPanelDismissed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("algostudio:onboarding-dismissed") === "1";
@@ -70,7 +73,10 @@ export function ActivationPanel() {
           </p>
         </div>
         <button
-          onClick={() => setSuccessDismissed(true)}
+          onClick={() => {
+            setSuccessDismissed(true);
+            localStorage.setItem("algostudio:monitoring-banner-dismissed", "1");
+          }}
           className="flex-shrink-0 text-[#64748B] hover:text-white transition-colors p-1"
           aria-label="Dismiss"
         >
