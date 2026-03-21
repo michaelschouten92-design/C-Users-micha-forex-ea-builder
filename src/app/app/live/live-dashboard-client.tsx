@@ -922,7 +922,7 @@ function deriveSignalSummary(
   snap: (EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never) | undefined,
   isLinked: boolean
 ): string {
-  if (!isLinked) return "Baseline not linked — health monitoring inactive";
+  if (!isLinked) return "No baseline linked — monitoring inactive";
   if (!snap) return "Awaiting first monitoring evaluation";
   switch (health) {
     case "Healthy":
@@ -1747,13 +1747,27 @@ function AccountCard({
                             {health}
                           </span>
                         </div>
-                        <p
-                          className={`text-xs self-center ${isLinked ? "text-[#10B981] font-medium" : "text-[#64748B]"}`}
-                        >
-                          {isLinked
-                            ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
-                            : "Missing"}
-                        </p>
+                        <div className="self-center flex items-center gap-2">
+                          <p
+                            className={`text-xs ${isLinked ? "text-[#10B981] font-medium" : "text-[#64748B]"}`}
+                          >
+                            {isLinked
+                              ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
+                              : "Missing"}
+                          </p>
+                          {!isLinked && sg.instanceId && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onLinkBaseline(sg.instanceId!);
+                              }}
+                              className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
+                            >
+                              Link
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {isExpanded && owningInstance && (
                         <InvestigationPanel
@@ -2910,6 +2924,11 @@ export function LiveDashboardClient({
     }
   }, [initialRelinkInstanceId]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [showRestoreGuide] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("algostudio:onboarding-dismissed") === "1"
+      : false
+  );
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -3388,26 +3407,25 @@ export function LiveDashboardClient({
                             {group.members.map((m) => (
                               <span
                                 key={m.id}
-                                className="text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
+                                className="inline-flex items-center gap-1.5 text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
                               >
                                 {m.identity}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    m.onClick();
+                                  }}
+                                  className="text-[9px] font-medium transition-colors hover:text-white"
+                                  style={{ color: group.color }}
+                                >
+                                  {group.actionLabel}
+                                </button>
                               </span>
                             ))}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={group.members[0].onClick}
-                            className="text-[10px] font-medium px-2 py-0.5 rounded border transition-colors"
-                            style={{
-                              color: group.color,
-                              borderColor: `${group.color}40`,
-                              backgroundColor: `${group.color}10`,
-                            }}
-                          >
-                            {group.actionLabel}
-                          </button>
                           <button
                             type="button"
                             onClick={() =>
@@ -3651,6 +3669,19 @@ export function LiveDashboardClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Restore onboarding guide */}
+      {eaInstances.length > 0 && showRestoreGuide && (
+        <button
+          onClick={() => {
+            localStorage.removeItem("algostudio:onboarding-dismissed");
+            window.location.reload();
+          }}
+          className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"
+        >
+          Show setup guide again
+        </button>
       )}
 
       {/* Alerts Modal */}

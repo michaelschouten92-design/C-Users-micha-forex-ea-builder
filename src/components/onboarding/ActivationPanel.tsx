@@ -21,6 +21,10 @@ export function ActivationPanel() {
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [successDismissed, setSuccessDismissed] = useState(false);
+  const [panelDismissed, setPanelDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("algostudio:onboarding-dismissed") === "1";
+  });
 
   useEffect(() => {
     fetch("/api/onboarding/status")
@@ -32,7 +36,7 @@ export function ActivationPanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading || !status) return null;
+  if (loading || !status || panelDismissed) return null;
 
   // ── Success state: activation complete ──
   if (status.baselineLinked) {
@@ -92,12 +96,32 @@ export function ActivationPanel() {
 
   return (
     <div className="rounded-xl border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.04)] p-5 mb-6">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-white">Start Monitoring Your Strategy</h3>
-        <p className="text-xs text-[#7C8DB0] mt-0.5">
-          AlgoStudio verifies whether your live strategy still matches its historical edge.{" "}
-          {completedCount}/3 steps completed.
-        </p>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-white">Start Monitoring Your Strategy</h3>
+          <p className="text-xs text-[#7C8DB0] mt-0.5">
+            AlgoStudio verifies whether your live strategy still matches its historical edge.{" "}
+            {completedCount}/3 steps completed.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setPanelDismissed(true);
+            localStorage.setItem("algostudio:onboarding-dismissed", "1");
+          }}
+          className="flex-shrink-0 text-[#64748B] hover:text-white transition-colors p-1"
+          aria-label="Dismiss onboarding"
+          title="Dismiss"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
       </div>
 
       <div className="space-y-1.5">
