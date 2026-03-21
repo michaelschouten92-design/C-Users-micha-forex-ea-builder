@@ -190,6 +190,7 @@ string   g_deployFingerprint = "";  // SHA-256 of material config fields
 StrategyContext g_contexts[];
 int    g_contextCount = 0;
 bool   g_manifestMode = false;
+datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -355,6 +356,19 @@ void OnTimer()
    // Flush offline queue after heartbeat (instanceId may now be known)
    if(g_queueCount > 0)
       FlushOfflineQueue();
+
+   // Late discovery: re-scan for strategies when still in legacy mode.
+   // Runs at most once per 60 seconds. Once a context is found, g_manifestMode
+   // flips to true and this block never executes again.
+   if(!g_manifestMode && g_contextCount == 0 && InpStrategyMagic <= 0
+      && now - g_lastRediscovery >= 60)
+   {
+      g_lastRediscovery = now;
+      AutoDiscoverContexts();
+      if(g_manifestMode)
+         Print("AlgoStudio Monitor: Late discovery activated — ",
+               g_contextCount, " context(s) found.");
+   }
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
    PollTradeChanges();
@@ -752,8 +766,8 @@ void AutoDiscoverContexts()
 
    for(int i = 0; i < found; i++)
    {
-      // Noise filter: suppress one-off historical signals
-      if(candidates[i].tradeCount < 2 && !candidates[i].hasOpenPosition)
+      // Noise filter: suppress candidates with zero evidence
+      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
          continue;
 
       // Cap
