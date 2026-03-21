@@ -1340,27 +1340,29 @@ function AccountCard({
       }`}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-3">
+      <div className="flex justify-between items-start mb-4">
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
-          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
+          <div className="flex items-center gap-2.5">
+            <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
+            <StatusBadge status={accountStatus} animate={statusChanged} />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-[#64748B]">
             {account.broker && <span>{account.broker}</span>}
             {account.accountNumber && (
               <>
                 {account.broker && <span className="text-[#334155]">•</span>}
-                <span>Account #{account.accountNumber}</span>
+                <span>#{account.accountNumber}</span>
               </>
             )}
             <>
               {(account.broker || account.accountNumber) && (
                 <span className="text-[#334155]">•</span>
               )}
-              <span className="text-[#7C8DB0]/70 italic">Portfolio mode</span>
+              <span>Portfolio</span>
             </>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status={accountStatus} animate={statusChanged} />
+        <div className="flex items-center gap-1.5">
           {(() => {
             const execState = anyHalted ? "HALTED" : allPaused ? "PAUSED" : "RUN";
             const execColor =
@@ -1379,11 +1381,11 @@ function AccountCard({
             );
           })()}
           {instances.some((ea) => ea.mode === "PAPER") && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-              Paper
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/15 text-[#F59E0B]">
+              PAPER
             </span>
           )}
-          {/* Edge monitoring status badge */}
+          {/* Edge monitoring status badge — only show non-healthy states */}
           {(() => {
             const latestSnapshot = instances
               .map((ea) => ea.healthSnapshots?.[0])
@@ -1392,55 +1394,49 @@ function AccountCard({
             const { driftDetected, driftSeverity, status } = latestSnapshot;
             if (driftDetected) {
               return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-pulse" />
-                  Drift detected
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/15 text-[#EF4444]">
+                  <span className="w-1 h-1 rounded-full bg-[#EF4444] animate-pulse" />
+                  Drift
                 </span>
               );
             }
             if (driftSeverity > 0.3 || status === "WARNING") {
               return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
-                  Monitoring: Warning
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/15 text-[#F59E0B]">
+                  <span className="w-1 h-1 rounded-full bg-[#F59E0B]" />
+                  Warning
                 </span>
               );
             }
             if (status === "DEGRADED") {
               return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-                  Monitoring: Edge at Risk
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/15 text-[#EF4444]">
+                  <span className="w-1 h-1 rounded-full bg-[#EF4444]" />
+                  Edge at Risk
                 </span>
               );
             }
-            return (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                Monitoring: OK
-              </span>
-            );
+            return null; // Healthy state — no badge needed, reduces noise
           })()}
-          {/* Auto-discovered strategy badge */}
           {instances.some((ea) => ea.isAutoDiscovered) && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30">
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#8B5CF6]/15 text-[#A78BFA]">
               Discovered
             </span>
           )}
         </div>
       </div>
 
-      {/* Strategy health summary */}
+      {/* Strategy health strip */}
       {healthSummaryParts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 mb-4 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
+        <div className="flex items-center gap-3 mb-3">
           {healthSummaryParts.map((label) => {
             const hs = HEALTH_STYLES[label];
             return (
               <span
                 key={label}
-                className={`inline-flex items-center gap-1.5 text-xs font-medium ${hs.text}`}
+                className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
               >
-                <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
                 {healthCounts[label]} {label}
               </span>
             );
@@ -1448,18 +1444,18 @@ function AccountCard({
         </div>
       )}
 
-      {/* Financial metrics */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* Financial metrics — primary row */}
+      <div className="grid grid-cols-3 gap-3 mb-3 py-3 border-y border-[#1E293B]/60">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Balance</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Balance</p>
           <p className="text-lg font-semibold text-white tabular-nums">{formatCurrency(balance)}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Equity</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Equity</p>
           <p className="text-lg font-semibold text-white tabular-nums">{formatCurrency(equity)}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Profit</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Profit</p>
           <p
             className={`text-lg font-semibold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
@@ -1468,62 +1464,61 @@ function AccountCard({
         </div>
       </div>
 
-      {/* Performance metrics */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Trades</p>
-          <p className="text-sm font-semibold text-white tabular-nums">{totalTrades}</p>
+      {/* Performance metrics — secondary row */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-4">
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm font-semibold text-white tabular-nums">{totalTrades}</span>
+          <span className="text-[10px] text-[#475569]">trades</span>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Win Rate</p>
-          <p className="text-sm font-semibold text-white tabular-nums">{winRate.toFixed(1)}%</p>
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm font-semibold text-white tabular-nums">
+            {winRate.toFixed(1)}%
+          </span>
+          <span className="text-[10px] text-[#475569]">win rate</span>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Profit Factor</p>
-          <p className="text-sm font-semibold text-white tabular-nums">
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm font-semibold text-white tabular-nums">
             {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
-          </p>
+          </span>
+          <span className="text-[10px] text-[#475569]">PF</span>
         </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Edge at Risk</p>
-          <p
-            className={`text-sm font-semibold ${edgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-[#475569]"}`}
-          >
-            {edgeAtRiskCount} {edgeAtRiskCount === 1 ? "strategy" : "strategies"}
-          </p>
-          <p className="text-[9px] text-[#475569]">
-            {edgeAtRiskCount > 0 ? "Investigation recommended" : "All strategies healthy"}
-          </p>
-        </div>
+        {edgeAtRiskCount > 0 && (
+          <div className="flex items-baseline gap-1 ml-auto">
+            <span className="text-sm font-semibold text-[#EF4444] tabular-nums">
+              {edgeAtRiskCount}
+            </span>
+            <span className="text-[10px] text-[#EF4444]/70">at risk</span>
+          </div>
+        )}
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <button
           onClick={handleAccountPause}
           disabled={pauseLoading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+          className={`px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
             allPaused
-              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-              : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
+              ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20"
+              : "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
           }`}
         >
-          {allPaused ? "▶ Resume All" : "⏸ Pause All"}
+          {allPaused ? "Resume All" : "Pause All"}
         </button>
 
         {showDeleteConfirm ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#EF4444]">Delete all instances?</span>
+            <span className="text-[10px] text-[#EF4444]">Delete all?</span>
             <button
               onClick={handleAccountDelete}
               disabled={deleteLoading}
-              className="px-2 py-1 text-xs font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626]"
+              className="px-2 py-0.5 text-[10px] font-medium text-white bg-[#EF4444] rounded-md hover:bg-[#DC2626]"
             >
               Confirm
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
-              className="px-2 py-1 text-xs font-medium text-[#94A3B8] hover:text-white"
+              className="px-2 py-0.5 text-[10px] font-medium text-[#64748B] hover:text-white"
             >
               Cancel
             </button>
@@ -1531,20 +1526,20 @@ function AccountCard({
         ) : (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-all duration-200"
+            className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-colors"
           >
-            🗑 Delete
+            Delete
           </button>
         )}
 
-        <span className="ml-auto text-[10px] text-[#64748B]">
-          Last heartbeat: {formatRelativeTime(lastHeartbeat ?? null)}
+        <span className="ml-auto text-[9px] text-[#475569]">
+          Heartbeat {formatRelativeTime(lastHeartbeat ?? null).toLowerCase()}
         </span>
       </div>
 
       {/* API Key management — only for root/parent instances (not child/discovered) */}
       {!primary.parentInstanceId && (
-        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+        <div className="mb-3 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">API Key</p>
@@ -1607,7 +1602,7 @@ function AccountCard({
 
       {/* Public Track Record share — only for root instances */}
       {!primary.parentInstanceId && (
-        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+        <div className="mb-3 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
