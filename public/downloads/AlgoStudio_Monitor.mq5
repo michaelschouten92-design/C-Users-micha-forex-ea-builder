@@ -42,6 +42,9 @@ struct StrategyContext
    int      seqNo;          // Chain sequence number for this context
    string   lastHash;       // Previous event hash for this context
    bool     sessionStartSent; // Per-context SESSION_START gate
+   // Cached per-heartbeat stats (populated once per tick by PrecomputeContextStats)
+   int      cachedTotalClosed;
+   double   cachedTotalPL;
 };
 
 //+------------------------------------------------------------------+
@@ -338,6 +341,9 @@ void OnTimer()
          // Account-level heartbeat first — updates base instance with
          // aggregated openTrades, totalTrades, totalProfit.
          SendHeartbeat();
+         // Pre-compute per-context trade stats in a single history scan
+         // (replaces N individual full scans inside SendContextHeartbeat).
+         PrecomputeContextStats();
          // Per-context heartbeats — update each strategy context instance.
          // Per-context governance is stored in each context only —
          // g_govAction is NOT modified from manifest context responses.
@@ -1867,6 +1873,41 @@ void SendHeartbeat()
 }
 
 //+------------------------------------------------------------------+
+//| Pre-compute per-context closed trade stats in a single scan.    |
+//| Called once per heartbeat tick, before the context heartbeat     |
+//| loop. Populates cachedTotalClosed / cachedTotalPL on each ctx   |
+//| so SendContextHeartbeat can skip its own full history scan.     |
+//+------------------------------------------------------------------+
+void PrecomputeContextStats()
+{
+   for(int c = 0; c < g_contextCount; c++)
+   {
+      g_contexts[c].cachedTotalClosed = 0;
+      g_contexts[c].cachedTotalPL     = 0;
+   }
+
+   HistorySelect(0, TimeCurrent());
+   for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
+   {
+      ulong dTicket = HistoryDealGetTicket(i);
+      if(dTicket == 0) continue;
+      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      long   magic = (long)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
+      string sym   = HistoryDealGetString(dTicket, DEAL_SYMBOL);
+
+      for(int c = 0; c < g_contextCount; c++)
+      {
+         if(g_contexts[c].magicNumber != magic) continue;
+         if(StringLen(g_contexts[c].symbol) > 0 && g_contexts[c].symbol != sym) continue;
+         g_contexts[c].cachedTotalClosed++;
+         g_contexts[c].cachedTotalPL += HistoryDealGetDouble(dTicket, DEAL_PROFIT);
+         break; // Each deal matches at most one context
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
 //| PER-CONTEXT HEARTBEAT  (Milestone B)                            |
 //| Sends one heartbeat for a single strategy context.              |
 //| Parses instanceId and governance from the response into ctx.    |
@@ -1901,21 +1942,9 @@ void SendContextHeartbeat(StrategyContext &ctx)
       myOpen++;
    }
 
-   // Per-context closed trade stats (filtered by magic + symbol)
-   HistorySelect(0, TimeCurrent());
-   int    totalClosed = 0;
-   double totalPL     = 0;
-   for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
-   {
-      ulong dTicket = HistoryDealGetTicket(i);
-      if(dTicket == 0) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
-      if((long)HistoryDealGetInteger(dTicket, DEAL_MAGIC) != ctx.magicNumber) continue;
-      if(StringLen(ctx.symbol) > 0 &&
-         HistoryDealGetString(dTicket, DEAL_SYMBOL) != ctx.symbol) continue;
-      totalClosed++;
-      totalPL += HistoryDealGetDouble(dTicket, DEAL_PROFIT);
-   }
+   // Per-context closed trade stats — use cached values from PrecomputeContextStats()
+   int    totalClosed = ctx.cachedTotalClosed;
+   double totalPL     = ctx.cachedTotalPL;
 
    // Strategy deployment identity for this context
    string deployJson = ",\"deployment\":{"
