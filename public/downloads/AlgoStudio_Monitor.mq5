@@ -2794,21 +2794,22 @@ void LoadState()
                   for(int j = 0; j < g_contextCount; j++)
                   {
                      if(g_contexts[j].seqNo > 0) continue; // already restored
-                     string s = g_contexts[j].symbol;
-                     StringToUpper(s);
+                     string raw = g_contexts[j].symbol;  // raw — legacy manifest/self-id used raw symbol
+                     string upper = raw;
+                     StringToUpper(upper);
                      string m = IntegerToString((int)g_contexts[j].magicNumber);
-                     // Legacy manifest: SYMBOL:TF:MAGIC:EANAME:COMMENTFILTER:EXCLUDEMANUAL
+                     // Legacy manifest: SYMBOL:TF:MAGIC:EANAME:COMMENTFILTER:EXCLUDEMANUAL (raw symbol)
                      string legacyManifest = StringFormat("%s:%s:%s:%s:%s:%s",
-                        s, g_contexts[j].timeframe, m, g_contexts[j].eaName,
+                        raw, g_contexts[j].timeframe, m, g_contexts[j].eaName,
                         InpCommentFilter, InpExcludeManual ? "true" : "false");
                      if(SHA256(legacyManifest) == fp) { matchIdx = j; break; }
-                     // Legacy self-id: SYMBOL:TF:MAGIC:COMMENTFILTER:EXCLUDEMANUAL
+                     // Legacy self-id: SYMBOL:TF:MAGIC:COMMENTFILTER:EXCLUDEMANUAL (raw symbol)
                      string legacySelfId = StringFormat("%s:%s:%s:%s:%s",
-                        s, g_contexts[j].timeframe, m,
+                        raw, g_contexts[j].timeframe, m,
                         InpCommentFilter, InpExcludeManual ? "true" : "false");
                      if(SHA256(legacySelfId) == fp) { matchIdx = j; break; }
-                     // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC
-                     if(SHA256("AUTO:v1:" + s + ":" + m) == fp) { matchIdx = j; break; }
+                     // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC (broker-native, typically uppercase)
+                     if(SHA256("AUTO:v1:" + upper + ":" + m) == fp) { matchIdx = j; break; }
                   }
                }
                // Fallback 2: match by symbol + magicNumber fields (7-field state lines).
