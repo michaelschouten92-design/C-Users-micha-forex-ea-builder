@@ -195,6 +195,8 @@ StrategyContext g_contexts[];
 int    g_contextCount = 0;
 bool   g_manifestMode = false;
 datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
+bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
+datetime g_lastSyncAttempt  = 0;         // Rate-limit chain sync retries
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -379,6 +381,15 @@ void OnTimer()
       if(g_manifestMode)
          Print("AlgoStudio Monitor: Late discovery activated — ",
                g_contextCount, " context(s) found.");
+   }
+
+   // Retry chain sync if initial sync failed — max once per 60 seconds.
+   // Once successful, g_chainSyncPending flips to false and this block stops.
+   if(g_chainSyncPending && StringLen(g_instanceId) > 0
+      && now - g_lastSyncAttempt >= 60)
+   {
+      g_lastSyncAttempt = now;
+      SyncChainState();
    }
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
@@ -2244,7 +2255,12 @@ void SyncChainState()
    ResetLastError();
    int res = WebRequest("GET", url, headers, 3000, postData, resultData, resultHeaders);
 
-   if(res < 200 || res >= 300) return;
+   if(res < 200 || res >= 300)
+   {
+      g_chainSyncPending = true;
+      Print("AlgoStudio Monitor: SyncChainState failed (HTTP ", res, ") — will retry.");
+      return;
+   }
 
    string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
 
@@ -2289,6 +2305,7 @@ void SyncChainState()
    }
 
    g_chainDegraded = false;
+   g_chainSyncPending = false;
    SaveState();
    Print("AlgoStudio Monitor: Chain synced. seqNo=", g_seqNo, " hash=", StringSubstr(g_lastHash, 0, 16), "...");
 }
