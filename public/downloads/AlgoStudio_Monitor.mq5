@@ -302,7 +302,11 @@ void OnDeinit(const int reason)
    // Destroy panel
    PanelDestroy();
 
-   // Send SESSION_END
+   // Send per-context SESSION_END (before base session — contexts close first)
+   for(int i = 0; i < g_contextCount; i++)
+      SendContextSessionEnd(i);
+
+   // Send base SESSION_END
    SendSessionEnd();
 
    // Flush offline queue
@@ -1366,8 +1370,8 @@ bool SendContextTrackRecordEvent(int ctxIdx, string eventType,
       return false;
    }
 
-   // Per-context governance gate
-   if(g_contexts[ctxIdx].govAction != "RUN")
+   // Per-context governance gate (SESSION_END always passes — must close cleanly)
+   if(g_contexts[ctxIdx].govAction != "RUN" && eventType != "SESSION_END")
    {
       Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
             "]: Skipping ", eventType, " — governance: ", g_contexts[ctxIdx].govAction);
@@ -1466,6 +1470,38 @@ void SendContextSessionStart(int ctxIdx)
 
    if(SendContextTrackRecordEvent(ctxIdx, "SESSION_START", payloadJson, payloadPairs))
       g_contexts[ctxIdx].sessionStartSent = true;
+}
+
+//+------------------------------------------------------------------+
+//| Per-context SESSION_END                                           |
+//| Only sent when the context had an active session (sessionStartSent|
+//| == true and instanceId is populated).                              |
+//+------------------------------------------------------------------+
+void SendContextSessionEnd(int ctxIdx)
+{
+   if(!g_contexts[ctxIdx].sessionStartSent) return;
+   if(StringLen(g_contexts[ctxIdx].instanceId) == 0) return;
+
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+   int uptime = (int)(TimeCurrent() - g_sessionStart);
+   if(uptime < 0) uptime = 0;
+
+   string payloadPairs[];
+   ArrayResize(payloadPairs, 4);
+   payloadPairs[0] = JMoney("finalBalance", bal);
+   payloadPairs[1] = JMoney("finalEquity", eq);
+   payloadPairs[2] = JStr("reason", "DEINIT");
+   payloadPairs[3] = JInt("uptimeSeconds", uptime);
+
+   string payloadJson = "{"
+      + JMoney("finalBalance", bal) + ","
+      + JMoney("finalEquity", eq) + ","
+      + JStr("reason", "DEINIT") + ","
+      + JInt("uptimeSeconds", uptime)
+      + "}";
+
+   SendContextTrackRecordEvent(ctxIdx, "SESSION_END", payloadJson, payloadPairs);
 }
 
 //+------------------------------------------------------------------+
