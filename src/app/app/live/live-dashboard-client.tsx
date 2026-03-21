@@ -3190,173 +3190,59 @@ export function LiveDashboardClient({
         </div>
       </div>
 
-      {/* Portfolio Summary */}
-      {eaInstances.length > 0 && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <SummaryCard
-              label="Floating P&L"
-              subtitle="unrealized"
-              value={eaInstances
-                .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
-                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-            />
-            <SummaryCard
-              label="Paper P&L"
-              subtitle="tracked total"
-              value={eaInstances
-                .filter((ea) => ea.mode === "PAPER")
-                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
-            />
-            <SummaryCard
-              label="Total Trades"
-              value={eaInstances
-                .filter(isAccountContainer)
-                .reduce((sum, ea) => sum + ea.totalTrades, 0)}
-              isCurrency={false}
-            />
-            <SummaryCard
-              label="Open Trades"
-              value={eaInstances
-                .filter(isAccountContainer)
-                .reduce((sum, ea) => sum + ea.openTrades, 0)}
-              isCurrency={false}
-            />
-            {/* Strategy Health Summary */}
-            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">
-                Strategy Health
-              </p>
-              {portfolioHealthParts.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  {portfolioHealthParts.map((label) => {
-                    const hs = HEALTH_STYLES[label];
-                    return (
-                      <span
-                        key={label}
-                        className={`inline-flex items-center gap-1 text-sm font-semibold ${hs.text}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
-                        {portfolioHealthCounts[label]} {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
-              )}
-            </div>
-            {/* Exposure Summary */}
-            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">Exposure</p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
-                  <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
-                  Strategies
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#CBD5E1]">
-                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
-                  Strategies
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* Edge Health Summary — system pulse at a glance */}
+      {eaInstances.length > 0 &&
+        (() => {
+          let healthy = 0;
+          let attentionCount = 0;
+          let monitoring = 0;
+          let paused = 0;
 
-          {/* Global Floating Drawdown Alert */}
-          <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <svg
-                  className="w-4 h-4 text-[#F59E0B] shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-                <p className="text-xs text-[#CBD5E1]">
-                  Floating drawdown alert (current balance-equity gap, all EAs)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#7C8DB0]">Alert at</span>
-                <input
-                  type="number"
-                  value={globalDrawdownThreshold}
-                  onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
-                  min="0.1"
-                  max="100"
-                  step="0.1"
-                  className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
-                />
-                <span className="text-xs text-[#7C8DB0]">% floating DD</span>
-                <button
-                  onClick={handleSaveGlobalDrawdown}
-                  className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Per-Symbol Breakdown */}
-          {(() => {
-            const symbolMap = new Map<string, { pnl: number; count: number; openTrades: number }>();
-            const filtered = eaInstances.filter(
-              (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
-            );
-            for (const ea of filtered) {
-              const sym = ea.symbol!;
-              const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
-              existing.pnl += ea.totalProfit;
-              existing.count += 1;
-              existing.openTrades += ea.openTrades;
-              symbolMap.set(sym, existing);
+          for (const ea of eaInstances) {
+            if (ea.tradingState === "PAUSED") {
+              paused++;
+              continue;
             }
-            if (symbolMap.size <= 1) return null;
-            const entries = Array.from(symbolMap.entries()).sort(
-              (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
-            );
-            return (
-              <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-3">
-                  Per-Symbol Breakdown
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {entries.map(([sym, data]) => (
-                    <div
-                      key={sym}
-                      className="flex items-center justify-between px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]"
-                    >
-                      <div>
-                        <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
-                        <span className="text-[9px] text-[#7C8DB0] ml-1.5">
-                          {data.count} EA{data.count > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-xs font-semibold ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-                      >
-                        {formatCurrency(data.pnl)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
+            const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+            if (!att) {
+              healthy++;
+            } else if (att.statusLabel === "Waiting for data") {
+              monitoring++;
+            } else {
+              attentionCount++;
+            }
+          }
 
-      {/* Action Required / Edge Health Panel */}
+          const cats = [
+            { label: "Healthy", count: healthy, color: "#10B981" },
+            { label: "Attention", count: attentionCount, color: "#F59E0B" },
+            { label: "Collecting Data", count: monitoring, color: "#A78BFA" },
+            { label: "Paused", count: paused, color: "#64748B" },
+          ];
+
+          return (
+            <div className="grid grid-cols-4 gap-3">
+              {cats.map((c) => (
+                <div
+                  key={c.label}
+                  className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg px-4 py-3"
+                >
+                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                    {c.label}
+                  </p>
+                  <p
+                    className="text-lg font-semibold"
+                    style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
+                  >
+                    {c.count}
+                  </p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+      {/* Action Required / Edge Health Panel — urgent items surface early */}
       {(() => {
         const items = eaInstances
           .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
@@ -3504,57 +3390,128 @@ export function LiveDashboardClient({
         );
       })()}
 
-      {/* Edge Health Summary */}
-      {eaInstances.length > 0 &&
-        (() => {
-          let healthy = 0;
-          let attention = 0;
-          let monitoring = 0;
-          let paused = 0;
-
-          for (const ea of eaInstances) {
-            if (ea.tradingState === "PAUSED") {
-              paused++;
-              continue;
-            }
-            const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!att) {
-              healthy++;
-            } else if (att.statusLabel === "Waiting for data") {
-              monitoring++;
-            } else {
-              attention++;
-            }
-          }
-
-          const cats = [
-            { label: "Healthy", count: healthy, color: "#10B981" },
-            { label: "Attention", count: attention, color: "#F59E0B" },
-            { label: "Collecting Data", count: monitoring, color: "#A78BFA" },
-            { label: "Paused", count: paused, color: "#64748B" },
-          ];
-
-          return (
-            <div className="grid grid-cols-4 gap-3">
-              {cats.map((c) => (
-                <div
-                  key={c.label}
-                  className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg px-4 py-3"
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                    {c.label}
-                  </p>
-                  <p
-                    className="text-lg font-semibold"
-                    style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
-                  >
-                    {c.count}
-                  </p>
+      {/* Portfolio Metrics */}
+      {eaInstances.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <SummaryCard
+              label="Floating P&L"
+              subtitle="unrealized"
+              value={eaInstances
+                .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
+                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
+            />
+            <SummaryCard
+              label="Paper P&L"
+              subtitle="tracked total"
+              value={eaInstances
+                .filter((ea) => ea.mode === "PAPER")
+                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
+            />
+            <SummaryCard
+              label="Total Trades"
+              value={eaInstances
+                .filter(isAccountContainer)
+                .reduce((sum, ea) => sum + ea.totalTrades, 0)}
+              isCurrency={false}
+            />
+            <SummaryCard
+              label="Open Trades"
+              value={eaInstances
+                .filter(isAccountContainer)
+                .reduce((sum, ea) => sum + ea.openTrades, 0)}
+              isCurrency={false}
+            />
+            {/* Strategy Health Summary */}
+            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">
+                Strategy Health
+              </p>
+              {portfolioHealthParts.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {portfolioHealthParts.map((label) => {
+                    const hs = HEALTH_STYLES[label];
+                    return (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1 text-sm font-semibold ${hs.text}`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
+                        {portfolioHealthCounts[label]} {label}
+                      </span>
+                    );
+                  })}
                 </div>
-              ))}
+              ) : (
+                <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
+              )}
             </div>
-          );
-        })()}
+            {/* Exposure Summary */}
+            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">Exposure</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
+                  <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
+                  Strategies
+                </span>
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#CBD5E1]">
+                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
+                  Strategies
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-Symbol Breakdown */}
+          {(() => {
+            const symbolMap = new Map<string, { pnl: number; count: number; openTrades: number }>();
+            const filtered = eaInstances.filter(
+              (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
+            );
+            for (const ea of filtered) {
+              const sym = ea.symbol!;
+              const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
+              existing.pnl += ea.totalProfit;
+              existing.count += 1;
+              existing.openTrades += ea.openTrades;
+              symbolMap.set(sym, existing);
+            }
+            if (symbolMap.size <= 1) return null;
+            const entries = Array.from(symbolMap.entries()).sort(
+              (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
+            );
+            return (
+              <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-3">
+                  Per-Symbol Breakdown
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {entries.map(([sym, data]) => (
+                    <div
+                      key={sym}
+                      className="flex items-center justify-between px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]"
+                    >
+                      <div>
+                        <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
+                        <span className="text-[9px] text-[#7C8DB0] ml-1.5">
+                          {data.count} EA{data.count > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs font-semibold ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                      >
+                        {formatCurrency(data.pnl)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
@@ -3605,6 +3562,51 @@ export function LiveDashboardClient({
               forceExpandId={scrollExpandId}
             />
           ))}
+        </div>
+      )}
+
+      {/* Settings — drawdown alert (secondary, below accounts) */}
+      {eaInstances.length > 0 && (
+        <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <svg
+                className="w-4 h-4 text-[#F59E0B] shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <p className="text-xs text-[#CBD5E1]">
+                Floating drawdown alert (current balance-equity gap, all EAs)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#7C8DB0]">Alert at</span>
+              <input
+                type="number"
+                value={globalDrawdownThreshold}
+                onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
+                min="0.1"
+                max="100"
+                step="0.1"
+                className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
+              />
+              <span className="text-xs text-[#7C8DB0]">% floating DD</span>
+              <button
+                onClick={handleSaveGlobalDrawdown}
+                className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
