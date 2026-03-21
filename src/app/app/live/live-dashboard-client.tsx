@@ -3432,21 +3432,15 @@ export function LiveDashboardClient({
 
       {/* Portfolio Metrics */}
       {eaInstances.length > 0 && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="space-y-3">
+          {/* Primary readings */}
+          <div className="grid grid-cols-3 gap-3">
             <SummaryCard
               label="Floating P&L"
               subtitle="unrealized"
               value={eaInstances
                 .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
                 .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-            />
-            <SummaryCard
-              label="Paper P&L"
-              subtitle="tracked total"
-              value={eaInstances
-                .filter((ea) => ea.mode === "PAPER")
-                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
             />
             <SummaryCard
               label="Total Trades"
@@ -3462,45 +3456,61 @@ export function LiveDashboardClient({
                 .reduce((sum, ea) => sum + ea.openTrades, 0)}
               isCurrency={false}
             />
-            {/* Strategy Health Summary */}
-            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">
-                Strategy Health
-              </p>
-              {portfolioHealthParts.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  {portfolioHealthParts.map((label) => {
-                    const hs = HEALTH_STYLES[label];
-                    return (
-                      <span
-                        key={label}
-                        className={`inline-flex items-center gap-1 text-sm font-semibold ${hs.text}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
-                        {portfolioHealthCounts[label]} {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
-              )}
+          </div>
+          {/* Secondary reading: Paper P&L (only when paper instances exist) */}
+          {eaInstances.some((ea) => ea.mode === "PAPER") && (
+            <div className="flex items-baseline gap-2 px-1">
+              <span className="text-[9px] uppercase tracking-wider text-[#475569]">Paper P&L</span>
+              <span
+                className={`text-xs font-semibold tabular-nums ${
+                  eaInstances
+                    .filter((ea) => ea.mode === "PAPER")
+                    .reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0
+                    ? "text-[#10B981]"
+                    : "text-[#EF4444]"
+                }`}
+              >
+                {formatCurrency(
+                  eaInstances
+                    .filter((ea) => ea.mode === "PAPER")
+                    .reduce((sum, ea) => sum + ea.totalProfit, 0)
+                )}
+              </span>
+              <span className="text-[9px] text-[#475569]">tracked total</span>
             </div>
-            {/* Exposure Summary */}
-            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">Exposure</p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
-                  <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
-                  Strategies
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#CBD5E1]">
-                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
-                  Strategies
-                </span>
+          )}
+
+          {/* Secondary: health + exposure inline */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
+            {/* Strategy Health */}
+            {portfolioHealthParts.length > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] uppercase tracking-wider text-[#475569]">Health</span>
+                {portfolioHealthParts.map((label) => {
+                  const hs = HEALTH_STYLES[label];
+                  return (
+                    <span
+                      key={label}
+                      className={`inline-flex items-center gap-1 text-xs font-medium ${hs.text}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                      {portfolioHealthCounts[label]} {label}
+                    </span>
+                  );
+                })}
               </div>
+            )}
+            {/* Exposure */}
+            <div className="flex items-center gap-3">
+              <span className="text-[9px] uppercase tracking-wider text-[#475569]">Exposure</span>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
+                {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
+                {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
+              </span>
             </div>
           </div>
 
@@ -3523,30 +3533,23 @@ export function LiveDashboardClient({
               (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
             );
             return (
-              <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-3">
-                  Per-Symbol Breakdown
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {entries.map(([sym, data]) => (
-                    <div
-                      key={sym}
-                      className="flex items-center justify-between px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]"
+              <div className="flex flex-wrap items-center gap-1.5 px-1">
+                <span className="text-[9px] uppercase tracking-wider text-[#475569] mr-0.5">
+                  Symbols
+                </span>
+                {entries.map(([sym, data]) => (
+                  <span
+                    key={sym}
+                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-white/[0.02] border border-[#1E293B]"
+                  >
+                    <span className="font-medium text-[#94A3B8]">{sym}</span>
+                    <span
+                      className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
                     >
-                      <div>
-                        <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
-                        <span className="text-[9px] text-[#7C8DB0] ml-1.5">
-                          {data.count} EA{data.count > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-xs font-semibold ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-                      >
-                        {formatCurrency(data.pnl)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                      {formatCurrency(data.pnl)}
+                    </span>
+                  </span>
+                ))}
               </div>
             );
           })()}
