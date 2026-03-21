@@ -317,6 +317,62 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ── Fingerprint Migration Fallback ───────────────────────────────────
+
+/**
+ * Find an existing child instance by (parentInstanceId, symbol, magicNumber).
+ *
+ * Used as fallback when the primary apiKeyHash lookup misses — this happens
+ * when the EA fingerprint formula changes (e.g. canonical unification).
+ *
+ * Returns the instance id if exactly one unambiguous match exists.
+ * Returns null if zero or multiple matches (ambiguity guard).
+ */
+async function findExistingContextByIdentity(
+  baseInstanceId: string,
+  symbol: string,
+  magicNumber: number
+): Promise<string | null> {
+  const normalizedSymbol = symbol.toUpperCase();
+
+  // Find child instances with matching parent + symbol
+  const candidates = await prisma.liveEAInstance.findMany({
+    where: {
+      parentInstanceId: baseInstanceId,
+      symbol: normalizedSymbol,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      terminalDeployments: {
+        where: { magicNumber, ignoredAt: null },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  });
+
+  if (candidates.length === 0) return null;
+
+  // Prefer candidates that have a matching deployment with the correct magic number
+  const withMagic = candidates.filter((c) => c.terminalDeployments.length > 0);
+
+  if (withMagic.length === 1) return withMagic[0].id;
+
+  // No confirmed magic match or multiple matches — do not auto-merge
+  log.warn(
+    {
+      baseInstanceId,
+      symbol: normalizedSymbol,
+      magicNumber,
+      candidateCount: candidates.length,
+      withMagicCount: withMagic.length,
+    },
+    "Fingerprint migration fallback: ambiguous match — skipping auto-merge"
+  );
+  return null;
+}
+
 // ── Manifest Context Instance Resolution ─────────────────────────────
 
 /**
@@ -344,21 +400,55 @@ async function resolveManifestContextInstance(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.upsert({
+  // Step 1: Try direct hash lookup
+  const existing = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: syntheticKeyHash },
-    create: {
+    select: { id: true },
+  });
+
+  if (existing) {
+    // Hash hit — update parentInstanceId backfill and return
+    await prisma.liveEAInstance.update({
+      where: { id: existing.id },
+      data: { parentInstanceId: baseInstanceId },
+    });
+    return existing.id;
+  }
+
+  // Step 2: Fallback — fingerprint migration compatibility.
+  // If a child instance already exists with the same parent + symbol + magic
+  // (via its deployment), reuse it and adopt the new apiKeyHash.
+  const fallback = await findExistingContextByIdentity(
+    baseInstanceId,
+    deployment.symbol,
+    deployment.magicNumber
+  );
+
+  if (fallback) {
+    log.info(
+      {
+        instanceId: fallback,
+        symbol: deployment.symbol,
+        magicNumber: deployment.magicNumber,
+      },
+      "Fingerprint migration fallback: reusing existing instance for manifest context"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: fallback },
+      data: { apiKeyHash: syntheticKeyHash, parentInstanceId: baseInstanceId },
+    });
+    return fallback;
+  }
+
+  // Step 3: No match — create new instance
+  const ctx = await prisma.liveEAInstance.create({
+    data: {
       userId,
       apiKeyHash: syntheticKeyHash,
       eaName: deployment.eaName,
       symbol: deployment.symbol.toUpperCase(),
       timeframe: deployment.timeframe.toUpperCase(),
-      // Start in LIVE_MONITORING so governance returns RUN immediately.
-      // Manifest context instances represent actively deployed live strategies.
       lifecycleState: "LIVE_MONITORING",
-      parentInstanceId: baseInstanceId,
-    },
-    update: {
-      // Backfill parentInstanceId for instances created before this field existed
       parentInstanceId: baseInstanceId,
     },
     select: { id: true },
@@ -407,9 +497,56 @@ async function resolveAutoDiscoveredContextInstance(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.upsert({
+  // Step 1: Try direct hash lookup
+  const existing = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: syntheticKeyHash },
-    create: {
+    select: { id: true },
+  });
+
+  if (existing) {
+    // Hash hit — backfill metadata and return
+    await prisma.liveEAInstance.update({
+      where: { id: existing.id },
+      data: {
+        ...(deployment.broker != null && { broker: deployment.broker }),
+        ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+        parentInstanceId: baseInstanceId,
+      },
+    });
+    return existing.id;
+  }
+
+  // Step 2: Fallback — fingerprint migration compatibility.
+  const fallback = await findExistingContextByIdentity(
+    baseInstanceId,
+    deployment.symbol,
+    deployment.magicNumber
+  );
+
+  if (fallback) {
+    log.info(
+      {
+        instanceId: fallback,
+        symbol: deployment.symbol,
+        magicNumber: deployment.magicNumber,
+      },
+      "Fingerprint migration fallback: reusing existing instance for auto-discovered context"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: fallback },
+      data: {
+        apiKeyHash: syntheticKeyHash,
+        ...(deployment.broker != null && { broker: deployment.broker }),
+        ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+        parentInstanceId: baseInstanceId,
+      },
+    });
+    return fallback;
+  }
+
+  // Step 3: No match — create new instance
+  const ctx = await prisma.liveEAInstance.create({
+    data: {
       userId,
       apiKeyHash: syntheticKeyHash,
       eaName: deployment.eaName,
@@ -418,12 +555,6 @@ async function resolveAutoDiscoveredContextInstance(
       lifecycleState: "DRAFT",
       broker: deployment.broker ?? undefined,
       accountNumber: deployment.accountNumber ?? undefined,
-      parentInstanceId: baseInstanceId,
-    },
-    update: {
-      // Backfill broker/accountNumber and parentInstanceId for pre-existing instances
-      ...(deployment.broker != null && { broker: deployment.broker }),
-      ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
       parentInstanceId: baseInstanceId,
     },
     select: { id: true },
