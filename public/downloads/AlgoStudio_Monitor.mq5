@@ -2316,7 +2316,9 @@ void FlushOfflineQueue()
 void SaveOfflineQueue()
 {
    string queueFile = STATE_FILE_PREFIX + StringSubstr(InpApiKey, 0, 8) + "_queue.dat";
-   int handle = FileOpen(queueFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
+   string tmpFile = queueFile + ".tmp";
+
+   int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
    if(handle == INVALID_HANDLE) return;
 
    FileWriteString(handle, IntegerToString(g_queueCount) + "\n");
@@ -2330,6 +2332,12 @@ void SaveOfflineQueue()
       FileWriteString(handle, IntegerToString(g_queueRetryCount[i]) + "|" + line + "\n");
    }
    FileClose(handle);
+
+   // Promote temp to live — preserves previous queue file on failure.
+   if(!FileCopy(tmpFile, FILE_COMMON, queueFile, FILE_COMMON | FILE_REWRITE))
+      Print("AlgoStudio Monitor: WARNING — queue file promotion failed.");
+
+   FileDelete(tmpFile, FILE_COMMON);
 }
 
 void LoadOfflineQueue()
@@ -2382,8 +2390,11 @@ void SaveState()
    GlobalVariableSet(prefix + "seqNo", (double)g_seqNo);
    // Hash stored in file (too long for GV)
 
-   // File backup (survives terminal restart)
-   int handle = FileOpen(g_stateFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
+   // Write to temp file first, then copy over live file.
+   // Crash during temp write leaves the live file intact.
+   string tmpFile = g_stateFile + ".tmp";
+
+   int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
    if(handle == INVALID_HANDLE) return;
 
    FileWriteString(handle, IntegerToString(g_seqNo) + "\n");
@@ -2406,6 +2417,14 @@ void SaveState()
    }
 
    FileClose(handle);
+
+   // Promote temp to live via FileCopy (not guaranteed atomic, but crash
+   // during temp write leaves the live file intact — significant improvement
+   // over direct truncate-on-open). If copy fails, previous state is preserved.
+   if(!FileCopy(tmpFile, FILE_COMMON, g_stateFile, FILE_COMMON | FILE_REWRITE))
+      Print("AlgoStudio Monitor: WARNING — state file promotion failed, previous state preserved.");
+
+   FileDelete(tmpFile, FILE_COMMON);
 }
 
 void LoadState()
@@ -2418,10 +2437,41 @@ void LoadState()
       g_seqNo = (int)GlobalVariableGet(prefix + "seqNo");
    }
 
-   // Load full state from file (needed for hash + instanceId)
-   if(FileIsExist(g_stateFile, FILE_COMMON))
+   // Load full state from file (needed for hash + instanceId).
+   // If the live file is missing or structurally invalid (empty, truncated,
+   // corrupt hash on line 2), try the temp file as fallback — covers the
+   // scenario where a crash occurred after temp write but before promotion,
+   // or during a FileCopy that left the live file incomplete.
+   string stateSource = g_stateFile;
+   string tmpFile = g_stateFile + ".tmp";
+   bool needFallback = !FileIsExist(g_stateFile, FILE_COMMON);
+   if(!needFallback)
    {
-      int handle = FileOpen(g_stateFile, FILE_READ | FILE_TXT | FILE_COMMON);
+      // Structural validation: line 1 = seqNo, line 2 = 64-char hash.
+      // If hash is missing or wrong length, the file is corrupt.
+      int probe = FileOpen(g_stateFile, FILE_READ | FILE_TXT | FILE_COMMON);
+      if(probe == INVALID_HANDLE)
+      {
+         needFallback = true;
+      }
+      else
+      {
+         string probeLine1 = FileIsEnding(probe) ? "" : FileReadString(probe);
+         string probeLine2 = FileIsEnding(probe) ? "" : FileReadString(probe);
+         FileClose(probe);
+         if(StringLen(probeLine2) != 64)
+            needFallback = true;
+      }
+   }
+   if(needFallback && FileIsExist(tmpFile, FILE_COMMON))
+   {
+      stateSource = tmpFile;
+      Print("AlgoStudio Monitor: Live state file missing or corrupt — recovering from temp file.");
+   }
+
+   if(FileIsExist(stateSource, FILE_COMMON))
+   {
+      int handle = FileOpen(stateSource, FILE_READ | FILE_TXT | FILE_COMMON);
       if(handle != INVALID_HANDLE)
       {
          if(!FileIsEnding(handle))
