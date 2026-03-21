@@ -293,10 +293,16 @@ int OnInit()
    if(InpShowPanel)
       PanelCreate();
 
+   string ctxMode = g_manifestMode
+      ? (g_contextCount > 0 && StringLen(InpStrategyManifest) > 0 ? "manifest"
+         : InpStrategyMagic > 0 ? "self-id" : "auto-discovery")
+      : "legacy";
    Print("AlgoStudio Monitor: Initialized. Mode=",
          InpMonitorMode == MODE_ACCOUNT_WIDE ? "Account-Wide" : "Symbol-Only",
+         " Context=", ctxMode, "(", g_contextCount, ")",
          " Heartbeat=", InpHeartbeatSec, "s Snapshot=", InpSnapshotSec, "s",
-         " Deployment=", g_deploymentAware ? "enabled" : "disabled");
+         " ChainSync=", g_chainSyncPending ? "PENDING" : "OK",
+         " SeqNo=", g_seqNo);
 
    return INIT_SUCCEEDED;
 }
@@ -335,7 +341,12 @@ void OnDeinit(const int reason)
 
    EventKillTimer();
 
-   Print("AlgoStudio Monitor: Shut down. Reason=", reason);
+   Print("AlgoStudio Monitor: Shut down. Reason=", reason,
+         " SeqNo=", g_seqNo,
+         " Queue=", g_queueCount,
+         (g_droppedEvents > 0 ? " Dropped=" + IntegerToString(g_droppedEvents) : ""),
+         (g_dealSelectFailures > 0 ? " DealSelFail=" + IntegerToString(g_dealSelectFailures) : ""),
+         (g_chainDegraded ? " CHAIN_DEGRADED" : ""));
 }
 
 //+------------------------------------------------------------------+
@@ -2563,7 +2574,11 @@ void SaveOfflineQueue()
    string tmpFile = queueFile + ".tmp";
 
    int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
-   if(handle == INVALID_HANDLE) return;
+   if(handle == INVALID_HANDLE)
+   {
+      Print("AlgoStudio Monitor: WARNING — cannot open queue temp file for writing.");
+      return;
+   }
 
    FileWriteString(handle, IntegerToString(g_queueCount) + "\n");
    for(int i = 0; i < g_queueCount; i++)
@@ -2639,7 +2654,11 @@ void SaveState()
    string tmpFile = g_stateFile + ".tmp";
 
    int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
-   if(handle == INVALID_HANDLE) return;
+   if(handle == INVALID_HANDLE)
+   {
+      Print("AlgoStudio Monitor: WARNING — cannot open state temp file for writing.");
+      return;
+   }
 
    FileWriteString(handle, IntegerToString(g_seqNo) + "\n");
    FileWriteString(handle, g_lastHash + "\n");
