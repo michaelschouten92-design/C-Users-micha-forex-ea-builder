@@ -3300,7 +3300,7 @@ export function LiveDashboardClient({
           const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="space-y-3">
+            <div className="space-y-3 sticky top-0 z-20 bg-[#0A0118] pb-3 -mx-px px-px">
               {/* System pulse header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
