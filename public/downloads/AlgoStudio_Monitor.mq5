@@ -197,6 +197,7 @@ bool   g_manifestMode = false;
 datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
 bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
 datetime g_lastSyncAttempt  = 0;         // Rate-limit chain sync retries
+bool     g_queueDirty       = false;     // True when queue was mutated but not yet flushed to disk
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -311,8 +312,13 @@ void OnDeinit(const int reason)
    // Send base SESSION_END
    SendSessionEnd();
 
-   // Flush offline queue
+   // Flush offline queue + persist any remaining dirty state
    FlushOfflineQueue();
+   if(g_queueDirty)
+   {
+      SaveOfflineQueue();
+      g_queueDirty = false;
+   }
 
    // Save state
    SaveState();
@@ -420,6 +426,13 @@ void OnTimer()
    // Update on-chart panel
    if(InpShowPanel)
       PanelUpdate();
+
+   // Flush dirty queue to disk (at most once per timer tick, after all mutations)
+   if(g_queueDirty)
+   {
+      SaveOfflineQueue();
+      g_queueDirty = false;
+   }
 
    // Periodic state save (every 5 minutes)
    static datetime lastSave = 0;
@@ -2334,9 +2347,7 @@ void EnqueueEvent(string json)
    g_offlineQueue[g_queueCount] = json;
    g_queueRetryCount[g_queueCount] = 0;
    g_queueCount++;
-
-   // Persist queue to file
-   SaveOfflineQueue();
+   g_queueDirty = true;
 }
 
 void FlushOfflineQueue()
@@ -2400,12 +2411,12 @@ void FlushOfflineQueue()
       g_queueCount -= consumed;
       ArrayResize(g_offlineQueue, g_queueCount);
       ArrayResize(g_queueRetryCount, g_queueCount);
-      SaveOfflineQueue();
+      g_queueDirty = true;
    }
    else if(stopped)
    {
-      // Retry counts may have been incremented — persist without removing events
-      SaveOfflineQueue();
+      // Retry counts may have been incremented — mark dirty for periodic save
+      g_queueDirty = true;
    }
 }
 
