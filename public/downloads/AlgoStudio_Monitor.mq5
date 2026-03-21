@@ -2932,7 +2932,7 @@ void PanelCreate()
 
    // Info rows — labels (left) and values (right)
    int y = 92;
-   string rowNames[] = {"Status", "Governance", "Heartbeat", "Instance", "Account", "Queue", "Last error"};
+   string rowNames[] = {"Status", "Governance", "Heartbeat", "Instance", "Account", "Diagnostics", "Last error"};
    for(int i = 0; i < 7; i++)
    {
       OvlLabel("L" + IntegerToString(i), OVL_LEFT_MARGIN, y, rowNames[i], OVL_LABEL_COLOR, OVL_LABEL_FONT_SIZE);
@@ -3054,16 +3054,25 @@ void PanelUpdate()
                    + "  " + AccountInfoString(ACCOUNT_SERVER);
    PanelSetValue(4, acctText, OVL_DIM_COLOR);
 
-   // Row 5: Queue + deal-select failures
-   if(g_queueCount > 0 || g_dealSelectFailures > 0)
+   // Row 5: Diagnostics — chain health, queue, deal-select failures
+   if(g_chainDegraded || g_chainSyncPending || g_queueCount > 0 || g_dealSelectFailures > 0)
    {
       string diagParts = "";
+      color  diagClr = OVL_YELLOW;
+      if(g_chainDegraded)
+      {
+         diagParts = "CHAIN STALLED";
+         diagClr = OVL_RED;
+      }
+      else if(g_chainSyncPending)
+         diagParts = "SYNC PENDING";
       if(g_queueCount > 0)
-         diagParts = IntegerToString(g_queueCount) + " queued";
+         diagParts += (StringLen(diagParts) > 0 ? "  " : "")
+                    + IntegerToString(g_queueCount) + " queued";
       if(g_dealSelectFailures > 0)
          diagParts += (StringLen(diagParts) > 0 ? "  " : "")
                     + IntegerToString(g_dealSelectFailures) + " deal-sel fail";
-      PanelSetValue(5, diagParts, OVL_YELLOW);
+      PanelSetValue(5, diagParts, diagClr);
    }
    else
       PanelSetValue(5, "—", OVL_DIM_COLOR);
