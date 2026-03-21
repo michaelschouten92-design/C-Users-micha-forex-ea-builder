@@ -1331,12 +1331,12 @@ function AccountCard({
   return (
     <div
       id={`account-card-${primary.id}`}
-      className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
+      className={`bg-[#0F0A1A] border rounded-lg p-5 transition-all duration-300 ${
         healthCounts["Edge at Risk"] > 0
-          ? "border-l-2 border-l-[#EF4444]/60 border-[rgba(79,70,229,0.2)]"
+          ? "border-l-2 border-l-[#EF4444]/60 border-[#1E293B]"
           : statusChanged
-            ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
-            : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+            ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
+            : "border-[#1E293B] hover:border-[#334155]"
       }`}
     >
       {/* Header */}
@@ -1347,13 +1347,13 @@ function AccountCard({
             {account.broker && <span>{account.broker}</span>}
             {account.accountNumber && (
               <>
-                {account.broker && <span className="text-[rgba(79,70,229,0.4)]">•</span>}
+                {account.broker && <span className="text-[#334155]">•</span>}
                 <span>Account #{account.accountNumber}</span>
               </>
             )}
             <>
               {(account.broker || account.accountNumber) && (
-                <span className="text-[rgba(79,70,229,0.4)]">•</span>
+                <span className="text-[#334155]">•</span>
               )}
               <span className="text-[#7C8DB0]/70 italic">Portfolio mode</span>
             </>
@@ -1432,7 +1432,7 @@ function AccountCard({
 
       {/* Strategy health summary */}
       {healthSummaryParts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 mb-4 px-3 py-2 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.08)]">
+        <div className="flex flex-wrap items-center gap-3 mb-4 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
           {healthSummaryParts.map((label) => {
             const hs = HEALTH_STYLES[label];
             return (
@@ -1451,17 +1451,17 @@ function AccountCard({
       {/* Financial metrics */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Balance</p>
-          <p className="text-lg font-semibold text-white">{formatCurrency(balance)}</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Balance</p>
+          <p className="text-lg font-semibold text-white tabular-nums">{formatCurrency(balance)}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Equity</p>
-          <p className="text-lg font-semibold text-white">{formatCurrency(equity)}</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Equity</p>
+          <p className="text-lg font-semibold text-white tabular-nums">{formatCurrency(equity)}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Profit</p>
           <p
-            className={`text-lg font-semibold ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+            className={`text-lg font-semibold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
             {formatCurrency(totalProfit)}
           </p>
@@ -1471,27 +1471,27 @@ function AccountCard({
       {/* Performance metrics */}
       <div className="grid grid-cols-4 gap-4 mb-4">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Trades</p>
-          <p className="text-sm font-semibold text-white">{totalTrades}</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Trades</p>
+          <p className="text-sm font-semibold text-white tabular-nums">{totalTrades}</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Win Rate</p>
-          <p className="text-sm font-semibold text-white">{winRate.toFixed(1)}%</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Win Rate</p>
+          <p className="text-sm font-semibold text-white tabular-nums">{winRate.toFixed(1)}%</p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit Factor</p>
-          <p className="text-sm font-semibold text-white">
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Profit Factor</p>
+          <p className="text-sm font-semibold text-white tabular-nums">
             {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
           </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Edge at Risk</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Edge at Risk</p>
           <p
-            className={`text-sm font-semibold ${edgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-white"}`}
+            className={`text-sm font-semibold ${edgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-[#475569]"}`}
           >
             {edgeAtRiskCount} {edgeAtRiskCount === 1 ? "strategy" : "strategies"}
           </p>
-          <p className="text-[9px] text-[#64748B]">
+          <p className="text-[9px] text-[#475569]">
             {edgeAtRiskCount > 0 ? "Investigation recommended" : "All strategies healthy"}
           </p>
         </div>
@@ -1872,13 +1872,13 @@ function EACard({
             {ea.timeframe && <span>{ea.timeframe}</span>}
             {ea.broker && (
               <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span className="text-[#334155]">|</span>
                 <span>{ea.broker}</span>
               </>
             )}
             {ea.accountNumber && (
               <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span className="text-[#334155]">|</span>
                 <span>#{ea.accountNumber}</span>
               </>
             )}
@@ -2531,14 +2531,14 @@ function SummaryCard({
   isCurrency?: boolean;
 }) {
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">{label}</p>
+    <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+      <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">{label}</p>
       <p
-        className={`text-lg font-semibold ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
+        className={`text-lg font-semibold tabular-nums ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
-      {subtitle && <p className="text-[9px] text-[#64748B] mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-[9px] text-[#475569] mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -3098,29 +3098,29 @@ export function LiveDashboardClient({
   ).filter((label) => portfolioHealthCounts[label] > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Controls bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">Track Record</h2>
-          <span className="text-sm text-[#7C8DB0]">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-white tracking-tight">Command Center</h2>
+          <span className="text-xs text-[#64748B]">
             {eaInstances.length} instance{eaInstances.length !== 1 ? "s" : ""}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Mode filter */}
-          <div className="flex items-center rounded-lg border border-[rgba(79,70,229,0.2)] overflow-hidden">
+          <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
             {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setModeFilter(mode)}
-                className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
                   modeFilter === mode
                     ? mode === "PAPER"
-                      ? "bg-[#F59E0B]/20 text-[#F59E0B]"
-                      : "bg-[#4F46E5]/20 text-[#A78BFA]"
-                    : "text-[#7C8DB0] hover:text-white"
+                      ? "bg-[#F59E0B]/15 text-[#F59E0B]"
+                      : "bg-white/5 text-white"
+                    : "text-[#64748B] hover:text-[#94A3B8]"
                 }`}
               >
                 {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
@@ -3134,10 +3134,10 @@ export function LiveDashboardClient({
           {/* Sound toggle */}
           <button
             onClick={() => setSoundAlerts(!soundAlerts)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors ${
               soundAlerts
-                ? "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
-                : "bg-[#0A0118] text-[#7C8DB0] border-[rgba(79,70,229,0.2)] hover:text-white"
+                ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
+                : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
             }`}
             title={soundAlerts ? "Notifications on" : "Notifications off"}
           >
@@ -3164,7 +3164,7 @@ export function LiveDashboardClient({
           {/* Alerts config button */}
           <button
             onClick={() => setShowAlertsModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-[#A78BFA] hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -3183,7 +3183,7 @@ export function LiveDashboardClient({
           {/* Manual refresh */}
           <button
             onClick={fetchUpdate}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+            className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
           >
             Refresh Now
           </button>
@@ -3223,8 +3223,8 @@ export function LiveDashboardClient({
               isCurrency={false}
             />
             {/* Strategy Health Summary */}
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">
                 Strategy Health
               </p>
               {portfolioHealthParts.length > 0 ? (
@@ -3247,8 +3247,8 @@ export function LiveDashboardClient({
               )}
             </div>
             {/* Exposure Summary */}
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Exposure</p>
+            <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">Exposure</p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
                   <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
@@ -3265,7 +3265,7 @@ export function LiveDashboardClient({
           </div>
 
           {/* Global Floating Drawdown Alert */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+          <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
                 <svg
@@ -3294,12 +3294,12 @@ export function LiveDashboardClient({
                   min="0.1"
                   max="100"
                   step="0.1"
-                  className="w-20 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#4F46E5]"
+                  className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
                 />
                 <span className="text-xs text-[#7C8DB0]">% floating DD</span>
                 <button
                   onClick={handleSaveGlobalDrawdown}
-                  className="px-3 py-1 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200"
+                  className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
                 >
                   Save
                 </button>
@@ -3326,15 +3326,15 @@ export function LiveDashboardClient({
               (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
             );
             return (
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
+              <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
+                <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-3">
                   Per-Symbol Breakdown
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {entries.map(([sym, data]) => (
                     <div
                       key={sym}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
+                      className="flex items-center justify-between px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]"
                     >
                       <div>
                         <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
@@ -3431,12 +3431,12 @@ export function LiveDashboardClient({
 
         return (
           <div
-            className="bg-[#1A0626] border rounded-xl p-4"
-            style={{ borderColor: `${headerColor}33` }}
+            className="bg-[#0F0A1A] border rounded-lg p-4"
+            style={{ borderColor: `${headerColor}40` }}
           >
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
-              <p className="text-xs font-semibold text-white">Action Required</p>
+              <p className="text-sm font-semibold text-white">Action Required</p>
               <span className="text-[10px] text-[#7C8DB0]">
                 {items.length} {items.length === 1 ? "strategy requires" : "strategies require"}{" "}
                 attention
@@ -3446,7 +3446,7 @@ export function LiveDashboardClient({
               {sortedGroups.map((group) => (
                 <div
                   key={group.statusLabel}
-                  className="rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
+                  className="rounded-md bg-white/[0.02] border border-[#1E293B] px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -3535,11 +3535,11 @@ export function LiveDashboardClient({
           ];
 
           return (
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-4 gap-3">
               {cats.map((c) => (
                 <div
                   key={c.label}
-                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3"
+                  className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg px-4 py-3"
                 >
                   <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
                     {c.label}
@@ -3558,8 +3558,8 @@ export function LiveDashboardClient({
 
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center opacity-60">
+        <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1E293B] flex items-center justify-center">
             <svg
               className="w-8 h-8 text-white"
               fill="none"
@@ -3581,7 +3581,7 @@ export function LiveDashboardClient({
           </p>
           <Link
             href="/app"
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-md hover:bg-[#4338CA] transition-colors"
           >
             Go to Dashboard
           </Link>
