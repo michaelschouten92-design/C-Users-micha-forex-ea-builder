@@ -2269,6 +2269,10 @@ void SyncChainState()
 {
    if(StringLen(g_instanceId) == 0) return;
 
+   // Capture pre-sync state for CHAIN_RECOVERY event
+   int preSyncSeq = g_seqNo;
+   string preSyncHash = g_lastHash;
+
    string url = InpBaseUrl + "/api/track-record/state/" + g_instanceId;
    string headers = "X-EA-Key: " + InpApiKey;
 
@@ -2332,6 +2336,28 @@ void SyncChainState()
    g_chainSyncPending = false;
    SaveState();
    Print("AlgoStudio Monitor: Chain synced. seqNo=", g_seqNo, " hash=", StringSubstr(g_lastHash, 0, 16), "...");
+
+   // Send CHAIN_RECOVERY audit event if state actually changed
+   if(g_seqNo > preSyncSeq && g_sessionStartSent)
+   {
+      string payloadPairs[];
+      ArrayResize(payloadPairs, 5);
+      payloadPairs[0] = JInt("previousSeqNo", preSyncSeq);
+      payloadPairs[1] = JStr("previousHash", preSyncHash);
+      payloadPairs[2] = JInt("recoveredFromSeqNo", g_seqNo);
+      payloadPairs[3] = JStr("recoveredFromHash", g_lastHash);
+      payloadPairs[4] = JStr("reason", "SERVER_AHEAD");
+
+      string payloadJson = "{"
+         + JInt("previousSeqNo", preSyncSeq) + ","
+         + JStr("previousHash", preSyncHash) + ","
+         + JInt("recoveredFromSeqNo", g_seqNo) + ","
+         + JStr("recoveredFromHash", g_lastHash) + ","
+         + JStr("reason", "SERVER_AHEAD")
+         + "}";
+
+      SendTrackRecordEvent("CHAIN_RECOVERY", payloadJson, payloadPairs);
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -2342,6 +2368,10 @@ void SyncChainState()
 bool SyncContextChainState(int ctxIdx)
 {
    if(StringLen(g_contexts[ctxIdx].instanceId) == 0) return false;
+
+   // Capture pre-sync state for CHAIN_RECOVERY event
+   int preSyncSeq = g_contexts[ctxIdx].seqNo;
+   string preSyncHash = g_contexts[ctxIdx].lastHash;
 
    string url = InpBaseUrl + "/api/track-record/state/" + g_contexts[ctxIdx].instanceId;
    string headers = "X-EA-Key: " + InpApiKey;
@@ -2404,6 +2434,29 @@ bool SyncContextChainState(int ctxIdx)
    Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
          "]: Context chain synced. seqNo=", g_contexts[ctxIdx].seqNo,
          " hash=", StringSubstr(g_contexts[ctxIdx].lastHash, 0, 16), "...");
+
+   // Send CHAIN_RECOVERY audit event if state actually changed
+   if(g_contexts[ctxIdx].seqNo > preSyncSeq && g_contexts[ctxIdx].sessionStartSent)
+   {
+      string payloadPairs[];
+      ArrayResize(payloadPairs, 5);
+      payloadPairs[0] = JInt("previousSeqNo", preSyncSeq);
+      payloadPairs[1] = JStr("previousHash", preSyncHash);
+      payloadPairs[2] = JInt("recoveredFromSeqNo", g_contexts[ctxIdx].seqNo);
+      payloadPairs[3] = JStr("recoveredFromHash", g_contexts[ctxIdx].lastHash);
+      payloadPairs[4] = JStr("reason", "SERVER_AHEAD");
+
+      string payloadJson = "{"
+         + JInt("previousSeqNo", preSyncSeq) + ","
+         + JStr("previousHash", preSyncHash) + ","
+         + JInt("recoveredFromSeqNo", g_contexts[ctxIdx].seqNo) + ","
+         + JStr("recoveredFromHash", g_contexts[ctxIdx].lastHash) + ","
+         + JStr("reason", "SERVER_AHEAD")
+         + "}";
+
+      SendContextTrackRecordEvent(ctxIdx, "CHAIN_RECOVERY", payloadJson, payloadPairs);
+   }
+
    return true;
 }
 
