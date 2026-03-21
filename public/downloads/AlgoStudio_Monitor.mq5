@@ -161,6 +161,7 @@ bool   g_initialized = false;
 bool   g_sessionStartSent = false;
 bool   g_chainDegraded = false;    // True after event drop — chain stalled until resync
 int    g_droppedEvents = 0;        // Cumulative dropped events (persisted across restarts)
+int    g_dealSelectFailures = 0;  // Cumulative HistoryDealSelect failures (session-only, not persisted)
 string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
@@ -1616,7 +1617,13 @@ void SendSnapshot()
 
 bool SendTradeOpen(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
+   if(!HistoryDealSelect(dealTicket))
+   {
+      g_dealSelectFailures++;
+      Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_OPEN deal #",
+            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
+      return true; // can't select → don't retry (deal marked as known — event is lost)
+   }
 
    string symbol   = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
    double price    = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1689,7 +1696,13 @@ bool SendTradeOpen(ulong dealTicket)
 
 bool SendTradeClose(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
+   if(!HistoryDealSelect(dealTicket))
+   {
+      g_dealSelectFailures++;
+      Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_CLOSE deal #",
+            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
+      return true; // can't select → don't retry (deal marked as known — event is lost)
+   }
 
    string ticket    = IntegerToString(dealTicket);
    double closePrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1826,6 +1839,7 @@ void SendHeartbeat()
       + JMoney("drawdown", dd) + ","
       + JInt("spread", spread)
       + (g_droppedEvents > 0 ? "," + JInt("droppedEvents", g_droppedEvents) : "")
+      + (g_dealSelectFailures > 0 ? "," + JInt("dealSelectFailures", g_dealSelectFailures) : "")
       + (g_chainDegraded ? ",\"chainStalled\":true" : "")
       + deployJson
       + discoveryJson
@@ -2791,9 +2805,17 @@ void PanelUpdate()
                    + "  " + AccountInfoString(ACCOUNT_SERVER);
    PanelSetValue(4, acctText, OVL_DIM_COLOR);
 
-   // Row 5: Queue — only show count when non-zero
-   if(g_queueCount > 0)
-      PanelSetValue(5, IntegerToString(g_queueCount) + " queued", OVL_YELLOW);
+   // Row 5: Queue + deal-select failures
+   if(g_queueCount > 0 || g_dealSelectFailures > 0)
+   {
+      string diagParts = "";
+      if(g_queueCount > 0)
+         diagParts = IntegerToString(g_queueCount) + " queued";
+      if(g_dealSelectFailures > 0)
+         diagParts += (StringLen(diagParts) > 0 ? "  " : "")
+                    + IntegerToString(g_dealSelectFailures) + " deal-sel fail";
+      PanelSetValue(5, diagParts, OVL_YELLOW);
+   }
    else
       PanelSetValue(5, "—", OVL_DIM_COLOR);
 
