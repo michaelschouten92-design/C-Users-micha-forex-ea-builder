@@ -3190,7 +3190,7 @@ export function LiveDashboardClient({
         </div>
       </div>
 
-      {/* Edge Health Summary — system pulse at a glance */}
+      {/* ── System Status Zone ── */}
       {eaInstances.length > 0 &&
         (() => {
           let healthy = 0;
@@ -3213,182 +3213,227 @@ export function LiveDashboardClient({
             }
           }
 
-          const cats = [
-            { label: "Healthy", count: healthy, color: "#10B981" },
-            { label: "Attention", count: attentionCount, color: "#F59E0B" },
-            { label: "Collecting Data", count: monitoring, color: "#A78BFA" },
-            { label: "Paused", count: paused, color: "#64748B" },
-          ];
+          const total = healthy + attentionCount + monitoring + paused;
+          const allHealthy = attentionCount === 0 && paused === 0 && monitoring === 0;
+
+          // Build action-required items
+          const actionItems = eaInstances
+            .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
+            .map((ea) => {
+              const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+              if (!att) return null;
+              const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+              const isBaselineAction =
+                att.statusLabel === "Baseline suspended" ||
+                att.statusLabel === "No baseline linked";
+              return {
+                id: ea.id,
+                identity,
+                ...att,
+                onClick: isBaselineAction
+                  ? () => setLinkBaselineInstanceId(ea.id)
+                  : () => {
+                      const cardId = ea.parentInstanceId || ea.id;
+                      if (ea.parentInstanceId) setScrollExpandId(ea.id);
+                      document
+                        .getElementById(`account-card-${cardId}`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    },
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+
+          // Group action items
+          const groups = new Map<
+            string,
+            {
+              statusLabel: string;
+              reason: string;
+              actionLabel: string;
+              color: string;
+              members: typeof actionItems;
+            }
+          >();
+          for (const item of actionItems) {
+            const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+            const existing = groups.get(groupKey);
+            if (existing) {
+              existing.members.push(item);
+            } else {
+              groups.set(groupKey, {
+                statusLabel: item.statusLabel,
+                reason: item.reason,
+                actionLabel: item.actionLabel,
+                color: item.color,
+                members: [item],
+              });
+            }
+          }
+
+          const ALERT_PRIORITY: Record<string, number> = {
+            "Edge at risk": 0,
+            Unstable: 1,
+            "Connection error": 2,
+            "Baseline suspended": 3,
+            "Waiting for data": 4,
+            "No baseline linked": 5,
+          };
+          const sortedGroups = [...groups.values()].sort(
+            (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+          );
+
+          const hasRed = actionItems.some((i) => i.color === "#EF4444");
+          const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="grid grid-cols-4 gap-3">
-              {cats.map((c) => (
-                <div
-                  key={c.label}
-                  className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg px-4 py-3"
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                    {c.label}
-                  </p>
-                  <p
-                    className="text-lg font-semibold"
-                    style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
-                  >
-                    {c.count}
+            <div className="space-y-3">
+              {/* System pulse header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{
+                      backgroundColor: allHealthy
+                        ? "#10B981"
+                        : hasRed
+                          ? "#EF4444"
+                          : attentionCount > 0
+                            ? "#F59E0B"
+                            : "#A78BFA",
+                      boxShadow: `0 0 8px ${allHealthy ? "#10B98140" : hasRed ? "#EF444440" : attentionCount > 0 ? "#F59E0B40" : "#A78BFA40"}`,
+                    }}
+                  />
+                  <p className="text-sm font-medium text-white">
+                    {allHealthy
+                      ? "All systems nominal"
+                      : attentionCount > 0
+                        ? `${attentionCount} ${attentionCount === 1 ? "instance" : "instances"} need attention`
+                        : monitoring > 0
+                          ? "Collecting baseline data"
+                          : paused > 0
+                            ? "Trading paused"
+                            : "System monitoring active"}
                   </p>
                 </div>
-              ))}
-            </div>
-          );
-        })()}
+                <p className="text-[10px] text-[#475569]">
+                  {total} instance{total !== 1 ? "s" : ""} monitored
+                </p>
+              </div>
 
-      {/* Action Required / Edge Health Panel — urgent items surface early */}
-      {(() => {
-        const items = eaInstances
-          .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
-          .map((ea) => {
-            const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!attention) return null;
-            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-            const isBaselineAction =
-              attention.statusLabel === "Baseline suspended" ||
-              attention.statusLabel === "No baseline linked";
-            return {
-              id: ea.id,
-              identity,
-              ...attention,
-              onClick: isBaselineAction
-                ? () => setLinkBaselineInstanceId(ea.id)
-                : () => {
-                    const cardId = ea.parentInstanceId || ea.id;
-                    if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                    document
-                      .getElementById(`account-card-${cardId}`)
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  },
-            };
-          })
-          .filter((item): item is NonNullable<typeof item> => item !== null);
-
-        if (items.length === 0) return null;
-
-        // Group items by composite key (statusLabel + reason + actionLabel)
-        const groups = new Map<
-          string,
-          {
-            statusLabel: string;
-            reason: string;
-            actionLabel: string;
-            color: string;
-            members: typeof items;
-          }
-        >();
-        for (const item of items) {
-          const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
-          const existing = groups.get(groupKey);
-          if (existing) {
-            existing.members.push(item);
-          } else {
-            groups.set(groupKey, {
-              statusLabel: item.statusLabel,
-              reason: item.reason,
-              actionLabel: item.actionLabel,
-              color: item.color,
-              members: [item],
-            });
-          }
-        }
-
-        // Sort groups by operational priority (urgent first)
-        const ALERT_PRIORITY: Record<string, number> = {
-          "Edge at risk": 0,
-          Unstable: 1,
-          "Connection error": 2,
-          "Baseline suspended": 3,
-          "Waiting for data": 4,
-          "No baseline linked": 5,
-        };
-        const sortedGroups = [...groups.values()].sort(
-          (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
-        );
-
-        const hasRed = items.some((i) => i.color === "#EF4444");
-        const headerColor = hasRed ? "#EF4444" : "#F59E0B";
-
-        return (
-          <div
-            className="bg-[#0F0A1A] border rounded-lg p-4"
-            style={{ borderColor: `${headerColor}40` }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
-              <p className="text-sm font-semibold text-white">Action Required</p>
-              <span className="text-[10px] text-[#7C8DB0]">
-                {items.length} {items.length === 1 ? "strategy requires" : "strategies require"}{" "}
-                attention
-              </span>
-            </div>
-            <div className="space-y-2">
-              {sortedGroups.map((group) => (
-                <div
-                  key={group.statusLabel}
-                  className="rounded-md bg-white/[0.02] border border-[#1E293B] px-3 py-2"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-medium" style={{ color: group.color }}>
-                        {group.statusLabel}
-                        <span className="text-[#7C8DB0] font-normal">
-                          {" "}
-                          ({group.members.length}{" "}
-                          {group.members.length === 1 ? "strategy" : "strategies"})
-                        </span>
-                      </p>
-                      <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{group.reason}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={group.members[0].onClick}
-                        className="text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
-                        style={{
-                          color: group.color,
-                          borderColor: `${group.color}4D`,
-                          backgroundColor: `${group.color}15`,
-                        }}
+              {/* Health counters */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "Healthy", count: healthy, color: "#10B981" },
+                  { label: "Attention", count: attentionCount, color: "#F59E0B" },
+                  { label: "Collecting", count: monitoring, color: "#A78BFA" },
+                  { label: "Paused", count: paused, color: "#64748B" },
+                ].map((c) => (
+                  <div
+                    key={c.label}
+                    className="flex items-center gap-2.5 bg-[#0F0A1A] border border-[#1E293B] rounded-md px-3 py-2.5"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: c.count > 0 ? c.color : "#27272A",
+                      }}
+                    />
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className="text-base font-semibold tabular-nums"
+                        style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
                       >
-                        {group.actionLabel}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDismissedAlerts(
-                            (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
-                          )
-                        }
-                        className="text-[10px] text-[#64748B] hover:text-[#CBD5E1] transition-colors p-1"
-                        title="Dismiss"
-                      >
-                        ✕
-                      </button>
+                        {c.count}
+                      </span>
+                      <span className="text-[10px] text-[#64748B]">{c.label}</span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {group.members.map((m) => (
-                      <span
-                        key={m.id}
-                        className="text-[10px] text-[#CBD5E1] bg-[#1A0626] px-1.5 py-0.5 rounded"
+                ))}
+              </div>
+
+              {/* Action Required */}
+              {actionItems.length > 0 && (
+                <div
+                  className="border rounded-md p-3"
+                  style={{
+                    borderColor: `${alertBorderColor}30`,
+                    backgroundColor: `${alertBorderColor}08`,
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: alertBorderColor }}
+                    />
+                    <p className="text-xs font-semibold text-white">Action Required</p>
+                    <span className="text-[10px] text-[#64748B]">
+                      {actionItems.length} {actionItems.length === 1 ? "strategy" : "strategies"}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {sortedGroups.map((group) => (
+                      <div
+                        key={group.statusLabel}
+                        className="flex items-center justify-between gap-3 rounded px-2.5 py-1.5 bg-black/20"
                       >
-                        {m.identity}
-                      </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-medium" style={{ color: group.color }}>
+                              {group.statusLabel}
+                            </p>
+                            <span className="text-[10px] text-[#475569]">
+                              ({group.members.length})
+                            </span>
+                            <span className="text-[10px] text-[#475569]">—</span>
+                            <span className="text-[10px] text-[#64748B] truncate">
+                              {group.reason}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {group.members.map((m) => (
+                              <span
+                                key={m.id}
+                                className="text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
+                              >
+                                {m.identity}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={group.members[0].onClick}
+                            className="text-[10px] font-medium px-2 py-0.5 rounded border transition-colors"
+                            style={{
+                              color: group.color,
+                              borderColor: `${group.color}40`,
+                              backgroundColor: `${group.color}10`,
+                            }}
+                          >
+                            {group.actionLabel}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDismissedAlerts(
+                                (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
+                              )
+                            }
+                            className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors p-0.5"
+                            title="Dismiss"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* Portfolio Metrics */}
       {eaInstances.length > 0 && (
