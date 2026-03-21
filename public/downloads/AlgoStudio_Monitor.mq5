@@ -279,6 +279,12 @@ int OnInit()
       // Mark it so the guard in SendTrackRecordEvent doesn't block events.
       g_sessionStartSent = true;
    }
+   // Sync per-context chain state for contexts restored from state file
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      if(StringLen(g_contexts[i].instanceId) > 0 && g_contexts[i].seqNo > 0)
+         SyncContextChainState(i);
+   }
 
    // SESSION_START is deferred until after first heartbeat populates g_instanceId
    // (see SendHeartbeat — sends SESSION_START once g_instanceId is known)
@@ -390,12 +396,17 @@ void OnTimer()
    }
 
    // Retry chain sync if initial sync failed — max once per 60 seconds.
-   // Once successful, g_chainSyncPending flips to false and this block stops.
+   // Syncs both base chain and per-context chains.
    if(g_chainSyncPending && StringLen(g_instanceId) > 0
       && now - g_lastSyncAttempt >= 60)
    {
       g_lastSyncAttempt = now;
       SyncChainState();
+      for(int i = 0; i < g_contextCount; i++)
+      {
+         if(StringLen(g_contexts[i].instanceId) > 0 && g_contexts[i].seqNo > 0)
+            SyncContextChainState(i);
+      }
    }
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
@@ -2321,6 +2332,79 @@ void SyncChainState()
    g_chainSyncPending = false;
    SaveState();
    Print("AlgoStudio Monitor: Chain synced. seqNo=", g_seqNo, " hash=", StringSubstr(g_lastHash, 0, 16), "...");
+}
+
+//+------------------------------------------------------------------+
+//| SYNC CONTEXT CHAIN STATE FROM SERVER                             |
+//| Syncs a single context's seqNo + lastHash, analogous to          |
+//| SyncChainState for the base chain. Requires ctx.instanceId.      |
+//+------------------------------------------------------------------+
+bool SyncContextChainState(int ctxIdx)
+{
+   if(StringLen(g_contexts[ctxIdx].instanceId) == 0) return false;
+
+   string url = InpBaseUrl + "/api/track-record/state/" + g_contexts[ctxIdx].instanceId;
+   string headers = "X-EA-Key: " + InpApiKey;
+
+   uchar postData[];
+   uchar resultData[];
+   string resultHeaders;
+
+   ResetLastError();
+   int res = WebRequest("GET", url, headers, 3000, postData, resultData, resultHeaders);
+
+   if(res < 200 || res >= 300)
+   {
+      g_chainSyncPending = true;
+      Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+            "]: Context chain sync failed (HTTP ", res, ") — will retry.");
+      return false;
+   }
+
+   string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+
+   // Parse lastSeqNo
+   int seqPos = StringFind(response, "\"lastSeqNo\":");
+   if(seqPos >= 0)
+   {
+      int valStart = seqPos + 12;
+      int valEnd = valStart;
+      while(valEnd < StringLen(response))
+      {
+         ushort ch = StringGetCharacter(response, valEnd);
+         if(ch < '0' || ch > '9') break;
+         valEnd++;
+      }
+      if(valEnd > valStart)
+      {
+         int serverSeq = (int)StringToInteger(StringSubstr(response, valStart, valEnd - valStart));
+         if(serverSeq > g_contexts[ctxIdx].seqNo)
+         {
+            Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+                  "]: Server ahead (seq=", serverSeq, " vs local=", g_contexts[ctxIdx].seqNo, "). Syncing.");
+            g_contexts[ctxIdx].seqNo = serverSeq;
+         }
+      }
+   }
+
+   // Parse lastEventHash
+   int hashPos = StringFind(response, "\"lastEventHash\":\"");
+   if(hashPos >= 0)
+   {
+      int valStart = hashPos + 17;
+      int valEnd = StringFind(response, "\"", valStart);
+      if(valEnd > valStart)
+      {
+         string serverHash = StringSubstr(response, valStart, valEnd - valStart);
+         if(StringLen(serverHash) == 64)
+            g_contexts[ctxIdx].lastHash = serverHash;
+      }
+   }
+
+   Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+         "]: Context chain synced. seqNo=", g_contexts[ctxIdx].seqNo,
+         " hash=", StringSubstr(g_contexts[ctxIdx].lastHash, 0, 16), "...");
+   return true;
 }
 
 //+------------------------------------------------------------------+
