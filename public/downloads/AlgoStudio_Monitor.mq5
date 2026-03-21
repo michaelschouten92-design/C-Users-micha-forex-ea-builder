@@ -669,10 +669,10 @@ void ParseManifest()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Fingerprint uses same material fields as single-context EvaluateDeploymentEligibility
-      string canonical = StringFormat("%s:%s:%d:%s:%s:%s",
-         ctx.symbol, ctx.timeframe, (int)ctx.magicNumber, ctx.eaName,
-         InpCommentFilter, InpExcludeManual ? "true" : "false");
+      // Canonical fingerprint: mode-independent, based on strategy identity only
+      string fpSymbol = ctx.symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
       ctx.fingerprint = SHA256(canonical);
 
       // Guard: max context count
@@ -779,10 +779,8 @@ void BuildSelfIdentifiedContext()
    ctx.lastHash         = GENESIS_HASH;
    ctx.sessionStartSent = false;
 
-   // Fingerprint: label-independent so renaming does not create a new context
-   string canonical = StringFormat("%s:%s:%d:%s:%s",
-      ctx.symbol, ctx.timeframe, (int)ctx.magicNumber,
-      InpCommentFilter, InpExcludeManual ? "true" : "false");
+   // Canonical fingerprint: mode-independent, based on strategy identity only
+   string canonical = "ctx:v2:" + sym + ":" + IntegerToString(InpStrategyMagic);
    ctx.fingerprint = SHA256(canonical);
 
    ArrayResize(g_contexts, 1);
@@ -850,10 +848,10 @@ void AutoDiscoverContexts()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // AUTO fingerprint — intentionally different from manifest fingerprints.
-      // timeframe is excluded (unknown). Backend scopes by base instance.
-      string canonical = "AUTO:v1:" + ctx.symbol + ":"
-                         + IntegerToString((int)ctx.magicNumber);
+      // Canonical fingerprint: mode-independent, based on strategy identity only
+      string fpSymbol = ctx.symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
       ctx.fingerprint   = SHA256(canonical);
 
       // Dedup by fingerprint (same guard as ParseManifest)
@@ -2667,7 +2665,10 @@ void SaveState()
    FileWriteString(handle, (g_chainDegraded ? "1" : "0") + "\n");
 
    // Per-context chain state (Milestone C)
-   // Format: count on line 6, then one line per context: fingerprint|seqNo|lastHash|instanceId|sessionStartSent
+   // Format: count on line 6, then one line per context:
+   // fingerprint|seqNo|lastHash|instanceId|sessionStartSent|symbol|magicNumber
+   // Fields 5-6 (symbol|magic) added for fingerprint migration fallback matching.
+   // Backward compatible: LoadState handles both 5-field and 7-field lines.
    FileWriteString(handle, IntegerToString(g_contextCount) + "\n");
    for(int i = 0; i < g_contextCount; i++)
    {
@@ -2676,6 +2677,8 @@ void SaveState()
          + "|" + g_contexts[i].lastHash
          + "|" + g_contexts[i].instanceId
          + "|" + (g_contexts[i].sessionStartSent ? "1" : "0")
+         + "|" + g_contexts[i].symbol
+         + "|" + IntegerToString((int)g_contexts[i].magicNumber)
          + "\n");
    }
 
@@ -2777,23 +2780,69 @@ void LoadState()
                if(partCount < 5) continue;
 
                string fp = parts[0];
-               // Match to current context by fingerprint
+               // Match to current context by fingerprint (primary)
+               // or by (symbol, magicNumber) fallback for fingerprint migration
+               int matchIdx = -1;
                for(int j = 0; j < g_contextCount; j++)
                {
-                  if(g_contexts[j].fingerprint == fp)
+                  if(g_contexts[j].fingerprint == fp) { matchIdx = j; break; }
+               }
+               // Fallback 1: reconstruct legacy fingerprint formulas and compare.
+               // Works for old 5-field state files where symbol+magic aren't stored.
+               if(matchIdx < 0)
+               {
+                  for(int j = 0; j < g_contextCount; j++)
                   {
-                     g_contexts[j].seqNo    = (int)StringToInteger(parts[1]);
-                     if(StringLen(parts[2]) == 64)
-                        g_contexts[j].lastHash = parts[2];
-                     if(StringLen(parts[3]) > 0)
-                        g_contexts[j].instanceId = parts[3];
-                     g_contexts[j].sessionStartSent = (parts[4] == "1");
-                     Print("AlgoStudio Monitor: Restored context [", g_contexts[j].eaName,
-                           "] seqNo=", g_contexts[j].seqNo,
-                           " instanceId=", StringLen(g_contexts[j].instanceId) > 0
-                              ? g_contexts[j].instanceId : "(pending)");
-                     break;
+                     if(g_contexts[j].seqNo > 0) continue; // already restored
+                     string s = g_contexts[j].symbol;
+                     StringToUpper(s);
+                     string m = IntegerToString((int)g_contexts[j].magicNumber);
+                     // Legacy manifest: SYMBOL:TF:MAGIC:EANAME:COMMENTFILTER:EXCLUDEMANUAL
+                     string legacyManifest = StringFormat("%s:%s:%s:%s:%s:%s",
+                        s, g_contexts[j].timeframe, m, g_contexts[j].eaName,
+                        InpCommentFilter, InpExcludeManual ? "true" : "false");
+                     if(SHA256(legacyManifest) == fp) { matchIdx = j; break; }
+                     // Legacy self-id: SYMBOL:TF:MAGIC:COMMENTFILTER:EXCLUDEMANUAL
+                     string legacySelfId = StringFormat("%s:%s:%s:%s:%s",
+                        s, g_contexts[j].timeframe, m,
+                        InpCommentFilter, InpExcludeManual ? "true" : "false");
+                     if(SHA256(legacySelfId) == fp) { matchIdx = j; break; }
+                     // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC
+                     if(SHA256("AUTO:v1:" + s + ":" + m) == fp) { matchIdx = j; break; }
                   }
+               }
+               // Fallback 2: match by symbol + magicNumber fields (7-field state lines).
+               if(matchIdx < 0 && partCount >= 7)
+               {
+                  string savedSymbol = parts[5];
+                  StringToUpper(savedSymbol);
+                  long savedMagic = StringToInteger(parts[6]);
+                  for(int j = 0; j < g_contextCount; j++)
+                  {
+                     if(g_contexts[j].seqNo > 0) continue; // already restored
+                     string ctxSym = g_contexts[j].symbol;
+                     StringToUpper(ctxSym);
+                     if(ctxSym == savedSymbol && g_contexts[j].magicNumber == savedMagic)
+                     {
+                        matchIdx = j;
+                        break;
+                     }
+                  }
+               }
+               if(matchIdx >= 0)
+               {
+                  g_contexts[matchIdx].seqNo    = (int)StringToInteger(parts[1]);
+                  if(StringLen(parts[2]) == 64)
+                     g_contexts[matchIdx].lastHash = parts[2];
+                  if(StringLen(parts[3]) > 0)
+                     g_contexts[matchIdx].instanceId = parts[3];
+                  g_contexts[matchIdx].sessionStartSent = (parts[4] == "1");
+                  bool migrated = (g_contexts[matchIdx].fingerprint != fp);
+                  Print("AlgoStudio Monitor: Restored context [", g_contexts[matchIdx].eaName,
+                        "] seqNo=", g_contexts[matchIdx].seqNo,
+                        " instanceId=", StringLen(g_contexts[matchIdx].instanceId) > 0
+                           ? g_contexts[matchIdx].instanceId : "(pending)",
+                        (migrated ? " (fingerprint migrated)" : ""));
                }
             }
          }
