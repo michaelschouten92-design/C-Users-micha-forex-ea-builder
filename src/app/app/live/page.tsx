@@ -156,26 +156,27 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── Control Surface: Header + Status ── */}
-        <div className="mt-5 mb-6">
-          {/* Title row */}
-          <div className="flex items-baseline justify-between gap-4 mb-3">
-            <div className="flex items-baseline gap-3">
-              <h1 className="text-lg font-semibold text-[#F1F5F9] tracking-tight">
-                Command Center
-              </h1>
-              {eaInstances.length > 0 && (
-                <span className="text-xs text-[#64748B] font-medium tabular-nums">
-                  {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}
-                </span>
-              )}
+        {/* ── Hero / System Status Zone ── */}
+        <div className="mt-5 mb-8">
+          <div className="rounded-xl border border-[rgba(79,70,229,0.2)] bg-gradient-to-b from-[rgba(79,70,229,0.09)] to-transparent px-6 py-5">
+            {/* Title row */}
+            <div className="flex items-baseline justify-between gap-4 mb-4">
+              <div className="flex items-baseline gap-3">
+                <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
+                {eaInstances.length > 0 && (
+                  <span className="text-xs text-[#64748B] font-medium tabular-nums">
+                    {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}{" "}
+                    monitored
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* System Status strip */}
-          {eaInstances.length > 0 && (
-            <SystemStatusStrip instances={eaInstances} authority={authority} />
-          )}
+            {/* System Status tiles */}
+            {eaInstances.length > 0 && (
+              <SystemStatusStrip instances={eaInstances} authority={authority} />
+            )}
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -201,31 +202,42 @@ function renderDashboard(
               : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
 
             return (
-              <section className="mb-6 space-y-2">
+              <section className="mb-8 space-y-2.5">
                 {showAuthority && (
                   <div
-                    className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg"
-                    style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-lg"
+                    style={{
+                      backgroundColor: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                      boxShadow: `0 0 20px ${colors.bg}`,
+                    }}
                   >
                     <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: colors.dot }}
                     />
+                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
+                      Governance
+                    </span>
                     <span className="text-sm font-bold" style={{ color: colors.text }}>
                       {action}
                     </span>
                     {isSetupRequired && (
-                      <span className="text-xs font-medium text-[#F59E0B]">Setup required</span>
+                      <span className="text-xs font-semibold text-[#F59E0B]">Setup required</span>
                     )}
-                    <span className="text-xs text-[#94A3B8]">{explanation}</span>
+                    <span className="text-xs text-[#94A3B8] leading-relaxed">{explanation}</span>
                   </div>
                 )}
                 {showHalted && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#EF4444]" />
-                    <span className="text-sm font-medium text-[#EF4444]">
-                      {halted.length} halted
+                  <div
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]"
+                    style={{ boxShadow: "0 0 20px rgba(239,68,68,0.04)" }}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
+                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
+                      Operator Hold
                     </span>
+                    <span className="text-sm font-bold text-[#EF4444]">{halted.length} halted</span>
                     <span className="text-xs text-[#94A3B8]">
                       {halted
                         .slice(0, 3)
@@ -364,17 +376,20 @@ function SystemStatusStrip({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-x-8 gap-y-1.5 px-4 py-2.5 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.18)]">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {items.map((item) => (
-        <span key={item.label} className="text-xs text-[#7C8DB0]">
-          {item.label}{" "}
-          <span
-            className="font-mono font-semibold text-[13px]"
+        <div
+          key={item.label}
+          className="rounded-lg bg-[rgba(15,10,26,0.6)] border border-[#1E293B]/60 px-4 py-3"
+        >
+          <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-1">{item.label}</p>
+          <p
+            className="text-lg font-bold font-mono tabular-nums leading-none"
             style={{ color: item.color ?? "#CBD5E1" }}
           >
             {item.value}
-          </span>
-        </span>
+          </p>
+        </div>
       ))}
     </div>
   );
