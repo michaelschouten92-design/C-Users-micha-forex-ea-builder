@@ -364,11 +364,14 @@ function SystemStatusStrip({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.12)]">
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-1.5 px-4 py-2.5 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.18)]">
       {items.map((item) => (
         <span key={item.label} className="text-xs text-[#7C8DB0]">
-          {item.label}:{" "}
-          <span className="font-mono font-medium" style={{ color: item.color ?? "#CBD5E1" }}>
+          {item.label}{" "}
+          <span
+            className="font-mono font-semibold text-[13px]"
+            style={{ color: item.color ?? "#CBD5E1" }}
+          >
             {item.value}
           </span>
         </span>

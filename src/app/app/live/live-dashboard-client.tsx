@@ -1336,12 +1336,12 @@ function AccountCard({
   return (
     <div
       id={`account-card-${primary.id}`}
-      className={`bg-[#0F0A1A]/80 border rounded-lg transition-all duration-300 ${
+      className={`bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${
         healthCounts["Edge at Risk"] > 0
           ? "border-l-2 border-l-[#EF4444]/60 border-[#1E293B]"
           : statusChanged
             ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
-            : "border-[#1E293B] hover:border-[#334155]"
+            : "border-[#1E293B]/80 hover:border-[#334155]"
       }`}
     >
       {/* Header zone */}
@@ -2552,14 +2552,14 @@ function SummaryCard({
   isCurrency?: boolean;
 }) {
   return (
-    <div className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-lg px-4 py-3.5">
-      <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-2">{label}</p>
+    <div className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-lg px-4 py-4">
+      <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-2.5">{label}</p>
       <p
-        className={`text-xl font-semibold tabular-nums leading-none ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
+        className={`text-2xl font-bold tabular-nums leading-none ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
-      {subtitle && <p className="text-[9px] text-[#475569] mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-[9px] text-[#475569] mt-1.5">{subtitle}</p>}
     </div>
   );
 }
