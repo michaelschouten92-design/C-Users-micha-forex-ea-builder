@@ -377,20 +377,31 @@ function SystemStatusStrip({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="rounded-lg bg-[rgba(15,10,26,0.6)] border border-[#1E293B]/60 px-4 py-3"
-        >
-          <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-1">{item.label}</p>
-          <p
-            className="text-lg font-bold font-mono tabular-nums leading-none"
-            style={{ color: item.color ?? "#CBD5E1" }}
+      {items.map((item) => {
+        const hasActiveColor = item.color && item.color !== "#CBD5E1";
+        return (
+          <div
+            key={item.label}
+            className="rounded-lg bg-[rgba(15,10,26,0.6)] border border-[#1E293B]/60 px-4 py-3 relative overflow-hidden"
+            style={hasActiveColor ? { boxShadow: `0 0 16px ${item.color}10` } : undefined}
           >
-            {item.value}
-          </p>
-        </div>
-      ))}
+            {/* Top accent line for active-state tiles */}
+            {hasActiveColor && (
+              <div
+                className="absolute top-0 left-0 right-0 h-[2px]"
+                style={{ backgroundColor: item.color, opacity: 0.5 }}
+              />
+            )}
+            <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-1">{item.label}</p>
+            <p
+              className="text-lg font-bold font-mono tabular-nums leading-none"
+              style={{ color: item.color ?? "#CBD5E1" }}
+            >
+              {item.value}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

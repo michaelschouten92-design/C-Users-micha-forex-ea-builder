@@ -2515,22 +2515,31 @@ function ConnectionIndicator({
   const config = CONNECTION_STATUS_CONFIG[connectionStatus];
 
   return (
-    <div className="flex items-center gap-2 text-xs text-[#7C8DB0]">
-      <span className="relative flex h-2.5 w-2.5">
+    <div
+      className="flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs"
+      style={{
+        borderColor: `${config.color}20`,
+        backgroundColor: `${config.color}08`,
+        color: config.color,
+      }}
+    >
+      <span className="relative flex h-2 w-2">
         {config.ping && (
           <span
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
             style={{ backgroundColor: config.color }}
           />
         )}
         <span
-          className="relative inline-flex rounded-full h-2.5 w-2.5"
+          className="relative inline-flex rounded-full h-2 w-2"
           style={{ backgroundColor: config.color }}
         />
       </span>
-      <span>
+      <span className="font-medium">
         {config.label}
-        {lastUpdated ? ` · ${timeSinceUpdate}` : ""}
+        {lastUpdated ? (
+          <span className="text-[#7C8DB0] font-normal"> · {timeSinceUpdate}</span>
+        ) : null}
       </span>
     </div>
   );
@@ -2551,8 +2560,17 @@ function SummaryCard({
   value: number;
   isCurrency?: boolean;
 }) {
+  const accentColor = isCurrency ? (value >= 0 ? "#10B981" : "#EF4444") : "#818CF8";
+
   return (
-    <div className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-xl px-5 py-5">
+    <div
+      className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-xl px-5 py-5 relative overflow-hidden"
+      style={{ boxShadow: `0 1px 20px ${accentColor}06` }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ backgroundColor: accentColor, opacity: 0.3 }}
+      />
       <p className="text-[10px] uppercase tracking-widest text-[#525B6B] font-medium mb-3">
         {label}
       </p>
@@ -3305,22 +3323,30 @@ export function LiveDashboardClient({
           const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="space-y-4 sticky top-0 z-20 pb-4 -mx-px px-px border-b border-[#1E293B]/40">
+            <div className="space-y-4 sticky top-0 z-20 pb-4 -mx-px px-px border-b border-[#1E293B]/40 bg-gradient-to-b from-[#0A0118] via-[#0A0118] to-[#0A0118]/95 backdrop-blur-sm">
               {/* System pulse header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{
-                      backgroundColor: allHealthy
-                        ? "#10B981"
-                        : hasRed
-                          ? "#EF4444"
-                          : attentionCount > 0
-                            ? "#F59E0B"
-                            : "#A78BFA",
-                    }}
-                  />
+                  <span className="relative flex h-2.5 w-2.5">
+                    {allHealthy && (
+                      <span
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+                        style={{ backgroundColor: "#10B981" }}
+                      />
+                    )}
+                    <span
+                      className="relative inline-flex rounded-full h-2.5 w-2.5"
+                      style={{
+                        backgroundColor: allHealthy
+                          ? "#10B981"
+                          : hasRed
+                            ? "#EF4444"
+                            : attentionCount > 0
+                              ? "#F59E0B"
+                              : "#A78BFA",
+                      }}
+                    />
+                  </span>
                   <p className="text-sm font-semibold text-[#CBD5E1]">
                     {allHealthy
                       ? "All systems nominal"
@@ -3333,9 +3359,20 @@ export function LiveDashboardClient({
                             : "System monitoring active"}
                   </p>
                 </div>
-                <p className="text-[10px] text-[#475569]">
-                  {total} instance{total !== 1 ? "s" : ""} monitored
-                </p>
+                <div className="flex items-center gap-3">
+                  {connectionStatus === "connected" && (
+                    <span className="flex items-center gap-1.5 text-[10px] text-[#10B981]/70 font-medium">
+                      <span className="relative flex h-1 w-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-50" />
+                        <span className="relative inline-flex rounded-full h-1 w-1 bg-[#10B981]" />
+                      </span>
+                      Telemetry active
+                    </span>
+                  )}
+                  <p className="text-[10px] text-[#475569]">
+                    {total} instance{total !== 1 ? "s" : ""} monitored
+                  </p>
+                </div>
               </div>
             </div>
           );
@@ -3555,10 +3592,16 @@ export function LiveDashboardClient({
               }}
             >
               <div className="flex items-center gap-3 mb-3.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: alertBorderColor }}
-                />
+                <span className="relative flex h-2.5 w-2.5">
+                  <span
+                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+                    style={{ backgroundColor: alertBorderColor }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full h-2.5 w-2.5"
+                    style={{ backgroundColor: alertBorderColor }}
+                  />
+                </span>
                 <p className="text-sm font-bold text-white">Action Required</p>
                 <span className="text-[10px] text-[#64748B]">
                   {actionItems.length} {actionItems.length === 1 ? "strategy" : "strategies"}
