@@ -155,10 +155,27 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── System Status strip ── */}
-        {eaInstances.length > 0 && (
-          <SystemStatusStrip instances={eaInstances} authority={authority} />
-        )}
+        {/* ── Control Surface: Header + Status ── */}
+        <div className="mt-5 mb-6">
+          {/* Title row */}
+          <div className="flex items-baseline justify-between gap-4 mb-3">
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-lg font-semibold text-[#F1F5F9] tracking-tight">
+                Command Center
+              </h1>
+              {eaInstances.length > 0 && (
+                <span className="text-xs text-[#64748B] font-medium tabular-nums">
+                  {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* System Status strip */}
+          {eaInstances.length > 0 && (
+            <SystemStatusStrip instances={eaInstances} authority={authority} />
+          )}
+        </div>
 
         {/* ══════════════════════════════════════════════════════
             ONBOARDING — Activation checklist (auto-hides)
@@ -183,7 +200,7 @@ function renderDashboard(
               : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
 
             return (
-              <section className="mt-4 space-y-2">
+              <section className="mb-6 space-y-2">
                 {showAuthority && (
                   <div
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg"
@@ -222,7 +239,7 @@ function renderDashboard(
           })()}
 
         {/* ── Strategies, Terminals, Journal ── */}
-        <section className="mt-6">
+        <section>
           <MonitorTabs>
             <LiveDashboardClient
               initialData={serializedInstances}
@@ -346,7 +363,7 @@ function SystemStatusStrip({
   ];
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.12)]">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.12)]">
       {items.map((item) => (
         <span key={item.label} className="text-xs text-[#7C8DB0]">
           {item.label}:{" "}
