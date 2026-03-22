@@ -2540,14 +2540,14 @@ function SummaryCard({
   isCurrency?: boolean;
 }) {
   return (
-    <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-4">
-      <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">{label}</p>
+    <div className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-lg px-4 py-3.5">
+      <p className="text-[10px] uppercase tracking-wider text-[#64748B] mb-2">{label}</p>
       <p
-        className={`text-lg font-semibold tabular-nums ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
+        className={`text-xl font-semibold tabular-nums leading-none ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
-      {subtitle && <p className="text-[9px] text-[#475569] mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-[9px] text-[#475569] mt-1">{subtitle}</p>}
     </div>
   );
 }
@@ -3333,8 +3333,8 @@ export function LiveDashboardClient({
                 </p>
               </div>
 
-              {/* Health counters */}
-              <div className="grid grid-cols-4 gap-2">
+              {/* Health counters — status-tier (compact indicators, not data cards) */}
+              <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { label: "Healthy", count: healthy, color: "#10B981" },
                   { label: "Attention", count: attentionCount, color: "#F59E0B" },
@@ -3343,23 +3343,21 @@ export function LiveDashboardClient({
                 ].map((c) => (
                   <div
                     key={c.label}
-                    className="flex items-center gap-2.5 bg-[#0F0A1A] border border-[#1E293B] rounded-md px-3 py-2.5"
+                    className="flex items-center gap-2 rounded-md px-2.5 py-1.5 border border-[#1E293B]/40"
                   >
                     <span
-                      className="w-2 h-2 rounded-full shrink-0"
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{
                         backgroundColor: c.count > 0 ? c.color : "#27272A",
                       }}
                     />
-                    <div className="flex items-baseline gap-1.5">
-                      <span
-                        className="text-base font-semibold tabular-nums"
-                        style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
-                      >
-                        {c.count}
-                      </span>
-                      <span className="text-[10px] text-[#64748B]">{c.label}</span>
-                    </div>
+                    <span
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
+                    >
+                      {c.count}
+                    </span>
+                    <span className="text-[10px] text-[#525B6B]">{c.label}</span>
                   </div>
                 ))}
               </div>
