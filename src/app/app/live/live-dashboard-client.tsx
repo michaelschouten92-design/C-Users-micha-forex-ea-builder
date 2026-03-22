@@ -3303,12 +3303,12 @@ export function LiveDashboardClient({
           const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="space-y-3 sticky top-0 z-20 pb-3 -mx-px px-px bg-[#0F0A1A] border-b border-[#F59E0B]/30">
+            <div className="space-y-3 sticky top-0 z-20 pb-3 -mx-px px-px border-b border-[#1E293B]/40">
               {/* System pulse header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <div
-                    className="w-2.5 h-2.5 rounded-full"
+                    className="w-2 h-2 rounded-full"
                     style={{
                       backgroundColor: allHealthy
                         ? "#10B981"
@@ -3319,7 +3319,7 @@ export function LiveDashboardClient({
                             : "#A78BFA",
                     }}
                   />
-                  <p className="text-base font-semibold text-[#CBD5E1]">
+                  <p className="text-sm font-medium text-[#94A3B8]">
                     {allHealthy
                       ? "All systems nominal"
                       : attentionCount > 0
