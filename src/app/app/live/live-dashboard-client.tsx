@@ -3303,12 +3303,12 @@ export function LiveDashboardClient({
           const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="space-y-3 sticky top-0 z-20 pb-2 -mx-px px-px border-b border-[#1E293B]/40">
+            <div className="space-y-3 sticky top-0 z-20 pb-3 -mx-px px-px bg-[#0F0A1A] border-b border-[#F59E0B]/30">
               {/* System pulse header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className="w-2 h-2 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full"
                     style={{
                       backgroundColor: allHealthy
                         ? "#10B981"
@@ -3319,7 +3319,7 @@ export function LiveDashboardClient({
                             : "#A78BFA",
                     }}
                   />
-                  <p className="text-xs font-medium text-[#94A3B8]">
+                  <p className="text-base font-semibold text-[#CBD5E1]">
                     {allHealthy
                       ? "All systems nominal"
                       : attentionCount > 0
@@ -3368,20 +3368,25 @@ export function LiveDashboardClient({
               {/* Action Required */}
               {actionItems.length > 0 && (
                 <div
-                  className="border rounded-md p-3"
-                  style={{ borderColor: `${alertBorderColor}25` }}
+                  className="rounded-lg px-4 py-3.5"
+                  style={{
+                    borderColor: `${alertBorderColor}30`,
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    backgroundColor: `${alertBorderColor}08`,
+                  }}
                 >
-                  <div className="flex items-center gap-2 mb-2.5">
+                  <div className="flex items-center gap-2.5 mb-3">
                     <span
-                      className="w-1.5 h-1.5 rounded-full"
+                      className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: alertBorderColor }}
                     />
-                    <p className="text-xs font-semibold text-white">Action Required</p>
+                    <p className="text-[13px] font-bold text-white">Action Required</p>
                     <span className="text-[10px] text-[#64748B]">
                       {actionItems.length} {actionItems.length === 1 ? "strategy" : "strategies"}
                     </span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {sortedGroups.map((group) => (
                       <div
                         key={group.statusLabel}
