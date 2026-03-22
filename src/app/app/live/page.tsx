@@ -67,6 +67,7 @@ function renderDashboard(
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
     id: ea.id,
+    createdAt: ea.createdAt.toISOString(),
     eaName: ea.eaName,
     symbol: ea.symbol,
     timeframe: ea.timeframe,

@@ -52,6 +52,7 @@ export interface LiveInstanceDeployment {
 
 export interface LiveInstanceDTO {
   id: string;
+  createdAt: string;
   eaName: string;
   symbol: string | null;
   timeframe: string | null;

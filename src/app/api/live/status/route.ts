@@ -88,6 +88,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Serialize dates to ISO strings for client consumption
     const data = eaInstances.map((ea) => ({
       id: ea.id,
+      createdAt: ea.createdAt.toISOString(),
       eaName: ea.eaName,
       symbol: ea.symbol,
       timeframe: ea.timeframe,
