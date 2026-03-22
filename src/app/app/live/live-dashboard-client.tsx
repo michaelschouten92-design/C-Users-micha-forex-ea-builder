@@ -859,7 +859,8 @@ function compareInstances(a: EAInstanceData, b: EAInstanceData): number {
 }
 
 /**
- * Sort account groups by the highest-priority instance within each group.
+ * Sort account groups by firstSeen (createdAt of the primary instance) ascending.
+ * Oldest accounts stay at the top — operators rely on spatial memory.
  * Also sorts instances within each group by priority.
  */
 function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
@@ -868,8 +869,12 @@ function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
     group.instances.sort(compareInstances);
   }
 
-  // Account order is stable (createdAt asc from DB) — do not re-sort groups.
-  return groups;
+  // Stable account order: oldest first by createdAt
+  return groups.sort((a, b) => {
+    const ta = new Date(a.primary.createdAt).getTime();
+    const tb = new Date(b.primary.createdAt).getTime();
+    return ta - tb;
+  });
 }
 
 // ============================================
