@@ -1546,10 +1546,10 @@ function AccountCard({
 
       {/* API Key management — only for root/parent instances (not child/discovered) */}
       {!primary.parentInstanceId && (
-        <div className="mx-5 mb-3 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
+        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">API Key</p>
+              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">API Key</p>
               {rotatedKey ? (
                 <div className="flex items-center gap-2">
                   <code className="text-xs font-mono text-[#10B981] truncate max-w-[280px]">
@@ -1609,10 +1609,10 @@ function AccountCard({
 
       {/* Public Track Record share — only for root instances */}
       {!primary.parentInstanceId && (
-        <div className="mx-5 mb-3 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]">
+        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">
                 Public Track Record
               </p>
               {trackRecordToken ? (
@@ -3121,94 +3121,85 @@ export function LiveDashboardClient({
   return (
     <div className="space-y-5">
       {/* Controls bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-white tracking-tight">Command Center</h2>
-          <span className="text-xs text-[#64748B]">
-            {eaInstances.length} instance{eaInstances.length !== 1 ? "s" : ""}
-          </span>
+      <div className="flex flex-wrap items-center justify-end gap-2.5">
+        {/* Mode filter */}
+        <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
+          {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setModeFilter(mode)}
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                modeFilter === mode
+                  ? mode === "PAPER"
+                    ? "bg-[#F59E0B]/15 text-[#F59E0B]"
+                    : "bg-white/5 text-white"
+                  : "text-[#64748B] hover:text-[#94A3B8]"
+              }`}
+            >
+              {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
+            </button>
+          ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Mode filter */}
-          <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
-            {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setModeFilter(mode)}
-                className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                  modeFilter === mode
-                    ? mode === "PAPER"
-                      ? "bg-[#F59E0B]/15 text-[#F59E0B]"
-                      : "bg-white/5 text-white"
-                    : "text-[#64748B] hover:text-[#94A3B8]"
-                }`}
-              >
-                {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
-              </button>
-            ))}
-          </div>
+        {/* Connection status indicator */}
+        <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
 
-          {/* Connection status indicator */}
-          <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
-
-          {/* Sound toggle */}
-          <button
-            onClick={() => setSoundAlerts(!soundAlerts)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors ${
-              soundAlerts
-                ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
-                : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
-            }`}
-            title={soundAlerts ? "Notifications on" : "Notifications off"}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {soundAlerts ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-                />
-              )}
-            </svg>
-            Notifications
-          </button>
-
-          {/* Alerts config button */}
-          <button
-            onClick={() => setShowAlertsModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* Sound toggle */}
+        <button
+          onClick={() => setSoundAlerts(!soundAlerts)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors ${
+            soundAlerts
+              ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
+              : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
+          }`}
+          title={soundAlerts ? "Notifications on" : "Notifications off"}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {soundAlerts ? (
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
               />
-            </svg>
-            Alerts
-          </button>
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+              />
+            )}
+          </svg>
+          Notifications
+        </button>
 
-          {/* Connect external EA */}
-          <RegisterEADialog onSuccess={fetchUpdate} />
+        {/* Alerts config button */}
+        <button
+          onClick={() => setShowAlertsModal(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+          Alerts
+        </button>
 
-          {/* Manual refresh */}
-          <button
-            onClick={fetchUpdate}
-            className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
-          >
-            Refresh Now
-          </button>
-        </div>
+        {/* Connect external EA */}
+        <RegisterEADialog onSuccess={fetchUpdate} />
+
+        {/* Manual refresh */}
+        <button
+          onClick={fetchUpdate}
+          className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
+        >
+          Refresh Now
+        </button>
       </div>
 
       {/* ── System Status Zone ── */}
@@ -3478,7 +3469,7 @@ export function LiveDashboardClient({
           </div>
           {/* Secondary reading: Paper P&L (only when paper instances exist) */}
           {eaInstances.some((ea) => ea.mode === "PAPER") && (
-            <div className="flex items-baseline gap-2 px-1">
+            <div className="flex items-baseline gap-2 px-0.5">
               <span className="text-[9px] uppercase tracking-wider text-[#475569]">Paper P&L</span>
               <span
                 className={`text-xs font-semibold tabular-nums ${
@@ -3500,7 +3491,7 @@ export function LiveDashboardClient({
           )}
 
           {/* Secondary: health + exposure inline */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-0.5">
             {/* Strategy Health */}
             {portfolioHealthParts.length > 0 && (
               <div className="flex items-center gap-3">
@@ -3552,7 +3543,7 @@ export function LiveDashboardClient({
               (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
             );
             return (
-              <div className="flex flex-wrap items-center gap-1.5 px-1">
+              <div className="flex flex-wrap items-center gap-1.5 px-0.5">
                 <span className="text-[9px] uppercase tracking-wider text-[#475569] mr-0.5">
                   Symbols
                 </span>
@@ -3606,7 +3597,7 @@ export function LiveDashboardClient({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {sortByPriority(
             groupByAccount(
               modeFilter === "ALL"
