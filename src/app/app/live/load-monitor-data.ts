@@ -174,6 +174,7 @@ function queryEaInstances(userId: string) {
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      createdAt: true,
       eaName: true,
       symbol: true,
       timeframe: true,
