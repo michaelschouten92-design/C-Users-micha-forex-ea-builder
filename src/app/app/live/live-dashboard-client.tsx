@@ -3410,8 +3410,8 @@ export function LiveDashboardClient({
           </div>
           {/* Secondary reading: Paper P&L (only when paper instances exist) */}
           {eaInstances.some((ea) => ea.mode === "PAPER") && (
-            <div className="flex items-baseline gap-2 px-0.5">
-              <span className="text-[9px] uppercase tracking-wider text-[#475569]">Paper P&L</span>
+            <div className="flex items-baseline gap-2 px-3">
+              <span className="text-[10px] uppercase tracking-wider text-[#475569]">Paper P&L</span>
               <span
                 className={`text-xs font-semibold tabular-nums ${
                   eaInstances
@@ -3427,16 +3427,16 @@ export function LiveDashboardClient({
                     .reduce((sum, ea) => sum + ea.totalProfit, 0)
                 )}
               </span>
-              <span className="text-[9px] text-[#475569]">tracked total</span>
+              <span className="text-[10px] text-[#475569]">tracked total</span>
             </div>
           )}
 
           {/* Secondary: health + exposure inline */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-0.5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2.5 rounded-lg bg-white/[0.015] border border-[#1E293B]/30">
             {/* Strategy Health */}
             {portfolioHealthParts.length > 0 && (
               <div className="flex items-center gap-3">
-                <span className="text-[9px] uppercase tracking-wider text-[#475569]">Health</span>
+                <span className="text-[10px] uppercase tracking-wider text-[#475569]">Health</span>
                 {portfolioHealthParts.map((label) => {
                   const hs = HEALTH_STYLES[label];
                   return (
@@ -3453,7 +3453,7 @@ export function LiveDashboardClient({
             )}
             {/* Exposure */}
             <div className="flex items-center gap-3">
-              <span className="text-[9px] uppercase tracking-wider text-[#475569]">Exposure</span>
+              <span className="text-[10px] uppercase tracking-wider text-[#475569]">Exposure</span>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
                 {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
@@ -3484,8 +3484,8 @@ export function LiveDashboardClient({
               (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
             );
             return (
-              <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-                <span className="text-[9px] uppercase tracking-wider text-[#475569] mr-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 rounded-lg bg-white/[0.015] border border-[#1E293B]/30">
+                <span className="text-[10px] uppercase tracking-wider text-[#475569] mr-0.5">
                   Symbols
                 </span>
                 {entries.map(([sym, data]) => (
@@ -3696,7 +3696,7 @@ export function LiveDashboardClient({
               ].map((c) => (
                 <div
                   key={c.label}
-                  className="flex items-center gap-2 rounded-md border border-[#1E293B]/30 px-2.5 py-1.5"
+                  className="flex items-center gap-2 rounded-lg border border-[#1E293B]/40 bg-white/[0.01] px-2.5 py-1.5"
                 >
                   <span
                     className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -3755,30 +3755,32 @@ export function LiveDashboardClient({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {sortByPriority(
-            groupByAccount(
-              modeFilter === "ALL"
-                ? eaInstances
-                : eaInstances.filter((ea) => ea.mode === modeFilter)
-            )
-          ).map((account) => (
-            <AccountCard
-              key={account.key}
-              account={account}
-              changedIds={changedIds}
-              onTogglePause={handleTogglePause}
-              onDelete={handleDelete}
-              onLinkBaseline={setLinkBaselineInstanceId}
-              forceExpandId={scrollExpandId}
-            />
-          ))}
+        <div className="rounded-xl border border-[#1E293B]/30 bg-[#0F0A1A]/40 p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {sortByPriority(
+              groupByAccount(
+                modeFilter === "ALL"
+                  ? eaInstances
+                  : eaInstances.filter((ea) => ea.mode === modeFilter)
+              )
+            ).map((account) => (
+              <AccountCard
+                key={account.key}
+                account={account}
+                changedIds={changedIds}
+                onTogglePause={handleTogglePause}
+                onDelete={handleDelete}
+                onLinkBaseline={setLinkBaselineInstanceId}
+                forceExpandId={scrollExpandId}
+              />
+            ))}
+          </div>
         </div>
       )}
 
       {/* Settings — drawdown alert (secondary, below accounts) */}
       {eaInstances.length > 0 && (
-        <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-md p-3">
+        <div className="bg-[#0F0A1A]/60 border border-[#1E293B]/40 rounded-xl p-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-1">
               <svg

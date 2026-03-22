@@ -172,6 +172,11 @@ function renderDashboard(
               </div>
             </div>
 
+            <p className="text-sm text-[#64748B] max-w-xl">
+              Monitor live trading strategies and detect edge drift, instability and risk anomalies
+              before they damage performance.
+            </p>
+
             {/* System Status tiles */}
             {eaInstances.length > 0 && (
               <SystemStatusStrip instances={eaInstances} authority={authority} />
@@ -205,7 +210,7 @@ function renderDashboard(
               <section className="mb-8 space-y-2.5">
                 {showAuthority && (
                   <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-lg"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-xl"
                     style={{
                       backgroundColor: colors.bg,
                       border: `1px solid ${colors.border}`,
@@ -230,7 +235,7 @@ function renderDashboard(
                 )}
                 {showHalted && (
                   <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-xl bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]"
                     style={{ boxShadow: "0 0 20px rgba(239,68,68,0.04)" }}
                   >
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
