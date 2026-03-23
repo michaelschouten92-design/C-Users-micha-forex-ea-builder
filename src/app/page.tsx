@@ -6,12 +6,12 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "AlgoStudio — Know When Your Trading Strategy Loses Its Edge",
+  title: "AlgoStudio — Know When Your Strategy Starts Losing Its Edge",
   description:
-    "AlgoStudio monitors algorithmic trading strategies and detects when performance starts drifting from the baseline backtest. Continuous health scoring, CUSUM drift detection, and investigation tools.",
+    "Continuously compare live algorithmic trading strategies against baseline backtests. Detect statistical drift before losses compound. CUSUM monitoring, health scoring, governed intervention.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "AlgoStudio — Know When Your Trading Strategy Loses Its Edge",
+    title: "AlgoStudio — Know When Your Strategy Starts Losing Its Edge",
     description:
       "Monitor strategy performance, detect edge degradation, and investigate what changed. The monitoring layer algorithmic trading has been missing.",
   },
@@ -34,14 +34,13 @@ export default async function HomePage() {
         <section className="pt-32 md:pt-40 pb-16 md:pb-24 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-[28px] md:text-[42px] font-extrabold tracking-tight leading-[1.15]">
-              Know when your trading strategy
+              Know when your strategy
               <br />
-              loses its edge.
+              starts losing its edge.
             </h1>
-            <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
-              AlgoStudio monitors algorithmic trading strategies and detects when performance starts
-              drifting from the baseline backtest. Continuous health scoring. Statistical drift
-              detection. No guesswork.
+            <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-xl mx-auto leading-relaxed">
+              Continuously compare live strategies against baseline backtests. Detect statistical
+              drift before losses compound.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -63,7 +62,7 @@ export default async function HomePage() {
           </div>
 
           {/* ── Command Center Product Visual ── */}
-          <div className="max-w-4xl mx-auto mt-14 md:mt-16 relative">
+          <div className="max-w-[56rem] mx-auto mt-14 md:mt-16 relative">
             {/* Ambient glow */}
             <div className="absolute -inset-8 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)] pointer-events-none" />
             <div className="relative rounded-xl border border-[rgba(255,255,255,0.08)] bg-gradient-to-b from-[#0F0A1A] to-[#09090B] p-[1px] shadow-[0_4px_80px_rgba(99,102,241,0.08)]">
@@ -181,26 +180,25 @@ export default async function HomePage() {
             </p>
             <div className="grid md:grid-cols-3 gap-4">
               <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
-                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Performance drifts</h3>
+                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Edge erosion</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Market regimes shift. A strategy that performed well in backtesting may quietly
-                  lose its edge in live conditions without any obvious signal.
+                  Market regimes shift. Win rate decays, spread sensitivity changes, fill quality
+                  degrades. The statistical edge you validated in backtesting quietly disappears in
+                  live conditions.
                 </p>
               </div>
               <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Drawdowns compound</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Without continuous monitoring, small deviations accumulate. By the time drawdown
-                  becomes visible on the equity curve, the underlying problem has been building for
-                  weeks.
+                  Small deviations accumulate into deep drawdowns. By the time the equity curve
+                  shows visible damage, the underlying degradation has been compounding for weeks.
                 </p>
               </div>
               <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
-                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">No early warning</h3>
+                <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Backtests go stale</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Most traders discover degradation through losses — after the fact. Statistical
-                  drift is detectable much earlier if you measure continuously against a known
-                  baseline.
+                  A backtest is a snapshot. Without continuous comparison between live execution and
+                  baseline expectations, there is no way to detect when the two diverge.
                 </p>
               </div>
             </div>
@@ -229,8 +227,8 @@ export default async function HomePage() {
                 },
                 {
                   step: "3",
-                  title: "Monitor live vs baseline",
-                  desc: "AlgoStudio compares every live trade against the baseline. Health scores, drift detection, and lifecycle signals tell you when something changes.",
+                  title: "Detect drift, govern execution",
+                  desc: "AlgoStudio continuously compares live performance against your baseline. When statistical drift is detected, it alerts you — and can automatically halt strategies before damage compounds.",
                 },
               ].map((item) => (
                 <div
@@ -580,12 +578,15 @@ export default async function HomePage() {
             ════════════════════════════════════════════════════════════ */}
         <section className="py-16 md:py-20 px-6">
           <div className="max-w-3xl mx-auto">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4 text-center">
+              Verified Performance
+            </p>
             <h2 className="text-xl md:text-2xl font-bold text-[#FAFAFA] tracking-tight text-center">
-              Verified Live Track Record
+              Track records built from real execution
             </h2>
             <p className="mt-3 text-sm text-[#A1A1AA] text-center max-w-xl mx-auto">
-              AlgoStudio monitors algorithmic trading accounts and produces verified track records
-              from real trading activity.
+              Every metric is derived from verified live trading activity — not simulated results.
+              Tamper-evident, continuously monitored, independently verifiable.
             </p>
 
             <div className="mt-8 bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-xl p-6">
