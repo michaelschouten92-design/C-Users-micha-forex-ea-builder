@@ -38,7 +38,7 @@ export default async function HomePage() {
               <br />
               loses its edge.
             </h1>
-            <p className="mt-6 text-sm md:text-[17px] text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
               AlgoStudio monitors algorithmic trading strategies and detects when performance starts
               drifting from the baseline backtest. Continuous health scoring. Statistical drift
               detection. No guesswork.
@@ -63,10 +63,10 @@ export default async function HomePage() {
           </div>
 
           {/* ── Command Center Product Visual ── */}
-          <div className="max-w-5xl mx-auto mt-16 md:mt-20 relative">
+          <div className="max-w-4xl mx-auto mt-14 md:mt-16 relative">
             {/* Ambient glow */}
             <div className="absolute -inset-8 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)] pointer-events-none" />
-            <div className="relative rounded-xl border border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-[#0F0A1A] to-[#09090B] p-[1px] shadow-[0_4px_80px_rgba(99,102,241,0.08)]">
+            <div className="relative rounded-xl border border-[rgba(255,255,255,0.08)] bg-gradient-to-b from-[#0F0A1A] to-[#09090B] p-[1px] shadow-[0_4px_80px_rgba(99,102,241,0.08)]">
               <div className="rounded-[11px] bg-[#0A0118] overflow-hidden">
                 {/* Title bar */}
                 <div className="px-6 pt-5 pb-4 border-b border-[#1E293B]/40">
@@ -180,14 +180,14 @@ export default async function HomePage() {
               already done.
             </p>
             <div className="grid md:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+              <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Performance drifts</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
                   Market regimes shift. A strategy that performed well in backtesting may quietly
                   lose its edge in live conditions without any obvious signal.
                 </p>
               </div>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+              <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Drawdowns compound</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
                   Without continuous monitoring, small deviations accumulate. By the time drawdown
@@ -195,7 +195,7 @@ export default async function HomePage() {
                   weeks.
                 </p>
               </div>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
+              <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5">
                 <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">No early warning</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
                   Most traders discover degradation through losses — after the fact. Statistical
@@ -204,9 +204,6 @@ export default async function HomePage() {
                 </p>
               </div>
             </div>
-            <p className="mt-6 text-sm text-[#71717A] text-center">
-              AlgoStudio provides the continuous monitoring that catches these problems early.
-            </p>
           </div>
         </section>
 
@@ -238,7 +235,7 @@ export default async function HomePage() {
               ].map((item) => (
                 <div
                   key={item.step}
-                  className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
+                  className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111114] p-5"
                 >
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#18181B] border border-[rgba(255,255,255,0.10)] text-xs font-bold text-[#A1A1AA] mb-3">
                     {item.step}
@@ -313,7 +310,7 @@ export default async function HomePage() {
               </div>
 
               {/* RIGHT: Edge Drift Visual (based on screenshot 2) */}
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(239,68,68,0.06)]">
+              <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(239,68,68,0.06)]">
                 {/* Alerts header */}
                 <div className="px-5 pt-4 pb-3 border-b border-[#1E293B]/40">
                   <div className="flex items-center justify-between">
@@ -442,7 +439,7 @@ export default async function HomePage() {
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
               {/* LEFT: Account Health Visual (based on screenshot 3) */}
-              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(99,102,241,0.06)] order-2 md:order-1">
+              <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(99,102,241,0.06)] order-2 md:order-1">
                 {/* Account header */}
                 <div className="px-5 pt-5 pb-4">
                   <div className="flex items-center gap-2 mb-3">
