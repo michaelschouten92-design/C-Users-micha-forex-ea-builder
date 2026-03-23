@@ -60,6 +60,10 @@ const heartbeatSchema = z.object({
   drawdown: z.number().finite().min(0).max(100).default(0),
   spread: z.number().finite().min(0).max(10000).default(0),
   mode: z.enum(["LIVE", "PAPER"]).optional(),
+  // EA monitor mode — determines whether a separate account-level heartbeat
+  // sends aggregated trade metrics to the base instance. Older EAs omit this
+  // field; the default preserves existing ACCOUNT_WIDE behaviour.
+  monitorMode: z.enum(["SYMBOL_ONLY", "ACCOUNT_WIDE"]).optional(),
   deployment: deploymentSchema.optional(),
   // Account-wide deployment discovery
   discoveredDeployments: z.array(discoveredDeploymentSchema).max(50).optional(),
@@ -183,6 +187,20 @@ export async function POST(request: NextRequest) {
       }),
     ];
     if (isManifestContext) {
+      // In SYMBOL_ONLY deployment-aware mode there is no separate account-level
+      // heartbeat — every heartbeat routes through context resolution. The base
+      // instance must receive openTrades/totalTrades/totalProfit here, otherwise
+      // they stay at the default 0.
+      //
+      // In ACCOUNT_WIDE manifest mode a dedicated account-level heartbeat (without
+      // deployment field) writes the correct aggregates directly to the base
+      // instance. Per-context heartbeats must NOT overwrite those values.
+      //
+      // The EA sends `monitorMode: "SYMBOL_ONLY" | "ACCOUNT_WIDE"` to distinguish
+      // the two cases. For backward compatibility with older EAs that omit the
+      // field, default to ACCOUNT_WIDE (safe: preserves existing behaviour).
+      const isSymbolOnly = data.monitorMode === "SYMBOL_ONLY";
+
       txOps.push(
         prisma.liveEAInstance.update({
           where: { id: auth.instanceId },
@@ -194,11 +212,15 @@ export async function POST(request: NextRequest) {
             ...(data.broker != null && { broker: data.broker }),
             ...(data.accountNumber != null && { accountNumber: data.accountNumber }),
             // Propagate account-level metrics so the base instance card shows live values.
-            // Only balance/equity are truly account-level; openTrades/totalTrades/totalProfit
-            // are strategy-level and must NOT overwrite the base instance (the last context
-            // heartbeat would clobber values reported by the account-wide heartbeat).
             balance: data.balance,
             equity: data.equity,
+            // Only propagate trade metrics for SYMBOL_ONLY EAs that have no
+            // separate account-level heartbeat to write these aggregates.
+            ...(isSymbolOnly && {
+              openTrades: data.openTrades,
+              totalTrades: data.totalTrades,
+              totalProfit: data.totalProfit,
+            }),
           },
         }),
         // Also create a heartbeat record for the base instance so the SSE

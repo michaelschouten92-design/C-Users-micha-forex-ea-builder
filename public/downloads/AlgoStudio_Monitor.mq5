@@ -1911,8 +1911,11 @@ void SendHeartbeat()
    // Automatic deployment discovery (ACCOUNT_WIDE mode only)
    string discoveryJson = DiscoverDeploymentsFromActivity();
 
+   string monitorModeStr = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
+
    string json = "{"
       + JStr("mode", accMode) + ","
+      + JStr("monitorMode", monitorModeStr) + ","
       + (StringLen(symbol) > 0 ? JStr("symbol", symbol) + "," : "")
       + (StringLen(tf) > 0 ? JStr("timeframe", tf) + "," : "")
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
@@ -2035,8 +2038,11 @@ void SendContextHeartbeat(StrategyContext &ctx)
       + JStr("materialFingerprint", ctx.fingerprint)
       + "}";
 
+   string ctxMonitorMode = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
+
    string json = "{"
       + JStr("mode", accMode) + ","
+      + JStr("monitorMode", ctxMonitorMode) + ","
       + JStr("symbol", ctx.symbol) + ","
       + JStr("timeframe", ctx.timeframe) + ","
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
