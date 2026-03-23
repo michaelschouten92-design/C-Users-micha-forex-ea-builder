@@ -20,7 +20,7 @@ export function MonitorTabs({ defaultTab = "accounts", children }: MonitorTabsPr
 
   return (
     <div>
-      <div className="flex gap-1 mb-6 bg-[#0F0A1A]/60 border border-[#1E293B]/40 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-5 bg-[#0A0118]/40 border border-[#1E293B]/30 rounded-lg p-1 w-fit">
         {tabs.map((t) => (
           <button
             key={t.key}

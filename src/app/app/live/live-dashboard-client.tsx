@@ -2564,14 +2564,14 @@ function SummaryCard({
 
   return (
     <div
-      className="bg-[#0F0A1A]/80 border border-[#1E293B] rounded-xl px-5 py-5 relative overflow-hidden"
-      style={{ boxShadow: `0 1px 20px ${accentColor}06` }}
+      className="bg-[#0F0A1A] border border-[#1E293B]/60 rounded-lg px-4 py-4 relative overflow-hidden"
+      style={{ boxShadow: `0 1px 16px ${accentColor}06` }}
     >
       <div
         className="absolute top-0 left-0 right-0 h-[2px]"
         style={{ backgroundColor: accentColor, opacity: 0.3 }}
       />
-      <p className="text-[10px] uppercase tracking-widest text-[#525B6B] font-medium mb-3">
+      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
         {label}
       </p>
       <p
@@ -2579,7 +2579,7 @@ function SummaryCard({
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
-      {subtitle && <p className="text-[10px] text-[#475569] mt-2">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] text-[#475569] mt-1.5">{subtitle}</p>}
     </div>
   );
 }
@@ -3144,9 +3144,9 @@ export function LiveDashboardClient({
   ).filter((label) => portfolioHealthCounts[label] > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Controls bar */}
-      <div className="flex flex-wrap items-center justify-end gap-2.5">
+      <div className="flex flex-wrap items-center justify-end gap-2.5 px-3 py-2 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/30">
         {/* Mode filter */}
         <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
           {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
@@ -3323,7 +3323,7 @@ export function LiveDashboardClient({
           const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="space-y-4 sticky top-0 z-20 pb-4 -mx-px px-px border-b border-[#1E293B]/40 bg-gradient-to-b from-[#0A0118] via-[#0A0118] to-[#0A0118]/95 backdrop-blur-sm">
+            <div className="sticky top-0 z-20 py-2.5 px-3 border-b border-[#1E293B]/40 bg-[#0A0118]/98 backdrop-blur-sm rounded-lg">
               {/* System pulse header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -3380,11 +3380,11 @@ export function LiveDashboardClient({
 
       {/* ── Two-Column Control Zone ── */}
       {eaInstances.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* LEFT: Key Metrics */}
-          <div className="lg:col-span-3 space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-[#525B6B] font-medium">
-              Key Metrics
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {/* LEFT: Operations */}
+          <div className="lg:col-span-3 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+              Operations
             </p>
             {/* Primary readings */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -3412,8 +3412,8 @@ export function LiveDashboardClient({
             </div>
             {/* Secondary reading: Paper P&L (only when paper instances exist) */}
             {eaInstances.some((ea) => ea.mode === "PAPER") && (
-              <div className="flex items-baseline gap-2 px-3">
-                <span className="text-[10px] uppercase tracking-wider text-[#475569]">
+              <div className="flex items-baseline gap-2 px-1">
+                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
                   Paper P&L
                 </span>
                 <span
@@ -3431,16 +3431,16 @@ export function LiveDashboardClient({
                       .reduce((sum, ea) => sum + ea.totalProfit, 0)
                   )}
                 </span>
-                <span className="text-[10px] text-[#475569]">tracked total</span>
+                <span className="text-[9px] text-[#475569]">tracked total</span>
               </div>
             )}
 
-            {/* Secondary: health + exposure inline */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2.5 rounded-lg bg-white/[0.015] border border-[#1E293B]/30">
+            {/* Secondary: health + exposure */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
               {/* Strategy Health */}
               {portfolioHealthParts.length > 0 && (
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] uppercase tracking-wider text-[#475569]">
+                  <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
                     Health
                   </span>
                   {portfolioHealthParts.map((label) => {
@@ -3459,7 +3459,7 @@ export function LiveDashboardClient({
               )}
               {/* Exposure */}
               <div className="flex items-center gap-3">
-                <span className="text-[10px] uppercase tracking-wider text-[#475569]">
+                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
                   Exposure
                 </span>
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
@@ -3495,32 +3495,34 @@ export function LiveDashboardClient({
                 (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
               );
               return (
-                <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 rounded-lg bg-white/[0.015] border border-[#1E293B]/30">
-                  <span className="text-[10px] uppercase tracking-wider text-[#475569] mr-0.5">
+                <div className="px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
                     Symbols
-                  </span>
-                  {entries.map(([sym, data]) => (
-                    <span
-                      key={sym}
-                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-white/[0.02] border border-[#1E293B]"
-                    >
-                      <span className="font-medium text-[#94A3B8]">{sym}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {entries.map(([sym, data]) => (
                       <span
-                        className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                        key={sym}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono"
                       >
-                        {formatCurrency(data.pnl)}
+                        <span className="font-medium text-[#94A3B8]">{sym}</span>
+                        <span
+                          className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                        >
+                          {formatCurrency(data.pnl)}
+                        </span>
                       </span>
-                    </span>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               );
             })()}
           </div>
 
-          {/* RIGHT: Alerts & Health */}
-          <div className="lg:col-span-2 space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-[#525B6B] font-medium">
-              Alerts & Health
+          {/* RIGHT: Monitoring */}
+          <div className="lg:col-span-2 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+              Monitoring
             </p>
             {(() => {
               const actionItems = eaInstances
@@ -3597,36 +3599,40 @@ export function LiveDashboardClient({
 
               return (
                 <div
-                  className="rounded-xl px-5 py-4"
+                  className="rounded-md px-3 py-3"
                   style={{
-                    borderColor: `${alertBorderColor}25`,
+                    borderColor: `${alertBorderColor}20`,
                     borderWidth: "1px",
                     borderStyle: "solid",
-                    backgroundColor: `${alertBorderColor}06`,
-                    boxShadow: `0 0 24px ${alertBorderColor}08`,
+                    backgroundColor: `${alertBorderColor}05`,
                   }}
                 >
-                  <div className="flex items-center gap-3 mb-3.5">
-                    <span className="relative flex h-2.5 w-2.5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2">
                       <span
                         className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
                         style={{ backgroundColor: alertBorderColor }}
                       />
                       <span
-                        className="relative inline-flex rounded-full h-2.5 w-2.5"
+                        className="relative inline-flex rounded-full h-2 w-2"
                         style={{ backgroundColor: alertBorderColor }}
                       />
                     </span>
-                    <p className="text-sm font-bold text-white">Action Required</p>
-                    <span className="text-[10px] text-[#64748B]">
-                      {actionItems.length} {actionItems.length === 1 ? "strategy" : "strategies"}
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+                      Alerts
+                    </p>
+                    <span
+                      className="text-[10px] font-semibold tabular-nums"
+                      style={{ color: alertBorderColor }}
+                    >
+                      {actionItems.length}
                     </span>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-1.5">
                     {sortedGroups.map((group) => (
                       <div
                         key={group.statusLabel}
-                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 bg-white/[0.02]"
+                        className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 bg-white/[0.02]"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
@@ -3703,30 +3709,30 @@ export function LiveDashboardClient({
                 }
               }
               return (
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: "Healthy", count: healthy, color: "#10B981" },
-                    { label: "Attention", count: attentionCount, color: "#F59E0B" },
-                    { label: "Collecting", count: monitoring, color: "#A78BFA" },
-                    { label: "Paused", count: paused, color: "#64748B" },
-                  ].map((c) => (
-                    <div
-                      key={c.label}
-                      className="flex items-center gap-2 rounded-lg border border-[#1E293B]/40 bg-white/[0.01] px-2.5 py-1.5"
-                    >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: c.count > 0 ? c.color : "#27272A" }}
-                      />
-                      <span
-                        className="text-sm font-semibold tabular-nums"
-                        style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
-                      >
-                        {c.count}
-                      </span>
-                      <span className="text-[10px] text-[#525B6B]">{c.label}</span>
-                    </div>
-                  ))}
+                <div className="rounded-md border border-[#1E293B]/25 bg-white/[0.015] px-3 py-2.5">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
+                    Health
+                  </p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: "Healthy", count: healthy, color: "#10B981" },
+                      { label: "Attention", count: attentionCount, color: "#F59E0B" },
+                      { label: "Collecting", count: monitoring, color: "#A78BFA" },
+                      { label: "Paused", count: paused, color: "#64748B" },
+                    ].map((c) => (
+                      <div key={c.label} className="text-center">
+                        <p
+                          className="text-lg font-bold font-mono tabular-nums leading-none"
+                          style={{ color: c.count > 0 ? c.color : "#27272A" }}
+                        >
+                          {c.count}
+                        </p>
+                        <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1">
+                          {c.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })()}
@@ -3734,18 +3740,9 @@ export function LiveDashboardClient({
         </div>
       )}
 
-      {/* ── Instances ── */}
-      {eaInstances.length > 0 && (
-        <div className="flex items-baseline justify-between">
-          <p className="text-[10px] uppercase tracking-widest text-[#525B6B] font-medium">
-            Instances
-          </p>
-        </div>
-      )}
-
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
-        <div className="bg-[#0F0A1A] border border-[#1E293B] rounded-lg p-12 text-center">
+        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1E293B] flex items-center justify-center">
             <svg
               className="w-8 h-8 text-white"
@@ -3774,7 +3771,10 @@ export function LiveDashboardClient({
           </Link>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#1E293B]/30 bg-[#0F0A1A]/40 p-4">
+        <div className="rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+          <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-4">
+            Strategy Monitor
+          </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {sortByPriority(
               groupByAccount(
@@ -3799,7 +3799,7 @@ export function LiveDashboardClient({
 
       {/* Settings — drawdown alert (secondary, below accounts) */}
       {eaInstances.length > 0 && (
-        <div className="bg-[#0F0A1A]/60 border border-[#1E293B]/40 rounded-xl p-3.5">
+        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-1">
               <svg

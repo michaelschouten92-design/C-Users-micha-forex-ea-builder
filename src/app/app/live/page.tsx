@@ -156,9 +156,9 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── Hero / System Status Zone ── */}
-        <div className="mt-5 mb-6">
-          <div className="rounded-xl border border-[rgba(79,70,229,0.2)] bg-gradient-to-b from-[rgba(79,70,229,0.09)] to-transparent px-6 pt-5 pb-6">
+        {/* ── System Command Board ── */}
+        <div className="mt-5 mb-4">
+          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-5">
             {/* Title row */}
             <div className="flex items-baseline justify-between gap-4">
               <div className="flex items-baseline gap-3">
@@ -172,7 +172,7 @@ function renderDashboard(
               </div>
             </div>
 
-            <p className="text-[13px] text-[#525B6B] max-w-xl mt-1.5 mb-6">
+            <p className="text-[12px] text-[#475569] max-w-xl mt-1.5 mb-5">
               Monitor live trading strategies and detect edge drift, instability and risk anomalies
               before they damage performance.
             </p>
@@ -212,14 +212,13 @@ function renderDashboard(
               : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
 
             return (
-              <section className="mb-5 space-y-2.5">
+              <section className="mb-4 space-y-2">
                 {showAuthority && (
                   <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-xl"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg"
                     style={{
                       backgroundColor: colors.bg,
                       border: `1px solid ${colors.border}`,
-                      boxShadow: `0 0 20px ${colors.bg}`,
                     }}
                   >
                     <span
@@ -239,10 +238,7 @@ function renderDashboard(
                   </div>
                 )}
                 {showHalted && (
-                  <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-5 py-3.5 rounded-xl bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]"
-                    style={{ boxShadow: "0 0 20px rgba(239,68,68,0.04)" }}
-                  >
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
                     <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
                       Operator Hold
@@ -392,7 +388,7 @@ function SystemStatusStrip({
         return (
           <div
             key={item.label}
-            className="rounded-lg bg-[rgba(15,10,26,0.4)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden"
+            className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden"
             style={hasActiveColor ? { boxShadow: `0 0 16px ${item.color}10` } : undefined}
           >
             {hasActiveColor && (
@@ -401,11 +397,11 @@ function SystemStatusStrip({
                 style={{ backgroundColor: item.color, opacity: 0.5 }}
               />
             )}
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
               {item.label}
             </p>
             <p
-              className="text-xl font-bold font-mono tabular-nums leading-none"
+              className="text-2xl font-bold font-mono tabular-nums leading-none"
               style={{ color: item.color ?? "#CBD5E1" }}
             >
               {item.value}
