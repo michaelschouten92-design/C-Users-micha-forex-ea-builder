@@ -31,14 +31,14 @@ export default async function HomePage() {
         {/* ════════════════════════════════════════════════════════════
             1. HERO
             ════════════════════════════════════════════════════════════ */}
-        <section className="pt-32 md:pt-36 pb-12 md:pb-16 px-6">
+        <section className="pt-32 md:pt-40 pb-16 md:pb-24 px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-[28px] md:text-[36px] font-extrabold tracking-tight leading-[1.2]">
+            <h1 className="text-[28px] md:text-[42px] font-extrabold tracking-tight leading-[1.15]">
               Know when your trading strategy
               <br />
               loses its edge.
             </h1>
-            <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-6 text-sm md:text-[17px] text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
               AlgoStudio monitors algorithmic trading strategies and detects when performance starts
               drifting from the baseline backtest. Continuous health scoring. Statistical drift
               detection. No guesswork.
@@ -46,29 +46,132 @@ export default async function HomePage() {
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/register"
-                className="px-6 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#818CF8] transition-colors text-sm"
+                className="px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-colors text-sm"
               >
                 Start monitoring your strategies
               </Link>
               <Link
                 href="/how-it-works"
-                className="px-6 py-3 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-sm"
+                className="px-7 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-sm"
               >
                 See how it works
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[#71717A] text-center">
+            <p className="mt-5 text-sm text-[#52525B]">
               Free plan available — no credit card required.
             </p>
+          </div>
+
+          {/* ── Command Center Product Visual ── */}
+          <div className="max-w-5xl mx-auto mt-16 md:mt-20 relative">
+            {/* Ambient glow */}
+            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)] pointer-events-none" />
+            <div className="relative rounded-xl border border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-[#0F0A1A] to-[#09090B] p-[1px] shadow-[0_4px_80px_rgba(99,102,241,0.08)]">
+              <div className="rounded-[11px] bg-[#0A0118] overflow-hidden">
+                {/* Title bar */}
+                <div className="px-6 pt-5 pb-4 border-b border-[#1E293B]/40">
+                  <div className="flex items-baseline justify-between">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-lg font-bold text-[#F1F5F9]">Command Center</span>
+                      <span className="text-xs text-[#64748B] font-medium tabular-nums">
+                        9 instances monitored
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-50" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#10B981]" />
+                      </span>
+                      <span className="text-[10px] text-[#525B6B] font-medium">Live</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System State Board */}
+                <div className="px-6 py-5">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
+                    System State
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {/* Execution */}
+                    <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#10B981] opacity-50" />
+                      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
+                        Execution
+                      </p>
+                      <p className="text-xl font-bold font-mono tabular-nums leading-none text-[#10B981]">
+                        RUNNING
+                      </p>
+                    </div>
+                    {/* Online */}
+                    <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5">
+                      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
+                        Online
+                      </p>
+                      <p className="text-xl font-bold font-mono tabular-nums leading-none text-[#CBD5E1]">
+                        9/9
+                      </p>
+                    </div>
+                    {/* Halted */}
+                    <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#F59E0B] opacity-50" />
+                      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
+                        Halted
+                      </p>
+                      <p className="text-xl font-bold font-mono tabular-nums leading-none text-[#F59E0B]">
+                        1
+                      </p>
+                    </div>
+                    {/* Drift */}
+                    <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#EF4444] opacity-50" />
+                      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
+                        Edge Drift
+                      </p>
+                      <p className="text-xl font-bold font-mono tabular-nums leading-none text-[#EF4444]">
+                        1
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alert strip */}
+                <div className="mx-6 mb-5 rounded-lg px-4 py-3 border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.05)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <svg
+                        className="w-3.5 h-3.5 text-[#F59E0B] shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-[9px] uppercase tracking-[0.15em] text-[#EF4444] font-bold">
+                        Edge Drift Detected
+                      </span>
+                      <span className="text-xs text-[#94A3B8] font-medium">
+                        EURUSD Grid Strategy
+                      </span>
+                      <span className="text-xs text-[#64748B]">Losing edge</span>
+                    </div>
+                    <span className="text-xs text-[#64748B] hidden sm:block">Link baseline ›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════
             2. PROBLEM — Why strategies fail silently
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
+        <section className="py-16 md:py-20 px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-3 tracking-tight">
+            <h2 className="text-xl md:text-2xl font-bold text-[#FAFAFA] text-center mb-3 tracking-tight">
               Strategies don&apos;t fail overnight
             </h2>
             <p className="text-sm text-[#A1A1AA] text-center max-w-2xl mx-auto mb-8 md:mb-10">
@@ -108,61 +211,11 @@ export default async function HomePage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            3. PRODUCT OVERVIEW — Command Center
+            3. HOW IT WORKS — 3 steps
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
+        <section className="py-16 md:py-20 px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-3 tracking-tight">
-              One place to monitor all your strategies
-            </h2>
-            <p className="text-sm text-[#A1A1AA] text-center max-w-2xl mx-auto mb-8 md:mb-10">
-              The Command Center shows every connected strategy, its current health, and whether
-              performance is drifting from the baseline. At a glance, you know which strategies are
-              healthy and which need attention.
-            </p>
-
-            {/* TODO: Insert Command Center dashboard screenshot here */}
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-8 md:p-12 text-center">
-              <p className="text-sm text-[#71717A]">Dashboard screenshot — coming soon</p>
-            </div>
-
-            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              {[
-                {
-                  label: "Strategy health",
-                  desc: "0-100 health score updated after every closed trade.",
-                },
-                {
-                  label: "Drift detection",
-                  desc: "CUSUM monitoring flags persistent performance shifts.",
-                },
-                {
-                  label: "Warning states",
-                  desc: "Strategies transition through Healthy, Warning, and Edge at Risk.",
-                },
-                {
-                  label: "Multi-strategy",
-                  desc: "Monitor all your strategies and accounts from one view.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
-                >
-                  <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">{item.label}</h3>
-                  <p className="text-sm text-[#A1A1AA] leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════
-            4. HOW IT WORKS — 3 steps
-            ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-8 md:mb-10 tracking-tight">
+            <h2 className="text-xl md:text-2xl font-bold text-[#FAFAFA] text-center mb-8 md:mb-10 tracking-tight">
               How it works
             </h2>
             <div className="grid md:grid-cols-3 gap-4">
@@ -207,98 +260,320 @@ export default async function HomePage() {
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            5. DRIFT DETECTION
+            5. DRIFT DETECTION — with alert panel visual
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-3 tracking-tight">
-              Detect drift before it becomes drawdown
-            </h2>
-            <p className="text-sm text-[#A1A1AA] text-center max-w-2xl mx-auto mb-8 md:mb-10">
-              AlgoStudio uses CUSUM statistical monitoring to detect persistent performance
-              degradation. It accumulates small deviations over time and distinguishes between
-              normal variance and meaningful directional shift.
-            </p>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-[rgba(16,185,129,0.15)] bg-[#111114] p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                  <span className="text-sm font-semibold text-[#10B981]">Healthy</span>
-                </div>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Live performance is within expected ranges. All tracked metrics are consistent
-                  with the baseline. No action needed.
+        <section className="py-16 md:py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
+              {/* LEFT: Copy */}
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
+                  Anomaly Detection
                 </p>
+                <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight leading-tight mb-4">
+                  Detect edge drift before it becomes drawdown
+                </h2>
+                <p className="text-sm text-[#A1A1AA] leading-relaxed mb-8">
+                  AlgoStudio uses CUSUM statistical monitoring to detect persistent performance
+                  degradation. It accumulates small deviations over time and distinguishes between
+                  normal variance and meaningful directional shift.
+                </p>
+                <div className="space-y-3">
+                  {[
+                    {
+                      color: "#10B981",
+                      label: "Healthy",
+                      desc: "Performance within expected baseline ranges.",
+                    },
+                    {
+                      color: "#F59E0B",
+                      label: "Warning",
+                      desc: "Sustained drift detected. Worth monitoring.",
+                    },
+                    {
+                      color: "#EF4444",
+                      label: "Edge at Risk",
+                      desc: "Significant degradation. Investigation recommended.",
+                    },
+                  ].map((s) => (
+                    <div key={s.label} className="flex items-start gap-3">
+                      <div
+                        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <div>
+                        <span className="text-sm font-semibold" style={{ color: s.color }}>
+                          {s.label}
+                        </span>
+                        <span className="text-sm text-[#71717A] ml-2">{s.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="rounded-xl border border-[rgba(245,158,11,0.15)] bg-[#111114] p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-                  <span className="text-sm font-semibold text-[#F59E0B]">Warning</span>
+
+              {/* RIGHT: Edge Drift Visual (based on screenshot 2) */}
+              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(239,68,68,0.06)]">
+                {/* Alerts header */}
+                <div className="px-5 pt-4 pb-3 border-b border-[#1E293B]/40">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+                      <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-bold">
+                        Alerts
+                      </span>
+                      <span className="text-xs font-bold text-[#F59E0B] tabular-nums">4</span>
+                    </div>
+                    <span className="text-[10px] text-[#475569] font-medium">Health ›</span>
+                  </div>
                 </div>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  One or more metrics are drifting from the baseline. The deviation is not yet
-                  critical, but sustained drift has been detected. Worth watching.
-                </p>
-              </div>
-              <div className="rounded-xl border border-[rgba(239,68,68,0.15)] bg-[#111114] p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
-                  <span className="text-sm font-semibold text-[#EF4444]">Edge at Risk</span>
+
+                {/* Alert rows */}
+                <div className="divide-y divide-[#1E293B]/30">
+                  <div className="px-5 py-3.5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg
+                        className="w-3 h-3 text-[#F59E0B] shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-[13px] font-semibold text-[#EF4444]">
+                        Edge drift detected
+                      </span>
+                      <span className="text-[10px] text-[#475569] ml-auto">30s ago ›</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8]">
+                      EURUSD Grid Strategy <span className="text-[#64748B]">· Losing edge</span>
+                    </p>
+                  </div>
+                  <div className="px-5 py-3.5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg
+                        className="w-3 h-3 text-[#F59E0B] shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-[13px] font-semibold text-[#F59E0B]">
+                        Baseline drift
+                      </span>
+                      <span className="text-[10px] text-[#475569] ml-auto">5m ago</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8]">
+                      USDJPY Grid Strategy{" "}
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-[#1E293B] text-[#94A3B8]">
+                        Demo
+                      </span>{" "}
+                      <span className="text-[#64748B]">· Statistical deviation</span>
+                    </p>
+                  </div>
+                  <div className="px-5 py-3.5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg
+                        className="w-3 h-3 text-[#F59E0B] shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-[13px] font-semibold text-[#EF4444]">
+                        Risk threshold breached
+                      </span>
+                      <span className="text-[10px] text-[#475569] ml-auto">18m ago</span>
+                    </div>
+                    <p className="text-xs text-[#94A3B8]">
+                      USDJPY Grid Strategy{" "}
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-[#1E293B] text-[#94A3B8]">
+                        Demo
+                      </span>
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Significant and sustained performance degradation detected. The strategy&apos;s
-                  statistical edge may no longer be present. Investigation recommended.
-                </p>
+
+                {/* Featured drift card */}
+                <div className="mx-4 my-4 rounded-lg border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.04)] p-4">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#EF4444] font-bold mb-2.5">
+                    Edge Drift Detected
+                  </p>
+                  <p className="text-base font-bold text-[#F1F5F9] mb-3">EURUSD Grid Master</p>
+                  <div className="flex items-center gap-4 mb-3">
+                    <div>
+                      <span className="text-xs text-[#64748B]">Max DD</span>
+                      <span className="text-sm font-semibold text-[#CBD5E1] ml-1.5">3.12%</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-[#64748B]">Deviation</span>
+                      <span className="text-sm font-bold text-[#EF4444] ml-1.5">+82%</span>
+                    </div>
+                    <span className="text-xs text-[#64748B] border border-[#1E293B] rounded px-2 py-0.5">
+                      Link baseline
+                    </span>
+                  </div>
+                  <div className="rounded-md bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.15)] px-3 py-2 text-center">
+                    <span className="text-xs font-semibold text-[#F59E0B]">
+                      Halted by AlgoStudio
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════
-            6. INVESTIGATION
+            6. GOVERNANCE — Govern live strategies
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] text-center mb-3 tracking-tight">
-              Understand what changed
-            </h2>
-            <p className="text-sm text-[#A1A1AA] text-center max-w-2xl mx-auto mb-8 md:mb-10">
-              When a strategy degrades, AlgoStudio helps you investigate why. Compare live
-              performance against the baseline across every dimension to pinpoint what shifted.
-            </p>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                {
-                  title: "Baseline vs live comparison",
-                  desc: "Side-by-side metrics showing how current performance compares to what the backtest predicted.",
-                },
-                {
-                  title: "Drawdown and volatility changes",
-                  desc: "Track whether drawdowns are deeper or more frequent than the baseline expected. Detect volatility regime shifts.",
-                },
-                {
-                  title: "Trade frequency shifts",
-                  desc: "Monitor whether the strategy is trading more or less often than expected. Frequency changes often signal changing market conditions.",
-                },
-                {
-                  title: "Full trade event audit trail",
-                  desc: "Every trade is recorded in a cryptographic hash chain. Review the complete history with tamper-evident integrity.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
-                >
-                  <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">{item.title}</h3>
-                  <p className="text-sm text-[#A1A1AA] leading-relaxed">{item.desc}</p>
+        <section className="py-16 md:py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
+              {/* LEFT: Account Health Visual (based on screenshot 3) */}
+              <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0A0118] overflow-hidden shadow-[0_4px_60px_rgba(99,102,241,0.06)] order-2 md:order-1">
+                {/* Account header */}
+                <div className="px-5 pt-5 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                    <span className="text-sm font-bold text-[#F1F5F9]">Online</span>
+                    <span className="text-sm text-[#64748B]">Demo</span>
+                  </div>
+                  <p className="text-xs text-[#64748B]">IC Markets (EU) Ltd · #52780353</p>
                 </div>
-              ))}
-            </div>
 
-            {/* TODO: Insert strategy investigation screenshot here */}
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-8 md:p-12 text-center mt-6">
-              <p className="text-sm text-[#71717A]">Investigation view screenshot — coming soon</p>
+                {/* Balance / Equity */}
+                <div className="mx-5 mb-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-3.5 py-3">
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
+                      Balance
+                    </p>
+                    <p className="text-lg font-bold font-mono tabular-nums text-[#CBD5E1]">
+                      $100,131
+                    </p>
+                  </div>
+                  <div className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-3.5 py-3">
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
+                      Equity
+                    </p>
+                    <p className="text-lg font-bold font-mono tabular-nums text-[#CBD5E1]">
+                      $100,131
+                    </p>
+                  </div>
+                </div>
+
+                {/* Edge drift alert */}
+                <div className="mx-5 mb-4 rounded-lg border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.04)] p-4">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#EF4444] font-bold mb-2">
+                    Edge Drift Detected
+                  </p>
+                  <p className="text-sm font-bold text-[#F1F5F9] mb-2">↓ EURUSD Grid Master</p>
+                  <div className="flex items-center gap-4 text-xs mb-3">
+                    <span className="text-[#64748B]">
+                      Max DD <span className="text-[#CBD5E1] font-semibold">3.12%</span>
+                    </span>
+                    <span className="text-[#EF4444] font-bold">+82%</span>
+                    <span className="text-[#64748B] border border-[#1E293B] rounded px-2 py-0.5">
+                      Link baseline
+                    </span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-[#94A3B8] mb-3">
+                    <li>■ Edge drift detected by AlgoStudio..</li>
+                    <li>■ Erosion Factor effect decrease</li>
+                    <li>■ Win Rate 7.1% vs 12.4% baseline</li>
+                    <li>■ Recovery Time 4.2x slower</li>
+                  </ul>
+                  <div className="rounded-md bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.15)] px-3 py-2 text-center">
+                    <span className="text-xs font-semibold text-[#F59E0B]">
+                      Halted by AlgoStudio
+                    </span>
+                  </div>
+                </div>
+
+                {/* Strategy Health */}
+                <div className="mx-5 mb-5">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2.5">
+                    Strategy Health
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "Halted", color: "#EF4444", count: "1" },
+                      { label: "Attention", color: "#F59E0B", count: "2" },
+                      { label: "Healthy", color: "#10B981", count: "6" },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-md border px-3 py-2.5 text-center"
+                        style={{ borderColor: `${s.color}20`, backgroundColor: `${s.color}08` }}
+                      >
+                        <p
+                          className="text-lg font-bold font-mono tabular-nums leading-none mb-1"
+                          style={{ color: s.color }}
+                        >
+                          {s.count}
+                        </p>
+                        <p
+                          className="text-[9px] uppercase tracking-wider"
+                          style={{ color: `${s.color}99` }}
+                        >
+                          {s.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: Copy */}
+              <div className="order-1 md:order-2">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
+                  Strategy Governance
+                </p>
+                <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight leading-tight mb-4">
+                  Govern live strategies with automatic intervention
+                </h2>
+                <p className="text-sm text-[#A1A1AA] leading-relaxed mb-8">
+                  When AlgoStudio detects that a strategy&apos;s edge is degrading beyond acceptable
+                  thresholds, it can automatically halt trading to prevent further damage. Every
+                  intervention is logged, explainable, and reversible.
+                </p>
+                <div className="space-y-4">
+                  {[
+                    {
+                      title: "Automatic halt on drift",
+                      desc: "Strategies are paused when statistical degradation exceeds configured thresholds.",
+                    },
+                    {
+                      title: "Full investigation context",
+                      desc: "Every halt includes the specific metrics that triggered it — win rate, drawdown, recovery time.",
+                    },
+                    {
+                      title: "Per-strategy health visibility",
+                      desc: "See the health state of every strategy in one view. Halted, Attention, Healthy — at a glance.",
+                    },
+                    {
+                      title: "Tamper-evident audit trail",
+                      desc: "Every trade and intervention is recorded in a cryptographic hash chain with verifiable integrity.",
+                    },
+                  ].map((item) => (
+                    <div key={item.title}>
+                      <h3 className="text-sm font-semibold text-[#FAFAFA] mb-1">{item.title}</h3>
+                      <p className="text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -306,9 +581,9 @@ export default async function HomePage() {
         {/* ════════════════════════════════════════════════════════════
             7. VERIFIED TRACK RECORD
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
+        <section className="py-16 md:py-20 px-6">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-xl font-bold text-[#FAFAFA] tracking-tight text-center">
+            <h2 className="text-xl md:text-2xl font-bold text-[#FAFAFA] tracking-tight text-center">
               Verified Live Track Record
             </h2>
             <p className="mt-3 text-sm text-[#A1A1AA] text-center max-w-xl mx-auto">
@@ -364,28 +639,30 @@ export default async function HomePage() {
         {/* ════════════════════════════════════════════════════════════
             8. FINAL CTA
             ════════════════════════════════════════════════════════════ */}
-        <section className="py-12 md:py-16 px-6">
+        <section className="py-20 md:py-28 px-6">
           <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-xl font-bold text-[#FAFAFA] tracking-tight">Stop flying blind.</h2>
-            <p className="mt-3 text-sm text-[#A1A1AA]">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] tracking-tight">
+              Stop flying blind.
+            </h2>
+            <p className="mt-4 text-sm md:text-base text-[#A1A1AA]">
               Connect your MT5 terminal and know within days whether your strategies are performing
               as expected — or drifting.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/register"
-                className="px-6 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#818CF8] transition-colors text-sm"
+                className="px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-colors text-sm"
               >
                 Start monitoring your strategies
               </Link>
               <Link
                 href="/pricing"
-                className="px-6 py-3 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-sm"
+                className="px-7 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-sm"
               >
                 See pricing
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[#71717A]">
+            <p className="mt-5 text-sm text-[#52525B]">
               Free plan available — no credit card required.
             </p>
           </div>
