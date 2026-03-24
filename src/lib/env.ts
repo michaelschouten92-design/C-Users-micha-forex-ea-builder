@@ -329,9 +329,14 @@ function validateEnv() {
     } as z.infer<typeof refinedEnvSchema>;
   }
 
-  // During build (next build), env vars may not all be available.
-  // Only warn during build, enforce at runtime.
+  // During build (next build) or local dev, env vars may not all be available.
+  // Build phase: warn and return best-effort defaults.
+  // Development: warn and return best-effort defaults — pages that don't touch
+  //   the missing services (e.g. the marketing homepage) can still render.
+  //   Routes that actually depend on a missing service will fail at call-site.
+  // Production: hard fail — all services must be configured.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  const isDev = process.env.NODE_ENV !== "production";
 
   // On the server, do full validation
   const result = refinedEnvSchema.safeParse(process.env);
@@ -341,19 +346,22 @@ function validateEnv() {
       .map((i) => `  ${i.path.join(".")}: ${i.message}`)
       .join("\n");
 
-    if (isBuildPhase) {
-      // During build: warn but don't crash — runtime secrets aren't available yet
-      console.warn("⚠ Environment validation warnings (build phase):");
+    if (isBuildPhase || isDev) {
+      // During build or dev: warn but don't crash — allow partial env
+      const phase = isBuildPhase ? "build phase" : "development";
+      console.warn(`⚠ Environment validation warnings (${phase}):`);
       console.warn(errorMessages);
-      console.warn("These variables must be set at runtime.");
+      if (isBuildPhase) {
+        console.warn("These variables must be set at runtime.");
+      }
 
-      // Return defaults for build phase — real values will be available at runtime
+      // Return best-effort values — real values will be used when available
       return {
-        NODE_ENV: process.env.NODE_ENV || "production",
+        NODE_ENV: process.env.NODE_ENV || "development",
         DATABASE_URL:
           process.env.DATABASE_URL ||
           "postgresql://placeholder:placeholder@localhost:5432/placeholder",
-        AUTH_SECRET: process.env.AUTH_SECRET || "build-phase-placeholder",
+        AUTH_SECRET: process.env.AUTH_SECRET || "dev-placeholder-secret-at-least-32-chars-long!",
         AUTH_URL: process.env.AUTH_URL || "http://localhost:3000",
         AUTH_TRUST_HOST: false,
         AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
@@ -383,6 +391,7 @@ function validateEnv() {
         DISCORD_PRO_ROLE_ID: process.env.DISCORD_PRO_ROLE_ID,
         DISCORD_ELITE_ROLE_ID: process.env.DISCORD_ELITE_ROLE_ID,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+        SUPPORT_EMAIL: process.env.SUPPORT_EMAIL,
         TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
         STRIPE_TRIAL_DAYS: process.env.STRIPE_TRIAL_DAYS
@@ -397,6 +406,7 @@ function validateEnv() {
       } as z.infer<typeof refinedEnvSchema>;
     }
 
+    // Production: hard fail
     console.error("Environment validation failed:");
     console.error("");
 
@@ -408,12 +418,7 @@ function validateEnv() {
     console.error("");
     console.error("Please check your .env file and ensure all required variables are set.");
     console.error("See .env.example for reference.");
-
-    if (process.env.NODE_ENV === "production") {
-      process.exit(1);
-    } else {
-      throw new Error(`Environment validation failed:\n${errorMessages}`);
-    }
+    process.exit(1);
   }
 
   return result.data;
