@@ -695,7 +695,7 @@ function resolveInstanceAttention(
       color: "#71717A",
     };
   }
-  if (ea.strategyStatus === "EDGE_DEGRADED") {
+  if (ea.lifecycleState === "EDGE_AT_RISK" || ea.strategyStatus === "EDGE_DEGRADED") {
     return {
       statusLabel: "Edge at risk",
       reason: ea.monitoringReasons?.length
@@ -1352,9 +1352,23 @@ function AccountCard({
               <StatusBadge status={accountStatus} animate={statusChanged} />
               <h3 className="font-semibold text-white truncate text-[15px]">{primary.eaName}</h3>
               {(() => {
-                const execState = anyHalted ? "HALTED" : allPaused ? "PAUSED" : "RUN";
+                const overridePending = instances.some(
+                  (ea) => (ea.operatorHold ?? "NONE") === "OVERRIDE_PENDING"
+                );
+                const execState = overridePending
+                  ? "OVERRIDE_PENDING"
+                  : anyHalted
+                    ? "HALTED"
+                    : allPaused
+                      ? "PAUSED"
+                      : "RUN";
                 if (execState === "RUN") return null;
-                const execColor = execState === "HALTED" ? "#EF4444" : "#F59E0B";
+                const execColor =
+                  execState === "HALTED" || execState === "OVERRIDE_PENDING"
+                    ? "#EF4444"
+                    : "#F59E0B";
+                const execLabel =
+                  execState === "OVERRIDE_PENDING" ? "OVERRIDE PENDING" : execState;
                 return (
                   <span
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-medium rounded"
@@ -1363,7 +1377,7 @@ function AccountCard({
                       color: execColor,
                     }}
                   >
-                    {execState}
+                    {execLabel}
                   </span>
                 );
               })()}
@@ -3035,13 +3049,41 @@ export function LiveDashboardClient({
       setEaInstances((prev) =>
         prev.map((ea) => (ea.id === hb.instanceId ? applyHeartbeatPatch(ea, hb) : ea))
       );
+      setChangedIds((prev) => new Set([...prev, hb.instanceId]));
+      if (changedTimeoutRef.current) clearTimeout(changedTimeoutRef.current);
+      changedTimeoutRef.current = setTimeout(() => setChangedIds(new Set()), 2000);
     },
     onTrade: (data) => {
-      const trade = data as { instanceId: string; profit: number };
+      const trade = data as {
+        instanceId: string;
+        profit: number;
+        closeTime: string | null;
+        symbol?: string | null;
+        magicNumber?: number | null;
+      };
       if (soundAlertsRef.current) {
         const ea = previousDataRef.current.get(trade.instanceId);
         showInfo(`New trade on ${ea?.eaName ?? "EA"}`, `P/L: $${trade.profit.toFixed(2)}`);
       }
+      // Prepend the new trade so AccountCard metrics stay current without a full refresh
+      setEaInstances((prev) =>
+        prev.map((ea) =>
+          ea.id === trade.instanceId
+            ? {
+                ...ea,
+                trades: [
+                  {
+                    profit: trade.profit,
+                    closeTime: trade.closeTime ?? null,
+                    symbol: trade.symbol ?? null,
+                    magicNumber: trade.magicNumber ?? null,
+                  },
+                  ...ea.trades,
+                ].slice(0, 20),
+              }
+            : ea
+        )
+      );
     },
     onError: () => {
       // SSE error events handled internally
@@ -3903,7 +3945,7 @@ export function LiveDashboardClient({
                   try {
                     const res = await fetch(`/api/live/${instanceId}/lifecycle`, {
                       method: "POST",
-                      headers: { "Content-Type": "application/json" },
+                      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
                       body: JSON.stringify({ action: "activate" }),
                     });
                     if (res.ok) {

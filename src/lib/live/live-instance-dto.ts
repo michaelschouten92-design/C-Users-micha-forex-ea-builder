@@ -100,6 +100,7 @@ export interface LiveHeartbeatPatch {
   status: string;
   tradingState: string;
   lastHeartbeat: string | null;
+  lastError: string | null;
 }
 
 // ── Update helpers ───────────────────────────────────────
@@ -123,6 +124,7 @@ export function applyHeartbeatPatch<T extends LiveInstanceDTO>(
     status: patch.status as T["status"],
     tradingState: patch.tradingState as T["tradingState"],
     lastHeartbeat: patch.lastHeartbeat,
+    lastError: patch.lastError,
   };
 }
 
