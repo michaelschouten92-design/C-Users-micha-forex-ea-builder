@@ -1718,18 +1718,13 @@ function AccountCard({
                 </div>
                 {/* Strategy rows */}
                 {strategyGroups.map((sg) => {
-                  // Find matching deployment for baseline status
-                  const allDeployments = instances.flatMap((ea) => ea.deployments ?? []);
-                  const deployment = allDeployments.find(
-                    (d) =>
-                      d.symbol.toUpperCase() === sg.symbol.toUpperCase() &&
-                      (sg.magicNumber === null || d.magicNumber === sg.magicNumber)
-                  );
-                  const isLinked = deployment?.baselineStatus === "LINKED";
                   // Resolve health badge from owning instance
                   const owningInstance = sg.instanceId
                     ? instances.find((ea) => ea.id === sg.instanceId)
                     : undefined;
+                  // Derive baseline status from instance-level truth (deployments not serialized to client)
+                  const relinkRequired = owningInstance?.relinkRequired ?? false;
+                  const isLinked = !relinkRequired && !!owningInstance?.baseline;
                   const health = deriveStrategyHealth(owningInstance);
                   const hs = HEALTH_STYLES[health];
                   const baselineTrades = owningInstance?.baseline?.totalTrades;
@@ -1761,11 +1756,13 @@ function AccountCard({
                         </div>
                         <div className="self-center flex items-center gap-2">
                           <p
-                            className={`text-xs ${isLinked ? "text-[#10B981] font-medium" : "text-[#64748B]"}`}
+                            className={`text-xs ${isLinked ? "text-[#10B981] font-medium" : relinkRequired ? "text-[#F59E0B] font-medium" : "text-[#64748B]"}`}
                           >
                             {isLinked
                               ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
-                              : "Missing"}
+                              : relinkRequired
+                                ? "Relink required"
+                                : "Missing"}
                           </p>
                           {!isLinked && sg.instanceId && (
                             <button
@@ -1776,7 +1773,7 @@ function AccountCard({
                               }}
                               className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
                             >
-                              Link
+                              {relinkRequired ? "Relink" : "Link"}
                             </button>
                           )}
                         </div>
