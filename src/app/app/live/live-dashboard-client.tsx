@@ -2907,6 +2907,8 @@ export function LiveDashboardClient({
     }
     return null;
   });
+  const [linkingInstanceId, setLinkingInstanceId] = useState<string | null>(null);
+  const [activatingInstanceId, setActivatingInstanceId] = useState<string | null>(null);
 
   // Clean up ?relink= from URL after initial render
   const relinkCleanedRef = useRef(false);
@@ -3424,14 +3426,19 @@ export function LiveDashboardClient({
                   <button
                     type="button"
                     onClick={item.onClick}
-                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors"
+                    disabled={linkingInstanceId === item.id || activatingInstanceId === item.id}
+                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       color: item.color,
                       borderColor: `${item.color}4D`,
                       backgroundColor: `${item.color}15`,
                     }}
                   >
-                    {item.actionLabel}
+                    {activatingInstanceId === item.id
+                      ? "Activating..."
+                      : linkingInstanceId === item.id
+                        ? "Linking..."
+                        : item.actionLabel}
                   </button>
                 </div>
               ))}
@@ -3562,11 +3569,18 @@ export function LiveDashboardClient({
               instanceName={inst?.eaName ?? ""}
               isRelink={inst?.relinkRequired}
               deploymentContext={ctx}
-              onClose={() => setLinkBaselineInstanceId(null)}
+              onLinkingStarted={() => setLinkingInstanceId(linkBaselineInstanceId)}
+              isActivating={activatingInstanceId === linkBaselineInstanceId}
+              onClose={() => {
+                setLinkBaselineInstanceId(null);
+                setLinkingInstanceId(null);
+                setActivatingInstanceId(null);
+              }}
               onLinked={async (instanceId, baseline) => {
                 // Check if this is an auto-discovered DRAFT instance — activate after linking
                 const inst = eaInstances.find((ea) => ea.id === instanceId);
                 if (inst?.isAutoDiscovered) {
+                  setActivatingInstanceId(instanceId);
                   try {
                     const res = await fetch(`/api/live/${instanceId}/lifecycle`, {
                       method: "POST",
@@ -3602,6 +3616,8 @@ export function LiveDashboardClient({
                         ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
                       )
                     );
+                  } finally {
+                    setActivatingInstanceId(null);
                   }
                 } else {
                   setEaInstances((prev) =>
@@ -3610,6 +3626,7 @@ export function LiveDashboardClient({
                     )
                   );
                 }
+                setLinkingInstanceId(null);
                 setLinkBaselineInstanceId(null);
               }}
             />
