@@ -94,6 +94,8 @@ export function LinkBaselineDialog({
   isRelink,
   deploymentLabel,
   deploymentContext,
+  onLinkingStarted,
+  isActivating,
   onClose,
   onLinked,
 }: {
@@ -104,6 +106,10 @@ export function LinkBaselineDialog({
   deploymentLabel?: string;
   /** Deployment fields used for auto-suggestion */
   deploymentContext?: DeploymentContext;
+  /** Called when the link API call starts */
+  onLinkingStarted?: () => void;
+  /** True while the parent is running lifecycle activation after linking */
+  isActivating?: boolean;
   onClose: () => void;
   onLinked: (instanceId: string, baseline: BaselineData) => void;
 }) {
@@ -170,6 +176,7 @@ export function LinkBaselineDialog({
     if (!selectedRunId) return;
     setLinking(true);
     setError(null);
+    onLinkingStarted?.();
     try {
       const res = await fetch(`/api/live/${instanceId}/link-baseline`, {
         method: "POST",
@@ -336,10 +343,10 @@ export function LinkBaselineDialog({
             </button>
             <button
               onClick={handleLink}
-              disabled={!selectedRunId || linking}
+              disabled={!selectedRunId || linking || isActivating}
               className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {linking ? "Linking..." : "Link Baseline"}
+              {isActivating ? "Activating..." : linking ? "Linking..." : "Link Baseline"}
             </button>
           </div>
         </div>
