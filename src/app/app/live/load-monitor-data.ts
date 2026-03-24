@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
@@ -30,7 +31,7 @@ export interface RecentDecision {
 }
 
 export interface MonitorData {
-  eaInstances: Awaited<ReturnType<typeof queryEaInstances>>;
+  eaInstances: (Awaited<ReturnType<typeof queryEaInstances>>[number] & { isAutoDiscovered: boolean })[];
   subscription: Awaited<ReturnType<typeof querySubscription>>;
   /** Most restrictive authority across all instances. null = fail-closed PAUSE. */
   authority: AuthorityDecision | null;
@@ -356,7 +357,17 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       return null;
     }
 
-    const eaInstances = eaResult.value;
+    const eaInstances = eaResult.value.map((ea) => ({
+      ...ea,
+      isAutoDiscovered:
+        ea.lifecycleState === "DRAFT" &&
+        ea.terminalDeployments.some((d) => {
+          const expected = createHash("sha256")
+            .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
+            .digest("hex");
+          return d.materialFingerprint === expected;
+        }),
+    }));
     const subscription = subResult.value;
 
     log.info({ step: "load_success", eaCount: eaInstances.length }, "monitor data loaded");
