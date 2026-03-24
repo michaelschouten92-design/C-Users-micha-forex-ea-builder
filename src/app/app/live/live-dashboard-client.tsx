@@ -3744,6 +3744,8 @@ export function LiveDashboardClient({
               );
             })()}
           </div>
+        </div>
+      )}
 
       {/* Baseline linked success banner */}
       {linkedSuccessBanner && (
