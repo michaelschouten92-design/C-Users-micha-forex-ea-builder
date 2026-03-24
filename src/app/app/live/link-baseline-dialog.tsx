@@ -213,12 +213,12 @@ export function LinkBaselineDialog({
         {/* Header */}
         <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">
           <h2 className="text-lg font-semibold text-white">
-            {isRelink ? "Restore Baseline Trust" : "Link Backtest Baseline"}
+            {isRelink ? "Restore Baseline Trust" : "Link Strategy Baseline"}
           </h2>
           <p className="text-xs text-[#7C8DB0] mt-1">
             {isRelink
               ? `Baseline trust was suspended due to a material configuration change on "${instanceName}". Select a replacement backtest baseline to restore monitoring.`
-              : `Select a backtest to use as baseline for "${instanceName}". Edge drift monitoring will compare live performance against this baseline.`}
+              : `Choose the backtest that represents this strategy's intended behaviour. Edge drift monitoring will compare live performance against this reference.`}
           </p>
           {deploymentLabel && (
             <p className="text-[10px] text-[#64748B] mt-2">
