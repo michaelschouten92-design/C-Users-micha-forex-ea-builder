@@ -16,7 +16,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
+import { appendProofEventInTx } from "@/lib/proof/events";
+import { randomUUID } from "crypto";
 import { MONITORING } from "./constants";
 import * as Sentry from "@sentry/nextjs";
 
@@ -39,7 +41,12 @@ export async function evaluateHealthLifecycleTrigger(instanceId: string): Promis
   // 1. Check current lifecycle state — only LIVE_MONITORING is eligible
   const instance = await prisma.liveEAInstance.findUnique({
     where: { id: instanceId },
-    select: { lifecycleState: true },
+    select: {
+      lifecycleState: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
+    },
   });
 
   if (!instance || instance.lifecycleState !== "LIVE_MONITORING") {
@@ -81,13 +88,34 @@ export async function evaluateHealthLifecycleTrigger(instanceId: string): Promis
     "Health lifecycle trigger: LIVE_MONITORING → EDGE_AT_RISK"
   );
 
+  const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
+
   try {
-    await performLifecycleTransition(
-      instanceId,
-      "LIVE_MONITORING",
-      "EDGE_AT_RISK",
-      "health_drift_degradation",
-      "monitoring"
+    await prisma.$transaction(
+      async (tx) => {
+        if (strategyId) {
+          await appendProofEventInTx(tx, strategyId, "LIFECYCLE_EDGE_AT_RISK", {
+            eventType: "LIFECYCLE_EDGE_AT_RISK",
+            recordId: randomUUID(),
+            strategyId,
+            instanceId,
+            from: "LIVE_MONITORING",
+            to: "EDGE_AT_RISK",
+            reason: "health_drift_degradation",
+            consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        await performLifecycleTransitionInTx(
+          tx,
+          instanceId,
+          "LIVE_MONITORING",
+          "EDGE_AT_RISK",
+          "health_drift_degradation",
+          "monitoring"
+        );
+      },
+      { isolationLevel: "Serializable" }
     );
   } catch (err) {
     // If the instance is no longer in LIVE_MONITORING (race condition),

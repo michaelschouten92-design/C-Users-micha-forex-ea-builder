@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
+import { appendProofEventInTx } from "@/lib/proof/events";
+import { randomUUID } from "crypto";
 
 const log = logger.child({ route: "unlink-baseline" });
 
@@ -51,6 +53,9 @@ export async function POST(
         exportJobId: true,
         strategyVersionId: true,
         deletedAt: true,
+        strategyVersion: {
+          select: { strategyIdentity: { select: { strategyId: true } } },
+        },
       },
     });
 
@@ -79,23 +84,39 @@ export async function POST(
       );
     }
 
-    // 6. Clear instance baseline + reset deployments atomically
-    const txOps = [
-      prisma.liveEAInstance.update({
-        where: { id: instanceId },
-        data: { strategyVersionId: null },
-      }),
-      body.deploymentId
-        ? prisma.terminalDeployment.update({
+    // 6. Clear instance baseline + reset deployments atomically, with proof event
+    const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
+    await prisma.$transaction(
+      async (tx) => {
+        if (strategyId) {
+          await appendProofEventInTx(tx, strategyId, "BASELINE_UNLINKED", {
+            eventType: "BASELINE_UNLINKED",
+            recordId: randomUUID(),
+            strategyId,
+            instanceId,
+            previousStrategyVersionId: instance.strategyVersionId,
+            deploymentId: body.deploymentId ?? null,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        await tx.liveEAInstance.update({
+          where: { id: instanceId },
+          data: { strategyVersionId: null },
+        });
+        if (body.deploymentId) {
+          await tx.terminalDeployment.update({
             where: { id: body.deploymentId },
             data: { baselineStatus: "UNLINKED", strategyVersionId: null },
-          })
-        : prisma.terminalDeployment.updateMany({
+          });
+        } else {
+          await tx.terminalDeployment.updateMany({
             where: { instanceId },
             data: { baselineStatus: "UNLINKED", strategyVersionId: null },
-          }),
-    ];
-    await prisma.$transaction(txOps);
+          });
+        }
+      },
+      { isolationLevel: "Serializable" }
+    );
 
     // 8. Audit
     const auditCtx = getAuditContext(request);
