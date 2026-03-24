@@ -187,13 +187,19 @@ export function LinkBaselineDialog({
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "Failed to link baseline");
+        const message =
+          json.code === "BASELINE_ALREADY_LINKED"
+            ? "A baseline is already linked to this instance. Refresh the page to see the current baseline."
+            : json.code === "INELIGIBLE_INSTANCE"
+              ? "This EA is managed through the export flow and cannot be linked manually."
+              : json.error || "Something went wrong — please try again.";
+        setError(message);
         setLinking(false);
         return;
       }
       onLinked(instanceId, json.baseline);
     } catch {
-      setError("Network error — please try again");
+      setError("Connection failed — check your network and try again.");
       setLinking(false);
     }
   }

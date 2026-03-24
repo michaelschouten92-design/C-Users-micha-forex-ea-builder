@@ -3613,19 +3613,27 @@ export function LiveDashboardClient({
                         )
                       );
                     } else {
-                      // Activation failed — still update baseline state
+                      // Activation failed — baseline is linked, lifecycle stays in DRAFT
                       setEaInstances((prev) =>
                         prev.map((ea) =>
                           ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
                         )
                       );
+                      showError(
+                        "Activation incomplete",
+                        "Baseline was linked successfully, but live monitoring activation did not complete. Refresh the page to retry."
+                      );
                     }
                   } catch {
-                    // Network error — still update baseline state
+                    // Network error — baseline is linked, activation request was not delivered
                     setEaInstances((prev) =>
                       prev.map((ea) =>
                         ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
                       )
+                    );
+                    showError(
+                      "Activation incomplete",
+                      "Baseline was linked successfully, but the activation request could not be sent. Check your connection and refresh."
                     );
                   } finally {
                     setActivatingInstanceId(null);
