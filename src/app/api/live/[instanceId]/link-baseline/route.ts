@@ -218,7 +218,8 @@ export async function POST(
           winRate: backtestRun.winRate,
           profitFactor: backtestRun.profitFactor,
           totalTrades: backtestRun.totalTrades,
-          healthScore: backtestRun.healthScore,
+          maxDrawdownPct: backtestRun.maxDrawdownPct,
+          sharpeRatio: backtestRun.sharpeRatio,
         },
       },
       { status: 200 }
