@@ -90,6 +90,7 @@ function renderDashboard(
     trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
     healthStatus: ea.healthSnapshots?.[0]?.status ?? null,
     isExternal: ea.exportJobId === null,
+    isAutoDiscovered: ea.isAutoDiscovered,
     relinkRequired: ea.terminalDeployments.some(
       (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
     ),
