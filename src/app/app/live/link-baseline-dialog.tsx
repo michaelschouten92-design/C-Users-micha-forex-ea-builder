@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { showSuccess } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 
 export interface BaselineData {
@@ -192,7 +191,6 @@ export function LinkBaselineDialog({
         setLinking(false);
         return;
       }
-      showSuccess("Baseline linked successfully");
       onLinked(instanceId, json.baseline);
     } catch {
       setError("Network error — please try again");
@@ -337,7 +335,8 @@ export function LinkBaselineDialog({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
+              disabled={linking || isActivating}
+              className="px-4 py-2 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

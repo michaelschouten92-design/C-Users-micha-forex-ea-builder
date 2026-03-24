@@ -2062,7 +2062,7 @@ function EACard({
             Baseline Snapshot
           </p>
           <p className="text-[10px] text-[#64748B] mb-2">
-            Reference metrics for trusted live monitoring.
+            Derived from linked backtest
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
@@ -2944,6 +2944,8 @@ export function LiveDashboardClient({
   });
   const [linkingInstanceId, setLinkingInstanceId] = useState<string | null>(null);
   const [activatingInstanceId, setActivatingInstanceId] = useState<string | null>(null);
+  const [linkedSuccessBanner, setLinkedSuccessBanner] = useState(false);
+  const linkedSuccessBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up ?relink= from URL after initial render
   const relinkCleanedRef = useRef(false);
@@ -2975,6 +2977,7 @@ export function LiveDashboardClient({
   useEffect(() => {
     return () => {
       if (changedTimeoutRef.current) clearTimeout(changedTimeoutRef.current);
+      if (linkedSuccessBannerTimerRef.current) clearTimeout(linkedSuccessBannerTimerRef.current);
     };
   }, []);
 
@@ -3744,6 +3747,12 @@ export function LiveDashboardClient({
               );
             })()}
           </div>
+
+      {/* Baseline linked success banner */}
+      {linkedSuccessBanner && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/20 text-xs text-[#10B981] font-medium mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] shrink-0" />
+          Baseline linked successfully
         </div>
       )}
 
@@ -3938,6 +3947,9 @@ export function LiveDashboardClient({
                   );
                 }
                 setLinkingInstanceId(null);
+                setLinkedSuccessBanner(true);
+                if (linkedSuccessBannerTimerRef.current) clearTimeout(linkedSuccessBannerTimerRef.current);
+                linkedSuccessBannerTimerRef.current = setTimeout(() => setLinkedSuccessBanner(false), 3000);
                 setLinkBaselineInstanceId(null);
               }}
             />
